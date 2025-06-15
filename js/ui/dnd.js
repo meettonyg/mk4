@@ -20,12 +20,12 @@ export function setupDragAndDrop() {
     componentItems.forEach(item => {
         item.addEventListener('dragstart', function(e) {
             setState('draggedComponent', this.getAttribute('data-component'));
-            this.classList.add('dragging');
+            this.classList.add('component-item--dragging');
             e.dataTransfer.effectAllowed = 'copy';
         });
 
         item.addEventListener('dragend', function() {
-            this.classList.remove('dragging');
+            this.classList.remove('component-item--dragging');
             setState('draggedComponent', null);
         });
     });
@@ -35,22 +35,22 @@ export function setupDragAndDrop() {
         zone.addEventListener('dragover', function(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
-            this.classList.add('drag-over');
+            this.classList.add('drop-zone--drag-over');
         });
 
         zone.addEventListener('dragleave', function() {
-            this.classList.remove('drag-over');
+            this.classList.remove('drop-zone--drag-over');
         });
 
         zone.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.classList.remove('drag-over');
+            this.classList.remove('drop-zone--drag-over');
             
             const draggedComponent = getState('draggedComponent');
             if (draggedComponent) {
                 // Check if premium component
                 const componentElement = document.querySelector(`[data-component="${draggedComponent}"]`);
-                if (componentElement && componentElement.classList.contains('premium')) {
+                if (componentElement && componentElement.classList.contains('component-item--premium')) {
                     showUpgradePrompt();
                     return;
                 }
@@ -63,7 +63,7 @@ export function setupDragAndDrop() {
 
         // Click to add component
         zone.addEventListener('click', function() {
-            if (this.classList.contains('empty')) {
+            if (this.classList.contains('drop-zone--empty')) {
                 showComponentLibraryModal();
             }
         });

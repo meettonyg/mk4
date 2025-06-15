@@ -12,8 +12,8 @@ export function setupLayoutOptions() {
     
     layoutOptions.forEach(option => {
         option.addEventListener('click', function() {
-            layoutOptions.forEach(opt => opt.classList.remove('active'));
-            this.classList.add('active');
+            layoutOptions.forEach(opt => opt.classList.remove('layout-option--active'));
+            this.classList.add('layout-option--active');
             
             const layout = this.getAttribute('data-layout');
             applyLayout(layout);

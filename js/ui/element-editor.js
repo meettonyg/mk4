@@ -22,10 +22,9 @@ export function setupElementSelection() {
     // Deselect when clicking outside
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.editable-element') && 
-            !e.target.closest('.left-sidebar') && 
-            !e.target.closest('.component-library-modal') &&
-            !e.target.closest('.global-settings-modal') &&
-            !e.target.closest('.export-modal')) {
+            !e.target.closest('.sidebar') && 
+            !e.target.closest('.library') &&
+            !e.target.closest('.modal__content')) {
             deselectAllElements();
         }
     });
@@ -38,18 +37,18 @@ export function setupElementSelection() {
 export function selectElement(element) {
     // Remove selection from all elements
     document.querySelectorAll('.editable-element').forEach(el => {
-        el.classList.remove('selected');
+        el.classList.remove('editable-element--selected');
     });
 
     // Select clicked element
-    element.classList.add('selected');
+    element.classList.add('editable-element--selected');
     setState('selectedElement', element);
 
     // Update design panel
     updateDesignPanel(element);
 
     // Switch to design tab
-    document.querySelector('.sidebar-tab[data-tab="design"]').click();
+    document.querySelector('.sidebar__tab[data-tab="design"]').click();
 }
 
 /**
@@ -57,7 +56,7 @@ export function selectElement(element) {
  */
 export function deselectAllElements() {
     document.querySelectorAll('.editable-element').forEach(el => {
-        el.classList.remove('selected');
+        el.classList.remove('editable-element--selected');
     });
     setState('selectedElement', null);
 }
@@ -73,7 +72,7 @@ export function updateDesignPanel(element) {
     if (!editor) return;
 
     // Update editor title and icon based on element type
-    const title = editor.querySelector('.editor-title');
+    const title = editor.querySelector('.element-editor__title');
     if (title) {
         const iconMap = {
             'hero': '👤',
