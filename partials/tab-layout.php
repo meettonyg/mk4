@@ -1,20 +1,20 @@
 <div id="layout-tab" class="tab-content">
-    <div class="section-title">Section Layouts</div>
+    <div class="sidebar__section-title">Section Layouts</div>
     <div class="layout-options">
-        <div class="layout-option active" data-layout="full-width">
-            <div class="layout-preview full-width"></div>
+        <div class="layout-option layout-option--active" data-layout="full-width">
+            <div class="layout-preview layout-preview--full-width"></div>
             <div class="layout-name">Full Width</div>
         </div>
         <div class="layout-option" data-layout="two-column">
-            <div class="layout-preview two-column"></div>
+            <div class="layout-preview layout-preview--two-column"></div>
             <div class="layout-name">Two Column</div>
         </div>
         <div class="layout-option" data-layout="sidebar">
-            <div class="layout-preview sidebar"></div>
+            <div class="layout-preview layout-preview--sidebar"></div>
             <div class="layout-name">Main + Sidebar</div>
         </div>
         <div class="layout-option" data-layout="three-column">
-            <div class="layout-preview three-column"></div>
+            <div class="layout-preview layout-preview--three-column"></div>
             <div class="layout-name">Three Column</div>
         </div>
     </div>
@@ -36,7 +36,7 @@
         </button>
     </div>
 
-    <div class="section-title" style="margin-top: 24px;">Global Settings</div>
+    <div class="sidebar__section-title" style="margin-top: 24px;">Global Settings</div>
     <div class="form-group">
         <label class="form-label">Max Width</label>
         <input type="text" class="form-input" value="900px" id="global-max-width">
