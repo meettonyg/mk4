@@ -11,7 +11,7 @@ import { selectElement } from '../ui/element-editor.js';
  */
 export function addComponentToZone(componentType, zone) {
     const template = getComponentTemplate(componentType);
-    zone.classList.remove('empty');
+    zone.classList.remove('drop-zone--empty');
     zone.innerHTML = template;
     
     // Make the new element selectable
@@ -37,18 +37,18 @@ export function addComponentToZone(componentType, zone) {
 export function getComponentTemplate(componentType) {
     const templates = {
         'hero': `
-            <div class="hero-section editable-element" data-element="hero" data-component="hero">
+            <div class="hero editable-element" data-element="hero" data-component="hero">
                 <div class="element-controls">
                     <button class="control-btn" title="Move Up">↑</button>
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <div class="hero-avatar">
+                <div class="hero__avatar">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50' text-anchor='middle' x='50' fill='%2364748b'%3EDJ%3C/text%3E%3C/svg%3E" alt="Profile Avatar">
                 </div>
-                <h1 class="hero-name" contenteditable="true">New Hero Section</h1>
-                <div class="hero-title" contenteditable="true">Your Professional Title</div>
-                <p class="hero-bio" contenteditable="true">Briefly introduce yourself and your expertise.</p>
+                <h1 class="hero__name" contenteditable="true">New Hero Section</h1>
+                <div class="hero__title" contenteditable="true">Your Professional Title</div>
+                <p class="hero__bio" contenteditable="true">Briefly introduce yourself and your expertise.</p>
             </div>
         `,
         'bio': `
@@ -59,7 +59,7 @@ export function getComponentTemplate(componentType) {
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <h2 class="section-title-mk" contenteditable="true">About Me</h2>
+                <h2 class="section-title" contenteditable="true">About Me</h2>
                 <p contenteditable="true">Add your full biography and professional background here. This is where you can share your story, expertise, and what makes you unique as a speaker or expert in your field.</p>
             </div>
         `,
@@ -71,7 +71,7 @@ export function getComponentTemplate(componentType) {
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <h2 class="section-title-mk" contenteditable="true">Speaking Topics</h2>
+                <h2 class="section-title" contenteditable="true">Speaking Topics</h2>
                 <div class="topics-grid">
                     <div class="topic-item" contenteditable="true">Topic 1</div>
                     <div class="topic-item" contenteditable="true">Topic 2</div>
@@ -116,23 +116,23 @@ export function getComponentTemplate(componentType) {
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <h2 class="section-title-mk" contenteditable="true">Key Statistics</h2>
+                <h2 class="section-title" contenteditable="true">Key Statistics</h2>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <span class="stat-number" contenteditable="true">1.2M</span>
-                        <div class="stat-label" contenteditable="true">Followers</div>
+                        <span class="stat-item__number" contenteditable="true">1.2M</span>
+                        <div class="stat-item__label" contenteditable="true">Followers</div>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number" contenteditable="true">150+</span>
-                        <div class="stat-label" contenteditable="true">Podcast Shows</div>
+                        <span class="stat-item__number" contenteditable="true">150+</span>
+                        <div class="stat-item__label" contenteditable="true">Podcast Shows</div>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number" contenteditable="true">500K</span>
-                        <div class="stat-label" contenteditable="true">Downloads</div>
+                        <span class="stat-item__number" contenteditable="true">500K</span>
+                        <div class="stat-item__label" contenteditable="true">Downloads</div>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number" contenteditable="true">5</span>
-                        <div class="stat-label" contenteditable="true">Years Experience</div>
+                        <span class="stat-item__number" contenteditable="true">5</span>
+                        <div class="stat-item__label" contenteditable="true">Years Experience</div>
                     </div>
                 </div>
             </div>
@@ -145,10 +145,10 @@ export function getComponentTemplate(componentType) {
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <div class="cta-section">
-                    <h2 class="section-title-mk" contenteditable="true">Ready to Connect?</h2>
+                <div class="cta">
+                    <h2 class="section-title" contenteditable="true">Ready to Connect?</h2>
                     <p contenteditable="true">Let's discuss how we can work together on your next project or podcast.</p>
-                    <a href="#" class="cta-button" contenteditable="true">Book a Meeting</a>
+                    <a href="#" class="cta__button" contenteditable="true">Book a Meeting</a>
                 </div>
             </div>
         `,
@@ -160,7 +160,7 @@ export function getComponentTemplate(componentType) {
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <h2 class="section-title-mk" contenteditable="true">Featured On</h2>
+                <h2 class="section-title" contenteditable="true">Featured On</h2>
                 <div class="logo-grid">
                     <div class="logo-item">
                         <div class="logo-placeholder">Click to add logo</div>
@@ -185,11 +185,11 @@ export function getComponentTemplate(componentType) {
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <h2 class="section-title-mk" contenteditable="true">What People Say</h2>
-                <div class="testimonial-card">
-                    <p class="testimonial-quote" contenteditable="true">"An incredible speaker with deep insights into quantum physics and ancient technology. Highly recommended!"</p>
-                    <div class="testimonial-author" contenteditable="true">Sarah Mitchell</div>
-                    <div class="testimonial-role" contenteditable="true">Host, The Science Podcast</div>
+                <h2 class="section-title" contenteditable="true">What People Say</h2>
+                <div class="testimonial">
+                    <p class="testimonial__quote" contenteditable="true">"An incredible speaker with deep insights into quantum physics and ancient technology. Highly recommended!"</p>
+                    <div class="testimonial__author" contenteditable="true">Sarah Mitchell</div>
+                    <div class="testimonial__role" contenteditable="true">Host, The Science Podcast</div>
                 </div>
             </div>
         `,
@@ -201,7 +201,7 @@ export function getComponentTemplate(componentType) {
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <h2 class="section-title-mk" contenteditable="true">Contact Information</h2>
+                <h2 class="section-title" contenteditable="true">Contact Information</h2>
                 <div class="contact-info">
                     <p contenteditable="true">📧 your.email@example.com</p>
                     <p contenteditable="true">📱 +1 (555) 123-4567</p>
@@ -217,7 +217,7 @@ export function getComponentTemplate(componentType) {
                     <button class="control-btn" title="Duplicate">⧉</button>
                     <button class="control-btn" title="Delete">×</button>
                 </div>
-                <h2 class="section-title-mk" contenteditable="true">Interview Questions</h2>
+                <h2 class="section-title" contenteditable="true">Interview Questions</h2>
                 <div class="questions-list">
                     <div class="question-item" contenteditable="true">What inspired you to become an expert in your field?</div>
                     <div class="question-item" contenteditable="true">What's the most common misconception about your industry?</div>
