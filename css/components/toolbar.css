@@ -1,0 +1,148 @@
+/* Toolbar Component */
+.toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: #2a2a2a;
+    border-bottom: 1px solid #404040;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 1000;
+}
+
+.toolbar__section {
+    display: flex;
+    align-items: center;
+}
+
+.toolbar__section--left {
+    gap: 12px;
+}
+
+.toolbar__section--center {
+    gap: 10px;
+}
+
+.toolbar__section--right {
+    gap: 8px;
+}
+
+.toolbar__logo {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0ea5e9;
+}
+
+.toolbar__guest-name {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.toolbar__status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.toolbar__status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+.toolbar__status-dot--saving {
+    background: #f59e0b;
+    animation: pulse 1s infinite;
+}
+
+.toolbar__btn {
+    background: #404040;
+    border: none;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.toolbar__btn:hover {
+    background: #505050;
+}
+
+.toolbar__btn--primary {
+    background: #0ea5e9;
+}
+
+.toolbar__btn--primary:hover {
+    background: #0284c7;
+}
+
+.toolbar__btn--export {
+    background: #059669;
+}
+
+.toolbar__btn--export:hover {
+    background: #047857;
+}
+
+.toolbar__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toolbar__preview-toggle {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+}
+
+.toolbar__preview-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toolbar__preview-btn--active {
+    background: #0ea5e9;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .toolbar {
+        padding: 0 12px;
+    }
+
+    .toolbar__section--left {
+        gap: 8px;
+    }
+
+    .toolbar__guest-name {
+        display: none;
+    }
+
+    .toolbar__btn {
+        padding: 4px 6px;
+        font-size: 11px;
+    }
+}

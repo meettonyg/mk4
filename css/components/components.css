@@ -1,0 +1,93 @@
+/* Component Library */
+.component-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.component-item {
+    background: #333;
+    border: 1px solid #404040;
+    border-radius: 6px;
+    padding: 10px;
+    cursor: grab;
+    transition: all 0.2s ease;
+    text-align: center;
+    position: relative;
+    user-select: none;
+}
+
+.component-item:hover {
+    border-color: #0ea5e9;
+    background: #3a3a3a;
+    transform: translateY(-1px);
+}
+
+.component-item:active {
+    cursor: grabbing;
+}
+
+.component-item--premium::after {
+    content: '🔒';
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    font-size: 9px;
+}
+
+.component-item--dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.component-item__icon {
+    width: 20px;
+    height: 20px;
+    margin: 0 auto 6px;
+    stroke: #94a3b8;
+}
+
+.component-item:hover .component-item__icon {
+    stroke: #0ea5e9;
+}
+
+.component-item__name {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.component-item:hover .component-item__name {
+    color: #e2e8f0;
+}
+
+.premium-badge {
+    background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 2px 5px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .component-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+
+    .component-item {
+        padding: 6px;
+    }
+
+    .component-item__name {
+        font-size: 10px;
+    }
+
+    .component-item__icon {
+        width: 16px;
+        height: 16px;
+        margin-bottom: 3px;
+    }
+}

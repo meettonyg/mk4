@@ -1,19 +1,19 @@
-<div class="global-settings-modal" id="global-settings-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <div class="modal-title">Global Theme Settings</div>
-            <button class="close-modal" id="close-global-settings">&times;</button>
+<div class="modal" id="global-settings-modal">
+    <div class="modal__content">
+        <div class="modal__header">
+            <div class="modal__title">Global Theme Settings</div>
+            <button class="modal__close" id="close-global-settings">&times;</button>
         </div>
-        <div class="modal-body">
+        <div class="modal__body">
             <div class="form-group">
                 <label class="form-label">Color Palette</label>
                 <div class="theme-palette">
-                    <div class="palette-option blue active" data-palette="blue"></div>
-                    <div class="palette-option green" data-palette="green"></div>
-                    <div class="palette-option purple" data-palette="purple"></div>
-                    <div class="palette-option orange" data-palette="orange"></div>
-                    <div class="palette-option pink" data-palette="pink"></div>
-                    <div class="palette-option gray" data-palette="gray"></div>
+                    <div class="palette-option palette-option--blue palette-option--active" data-palette="blue"></div>
+                    <div class="palette-option palette-option--green" data-palette="green"></div>
+                    <div class="palette-option palette-option--purple" data-palette="purple"></div>
+                    <div class="palette-option palette-option--orange" data-palette="orange"></div>
+                    <div class="palette-option palette-option--pink" data-palette="pink"></div>
+                    <div class="palette-option palette-option--gray" data-palette="gray"></div>
                 </div>
             </div>
             

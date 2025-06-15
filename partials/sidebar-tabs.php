@@ -1,9 +1,9 @@
-<div class="sidebar-tabs">
-    <button class="sidebar-tab active" data-tab="components">Components</button>
-    <button class="sidebar-tab" data-tab="design">Design</button>
-    <button class="sidebar-tab" data-tab="layout">Layout</button>
+<div class="sidebar__tabs">
+    <button class="sidebar__tab sidebar__tab--active" data-tab="components">Components</button>
+    <button class="sidebar__tab" data-tab="design">Design</button>
+    <button class="sidebar__tab" data-tab="layout">Layout</button>
 </div>
-<div class="sidebar-content">
+<div class="sidebar__content">
     <?php
     include __DIR__ . '/tab-components.php';
     include __DIR__ . '/tab-design.php';

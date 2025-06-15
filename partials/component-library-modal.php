@@ -1,7 +1,7 @@
-<div class="component-library-overlay" id="component-library-overlay">
-    <div class="component-library-modal">
-        <div class="library-header">
-            <div class="library-title">
+<div class="library-modal" id="component-library-overlay">
+    <div class="library">
+        <div class="library__header">
+            <div class="library__title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14,2 14,8 20,8"></polyline>
@@ -11,8 +11,8 @@
                 </svg>
                 Component Library
             </div>
-            <div class="library-controls">
-                <select class="category-filter" id="category-filter">
+            <div class="library__controls">
+                <select class="library__filter" id="category-filter">
                     <option value="all">All Categories</option>
                     <option value="hero">Hero Sections</option>
                     <option value="biography">Biography</option>
@@ -22,21 +22,21 @@
                     <option value="contact">Contact</option>
                     <option value="stats">Statistics</option>
                 </select>
-                <div class="library-search">
+                <div class="library__search">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.35-4.35"></path>
                     </svg>
                     <input type="text" placeholder="Search components..." id="component-search">
                 </div>
-                <button class="close-library" id="close-library">&times;</button>
+                <button class="library__close" id="close-library">&times;</button>
             </div>
         </div>
         
-        <div class="library-content">
-            <div class="library-sidebar">
+        <div class="library__content">
+            <div class="library__sidebar">
                 <ul class="category-list">
-                    <li class="category-item active" data-category="all">All Components</li>
+                    <li class="category-item category-item--active" data-category="all">All Components</li>
                     <li class="category-item" data-category="hero">Hero Sections</li>
                     <li class="category-item" data-category="biography">Biography</li>
                     <li class="category-item" data-category="topics">Topics & Skills</li>
@@ -47,8 +47,8 @@
                 </ul>
             </div>
             
-            <div class="library-main">
-                <div class="section-header">
+            <div class="library__main">
+                <div class="library__section-header">
                     <h3>Free Components</h3>
                     <p>Essential components included with your Guestify account</p>
                 </div>
@@ -135,13 +135,13 @@
                     </div>
                 </div>
                 
-                <div class="section-header" style="margin-top: 30px;">
+                <div class="library__section-header" style="margin-top: 30px;">
                     <h3>Premium Components</h3>
                     <p>Advanced components available with Guestify Pro</p>
                 </div>
                 
                 <div class="components-grid" id="premium-components">
-                    <div class="component-card premium" data-category="media" data-component="video-intro">
+                    <div class="component-card component-card--premium" data-category="media" data-component="video-intro">
                         <div class="component-preview" style="background: #1e293b; display: flex; align-items: center; justify-content: center;">
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2">
                                 <polygon points="5,3 19,12 5,21"></polygon>
@@ -153,7 +153,7 @@
                         </div>
                     </div>
                     
-                    <div class="component-card premium" data-category="media" data-component="image-gallery">
+                    <div class="component-card component-card--premium" data-category="media" data-component="image-gallery">
                         <div class="component-preview" style="background: #f8fafc; padding: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px;">
                             <div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div>
                             <div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div>
