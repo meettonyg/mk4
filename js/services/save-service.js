@@ -2,7 +2,7 @@
  * Save functionality
  */
 
-import { setState } from '../state.js';
+import { setState, getState } from '../state.js';
 
 /**
  * Set up save system
@@ -29,19 +29,19 @@ export function setupSaveSystem() {
  */
 export function saveMediaKit() {
     const saveBtn = document.getElementById('save-btn');
-    const statusDot = document.querySelector('.status-dot');
-    const statusText = document.querySelector('.status-indicator span');
+    const statusDot = document.querySelector('.toolbar__status-dot');
+    const statusText = document.querySelector('.toolbar__status span');
 
     // Update UI to show saving state
     if (saveBtn) saveBtn.disabled = true;
-    if (statusDot) statusDot.classList.add('saving');
+    if (statusDot) statusDot.classList.add('toolbar__status-dot--saving');
     if (statusText) statusText.textContent = 'Saving...';
 
     // Simulate save operation
     setTimeout(() => {
         setState('isUnsaved', false);
         if (saveBtn) saveBtn.disabled = false;
-        if (statusDot) statusDot.classList.remove('saving');
+        if (statusDot) statusDot.classList.remove('toolbar__status-dot--saving');
         if (statusText) statusText.textContent = 'Saved';
         
         console.log('Media kit saved successfully');
@@ -52,7 +52,7 @@ export function saveMediaKit() {
  * Auto-save the media kit
  */
 function autoSave() {
-    const statusText = document.querySelector('.status-indicator span');
+    const statusText = document.querySelector('.toolbar__status span');
     if (statusText) statusText.textContent = 'Auto-saving...';
     
     setTimeout(() => {
@@ -66,7 +66,7 @@ function autoSave() {
  */
 export function markUnsaved() {
     setState('isUnsaved', true);
-    const statusText = document.querySelector('.status-indicator span');
+    const statusText = document.querySelector('.toolbar__status span');
     if (statusText) statusText.textContent = 'Unsaved changes';
 }
 
@@ -75,5 +75,5 @@ export function markUnsaved() {
  * @returns {boolean} Whether the media kit is unsaved
  */
 export function isUnsaved() {
-    return require('../state.js').getState('isUnsaved');
+    return getState('isUnsaved');
 }
