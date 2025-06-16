@@ -288,40 +288,15 @@ function gmkb_enqueue_builder_scripts() {
         }
     ');
     
-    // Enqueue the new enhanced scripts
-    wp_enqueue_script(
-        'gmkb-state-manager',
-        GMKB_PLUGIN_URL . 'js/services/state-manager.js',
-        array(),
-        GMKB_VERSION,
-        true
-    );
-    
-    wp_enqueue_script(
-        'gmkb-data-binding',
-        GMKB_PLUGIN_URL . 'js/services/data-binding-engine.js',
-        array('gmkb-state-manager'),
-        GMKB_VERSION,
-        true
-    );
-    
-    wp_enqueue_script(
-        'gmkb-design-panel',
-        GMKB_PLUGIN_URL . 'js/ui/design-panel.js',
-        array('gmkb-data-binding', 'gmkb-state-manager'),
-        GMKB_VERSION,
-        true
-    );
-    
     // Enqueue enhanced CSS
     wp_enqueue_style(
         'gmkb-enhancements',
         GMKB_PLUGIN_URL . 'css/modules/enhancements.css',
-        array('gmkb-builder'),
+        array(), // Removed gmkb-builder dependency to avoid potential load order issues
         GMKB_VERSION
     );
     
-    // Localize script data for both main script and enhanced scripts
+    // Localize script data for main script
     $localize_data = array(
         'nonce' => wp_create_nonce('gmkb_nonce'),
         'upload_nonce' => wp_create_nonce('media-form'),
@@ -330,9 +305,7 @@ function gmkb_enqueue_builder_scripts() {
         'media_kit_id' => isset($_GET['media_kit_id']) ? intval($_GET['media_kit_id']) : 0
     );
     
-    // Add to multiple scripts for compatibility
-    wp_localize_script('gmkb-design-panel', 'gmkb_data', $localize_data);
-    wp_localize_script('gmkb-state-manager', 'gmkb_data', $localize_data);
+    // Only localize to the main script - let it handle all module loading
     wp_localize_script('guestify-builder-script', 'gmkb_data', $localize_data);
 }
 
