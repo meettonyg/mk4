@@ -5,19 +5,25 @@
 
 // Register this component's panel handler
 window.componentPanelHandlers = window.componentPanelHandlers || {};
-window.componentPanelHandlers['testimonials'] = function(element) {
-    initializeTestimonialsPanel(element);
+window.componentPanelHandlers['testimonials'] = function(element, schema) {
+    initializeTestimonialsPanel(element, schema);
 };
 
 /**
  * Initialize testimonials panel
  * @param {HTMLElement} element - The testimonials component element
+ * @param {Object} schema - Component schema (optional)
  */
-function initializeTestimonialsPanel(element) {
+function initializeTestimonialsPanel(element, schema) {
     const testimonialsList = document.getElementById('design-testimonials-list');
     const addTestimonialBtn = document.getElementById('add-testimonial-btn');
     
     if (!testimonialsList || !addTestimonialBtn) return;
+    
+    // Log schema if available
+    if (schema) {
+        console.log('Testimonials component schema:', schema);
+    }
     
     // Load existing testimonials
     const existingTestimonials = element.querySelectorAll('.testimonial-item');

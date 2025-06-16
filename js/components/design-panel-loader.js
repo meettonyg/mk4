@@ -102,14 +102,23 @@ export async function showDesignPanel(componentType, element) {
  * @param {HTMLElement} element - The selected element
  */
 function initializeDesignPanel(componentType, element) {
-    const elementEditor = document.getElementById('element-editor');
-    if (!elementEditor) return;
-    
     // Handle common form inputs generically
     initializeCommonControls(element);
     
+    // Get component schema if available
+    const schemaData = element.getAttribute('data-schema');
+    let schema = null;
+    
+    try {
+        if (schemaData) {
+            schema = JSON.parse(schemaData);
+        }
+    } catch (e) {
+        console.error('Error parsing schema data:', e);
+    }
+    
     // Try to load component-specific panel script
-    loadComponentPanelScript(componentType, element);
+    loadComponentPanelScript(componentType, element, schema);
 }
 
 /**
@@ -180,11 +189,12 @@ function initializeCommonControls(element) {
  * Load component-specific panel script if available
  * @param {string} componentType - The component type
  * @param {HTMLElement} element - The selected element
+ * @param {Object} schema - Component schema (optional)
  */
-function loadComponentPanelScript(componentType, element) {
+function loadComponentPanelScript(componentType, element, schema) {
     // Check if component has registered an init function
     if (window.componentPanelHandlers && window.componentPanelHandlers[componentType]) {
-        window.componentPanelHandlers[componentType](element);
+        window.componentPanelHandlers[componentType](element, schema);
         return;
     }
     
@@ -195,8 +205,15 @@ function loadComponentPanelScript(componentType, element) {
         initializeStatsPanel(element);
     } else {
         // Try to dynamically load panel-script.js if it exists
-        const pluginUrl = typeof guestifyData !== 'undefined' ? guestifyData.plugin_url : '';
-        const scriptUrl = `${pluginUrl}components/${componentType}/panel-script.js`;
+        // Get plugin URL from global object
+        // Direct approach - no fallbacks
+        // Get the current site URL
+        const siteUrl = window.location.origin;
+        
+        // Direct path to the component script
+        const scriptUrl = `${siteUrl}/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/panel-script.js`;
+        
+        console.log('Loading panel script from:', scriptUrl);
         
         fetch(scriptUrl, { method: 'HEAD' })
             .then(response => {
@@ -208,16 +225,16 @@ function loadComponentPanelScript(componentType, element) {
                         // Call initialization function if it was registered
                         if (window.componentPanelHandlers && 
                             window.componentPanelHandlers[componentType]) {
-                            window.componentPanelHandlers[componentType](element);
+                            window.componentPanelHandlers[componentType](element, schema);
                         }
                     };
                     document.head.appendChild(script);
                 }
             })
-            .catch(() => {
+            .catch((error) => {
                 // Script doesn't exist, or error loading - that's fine,
                 // we'll just use the generic controls
-                console.log(`No panel script for ${componentType}, using generic controls`);
+                console.log(`No panel script for ${componentType}, using generic controls`); 
             });
     }
 }

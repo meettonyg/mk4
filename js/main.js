@@ -43,6 +43,9 @@ let enhancedInitialized = false;
  * regardless of the data management system in use.
  */
 function initializeCoreUI() {
+    // Set up global plugin URL for component loading
+    setupGlobalPluginUrl();
+    
     setupTabs();
     setupPreviewToggle();
     setupDragAndDrop();
@@ -55,6 +58,52 @@ function initializeCoreUI() {
     setupGlobalSettings();
     setupExportSystem();
     setupShareSystem();
+}
+
+/**
+ * Set up the global plugin URL variable for all components to use
+ */
+function setupGlobalPluginUrl() {
+    // Initialize the guestifyMediaKitBuilder global object if it doesn't exist
+    window.guestifyMediaKitBuilder = window.guestifyMediaKitBuilder || {};
+    
+    // Determine the plugin URL from various possible sources
+    let pluginUrl = '';
+    
+    if (typeof guestifyData !== 'undefined') {
+        if (guestifyData.pluginUrl) {
+            pluginUrl = guestifyData.pluginUrl;
+        } else if (guestifyData.plugin_url) {
+            pluginUrl = guestifyData.plugin_url;
+        }
+    } else if (typeof gmkb_data !== 'undefined' && gmkb_data.plugin_url) {
+        pluginUrl = gmkb_data.plugin_url;
+    } else {
+        // Try to determine from script tags
+        const scriptTags = document.querySelectorAll('script[src*="guestify-media-kit-builder"]');
+        if (scriptTags.length > 0) {
+            const src = scriptTags[0].getAttribute('src');
+            const match = src.match(/(.*\/guestify-media-kit-builder\/)/);
+            if (match && match[1]) {
+                pluginUrl = match[1];
+            }
+        }
+        
+        // Fallback to a standard path if nothing else works
+        if (!pluginUrl) {
+            pluginUrl = '/wp-content/plugins/guestify-media-kit-builder/';
+        }
+    }
+    
+    // Ensure pluginUrl ends with a slash
+    if (pluginUrl && !pluginUrl.endsWith('/')) {
+        pluginUrl += '/';
+    }
+    
+    // Store in the global object
+    window.guestifyMediaKitBuilder.pluginUrl = pluginUrl;
+    
+    console.log('Plugin URL set to:', pluginUrl);
 }
 
 /**
