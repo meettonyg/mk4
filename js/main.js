@@ -18,6 +18,7 @@ import { setupExportSystem } from './modals/export.js';
 import { setupShareSystem } from './services/share-service.js';
 import { saveCurrentState } from './services/history-service.js';
 import { initializeDynamicComponents } from './components/dynamic-component-loader.js';
+import './components/design-panel-loader.js'; // Import for side effects
 
 /**
  * Initialize the builder

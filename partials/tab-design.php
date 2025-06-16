@@ -1,43 +1,16 @@
 <div id="design-tab" class="tab-content">
     <div class="element-editor" id="element-editor">
-        <div class="element-editor__title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            Hero Section
-        </div>
-        <div class="element-editor__subtitle">Click on any element to edit its properties</div>
+        <div class="element-editor__title">No Element Selected</div>
+        <div class="element-editor__subtitle">Click on any element in the preview to edit its properties</div>
         
-        <div class="form-group">
-            <label class="form-label">Full Name</label>
-            <input type="text" class="form-input" value="Daniel Jackson" id="hero-name">
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Professional Title</label>
-            <input type="text" class="form-input" value="Astral Engineer" id="hero-title">
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Bio Description</label>
-            <textarea class="form-input form-textarea" id="hero-bio">Expert in ancient technology and quantum physics. Leading researcher in astral projection and interdimensional travel with over 15 years of experience.</textarea>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Background Color</label>
-            <div class="color-picker">
-                <input type="color" class="color-input" value="#f8fafc" id="hero-bg-color">
-                <input type="text" class="form-input" value="#f8fafc" id="hero-bg-text" style="flex: 1;">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Text Color</label>
-            <div class="color-picker">
-                <input type="color" class="color-input" value="#1e293b" id="hero-text-color">
-                <input type="text" class="form-input" value="#1e293b" id="hero-text-text" style="flex: 1;">
-            </div>
+        <div class="form-section">
+            <h4 class="form-section__title">Getting Started</h4>
+            <ul class="tips-list">
+                <li>Select an element by clicking on it in the preview</li>
+                <li>Use the design panel to customize properties</li>
+                <li>Some components allow direct inline editing</li>
+                <li>Changes are saved automatically</li>
+            </ul>
         </div>
     </div>
 

@@ -5,6 +5,7 @@
 import { getState, setState } from '../state.js';
 import { markUnsaved } from '../services/save-service.js';
 import { saveCurrentState } from '../services/history-service.js';
+import { showDesignPanel, clearDesignPanel } from '../components/design-panel-loader.js';
 
 /**
  * Set up element selection functionality
@@ -48,7 +49,10 @@ export function selectElement(element) {
     updateDesignPanel(element);
 
     // Switch to design tab
-    document.querySelector('.sidebar__tab[data-tab="design"]').click();
+    const designTab = document.querySelector('.sidebar__tab[data-tab="design"]');
+    if (designTab) {
+        designTab.click();
+    }
 }
 
 /**
@@ -59,84 +63,46 @@ export function deselectAllElements() {
         el.classList.remove('editable-element--selected');
     });
     setState('selectedElement', null);
+    
+    // Clear the design panel
+    clearDesignPanel();
 }
 
 /**
  * Update the design panel based on the selected element
  * @param {HTMLElement} element - The selected element
  */
-export function updateDesignPanel(element) {
-    const elementType = element.getAttribute('data-element');
-    const editor = document.getElementById('element-editor');
+export async function updateDesignPanel(element) {
+    const componentType = element.getAttribute('data-component');
     
-    if (!editor) return;
-
-    // Update editor title and icon based on element type
-    const title = editor.querySelector('.element-editor__title');
-    if (title) {
-        const iconMap = {
-            'hero': '👤',
-            'topics': '💬',
-            'social': '🔗',
-            'bio': '📝',
-            'contact': '📧',
-            'questions': '❓',
-            'stats': '📊',
-            'cta': '🎯',
-            'logo-grid': '🏢',
-            'testimonials': '💬'
-        };
-        
-        const elementNames = {
-            'hero': 'Hero Section',
-            'topics': 'Topics Section',
-            'social': 'Social Links',
-            'bio': 'Biography',
-            'contact': 'Contact Information',
-            'questions': 'Interview Questions',
-            'stats': 'Statistics',
-            'cta': 'Call to Action',
-            'logo-grid': 'Logo Grid',
-            'testimonials': 'Testimonials'
-        };
-
-        title.innerHTML = `
-            <span style="font-size: 16px;">${iconMap[elementType] || '⚙️'}</span>
-            ${elementNames[elementType] || 'Element Settings'}
-        `;
+    if (!componentType) {
+        console.warn('Element has no data-component attribute');
+        return;
     }
-
-    // Show relevant form controls based on element type
-    showRelevantControls(elementType);
-}
-
-/**
- * Show relevant controls based on element type
- * @param {string} elementType - The type of element
- */
-function showRelevantControls(elementType) {
-    // This would dynamically show/hide relevant form controls
-    console.log('Updating controls for:', elementType);
+    
+    // Load the appropriate design panel
+    await showDesignPanel(componentType, element);
 }
 
 /**
  * Set up contenteditable live updates
  */
 export function setupContentEditableUpdates() {
-    const editableElements = document.querySelectorAll('[contenteditable="true"]');
-    
-    editableElements.forEach(element => {
-        element.addEventListener('blur', function() {
+    // Use event delegation for dynamically added elements
+    document.addEventListener('blur', function(e) {
+        if (e.target.hasAttribute('contenteditable') && e.target.getAttribute('contenteditable') === 'true') {
             markUnsaved();
             saveCurrentState();
-        });
+        }
+    }, true);
 
-        element.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function(e) {
+        if (e.target.hasAttribute('contenteditable') && e.target.getAttribute('contenteditable') === 'true') {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                this.blur();
+                e.target.blur();
             }
-        });
+        }
     });
 }
 
@@ -148,6 +114,7 @@ export function deleteSelectedElement() {
     if (selectedElement && selectedElement.getAttribute('data-component') !== 'hero') {
         selectedElement.remove();
         setState('selectedElement', null);
+        clearDesignPanel();
         markUnsaved();
         saveCurrentState();
     }

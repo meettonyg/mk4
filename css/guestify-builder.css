@@ -14,6 +14,7 @@
 /* UI Modules */
 @import 'modules/ui-elements.css';
 @import 'modules/form-controls.css';
+@import 'modules/design-panel.css';
 @import 'modules/layout.css';
 @import 'modules/media-kit.css';
 @import 'modules/modals.css';

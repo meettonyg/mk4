@@ -99,6 +99,15 @@ function wrapComponentWithControls(html, componentType) {
                 el.setAttribute('contenteditable', 'true');
             }
         });
+        
+        // Add click handler for element selection
+        componentEl.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Import and use selectElement
+            import('../ui/element-editor.js').then(module => {
+                module.selectElement(this);
+            });
+        });
     }
     
     // Dispatch event to notify that a component was added

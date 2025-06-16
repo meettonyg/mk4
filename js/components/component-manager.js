@@ -32,6 +32,16 @@ export async function addComponentToZone(componentType, zone) {
             
             // Select the newly added element
             selectElement(newElement);
+            
+            // Initialize contenteditable updates for the new element
+            const editables = newElement.querySelectorAll('[contenteditable="true"]');
+            editables.forEach(el => {
+                el.addEventListener('blur', function() {
+                    // Trigger save when content is edited
+                    const event = new Event('change', { bubbles: true });
+                    newElement.dispatchEvent(event);
+                });
+            });
         }
         
         console.log(`Added ${componentType} component`);

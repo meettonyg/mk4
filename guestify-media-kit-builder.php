@@ -189,11 +189,19 @@ class Guestify_Media_Kit_Builder {
         $params = $request->get_json_params();
         $component_slug = isset( $params['component'] ) ? sanitize_text_field( $params['component'] ) : '';
         
-        // For now, return a generic design panel
-        // In future, this could load component-specific design panels
+        if ( empty( $component_slug ) ) {
+            return new WP_Error( 'invalid_component', 'Component slug is required', array( 'status' => 400 ) );
+        }
+        
+        $html = $this->component_loader->loadDesignPanel( $component_slug );
+        
+        if ( $html === false ) {
+            return new WP_Error( 'panel_not_found', 'Design panel not found', array( 'status' => 404 ) );
+        }
+        
         return array(
             'success' => true,
-            'html' => '<div class="design-panel-content">Design settings for ' . esc_html( $component_slug ) . '</div>'
+            'html' => $html
         );
     }
     
@@ -230,9 +238,17 @@ class Guestify_Media_Kit_Builder {
     public function ajax_render_design_panel() {
         $component_slug = isset( $_POST['component'] ) ? sanitize_text_field( $_POST['component'] ) : '';
         
-        wp_send_json_success( array(
-            'html' => '<div class="design-panel-content">Design settings for ' . esc_html( $component_slug ) . '</div>'
-        ) );
+        if ( empty( $component_slug ) ) {
+            wp_send_json_error( 'Component slug is required' );
+        }
+        
+        $html = $this->component_loader->loadDesignPanel( $component_slug );
+        
+        if ( $html === false ) {
+            wp_send_json_error( 'Design panel not found' );
+        }
+        
+        wp_send_json_success( array( 'html' => $html ) );
     }
     
     /**

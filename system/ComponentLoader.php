@@ -126,6 +126,68 @@ class ComponentLoader {
     }
 
     /**
+     * Load and render a component's design panel
+     * 
+     * @param string $componentName Component directory name
+     * @return string|false Rendered design panel or false on failure
+     */
+    public function loadDesignPanel($componentName) {
+        // Map old component names to new ones if needed
+        if (isset($this->componentMapping[$componentName])) {
+            $componentName = $this->componentMapping[$componentName];
+        }
+        
+        // Check if component exists
+        $component = $this->discovery->getComponent($componentName);
+        if (!$component) {
+            return false;
+        }
+
+        // Check if design panel exists
+        $panelPath = $this->componentsDir . '/' . $componentName . '/design-panel.php';
+        if (!file_exists($panelPath)) {
+            // Return a generic panel if no specific one exists
+            return $this->getGenericDesignPanel($component);
+        }
+
+        // Capture output
+        ob_start();
+        include $panelPath;
+        return ob_get_clean();
+    }
+    
+    /**
+     * Get a generic design panel for components without custom panels
+     * 
+     * @param array $component Component data
+     * @return string Generic design panel HTML
+     */
+    private function getGenericDesignPanel($component) {
+        ob_start();
+        ?>
+        <div class="element-editor__title">
+            <?php echo esc_html($component['name']); ?> Settings
+        </div>
+        <div class="element-editor__subtitle">This component uses inline editing. Click on any text in the preview to edit.</div>
+        
+        <div class="form-section">
+            <h4 class="form-section__title">Component Info</h4>
+            <p class="form-help-text"><?php echo esc_html($component['description'] ?? 'Edit this component by clicking on elements in the preview area.'); ?></p>
+        </div>
+        
+        <div class="form-section">
+            <h4 class="form-section__title">Tips</h4>
+            <ul class="tips-list">
+                <li>Click any text to edit it directly</li>
+                <li>Use the element controls to move or delete</li>
+                <li>Changes are saved automatically</li>
+            </ul>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+    
+    /**
      * Check if current user has access to premium components
      * 
      * @return bool Whether the user has access to premium components
