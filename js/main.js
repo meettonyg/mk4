@@ -250,9 +250,20 @@ function loadFromLocalStorage() {
             localStorage.setItem('gmkb_last_saved_state', savedData);
             
             console.log('Media kit loaded from localStorage');
+            
+            // Show a toast notification to confirm the load
+            if (window.gmkbDebug?.historyService?.showToast) {
+                window.gmkbDebug.historyService.showToast('Your last session was restored.');
+            } else if (typeof historyService !== 'undefined' && historyService.showToast) {
+                historyService.showToast('Your last session was restored.');
+            }
         }
     } catch (error) {
         console.error('Error loading media kit from localStorage:', error);
+        
+        // Clear the corrupted item to prevent future errors
+        localStorage.removeItem('mediaKitData');
+        localStorage.removeItem('gmkb_last_saved_state');
     }
 }
 
@@ -335,6 +346,16 @@ if (document.readyState === 'loading') {
     initializeBuilder();
 }
 
+// Add beforeunload event to prevent accidental navigation with unsaved changes
+window.addEventListener('beforeunload', (event) => {
+    // Check if there are unsaved changes
+    if (getState('isUnsaved')) { 
+        // Standard way to trigger the browser's confirmation dialog
+        event.preventDefault();
+        event.returnValue = '';
+    }
+});
+
 // Export for debugging
 window.gmkbDebug = {
     stateManager,
@@ -348,3 +369,9 @@ window.gmkbDebug = {
         window.location.reload();
     }
 };
+
+// Make managers globally accessible for legacy scripts and debugging
+window.stateManager = stateManager;
+window.componentManager = componentManager;
+window.dataBindingEngine = dataBindingEngine;
+window.historyService = historyService;

@@ -18,6 +18,11 @@ This document outlines the changes made to align the saving mechanism with the s
 3. **Set Up Save System with Enhanced Features**
    - Added explicit `setupSaveSystem()` call in the enhanced features initialization path
 
+4. **User Experience Improvements**
+   - Added a beforeunload event handler to prevent accidental navigation when there are unsaved changes
+   - Added toast notification when restoring a session from localStorage
+   - Improved error handling for corrupted localStorage data
+
 ## Next Steps for Server Implementation
 
 When ready to implement server-side saving, the following changes will be needed:
