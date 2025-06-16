@@ -4,7 +4,7 @@
 
 import { getState, setState } from '../state.js';
 import { markUnsaved } from '../services/save-service.js';
-import { saveCurrentState } from '../services/history-service.js';
+// Removed import for saveCurrentState as it's deprecated
 import { showDesignPanel, clearDesignPanel } from '../components/design-panel-loader.js';
 
 /**
@@ -92,7 +92,7 @@ export function setupContentEditableUpdates() {
     document.addEventListener('blur', function(e) {
         if (e.target.hasAttribute('contenteditable') && e.target.getAttribute('contenteditable') === 'true') {
             markUnsaved();
-            saveCurrentState();
+            // State is automatically tracked by stateManager - no need to call saveCurrentState
         }
     }, true);
 
@@ -116,6 +116,6 @@ export function deleteSelectedElement() {
         setState('selectedElement', null);
         clearDesignPanel();
         markUnsaved();
-        saveCurrentState();
+        // State is automatically tracked by stateManager - no need to call saveCurrentState
     }
 }

@@ -218,11 +218,7 @@ export class HistoryService {
 // Create singleton instance
 export const historyService = new HistoryService();
 
-// Legacy function exports for backward compatibility
-export function saveCurrentState() {
-    console.warn('saveCurrentState is deprecated. State is now automatically tracked by stateManager.');
-}
-
+// Legacy function exports for backward compatibility - only keeping essential ones
 export function undo() {
     return historyService.undo();
 }
