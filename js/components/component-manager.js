@@ -139,27 +139,52 @@ class ComponentManager {
      * @param {string} position - Position relative to target ('before', 'after', 'inside')
      */
     async addComponent(componentType, targetId = null, position = 'inside') {
-        const componentId = this.generateComponentId(componentType);
+        console.log(`Adding component: ${componentType}`);
+        
+        // Map common component aliases
+        const componentMap = {
+            'bio': 'biography',
+            'calendar': 'booking-calendar',
+            'cta': 'call-to-action',
+            'gallery': 'photo-gallery',
+            'podcast': 'podcast-player',
+            'video': 'video-intro'
+        };
+        
+        // Use mapped name if available
+        const mappedType = componentMap[componentType] || componentType;
+        const componentId = this.generateComponentId(mappedType);
         
         try {
             // Load component schema if not already loaded
-            if (!this.loadedSchemas.has(componentType)) {
-                const schema = await this.loadComponentSchema(componentType);
+            if (!this.loadedSchemas.has(mappedType)) {
+                const schema = await this.loadComponentSchema(mappedType);
                 if (schema) {
-                    this.loadedSchemas.set(componentType, schema);
+                    this.loadedSchemas.set(mappedType, schema);
+                } else {
+                    // Create a minimal schema if loading fails
+                    console.warn(`Schema not found for ${mappedType}, using minimal schema`);
+                    const minimalSchema = {
+                        name: mappedType.charAt(0).toUpperCase() + mappedType.slice(1),
+                        type: mappedType,
+                        settings: {}
+                    };
+                    this.loadedSchemas.set(mappedType, minimalSchema);
                 }
             }
             
-            const schema = this.loadedSchemas.get(componentType);
-            if (!schema) {
-                throw new Error(`Schema not found for component type: ${componentType}`);
+            const schema = this.loadedSchemas.get(mappedType);
+            
+            // Initialize component in state manager first
+            stateManager.initComponent(componentId, mappedType, {});
+            
+            // Initialize component in data binding engine (if schema has settings)
+            if (schema.settings && Object.keys(schema.settings).length > 0) {
+                await dataBindingEngine.initializeComponent(componentId, mappedType, schema);
             }
             
-            // Initialize component in data binding engine
-            await dataBindingEngine.initializeComponent(componentId, componentType, schema);
-            
             // Render component HTML
-            const componentHTML = await renderComponent(componentType, componentId);
+            const componentHTML = await renderComponent(mappedType, componentId);
             
             // Insert component into DOM
             this.insertComponentIntoDOM(componentHTML, componentId, targetId, position);
@@ -174,7 +199,7 @@ class ComponentManager {
                 
                 // Dispatch component selected event for design panel
                 document.dispatchEvent(new CustomEvent('component-selected', {
-                    detail: { componentId, componentType }
+                    detail: { componentId, componentType: mappedType }
                 }));
             }
             
@@ -184,6 +209,7 @@ class ComponentManager {
         } catch (error) {
             console.error('Error adding component:', error);
             this.showNotification('Failed to add component', 'error');
+            throw error; // Re-throw to be caught by addComponentToZone
         }
     }
 
@@ -193,6 +219,8 @@ class ComponentManager {
      * @param {HTMLElement} zone - Drop zone element
      */
     async addComponentToZone(componentType, zone) {
+        console.log(`Adding component ${componentType} to zone`);
+        
         // Show loading state
         zone.classList.add('loading');
         zone.innerHTML = '<div class="loading-spinner">Loading component...</div>';
@@ -205,15 +233,20 @@ class ComponentManager {
                 zone.setAttribute('data-zone-id', zoneId);
             }
             
-            // Add component
-            await this.addComponent(componentType, zoneId, 'inside');
+            // Clear the zone's content first
+            zone.innerHTML = '';
             
-            // Remove loading state
+            // Add component and get the rendered HTML directly
+            const componentId = await this.addComponent(componentType, zoneId, 'inside');
+            
+            // Remove loading state classes
             zone.classList.remove('drop-zone--empty', 'loading');
             
         } catch (error) {
+            console.error('Failed to add component to zone:', error);
             zone.classList.remove('loading');
-            zone.innerHTML = '<div class="error-message">Failed to load component</div>';
+            zone.classList.add('drop-zone--empty');
+            zone.innerHTML = '<div class="error-message">Failed to load component. Click to try again.</div>';
         }
     }
 
@@ -294,10 +327,27 @@ class ComponentManager {
      */
     async loadComponentSchema(componentType) {
         try {
-            const response = await fetch(`/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/component.json`);
-            if (response.ok) {
-                return await response.json();
+            // Try multiple possible paths
+            const paths = [
+                `/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/component.json`,
+                `${window.guestifyData?.pluginUrl || ''}/components/${componentType}/component.json`,
+                `${window.location.origin}/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/component.json`
+            ];
+            
+            for (const path of paths) {
+                try {
+                    const response = await fetch(path);
+                    if (response.ok) {
+                        const schema = await response.json();
+                        console.log(`Loaded schema for ${componentType} from ${path}`);
+                        return schema;
+                    }
+                } catch (e) {
+                    // Try next path
+                }
             }
+            
+            console.warn(`Could not load schema for ${componentType} from any path`);
         } catch (error) {
             console.error(`Failed to load schema for ${componentType}:`, error);
         }
@@ -312,6 +362,18 @@ class ComponentManager {
      * @param {string} position - Position relative to target
      */
     insertComponentIntoDOM(html, componentId, targetId, position) {
+        // First try to find the drop zone if targetId is provided
+        if (targetId) {
+            const zone = document.querySelector(`[data-zone-id="${targetId}"]`);
+            if (zone && zone.classList.contains('drop-zone')) {
+                // Insert into drop zone
+                zone.innerHTML = html;
+                zone.classList.remove('drop-zone--empty');
+                return;
+            }
+        }
+        
+        // Otherwise use the standard insertion logic
         const container = document.getElementById('media-kit-preview');
         
         if (!targetId || position === 'inside') {
