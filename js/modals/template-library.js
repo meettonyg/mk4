@@ -19,6 +19,7 @@ export function setupTemplateLibrary() {
     
     // Listen for show event
     document.addEventListener('show-template-library', () => {
+        console.log('Received show-template-library event');
         showTemplateLibrary();
     });
     
@@ -62,8 +63,17 @@ function createTemplateModal() {
  * Show template library
  */
 function showTemplateLibrary() {
-    populateTemplates();
-    showModal('template-library-modal');
+    console.log('showTemplateLibrary called');
+    const modal = document.getElementById('template-library-modal');
+    if (modal) {
+        console.log('Template modal found, showing...');
+        populateTemplates();
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
+    } else {
+        console.error('Template library modal not found!');
+    }
 }
 
 /**

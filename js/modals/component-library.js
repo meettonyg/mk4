@@ -112,11 +112,14 @@ export function setupComponentLibraryModal() {
                     // First component - add directly to preview
                     await addComponentToZone(actualComponentType, preview);
                     
-                    // Hide empty state
+                    // Hide empty state and show primary drop zone
                     const emptyState = document.getElementById('empty-state');
                     if (emptyState) {
                         emptyState.style.display = 'none';
                     }
+                    
+                    // Add has-components class to preview
+                    preview.classList.add('has-components');
                 } else {
                     // Look for empty drop zones
                     const firstEmptyDropZone = document.querySelector('.drop-zone.drop-zone--empty');
@@ -139,7 +142,17 @@ export function setupComponentLibraryModal() {
  * Show the component library modal
  */
 export function showComponentLibraryModal() {
-    showModal('component-library-overlay');
+    console.log('showComponentLibraryModal called');
+    const modal = document.getElementById('component-library-overlay');
+    if (modal) {
+        console.log('Modal found, showing...');
+        modal.style.display = 'flex';
+        // Ensure it's visible
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
+    } else {
+        console.error('Component library modal not found!');
+    }
 }
 
 /**

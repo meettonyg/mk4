@@ -54,19 +54,19 @@
                 </div>
                 
                 <div class="components-grid" id="free-components">
-                    <div class="component-card" data-category="hero" data-component="hero-minimal">
+                    <div class="component-card" data-category="hero" data-component="hero">
                         <div class="component-preview preview-hero">
                             <div class="mini-avatar"></div>
                             <div class="mini-name">John Doe</div>
                             <div class="mini-title">Professional Title</div>
                         </div>
                         <div class="component-info">
-                            <h4>Minimal Hero</h4>
-                            <p>Clean, centered hero with name and title</p>
+                            <h4>Hero Section</h4>
+                            <p>Profile section with name, title and bio</p>
                         </div>
                     </div>
                     
-                    <div class="component-card" data-category="biography" data-component="bio-standard">
+                    <div class="component-card" data-category="biography" data-component="biography">
                         <div class="component-preview preview-bio">
                             <div class="mini-lines"></div>
                             <div class="mini-lines"></div>
@@ -74,12 +74,12 @@
                             <div class="mini-lines"></div>
                         </div>
                         <div class="component-info">
-                            <h4>Standard Biography</h4>
+                            <h4>Biography</h4>
                             <p>Full-width text biography section</p>
                         </div>
                     </div>
                     
-                    <div class="component-card" data-category="topics" data-component="topics-grid">
+                    <div class="component-card" data-category="topics" data-component="topics">
                         <div class="component-preview preview-topics">
                             <div class="mini-topic"></div>
                             <div class="mini-topic"></div>
@@ -87,24 +87,24 @@
                             <div class="mini-topic"></div>
                         </div>
                         <div class="component-info">
-                            <h4>Topics Grid</h4>
+                            <h4>Topics</h4>
                             <p>Grid layout for speaking topics</p>
                         </div>
                     </div>
                     
-                    <div class="component-card" data-category="social" data-component="social-icons">
+                    <div class="component-card" data-category="social" data-component="social">
                         <div class="component-preview preview-social">
                             <div class="mini-social"></div>
                             <div class="mini-social"></div>
                             <div class="mini-social"></div>
                         </div>
                         <div class="component-info">
-                            <h4>Social Icons</h4>
-                            <p>Horizontal row of social media icons</p>
+                            <h4>Social Links</h4>
+                            <p>Social media icon links</p>
                         </div>
                     </div>
 
-                    <div class="component-card" data-category="stats" data-component="stats-grid">
+                    <div class="component-card" data-category="stats" data-component="stats">
                         <div class="component-preview preview-stats">
                             <div class="mini-stat">
                                 <div class="mini-stat-number">1.2M</div>

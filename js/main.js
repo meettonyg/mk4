@@ -379,6 +379,23 @@ if (document.readyState === 'loading') {
     initializeBuilder();
 }
 
+// Global click handler for empty state buttons as fallback
+document.addEventListener('click', (e) => {
+    // Handle add component button
+    if (e.target.id === 'add-first-component' || e.target.closest('#add-first-component')) {
+        e.preventDefault();
+        console.log('Add component button clicked (global handler)');
+        document.dispatchEvent(new CustomEvent('show-component-library'));
+    }
+    
+    // Handle load template button
+    if (e.target.id === 'load-template' || e.target.closest('#load-template')) {
+        e.preventDefault();
+        console.log('Load template button clicked (global handler)');
+        document.dispatchEvent(new CustomEvent('show-template-library'));
+    }
+});
+
 // Add beforeunload event to prevent accidental navigation with unsaved changes
 window.addEventListener('beforeunload', (event) => {
     // Check if there are unsaved changes

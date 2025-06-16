@@ -163,3 +163,92 @@
 .has-components .drop-zone--primary {
     display: none !important;
 }
+
+/* Ensure modals are properly displayed */
+.library-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    display: none;
+}
+
+.library-modal[style*="display: flex"] {
+    display: flex !important;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    display: none;
+}
+
+.modal-overlay[style*="display: flex"] {
+    display: flex !important;
+}
+
+/* Template modal specific styles */
+#template-library-modal .modal {
+    background: white;
+    border-radius: 8px;
+    max-width: 900px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#template-library-modal .modal__header {
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#template-library-modal .modal__title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+#template-library-modal .modal__close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+#template-library-modal .modal__close:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+#template-library-modal .modal__body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}

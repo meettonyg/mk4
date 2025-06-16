@@ -180,6 +180,9 @@ class ComponentManager {
             // Initialize component in state manager first
             stateManager.initComponent(componentId, mappedType, {});
             
+            // Wait for state to settle
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
             // Initialize component in data binding engine (if schema has settings)
             if (schema.settings && Object.keys(schema.settings).length > 0) {
                 await dataBindingEngine.initializeComponent(componentId, mappedType, schema);

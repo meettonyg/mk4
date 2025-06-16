@@ -66,6 +66,13 @@ class ComponentRenderer {
             // Skip the re-render during deletion to avoid conflicts
             return;
         }
+        
+        // Skip if we're currently rendering
+        if (this.isRendering) {
+            console.log('Already rendering, skipping state change');
+            return;
+        }
+        
         this.renderAllComponents(state);
     }
     
@@ -126,8 +133,19 @@ class ComponentRenderer {
     async renderAllFromScratch(components) {
         if (!this.previewContainer) return;
         
+        // Set rendering flag
+        this.isRendering = true;
+        
         // Clear the container
         this.previewContainer.innerHTML = '';
+        
+        // Hide empty state if we have components
+        if (components.length > 0) {
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+        }
         
         // Render each component
         for (const component of components) {
@@ -172,6 +190,9 @@ class ComponentRenderer {
         
         // Update empty state visibility
         this.updateEmptyState();
+        
+        // Clear rendering flag
+        this.isRendering = false;
     }
     
     // updateComponentData method has been removed
