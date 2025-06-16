@@ -1,0 +1,236 @@
+/**
+ * Toast Notifications CSS
+ */
+
+.gmkb-toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100000;
+    pointer-events: none;
+}
+
+.gmkb-toast {
+    background: #1e293b;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.gmkb-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Image upload area styles */
+.image-upload-area {
+    border: 2px dashed #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.image-upload-area:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.image-upload-area.drag-over {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.upload-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.upload-btn:hover {
+    background: #2563eb;
+}
+
+.upload-text {
+    display: block;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.image-preview {
+    position: relative;
+    margin-top: 12px;
+}
+
+.image-preview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+}
+
+.image-preview .remove-image {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-preview .remove-image:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+/* Save indicator styles */
+.save-indicator {
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.save-indicator.unsaved {
+    color: #ef4444;
+}
+
+.save-indicator.unsaved::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Design panel form improvements */
+.design-panel-content .form-section {
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.design-panel-content .form-section:last-child {
+    border-bottom: none;
+}
+
+.design-panel-content .form-section__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 16px;
+}
+
+.design-panel-content .form-group {
+    margin-bottom: 16px;
+}
+
+.design-panel-content .form-group:last-child {
+    margin-bottom: 0;
+}
+
+.design-panel-content .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.design-panel-content .form-input,
+.design-panel-content .form-select,
+.design-panel-content .form-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.design-panel-content .form-input:focus,
+.design-panel-content .form-select:focus,
+.design-panel-content .form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.design-panel-content .form-help-text {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.design-panel-content .color-picker {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.design-panel-content .color-input {
+    width: 48px;
+    height: 36px;
+    padding: 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.design-panel-content .form-range {
+    width: 100%;
+}
+
+.design-panel-content .range-value {
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+    font-size: 13px;
+    color: #64748b;
+    margin-left: 8px;
+}
+
+/* Schema-driven panel header */
+.element-editor__header {
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.element-editor__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.element-editor__subtitle {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
+}

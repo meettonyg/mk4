@@ -6,5 +6,132 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 5
+  "order": 5,
+  "settings": {
+    "section_title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Key Statistics",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content"
+    },
+    "stat1_value": {
+      "type": "text",
+      "label": "Statistic 1 Value",
+      "default": "1.2M",
+      "placeholder": "e.g., 1.2M",
+      "previewSelector": ".stat-item:nth-child(1) .stat-item__number",
+      "updateMethod": "textContent",
+      "section": "statistics"
+    },
+    "stat1_label": {
+      "type": "text",
+      "label": "Statistic 1 Label",
+      "default": "Followers",
+      "placeholder": "e.g., Followers",
+      "previewSelector": ".stat-item:nth-child(1) .stat-item__label",
+      "updateMethod": "textContent",
+      "section": "statistics"
+    },
+    "stat2_value": {
+      "type": "text",
+      "label": "Statistic 2 Value",
+      "default": "150+",
+      "placeholder": "e.g., 150+",
+      "previewSelector": ".stat-item:nth-child(2) .stat-item__number",
+      "updateMethod": "textContent",
+      "section": "statistics"
+    },
+    "stat2_label": {
+      "type": "text",
+      "label": "Statistic 2 Label",
+      "default": "Podcast Shows",
+      "placeholder": "e.g., Podcast Shows",
+      "previewSelector": ".stat-item:nth-child(2) .stat-item__label",
+      "updateMethod": "textContent",
+      "section": "statistics"
+    },
+    "stat3_value": {
+      "type": "text",
+      "label": "Statistic 3 Value",
+      "default": "500K",
+      "placeholder": "e.g., 500K",
+      "previewSelector": ".stat-item:nth-child(3) .stat-item__number",
+      "updateMethod": "textContent",
+      "section": "statistics"
+    },
+    "stat3_label": {
+      "type": "text",
+      "label": "Statistic 3 Label",
+      "default": "Downloads",
+      "placeholder": "e.g., Downloads",
+      "previewSelector": ".stat-item:nth-child(3) .stat-item__label",
+      "updateMethod": "textContent",
+      "section": "statistics"
+    },
+    "stat4_value": {
+      "type": "text",
+      "label": "Statistic 4 Value",
+      "default": "5",
+      "placeholder": "e.g., 5",
+      "previewSelector": ".stat-item:nth-child(4) .stat-item__number",
+      "updateMethod": "textContent",
+      "section": "statistics"
+    },
+    "stat4_label": {
+      "type": "text",
+      "label": "Statistic 4 Label",
+      "default": "Years Experience",
+      "placeholder": "e.g., Years Experience",
+      "previewSelector": ".stat-item:nth-child(4) .stat-item__label",
+      "updateMethod": "textContent",
+      "section": "statistics"
+    },
+    "stats_columns": {
+      "type": "select",
+      "label": "Number of Columns",
+      "default": "4",
+      "options": [
+        {"value": "2", "label": "2 Columns"},
+        {"value": "3", "label": "3 Columns"},
+        {"value": "4", "label": "4 Columns"}
+      ],
+      "previewSelector": ".stats-grid",
+      "updateMethod": "class",
+      "classPrefix": "stats-cols-",
+      "section": "appearance"
+    },
+    "stat_color": {
+      "type": "color",
+      "label": "Statistic Color",
+      "default": "#3b82f6",
+      "previewSelector": ".stat-item__number",
+      "updateMethod": "style.color",
+      "section": "appearance"
+    },
+    "show_icons": {
+      "type": "checkbox",
+      "label": "Show Icons",
+      "default": false,
+      "previewSelector": ".stat-item__icon",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Content",
+      "order": 1
+    },
+    "statistics": {
+      "title": "Statistics",
+      "order": 2
+    },
+    "appearance": {
+      "title": "Appearance",
+      "order": 3
+    }
+  }
 }

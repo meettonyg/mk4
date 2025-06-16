@@ -15,7 +15,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 add_filter('script_loader_tag', 'guestify_add_module_type_attribute', 10, 3);
 function guestify_add_module_type_attribute($tag, $handle, $src) {
-    if ('guestify-builder-script' === $handle) {
+    // List of scripts that need module type
+    $module_scripts = array(
+        'guestify-builder-script',
+        'gmkb-state-manager',
+        'gmkb-data-binding',
+        'gmkb-design-panel',
+        'gmkb-enhanced-history',
+        'gmkb-component-manager'
+    );
+    
+    if (in_array($handle, $module_scripts)) {
         $tag = '<script type="module" src="' . esc_url($src) . '" id="' . esc_attr($handle) . '-js"></script>';
     }
     return $tag;

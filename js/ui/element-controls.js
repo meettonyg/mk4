@@ -13,20 +13,44 @@ export function setupElementControls() {
     // Bind control buttons immediately
     bindControlButtons();
     
+    // Debounce timer for mutation observer
+    let debounceTimer = null;
+    
     // Re-bind buttons when content changes (for dynamically added elements)
     const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'childList') {
+        // Clear existing timer
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+        
+        // Set new timer to debounce rapid mutations
+        debounceTimer = setTimeout(() => {
+            // Check if any mutations actually added control buttons
+            const hasNewButtons = mutations.some(mutation => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    return Array.from(mutation.addedNodes).some(node => {
+                        return node.nodeType === 1 && (node.classList?.contains('control-btn') || 
+                               node.querySelector?.('.control-btn'));
+                    });
+                }
+                return false;
+            });
+            
+            // Only rebind if new buttons were actually added
+            if (hasNewButtons) {
                 bindControlButtons();
             }
-        });
+        }, 100); // 100ms debounce
     });
     
-    // Observe the entire document for changes
-    observer.observe(document.body, { 
-        childList: true, 
-        subtree: true 
-    });
+    // Observe only the preview area instead of entire body
+    const previewArea = document.getElementById('media-kit-preview');
+    if (previewArea) {
+        observer.observe(previewArea, { 
+            childList: true, 
+            subtree: true 
+        });
+    }
     
     // Listen for custom rebindControls events
     document.addEventListener('rebindControls', function() {
@@ -37,20 +61,33 @@ export function setupElementControls() {
     console.log('Element controls initialized');
 }
 
+// Track which buttons have been bound
+const boundButtons = new WeakSet();
+
 /**
  * Bind event listeners to all control buttons
  */
 function bindControlButtons() {
     const controlButtons = document.querySelectorAll('.control-btn');
-    console.log(`Found ${controlButtons.length} control buttons to bind`);
+    let newButtonsCount = 0;
     
     controlButtons.forEach(button => {
-        // Remove existing listeners to prevent duplicates
-        button.removeEventListener('click', handleControlButtonClick);
+        // Skip if already bound
+        if (boundButtons.has(button)) {
+            return;
+        }
         
-        // Add fresh listener
+        // Mark as bound
+        boundButtons.add(button);
+        newButtonsCount++;
+        
+        // Add listener
         button.addEventListener('click', handleControlButtonClick);
     });
+    
+    if (newButtonsCount > 0) {
+        console.log(`Bound ${newButtonsCount} new control buttons (${controlButtons.length} total)`);
+    }
 }
 
 /**

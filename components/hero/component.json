@@ -6,5 +6,106 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 1
+  "order": 1,
+  "settings": {
+    "hero_name": {
+      "type": "text",
+      "label": "Full Name",
+      "default": "Your Name",
+      "placeholder": "Enter your full name",
+      "previewSelector": ".hero-name",
+      "updateMethod": "textContent",
+      "section": "profile"
+    },
+    "hero_title": {
+      "type": "text",
+      "label": "Professional Title",
+      "default": "Your Title",
+      "placeholder": "Your Professional Title",
+      "previewSelector": ".hero-title",
+      "updateMethod": "textContent",
+      "section": "profile"
+    },
+    "hero_bio": {
+      "type": "textarea",
+      "label": "Bio Description",
+      "default": "Brief introduction about yourself...",
+      "rows": 3,
+      "previewSelector": ".hero-bio",
+      "updateMethod": "textContent",
+      "section": "profile"
+    },
+    "profile_image": {
+      "type": "image",
+      "label": "Profile Picture",
+      "default": "",
+      "previewSelector": ".hero-avatar img",
+      "updateMethod": "src",
+      "section": "profile",
+      "helpText": "Recommended: Square image, at least 200x200px"
+    },
+    "hero_bg_style": {
+      "type": "select",
+      "label": "Background Style",
+      "default": "gradient",
+      "options": [
+        {"value": "gradient", "label": "Gradient Background"},
+        {"value": "solid", "label": "Solid Color"},
+        {"value": "image", "label": "Background Image"},
+        {"value": "pattern", "label": "Pattern Background"}
+      ],
+      "previewSelector": ".hero-section",
+      "updateMethod": "class",
+      "classPrefix": "bg-style-",
+      "section": "appearance"
+    },
+    "hero_bg_color": {
+      "type": "color",
+      "label": "Background Color",
+      "default": "#f8fafc",
+      "previewSelector": ".hero-section",
+      "updateMethod": "style.backgroundColor",
+      "section": "appearance"
+    },
+    "hero_text_color": {
+      "type": "color",
+      "label": "Text Color",
+      "default": "#1e293b",
+      "previewSelector": ".hero-section",
+      "updateMethod": "style.color",
+      "section": "appearance"
+    },
+    "avatar_style": {
+      "type": "select",
+      "label": "Avatar Style",
+      "default": "circle",
+      "options": [
+        {"value": "circle", "label": "Circle"},
+        {"value": "square", "label": "Square"},
+        {"value": "rounded", "label": "Rounded Square"}
+      ],
+      "previewSelector": ".hero-avatar",
+      "updateMethod": "class",
+      "classPrefix": "avatar-",
+      "section": "appearance"
+    },
+    "show_bio": {
+      "type": "checkbox",
+      "label": "Show Bio Description",
+      "default": true,
+      "previewSelector": ".hero-bio",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "profile": {
+      "title": "Profile Information",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Appearance",
+      "order": 2
+    }
+  }
 }

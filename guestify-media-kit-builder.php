@@ -16,9 +16,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants
-define( 'GUESTIFY_VERSION', '2.1.0' );
+define( 'GUESTIFY_VERSION', '2.2.0' );
 define( 'GUESTIFY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GUESTIFY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+// Define GMKB constants for enhanced system compatibility
+define( 'GMKB_VERSION', '2.2.0' );
+define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 /**
  * Main plugin class
@@ -44,6 +49,9 @@ class Guestify_Media_Kit_Builder {
 
     private function __construct() {
         require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
+        
+        // Initialize enhanced schema-driven system
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-init.php';
         
         // Initialize component system
         $this->component_discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components');

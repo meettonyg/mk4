@@ -1,256 +1,579 @@
 /**
- * Component templates and management
+ * Enhanced Component Manager
+ * Manages component lifecycle with centralized state management
  */
 
+import { stateManager } from '../services/state-manager.js';
+import { dataBindingEngine } from '../services/data-binding-engine.js';
 import { selectElement } from '../ui/element-editor.js';
 import { renderComponent } from './dynamic-component-loader.js';
 
-/**
- * Add a component to a drop zone
- * @param {string} componentType - The type of component to add
- * @param {HTMLElement} zone - The drop zone to add the component to
- */
-export async function addComponentToZone(componentType, zone) {
-    try {
+class ComponentManager {
+    constructor() {
+        this.componentRegistry = new Map();
+        this.loadedSchemas = new Map();
+        this.initialized = false;
+    }
+
+    /**
+     * Initialize the component manager
+     */
+    async init() {
+        if (this.initialized) {
+            console.log('ComponentManager already initialized');
+            return;
+        }
+        
+        this.initialized = true;
+        
+        // Load component registry
+        await this.loadComponentRegistry();
+        
+        // Subscribe to state changes
+        stateManager.subscribeGlobal((state) => {
+            this.onStateChange(state);
+        });
+        
+        // Listen for component events
+        this.setupEventListeners();
+    }
+
+    /**
+     * Load available components from the server
+     */
+    async loadComponentRegistry() {
+        // Check if components are already available from guestifyData
+        if (window.guestifyData && window.guestifyData.components) {
+            // Use pre-loaded components
+            window.guestifyData.components.forEach(component => {
+                this.componentRegistry.set(component.name, component);
+            });
+            console.log(`Loaded ${this.componentRegistry.size} components from guestifyData`);
+            return;
+        }
+        
+        // Fallback to AJAX if needed
+        try {
+            const ajaxUrl = window.ajaxurl || window.gmkb_data?.ajax_url || '/wp-admin/admin-ajax.php';
+            const nonce = window.gmkb_data?.nonce || window.guestifyData?.nonce || '';
+            
+            const response = await fetch(ajaxUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    action: 'gmkb_get_components',
+                    nonce: nonce
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    data.data.forEach(component => {
+                        this.componentRegistry.set(component.name, component);
+                    });
+                    console.log(`Loaded ${this.componentRegistry.size} components via AJAX`);
+                } else {
+                    console.error('Component loading failed:', data.data || 'Unknown error');
+                }
+            } else {
+                console.error('Component loading failed with status:', response.status);
+            }
+        } catch (error) {
+            console.error('Failed to load component registry:', error);
+            // Try to load from component discovery if available
+            this.loadFromDiscovery();
+        }
+    }
+    
+    /**
+     * Load components from discovery system
+     */
+    loadFromDiscovery() {
+        // Check if component data is available from PHP
+        const componentElements = document.querySelectorAll('[data-component-type]');
+        const foundTypes = new Set();
+        
+        componentElements.forEach(el => {
+            const type = el.getAttribute('data-component-type');
+            if (type && !foundTypes.has(type)) {
+                foundTypes.add(type);
+                this.componentRegistry.set(type, {
+                    name: type,
+                    type: type
+                });
+            }
+        });
+        
+        if (foundTypes.size > 0) {
+            console.log(`Discovered ${foundTypes.size} component types from DOM`);
+        }
+    }
+
+    /**
+     * Setup event listeners
+     */
+    setupEventListeners() {
+        // Listen for component add requests
+        document.addEventListener('add-component', async (e) => {
+            await this.addComponent(e.detail.type, e.detail.targetId, e.detail.position);
+        });
+        
+        // Listen for component remove requests
+        document.addEventListener('remove-component', (e) => {
+            this.removeComponent(e.detail.componentId);
+        });
+        
+        // Listen for component reorder
+        document.addEventListener('reorder-components', (e) => {
+            this.reorderComponents(e.detail.componentIds);
+        });
+    }
+
+    /**
+     * Add a component to the media kit
+     * @param {string} componentType - Component type
+     * @param {string} targetId - Target container or component ID
+     * @param {string} position - Position relative to target ('before', 'after', 'inside')
+     */
+    async addComponent(componentType, targetId = null, position = 'inside') {
+        const componentId = this.generateComponentId(componentType);
+        
+        try {
+            // Load component schema if not already loaded
+            if (!this.loadedSchemas.has(componentType)) {
+                const schema = await this.loadComponentSchema(componentType);
+                if (schema) {
+                    this.loadedSchemas.set(componentType, schema);
+                }
+            }
+            
+            const schema = this.loadedSchemas.get(componentType);
+            if (!schema) {
+                throw new Error(`Schema not found for component type: ${componentType}`);
+            }
+            
+            // Initialize component in data binding engine
+            await dataBindingEngine.initializeComponent(componentId, componentType, schema);
+            
+            // Render component HTML
+            const componentHTML = await renderComponent(componentType, componentId);
+            
+            // Insert component into DOM
+            this.insertComponentIntoDOM(componentHTML, componentId, targetId, position);
+            
+            // Make component interactive
+            this.makeComponentInteractive(componentId);
+            
+            // Select the newly added component
+            const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (componentElement) {
+                selectElement(componentElement);
+                
+                // Dispatch component selected event for design panel
+                document.dispatchEvent(new CustomEvent('component-selected', {
+                    detail: { componentId, componentType }
+                }));
+            }
+            
+            // Show success notification
+            this.showNotification(`${schema.name} component added successfully`);
+            
+        } catch (error) {
+            console.error('Error adding component:', error);
+            this.showNotification('Failed to add component', 'error');
+        }
+    }
+
+    /**
+     * Add component to a drop zone (legacy support)
+     * @param {string} componentType - Component type
+     * @param {HTMLElement} zone - Drop zone element
+     */
+    async addComponentToZone(componentType, zone) {
         // Show loading state
         zone.classList.add('loading');
         zone.innerHTML = '<div class="loading-spinner">Loading component...</div>';
         
-        // Render component dynamically
-        const template = await renderComponent(componentType);
+        try {
+            // Get the zone's ID or generate one
+            let zoneId = zone.getAttribute('data-zone-id');
+            if (!zoneId) {
+                zoneId = 'zone-' + Date.now();
+                zone.setAttribute('data-zone-id', zoneId);
+            }
+            
+            // Add component
+            await this.addComponent(componentType, zoneId, 'inside');
+            
+            // Remove loading state
+            zone.classList.remove('drop-zone--empty', 'loading');
+            
+        } catch (error) {
+            zone.classList.remove('loading');
+            zone.innerHTML = '<div class="error-message">Failed to load component</div>';
+        }
+    }
+
+    /**
+     * Remove a component
+     * @param {string} componentId - Component ID
+     */
+    removeComponent(componentId) {
+        // Remove from state
+        stateManager.removeComponent(componentId);
         
-        zone.classList.remove('drop-zone--empty', 'loading');
-        zone.innerHTML = template;
+        // Remove from DOM
+        const element = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (element) {
+            // Animate removal
+            element.style.opacity = '0';
+            element.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                element.remove();
+                this.showNotification('Component removed');
+            }, 200);
+        }
+    }
+
+    /**
+     * Reorder components
+     * @param {Array<string>} componentIds - Ordered array of component IDs
+     */
+    reorderComponents(componentIds) {
+        stateManager.reorderComponents(componentIds);
         
-        // Make the new element selectable
-        const newElement = zone.querySelector('.editable-element');
-        if (newElement) {
-            newElement.addEventListener('click', function(e) {
+        // Reorder in DOM
+        const container = document.getElementById('media-kit-preview');
+        if (!container) return;
+        
+        componentIds.forEach((id, index) => {
+            const element = document.querySelector(`[data-component-id="${id}"]`);
+            if (element) {
+                container.appendChild(element);
+            }
+        });
+    }
+
+    /**
+     * Duplicate a component
+     * @param {string} sourceComponentId - ID of component to duplicate
+     */
+    async duplicateComponent(sourceComponentId) {
+        const sourceComponent = stateManager.getComponent(sourceComponentId);
+        if (!sourceComponent) return;
+        
+        const newComponentId = this.generateComponentId(sourceComponent.type);
+        
+        // Copy component data
+        const newData = { ...sourceComponent.data };
+        
+        // Initialize new component with copied data
+        const schema = this.loadedSchemas.get(sourceComponent.type);
+        if (schema) {
+            stateManager.initComponent(newComponentId, sourceComponent.type, newData);
+            
+            // Render and insert after source
+            const componentHTML = await renderComponent(sourceComponent.type, newComponentId);
+            this.insertComponentIntoDOM(componentHTML, newComponentId, sourceComponentId, 'after');
+            
+            // Make interactive
+            this.makeComponentInteractive(newComponentId);
+            
+            this.showNotification('Component duplicated');
+        }
+    }
+
+    /**
+     * Load component schema
+     * @param {string} componentType - Component type
+     * @returns {Object|null} Component schema
+     */
+    async loadComponentSchema(componentType) {
+        try {
+            const response = await fetch(`/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/component.json`);
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (error) {
+            console.error(`Failed to load schema for ${componentType}:`, error);
+        }
+        return null;
+    }
+
+    /**
+     * Insert component HTML into DOM
+     * @param {string} html - Component HTML
+     * @param {string} componentId - Component ID
+     * @param {string} targetId - Target ID
+     * @param {string} position - Position relative to target
+     */
+    insertComponentIntoDOM(html, componentId, targetId, position) {
+        const container = document.getElementById('media-kit-preview');
+        
+        if (!targetId || position === 'inside') {
+            // Add to end of container
+            container.insertAdjacentHTML('beforeend', html);
+        } else {
+            const target = document.querySelector(`[data-component-id="${targetId}"], [data-zone-id="${targetId}"]`);
+            if (target) {
+                switch (position) {
+                    case 'before':
+                        target.insertAdjacentHTML('beforebegin', html);
+                        break;
+                    case 'after':
+                        target.insertAdjacentHTML('afterend', html);
+                        break;
+                    case 'inside':
+                        target.innerHTML = html;
+                        break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Make component interactive
+     * @param {string} componentId - Component ID
+     */
+    makeComponentInteractive(componentId) {
+        const element = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (!element) return;
+        
+        // Add click handler for selection
+        element.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectElement(element);
+            
+            // Get component type
+            const componentType = element.getAttribute('data-component-type');
+            
+            // Dispatch selection event
+            document.dispatchEvent(new CustomEvent('component-selected', {
+                detail: { componentId, componentType }
+            }));
+        });
+        
+        // Add control button handlers
+        const controls = element.querySelector('.element-controls');
+        if (controls) {
+            controls.addEventListener('click', (e) => {
                 e.stopPropagation();
-                selectElement(this);
-            });
-            
-            // Select the newly added element
-            selectElement(newElement);
-            
-            // Initialize contenteditable updates for the new element
-            const editables = newElement.querySelectorAll('[contenteditable="true"]');
-            editables.forEach(el => {
-                el.addEventListener('blur', function() {
-                    // Trigger save when content is edited
-                    const event = new Event('change', { bubbles: true });
-                    newElement.dispatchEvent(event);
-                });
+                const btn = e.target.closest('.control-btn');
+                if (!btn) return;
+                
+                const action = btn.getAttribute('data-action') || btn.textContent;
+                this.handleControlAction(action, componentId);
             });
         }
         
-        console.log(`Added ${componentType} component`);
-    } catch (error) {
-        console.error('Error adding component:', error);
-        zone.classList.remove('loading');
-        zone.innerHTML = '<div class="error-message">Failed to load component</div>';
+        // Initialize any contenteditable elements
+        const editables = element.querySelectorAll('[contenteditable="true"]');
+        editables.forEach(editable => {
+            // Store original content
+            const originalContent = editable.textContent;
+            
+            editable.addEventListener('focus', () => {
+                editable.setAttribute('data-original-content', editable.textContent);
+            });
+            
+            editable.addEventListener('blur', () => {
+                const newContent = editable.textContent;
+                const original = editable.getAttribute('data-original-content');
+                
+                if (newContent !== original) {
+                    // Find the setting key for this editable
+                    const settingKey = this.findSettingKeyForElement(editable, componentId);
+                    if (settingKey) {
+                        stateManager.updateComponent(componentId, settingKey, newContent);
+                    }
+                }
+            });
+            
+            // Prevent Enter key in single-line editables
+            if (!editable.matches('p, div.multiline')) {
+                editable.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        editable.blur();
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Handle control button actions
+     * @param {string} action - Action to perform
+     * @param {string} componentId - Component ID
+     */
+    handleControlAction(action, componentId) {
+        switch (action) {
+            case '×':
+            case 'delete':
+                if (confirm('Are you sure you want to delete this component?')) {
+                    this.removeComponent(componentId);
+                }
+                break;
+                
+            case '⧉':
+            case 'duplicate':
+                this.duplicateComponent(componentId);
+                break;
+                
+            case '↑':
+            case 'moveUp':
+                this.moveComponent(componentId, 'up');
+                break;
+                
+            case '↓':
+            case 'moveDown':
+                this.moveComponent(componentId, 'down');
+                break;
+        }
+    }
+
+    /**
+     * Move component up or down
+     * @param {string} componentId - Component ID
+     * @param {string} direction - 'up' or 'down'
+     */
+    moveComponent(componentId, direction) {
+        const components = stateManager.getOrderedComponents();
+        const currentIndex = components.findIndex(c => c.id === componentId);
+        
+        if (currentIndex === -1) return;
+        
+        const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        
+        if (newIndex < 0 || newIndex >= components.length) return;
+        
+        // Swap positions
+        const componentIds = components.map(c => c.id);
+        [componentIds[currentIndex], componentIds[newIndex]] = [componentIds[newIndex], componentIds[currentIndex]];
+        
+        this.reorderComponents(componentIds);
+    }
+
+    /**
+     * Find setting key for an editable element
+     * @param {HTMLElement} element - Editable element
+     * @param {string} componentId - Component ID
+     * @returns {string|null} Setting key
+     */
+    findSettingKeyForElement(element, componentId) {
+        // Check if element has data-setting attribute
+        if (element.hasAttribute('data-setting')) {
+            return element.getAttribute('data-setting');
+        }
+        
+        // Try to infer from class name
+        const component = stateManager.getComponent(componentId);
+        if (!component) return null;
+        
+        const schema = this.loadedSchemas.get(component.type);
+        if (!schema || !schema.settings) return null;
+        
+        // Look for matching selector
+        for (const [key, setting] of Object.entries(schema.settings)) {
+            if (setting.previewSelector) {
+                const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                const matches = componentElement.querySelectorAll(setting.previewSelector);
+                
+                if (Array.from(matches).includes(element)) {
+                    return key;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Generate unique component ID
+     * @param {string} type - Component type
+     * @returns {string} Unique ID
+     */
+    generateComponentId(type) {
+        return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    /**
+     * Show notification
+     * @param {string} message - Message to show
+     * @param {string} type - Notification type ('success', 'error', 'info')
+     */
+    showNotification(message, type = 'success') {
+        // Use history service's toast if available
+        if (window.historyService && window.historyService.showToast) {
+            window.historyService.showToast(message);
+        } else {
+            // Fallback to console
+            console.log(`[${type}] ${message}`);
+        }
+    }
+
+    /**
+     * Handle state changes
+     * @param {Object} state - New state
+     */
+    onStateChange(state) {
+        // Could be used for updating UI based on global state changes
+    }
+
+    /**
+     * Get component template (legacy support)
+     * @deprecated Use renderComponent instead
+     */
+    getComponentTemplate(componentType) {
+        console.warn('getComponentTemplate is deprecated. Use renderComponent instead.');
+        return '<div>Legacy template - please update to use renderComponent</div>';
     }
 }
 
-/**
- * Get a component template (deprecated - use renderComponent instead)
- * @param {string} componentType - The type of component to get the template for
- * @returns {string} The component template HTML
- * @deprecated This function is deprecated. Use renderComponent from dynamic-component-loader.js instead.
- */
-export function getComponentTemplate(componentType) {
-    console.warn('getComponentTemplate is deprecated. Use renderComponent instead.');
-    const templates = {
-        'hero': `
-            <div class="hero editable-element" data-element="hero" data-component="hero">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <div class="hero__avatar">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50' text-anchor='middle' x='50' fill='%2364748b'%3EDJ%3C/text%3E%3C/svg%3E" alt="Profile Avatar">
-                </div>
-                <h1 class="hero__name" contenteditable="true">New Hero Section</h1>
-                <div class="hero__title" contenteditable="true">Your Professional Title</div>
-                <p class="hero__bio" contenteditable="true">Briefly introduce yourself and your expertise.</p>
-            </div>
-        `,
-        'bio': `
-            <div class="content-section editable-element" data-element="bio" data-component="bio">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <h2 class="section-title" contenteditable="true">About Me</h2>
-                <p contenteditable="true">Add your full biography and professional background here. This is where you can share your story, expertise, and what makes you unique as a speaker or expert in your field.</p>
-            </div>
-        `,
-        'topics': `
-            <div class="content-section editable-element" data-element="topics" data-component="topics">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <h2 class="section-title" contenteditable="true">Speaking Topics</h2>
-                <div class="topics-grid">
-                    <div class="topic-item" contenteditable="true">Topic 1</div>
-                    <div class="topic-item" contenteditable="true">Topic 2</div>
-                    <div class="topic-item" contenteditable="true">Topic 3</div>
-                    <div class="topic-item" contenteditable="true">Topic 4</div>
-                </div>
-            </div>
-        `,
-        'social': `
-            <div class="social-links editable-element" data-element="social" data-component="social">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <a href="#" class="social-link" title="Twitter">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
-                    </svg>
-                </a>
-                <a href="#" class="social-link" title="LinkedIn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
-                        <circle cx="4" cy="4" r="2"/>
-                    </svg>
-                </a>
-                <a href="#" class="social-link" title="Instagram">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                        <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/>
-                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                    </svg>
-                </a>
-            </div>
-        `,
-        'stats': `
-            <div class="content-section editable-element" data-element="stats" data-component="stats">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <h2 class="section-title" contenteditable="true">Key Statistics</h2>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-item__number" contenteditable="true">1.2M</span>
-                        <div class="stat-item__label" contenteditable="true">Followers</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-item__number" contenteditable="true">150+</span>
-                        <div class="stat-item__label" contenteditable="true">Podcast Shows</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-item__number" contenteditable="true">500K</span>
-                        <div class="stat-item__label" contenteditable="true">Downloads</div>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-item__number" contenteditable="true">5</span>
-                        <div class="stat-item__label" contenteditable="true">Years Experience</div>
-                    </div>
-                </div>
-            </div>
-        `,
-        'cta': `
-            <div class="content-section editable-element" data-element="cta" data-component="cta">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <div class="cta">
-                    <h2 class="section-title" contenteditable="true">Ready to Connect?</h2>
-                    <p contenteditable="true">Let's discuss how we can work together on your next project or podcast.</p>
-                    <a href="#" class="cta__button" contenteditable="true">Book a Meeting</a>
-                </div>
-            </div>
-        `,
-        'logo-grid': `
-            <div class="content-section editable-element" data-element="logo-grid" data-component="logo-grid">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <h2 class="section-title" contenteditable="true">Featured On</h2>
-                <div class="logo-grid">
-                    <div class="logo-item">
-                        <div class="logo-placeholder">Click to add logo</div>
-                    </div>
-                    <div class="logo-item">
-                        <div class="logo-placeholder">Click to add logo</div>
-                    </div>
-                    <div class="logo-item">
-                        <div class="logo-placeholder">Click to add logo</div>
-                    </div>
-                    <div class="logo-item">
-                        <div class="logo-placeholder">Click to add logo</div>
-                    </div>
-                </div>
-            </div>
-        `,
-        'testimonials': `
-            <div class="content-section editable-element" data-element="testimonials" data-component="testimonials">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <h2 class="section-title" contenteditable="true">What People Say</h2>
-                <div class="testimonial">
-                    <p class="testimonial__quote" contenteditable="true">"An incredible speaker with deep insights into quantum physics and ancient technology. Highly recommended!"</p>
-                    <div class="testimonial__author" contenteditable="true">Sarah Mitchell</div>
-                    <div class="testimonial__role" contenteditable="true">Host, The Science Podcast</div>
-                </div>
-            </div>
-        `,
-        'contact': `
-            <div class="content-section editable-element" data-element="contact" data-component="contact">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <h2 class="section-title" contenteditable="true">Contact Information</h2>
-                <div class="contact-info">
-                    <p contenteditable="true">📧 your.email@example.com</p>
-                    <p contenteditable="true">📱 +1 (555) 123-4567</p>
-                    <p contenteditable="true">🌐 www.yourwebsite.com</p>
-                </div>
-            </div>
-        `,
-        'questions': `
-            <div class="content-section editable-element" data-element="questions" data-component="questions">
-                <div class="element-controls">
-                    <button class="control-btn" title="Move Up">↑</button>
-                    <button class="control-btn" title="Move Down">↓</button>
-                    <button class="control-btn" title="Duplicate">⧉</button>
-                    <button class="control-btn" title="Delete">×</button>
-                </div>
-                <h2 class="section-title" contenteditable="true">Interview Questions</h2>
-                <div class="questions-list">
-                    <div class="question-item" contenteditable="true">What inspired you to become an expert in your field?</div>
-                    <div class="question-item" contenteditable="true">What's the most common misconception about your industry?</div>
-                    <div class="question-item" contenteditable="true">What advice would you give to someone starting out?</div>
-                </div>
-            </div>
-        `
-    };
-    
-    return templates[componentType] || '<div class="content-section"><p>Component template not found</p></div>';
+// Create singleton instance
+let componentManager = null;
+
+// Ensure single initialization
+function getComponentManager() {
+    if (!componentManager) {
+        componentManager = new ComponentManager();
+    }
+    return componentManager;
 }
+
+// Initialize only once when DOM is ready
+let initialized = false;
+function initializeOnce() {
+    if (initialized) return;
+    initialized = true;
+    
+    const manager = getComponentManager();
+    manager.init().catch(error => {
+        console.error('Component manager initialization failed:', error);
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeOnce);
+} else {
+    initializeOnce();
+}
+
+// Get the singleton for exports
+componentManager = getComponentManager();
+
+// Export functions for backward compatibility
+export async function addComponentToZone(componentType, zone) {
+    return componentManager.addComponentToZone(componentType, zone);
+}
+
+export function getComponentTemplate(componentType) {
+    return componentManager.getComponentTemplate(componentType);
+}
+
+// Export the manager instance for direct access
+export { componentManager };
