@@ -55,6 +55,10 @@ function guestify_media_kit_builder_enqueue_scripts() {
         true
     );
 
+    // Get component data from the plugin instance
+    $plugin_instance = Guestify_Media_Kit_Builder::get_instance();
+    $component_discovery = $plugin_instance->get_component_discovery();
+    
     // Localize script with WordPress data
     wp_localize_script(
         'guestify-builder-script',
@@ -65,6 +69,8 @@ function guestify_media_kit_builder_enqueue_scripts() {
             'restUrl' => esc_url_raw(rest_url()),
             'restNonce' => wp_create_nonce('wp_rest'),
             'pluginUrl' => $plugin_url,
+            'components' => $component_discovery->getComponents(),
+            'categories' => $component_discovery->getCategories(),
         ]
     );
 }

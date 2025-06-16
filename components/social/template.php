@@ -3,24 +3,23 @@
  * Social Component Template
  */
 ?>
-<div class="social-component">
-    <h2 class="social-title"><?php echo $title ?? 'Connect With Me'; ?></h2>
-    <div class="social-links">
-        <?php if (isset($socialLinks) && !empty($socialLinks)): ?>
-            <?php foreach ($socialLinks as $link): ?>
-                <a href="<?php echo $link['url']; ?>" class="social-link" target="_blank" rel="noopener noreferrer">
-                    <span class="social-icon <?php echo $link['platform']; ?>-icon"></span>
-                    <span class="social-name"><?php echo $link['platform']; ?></span>
-                </a>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div class="social-placeholder">
-                <p>Add your social media profiles here.</p>
-                <button class="add-social-btn">+ Add Social Link</button>
-            </div>
-        <?php endif; ?>
-    </div>
-    <?php if (isset($socialLinks) && !empty($socialLinks)): ?>
-        <button class="add-social-btn">+ Add Social Link</button>
-    <?php endif; ?>
+<div class="social-links" data-element="social" data-component="social">
+    <a href="#" class="social-link" title="Twitter">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
+        </svg>
+    </a>
+    <a href="#" class="social-link" title="LinkedIn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
+            <circle cx="4" cy="4" r="2"/>
+        </svg>
+    </a>
+    <a href="#" class="social-link" title="Instagram">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+        </svg>
+    </a>
 </div>

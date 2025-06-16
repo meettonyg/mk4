@@ -3,38 +3,53 @@
  */
 
 import { selectElement } from '../ui/element-editor.js';
+import { renderComponent } from './dynamic-component-loader.js';
 
 /**
  * Add a component to a drop zone
  * @param {string} componentType - The type of component to add
  * @param {HTMLElement} zone - The drop zone to add the component to
  */
-export function addComponentToZone(componentType, zone) {
-    const template = getComponentTemplate(componentType);
-    zone.classList.remove('drop-zone--empty');
-    zone.innerHTML = template;
-    
-    // Make the new element selectable
-    const newElement = zone.querySelector('.editable-element');
-    if (newElement) {
-        newElement.addEventListener('click', function(e) {
-            e.stopPropagation();
-            selectElement(this);
-        });
+export async function addComponentToZone(componentType, zone) {
+    try {
+        // Show loading state
+        zone.classList.add('loading');
+        zone.innerHTML = '<div class="loading-spinner">Loading component...</div>';
         
-        // Select the newly added element
-        selectElement(newElement);
+        // Render component dynamically
+        const template = await renderComponent(componentType);
+        
+        zone.classList.remove('drop-zone--empty', 'loading');
+        zone.innerHTML = template;
+        
+        // Make the new element selectable
+        const newElement = zone.querySelector('.editable-element');
+        if (newElement) {
+            newElement.addEventListener('click', function(e) {
+                e.stopPropagation();
+                selectElement(this);
+            });
+            
+            // Select the newly added element
+            selectElement(newElement);
+        }
+        
+        console.log(`Added ${componentType} component`);
+    } catch (error) {
+        console.error('Error adding component:', error);
+        zone.classList.remove('loading');
+        zone.innerHTML = '<div class="error-message">Failed to load component</div>';
     }
-    
-    console.log(`Added ${componentType} component`);
 }
 
 /**
- * Get a component template
+ * Get a component template (deprecated - use renderComponent instead)
  * @param {string} componentType - The type of component to get the template for
  * @returns {string} The component template HTML
+ * @deprecated This function is deprecated. Use renderComponent from dynamic-component-loader.js instead.
  */
 export function getComponentTemplate(componentType) {
+    console.warn('getComponentTemplate is deprecated. Use renderComponent instead.');
     const templates = {
         'hero': `
             <div class="hero editable-element" data-element="hero" data-component="hero">

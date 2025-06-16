@@ -3,13 +3,13 @@
  * Biography Component Template
  */
 ?>
-<div class="biography-component">
-    <h2 class="biography-title"><?php echo $title ?? 'Biography'; ?></h2>
+<div class="content-section biography-component" data-element="biography" data-component="biography">
+    <h2 class="section-title"><?php echo isset($title) ? esc_html($title) : 'About Me'; ?></h2>
     <div class="biography-content">
         <?php if (isset($content) && !empty($content)): ?>
-            <div class="biography-text"><?php echo $content; ?></div>
+            <p><?php echo wp_kses_post($content); ?></p>
         <?php else: ?>
-            <div class="biography-placeholder">Add your biography here. Share your story, experience, and qualifications.</div>
+            <p>Add your full biography and professional background here. This is where you can share your story, expertise, and what makes you unique as a speaker or expert in your field.</p>
         <?php endif; ?>
     </div>
 </div>

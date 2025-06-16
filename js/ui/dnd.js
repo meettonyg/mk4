@@ -13,22 +13,29 @@ import { showComponentLibraryModal } from '../modals/component-library.js';
  * Set up drag and drop functionality
  */
 export function setupDragAndDrop() {
-    const componentItems = document.querySelectorAll('.component-item[draggable="true"]');
     const dropZones = document.querySelectorAll('.drop-zone');
-
-    // Component drag start
-    componentItems.forEach(item => {
-        item.addEventListener('dragstart', function(e) {
-            setState('draggedComponent', this.getAttribute('data-component'));
-            this.classList.add('component-item--dragging');
+    
+    // Use event delegation for dynamically created component items
+    const componentsTab = document.getElementById('components-tab');
+    if (componentsTab) {
+        // Component drag start - using event delegation
+        componentsTab.addEventListener('dragstart', function(e) {
+            const item = e.target.closest('.component-item[draggable="true"]');
+            if (!item) return;
+            
+            setState('draggedComponent', item.getAttribute('data-component'));
+            item.classList.add('component-item--dragging');
             e.dataTransfer.effectAllowed = 'copy';
         });
-
-        item.addEventListener('dragend', function() {
-            this.classList.remove('component-item--dragging');
+        
+        componentsTab.addEventListener('dragend', function(e) {
+            const item = e.target.closest('.component-item[draggable="true"]');
+            if (!item) return;
+            
+            item.classList.remove('component-item--dragging');
             setState('draggedComponent', null);
         });
-    });
+    }
 
     // Drop zone functionality
     dropZones.forEach(zone => {
@@ -42,7 +49,7 @@ export function setupDragAndDrop() {
             this.classList.remove('drop-zone--drag-over');
         });
 
-        zone.addEventListener('drop', function(e) {
+        zone.addEventListener('drop', async function(e) {
             e.preventDefault();
             this.classList.remove('drop-zone--drag-over');
             
@@ -55,7 +62,8 @@ export function setupDragAndDrop() {
                     return;
                 }
                 
-                addComponentToZone(draggedComponent, this);
+                // Add component asynchronously
+                await addComponentToZone(draggedComponent, this);
                 markUnsaved();
                 saveCurrentState();
             }

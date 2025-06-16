@@ -17,6 +17,7 @@ import { setupGlobalSettings } from './modals/global-settings.js';
 import { setupExportSystem } from './modals/export.js';
 import { setupShareSystem } from './services/share-service.js';
 import { saveCurrentState } from './services/history-service.js';
+import { initializeDynamicComponents } from './components/dynamic-component-loader.js';
 
 /**
  * Initialize the builder
@@ -37,6 +38,9 @@ function initializeBuilder() {
     setupGlobalSettings();
     setupExportSystem();
     setupShareSystem();
+    
+    // Initialize dynamic components
+    initializeDynamicComponents();
     
     // Add a debugging tool to check controls
     setTimeout(debugControlsSetup, 1000);

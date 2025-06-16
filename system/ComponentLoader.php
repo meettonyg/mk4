@@ -22,6 +22,18 @@ class ComponentLoader {
     }
 
     /**
+     * Map old component names to new directory names
+     */
+    private $componentMapping = [
+        'bio' => 'biography',
+        'calendar' => 'booking-calendar',
+        'cta' => 'call-to-action',
+        'gallery' => 'photo-gallery',
+        'podcast' => 'podcast-player',
+        'video' => 'video-intro'
+    ];
+    
+    /**
      * Load and render a component
      * 
      * @param string $componentName Component directory name
@@ -29,6 +41,10 @@ class ComponentLoader {
      * @return string|false Rendered component or false on failure
      */
     public function loadComponent($componentName, $props = []) {
+        // Map old component names to new ones if needed
+        if (isset($this->componentMapping[$componentName])) {
+            $componentName = $this->componentMapping[$componentName];
+        }
         // Check if component exists
         $component = $this->discovery->getComponent($componentName);
         if (!$component) {
