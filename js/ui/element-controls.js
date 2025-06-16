@@ -28,6 +28,12 @@ export function setupElementControls() {
         subtree: true 
     });
     
+    // Listen for custom rebindControls events
+    document.addEventListener('rebindControls', function() {
+        console.log('Rebinding control buttons');
+        bindControlButtons();
+    });
+    
     console.log('Element controls initialized');
 }
 
@@ -272,3 +278,6 @@ function getNextElement(element) {
     const index = allElements.indexOf(element);
     return index < allElements.length - 1 ? allElements[index + 1] : null;
 }
+
+// Export the bindControlButtons function so it can be called from elsewhere
+export { bindControlButtons };

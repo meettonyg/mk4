@@ -17,6 +17,7 @@
 @import 'modules/layout.css';
 @import 'modules/media-kit.css';
 @import 'modules/modals.css';
+@import 'modules/layouts.css';
 
 /* Debug Module - add specific debug styling */
 @import 'modules/debug-controls.css';
