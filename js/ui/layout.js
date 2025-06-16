@@ -3,7 +3,6 @@
  */
 
 import { markUnsaved } from '../services/save-service.js';
-import { saveCurrentState } from '../services/history-service.js';
 import { selectElement } from './element-editor.js';
 import { getComponentTemplate } from '../components/component-manager.js';
 
@@ -67,7 +66,6 @@ function applyLayout(layoutType) {
         applyLayoutStyles(targetElement, layoutType);
         
         markUnsaved();
-        saveCurrentState();
     }
 }
 
@@ -209,7 +207,6 @@ function addNewSection() {
         
         // Mark as unsaved
         markUnsaved();
-        saveCurrentState();
         
         // Rebind control buttons
         const event = new CustomEvent('rebindControls');
@@ -244,7 +241,6 @@ function duplicateSelectedSection() {
         
         // Mark as unsaved
         markUnsaved();
-        saveCurrentState();
         
         // Rebind control buttons
         const event = new CustomEvent('rebindControls');

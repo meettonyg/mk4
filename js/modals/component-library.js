@@ -6,7 +6,6 @@ import { showModal, hideModal, setupModalClose } from './modal-base.js';
 import { showUpgradePrompt } from '../utils/helpers.js';
 import { addComponentToZone } from '../components/component-manager.js';
 import { markUnsaved } from '../services/save-service.js';
-import { saveCurrentState } from '../services/history-service.js';
 import { getComponentInfo } from '../components/dynamic-component-loader.js';
 
 /**
@@ -93,7 +92,7 @@ export function setupComponentLibraryModal() {
                     await addComponentToZone(componentType, firstEmptyDropZone);
                     hideComponentLibraryModal();
                     markUnsaved();
-                    saveCurrentState();
+                    // State is automatically tracked by stateManager - no need to call saveCurrentState
                 } else {
                     alert('Please make space for a new component by moving or deleting an existing one, or dragging to an empty drop zone.');
                 }
