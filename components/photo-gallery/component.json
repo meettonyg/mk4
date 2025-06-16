@@ -1,0 +1,10 @@
+{
+  "name": "Photo Gallery",
+  "category": "premium",
+  "icon": "image.svg",
+  "description": "Display a gallery of photos or images",
+  "isPremium": true,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 2
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Contact",
+  "category": "media",
+  "icon": "mail.svg",
+  "description": "Contact form or contact information",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 3
+}

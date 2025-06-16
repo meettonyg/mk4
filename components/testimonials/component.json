@@ -1,0 +1,10 @@
+{
+  "name": "Testimonials",
+  "category": "media",
+  "icon": "message-square.svg",
+  "description": "Display testimonials from clients or colleagues",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 2
+}

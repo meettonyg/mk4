@@ -1,0 +1,10 @@
+{
+  "name": "Questions",
+  "category": "media",
+  "icon": "help-circle.svg",
+  "description": "FAQ or frequently asked questions section",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 4
+}

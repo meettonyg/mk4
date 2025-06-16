@@ -1,0 +1,10 @@
+{
+  "name": "Social",
+  "category": "essential",
+  "icon": "linkedin.svg",
+  "description": "Social media links and profiles",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 4
+}

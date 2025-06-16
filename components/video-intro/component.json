@@ -1,0 +1,10 @@
+{
+  "name": "Video Intro",
+  "category": "premium",
+  "icon": "video.svg",
+  "description": "Feature a video introduction or showcase",
+  "isPremium": true,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 1
+}

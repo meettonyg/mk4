@@ -1,0 +1,10 @@
+{
+  "name": "Stats",
+  "category": "essential",
+  "icon": "bar-chart.svg",
+  "description": "Display key statistics and metrics",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 5
+}

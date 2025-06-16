@@ -1,0 +1,125 @@
+/**
+ * Stats Component Styles
+ */
+.stats-component {
+    padding: 2rem;
+    background-color: var(--background-color, #f5f5f5);
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.stats-title {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-text-color, #333);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-item {
+    padding: 1.5rem;
+    background-color: var(--component-bg-color, #fff);
+    border-radius: 0.5rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color, #4a7aff);
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-text-color, #333);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+
+.stat-description {
+    font-size: 0.875rem;
+    color: var(--secondary-text-color, #666);
+    line-height: 1.4;
+}
+
+.stats-placeholder {
+    grid-column: 1 / -1;
+    padding: 2rem;
+    border: 2px dashed var(--accent-color, #ccc);
+    border-radius: 0.375rem;
+    text-align: center;
+    color: var(--muted-text-color, #888);
+}
+
+.add-stat-btn {
+    background-color: var(--primary-color, #4a7aff);
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.add-stat-btn:hover {
+    background-color: var(--primary-hover-color, #3a67e0);
+}
+
+.stat-actions {
+    display: flex;
+    gap: 0.5rem;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stat-item:hover .stat-actions {
+    opacity: 1;
+}
+
+.edit-stat-btn,
+.delete-stat-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.edit-stat-btn {
+    background-color: var(--secondary-color, #f0f0f0);
+    color: var(--secondary-text-color, #333);
+}
+
+.delete-stat-btn {
+    background-color: var(--danger-color, #ff4a4a);
+    color: white;
+}
+
+.edit-stat-btn:hover {
+    background-color: var(--secondary-hover-color, #e0e0e0);
+}
+
+.delete-stat-btn:hover {
+    background-color: var(--danger-hover-color, #e04040);
+}

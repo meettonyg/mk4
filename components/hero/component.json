@@ -1,0 +1,10 @@
+{
+  "name": "Hero",
+  "category": "essential",
+  "icon": "user.svg",
+  "description": "Hero section for your media kit",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 1
+}

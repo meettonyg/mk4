@@ -1,0 +1,10 @@
+{
+  "name": "Call to Action",
+  "category": "essential",
+  "icon": "arrow-right-circle.svg",
+  "description": "Prompt visitors to take a specific action",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 6
+}

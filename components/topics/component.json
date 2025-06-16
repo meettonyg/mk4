@@ -1,0 +1,10 @@
+{
+  "name": "Topics",
+  "category": "essential",
+  "icon": "list.svg",
+  "description": "Display topics or areas of expertise",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 3
+}

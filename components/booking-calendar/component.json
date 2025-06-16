@@ -1,0 +1,10 @@
+{
+  "name": "Booking Calendar",
+  "category": "premium",
+  "icon": "calendar.svg",
+  "description": "Allow visitors to book appointments or sessions",
+  "isPremium": true,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 3
+}
