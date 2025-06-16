@@ -4,7 +4,6 @@
 
 import { getState, setState } from '../state.js';
 import { markUnsaved } from '../services/save-service.js';
-import { saveCurrentState } from '../services/history-service.js';
 import { addComponentToZone } from '../components/component-manager.js';
 import { showUpgradePrompt } from '../utils/helpers.js';
 import { showComponentLibraryModal } from '../modals/component-library.js';
@@ -65,7 +64,7 @@ export function setupDragAndDrop() {
                 // Add component asynchronously
                 await addComponentToZone(draggedComponent, this);
                 markUnsaved();
-                saveCurrentState();
+                // State is now automatically tracked by stateManager
             }
         });
 

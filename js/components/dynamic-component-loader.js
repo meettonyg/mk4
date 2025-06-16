@@ -6,10 +6,11 @@
 /**
  * Render a component by fetching its template from the server
  * @param {string} componentType - The type/slug of the component
+ * @param {string} componentId - Unique component instance ID
  * @param {object} props - Component properties
  * @returns {Promise<string>} - The rendered component HTML
  */
-export async function renderComponent(componentType, props = {}) {
+export async function renderComponent(componentType, componentId = null, props = {}) {
     try {
         // First try REST API
         if (guestifyData.restUrl) {
@@ -28,7 +29,7 @@ export async function renderComponent(componentType, props = {}) {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
-                    return wrapComponentWithControls(data.html, componentType);
+                    return wrapComponentWithControls(data.html, componentType, componentId);
                 }
             }
         }
@@ -47,7 +48,7 @@ export async function renderComponent(componentType, props = {}) {
 
         const ajaxData = await ajaxResponse.json();
         if (ajaxData.success) {
-            return wrapComponentWithControls(ajaxData.data.html, componentType);
+            return wrapComponentWithControls(ajaxData.data.html, componentType, componentId);
         }
 
         throw new Error('Failed to render component');
@@ -61,9 +62,10 @@ export async function renderComponent(componentType, props = {}) {
  * Wrap component HTML with editing controls
  * @param {string} html - The component HTML
  * @param {string} componentType - The component type
+ * @param {string} componentId - Unique component instance ID
  * @returns {string} - HTML with controls
  */
-function wrapComponentWithControls(html, componentType) {
+function wrapComponentWithControls(html, componentType, componentId) {
     // Create a temporary container to parse the HTML
     const temp = document.createElement('div');
     temp.innerHTML = html;
@@ -76,6 +78,12 @@ function wrapComponentWithControls(html, componentType) {
         componentEl.classList.add('editable-element');
         componentEl.setAttribute('data-component', componentType);
         componentEl.setAttribute('data-element', componentType);
+        componentEl.setAttribute('data-component-type', componentType);
+        
+        // Add component ID if provided
+        if (componentId) {
+            componentEl.setAttribute('data-component-id', componentId);
+        }
         
         // Add element controls
         const controls = `
