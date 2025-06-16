@@ -146,6 +146,9 @@ async function initializeEnhancedFeatures() {
         
         if (mediaKitId) {
             await loadMediaKit(mediaKitId);
+        } else {
+            // If no ID provided, try to load from localStorage
+            loadFromLocalStorage();
         }
         
         console.log('Enhanced system initialized successfully');
@@ -170,6 +173,9 @@ async function initializeBuilder() {
     if (useEnhanced) {
         console.log('Using enhanced schema-driven system');
         await initializeEnhancedFeatures();
+        
+        // Set up save system with the enhanced features
+        setupSaveSystem();
     } else {
         console.log('Using legacy system (fallback)');
         
@@ -226,6 +232,27 @@ async function loadMediaKit(mediaKitId) {
         }
     } catch (error) {
         console.error('Error loading media kit:', error);
+    }
+}
+
+/**
+ * Load media kit from localStorage
+ */
+function loadFromLocalStorage() {
+    try {
+        const savedData = localStorage.getItem('mediaKitData');
+        
+        if (savedData) {
+            const mediaKitData = JSON.parse(savedData);
+            stateManager.loadSerializedState(mediaKitData);
+            
+            // Save current state to compare for unsaved changes
+            localStorage.setItem('gmkb_last_saved_state', savedData);
+            
+            console.log('Media kit loaded from localStorage');
+        }
+    } catch (error) {
+        console.error('Error loading media kit from localStorage:', error);
     }
 }
 
