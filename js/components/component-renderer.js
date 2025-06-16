@@ -55,6 +55,12 @@ class ComponentRenderer {
      * @param {Object} state - Current state
      */
     onStateChange(state) {
+        // Skip if rendering is disabled (batch operations)
+        if (this.disableRendering) {
+            console.log('Rendering disabled for batch operation');
+            return;
+        }
+        
         // Skip initial render to preserve hardcoded components
         if (this.skipInitialRender) {
             console.log('Skipping initial render to preserve existing components');
@@ -89,21 +95,76 @@ class ComponentRenderer {
         const components = this.getSortedComponents(state);
         const existingComponents = this.previewContainer.querySelectorAll('[data-component-id]');
         
-        // Check if a full re-render is necessary
-        let needsRerender = (existingComponents.length !== components.length);
-        if (!needsRerender) {
+        // Create a map of existing component IDs
+        const existingIds = new Set();
+        existingComponents.forEach(el => {
+            existingIds.add(el.getAttribute('data-component-id'));
+        });
+        
+        // Check if we need to do a full re-render (components removed or reordered)
+        let needsFullRerender = false;
+        
+        // Check for removed components
+        existingIds.forEach(id => {
+            if (!components.find(c => c.id === id)) {
+                needsFullRerender = true;
+            }
+        });
+        
+        // Check for order changes
+        if (!needsFullRerender && existingComponents.length === components.length) {
             existingComponents.forEach((el, index) => {
                 if (el.getAttribute('data-component-id') !== components[index].id) {
-                    needsRerender = true;
+                    needsFullRerender = true;
                 }
             });
         }
         
-        if (needsRerender) {
+        if (needsFullRerender) {
             this.renderAllFromScratch(components);
+        } else {
+            // Only render new components
+            this.renderNewComponents(components, existingIds);
         }
-        // If no re-render is needed, the DataBindingEngine will handle any necessary internal updates.
-        // No else block or call to updateComponentData is required.
+    }
+    
+    /**
+     * Render only new components
+     * @param {Array} components - All components
+     * @param {Set} existingIds - Set of existing component IDs
+     */
+    async renderNewComponents(components, existingIds) {
+        // Hide empty state if we have components
+        if (components.length > 0) {
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            this.previewContainer.classList.add('has-components');
+        }
+        
+        // Render only new components
+        for (const component of components) {
+            if (!existingIds.has(component.id)) {
+                try {
+                    console.log(`Rendering new component: ${component.type} (${component.id})`);
+                    
+                    // Use the dynamic component loader to render the component
+                    const html = await renderComponent(component.type, component.id, component.data);
+                    
+                    // Add to the preview container
+                    this.previewContainer.insertAdjacentHTML('beforeend', html);
+                    
+                    // Make the component interactive
+                    this.setupComponentInteractivity(component.id);
+                } catch (error) {
+                    console.error(`Failed to render component ${component.type}:`, error);
+                }
+            }
+        }
+        
+        // Update empty state visibility
+        this.updateEmptyState();
     }
     
     /**

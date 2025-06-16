@@ -205,9 +205,34 @@ class StateManager {
      * Notify global listeners
      */
     notifyGlobalListeners() {
+        // Skip if notifications are paused
+        if (this.pauseNotifications) {
+            return;
+        }
+        
         this.globalListeners.forEach(callback => {
             callback(this.state);
         });
+    }
+    
+    /**
+     * Batch update components
+     * @param {Function} updateFn - Function that performs multiple updates
+     */
+    async batchUpdate(updateFn) {
+        // Pause notifications
+        this.pauseNotifications = true;
+        
+        try {
+            // Execute the update function
+            await updateFn();
+        } finally {
+            // Resume notifications
+            this.pauseNotifications = false;
+            
+            // Trigger a single notification for all changes
+            this.notifyGlobalListeners();
+        }
     }
 
     /**

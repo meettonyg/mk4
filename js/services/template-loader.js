@@ -132,21 +132,44 @@ class TemplateLoader {
             emptyState.style.display = 'none';
         }
         
-        // Add each component from the template
+        // Disable rendering during batch update
+        if (window.componentRenderer) {
+            window.componentRenderer.disableRendering = true;
+        }
+        
+        // Collect all components to add
+        const componentsToAdd = [];
+        
+        // Process each component from the template
         for (const [index, component] of templateData.components.entries()) {
             try {
                 // Generate component ID
                 const componentId = `${component.type}-${Date.now()}-${index}`;
-                
-                // Initialize component in state
-                stateManager.initComponent(componentId, component.type, component.data);
-                
-                // Add a small delay between components for visual effect
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
+                componentsToAdd.push({
+                    id: componentId,
+                    type: component.type,
+                    data: component.data,
+                    order: index
+                });
             } catch (error) {
-                console.error(`Failed to add component ${component.type}:`, error);
+                console.error(`Failed to prepare component ${component.type}:`, error);
             }
+        }
+        
+        // Add all components at once
+        if (componentsToAdd.length > 0) {
+            // Initialize all components in state without triggering individual renders
+            componentsToAdd.forEach(comp => {
+                stateManager.initComponent(comp.id, comp.type, comp.data, true); // Skip notifications
+            });
+            
+            // Re-enable rendering
+            if (window.componentRenderer) {
+                window.componentRenderer.disableRendering = false;
+            }
+            
+            // Now trigger a single render for all components
+            stateManager.notifyGlobalListeners();
         }
         
         // Mark as unsaved
