@@ -96,13 +96,18 @@ class DesignPanelSystem {
         this.currentComponentId = componentId;
         this.currentComponentType = componentType;
         
-        // Initialize component if not already done
+        // Always load schema first - schema is the source of truth
+        const schema = await this.ensureSchemaLoaded(componentType);
+        if (!schema) {
+            console.error(`Component ${componentType} has no schema. All components require a schema.`);
+            this.showSchemaError(componentType);
+            return;
+        }
+        
+        // Initialize component with schema if not already done
         if (!stateManager.getComponent(componentId)) {
             await this.initializeComponent(componentId, componentType);
         }
-        
-        const schema = this.componentSchemas.get(componentType);
-        if (!schema) return;
         
         // Check if component has a custom design panel
         const hasCustomPanel = await this.hasCustomDesignPanel(componentType);
@@ -115,8 +120,12 @@ class DesignPanelSystem {
             this.generateDesignPanel(schema, componentId);
         }
         
-        // Bind the design panel to data binding engine
+        // Always bind the design panel to data binding engine using the schema
+        // This ensures all properties defined in the schema are tracked
         dataBindingEngine.bindDesignPanel(this.panelContainer, componentId);
+        
+        // Store the schema in the DOM for future reference
+        this.storeSchemaInComponent(componentId, schema);
         
         // Add component-specific event handlers
         this.attachSpecialHandlers(componentType, componentId);
@@ -422,6 +431,93 @@ class DesignPanelSystem {
         
         const days = Math.floor(hours / 24);
         return `${days} day${days > 1 ? 's' : ''} ago`;
+    }
+    
+    /**
+     * Ensure schema is loaded for a component
+     * @param {string} componentType - Component type
+     * @returns {Object|null} Component schema
+     */
+    async ensureSchemaLoaded(componentType) {
+        if (!this.componentSchemas.has(componentType)) {
+            const schema = await this.loadComponentSchema(componentType);
+            if (schema) {
+                this.validateSchema(schema, componentType);
+                this.componentSchemas.set(componentType, schema);
+            } else {
+                return null;
+            }
+        }
+        
+        return this.componentSchemas.get(componentType);
+    }
+    
+    /**
+     * Validate that schema contains all required properties
+     * @param {Object} schema - Component schema
+     * @param {string} componentType - Component type for error reporting
+     */
+    validateSchema(schema, componentType) {
+        // Required schema properties
+        const required = ['name', 'settings'];
+        
+        for (const prop of required) {
+            if (!schema[prop]) {
+                console.warn(`Component ${componentType} schema is missing required property: ${prop}`);
+            }
+        }
+        
+        // Ensure settings is an object
+        if (schema.settings && typeof schema.settings !== 'object') {
+            console.error(`Component ${componentType} schema has invalid settings property (must be an object)`);
+        }
+        
+        // Check that each setting has required properties
+        if (schema.settings) {
+            Object.entries(schema.settings).forEach(([key, setting]) => {
+                const settingRequired = ['type', 'label'];
+                
+                for (const prop of settingRequired) {
+                    if (!setting[prop]) {
+                        console.warn(`Setting '${key}' in component ${componentType} is missing required property: ${prop}`);
+                    }
+                }
+            });
+        }
+    }
+    
+    /**
+     * Store schema in the component element for front-end rendering
+     * @param {string} componentId - Component instance ID
+     * @param {Object} schema - Component schema
+     */
+    storeSchemaInComponent(componentId, schema) {
+        const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (componentElement) {
+            // Store serialized schema in a data attribute
+            componentElement.setAttribute('data-schema', JSON.stringify(schema));
+        }
+    }
+    
+    /**
+     * Show error when a component has no schema
+     * @param {string} componentType - Component type
+     */
+    showSchemaError(componentType) {
+        this.panelContainer.innerHTML = `
+            <div class="element-editor__header">
+                <div class="element-editor__title error">Schema Missing</div>
+                <div class="element-editor__subtitle">Component ${componentType} has no schema</div>
+            </div>
+            <div class="element-editor__body">
+                <div class="form-section">
+                    <div class="error-message">
+                        <p>This component requires a schema defined in component.json.</p>
+                        <p>Please create a valid component.json file in the component directory.</p>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 }
 

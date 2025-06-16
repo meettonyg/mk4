@@ -105,6 +105,21 @@ function initializeDesignPanel(componentType, element) {
     const elementEditor = document.getElementById('element-editor');
     if (!elementEditor) return;
     
+    // Handle common form inputs generically
+    initializeCommonControls(element);
+    
+    // Try to load component-specific panel script
+    loadComponentPanelScript(componentType, element);
+}
+
+/**
+ * Initialize common controls (inputs, selects, etc.)
+ * @param {HTMLElement} element - The selected element
+ */
+function initializeCommonControls(element) {
+    const elementEditor = document.getElementById('element-editor');
+    if (!elementEditor) return;
+    
     // Handle form inputs
     const inputs = elementEditor.querySelectorAll('input, textarea, select');
     inputs.forEach(input => {
@@ -159,12 +174,51 @@ function initializeDesignPanel(componentType, element) {
             });
         }
     });
+}
+
+/**
+ * Load component-specific panel script if available
+ * @param {string} componentType - The component type
+ * @param {HTMLElement} element - The selected element
+ */
+function loadComponentPanelScript(componentType, element) {
+    // Check if component has registered an init function
+    if (window.componentPanelHandlers && window.componentPanelHandlers[componentType]) {
+        window.componentPanelHandlers[componentType](element);
+        return;
+    }
     
-    // Initialize component-specific features
+    // Legacy component-specific code (will be migrated to panel-script.js files)
     if (componentType === 'guest-intro') {
         initializeGuestIntroPanel(element);
     } else if (componentType === 'stats') {
         initializeStatsPanel(element);
+    } else {
+        // Try to dynamically load panel-script.js if it exists
+        const pluginUrl = typeof guestifyData !== 'undefined' ? guestifyData.plugin_url : '';
+        const scriptUrl = `${pluginUrl}components/${componentType}/panel-script.js`;
+        
+        fetch(scriptUrl, { method: 'HEAD' })
+            .then(response => {
+                if (response.ok) {
+                    // Script exists, load it
+                    const script = document.createElement('script');
+                    script.src = scriptUrl;
+                    script.onload = () => {
+                        // Call initialization function if it was registered
+                        if (window.componentPanelHandlers && 
+                            window.componentPanelHandlers[componentType]) {
+                            window.componentPanelHandlers[componentType](element);
+                        }
+                    };
+                    document.head.appendChild(script);
+                }
+            })
+            .catch(() => {
+                // Script doesn't exist, or error loading - that's fine,
+                // we'll just use the generic controls
+                console.log(`No panel script for ${componentType}, using generic controls`);
+            });
     }
 }
 

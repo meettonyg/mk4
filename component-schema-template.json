@@ -1,0 +1,115 @@
+{
+  "name": "Component Name",
+  "description": "Component description",
+  "category": "essential",
+  "icon": "component-icon.svg",
+  "version": "1.0.0",
+  "order": 10,
+  "sections": {
+    "content": {
+      "title": "Content",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Appearance",
+      "order": 2
+    },
+    "advanced": {
+      "title": "Advanced",
+      "order": 3
+    }
+  },
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Title",
+      "default": "Section Title",
+      "placeholder": "Enter title",
+      "section": "content",
+      "previewSelector": ".component-title",
+      "updateMethod": "textContent"
+    },
+    "description": {
+      "type": "textarea",
+      "label": "Description",
+      "default": "Component description goes here",
+      "placeholder": "Enter description",
+      "rows": 3,
+      "section": "content",
+      "previewSelector": ".component-description",
+      "updateMethod": "textContent"
+    },
+    "image_url": {
+      "type": "image",
+      "label": "Image",
+      "default": "",
+      "section": "content",
+      "previewSelector": ".component-image",
+      "updateMethod": "src"
+    },
+    "background_color": {
+      "type": "color",
+      "label": "Background Color",
+      "default": "#ffffff",
+      "section": "appearance",
+      "previewSelector": ".component-container",
+      "updateMethod": "style.backgroundColor"
+    },
+    "text_color": {
+      "type": "color",
+      "label": "Text Color",
+      "default": "#333333",
+      "section": "appearance",
+      "previewSelector": ".component-container",
+      "updateMethod": "style.color"
+    },
+    "text_alignment": {
+      "type": "select",
+      "label": "Text Alignment",
+      "default": "left",
+      "section": "appearance",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "previewSelector": ".component-container",
+      "updateMethod": "style.textAlign"
+    },
+    "show_border": {
+      "type": "checkbox",
+      "label": "Show Border",
+      "default": false,
+      "section": "appearance",
+      "previewSelector": ".component-container",
+      "updateMethod": "class",
+      "classPrefix": "border-"
+    },
+    "padding": {
+      "type": "range",
+      "label": "Padding",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "default": 20,
+      "section": "appearance",
+      "previewSelector": ".component-container",
+      "updateMethod": "style.padding",
+      "transform": function(value) { return value + 'px'; }
+    },
+    "animation": {
+      "type": "select",
+      "label": "Animation",
+      "default": "none",
+      "section": "advanced",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "fade", "label": "Fade In" },
+        { "value": "slide", "label": "Slide In" },
+        { "value": "zoom", "label": "Zoom In" }
+      ],
+      "previewSelector": ".component-container",
+      "updateMethod": "data-animation"
+    }
+  }
+}
