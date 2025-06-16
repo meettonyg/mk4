@@ -25,6 +25,7 @@ import './components/design-panel-loader.js';
 import { stateManager } from './services/state-manager.js';
 import { dataBindingEngine } from './services/data-binding-engine.js';
 import { componentManager } from './components/component-manager.js';
+import { componentRenderer } from './components/component-renderer.js';
 
 /**
  * Check if enhanced system is available
@@ -32,7 +33,8 @@ import { componentManager } from './components/component-manager.js';
 function isEnhancedSystemAvailable() {
     return typeof stateManager !== 'undefined' && 
            typeof dataBindingEngine !== 'undefined' &&
-           typeof componentManager !== 'undefined';
+           typeof componentManager !== 'undefined' &&
+           typeof componentRenderer !== 'undefined';
 }
 
 // Track initialization state
@@ -119,9 +121,29 @@ async function initializeEnhancedFeatures() {
     console.log('Initializing enhanced schema-driven system...');
     
     try {
-        // Component manager initializes itself, just wait for it
-        if (componentManager && !componentManager.initialized) {
-            await componentManager.init();
+        // First, fully initialize the component manager
+        // and ensure it's ready before proceeding
+        if (componentManager) {
+            if (!componentManager.initialized) {
+                console.log('Initializing component manager...');
+                await componentManager.init();
+                // Wait a bit more to ensure it's really ready
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            console.log('Component manager initialized:', componentManager.initialized);
+        } else {
+            console.error('Component manager not available');
+        }
+        
+        // Initialize the component renderer
+        if (componentRenderer) {
+            if (!componentRenderer.initialized) {
+                console.log('Initializing component renderer...');
+                componentRenderer.init();
+            }
+            console.log('Component renderer initialized:', componentRenderer.initialized);
+        } else {
+            console.error('Component renderer not available');
         }
         
         // Initialize design panel system (handled by design-panel.js)
@@ -140,7 +162,7 @@ async function initializeEnhancedFeatures() {
             }));
         });
         
-        // Load existing media kit if ID is provided
+        // Now that everything is initialized, load existing data
         const urlParams = new URLSearchParams(window.location.search);
         const mediaKitId = urlParams.get('media_kit_id');
         
@@ -148,7 +170,31 @@ async function initializeEnhancedFeatures() {
             await loadMediaKit(mediaKitId);
         } else {
             // If no ID provided, try to load from localStorage
-            loadFromLocalStorage();
+            // No need to check for component manager initialization here
+            // since we've already waited for it above
+            console.log('Loading from localStorage without checking initialization');
+            const savedData = localStorage.getItem('mediaKitData');
+            
+            if (savedData && window.stateManager) {
+                try {
+                    const mediaKitData = JSON.parse(savedData);
+                    window.stateManager.loadSerializedState(mediaKitData);
+                    
+                    // Save current state to compare for unsaved changes
+                    localStorage.setItem('gmkb_last_saved_state', savedData);
+                    
+                    console.log('Media kit loaded successfully from localStorage');
+                    
+                    // Show a toast notification to confirm the load
+                    if (window.historyService && window.historyService.showToast) {
+                        window.historyService.showToast('Your last session was restored.');
+                    }
+                } catch (error) {
+                    console.error('Error loading media kit from localStorage:', error);
+                    localStorage.removeItem('mediaKitData');
+                    localStorage.removeItem('gmkb_last_saved_state');
+                }
+            }
         }
         
         console.log('Enhanced system initialized successfully');
@@ -224,7 +270,7 @@ async function loadMediaKit(mediaKitId) {
         
         if (data.success) {
             // Load state into state manager
-            stateManager.loadSerializedState(data.data.state);
+            window.stateManager.loadSerializedState(data.data.state);
             
             console.log('Media kit loaded successfully');
         } else {
@@ -235,56 +281,8 @@ async function loadMediaKit(mediaKitId) {
     }
 }
 
-/**
- * Load media kit from localStorage
- */
-function loadFromLocalStorage() {
-    // First check if component manager is fully initialized
-    if (!window.componentManager || !window.componentManager.initialized) {
-        console.warn('Component manager not initialized yet, delaying localStorage load');
-        setTimeout(loadFromLocalStorage, 500);
-        return;
-    }
-
-    try {
-        const savedData = localStorage.getItem('mediaKitData');
-        
-        if (savedData) {
-            const mediaKitData = JSON.parse(savedData);
-            
-            // Now that we have confirmed the component manager is available, load the state
-            if (window.stateManager) {
-                window.stateManager.loadSerializedState(mediaKitData);
-                
-                // Save current state to compare for unsaved changes
-                localStorage.setItem('gmkb_last_saved_state', savedData);
-                
-                console.log('Media kit loaded successfully from localStorage');
-                
-                // Show a toast notification to confirm the load
-                if (window.historyService && window.historyService.showToast) {
-                    window.historyService.showToast('Your last session was restored.');
-                }
-                
-                // Update UI to ensure components are properly rendered
-                setTimeout(() => {
-                    // Trigger a state change event to update the UI
-                    document.dispatchEvent(new CustomEvent('gmkb-state-changed', {
-                        detail: { state: window.stateManager.getState() }
-                    }));
-                }, 100);
-            } else {
-                console.error('State manager not available, cannot load data');
-            }
-        }
-    } catch (error) {
-        console.error('Error loading media kit from localStorage:', error);
-        
-        // Clear the corrupted item to prevent future errors
-        localStorage.removeItem('mediaKitData');
-        localStorage.removeItem('gmkb_last_saved_state');
-    }
-}
+// loadFromLocalStorage function has been removed
+// Loading from localStorage is now handled directly in initializeEnhancedFeatures
 
 /**
  * Update save indicator based on state
@@ -380,11 +378,13 @@ window.gmkbDebug = {
     stateManager,
     dataBindingEngine,
     componentManager,
+    componentRenderer,
     historyService,
     getState: () => stateManager ? stateManager.getState() : null,
     forceReload: () => window.location.reload(),
     resetAll: () => {
         if (componentManager) componentManager.initialized = false;
+        if (componentRenderer) componentRenderer.initialized = false;
         window.location.reload();
     }
 };
@@ -394,3 +394,4 @@ window.stateManager = stateManager;
 window.componentManager = componentManager;
 window.dataBindingEngine = dataBindingEngine;
 window.historyService = historyService;
+window.componentRenderer = componentRenderer;
