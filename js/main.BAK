@@ -39,25 +39,6 @@ function isEnhancedSystemAvailable() {
 let enhancedInitialized = false;
 
 /**
- * Initializes core UI modules that are required for the builder to function,
- * regardless of the data management system in use.
- */
-function initializeCoreUI() {
-    setupTabs();
-    setupPreviewToggle();
-    setupDragAndDrop();
-    setupElementSelection();
-    setupElementControls();
-    setupContentEditableUpdates();
-    setupLayoutOptions();
-    setupKeyboardShortcuts();
-    setupComponentLibraryModal();
-    setupGlobalSettings();
-    setupExportSystem();
-    setupShareSystem();
-}
-
-/**
  * Initialize the enhanced builder features
  */
 async function initializeEnhancedFeatures() {
@@ -106,30 +87,67 @@ async function initializeEnhancedFeatures() {
         
     } catch (error) {
         console.error('Failed to initialize enhanced features:', error);
+        console.log('Falling back to legacy system');
     }
+}
+
+// Track legacy initialization
+let legacyInitialized = false;
+
+/**
+ * Initialize the legacy builder
+ */
+function initializeLegacyBuilder() {
+    if (legacyInitialized) {
+        console.log('Legacy builder already initialized');
+        return;
+    }
+    
+    legacyInitialized = true;
+    
+    resetState();
+    setupTabs();
+    setupPreviewToggle();
+    setupDragAndDrop();
+    setupElementSelection();
+    setupElementControls();
+    setupContentEditableUpdates();
+    setupFormUpdates();
+    setupLayoutOptions();
+    setupSaveSystem();
+    setupKeyboardShortcuts();
+    setupComponentLibraryModal();
+    setupGlobalSettings();
+    setupExportSystem();
+    setupShareSystem();
+    
+    // Initialize dynamic components
+    initializeDynamicComponents();
+    
+    // Initialize history service
+    historyService.init();
+    
+    console.log('Guestify Media Kit Builder (Legacy Mode) initialized');
 }
 
 /**
  * Initialize the builder with enhanced features if available
  */
 async function initializeBuilder() {
-    // Always initialize the core UI first, as it's needed in both modes.
-    initializeCoreUI();
-
+    // Check if we should use enhanced system
     const useEnhanced = isEnhancedSystemAvailable() && !window.gmkbForceLegacy;
     
     if (useEnhanced) {
         console.log('Using enhanced schema-driven system');
+        
+        // Initialize legacy features that are still needed
+        initializeLegacyBuilder();
+        
+        // Add enhanced features on top
         await initializeEnhancedFeatures();
     } else {
-        console.log('Using legacy system (fallback)');
-        
-        // These are the TRUE legacy functions that have been replaced by the enhanced system
-        resetState(); 
-        setupFormUpdates();
-        setupSaveSystem(); 
-        initializeDynamicComponents();
-        historyService.init(); 
+        console.log('Using legacy system');
+        initializeLegacyBuilder();
         
         // Save initial state for legacy undo/redo
         setTimeout(() => {
@@ -268,6 +286,8 @@ window.gmkbDebug = {
     getState: () => stateManager ? stateManager.getState() : null,
     forceReload: () => window.location.reload(),
     resetAll: () => {
+        legacyInitialized = false;
+        enhancedInitialized = false;
         if (componentManager) componentManager.initialized = false;
         window.location.reload();
     }
