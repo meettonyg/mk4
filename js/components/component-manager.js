@@ -148,7 +148,9 @@ class ComponentManager {
             'cta': 'call-to-action',
             'gallery': 'photo-gallery',
             'podcast': 'podcast-player',
-            'video': 'video-intro'
+            'video': 'video-intro',
+            'hero-section': 'hero',  // Map Hero Section to hero
+            'Hero Section': 'hero'   // Handle display name too
         };
         
         // Use mapped name if available
@@ -206,6 +208,9 @@ class ComponentManager {
             // Show success notification
             this.showNotification(`${schema.name} component added successfully`);
             
+            // Return the component ID for the caller
+            return componentId;
+            
         } catch (error) {
             console.error('Error adding component:', error);
             this.showNotification('Failed to add component', 'error');
@@ -221,9 +226,14 @@ class ComponentManager {
     async addComponentToZone(componentType, zone) {
         console.log(`Adding component ${componentType} to zone`);
         
-        // Show loading state
-        zone.classList.add('loading');
-        zone.innerHTML = '<div class="loading-spinner">Loading component...</div>';
+        // Check if zone is the preview container (for first component)
+        const isPreviewContainer = zone.id === 'media-kit-preview';
+        
+        if (!isPreviewContainer) {
+            // Show loading state for drop zones
+            zone.classList.add('loading');
+            zone.innerHTML = '<div class="loading-spinner">Loading component...</div>';
+        }
         
         try {
             // Get the zone's ID or generate one
@@ -233,14 +243,26 @@ class ComponentManager {
                 zone.setAttribute('data-zone-id', zoneId);
             }
             
-            // Clear the zone's content first
-            zone.innerHTML = '';
-            
-            // Add component and get the rendered HTML directly
-            const componentId = await this.addComponent(componentType, zoneId, 'inside');
-            
-            // Remove loading state classes
-            zone.classList.remove('drop-zone--empty', 'loading');
+            // For preview container, add directly
+            if (isPreviewContainer) {
+                const componentId = await this.addComponent(componentType);
+                // Update preview container state
+                zone.classList.add('has-components');
+            } else {
+                // Clear the zone's content first
+                zone.innerHTML = '';
+                
+                // Add component and get the componentId
+                const componentId = await this.addComponent(componentType, zoneId, 'inside');
+                
+                // The component should now be rendered in the zone
+                // Remove loading state classes and zone classes since it's no longer a drop zone
+                zone.classList.remove('drop-zone', 'drop-zone--empty', 'loading');
+                
+                // Update zone attributes to indicate it now contains a component
+                zone.removeAttribute('data-zone');
+                zone.setAttribute('data-has-component', 'true');
+            }
             
         } catch (error) {
             console.error('Failed to add component to zone:', error);
@@ -366,10 +388,16 @@ class ComponentManager {
         if (targetId) {
             const zone = document.querySelector(`[data-zone-id="${targetId}"]`);
             if (zone && zone.classList.contains('drop-zone')) {
-                // Insert into drop zone
-                zone.innerHTML = html;
-                zone.classList.remove('drop-zone--empty');
-                return;
+                // Replace the drop zone with the component
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const componentElement = tempDiv.firstElementChild;
+                
+                // Replace the zone element with the component element
+                if (componentElement && zone.parentNode) {
+                    zone.parentNode.replaceChild(componentElement, zone);
+                    return;
+                }
             }
         }
         

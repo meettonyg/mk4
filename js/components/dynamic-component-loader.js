@@ -12,6 +12,9 @@
  */
 export async function renderComponent(componentType, componentId = null, props = {}) {
     try {
+        // Add componentId to props for the template
+        const propsWithId = { ...props, componentId };
+        
         // First try REST API
         if (guestifyData.restUrl) {
             const response = await fetch(`${guestifyData.restUrl}guestify/v1/render-component`, {
@@ -22,7 +25,7 @@ export async function renderComponent(componentType, componentId = null, props =
                 },
                 body: JSON.stringify({
                     component: componentType,
-                    props: props
+                    props: propsWithId
                 })
             });
 
@@ -38,7 +41,7 @@ export async function renderComponent(componentType, componentId = null, props =
         const formData = new FormData();
         formData.append('action', 'guestify_render_component');
         formData.append('component', componentType);
-        formData.append('props', JSON.stringify(props));
+        formData.append('props', JSON.stringify(propsWithId));
         formData.append('nonce', guestifyData.nonce);
 
         const ajaxResponse = await fetch(guestifyData.ajaxUrl, {
@@ -85,17 +88,19 @@ function wrapComponentWithControls(html, componentType, componentId) {
             componentEl.setAttribute('data-component-id', componentId);
         }
         
-        // Add element controls
-        const controls = `
-            <div class="element-controls">
-                <button class="control-btn" title="Move Up">↑</button>
-                <button class="control-btn" title="Move Down">↓</button>
-                <button class="control-btn" title="Duplicate">⧉</button>
-                <button class="control-btn" title="Delete">×</button>
-            </div>
-        `;
-        
-        componentEl.insertAdjacentHTML('afterbegin', controls);
+        // Only add controls if they don't already exist
+        if (!componentEl.querySelector('.element-controls')) {
+            const controls = `
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+            `;
+            
+            componentEl.insertAdjacentHTML('afterbegin', controls);
+        }
         
         // Make text content editable
         const editableElements = componentEl.querySelectorAll('h1, h2, h3, p, span, div');

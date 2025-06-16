@@ -27,15 +27,17 @@ class StateManager {
      * @param {string} componentType - Component type
      * @param {Object} initialData - Initial component data
      */
-    initComponent(componentId, componentType, initialData = {}) {
+    initComponent(componentId, componentType, initialData = {}, skipNotification = false) {
         this.state.components[componentId] = {
             type: componentType,
             data: { ...initialData },
             order: Object.keys(this.state.components).length
         };
         
-        this.notifyListeners(componentId);
-        this.saveHistory('component_added', { componentId, componentType });
+        if (!skipNotification) {
+            this.notifyListeners(componentId);
+            this.saveHistory('component_added', { componentId, componentType });
+        }
     }
 
     /**

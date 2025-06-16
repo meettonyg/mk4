@@ -25,6 +25,12 @@ class ComponentRenderer {
             return;
         }
         
+        // Set flag to prevent initial re-render
+        this.skipInitialRender = true;
+        
+        // Initialize state from existing DOM components
+        this.initializeFromDOM();
+        
         // Subscribe to state changes
         if (window.stateManager) {
             window.stateManager.subscribeGlobal(state => this.onStateChange(state));
@@ -35,6 +41,11 @@ class ComponentRenderer {
             this.renderAllComponents(e.detail.state);
         });
         
+        // Clear the skip flag after initialization
+        setTimeout(() => {
+            this.skipInitialRender = false;
+        }, 100);
+        
         this.initialized = true;
         console.log('Component renderer initialized');
     }
@@ -44,6 +55,17 @@ class ComponentRenderer {
      * @param {Object} state - Current state
      */
     onStateChange(state) {
+        // Skip initial render to preserve hardcoded components
+        if (this.skipInitialRender) {
+            console.log('Skipping initial render to preserve existing components');
+            return;
+        }
+        
+        // Check if we're in the middle of a deletion operation
+        if (this.isDeletingComponent) {
+            // Skip the re-render during deletion to avoid conflicts
+            return;
+        }
         this.renderAllComponents(state);
     }
     
@@ -147,6 +169,9 @@ class ComponentRenderer {
         document.dispatchEvent(new CustomEvent('components-rendered', {
             detail: { count: components.length }
         }));
+        
+        // Update empty state visibility
+        this.updateEmptyState();
     }
     
     // updateComponentData method has been removed
@@ -212,11 +237,23 @@ class ComponentRenderer {
                     case 'Delete':
                     case 'delete':
                         if (confirm('Are you sure you want to delete this component?')) {
-                            if (window.stateManager) {
-                                window.stateManager.removeComponent(componentId);
-                            } else {
-                                element.remove();
-                            }
+                            // Set flag to prevent re-render during deletion
+                            this.isDeletingComponent = true;
+                            
+                            // Animate the removal
+                            element.style.transition = 'all 0.3s ease';
+                            element.style.opacity = '0';
+                            element.style.transform = 'scale(0.95)';
+                            
+                            setTimeout(() => {
+                                if (window.stateManager) {
+                                    window.stateManager.removeComponent(componentId);
+                                }
+                                // Clear the flag after state update
+                                setTimeout(() => {
+                                    this.isDeletingComponent = false;
+                                }, 100);
+                            }, 300);
                         }
                         break;
                         
@@ -242,6 +279,156 @@ class ComponentRenderer {
                         break;
                 }
             });
+        }
+    }
+    
+    /**
+     * Initialize state from existing DOM components
+     */
+    initializeFromDOM() {
+        if (!this.previewContainer || !window.stateManager) return;
+        
+        // Find all existing components in the DOM
+        const existingComponents = this.previewContainer.querySelectorAll('.editable-element[data-component]');
+        
+        // Skip initialization if no components exist (blank canvas)
+        if (existingComponents.length === 0) {
+            console.log('No existing components found - starting with blank canvas');
+            this.setupEmptyState();
+            return;
+        }
+        
+        // Also preserve drop zones
+        const dropZones = this.previewContainer.querySelectorAll('.drop-zone');
+        console.log(`Found ${dropZones.length} drop zones to preserve`);
+        
+        // Temporarily disable state notifications
+        const originalNotify = window.stateManager.notifyGlobalListeners;
+        window.stateManager.notifyGlobalListeners = () => {};
+        
+        existingComponents.forEach((element, index) => {
+            const componentType = element.getAttribute('data-component');
+            const componentId = element.getAttribute('data-component-id') || `${componentType}-initial-${index}`;
+            
+            // Set the component ID if not already set
+            if (!element.hasAttribute('data-component-id')) {
+                element.setAttribute('data-component-id', componentId);
+            }
+            
+            // Also set data-component-type for consistency
+            if (!element.hasAttribute('data-component-type')) {
+                element.setAttribute('data-component-type', componentType);
+            }
+            
+            // Initialize in state manager (skip notification during init)
+            const componentData = this.extractComponentData(element, componentType);
+            window.stateManager.initComponent(componentId, componentType, componentData, true);
+            
+            // Make the component interactive
+            this.setupComponentInteractivity(componentId);
+        });
+        
+        // Re-enable state notifications
+        window.stateManager.notifyGlobalListeners = originalNotify;
+        
+        console.log(`Initialized ${existingComponents.length} components from DOM`);
+    }
+    
+    /**
+     * Extract component data from DOM element
+     */
+    extractComponentData(element, componentType) {
+        const data = {};
+        
+        // Extract data based on component type
+        switch (componentType) {
+            case 'hero':
+                const nameEl = element.querySelector('.hero__name');
+                const titleEl = element.querySelector('.hero__title');
+                const bioEl = element.querySelector('.hero__bio');
+                
+                if (nameEl) data.name = nameEl.textContent;
+                if (titleEl) data.title = titleEl.textContent;
+                if (bioEl) data.bio = bioEl.textContent;
+                break;
+                
+            case 'topics':
+                const topicEls = element.querySelectorAll('.topic-item');
+                data.topics = Array.from(topicEls).map(el => el.textContent);
+                break;
+                
+            case 'social':
+                const linkEls = element.querySelectorAll('.social-link');
+                data.links = Array.from(linkEls).map(el => ({
+                    url: el.getAttribute('href'),
+                    title: el.getAttribute('title')
+                }));
+                break;
+        }
+        
+        return data;
+    }
+    
+    /**
+     * Set up empty state interactions
+     */
+    setupEmptyState() {
+        console.log('Setting up empty state interactions...');
+        
+        // Use a slight delay to ensure DOM is ready
+        setTimeout(() => {
+            const addFirstBtn = document.getElementById('add-first-component');
+            const loadTemplateBtn = document.getElementById('load-template');
+            const dropZone = document.querySelector('.drop-zone--primary');
+            
+            console.log('Empty state elements:', {
+                addFirstBtn: !!addFirstBtn,
+                loadTemplateBtn: !!loadTemplateBtn,
+                dropZone: !!dropZone
+            });
+            
+            if (addFirstBtn) {
+                addFirstBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Add component button clicked');
+                    // Show component library modal
+                    document.dispatchEvent(new CustomEvent('show-component-library'));
+                });
+                console.log('Add component button listener attached');
+            }
+            
+            if (loadTemplateBtn) {
+                loadTemplateBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Load template button clicked');
+                    // Show template selection modal
+                    document.dispatchEvent(new CustomEvent('show-template-library'));
+                });
+                console.log('Load template button listener attached');
+            }
+            
+            // Show drop zone when dragging starts
+            document.addEventListener('dragstart', () => {
+                if (dropZone && !document.querySelector('[data-component-id]')) {
+                    dropZone.style.display = 'block';
+                }
+            });
+        }, 100);
+    }
+    
+    /**
+     * Check if preview is empty and update UI accordingly
+     */
+    updateEmptyState() {
+        const hasComponents = this.previewContainer && 
+                            this.previewContainer.querySelector('[data-component-id]');
+        
+        if (this.previewContainer) {
+            if (hasComponents) {
+                this.previewContainer.classList.add('has-components');
+            } else {
+                this.previewContainer.classList.remove('has-components');
+            }
         }
     }
 }

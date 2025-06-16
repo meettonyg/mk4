@@ -2,27 +2,22 @@
 /**
  * Topics Component Template
  */
+// Default topics if none provided
+$defaultTopics = ['Topic 1', 'Topic 2', 'Topic 3', 'Topic 4'];
+$topicsList = $topics ?? $defaultTopics;
+$sectionTitle = $title ?? 'Speaking Topics';
 ?>
-<div class="topics-component">
-    <h2 class="topics-title"><?php echo $title ?? 'Topics'; ?></h2>
-    <div class="topics-list">
-        <?php if (isset($topics) && !empty($topics)): ?>
-            <?php foreach ($topics as $topic): ?>
-                <div class="topic-item">
-                    <span class="topic-name"><?php echo $topic['name']; ?></span>
-                    <?php if (isset($topic['description'])): ?>
-                        <p class="topic-description"><?php echo $topic['description']; ?></p>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <div class="topics-placeholder">
-                <p>Add your areas of expertise or speaking topics here.</p>
-                <button class="add-topic-btn">+ Add Topic</button>
-            </div>
-        <?php endif; ?>
+<div class="content-section editable-element" data-element="topics" data-component="topics" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="topics">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
     </div>
-    <?php if (isset($topics) && !empty($topics)): ?>
-        <button class="add-topic-btn">+ Add Topic</button>
-    <?php endif; ?>
+    <h2 class="section-title" contenteditable="true" data-setting="title"><?php echo esc_html($sectionTitle); ?></h2>
+    <div class="topics-grid">
+        <?php foreach ($topicsList as $topic): ?>
+            <div class="topic-item" contenteditable="true"><?php echo esc_html($topic); ?></div>
+        <?php endforeach; ?>
+    </div>
 </div>

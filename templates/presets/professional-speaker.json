@@ -1,0 +1,100 @@
+{
+  "name": "Professional Speaker",
+  "description": "Perfect for keynote speakers and conference presenters",
+  "thumbnail": "speaker-template.jpg",
+  "components": [
+    {
+      "type": "hero",
+      "data": {
+        "name": "Your Name",
+        "title": "Professional Speaker & Author",
+        "bio": "Inspiring audiences worldwide with transformative insights on leadership, innovation, and personal growth.",
+        "image": ""
+      }
+    },
+    {
+      "type": "stats",
+      "data": {
+        "stats": [
+          {
+            "value": "500+",
+            "label": "Keynotes Delivered"
+          },
+          {
+            "value": "50k+",
+            "label": "Audience Reached"
+          },
+          {
+            "value": "25+",
+            "label": "Countries"
+          },
+          {
+            "value": "4.9/5",
+            "label": "Average Rating"
+          }
+        ]
+      }
+    },
+    {
+      "type": "topics",
+      "data": {
+        "title": "Speaking Topics",
+        "topics": [
+          "Leadership in the Digital Age",
+          "Innovation & Disruption",
+          "Building High-Performance Teams",
+          "Personal Branding & Influence"
+        ]
+      }
+    },
+    {
+      "type": "testimonials",
+      "data": {
+        "title": "What People Say",
+        "testimonials": [
+          {
+            "quote": "An absolutely transformative keynote that energized our entire organization.",
+            "author": "Sarah Johnson",
+            "role": "CEO, TechCorp"
+          },
+          {
+            "quote": "The best speaker we've had at our annual conference in 10 years.",
+            "author": "Michael Chen",
+            "role": "Event Director, Innovation Summit"
+          }
+        ]
+      }
+    },
+    {
+      "type": "call-to-action",
+      "data": {
+        "title": "Book Me for Your Next Event",
+        "description": "Let's create an unforgettable experience for your audience.",
+        "buttonText": "Check Availability",
+        "buttonLink": "#contact"
+      }
+    },
+    {
+      "type": "social",
+      "data": {
+        "links": [
+          {
+            "url": "https://twitter.com/",
+            "title": "Twitter",
+            "icon": "twitter"
+          },
+          {
+            "url": "https://linkedin.com/in/",
+            "title": "LinkedIn",
+            "icon": "linkedin"
+          },
+          {
+            "url": "https://instagram.com/",
+            "title": "Instagram",
+            "icon": "instagram"
+          }
+        ]
+      }
+    }
+  ]
+}

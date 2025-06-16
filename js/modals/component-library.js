@@ -21,6 +21,12 @@ export function setupComponentLibraryModal() {
         }
     });
     
+    // Listen for custom event to show component library
+    document.addEventListener('show-component-library', function() {
+        console.log('Received show-component-library event');
+        showComponentLibraryModal();
+    });
+    
     // Populate modal with dynamic components
     populateComponentLibrary();
     
@@ -87,15 +93,43 @@ export function setupComponentLibraryModal() {
             if (isPremium) {
                 showUpgradePrompt();
             } else {
-                const firstEmptyDropZone = document.querySelector('.drop-zone.drop-zone--empty');
-                if (firstEmptyDropZone) {
-                    await addComponentToZone(componentType, firstEmptyDropZone);
-                    hideComponentLibraryModal();
-                    markUnsaved();
-                    // State is automatically tracked by stateManager - no need to call saveCurrentState
+                // Map display names to component types
+                const componentTypeMap = {
+                    'Hero Section': 'hero',
+                    'Biography': 'biography',
+                    'Topics': 'topics',
+                    'Social Links': 'social'
+                };
+                
+                // Use mapped type if available
+                const actualComponentType = componentTypeMap[componentType] || componentType;
+                
+                // Check if this is the first component (empty state)
+                const preview = document.getElementById('media-kit-preview');
+                const hasComponents = preview && preview.querySelector('[data-component-id]');
+                
+                if (!hasComponents) {
+                    // First component - add directly to preview
+                    await addComponentToZone(actualComponentType, preview);
+                    
+                    // Hide empty state
+                    const emptyState = document.getElementById('empty-state');
+                    if (emptyState) {
+                        emptyState.style.display = 'none';
+                    }
                 } else {
-                    alert('Please make space for a new component by moving or deleting an existing one, or dragging to an empty drop zone.');
+                    // Look for empty drop zones
+                    const firstEmptyDropZone = document.querySelector('.drop-zone.drop-zone--empty');
+                    if (firstEmptyDropZone) {
+                        await addComponentToZone(actualComponentType, firstEmptyDropZone);
+                    } else {
+                        // Add at the end
+                        await componentManager.addComponent(actualComponentType);
+                    }
                 }
+                
+                hideComponentLibraryModal();
+                markUnsaved();
             }
         });
     }

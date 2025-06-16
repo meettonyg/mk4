@@ -20,6 +20,8 @@ import { setupShareSystem } from './services/share-service.js';
 import { historyService } from './services/history-service.js';
 import { initializeDynamicComponents } from './components/dynamic-component-loader.js';
 import './components/design-panel-loader.js';
+import { templateLoader } from './services/template-loader.js';
+import './modals/template-library.js';
 
 // Import enhanced system modules
 import { stateManager } from './services/state-manager.js';
@@ -135,10 +137,13 @@ async function initializeEnhancedFeatures() {
             console.error('Component manager not available');
         }
         
-        // Initialize the component renderer
+        // Initialize the component renderer AFTER component manager
+        // This ensures state manager is ready when renderer initializes from DOM
         if (componentRenderer) {
             if (!componentRenderer.initialized) {
                 console.log('Initializing component renderer...');
+                // Wait for next tick to ensure state manager is ready
+                await new Promise(resolve => setTimeout(resolve, 0));
                 componentRenderer.init();
             }
             console.log('Component renderer initialized:', componentRenderer.initialized);
@@ -155,6 +160,17 @@ async function initializeEnhancedFeatures() {
         stateManager.subscribeGlobal((state) => {
             // Update save indicator
             updateSaveIndicator(state);
+            
+            // Update empty state visibility
+            const preview = document.getElementById('media-kit-preview');
+            if (preview) {
+                const hasComponents = Object.keys(state.components || {}).length > 0;
+                if (hasComponents) {
+                    preview.classList.add('has-components');
+                } else {
+                    preview.classList.remove('has-components');
+                }
+            }
             
             // Dispatch state change event for other systems
             document.dispatchEvent(new CustomEvent('gmkb-state-changed', {

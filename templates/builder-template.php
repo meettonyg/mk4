@@ -92,68 +92,46 @@
     <div class="preview">
         <div class="preview__container" id="preview-container">
             <div class="media-kit" id="media-kit-preview">
-                <div class="hero editable-element editable-element--selected" data-element="hero" data-component="hero">
-                    <div class="element-controls">
-                        <button class="control-btn" title="Move Up">↑</button>
-                        <button class="control-btn" title="Duplicate">⧉</button>
-                        <button class="control-btn" title="Delete">×</button>
+                <!-- Initial empty state with welcome message -->
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-state__icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                            <line x1="9" y1="13" x2="15" y2="13"></line>
+                            <line x1="9" y1="17" x2="11" y2="17"></line>
+                        </svg>
                     </div>
-                    <div class="hero__avatar">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50' text-anchor='middle' x='50' fill='%2364748b'%3EDJ%3C/text%3E%3C/svg%3E" alt="Profile Avatar">
-                    </div>
-                    <h1 class="hero__name" contenteditable="true" id="preview-name">Daniel Jackson</h1>
-                    <div class="hero__title" contenteditable="true" id="preview-title">Astral Engineer</div>
-                    <p class="hero__bio" contenteditable="true" id="preview-bio">Expert in ancient technology and quantum physics. Leading researcher in astral projection and interdimensional travel with over 15 years of experience.</p>
-                </div>
-
-                <div class="drop-zone drop-zone--empty" data-zone="1"></div>
-
-                <div class="content-section editable-element" data-element="topics" data-component="topics">
-                    <div class="element-controls">
-                        <button class="control-btn" title="Move Up">↑</button>
-                        <button class="control-btn" title="Move Down">↓</button>
-                        <button class="control-btn" title="Duplicate">⧉</button>
-                        <button class="control-btn" title="Delete">×</button>
-                    </div>
-                    <h2 class="section-title" contenteditable="true">Speaking Topics</h2>
-                    <div class="topics-grid">
-                        <div class="topic-item" contenteditable="true">Quantum Physics</div>
-                        <div class="topic-item" contenteditable="true">Space Exploration</div>
-                        <div class="topic-item" contenteditable="true">Ancient Civilizations</div>
-                        <div class="topic-item" contenteditable="true">Technology Innovation</div>
+                    <h2 class="empty-state__title">Start Building Your Media Kit</h2>
+                    <p class="empty-state__text">Add components from the sidebar or choose a template to get started.</p>
+                    <div class="empty-state__actions">
+                        <button class="btn btn--primary" id="add-first-component">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add Component
+                        </button>
+                        <button class="btn btn--secondary" id="load-template">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Load Template
+                        </button>
                     </div>
                 </div>
-
-                <div class="drop-zone drop-zone--empty" data-zone="2"></div>
-
-                <div class="social-links editable-element" data-element="social" data-component="social">
-                    <div class="element-controls">
-                        <button class="control-btn" title="Move Up">↑</button>
-                        <button class="control-btn" title="Move Down">↓</button>
-                        <button class="control-btn" title="Duplicate">⧉</button>
-                        <button class="control-btn" title="Delete">×</button>
+                
+                <!-- Drop zone for first component -->
+                <div class="drop-zone drop-zone--empty drop-zone--primary" data-zone="0" style="display: none;">
+                    <div class="drop-zone__content">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Drop component here</span>
                     </div>
-                    <a href="#" class="social-link" title="Twitter">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
-                        </svg>
-                    </a>
-                    <a href="#" class="social-link" title="LinkedIn">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
-                            <circle cx="4" cy="4" r="2"/>
-                        </svg>
-                    </a>
-                    <a href="#" class="social-link" title="Instagram">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                            <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/>
-                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                        </svg>
-                    </a>
                 </div>
-
-                <div class="drop-zone drop-zone--empty" data-zone="3"></div>
             </div>
         </div>
     </div>

@@ -1,0 +1,100 @@
+{
+  "name": "Podcast Host",
+  "description": "Ideal for podcast hosts and audio content creators",
+  "thumbnail": "podcast-template.jpg",
+  "components": [
+    {
+      "type": "hero",
+      "data": {
+        "name": "Your Name",
+        "title": "Host of [Podcast Name]",
+        "bio": "Exploring fascinating stories and insights with remarkable guests every week.",
+        "image": ""
+      }
+    },
+    {
+      "type": "podcast-player",
+      "data": {
+        "title": "Latest Episodes",
+        "episodes": [
+          {
+            "title": "Episode 100: Special Anniversary Show",
+            "description": "Celebrating 100 episodes with our most popular guests",
+            "audioUrl": "",
+            "duration": "45:00"
+          }
+        ]
+      }
+    },
+    {
+      "type": "stats",
+      "data": {
+        "stats": [
+          {
+            "value": "2M+",
+            "label": "Downloads"
+          },
+          {
+            "value": "100+",
+            "label": "Episodes"
+          },
+          {
+            "value": "Top 10",
+            "label": "Business Podcasts"
+          },
+          {
+            "value": "50+",
+            "label": "Countries"
+          }
+        ]
+      }
+    },
+    {
+      "type": "topics",
+      "data": {
+        "title": "Topics We Cover",
+        "topics": [
+          "Entrepreneurship",
+          "Personal Development",
+          "Technology & Innovation",
+          "Leadership Stories"
+        ]
+      }
+    },
+    {
+      "type": "guest-intro",
+      "data": {
+        "title": "Be a Guest",
+        "description": "Share your story with our engaged audience",
+        "buttonText": "Apply to be a Guest",
+        "requirements": [
+          "Expertise in business or technology",
+          "Compelling personal story",
+          "Available for 60-minute recording"
+        ]
+      }
+    },
+    {
+      "type": "social",
+      "data": {
+        "links": [
+          {
+            "url": "https://spotify.com/",
+            "title": "Spotify",
+            "icon": "headphones"
+          },
+          {
+            "url": "https://apple.com/",
+            "title": "Apple Podcasts",
+            "icon": "mic"
+          },
+          {
+            "url": "https://youtube.com/",
+            "title": "YouTube",
+            "icon": "video"
+          }
+        ]
+      }
+    }
+  ]
+}

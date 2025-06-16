@@ -1,0 +1,48 @@
+{
+  "name": "Minimal Professional",
+  "description": "Clean and simple layout for any professional",
+  "thumbnail": "minimal-template.jpg",
+  "components": [
+    {
+      "type": "hero",
+      "data": {
+        "name": "Your Name",
+        "title": "Your Title",
+        "bio": "A brief introduction about yourself and what you do.",
+        "image": ""
+      }
+    },
+    {
+      "type": "biography",
+      "data": {
+        "content": "Add your professional background, experience, and achievements here. This is where you can tell your story in more detail.",
+        "title": "About"
+      }
+    },
+    {
+      "type": "contact",
+      "data": {
+        "email": "your@email.com",
+        "phone": "",
+        "title": "Get in Touch"
+      }
+    },
+    {
+      "type": "social",
+      "data": {
+        "links": [
+          {
+            "url": "#",
+            "title": "LinkedIn",
+            "icon": "linkedin"
+          },
+          {
+            "url": "#",
+            "title": "Twitter",
+            "icon": "twitter"
+          }
+        ]
+      }
+    }
+  ]
+}
