@@ -239,23 +239,42 @@ async function loadMediaKit(mediaKitId) {
  * Load media kit from localStorage
  */
 function loadFromLocalStorage() {
+    // First check if component manager is fully initialized
+    if (!window.componentManager || !window.componentManager.initialized) {
+        console.warn('Component manager not initialized yet, delaying localStorage load');
+        setTimeout(loadFromLocalStorage, 500);
+        return;
+    }
+
     try {
         const savedData = localStorage.getItem('mediaKitData');
         
         if (savedData) {
             const mediaKitData = JSON.parse(savedData);
-            stateManager.loadSerializedState(mediaKitData);
             
-            // Save current state to compare for unsaved changes
-            localStorage.setItem('gmkb_last_saved_state', savedData);
-            
-            console.log('Media kit loaded from localStorage');
-            
-            // Show a toast notification to confirm the load
-            if (window.gmkbDebug?.historyService?.showToast) {
-                window.gmkbDebug.historyService.showToast('Your last session was restored.');
-            } else if (typeof historyService !== 'undefined' && historyService.showToast) {
-                historyService.showToast('Your last session was restored.');
+            // Now that we have confirmed the component manager is available, load the state
+            if (window.stateManager) {
+                window.stateManager.loadSerializedState(mediaKitData);
+                
+                // Save current state to compare for unsaved changes
+                localStorage.setItem('gmkb_last_saved_state', savedData);
+                
+                console.log('Media kit loaded successfully from localStorage');
+                
+                // Show a toast notification to confirm the load
+                if (window.historyService && window.historyService.showToast) {
+                    window.historyService.showToast('Your last session was restored.');
+                }
+                
+                // Update UI to ensure components are properly rendered
+                setTimeout(() => {
+                    // Trigger a state change event to update the UI
+                    document.dispatchEvent(new CustomEvent('gmkb-state-changed', {
+                        detail: { state: window.stateManager.getState() }
+                    }));
+                }, 100);
+            } else {
+                console.error('State manager not available, cannot load data');
             }
         }
     } catch (error) {

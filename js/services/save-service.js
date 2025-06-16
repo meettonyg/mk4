@@ -39,8 +39,16 @@ export function saveMediaKit() {
     if (statusDot) statusDot.classList.add('toolbar__status-dot--saving');
     if (statusText) statusText.textContent = 'Saving...';
 
+    // Use the global window.stateManager to ensure we get the correct instance
+    if (!window.stateManager) {
+        console.error('State manager not available, cannot save');
+        if (statusText) statusText.textContent = 'Save failed - refresh page';
+        if (saveBtn) saveBtn.disabled = false;
+        return;
+    }
+
     // Get data directly from the state manager
-    const mediaKitData = stateManager.getSerializableState();
+    const mediaKitData = window.stateManager.getSerializableState();
     
     // Log the schema-based data structure
     console.log('Saving media kit data from state manager:', mediaKitData);
@@ -72,8 +80,15 @@ function autoSave() {
     const statusText = document.querySelector('.toolbar__status span');
     if (statusText) statusText.textContent = 'Auto-saving...';
     
+    // Check if state manager is available
+    if (!window.stateManager) {
+        console.error('State manager not available, cannot auto-save');
+        if (statusText) statusText.textContent = 'Auto-save failed';
+        return;
+    }
+    
     // Get data from state manager
-    const mediaKitData = stateManager.getSerializableState();
+    const mediaKitData = window.stateManager.getSerializableState();
     
     // Save to localStorage
     localStorage.setItem('mediaKitData', JSON.stringify(mediaKitData));
