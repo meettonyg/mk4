@@ -145,7 +145,8 @@ class DesignPanelSystem {
      */
     async loadCustomDesignPanel(componentType, componentId) {
         try {
-            const response = await fetch(`/wp-admin/admin-ajax.php`, {
+            const ajaxUrl = window.ajaxurl || window.gmkb_data?.ajax_url || window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
+            const response = await fetch(ajaxUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

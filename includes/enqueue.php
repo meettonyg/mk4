@@ -60,7 +60,7 @@ function guestify_media_kit_builder_enqueue_scripts() {
     wp_register_script(
         'guestify-builder-script',
         $plugin_url . 'js/main.js',
-        ['sortable-js'],
+        ['jquery', 'sortable-js'], // Add jQuery dependency for ajaxurl
         $version,
         true
     );
@@ -69,17 +69,22 @@ function guestify_media_kit_builder_enqueue_scripts() {
     $plugin_instance = Guestify_Media_Kit_Builder::get_instance();
     $component_discovery = $plugin_instance->get_component_discovery();
     
+    // Get components and ensure they're in array format
+    $components = $component_discovery->getComponents();
+    $components_array = is_array($components) ? array_values($components) : [];
+    
     // Localize script with WordPress data
     wp_localize_script(
         'guestify-builder-script',
         'guestifyData',
         [
             'ajaxUrl' => admin_url('admin-ajax.php'),
+            'ajax_url' => admin_url('admin-ajax.php'), // Duplicate for compatibility
             'nonce' => wp_create_nonce('guestify_media_kit_builder'),
             'restUrl' => esc_url_raw(rest_url()),
             'restNonce' => wp_create_nonce('wp_rest'),
             'pluginUrl' => $plugin_url,
-            'components' => $component_discovery->getComponents(),
+            'components' => $components_array, // Ensure it's a proper array
             'categories' => $component_discovery->getCategories(),
         ]
     );

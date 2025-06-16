@@ -278,6 +278,15 @@ function gmkb_enqueue_enhanced_scripts_frontend() {
 }
 
 function gmkb_enqueue_builder_scripts() {
+    // Ensure jQuery is loaded first for ajaxurl
+    wp_enqueue_script('jquery');
+    
+    // Add inline script to define ajaxurl if not already defined
+    wp_add_inline_script('jquery', '
+        if (typeof ajaxurl === "undefined") {
+            window.ajaxurl = "' . admin_url('admin-ajax.php') . '";
+        }
+    ');
     
     // Enqueue the new enhanced scripts
     wp_enqueue_script(
@@ -312,14 +321,19 @@ function gmkb_enqueue_builder_scripts() {
         GMKB_VERSION
     );
     
-    // Localize script data
-    wp_localize_script('gmkb-design-panel', 'gmkb_data', array(
+    // Localize script data for both main script and enhanced scripts
+    $localize_data = array(
         'nonce' => wp_create_nonce('gmkb_nonce'),
         'upload_nonce' => wp_create_nonce('media-form'),
         'ajax_url' => admin_url('admin-ajax.php'),
         'plugin_url' => GMKB_PLUGIN_URL,
         'media_kit_id' => isset($_GET['media_kit_id']) ? intval($_GET['media_kit_id']) : 0
-    ));
+    );
+    
+    // Add to multiple scripts for compatibility
+    wp_localize_script('gmkb-design-panel', 'gmkb_data', $localize_data);
+    wp_localize_script('gmkb-state-manager', 'gmkb_data', $localize_data);
+    wp_localize_script('guestify-builder-script', 'gmkb_data', $localize_data);
 }
 
 // Initialize the enhanced system

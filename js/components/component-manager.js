@@ -63,7 +63,7 @@ class ComponentManager {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    action: 'gmkb_get_components',
+                    action: 'guestify_get_components', // Match the registered action
                     nonce: nonce
                 })
             });
