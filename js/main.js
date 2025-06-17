@@ -8,7 +8,7 @@ import { setupTabs } from './ui/tabs.js';
 import { setupPreviewToggle } from './ui/preview.js';
 import { setupDragAndDrop } from './ui/dnd.js';
 import { setupElementSelection, setupContentEditableUpdates } from './ui/element-editor.js';
-import { setupElementControls } from './ui/element-controls.js';
+// Removed element-controls import - using component-renderer's controls system instead
 import { setupFormUpdates } from './ui/form-controls.js';
 import { setupLayoutOptions } from './ui/layout.js';
 import { setupSaveSystem } from './services/save-service.js';
@@ -54,7 +54,7 @@ function initializeCoreUI() {
     setupPreviewToggle();
     setupDragAndDrop();
     setupElementSelection();
-    setupElementControls();
+    // Removed setupElementControls() - using component-renderer's controls system instead
     setupContentEditableUpdates();
     setupLayoutOptions();
     setupKeyboardShortcuts();
@@ -123,33 +123,19 @@ async function initializeEnhancedFeatures() {
     console.log('Initializing enhanced schema-driven system...');
     
     try {
-        // First, fully initialize the component manager
-        // and ensure it's ready before proceeding
-        if (componentManager) {
-            if (!componentManager.initialized) {
-                console.log('Initializing component manager...');
-                await componentManager.init();
-                // Wait a bit more to ensure it's really ready
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            console.log('Component manager initialized:', componentManager.initialized);
-        } else {
-            console.error('Component manager not available');
+        // First, ensure the component manager and renderer are fully initialized
+        if (window.componentManager && !window.componentManager.initialized) {
+            console.log('Initializing component manager...');
+            await window.componentManager.init();
         }
         
-        // Initialize the component renderer AFTER component manager
-        // This ensures state manager is ready when renderer initializes from DOM
-        if (componentRenderer) {
-            if (!componentRenderer.initialized) {
-                console.log('Initializing component renderer...');
-                // Wait for next tick to ensure state manager is ready
-                await new Promise(resolve => setTimeout(resolve, 0));
-                componentRenderer.init();
-            }
-            console.log('Component renderer initialized:', componentRenderer.initialized);
-        } else {
-            console.error('Component renderer not available');
+        if (window.componentRenderer && !window.componentRenderer.initialized) {
+            console.log('Initializing component renderer...');
+            window.componentRenderer.init();
         }
+        
+        // Add a small delay to ensure systems are fully ready
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Initialize design panel system (handled by design-panel.js)
         if (window.gmkbDesignPanel) {
@@ -185,21 +171,34 @@ async function initializeEnhancedFeatures() {
         if (mediaKitId) {
             await loadMediaKit(mediaKitId);
         } else {
-            // If no ID provided, try to load from localStorage
-            // No need to check for component manager initialization here
-            // since we've already waited for it above
-            console.log('Loading from localStorage without checking initialization');
-            const savedData = localStorage.getItem('mediaKitData');
+            // Add a small delay before loading to ensure renderer is truly ready
+            await new Promise(resolve => setTimeout(resolve, 200));
             
+            // Now, proceed to load existing data from localStorage
+            const savedData = localStorage.getItem('mediaKitData');
             if (savedData && window.stateManager) {
+                console.log('Saved data found, attempting to load from localStorage.');
                 try {
                     const mediaKitData = JSON.parse(savedData);
+                    
+                    // Clear the skip flag BEFORE loading state so the automatic render works
+                    if (window.componentRenderer) {
+                        window.componentRenderer.skipInitialRender = false;
+                    }
+                    
+                    // Load state - this will trigger automatic render via state subscription
                     window.stateManager.loadSerializedState(mediaKitData);
                     
                     // Save current state to compare for unsaved changes
                     localStorage.setItem('gmkb_last_saved_state', savedData);
                     
                     console.log('Media kit loaded successfully from localStorage');
+                    
+                    // CRITICAL FIX: Simply clear the flag that prevents the initial render.
+                    // The renderer's existing subscription to the state manager will handle the rest.
+                    if (window.componentRenderer) {
+                        window.componentRenderer.skipInitialRender = false;
+                    }
                     
                     // Show a toast notification to confirm the load
                     if (window.historyService && window.historyService.showToast) {
@@ -349,27 +348,33 @@ function addEnhancedIndicator() {
  */
 window.addEventListener('error', (e) => {
     console.error('Global error:', e.error);
+    console.error('Error message:', e.message);
+    console.error('Error filename:', e.filename);
+    console.error('Error line:', e.lineno, 'column:', e.colno);
     
-    // Show user-friendly error message
-    const errorToast = document.createElement('div');
-    errorToast.className = 'gmkb-error-toast';
-    errorToast.textContent = 'An error occurred. Check console for details.';
-    errorToast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #ef4444;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 4px;
-        z-index: 100000;
-    `;
-    
-    document.body.appendChild(errorToast);
-    
-    setTimeout(() => {
-        errorToast.remove();
-    }, 5000);
+    // Only show toast for actual errors, not warnings or expected conditions
+    if (e.error && !(e.error.message && e.error.message.includes('ResizeObserver'))) {
+        // Show user-friendly error message
+        const errorToast = document.createElement('div');
+        errorToast.className = 'gmkb-error-toast';
+        errorToast.textContent = 'An error occurred. Check console for details.';
+        errorToast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            z-index: 100000;
+        `;
+        
+        document.body.appendChild(errorToast);
+        
+        setTimeout(() => {
+            errorToast.remove();
+        }, 5000);
+    }
 });
 
 // Initialize the builder when the DOM is loaded

@@ -9,6 +9,8 @@ class ComponentRenderer {
     constructor() {
         this.initialized = false;
         this.previewContainer = null;
+        this.lastRenderedState = null;
+        this.renderDebounceTimer = null;
     }
     
     /**
@@ -40,18 +42,14 @@ class ComponentRenderer {
             console.log('Subscribed to state manager');
         }
         
-        // Listen for component-specific events - mark listener to avoid duplicates
-        if (!this.eventListenerAdded) {
-            this.eventListenerAdded = true;
-            document.addEventListener('gmkb-state-changed', e => {
-                console.log('Received gmkb-state-changed event');
-                this.renderAllComponents(e.detail.state);
-            });
-        }
+        // NOTE: We don't need the gmkb-state-changed event listener because
+        // we're already subscribed to state changes directly.
+        // This prevents duplicate renders.
         
         // Clear the skip flag after initialization
         setTimeout(() => {
             this.skipInitialRender = false;
+            console.log('Component renderer fully initialized - skipInitialRender cleared');
         }, 100);
         
         this.initialized = true;
@@ -69,10 +67,21 @@ class ComponentRenderer {
             return;
         }
         
-        // Skip initial render to preserve hardcoded components
+        // Skip initial render ONLY if state is empty or matches DOM
+        // This allows loading from localStorage to work properly
         if (this.skipInitialRender) {
-            console.log('Skipping initial render to preserve existing components');
-            return;
+            const stateComponents = this.getSortedComponents(state);
+            const domComponents = this.previewContainer.querySelectorAll('[data-component-id]');
+            
+            // If state has components but DOM is empty (except for empty state), 
+            // we need to render them
+            if (stateComponents.length > 0 && domComponents.length === 0) {
+                console.log('State has components but DOM is empty - forcing render');
+                this.skipInitialRender = false;
+            } else {
+                console.log('Skipping initial render to preserve existing components');
+                return;
+            }
         }
         
         // Skip if we're currently rendering
@@ -81,7 +90,21 @@ class ComponentRenderer {
             return;
         }
         
-        this.renderWithDiff(state);
+        // Debounce rapid renders to prevent duplicates
+        if (this.renderDebounceTimer) {
+            clearTimeout(this.renderDebounceTimer);
+        }
+        
+        this.renderDebounceTimer = setTimeout(() => {
+            // If state has no components, ensure empty state is visible
+            const stateComponents = this.getSortedComponents(state);
+            if (stateComponents.length === 0) {
+                console.log('No components in state, ensuring empty state is visible');
+                this.updateEmptyState();
+            } else {
+                this.renderWithDiff(state);
+            }
+        }, 10);
     }
     
     /**
@@ -96,6 +119,7 @@ class ComponentRenderer {
 
         // Set rendering flag to prevent concurrent renders
         this.isRendering = true;
+        const renderId = `render-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
         try {
             const stateComponents = this.getSortedComponents(state);
@@ -103,7 +127,7 @@ class ComponentRenderer {
             const domIds = domElements.map(el => el.getAttribute('data-component-id'));
             const stateIds = stateComponents.map(c => c.id);
 
-            console.log('=== DIFF RENDER START ===');
+            console.log(`=== DIFF RENDER START [${renderId}] ===`);
             console.log('State components:', stateIds);
             console.log('DOM components:', domIds);
             console.log('Components to remove:', domIds.filter(id => !stateIds.includes(id)));
@@ -129,12 +153,36 @@ class ComponentRenderer {
             }
 
             // 2. Add components that are in state but not in DOM
+            const addedInThisRender = new Set();
+            
             for (const component of stateComponents) {
-                if (!domIds.includes(component.id)) {
-                    console.log(`Adding component ${component.id} to DOM`);
+                if (!domIds.includes(component.id) && !addedInThisRender.has(component.id)) {
+                    // Double-check the component doesn't already exist (race condition protection)
+                    const existingElement = this.previewContainer.querySelector(`[data-component-id="${component.id}"]`);
+                    if (existingElement) {
+                        console.log(`Component ${component.id} already exists in DOM, skipping`);
+                        continue;
+                    }
+                    
+                    console.log(`Adding component ${component.id} (type: ${component.type}) to DOM`);
                     
                     try {
                         const html = await renderComponent(component.type, component.id, component.data);
+                        
+                        if (!html) {
+                            console.error(`No HTML returned for component ${component.type}`);
+                            continue;
+                        }
+                        
+                        // Create a temporary container to parse the HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        const newElement = tempDiv.firstElementChild;
+                        
+                        if (!newElement) {
+                            console.error(`Failed to parse HTML for component ${component.type}`);
+                            continue;
+                        }
                         
                         // Find correct position based on order
                         const index = stateComponents.indexOf(component);
@@ -142,16 +190,26 @@ class ComponentRenderer {
                         
                         // Insert at correct position
                         if (referenceNode) {
-                            referenceNode.insertAdjacentHTML('afterend', html);
-                        } else {
+                            referenceNode.insertAdjacentElement('afterend', newElement);
+                        } else if (this.previewContainer.firstElementChild) {
                             // Insert at beginning if no reference node
-                            this.previewContainer.insertAdjacentHTML('afterbegin', html);
+                            this.previewContainer.insertBefore(newElement, this.previewContainer.firstElementChild);
+                        } else {
+                            // Preview container is empty
+                            this.previewContainer.appendChild(newElement);
                         }
                         
-                        // Setup interactivity
+                        // Mark as added in this render
+                        addedInThisRender.add(component.id);
+                        
+                        // Setup interactivity after element is in DOM
+                        await new Promise(resolve => setTimeout(resolve, 10));
                         this.setupComponentInteractivity(component.id);
+                        
+                        console.log(`Successfully added component ${component.id} to DOM`);
                     } catch (error) {
                         console.error(`Failed to render component ${component.type}:`, error);
+                        console.error('Component data:', component);
                     }
                 }
             }
@@ -179,15 +237,17 @@ class ComponentRenderer {
                 }
             }
 
-            // Update empty state
-            this.updateEmptyState();
+            // Update empty state with a small delay to ensure DOM is stable
+            setTimeout(() => {
+                this.updateEmptyState();
+            }, 50);
 
             // Trigger rendered event
             document.dispatchEvent(new CustomEvent('components-rendered', {
                 detail: { count: stateComponents.length }
             }));
             
-            console.log('=== DIFF RENDER COMPLETE ===');
+            console.log(`=== DIFF RENDER COMPLETE [${renderId}] ===`);
 
         } finally {
             // Clear rendering flag
@@ -576,6 +636,13 @@ class ComponentRenderer {
         // Skip initialization if no components exist (blank canvas)
         if (existingComponents.length === 0) {
             console.log('No existing components found - starting with blank canvas');
+            // Ensure empty state exists and is visible
+            let emptyState = document.getElementById('empty-state');
+            if (!emptyState) {
+                emptyState = this.createEmptyStateElement();
+                this.previewContainer.appendChild(emptyState);
+            }
+            emptyState.style.cssText = 'display: block !important;';
             this.setupEmptyState();
             return;
         }
@@ -717,7 +784,7 @@ class ComponentRenderer {
                 this.previewContainer.classList.add('has-components');
                 // Hide empty state if visible
                 if (emptyState) {
-                    emptyState.style.display = 'none';
+                    emptyState.style.cssText = 'display: none;';
                 }
             } else {
                 console.log('No components found, showing empty state...');
@@ -731,8 +798,8 @@ class ComponentRenderer {
                     this.previewContainer.appendChild(emptyState);
                 }
                 
-                // Ensure empty state is visible
-                emptyState.style.display = 'block';
+                // Ensure empty state is visible - use important to override any CSS
+                emptyState.style.cssText = 'display: block !important;';
                 
                 // Setup interactions
                 this.setupEmptyState();
@@ -740,11 +807,12 @@ class ComponentRenderer {
                 // Force a check to ensure it's really visible
                 setTimeout(() => {
                     const stillEmpty = !this.previewContainer.querySelector('[data-component-id]');
-                    if (stillEmpty && emptyState) {
-                        emptyState.style.display = 'block';
+                    const currentEmptyState = document.getElementById('empty-state');
+                    if (stillEmpty && currentEmptyState) {
+                        currentEmptyState.style.cssText = 'display: block !important;';
                         console.log('Empty state visibility confirmed');
                     }
-                }, 50);
+                }, 100);
             }
         }
     }
@@ -754,6 +822,13 @@ class ComponentRenderer {
      * @returns {HTMLElement} Empty state element
      */
     createEmptyStateElement() {
+        // Check if empty state already exists (from template)
+        const existingEmptyState = document.getElementById('empty-state');
+        if (existingEmptyState) {
+            console.log('Using existing empty state from template');
+            return existingEmptyState;
+        }
+        
         const emptyState = document.createElement('div');
         emptyState.className = 'empty-state';
         emptyState.id = 'empty-state';
