@@ -382,14 +382,53 @@ class StateManager {
             components: {}
         };
         
-        // Reconstruct components
-        (serializedState.components || []).forEach(component => {
-            state.components[component.id] = {
-                type: component.type,
-                order: component.order,
-                data: component.data
-            };
-        });
+        // Handle new format (array of components)
+        if (serializedState.components && Array.isArray(serializedState.components)) {
+            serializedState.components.forEach(component => {
+                state.components[component.id] = {
+                    type: component.type,
+                    order: component.order,
+                    data: component.data
+                };
+            });
+        }
+        // Handle legacy format (direct properties like hero, sections, cta)
+        else if (serializedState.hero || serializedState.sections || serializedState.cta) {
+            console.log('Migrating from legacy state format');
+            let order = 0;
+            
+            // Migrate hero
+            if (serializedState.hero) {
+                const heroId = serializedState.hero.id || `hero-migrated-${Date.now()}`;
+                state.components[heroId] = {
+                    type: 'hero',
+                    order: order++,
+                    data: serializedState.hero.data || serializedState.hero
+                };
+            }
+            
+            // Migrate sections
+            if (serializedState.sections && Array.isArray(serializedState.sections)) {
+                serializedState.sections.forEach(section => {
+                    const sectionId = section.id || `section-migrated-${Date.now()}-${order}`;
+                    state.components[sectionId] = {
+                        type: section.type || 'stats',
+                        order: order++,
+                        data: section.data || section
+                    };
+                });
+            }
+            
+            // Migrate cta
+            if (serializedState.cta) {
+                const ctaId = serializedState.cta.id || `cta-migrated-${Date.now()}`;
+                state.components[ctaId] = {
+                    type: 'cta',
+                    order: order++,
+                    data: serializedState.cta.data || serializedState.cta
+                };
+            }
+        }
         
         this.loadState(state);
     }

@@ -1,6 +1,6 @@
 /**
  * Component Renderer
- * Responsible for rendering components in the DOM based on state changes
+ * FINAL, ROBUST VERSION
  */
 
 import { renderComponent } from './dynamic-component-loader.js';
@@ -9,869 +9,268 @@ class ComponentRenderer {
     constructor() {
         this.initialized = false;
         this.previewContainer = null;
-        this.lastRenderedState = null;
+        this.isRendering = false;
         this.renderDebounceTimer = null;
+        this.stateUnsubscribe = null;
     }
     
-    /**
-     * Initialize the component renderer
-     */
     init() {
-        if (this.initialized) {
-            console.warn('Component renderer already initialized, skipping');
-            return;
-        }
+        if (this.initialized) return;
+        console.log('Component Renderer: Initializing...');
         
-        // Find the preview container
         this.previewContainer = document.getElementById('media-kit-preview');
-        
         if (!this.previewContainer) {
-            console.error('Preview container not found. Components cannot be rendered.');
+            console.error('CRITICAL: Preview container #media-kit-preview not found.');
             return;
         }
         
-        // Set flag to prevent initial re-render
-        this.skipInitialRender = true;
-        
-        // Initialize state from existing DOM components
         this.initializeFromDOM();
         
-        // Subscribe to state changes - store unsubscribe function
         if (window.stateManager) {
             this.stateUnsubscribe = window.stateManager.subscribeGlobal(state => this.onStateChange(state));
-            console.log('Subscribed to state manager');
+            console.log('Component Renderer: Subscribed to state changes.');
         }
         
-        // NOTE: We don't need the gmkb-state-changed event listener because
-        // we're already subscribed to state changes directly.
-        // This prevents duplicate renders.
-        
-        // Clear the skip flag after initialization
-        setTimeout(() => {
-            this.skipInitialRender = false;
-            console.log('Component renderer fully initialized - skipInitialRender cleared');
-        }, 100);
-        
-        this.initialized = true;
-        console.log('Component renderer initialized');
-    }
-    
-    /**
-     * Handle state changes
-     * @param {Object} state - Current state
-     */
-    onStateChange(state) {
-        // Skip if rendering is disabled (batch operations)
-        if (this.disableRendering) {
-            console.log('Rendering disabled for batch operation');
-            return;
-        }
-        
-        // Skip initial render ONLY if state is empty or matches DOM
-        // This allows loading from localStorage to work properly
-        if (this.skipInitialRender) {
-            const stateComponents = this.getSortedComponents(state);
-            const domComponents = this.previewContainer.querySelectorAll('[data-component-id]');
-            
-            // If state has components but DOM is empty (except for empty state), 
-            // we need to render them
-            if (stateComponents.length > 0 && domComponents.length === 0) {
-                console.log('State has components but DOM is empty - forcing render');
-                this.skipInitialRender = false;
-            } else {
-                console.log('Skipping initial render to preserve existing components');
-                return;
-            }
-        }
-        
-        // Skip if we're currently rendering
-        if (this.isRendering) {
-            console.log('Already rendering, skipping state change');
-            return;
-        }
-        
-        // Debounce rapid renders to prevent duplicates
-        if (this.renderDebounceTimer) {
-            clearTimeout(this.renderDebounceTimer);
-        }
-        
-        this.renderDebounceTimer = setTimeout(() => {
-            // If state has no components, ensure empty state is visible
-            const stateComponents = this.getSortedComponents(state);
-            if (stateComponents.length === 0) {
-                console.log('No components in state, ensuring empty state is visible');
-                this.updateEmptyState();
-            } else {
-                this.renderWithDiff(state);
-            }
-        }, 10);
-    }
-    
-    /**
-     * Render components using intelligent diffing
-     * @param {Object} state - Current state
-     */
-    async renderWithDiff(state) {
-        if (!this.previewContainer) {
-            console.error('Preview container not found. Cannot render components.');
-            return;
-        }
-
-        // Set rendering flag to prevent concurrent renders
-        this.isRendering = true;
-        const renderId = `render-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-
-        try {
-            const stateComponents = this.getSortedComponents(state);
-            const domElements = Array.from(this.previewContainer.querySelectorAll('[data-component-id]'));
-            const domIds = domElements.map(el => el.getAttribute('data-component-id'));
-            const stateIds = stateComponents.map(c => c.id);
-
-            console.log(`=== DIFF RENDER START [${renderId}] ===`);
-            console.log('State components:', stateIds);
-            console.log('DOM components:', domIds);
-            console.log('Components to remove:', domIds.filter(id => !stateIds.includes(id)));
-            console.log('Components to add:', stateIds.filter(id => !domIds.includes(id)));
-
-            // 1. Remove components that are in DOM but not in state
-            for (const element of domElements) {
-                const id = element.getAttribute('data-component-id');
-                if (!stateIds.includes(id)) {
-                    console.log(`Removing component ${id} from DOM`);
-                    // Animate removal
-                    element.style.transition = 'all 0.3s ease';
-                    element.style.opacity = '0';
-                    element.style.transform = 'scale(0.95)';
-                    
-                    await new Promise(resolve => {
-                        setTimeout(() => {
-                            element.remove();
-                            resolve();
-                        }, 300);
-                    });
-                }
-            }
-
-            // 2. Add components that are in state but not in DOM
-            const addedInThisRender = new Set();
-            
-            for (const component of stateComponents) {
-                if (!domIds.includes(component.id) && !addedInThisRender.has(component.id)) {
-                    // Double-check the component doesn't already exist (race condition protection)
-                    const existingElement = this.previewContainer.querySelector(`[data-component-id="${component.id}"]`);
-                    if (existingElement) {
-                        console.log(`Component ${component.id} already exists in DOM, skipping`);
-                        continue;
-                    }
-                    
-                    console.log(`Adding component ${component.id} (type: ${component.type}) to DOM`);
-                    
-                    try {
-                        const html = await renderComponent(component.type, component.id, component.data);
-                        
-                        if (!html) {
-                            console.error(`No HTML returned for component ${component.type}`);
-                            continue;
-                        }
-                        
-                        // Create a temporary container to parse the HTML
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html;
-                        const newElement = tempDiv.firstElementChild;
-                        
-                        if (!newElement) {
-                            console.error(`Failed to parse HTML for component ${component.type}`);
-                            continue;
-                        }
-                        
-                        // Find correct position based on order
-                        const index = stateComponents.indexOf(component);
-                        const referenceNode = this.findReferenceNode(index, stateComponents);
-                        
-                        // Insert at correct position
-                        if (referenceNode) {
-                            referenceNode.insertAdjacentElement('afterend', newElement);
-                        } else if (this.previewContainer.firstElementChild) {
-                            // Insert at beginning if no reference node
-                            this.previewContainer.insertBefore(newElement, this.previewContainer.firstElementChild);
-                        } else {
-                            // Preview container is empty
-                            this.previewContainer.appendChild(newElement);
-                        }
-                        
-                        // Mark as added in this render
-                        addedInThisRender.add(component.id);
-                        
-                        // Setup interactivity after element is in DOM
-                        await new Promise(resolve => setTimeout(resolve, 10));
-                        this.setupComponentInteractivity(component.id);
-                        
-                        console.log(`Successfully added component ${component.id} to DOM`);
-                    } catch (error) {
-                        console.error(`Failed to render component ${component.type}:`, error);
-                        console.error('Component data:', component);
-                    }
-                }
-            }
-
-            // 3. Reorder components if needed
-            const currentDomOrder = Array.from(this.previewContainer.querySelectorAll('[data-component-id]'));
-            for (let i = 0; i < stateComponents.length; i++) {
-                const expectedId = stateComponents[i].id;
-                const currentElement = currentDomOrder[i];
-                
-                if (currentElement && currentElement.getAttribute('data-component-id') !== expectedId) {
-                    // Find the correct element and move it
-                    const correctElement = this.previewContainer.querySelector(`[data-component-id="${expectedId}"]`);
-                    if (correctElement) {
-                        console.log(`Reordering component ${expectedId} to position ${i}`);
-                        if (i === 0) {
-                            this.previewContainer.insertBefore(correctElement, this.previewContainer.firstElementChild);
-                        } else {
-                            const previousElement = this.previewContainer.querySelector(`[data-component-id="${stateComponents[i-1].id}"]`);
-                            if (previousElement) {
-                                previousElement.insertAdjacentElement('afterend', correctElement);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Update empty state with a small delay to ensure DOM is stable
-            setTimeout(() => {
-                this.updateEmptyState();
-            }, 50);
-
-            // Trigger rendered event
-            document.dispatchEvent(new CustomEvent('components-rendered', {
-                detail: { count: stateComponents.length }
-            }));
-            
-            console.log(`=== DIFF RENDER COMPLETE [${renderId}] ===`);
-
-        } finally {
-            // Clear rendering flag
-            this.isRendering = false;
-        }
-    }
-
-    /**
-     * Find reference node for inserting at correct position
-     * @param {number} index - Target index
-     * @param {Array} stateComponents - All components in state
-     * @returns {HTMLElement|null} Reference element or null
-     */
-    findReferenceNode(index, stateComponents) {
-        // Find the previous component that exists in DOM
-        for (let i = index - 1; i >= 0; i--) {
-            const element = this.previewContainer.querySelector(`[data-component-id="${stateComponents[i].id}"]`);
-            if (element) {
-                return element;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Legacy render method - kept for compatibility but redirects to diff render
-     * @param {Object} state - Current state
-     */
-    renderAllComponents(state) {
-        this.renderWithDiff(state);
-    }
-    
-    /**
-     * Render only new components
-     * @param {Array} components - All components
-     * @param {Set} existingIds - Set of existing component IDs
-     */
-    async renderNewComponents(components, existingIds) {
-        console.log('renderNewComponents called with', components.length, 'components');
-        console.log('Existing IDs:', Array.from(existingIds));
-        
-        // Handle empty state and drop zones based on component count
-        const emptyState = document.getElementById('empty-state');
-        const dropZones = this.previewContainer.querySelectorAll('.drop-zone');
-        
-        if (components.length > 0) {
-            // Hide empty state if we have components
-            if (emptyState) {
-                emptyState.style.display = 'none';
-            }
-            
-            // Hide any remaining drop zones
-            dropZones.forEach(zone => {
-                zone.style.display = 'none';
-            });
-            
-            this.previewContainer.classList.add('has-components');
-        } else {
-            // Show empty state if no components
-            if (!emptyState) {
-                // Create if doesn't exist
-                const newEmptyState = this.createEmptyStateElement();
-                this.previewContainer.appendChild(newEmptyState);
-                this.setupEmptyState();
-            } else {
-                emptyState.style.display = 'block';
-            }
-            
-            this.previewContainer.classList.remove('has-components');
-        }
-        
-        // Render only new components
-        for (const component of components) {
-            console.log(`Checking component ${component.id}, exists: ${existingIds.has(component.id)}`);
-            if (!existingIds.has(component.id)) {
-                // Double-check the component doesn't already exist in DOM
-                const alreadyInDOM = document.querySelector(`[data-component-id="${component.id}"]`);
-                if (alreadyInDOM) {
-                    console.warn(`Component ${component.id} already in DOM, skipping render`);
-                    continue;
-                }
-                
-                try {
-                    console.log(`Rendering new component: ${component.type} (${component.id})`);
-                    
-                    // Use the dynamic component loader to render the component
-                    const html = await renderComponent(component.type, component.id, component.data);
-                    
-                    // Find the appropriate insertion point
-                    const insertionPoint = this.findInsertionPoint(component);
-                    
-                    if (insertionPoint.dropZone) {
-                        // Replace drop zone with component
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = html;
-                        const componentElement = tempDiv.firstElementChild;
-                        
-                        if (componentElement && insertionPoint.dropZone.parentNode) {
-                            insertionPoint.dropZone.parentNode.replaceChild(componentElement, insertionPoint.dropZone);
-                        }
-                    } else {
-                        // Add to the preview container at the appropriate position
-                        this.previewContainer.insertAdjacentHTML('beforeend', html);
-                    }
-                    
-                    // Make the component interactive
-                    this.setupComponentInteractivity(component.id);
-                } catch (error) {
-                    console.error(`Failed to render component ${component.type}:`, error);
-                }
-            }
-        }
-        
-        // Update empty state visibility
-        this.updateEmptyState();
-    }
-    
-    /**
-     * Get sorted components from state
-     * @param {Object} state - Current state
-     * @returns {Array} Sorted components
-     */
-    getSortedComponents(state) {
-        if (!state.components) return [];
-        
-        if (Array.isArray(state.components)) {
-            return [...state.components].sort((a, b) => (a.order || 0) - (b.order || 0));
-        }
-        
-        return Object.entries(state.components).map(([id, component]) => ({
-            id, 
-            type: component.type,
-            order: component.order,
-            data: component.data
-        })).sort((a, b) => (a.order || 0) - (b.order || 0));
-    }
-    
-    /**
-     * Render all components from scratch
-     * @param {Array} components - Components to render
-     */
-    async renderAllFromScratch(components) {
-        if (!this.previewContainer) return;
-        
-        // Set rendering flag
-        this.isRendering = true;
-        
-        // Store reference to empty state before clearing
-        let emptyState = document.getElementById('empty-state');
-        const emptyStateParent = emptyState ? emptyState.parentNode : null;
-        
-        // Clear only components, preserve empty state
-        const componentsInDom = this.previewContainer.querySelectorAll('[data-component-id]');
-        componentsInDom.forEach(comp => comp.remove());
-        
-        // Also clear any drop zones
-        const dropZones = this.previewContainer.querySelectorAll('.drop-zone');
-        dropZones.forEach(zone => zone.remove());
-        
-        // Handle empty state visibility
-        if (!emptyState) {
-            // Create empty state if it doesn't exist
-            emptyState = this.createEmptyStateElement();
-            this.previewContainer.appendChild(emptyState);
-        }
-        
-        if (components.length > 0) {
-            // Hide empty state if we have components
-            emptyState.style.display = 'none';
-            this.previewContainer.classList.add('has-components');
-        } else {
-            // Show empty state if no components
-            emptyState.style.display = 'block';
-            this.previewContainer.classList.remove('has-components');
-            // Setup empty state interactions
-            this.setupEmptyState();
-        }
-        
-        // Render each component
-        for (const component of components) {
-            try {
-                console.log(`Rendering component: ${component.type} (${component.id})`);
-                
-                // Use the dynamic component loader to render the component
-                const html = await renderComponent(component.type, component.id, component.data);
-                
-                // Add to the preview container
-                this.previewContainer.insertAdjacentHTML('beforeend', html);
-                
-                // Make the component interactive
-                this.setupComponentInteractivity(component.id);
-            } catch (error) {
-                console.error(`Failed to render component ${component.type}:`, error);
-                
-                // Add a placeholder for the failed component
-                const placeholder = document.createElement('div');
-                placeholder.className = 'editable-element component-placeholder';
-                placeholder.setAttribute('data-component-id', component.id);
-                placeholder.setAttribute('data-component-type', component.type);
-                placeholder.innerHTML = `
-                    <div class="element-controls">
-                        <button class="control-btn" title="Move Up">↑</button>
-                        <button class="control-btn" title="Move Down">↓</button>
-                        <button class="control-btn" title="Duplicate">⧉</button>
-                        <button class="control-btn" title="Delete">×</button>
-                    </div>
-                    <h3>${component.type} Component</h3>
-                    <p>This component could not be rendered. Please try refreshing.</p>
-                `;
-                
-                this.previewContainer.appendChild(placeholder);
-            }
-        }
-        
-        // Trigger a rendered event
-        document.dispatchEvent(new CustomEvent('components-rendered', {
-            detail: { count: components.length }
-        }));
-        
-        // Clear rendering flag
-        this.isRendering = false;
-        
-        // Update empty state visibility with a slight delay to ensure DOM is settled
-        setTimeout(() => {
-            this.updateEmptyState();
-        }, 50);
-    }
-    
-    /**
-     * Find the appropriate insertion point for a component
-     * @param {Object} component - Component to insert
-     * @returns {Object} Insertion point info
-     */
-    findInsertionPoint(component) {
-        // Check if there's a drop zone waiting for this component
-        const dropZones = this.previewContainer.querySelectorAll('.drop-zone:not([style*="display: none"])');
-        
-        if (dropZones.length > 0) {
-            // Use the first visible drop zone
-            return { dropZone: dropZones[0] };
-        }
-        
-        return { dropZone: null };
-    }
-    
-    // updateComponentData method has been removed
-    // DataBindingEngine now handles all internal component updates
-    
-    /**
-     * Set up interactivity for a component
-     * @param {string} componentId - Component ID
-     */
-    setupComponentInteractivity(componentId) {
-        const element = document.querySelector(`[data-component-id="${componentId}"]`);
-        if (!element) return;
-        
-        // Check if interactivity was already set up to avoid duplicate listeners
-        if (element.hasAttribute('data-interactive')) {
-            console.log(`Component ${componentId} already has interactivity set up, skipping`);
-            return;
-        }
-        
-        console.log(`Setting up interactivity for component ${componentId}`);
-        element.setAttribute('data-interactive', 'true');
-        
-        // Import needed modules for interactivity
-        import('../ui/element-editor.js').then(module => {
-            // Add click handler for selection
-            element.addEventListener('click', (e) => {
-                e.stopPropagation();
-                module.selectElement(element);
-                
-                // Dispatch selection event
-                document.dispatchEvent(new CustomEvent('component-selected', {
-                    detail: {
-                        componentId,
-                        componentType: element.getAttribute('data-component-type')
-                    }
-                }));
-            });
-            
-            // Set up content editable elements
-            const editables = element.querySelectorAll('[contenteditable="true"]');
-            editables.forEach(editable => {
-                // Store original content on focus
-                editable.addEventListener('focus', () => {
-                    editable.setAttribute('data-original-content', editable.textContent);
-                });
-                
-                editable.addEventListener('blur', () => {
-                    const settingKey = editable.getAttribute('data-setting');
-                    if (settingKey && window.stateManager) {
-                        window.stateManager.updateComponent(componentId, settingKey, editable.textContent);
-                    }
-                    // Clear the original content attribute after saving
-                    editable.removeAttribute('data-original-content');
-                });
-                
-                // Prevent Enter key in single-line editables
-                if (!editable.matches('p, div.multiline')) {
-                    editable.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            editable.blur();
-                        }
-                    });
+        // Listen for rebindControls event
+        document.addEventListener('rebindControls', () => {
+            console.log('Rebinding control buttons...');
+            const components = this.previewContainer.querySelectorAll('[data-component-id]');
+            components.forEach(element => {
+                const componentId = element.getAttribute('data-component-id');
+                if (componentId) {
+                    this.setupComponentInteractivity(componentId);
                 }
             });
         });
-        
-        // Set up control buttons
-        const controls = element.querySelector('.element-controls');
-        if (controls) {
-            controls.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const btn = e.target.closest('.control-btn');
-                if (!btn) return;
-                
-                const action = btn.getAttribute('data-action') || btn.title || btn.textContent.trim();
-                
-                // If action doesn't match expected values, try button text
-                let finalAction = action;
-                if (!['Delete', 'delete', 'Duplicate', 'duplicate', 'Move Up', 'moveUp', 'Move Down', 'moveDown'].includes(action)) {
-                    finalAction = btn.textContent.trim();
+
+        this.initialized = true;
+        console.log('Component Renderer: Initialization complete.');
+    }
+    
+    onStateChange(state) {
+        if (this.isRendering) {
+            console.warn('Render skipped: a render is already in progress.');
+            return;
+        }
+
+        if (this.renderDebounceTimer) clearTimeout(this.renderDebounceTimer);
+
+        this.renderDebounceTimer = setTimeout(() => {
+            console.log('Render triggered by state change.');
+            const stateComponents = this.getSortedComponents(state);
+            if (stateComponents.length > 0) {
+                this.renderWithDiff(state);
+            } else {
+                this.updateEmptyState();
+            }
+        }, 50);
+    }
+    
+    async renderWithDiff(state) {
+        if (!this.previewContainer) return;
+        this.isRendering = true;
+        console.log('--- Render Start ---');
+
+        const stateComponents = this.getSortedComponents(state);
+        const domElements = Array.from(this.previewContainer.querySelectorAll('[data-component-id]'));
+        const domIds = domElements.map(el => el.getAttribute('data-component-id'));
+        const stateIds = stateComponents.map(c => c.id);
+
+        // Remove components no longer in state
+        for (const element of domElements) {
+            if (!stateIds.includes(element.getAttribute('data-component-id'))) {
+                console.log(`Removing component: ${element.getAttribute('data-component-id')}`);
+                element.remove();
+            }
+        }
+
+        // Add or update components
+        for (const [index, component] of stateComponents.entries()) {
+            let element = this.previewContainer.querySelector(`[data-component-id="${component.id}"]`);
+            if (!element) {
+                console.log(`Adding new component: ${component.id}`);
+                const html = await renderComponent(component.type, component.id, component.data);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                element = tempDiv.firstElementChild;
+
+                if (element) {
+                    const referenceNode = this.previewContainer.children[index];
+                    this.previewContainer.insertBefore(element, referenceNode || null);
+                    this.setupComponentInteractivity(component.id);
+                } else {
+                    console.error(`Failed to create element for component: ${component.id}`);
                 }
-                
-                switch (finalAction) {
-                    case 'Delete':
-                    case 'delete':
-                    case '×': // × symbol
-                        if (confirm('Are you sure you want to delete this component?')) {
-                            // Save any active edits first
-                            if (window.componentManager) {
-                                await window.componentManager.saveActiveEditableContent();
-                            }
-                            
-                            // Remove from state - the diff renderer will handle the animation
-                            if (window.stateManager) {
-                                window.stateManager.removeComponent(componentId);
-                            }
-                        }
-                        break;
-                        
-                    case 'Duplicate':
-                    case 'duplicate':
-                    case '⧉': // ⧉ symbol
-                        if (window.componentManager) {
-                            await window.componentManager.saveActiveEditableContent();
-                            window.componentManager.duplicateComponent(componentId);
-                        }
-                        break;
-                        
-                    case 'Move Up':
-                    case 'moveUp':
-                    case '↑': // ↑ symbol
-                        if (window.componentManager) {
-                            await window.componentManager.moveComponent(componentId, 'up');
-                        }
-                        break;
-                        
-                    case 'Move Down':
-                    case 'moveDown':
-                    case '↓': // ↓ symbol
-                        if (window.componentManager) {
-                            await window.componentManager.moveComponent(componentId, 'down');
-                        }
-                        break;
-                        
-                    default:
-                        console.warn(`Unknown control action: '${action}', button text: '${buttonText}'`);
-                        break;
+            } else {
+                // Update component data if needed
+                this.updateComponentData(element, component.data);
+                // Also set up interactivity for existing components (in case they were loaded from state)
+                this.setupComponentInteractivity(component.id);
+            }
+        }
+        
+        // Final re-ordering pass to ensure correctness
+        for (const [index, component] of stateComponents.entries()) {
+            const element = this.previewContainer.querySelector(`[data-component-id="${component.id}"]`);
+            if (element && this.previewContainer.children[index] !== element) {
+                 const referenceNode = this.previewContainer.children[index];
+                 this.previewContainer.insertBefore(element, referenceNode || null);
+            }
+        }
+        
+        this.updateEmptyState();
+        this.isRendering = false;
+        console.log('--- Render Complete ---');
+    }
+
+    updateComponentData(element, data) {
+        // Update contenteditable fields
+        Object.entries(data).forEach(([key, value]) => {
+            const field = element.querySelector(`[data-setting="${key}"]`);
+            if (field && field.getAttribute('contenteditable') === 'true') {
+                if (field.textContent !== value) {
+                    field.textContent = value;
+                }
+            }
+        });
+    }
+
+    initializeFromDOM() {
+        if (!this.previewContainer) return;
+        const existingComponents = this.previewContainer.querySelectorAll('.editable-element[data-component]');
+        if (existingComponents.length === 0) {
+            this.updateEmptyState(); // Use the standard method to show/setup empty state
+        } else {
+            // Set up interactivity for any components that exist in DOM on page load
+            existingComponents.forEach(element => {
+                const componentId = element.getAttribute('data-component-id');
+                if (componentId) {
+                    this.setupComponentInteractivity(componentId);
                 }
             });
         }
     }
-    
-    /**
-     * Initialize state from existing DOM components
-     */
-    initializeFromDOM() {
-        if (!this.previewContainer || !window.stateManager) return;
-        
-        // Find all existing components in the DOM
-        const existingComponents = this.previewContainer.querySelectorAll('.editable-element[data-component]');
-        
-        // Skip initialization if no components exist (blank canvas)
-        if (existingComponents.length === 0) {
-            console.log('No existing components found - starting with blank canvas');
-            // Ensure empty state exists and is visible
-            let emptyState = document.getElementById('empty-state');
+
+    updateEmptyState() {
+        if (!this.previewContainer) return;
+        const hasComponents = !!this.previewContainer.querySelector('[data-component-id]');
+        let emptyState = document.getElementById('empty-state');
+
+        if (hasComponents) {
+            this.previewContainer.classList.add('has-components');
+            if (emptyState) emptyState.style.display = 'none';
+        } else {
+            console.log('No components found, showing and setting up empty state.');
+            this.previewContainer.classList.remove('has-components');
             if (!emptyState) {
                 emptyState = this.createEmptyStateElement();
                 this.previewContainer.appendChild(emptyState);
             }
-            emptyState.style.cssText = 'display: block !important;';
+            emptyState.style.display = 'flex';
             this.setupEmptyState();
-            return;
         }
-        
-        // Also preserve drop zones
-        const dropZones = this.previewContainer.querySelectorAll('.drop-zone');
-        console.log(`Found ${dropZones.length} drop zones to preserve`);
-        
-        // Temporarily disable state notifications
-        const originalNotify = window.stateManager.notifyGlobalListeners;
-        window.stateManager.notifyGlobalListeners = () => {};
-        
-        existingComponents.forEach((element, index) => {
-            const componentType = element.getAttribute('data-component');
-            const componentId = element.getAttribute('data-component-id') || `${componentType}-initial-${index}`;
-            
-            // Set the component ID if not already set
-            if (!element.hasAttribute('data-component-id')) {
-                element.setAttribute('data-component-id', componentId);
-            }
-            
-            // Also set data-component-type for consistency
-            if (!element.hasAttribute('data-component-type')) {
-                element.setAttribute('data-component-type', componentType);
-            }
-            
-            // Initialize in state manager (skip notification during init)
-            const componentData = this.extractComponentData(element, componentType);
-            window.stateManager.initComponent(componentId, componentType, componentData, true);
-            
-            // Make the component interactive
-            this.setupComponentInteractivity(componentId);
-        });
-        
-        // Re-enable state notifications
-        window.stateManager.notifyGlobalListeners = originalNotify;
-        
-        console.log(`Initialized ${existingComponents.length} components from DOM`);
     }
-    
-    /**
-     * Extract component data from DOM element
-     */
-    extractComponentData(element, componentType) {
-        const data = {};
-        
-        // Extract data based on component type
-        switch (componentType) {
-            case 'hero':
-                const nameEl = element.querySelector('.hero__name');
-                const titleEl = element.querySelector('.hero__title');
-                const bioEl = element.querySelector('.hero__bio');
-                
-                if (nameEl) data.name = nameEl.textContent;
-                if (titleEl) data.title = titleEl.textContent;
-                if (bioEl) data.bio = bioEl.textContent;
-                break;
-                
-            case 'topics':
-                const topicEls = element.querySelectorAll('.topic-item');
-                data.topics = Array.from(topicEls).map(el => el.textContent);
-                break;
-                
-            case 'social':
-                const linkEls = element.querySelectorAll('.social-link');
-                data.links = Array.from(linkEls).map(el => ({
-                    url: el.getAttribute('href'),
-                    title: el.getAttribute('title')
-                }));
-                break;
-        }
-        
-        return data;
-    }
-    
-    /**
-     * Set up empty state interactions
-     */
+
     setupEmptyState() {
-        console.log('Setting up empty state interactions...');
-        
-        // Use a slight delay to ensure DOM is ready
         setTimeout(() => {
-            const addFirstBtn = document.getElementById('add-first-component');
-            const loadTemplateBtn = document.getElementById('load-template');
-            const dropZone = document.querySelector('.drop-zone--primary');
-            
-            console.log('Empty state elements:', {
-                addFirstBtn: !!addFirstBtn,
-                loadTemplateBtn: !!loadTemplateBtn,
-                dropZone: !!dropZone
-            });
-            
-            if (addFirstBtn && !addFirstBtn.hasAttribute('data-listener-attached')) {
-                addFirstBtn.setAttribute('data-listener-attached', 'true');
-                addFirstBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('Add component button clicked');
-                    // Show component library modal
-                    document.dispatchEvent(new CustomEvent('show-component-library'));
-                });
-                console.log('Add component button listener attached');
+            const addBtn = document.getElementById('add-first-component');
+            const loadBtn = document.getElementById('load-template');
+
+            if (addBtn && !addBtn.hasAttribute('data-listener-attached')) {
+                addBtn.setAttribute('data-listener-attached', 'true');
+                addBtn.addEventListener('click', () => document.dispatchEvent(new CustomEvent('show-component-library')));
+                console.log('Add Component button listener attached.');
             }
-            
-            if (loadTemplateBtn && !loadTemplateBtn.hasAttribute('data-listener-attached')) {
-                loadTemplateBtn.setAttribute('data-listener-attached', 'true');
-                loadTemplateBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('Load template button clicked');
-                    // Show template selection modal
-                    document.dispatchEvent(new CustomEvent('show-template-library'));
-                });
-                console.log('Load template button listener attached');
-            }
-            
-            // Show drop zone when dragging starts - only add listener once
-            if (!this.dragListenerAdded) {
-                this.dragListenerAdded = true;
-                document.addEventListener('dragstart', () => {
-                    if (dropZone && !document.querySelector('[data-component-id]')) {
-                        dropZone.style.display = 'block';
-                    }
-                });
+            if (loadBtn && !loadBtn.hasAttribute('data-listener-attached')) {
+                loadBtn.setAttribute('data-listener-attached', 'true');
+                loadBtn.addEventListener('click', () => document.dispatchEvent(new CustomEvent('show-template-library')));
+                console.log('Load Template button listener attached.');
             }
         }, 100);
     }
     
-    /**
-     * Check if preview is empty and update UI accordingly
-     */
-    updateEmptyState() {
-        const hasComponents = this.previewContainer && 
-                            this.previewContainer.querySelector('[data-component-id]');
-        
-        if (this.previewContainer) {
-            let emptyState = document.getElementById('empty-state');
-            
-            if (hasComponents) {
-                this.previewContainer.classList.add('has-components');
-                // Hide empty state if visible
-                if (emptyState) {
-                    emptyState.style.cssText = 'display: none;';
-                }
-            } else {
-                console.log('No components found, showing empty state...');
-                this.previewContainer.classList.remove('has-components');
+    setupComponentInteractivity(componentId) {
+        setTimeout(() => {
+            const element = this.previewContainer.querySelector(`[data-component-id="${componentId}"]`);
+            if (!element) return;
+
+            // Set up control buttons
+            const controlButtons = element.querySelectorAll('.control-btn');
+            controlButtons.forEach(btn => {
+                // Remove any existing listeners to prevent duplicates
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
                 
-                // Show empty state
-                if (!emptyState) {
-                    // Create if doesn't exist
-                    console.log('Creating new empty state element...');
-                    emptyState = this.createEmptyStateElement();
-                    this.previewContainer.appendChild(emptyState);
-                }
-                
-                // Ensure empty state is visible - use important to override any CSS
-                emptyState.style.cssText = 'display: block !important;';
-                
-                // Setup interactions
-                this.setupEmptyState();
-                
-                // Force a check to ensure it's really visible
-                setTimeout(() => {
-                    const stillEmpty = !this.previewContainer.querySelector('[data-component-id]');
-                    const currentEmptyState = document.getElementById('empty-state');
-                    if (stillEmpty && currentEmptyState) {
-                        currentEmptyState.style.cssText = 'display: block !important;';
-                        console.log('Empty state visibility confirmed');
+                // Add new listener
+                newBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = newBtn.textContent.trim();
+                    console.log(`Control button clicked: ${action} for component ${componentId}`);
+                    
+                    if (window.componentManager && window.componentManager.handleControlAction) {
+                        window.componentManager.handleControlAction(action, componentId);
+                    } else {
+                        console.error('Component manager not available for control actions');
                     }
-                }, 100);
+                });
+            });
+
+            // Ensure element selection is set up
+            if (window.setupElementSelection) {
+                window.setupElementSelection();
             }
-        }
+
+            // Ensure content editable updates are set up
+            if (window.setupContentEditableUpdates) {
+                window.setupContentEditableUpdates();
+            }
+        }, 100);
     }
-    
-    /**
-     * Create empty state element if it doesn't exist
-     * @returns {HTMLElement} Empty state element
-     */
-    createEmptyStateElement() {
-        // Check if empty state already exists (from template)
-        const existingEmptyState = document.getElementById('empty-state');
-        if (existingEmptyState) {
-            console.log('Using existing empty state from template');
-            return existingEmptyState;
-        }
+
+    getSortedComponents(state) {
+        if (!state.components) return [];
         
+        // Convert components object to array and add IDs
+        const components = Object.entries(state.components).map(([id, component]) => ({
+            id,
+            type: component.type,
+            data: component.data,
+            order: component.order || 0
+        }));
+        
+        // Sort by order
+        return components.sort((a, b) => a.order - b.order);
+    }
+
+    createEmptyStateElement() {
         const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state';
         emptyState.id = 'empty-state';
         emptyState.innerHTML = `
-            <div class="empty-state__icon">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="9" y1="9" x2="15" y2="9"></line>
-                    <line x1="9" y1="13" x2="15" y2="13"></line>
-                    <line x1="9" y1="17" x2="11" y2="17"></line>
-                </svg>
-            </div>
-            <h2 class="empty-state__title">Start Building Your Media Kit</h2>
-            <p class="empty-state__text">Add components from the sidebar or choose a template to get started.</p>
-            <div class="empty-state__actions">
-                <button class="btn btn--primary" id="add-first-component">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Add Component
-                </button>
-                <button class="btn btn--secondary" id="load-template">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                    </svg>
-                    Load Template
-                </button>
+            <div class="empty-state-content">
+                <h3>Start Building Your Media Kit</h3>
+                <p>Add your first component to get started</p>
+                <div class="empty-state-actions">
+                    <button id="add-first-component" class="button button-primary">
+                        <span class="dashicons dashicons-plus-alt2"></span>
+                        Add Component
+                    </button>
+                    <button id="load-template" class="button">
+                        <span class="dashicons dashicons-layout"></span>
+                        Load Template
+                    </button>
+                </div>
             </div>
         `;
         return emptyState;
     }
+
+    destroy() {
+        if (this.stateUnsubscribe) {
+            this.stateUnsubscribe();
+        }
+        this.initialized = false;
+    }
 }
 
-// Create singleton instance
+// Export singleton instance (ensure this part is at the end)
 export const componentRenderer = new ComponentRenderer();
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        componentRenderer.init();
-    });
-} else {
-    componentRenderer.init();
-}

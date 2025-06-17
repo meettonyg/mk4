@@ -279,7 +279,6 @@ class ComponentManager {
     async duplicateComponent(sourceComponentId) {
         console.log('=== duplicateComponent CALLED ===');
         console.log('Source component ID:', sourceComponentId);
-        console.log('Call stack:', new Error().stack);
         
         const sourceComponent = stateManager.getComponent(sourceComponentId);
         if (!sourceComponent) {
@@ -287,21 +286,46 @@ class ComponentManager {
             return;
         }
         
+        console.log('Source component type:', sourceComponent.type);
+        console.log('Source component data:', sourceComponent.data);
+        
         const newComponentId = this.generateComponentId(sourceComponent.type);
         
         // Copy component data
         const newData = { ...sourceComponent.data };
         
-        // Initialize new component with copied data
-        const schema = this.loadedSchemas.get(sourceComponent.type);
-        if (schema) {
-            stateManager.initComponent(newComponentId, sourceComponent.type, newData);
-            
-            // Just update the state - Component Renderer will handle the DOM
-            // The component will be rendered automatically by the state change
-            
-            this.showNotification('Component duplicated');
+        // Ensure schema is loaded for this component type
+        if (!this.loadedSchemas.has(sourceComponent.type)) {
+            console.log('Loading schema for component type:', sourceComponent.type);
+            const schema = await this.loadComponentSchema(sourceComponent.type);
+            if (schema) {
+                this.loadedSchemas.set(sourceComponent.type, schema);
+            }
         }
+        
+        // Get the order for the new component (place it after the source)
+        const components = stateManager.getOrderedComponents();
+        const sourceIndex = components.findIndex(c => c.id === sourceComponentId);
+        const newOrder = sourceIndex >= 0 ? sourceComponent.order + 0.5 : components.length;
+        
+        // Initialize new component with copied data
+        console.log('Creating duplicate with ID:', newComponentId);
+        stateManager.initComponent(newComponentId, sourceComponent.type, newData);
+        
+        // Update the order to place it after the source
+        const newComponents = stateManager.getOrderedComponents();
+        const componentIds = newComponents.map(c => c.id);
+        const newIndex = componentIds.indexOf(newComponentId);
+        
+        if (newIndex > -1 && sourceIndex >= 0) {
+            // Move the new component to be right after the source
+            componentIds.splice(newIndex, 1);
+            componentIds.splice(sourceIndex + 1, 0, newComponentId);
+            stateManager.reorderComponents(componentIds);
+        }
+        
+        this.showNotification('Component duplicated');
+        console.log('Duplicate component created successfully');
     }
 
     /**

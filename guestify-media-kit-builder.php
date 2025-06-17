@@ -225,7 +225,8 @@ class Guestify_Media_Kit_Builder {
      */
     public function ajax_render_component() {
         $component_slug = isset( $_POST['component'] ) ? sanitize_text_field( $_POST['component'] ) : '';
-        $props = isset( $_POST['props'] ) ? $_POST['props'] : array();
+        // The corrected line with json_decode
+        $props = isset( $_POST['props'] ) ? json_decode( stripslashes( $_POST['props'] ), true ) : array();
         
         if ( empty( $component_slug ) ) {
             wp_send_json_error( 'Component slug is required' );
