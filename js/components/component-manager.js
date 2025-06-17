@@ -256,21 +256,11 @@ class ComponentManager {
      * @param {string} componentId - Component ID
      */
     removeComponent(componentId) {
-        // Remove from state
+        // Only remove from state - Component Renderer will handle DOM removal
         stateManager.removeComponent(componentId);
         
-        // Remove from DOM
-        const element = document.querySelector(`[data-component-id="${componentId}"]`);
-        if (element) {
-            // Animate removal
-            element.style.opacity = '0';
-            element.style.transform = 'scale(0.95)';
-            
-            setTimeout(() => {
-                element.remove();
-                this.showNotification('Component removed');
-            }, 200);
-        }
+        // Show notification
+        this.showNotification('Component removed');
     }
 
     /**
@@ -278,18 +268,8 @@ class ComponentManager {
      * @param {Array<string>} componentIds - Ordered array of component IDs
      */
     reorderComponents(componentIds) {
+        // Only update state - Component Renderer will handle DOM reordering
         stateManager.reorderComponents(componentIds);
-        
-        // Reorder in DOM
-        const container = document.getElementById('media-kit-preview');
-        if (!container) return;
-        
-        componentIds.forEach((id, index) => {
-            const element = document.querySelector(`[data-component-id="${id}"]`);
-            if (element) {
-                container.appendChild(element);
-            }
-        });
     }
 
     /**
@@ -297,8 +277,15 @@ class ComponentManager {
      * @param {string} sourceComponentId - ID of component to duplicate
      */
     async duplicateComponent(sourceComponentId) {
+        console.log('=== duplicateComponent CALLED ===');
+        console.log('Source component ID:', sourceComponentId);
+        console.log('Call stack:', new Error().stack);
+        
         const sourceComponent = stateManager.getComponent(sourceComponentId);
-        if (!sourceComponent) return;
+        if (!sourceComponent) {
+            console.log('Source component not found');
+            return;
+        }
         
         const newComponentId = this.generateComponentId(sourceComponent.type);
         

@@ -1,0 +1,28 @@
+@echo off
+REM Final commit for all fixes and debugging tools
+
+cd /d "C:\Users\seoge\OneDrive\Desktop\CODE-Guestify\MEDIAKIT\PLUGIN\mk4"
+
+REM Add all modified and new files
+git add js/components/component-manager.js
+git add js/components/component-renderer.js
+git add js/services/state-manager.js
+git add DUPLICATE_COMPONENT_FIX.md
+git add COMPONENT_EDIT_LOSS_FIX.md
+git add DELETE_BUTTON_ISSUE.md
+git add FIXES_SUMMARY.md
+git add debug-delete-button.js
+git add delete-button-fix-patch.js
+git add DELETE_BUTTON_QUICK_REFERENCE.md
+
+git commit -m "Fix: Component management and add delete button debugging tools" -m "" -m "Fixed Issues:" -m "1. Duplicate component rendering - removed DOM manipulation from Component Manager" -m "2. Content loss when moving components - added saveActiveEditableContent()" -m "" -m "Investigating:" -m "3. Delete button creating duplicates instead of deleting" -m "" -m "Added debugging tools:" -m "- debug-delete-button.js: Traces button clicks and state changes" -m "- delete-button-fix-patch.js: Temporary workaround patch" -m "- Comprehensive logging throughout the delete flow" -m "" -m "The system now follows clean architecture:" -m "- Component Manager: state only" -m "- Component Renderer: DOM only" -m "- Unidirectional data flow"
+
+echo.
+echo All changes committed successfully!
+echo.
+echo To debug the delete button issue:
+echo 1. Open browser console on the builder page
+echo 2. Run: const script = document.createElement('script'); script.src = 'debug-delete-button.js'; document.head.appendChild(script);
+echo 3. Click a delete button and check console output
+echo.
+pause

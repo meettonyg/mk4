@@ -93,6 +93,7 @@ class ComponentRenderer {
         }
         
         const components = this.getSortedComponents(state);
+        console.log('renderAllComponents - Components from state:', components.map(c => ({ id: c.id, type: c.type })));
         const existingComponents = this.previewContainer.querySelectorAll('[data-component-id]');
         
         // Create a map of existing component IDs
@@ -316,6 +317,15 @@ class ComponentRenderer {
         const element = document.querySelector(`[data-component-id="${componentId}"]`);
         if (!element) return;
         
+        // Check if interactivity was already set up to avoid duplicate listeners
+        if (element.hasAttribute('data-interactive')) {
+            console.log(`Component ${componentId} already has interactivity set up, skipping`);
+            return;
+        }
+        
+        console.log(`Setting up interactivity for component ${componentId}`);
+        element.setAttribute('data-interactive', 'true');
+        
         // Import needed modules for interactivity
         import('../ui/element-editor.js').then(module => {
             // Add click handler for selection
@@ -369,12 +379,36 @@ class ComponentRenderer {
                 const btn = e.target.closest('.control-btn');
                 if (!btn) return;
                 
-                const action = btn.getAttribute('data-action') || btn.title;
+                // Debug: Log all button properties
+                console.log('=== BUTTON CLICKED ===');
+                console.log('Button element:', btn);
+                console.log('Button title:', btn.title);
+                console.log('Button textContent:', btn.textContent);
+                console.log('Button innerHTML:', btn.innerHTML);
+                console.log('Button data-action:', btn.getAttribute('data-action'));
                 
-                switch (action) {
+                const action = btn.getAttribute('data-action') || btn.title || btn.textContent.trim();
+                console.log(`Control button clicked - Action: ${action}, Component: ${componentId}`);
+                
+                // Also check the button text content for special characters
+                const buttonText = btn.textContent.trim();
+                console.log(`Button text: '${buttonText}'`);
+                
+                // If action doesn't match expected values, try button text
+                let finalAction = action;
+                if (!['Delete', 'delete', 'Duplicate', 'duplicate', 'Move Up', 'moveUp', 'Move Down', 'moveDown'].includes(action)) {
+                    finalAction = buttonText;
+                }
+                
+                console.log(`Final action to execute: '${finalAction}'`);
+                
+                switch (finalAction) {
                     case 'Delete':
                     case 'delete':
+                    case '×': // × symbol
+                        console.log('Delete case triggered');
                         if (confirm('Are you sure you want to delete this component?')) {
+                            console.log('User confirmed deletion');
                             // Save any active edits first
                             if (window.componentManager) {
                                 await window.componentManager.saveActiveEditableContent();
@@ -389,12 +423,14 @@ class ComponentRenderer {
                             element.style.transform = 'scale(0.95)';
                             
                             setTimeout(() => {
+                                console.log('Calling stateManager.removeComponent');
                                 if (window.stateManager) {
                                     window.stateManager.removeComponent(componentId);
                                 }
                                 // Clear the flag after state update
                                 setTimeout(() => {
                                     this.isDeletingComponent = false;
+                                    console.log('isDeletingComponent flag cleared');
                                 }, 100);
                             }, 300);
                         }
@@ -402,6 +438,10 @@ class ComponentRenderer {
                         
                     case 'Duplicate':
                     case 'duplicate':
+                    case '⧉': // ⧉ symbol
+                        console.log('=== DUPLICATE CASE TRIGGERED ===');
+                        console.log('Action that triggered duplicate:', finalAction);
+                        console.log('Component to duplicate:', componentId);
                         if (window.componentManager) {
                             await window.componentManager.saveActiveEditableContent();
                             window.componentManager.duplicateComponent(componentId);
@@ -410,6 +450,7 @@ class ComponentRenderer {
                         
                     case 'Move Up':
                     case 'moveUp':
+                    case '↑': // ↑ symbol
                         if (window.componentManager) {
                             await window.componentManager.moveComponent(componentId, 'up');
                         }
@@ -417,9 +458,14 @@ class ComponentRenderer {
                         
                     case 'Move Down':
                     case 'moveDown':
+                    case '↓': // ↓ symbol
                         if (window.componentManager) {
                             await window.componentManager.moveComponent(componentId, 'down');
                         }
+                        break;
+                        
+                    default:
+                        console.warn(`Unknown control action: '${action}', button text: '${buttonText}'`);
                         break;
                 }
             });

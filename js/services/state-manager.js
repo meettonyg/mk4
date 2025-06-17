@@ -97,10 +97,15 @@ class StateManager {
      * @param {string} componentId - Component ID
      */
     removeComponent(componentId) {
-        if (!this.state.components[componentId]) return;
+        console.log(`StateManager.removeComponent called for: ${componentId}`);
+        if (!this.state.components[componentId]) {
+            console.warn(`Component ${componentId} not found in state`);
+            return;
+        }
         
         const componentData = { ...this.state.components[componentId] };
         delete this.state.components[componentId];
+        console.log(`Component ${componentId} deleted from state`);
         
         // Reorder remaining components
         this.reorderComponents();

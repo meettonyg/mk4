@@ -1,0 +1,18 @@
+@echo off
+REM Git commit for delete button issue investigation
+
+cd /d "C:\Users\seoge\OneDrive\Desktop\CODE-Guestify\MEDIAKIT\PLUGIN\mk4"
+
+git add js/components/component-manager.js
+git add js/components/component-renderer.js
+git add js/services/state-manager.js
+git add DUPLICATE_COMPONENT_FIX.md
+git add COMPONENT_EDIT_LOSS_FIX.md
+git add DELETE_BUTTON_ISSUE.md
+git add debug-delete-button.js
+
+git commit -m "Fix: Component management issues and delete button debugging" -m "" -m "Issues addressed:" -m "1. Fixed duplicate component rendering by removing DOM manipulation from Component Manager" -m "2. Fixed content loss when moving components with arrow controls" -m "3. Added debugging for delete button creating duplicates instead of deleting" -m "" -m "Changes:" -m "- Component Manager now only updates state, no DOM manipulation" -m "- Added saveActiveEditableContent() to preserve edits before actions" -m "- Added data-interactive check to prevent duplicate event listeners" -m "- Enhanced control button action detection with Unicode support" -m "- Added comprehensive debug logging for troubleshooting" -m "" -m "The delete button issue is still under investigation."
+
+echo.
+echo Commit completed successfully!
+pause
