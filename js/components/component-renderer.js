@@ -316,11 +316,13 @@ class ComponentRenderer {
             detail: { count: components.length }
         }));
         
-        // Update empty state visibility
-        this.updateEmptyState();
-        
         // Clear rendering flag
         this.isRendering = false;
+        
+        // Update empty state visibility with a slight delay to ensure DOM is settled
+        setTimeout(() => {
+            this.updateEmptyState();
+        }, 50);
     }
     
     /**
@@ -446,6 +448,8 @@ class ComponentRenderer {
                                 // Clear the flag after state update
                                 setTimeout(() => {
                                     this.isDeletingComponent = false;
+                                    // Force empty state check after deletion
+                                    this.updateEmptyState();
                                 }, 100);
                             }, 300);
                         }
@@ -589,7 +593,8 @@ class ComponentRenderer {
                 dropZone: !!dropZone
             });
             
-            if (addFirstBtn) {
+            if (addFirstBtn && !addFirstBtn.hasAttribute('data-listener-attached')) {
+                addFirstBtn.setAttribute('data-listener-attached', 'true');
                 addFirstBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     console.log('Add component button clicked');
@@ -599,7 +604,8 @@ class ComponentRenderer {
                 console.log('Add component button listener attached');
             }
             
-            if (loadTemplateBtn) {
+            if (loadTemplateBtn && !loadTemplateBtn.hasAttribute('data-listener-attached')) {
+                loadTemplateBtn.setAttribute('data-listener-attached', 'true');
                 loadTemplateBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     console.log('Load template button clicked');
@@ -609,12 +615,15 @@ class ComponentRenderer {
                 console.log('Load template button listener attached');
             }
             
-            // Show drop zone when dragging starts
-            document.addEventListener('dragstart', () => {
-                if (dropZone && !document.querySelector('[data-component-id]')) {
-                    dropZone.style.display = 'block';
-                }
-            });
+            // Show drop zone when dragging starts - only add listener once
+            if (!this.dragListenerAdded) {
+                this.dragListenerAdded = true;
+                document.addEventListener('dragstart', () => {
+                    if (dropZone && !document.querySelector('[data-component-id]')) {
+                        dropZone.style.display = 'block';
+                    }
+                });
+            }
         }, 100);
     }
     
@@ -635,15 +644,31 @@ class ComponentRenderer {
                     emptyState.style.display = 'none';
                 }
             } else {
+                console.log('No components found, showing empty state...');
                 this.previewContainer.classList.remove('has-components');
+                
                 // Show empty state
                 if (!emptyState) {
                     // Create if doesn't exist
+                    console.log('Creating new empty state element...');
                     emptyState = this.createEmptyStateElement();
                     this.previewContainer.appendChild(emptyState);
-                    this.setupEmptyState();
                 }
+                
+                // Ensure empty state is visible
                 emptyState.style.display = 'block';
+                
+                // Setup interactions
+                this.setupEmptyState();
+                
+                // Force a check to ensure it's really visible
+                setTimeout(() => {
+                    const stillEmpty = !this.previewContainer.querySelector('[data-component-id]');
+                    if (stillEmpty && emptyState) {
+                        emptyState.style.display = 'block';
+                        console.log('Empty state visibility confirmed');
+                    }
+                }, 50);
             }
         }
     }
