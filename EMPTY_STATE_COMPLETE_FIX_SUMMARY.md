@@ -22,11 +22,26 @@
 - Fixed timing issues with delayed updates
 - Removed inline styles that were conflicting with CSS
 
-### 2. CSS Layout Fixes (`/css/modules/preview.css`)
-- Added flexbox to `.preview__container`
-- Made `.media-kit` a flex container that expands to fill space
-- Added centering rules for empty state: `justify-content: center` and `align-items: center`
-- Ensured proper width with `flex: 1` and `width: 100%`
+### 2. CSS Layout Fixes - CRITICAL (`/css/modules/preview.css`)
+Based on Gemini's feedback, the key fix is ensuring proper flexbox chain:
+```css
+.preview__container {
+    display: flex;
+    flex-direction: column;
+}
+
+.media-kit {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* CRITICAL: Makes container fill available height */
+    width: 100%;
+}
+
+.media-kit:not(.has-components) {
+    justify-content: center;
+    align-items: center;
+}
+```
 
 ### 3. CSS Styling Fixes (`/css/guestify-builder.css`)
 - Updated selectors with `.media-kit` prefix for specificity
@@ -34,10 +49,10 @@
 - Ensured proper text colors and sizing
 - Removed conflicting min-height from empty state
 
-### 4. Additional CSS Module (`/css/modules/empty-state-center.css`)
-- Simplified centering rules
-- Ensured drop zones don't interfere with layout
-- Set proper max-width and margins for empty state
+### 4. Reinforced Centering (`/css/modules/empty-state-center.css`)
+- Used ID selectors with `!important` for higher specificity
+- Ensured `flex: 1` is applied to make container fill space
+- Added explicit centering rules for empty state
 
 ## Files Modified
 1. `/js/components/component-renderer.js` - Core functionality fixes

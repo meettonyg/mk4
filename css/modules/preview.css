@@ -34,19 +34,25 @@
 /* Media Kit Preview Styles */
 .media-kit {
     color: #1a1a1a;
-    min-height: 500px;
     position: relative;
     background: white;
     display: flex;
     flex-direction: column;
-    flex: 1;
+    flex: 1; /* Critical: Makes container fill available height */
     width: 100%;
+    min-height: 500px;
 }
 
 /* When empty, center the content */
 .media-kit:not(.has-components) {
     justify-content: center;
     align-items: center;
+}
+
+/* When has components, reset to normal flow */
+.media-kit.has-components {
+    justify-content: flex-start;
+    align-items: stretch;
 }
 
 /* Drop Zones */

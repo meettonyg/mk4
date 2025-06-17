@@ -1,30 +1,99 @@
 /**
  * Guestify Media Kit Builder
- * Main CSS file that imports all module styles
+ * All styles consolidated due to module loading issues
  */
 
-/* Base styles */
-@import 'modules/base.css';
+/* === BASE STYLES === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
 
-/* Layout Modules */
-@import 'modules/toolbar.css';
-@import 'modules/sidebar.css';
-@import 'modules/preview.css';
+body {
+    background: #1a1a1a;
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+}
 
-/* UI Modules */
-@import 'modules/ui-elements.css';
-@import 'modules/form-controls.css';
-@import 'modules/design-panel.css';
-@import 'modules/layout.css';
-@import 'modules/media-kit.css';
-@import 'modules/modals.css';
-@import 'modules/layouts.css';
+.builder {
+    display: flex;
+    height: 100vh;
+    position: relative;
+}
 
-/* Debug Module - add specific debug styling */
-@import 'modules/debug-controls.css';
+/* === PREVIEW STYLES === */
+.preview {
+    flex: 1;
+    margin-top: 48px;
+    height: calc(100vh - 48px);
+    overflow: auto;
+    background: #1a1a1a;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
 
-/* Empty State Centering Fix */
-@import 'modules/empty-state-center.css';
+.preview__container {
+    max-width: 900px;
+    margin: 30px auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    width: 100%;
+}
+
+/* === MEDIA KIT CONTAINER - CRITICAL FOR CENTERING === */
+.media-kit,
+#media-kit-preview {
+    color: #1a1a1a;
+    position: relative;
+    background: white;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    width: 100% !important;
+    min-height: 500px;
+}
+
+/* Center when empty */
+.media-kit:not(.has-components),
+#media-kit-preview:not(.has-components) {
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Normal layout when has components */
+.media-kit.has-components,
+#media-kit-preview.has-components {
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+}
+
+/* === EMPTY STATE STYLES === */
+#media-kit-preview .empty-state {
+    width: 100%;
+    /* max-width: 600px; - Removed to allow full centering */
+    margin: 0 auto;
+    padding: 60px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Hide drop zones when no components */
+#media-kit-preview:not(.has-components) .drop-zone {
+    display: none !important;
+}
 
 /* Loading state for drop zones */
 .drop-zone.loading {
@@ -96,7 +165,7 @@
     font-size: 16px;
     color: #64748b;
     margin: 0 0 32px 0;
-    max-width: 400px;
+    max-width: 100%;  /* Changed from 400px */
     line-height: 1.5;
 }
 
