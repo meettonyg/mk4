@@ -23,6 +23,9 @@
 /* Debug Module - add specific debug styling */
 @import 'modules/debug-controls.css';
 
+/* Empty State Centering Fix */
+@import 'modules/empty-state-center.css';
+
 /* Loading state for drop zones */
 .drop-zone.loading {
     position: relative;
@@ -57,43 +60,53 @@
 }
 
 /* Empty State Styles */
-.empty-state {
+.media-kit .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 60px 20px;
     text-align: center;
-    min-height: 400px;
+    background: transparent;
+    color: #1a1a1a;
+    width: 100%;
+    max-width: 600px;
 }
 
-.empty-state__icon {
+.media-kit .empty-state__icon {
     margin-bottom: 24px;
     color: #475569;
     opacity: 0.5;
 }
 
-.empty-state__title {
+.media-kit .empty-state__icon svg {
+    width: 64px;
+    height: 64px;
+}
+
+.media-kit .empty-state__title {
     font-size: 24px;
     font-weight: 600;
     color: #1e293b;
     margin: 0 0 12px 0;
+    line-height: 1.2;
 }
 
-.empty-state__text {
+.media-kit .empty-state__text {
     font-size: 16px;
     color: #64748b;
     margin: 0 0 32px 0;
     max-width: 400px;
+    line-height: 1.5;
 }
 
-.empty-state__actions {
+.media-kit .empty-state__actions {
     display: flex;
     gap: 16px;
     align-items: center;
 }
 
-.btn {
+.media-kit .btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -104,26 +117,33 @@
     border: none;
     cursor: pointer;
     transition: all 0.2s;
+    text-decoration: none;
+    line-height: 1;
 }
 
-.btn--primary {
+.media-kit .btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.media-kit .btn--primary {
     background: #0ea5e9;
     color: white;
 }
 
-.btn--primary:hover {
+.media-kit .btn--primary:hover {
     background: #0284c7;
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
 }
 
-.btn--secondary {
-    background: transparent;
+.media-kit .btn--secondary {
+    background: white;
     color: #64748b;
     border: 1px solid #e2e8f0;
 }
 
-.btn--secondary:hover {
+.media-kit .btn--secondary:hover {
     background: #f8fafc;
     border-color: #cbd5e1;
 }

@@ -17,6 +17,8 @@
     overflow: hidden;
     transition: all 0.3s ease;
     min-height: 500px;
+    display: flex;
+    flex-direction: column;
 }
 
 .preview__container--mobile {
@@ -34,6 +36,17 @@
     color: #1a1a1a;
     min-height: 500px;
     position: relative;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    width: 100%;
+}
+
+/* When empty, center the content */
+.media-kit:not(.has-components) {
+    justify-content: center;
+    align-items: center;
 }
 
 /* Drop Zones */

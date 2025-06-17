@@ -1,0 +1,14 @@
+/* Empty State Centering Fix - Simplified */
+
+/* Ensure empty state is properly sized and centered */
+#media-kit-preview .empty-state {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+
+/* Ensure drop zones don't interfere with layout */
+#media-kit-preview:not(.has-components) .drop-zone {
+    display: none !important;
+}
