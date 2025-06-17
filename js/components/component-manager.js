@@ -362,7 +362,10 @@ class ComponentManager {
      * @param {string} action - Action to perform
      * @param {string} componentId - Component ID
      */
-    handleControlAction(action, componentId) {
+    async handleControlAction(action, componentId) {
+        // Save any active contenteditable changes before any action
+        await this.saveActiveEditableContent();
+        
         switch (action) {
             case '×':
             case 'delete':
@@ -378,12 +381,12 @@ class ComponentManager {
                 
             case '↑':
             case 'moveUp':
-                this.moveComponent(componentId, 'up');
+                await this.moveComponent(componentId, 'up');
                 break;
                 
             case '↓':
             case 'moveDown':
-                this.moveComponent(componentId, 'down');
+                await this.moveComponent(componentId, 'down');
                 break;
         }
     }
@@ -393,7 +396,10 @@ class ComponentManager {
      * @param {string} componentId - Component ID
      * @param {string} direction - 'up' or 'down'
      */
-    moveComponent(componentId, direction) {
+    async moveComponent(componentId, direction) {
+        // Save any active contenteditable changes before moving
+        await this.saveActiveEditableContent();
+        
         const components = stateManager.getOrderedComponents();
         const currentIndex = components.findIndex(c => c.id === componentId);
         
@@ -444,6 +450,36 @@ class ComponentManager {
         return null;
     }
 
+    /**
+     * Save any active contenteditable content
+     * This ensures unsaved changes are preserved before actions like move/delete
+     */
+    saveActiveEditableContent() {
+        // Find the currently focused element
+        const activeElement = document.activeElement;
+        
+        // Check if it's a contenteditable element
+        if (activeElement && activeElement.contentEditable === 'true') {
+            // Trigger blur to save the content
+            activeElement.blur();
+            
+            // Small delay to ensure state is updated
+            return new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        // Also check for any contenteditable with unsaved changes
+        const editables = document.querySelectorAll('[contenteditable="true"]');
+        editables.forEach(editable => {
+            const originalContent = editable.getAttribute('data-original-content');
+            if (originalContent !== null && originalContent !== editable.textContent) {
+                // Trigger blur to save changes
+                editable.blur();
+            }
+        });
+        
+        return Promise.resolve();
+    }
+    
     /**
      * Generate unique component ID
      * @param {string} type - Component type

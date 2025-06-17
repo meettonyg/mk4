@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Git commit for component edit loss fix
+
+cd "C:\Users\seoge\OneDrive\Desktop\CODE-Guestify\MEDIAKIT\PLUGIN\mk4"
+
+git add js/components/component-manager.js
+git add js/components/component-renderer.js
+git add DUPLICATE_COMPONENT_FIX.md
+git add COMPONENT_EDIT_LOSS_FIX.md
+
+git commit -m "Fix: Prevent content loss when moving components
+
+- Added saveActiveEditableContent() to save unsaved edits before actions
+- Made component control actions (move, duplicate, delete) async
+- Enhanced contenteditable tracking with focus/blur events
+- Ensures all edits are preserved during component manipulation
+
+Previously, clicking move arrows while editing would lose changes.
+Now all edits are automatically saved before any action."
+
+echo "Commit completed successfully!"

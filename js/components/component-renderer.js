@@ -335,11 +335,18 @@ class ComponentRenderer {
             // Set up content editable elements
             const editables = element.querySelectorAll('[contenteditable="true"]');
             editables.forEach(editable => {
+                // Store original content on focus
+                editable.addEventListener('focus', () => {
+                    editable.setAttribute('data-original-content', editable.textContent);
+                });
+                
                 editable.addEventListener('blur', () => {
                     const settingKey = editable.getAttribute('data-setting');
                     if (settingKey && window.stateManager) {
                         window.stateManager.updateComponent(componentId, settingKey, editable.textContent);
                     }
+                    // Clear the original content attribute after saving
+                    editable.removeAttribute('data-original-content');
                 });
                 
                 // Prevent Enter key in single-line editables
@@ -357,7 +364,7 @@ class ComponentRenderer {
         // Set up control buttons
         const controls = element.querySelector('.element-controls');
         if (controls) {
-            controls.addEventListener('click', (e) => {
+            controls.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const btn = e.target.closest('.control-btn');
                 if (!btn) return;
@@ -368,6 +375,11 @@ class ComponentRenderer {
                     case 'Delete':
                     case 'delete':
                         if (confirm('Are you sure you want to delete this component?')) {
+                            // Save any active edits first
+                            if (window.componentManager) {
+                                await window.componentManager.saveActiveEditableContent();
+                            }
+                            
                             // Set flag to prevent re-render during deletion
                             this.isDeletingComponent = true;
                             
@@ -391,6 +403,7 @@ class ComponentRenderer {
                     case 'Duplicate':
                     case 'duplicate':
                         if (window.componentManager) {
+                            await window.componentManager.saveActiveEditableContent();
                             window.componentManager.duplicateComponent(componentId);
                         }
                         break;
@@ -398,14 +411,14 @@ class ComponentRenderer {
                     case 'Move Up':
                     case 'moveUp':
                         if (window.componentManager) {
-                            window.componentManager.moveComponent(componentId, 'up');
+                            await window.componentManager.moveComponent(componentId, 'up');
                         }
                         break;
                         
                     case 'Move Down':
                     case 'moveDown':
                         if (window.componentManager) {
-                            window.componentManager.moveComponent(componentId, 'down');
+                            await window.componentManager.moveComponent(componentId, 'down');
                         }
                         break;
                 }
