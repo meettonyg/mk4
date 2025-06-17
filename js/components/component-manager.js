@@ -188,16 +188,24 @@ class ComponentManager {
                 }
             });
             
-            // Render component HTML
-            const componentHTML = await renderComponent(mappedType, componentId);
+            // Wait for the component to be rendered by the state change
+            await new Promise((resolve) => {
+                const checkInterval = setInterval(() => {
+                    const element = document.querySelector(`[data-component-id="${componentId}"]`);
+                    if (element) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 50);
+                
+                // Timeout after 2 seconds
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                    resolve();
+                }, 2000);
+            });
             
-            // Insert component into DOM
-            this.insertComponentIntoDOM(componentHTML, componentId, targetId, position);
-            
-            // Make component interactive
-            this.makeComponentInteractive(componentId);
-            
-            // Select the newly added component
+            // Now select the component
             const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
             if (componentElement) {
                 selectElement(componentElement);
@@ -251,20 +259,20 @@ class ComponentManager {
                 const componentId = await this.addComponent(componentType);
                 // Update preview container state
                 zone.classList.add('has-components');
+                
+                // Hide empty state
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
             } else {
-                // Clear the zone's content first
-                zone.innerHTML = '';
-                
-                // Add component and get the componentId
-                const componentId = await this.addComponent(componentType, zoneId, 'inside');
-                
-                // The component should now be rendered in the zone
-                // Remove loading state classes and zone classes since it's no longer a drop zone
+                // For drop zones, we need to handle differently since we're not inserting directly
+                // Mark the zone as having a component
                 zone.classList.remove('drop-zone', 'drop-zone--empty', 'loading');
-                
-                // Update zone attributes to indicate it now contains a component
-                zone.removeAttribute('data-zone');
                 zone.setAttribute('data-has-component', 'true');
+                
+                // Add component to state
+                const componentId = await this.addComponent(componentType);
             }
             
         } catch (error) {

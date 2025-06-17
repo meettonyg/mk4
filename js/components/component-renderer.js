@@ -134,6 +134,9 @@ class ComponentRenderer {
      * @param {Set} existingIds - Set of existing component IDs
      */
     async renderNewComponents(components, existingIds) {
+        console.log('renderNewComponents called with', components.length, 'components');
+        console.log('Existing IDs:', Array.from(existingIds));
+        
         // Hide empty state if we have components
         if (components.length > 0) {
             const emptyState = document.getElementById('empty-state');
@@ -145,7 +148,15 @@ class ComponentRenderer {
         
         // Render only new components
         for (const component of components) {
+            console.log(`Checking component ${component.id}, exists: ${existingIds.has(component.id)}`);
             if (!existingIds.has(component.id)) {
+                // Double-check the component doesn't already exist in DOM
+                const alreadyInDOM = document.querySelector(`[data-component-id="${component.id}"]`);
+                if (alreadyInDOM) {
+                    console.warn(`Component ${component.id} already in DOM, skipping render`);
+                    continue;
+                }
+                
                 try {
                     console.log(`Rendering new component: ${component.type} (${component.id})`);
                     

@@ -11,6 +11,8 @@
  * @returns {Promise<string>} - The rendered component HTML
  */
 export async function renderComponent(componentType, componentId = null, props = {}) {
+    console.log(`renderComponent called - Type: ${componentType}, ID: ${componentId}`);
+    
     try {
         // Add componentId to props for the template
         const propsWithId = { ...props, componentId };
@@ -112,21 +114,7 @@ function wrapComponentWithControls(html, componentType, componentId) {
                 el.setAttribute('contenteditable', 'true');
             }
         });
-        
-        // Add click handler for element selection
-        componentEl.addEventListener('click', function(e) {
-            e.stopPropagation();
-            // Import and use selectElement
-            import('../ui/element-editor.js').then(module => {
-                module.selectElement(this);
-            });
-        });
     }
-    
-    // Dispatch event to notify that a component was added
-    document.dispatchEvent(new CustomEvent('componentAdded', {
-        detail: { type: componentType, element: componentEl }
-    }));
     
     return temp.innerHTML;
 }

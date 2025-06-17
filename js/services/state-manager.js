@@ -28,6 +28,8 @@ class StateManager {
      * @param {Object} initialData - Initial component data
      */
     initComponent(componentId, componentType, initialData = {}, skipNotification = false) {
+        console.log(`StateManager: initComponent called - ID: ${componentId}, Type: ${componentType}, Skip: ${skipNotification}`);
+        
         this.state.components[componentId] = {
             type: componentType,
             data: { ...initialData },
