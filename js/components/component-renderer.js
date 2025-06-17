@@ -15,7 +15,10 @@ class ComponentRenderer {
      * Initialize the component renderer
      */
     init() {
-        if (this.initialized) return;
+        if (this.initialized) {
+            console.warn('Component renderer already initialized, skipping');
+            return;
+        }
         
         // Find the preview container
         this.previewContainer = document.getElementById('media-kit-preview');
@@ -31,15 +34,20 @@ class ComponentRenderer {
         // Initialize state from existing DOM components
         this.initializeFromDOM();
         
-        // Subscribe to state changes
+        // Subscribe to state changes - store unsubscribe function
         if (window.stateManager) {
-            window.stateManager.subscribeGlobal(state => this.onStateChange(state));
+            this.stateUnsubscribe = window.stateManager.subscribeGlobal(state => this.onStateChange(state));
+            console.log('Subscribed to state manager');
         }
         
-        // Listen for component-specific events
-        document.addEventListener('gmkb-state-changed', e => {
-            this.renderAllComponents(e.detail.state);
-        });
+        // Listen for component-specific events - mark listener to avoid duplicates
+        if (!this.eventListenerAdded) {
+            this.eventListenerAdded = true;
+            document.addEventListener('gmkb-state-changed', e => {
+                console.log('Received gmkb-state-changed event');
+                this.renderAllComponents(e.detail.state);
+            });
+        }
         
         // Clear the skip flag after initialization
         setTimeout(() => {
@@ -67,66 +75,149 @@ class ComponentRenderer {
             return;
         }
         
-        // Check if we're in the middle of a deletion operation
-        if (this.isDeletingComponent) {
-            // Skip the re-render during deletion to avoid conflicts
-            return;
-        }
-        
         // Skip if we're currently rendering
         if (this.isRendering) {
             console.log('Already rendering, skipping state change');
             return;
         }
         
-        this.renderAllComponents(state);
+        this.renderWithDiff(state);
     }
     
     /**
-     * Render all components based on current state
+     * Render components using intelligent diffing
      * @param {Object} state - Current state
      */
-    renderAllComponents(state) {
+    async renderWithDiff(state) {
         if (!this.previewContainer) {
             console.error('Preview container not found. Cannot render components.');
             return;
         }
-        
-        const components = this.getSortedComponents(state);
-        console.log('renderAllComponents - Components from state:', components.map(c => ({ id: c.id, type: c.type })));
-        const existingComponents = this.previewContainer.querySelectorAll('[data-component-id]');
-        
-        // Create a map of existing component IDs
-        const existingIds = new Set();
-        existingComponents.forEach(el => {
-            existingIds.add(el.getAttribute('data-component-id'));
-        });
-        
-        // Check if we need to do a full re-render (components removed or reordered)
-        let needsFullRerender = false;
-        
-        // Check for removed components
-        existingIds.forEach(id => {
-            if (!components.find(c => c.id === id)) {
-                needsFullRerender = true;
-            }
-        });
-        
-        // Check for order changes
-        if (!needsFullRerender && existingComponents.length === components.length) {
-            existingComponents.forEach((el, index) => {
-                if (el.getAttribute('data-component-id') !== components[index].id) {
-                    needsFullRerender = true;
+
+        // Set rendering flag to prevent concurrent renders
+        this.isRendering = true;
+
+        try {
+            const stateComponents = this.getSortedComponents(state);
+            const domElements = Array.from(this.previewContainer.querySelectorAll('[data-component-id]'));
+            const domIds = domElements.map(el => el.getAttribute('data-component-id'));
+            const stateIds = stateComponents.map(c => c.id);
+
+            console.log('=== DIFF RENDER START ===');
+            console.log('State components:', stateIds);
+            console.log('DOM components:', domIds);
+            console.log('Components to remove:', domIds.filter(id => !stateIds.includes(id)));
+            console.log('Components to add:', stateIds.filter(id => !domIds.includes(id)));
+
+            // 1. Remove components that are in DOM but not in state
+            for (const element of domElements) {
+                const id = element.getAttribute('data-component-id');
+                if (!stateIds.includes(id)) {
+                    console.log(`Removing component ${id} from DOM`);
+                    // Animate removal
+                    element.style.transition = 'all 0.3s ease';
+                    element.style.opacity = '0';
+                    element.style.transform = 'scale(0.95)';
+                    
+                    await new Promise(resolve => {
+                        setTimeout(() => {
+                            element.remove();
+                            resolve();
+                        }, 300);
+                    });
                 }
-            });
+            }
+
+            // 2. Add components that are in state but not in DOM
+            for (const component of stateComponents) {
+                if (!domIds.includes(component.id)) {
+                    console.log(`Adding component ${component.id} to DOM`);
+                    
+                    try {
+                        const html = await renderComponent(component.type, component.id, component.data);
+                        
+                        // Find correct position based on order
+                        const index = stateComponents.indexOf(component);
+                        const referenceNode = this.findReferenceNode(index, stateComponents);
+                        
+                        // Insert at correct position
+                        if (referenceNode) {
+                            referenceNode.insertAdjacentHTML('afterend', html);
+                        } else {
+                            // Insert at beginning if no reference node
+                            this.previewContainer.insertAdjacentHTML('afterbegin', html);
+                        }
+                        
+                        // Setup interactivity
+                        this.setupComponentInteractivity(component.id);
+                    } catch (error) {
+                        console.error(`Failed to render component ${component.type}:`, error);
+                    }
+                }
+            }
+
+            // 3. Reorder components if needed
+            const currentDomOrder = Array.from(this.previewContainer.querySelectorAll('[data-component-id]'));
+            for (let i = 0; i < stateComponents.length; i++) {
+                const expectedId = stateComponents[i].id;
+                const currentElement = currentDomOrder[i];
+                
+                if (currentElement && currentElement.getAttribute('data-component-id') !== expectedId) {
+                    // Find the correct element and move it
+                    const correctElement = this.previewContainer.querySelector(`[data-component-id="${expectedId}"]`);
+                    if (correctElement) {
+                        console.log(`Reordering component ${expectedId} to position ${i}`);
+                        if (i === 0) {
+                            this.previewContainer.insertBefore(correctElement, this.previewContainer.firstElementChild);
+                        } else {
+                            const previousElement = this.previewContainer.querySelector(`[data-component-id="${stateComponents[i-1].id}"]`);
+                            if (previousElement) {
+                                previousElement.insertAdjacentElement('afterend', correctElement);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Update empty state
+            this.updateEmptyState();
+
+            // Trigger rendered event
+            document.dispatchEvent(new CustomEvent('components-rendered', {
+                detail: { count: stateComponents.length }
+            }));
+            
+            console.log('=== DIFF RENDER COMPLETE ===');
+
+        } finally {
+            // Clear rendering flag
+            this.isRendering = false;
         }
-        
-        if (needsFullRerender) {
-            this.renderAllFromScratch(components);
-        } else {
-            // Only render new components
-            this.renderNewComponents(components, existingIds);
+    }
+
+    /**
+     * Find reference node for inserting at correct position
+     * @param {number} index - Target index
+     * @param {Array} stateComponents - All components in state
+     * @returns {HTMLElement|null} Reference element or null
+     */
+    findReferenceNode(index, stateComponents) {
+        // Find the previous component that exists in DOM
+        for (let i = index - 1; i >= 0; i--) {
+            const element = this.previewContainer.querySelector(`[data-component-id="${stateComponents[i].id}"]`);
+            if (element) {
+                return element;
+            }
         }
+        return null;
+    }
+
+    /**
+     * Legacy render method - kept for compatibility but redirects to diff render
+     * @param {Object} state - Current state
+     */
+    renderAllComponents(state) {
+        this.renderWithDiff(state);
     }
     
     /**
@@ -433,25 +524,10 @@ class ComponentRenderer {
                                 await window.componentManager.saveActiveEditableContent();
                             }
                             
-                            // Set flag to prevent re-render during deletion
-                            this.isDeletingComponent = true;
-                            
-                            // Animate the removal
-                            element.style.transition = 'all 0.3s ease';
-                            element.style.opacity = '0';
-                            element.style.transform = 'scale(0.95)';
-                            
-                            setTimeout(() => {
-                                if (window.stateManager) {
-                                    window.stateManager.removeComponent(componentId);
-                                }
-                                // Clear the flag after state update
-                                setTimeout(() => {
-                                    this.isDeletingComponent = false;
-                                    // Force empty state check after deletion
-                                    this.updateEmptyState();
-                                }, 100);
-                            }, 300);
+                            // Remove from state - the diff renderer will handle the animation
+                            if (window.stateManager) {
+                                window.stateManager.removeComponent(componentId);
+                            }
                         }
                         break;
                         
