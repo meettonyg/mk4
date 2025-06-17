@@ -137,12 +137,19 @@ class ComponentRenderer {
         console.log('renderNewComponents called with', components.length, 'components');
         console.log('Existing IDs:', Array.from(existingIds));
         
-        // Hide empty state if we have components
+        // Hide empty state and drop zones if we have components
         if (components.length > 0) {
             const emptyState = document.getElementById('empty-state');
             if (emptyState) {
                 emptyState.style.display = 'none';
             }
+            
+            // Hide any remaining drop zones
+            const dropZones = this.previewContainer.querySelectorAll('.drop-zone');
+            dropZones.forEach(zone => {
+                zone.style.display = 'none';
+            });
+            
             this.previewContainer.classList.add('has-components');
         }
         
@@ -163,8 +170,22 @@ class ComponentRenderer {
                     // Use the dynamic component loader to render the component
                     const html = await renderComponent(component.type, component.id, component.data);
                     
-                    // Add to the preview container
-                    this.previewContainer.insertAdjacentHTML('beforeend', html);
+                    // Find the appropriate insertion point
+                    const insertionPoint = this.findInsertionPoint(component);
+                    
+                    if (insertionPoint.dropZone) {
+                        // Replace drop zone with component
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = html;
+                        const componentElement = tempDiv.firstElementChild;
+                        
+                        if (componentElement && insertionPoint.dropZone.parentNode) {
+                            insertionPoint.dropZone.parentNode.replaceChild(componentElement, insertionPoint.dropZone);
+                        }
+                    } else {
+                        // Add to the preview container at the appropriate position
+                        this.previewContainer.insertAdjacentHTML('beforeend', html);
+                    }
                     
                     // Make the component interactive
                     this.setupComponentInteractivity(component.id);
@@ -265,6 +286,23 @@ class ComponentRenderer {
         
         // Clear rendering flag
         this.isRendering = false;
+    }
+    
+    /**
+     * Find the appropriate insertion point for a component
+     * @param {Object} component - Component to insert
+     * @returns {Object} Insertion point info
+     */
+    findInsertionPoint(component) {
+        // Check if there's a drop zone waiting for this component
+        const dropZones = this.previewContainer.querySelectorAll('.drop-zone:not([style*="display: none"])');
+        
+        if (dropZones.length > 0) {
+            // Use the first visible drop zone
+            return { dropZone: dropZones[0] };
+        }
+        
+        return { dropZone: null };
     }
     
     // updateComponentData method has been removed

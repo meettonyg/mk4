@@ -237,49 +237,17 @@ class ComponentManager {
     async addComponentToZone(componentType, zone) {
         console.log(`Adding component ${componentType} to zone`);
         
-        // Check if zone is the preview container (for first component)
-        const isPreviewContainer = zone.id === 'media-kit-preview';
-        
-        if (!isPreviewContainer) {
-            // Show loading state for drop zones
-            zone.classList.add('loading');
-            zone.innerHTML = '<div class="loading-spinner">Loading component...</div>';
-        }
-        
         try {
-            // Get the zone's ID or generate one
-            let zoneId = zone.getAttribute('data-zone-id');
-            if (!zoneId) {
-                zoneId = 'zone-' + Date.now();
-                zone.setAttribute('data-zone-id', zoneId);
-            }
+            // Simply add the component to state
+            // The Component Renderer will handle all DOM updates
+            const componentId = await this.addComponent(componentType);
             
-            // For preview container, add directly
-            if (isPreviewContainer) {
-                const componentId = await this.addComponent(componentType);
-                // Update preview container state
-                zone.classList.add('has-components');
-                
-                // Hide empty state
-                const emptyState = document.getElementById('empty-state');
-                if (emptyState) {
-                    emptyState.style.display = 'none';
-                }
-            } else {
-                // For drop zones, we need to handle differently since we're not inserting directly
-                // Mark the zone as having a component
-                zone.classList.remove('drop-zone', 'drop-zone--empty', 'loading');
-                zone.setAttribute('data-has-component', 'true');
-                
-                // Add component to state
-                const componentId = await this.addComponent(componentType);
-            }
+            // Return the component ID for the caller
+            return componentId;
             
         } catch (error) {
             console.error('Failed to add component to zone:', error);
-            zone.classList.remove('loading');
-            zone.classList.add('drop-zone--empty');
-            zone.innerHTML = '<div class="error-message">Failed to load component. Click to try again.</div>';
+            throw error;
         }
     }
 
@@ -342,12 +310,8 @@ class ComponentManager {
         if (schema) {
             stateManager.initComponent(newComponentId, sourceComponent.type, newData);
             
-            // Render and insert after source
-            const componentHTML = await renderComponent(sourceComponent.type, newComponentId);
-            this.insertComponentIntoDOM(componentHTML, newComponentId, sourceComponentId, 'after');
-            
-            // Make interactive
-            this.makeComponentInteractive(newComponentId);
+            // Just update the state - Component Renderer will handle the DOM
+            // The component will be rendered automatically by the state change
             
             this.showNotification('Component duplicated');
         }
@@ -387,124 +351,11 @@ class ComponentManager {
         return null;
     }
 
-    /**
-     * Insert component HTML into DOM
-     * @param {string} html - Component HTML
-     * @param {string} componentId - Component ID
-     * @param {string} targetId - Target ID
-     * @param {string} position - Position relative to target
-     */
-    insertComponentIntoDOM(html, componentId, targetId, position) {
-        // First try to find the drop zone if targetId is provided
-        if (targetId) {
-            const zone = document.querySelector(`[data-zone-id="${targetId}"]`);
-            if (zone && zone.classList.contains('drop-zone')) {
-                // Replace the drop zone with the component
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                const componentElement = tempDiv.firstElementChild;
-                
-                // Replace the zone element with the component element
-                if (componentElement && zone.parentNode) {
-                    zone.parentNode.replaceChild(componentElement, zone);
-                    return;
-                }
-            }
-        }
-        
-        // Otherwise use the standard insertion logic
-        const container = document.getElementById('media-kit-preview');
-        
-        if (!targetId || position === 'inside') {
-            // Add to end of container
-            container.insertAdjacentHTML('beforeend', html);
-        } else {
-            const target = document.querySelector(`[data-component-id="${targetId}"], [data-zone-id="${targetId}"]`);
-            if (target) {
-                switch (position) {
-                    case 'before':
-                        target.insertAdjacentHTML('beforebegin', html);
-                        break;
-                    case 'after':
-                        target.insertAdjacentHTML('afterend', html);
-                        break;
-                    case 'inside':
-                        target.innerHTML = html;
-                        break;
-                }
-            }
-        }
-    }
+    // REMOVED: insertComponentIntoDOM method
+    // All DOM manipulation is now handled by Component Renderer
 
-    /**
-     * Make component interactive
-     * @param {string} componentId - Component ID
-     */
-    makeComponentInteractive(componentId) {
-        const element = document.querySelector(`[data-component-id="${componentId}"]`);
-        if (!element) return;
-        
-        // Add click handler for selection
-        element.addEventListener('click', (e) => {
-            e.stopPropagation();
-            selectElement(element);
-            
-            // Get component type
-            const componentType = element.getAttribute('data-component-type');
-            
-            // Dispatch selection event
-            document.dispatchEvent(new CustomEvent('component-selected', {
-                detail: { componentId, componentType }
-            }));
-        });
-        
-        // Add control button handlers
-        const controls = element.querySelector('.element-controls');
-        if (controls) {
-            controls.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const btn = e.target.closest('.control-btn');
-                if (!btn) return;
-                
-                const action = btn.getAttribute('data-action') || btn.textContent;
-                this.handleControlAction(action, componentId);
-            });
-        }
-        
-        // Initialize any contenteditable elements
-        const editables = element.querySelectorAll('[contenteditable="true"]');
-        editables.forEach(editable => {
-            // Store original content
-            const originalContent = editable.textContent;
-            
-            editable.addEventListener('focus', () => {
-                editable.setAttribute('data-original-content', editable.textContent);
-            });
-            
-            editable.addEventListener('blur', () => {
-                const newContent = editable.textContent;
-                const original = editable.getAttribute('data-original-content');
-                
-                if (newContent !== original) {
-                    // Find the setting key for this editable
-                    const settingKey = this.findSettingKeyForElement(editable, componentId);
-                    if (settingKey) {
-                        stateManager.updateComponent(componentId, settingKey, newContent);
-                    }
-                }
-            });
-            
-            // Prevent Enter key in single-line editables
-            if (!editable.matches('p, div.multiline')) {
-                editable.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        editable.blur();
-                    }
-                });
-            }
-        });
-    }
+    // REMOVED: makeComponentInteractive method
+    // Component interactivity is now handled by Component Renderer
 
     /**
      * Handle control button actions
