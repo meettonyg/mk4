@@ -73,6 +73,45 @@ function guestify_media_kit_builder_enqueue_scripts() {
     $components = $component_discovery->getComponents();
     $components_array = is_array($components) ? array_values($components) : [];
     
+    // Prepare component schemas for localization
+    $component_schemas = array();
+    foreach ($components_array as $component) {
+        // Use the directory name, not the display name
+        $component_dir = isset($component['directory']) ? $component['directory'] : $component['name'];
+        $schema_path = GUESTIFY_PLUGIN_DIR . 'components/' . $component_dir . '/component.json';
+        
+        if (file_exists($schema_path)) {
+            $schema_content = file_get_contents($schema_path);
+            if ($schema_content !== false) {
+                $schema = json_decode($schema_content, true);
+                
+                // Check for JSON errors
+                if (json_last_error() === JSON_ERROR_NONE && $schema !== null) {
+                    // Use directory name as key for consistency
+                    $component_schemas[$component_dir] = $schema;
+                    
+                    // Also add using the component name for backwards compatibility
+                    if (isset($component['name']) && $component['name'] !== $component_dir) {
+                        $component_schemas[$component['name']] = $schema;
+                    }
+                } else {
+                    error_log('Media Kit Builder: Failed to parse schema JSON for component: ' . $component_dir . ' - ' . json_last_error_msg());
+                }
+            } else {
+                error_log('Media Kit Builder: Failed to read schema file for component: ' . $component_dir);
+            }
+        } else {
+            // This is not necessarily an error - component might not have a schema
+            // Only log in debug mode
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Media Kit Builder: Schema file not found for component: ' . $component_dir . ' at ' . $schema_path);
+            }
+        }
+    }
+    
+    // Get existing component data from any saved state
+    $saved_state = get_option('guestify_media_kit_state', array());
+    
     // Localize script with WordPress data
     wp_localize_script(
         'guestify-builder-script',
@@ -86,6 +125,13 @@ function guestify_media_kit_builder_enqueue_scripts() {
             'pluginUrl' => $plugin_url,
             'components' => $components_array, // Ensure it's a proper array
             'categories' => $component_discovery->getCategories(),
+            'componentSchemas' => $component_schemas, // Add schemas for immediate access
+            'initialState' => $saved_state, // Add any saved state
+            'features' => array( // Add feature flags from PHP
+                'useEnhancedInit' => true,
+                'useBatchUpdates' => true,
+                'usePendingActions' => true
+            )
         ]
     );
 }

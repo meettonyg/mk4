@@ -13,6 +13,8 @@ class ComponentManager {
         this.componentRegistry = new Map();
         this.loadedSchemas = new Map();
         this.initialized = false;
+        this.pendingActions = new Set(); // Track pending actions to prevent duplicates
+        this.controlActionDebounce = new Map(); // Debounce control actions
     }
 
     /**
@@ -256,6 +258,14 @@ class ComponentManager {
      * @param {string} componentId - Component ID
      */
     removeComponent(componentId) {
+        // First, mark the component as being deleted in the DOM
+        const element = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (element) {
+            element.classList.add('component-deleting');
+            element.style.opacity = '0.5';
+            element.style.pointerEvents = 'none';
+        }
+        
         // Only remove from state - Component Renderer will handle DOM removal
         stateManager.removeComponent(componentId);
         
@@ -374,31 +384,59 @@ class ComponentManager {
      * @param {string} componentId - Component ID
      */
     async handleControlAction(action, componentId) {
-        // Save any active contenteditable changes before any action
-        await this.saveActiveEditableContent();
+        // Create unique key for this action
+        const actionKey = `${action}-${componentId}`;
         
-        switch (action) {
-            case '×':
-            case 'delete':
-                if (confirm('Are you sure you want to delete this component?')) {
-                    this.removeComponent(componentId);
-                }
-                break;
-                
-            case '⧉':
-            case 'duplicate':
-                this.duplicateComponent(componentId);
-                break;
-                
-            case '↑':
-            case 'moveUp':
-                await this.moveComponent(componentId, 'up');
-                break;
-                
-            case '↓':
-            case 'moveDown':
-                await this.moveComponent(componentId, 'down');
-                break;
+        // Check if this action is already pending
+        if (this.pendingActions.has(actionKey)) {
+            console.log(`Action ${actionKey} already in progress, skipping`);
+            return;
+        }
+        
+        // Debounce rapid clicks (300ms)
+        if (this.controlActionDebounce.has(actionKey)) {
+            clearTimeout(this.controlActionDebounce.get(actionKey));
+        }
+        
+        this.controlActionDebounce.set(actionKey, setTimeout(() => {
+            this.controlActionDebounce.delete(actionKey);
+        }, 300));
+        
+        // Mark action as pending
+        this.pendingActions.add(actionKey);
+        
+        try {
+            // Save any active contenteditable changes before any action
+            await this.saveActiveEditableContent();
+            
+            switch (action) {
+                case '×':
+                case 'delete':
+                    if (confirm('Are you sure you want to delete this component?')) {
+                        // Immediately disable controls on the component
+                        this.disableComponentControls(componentId);
+                        this.removeComponent(componentId);
+                    }
+                    break;
+                    
+                case '⧉':
+                case 'duplicate':
+                    await this.duplicateComponent(componentId);
+                    break;
+                    
+                case '↑':
+                case 'moveUp':
+                    await this.moveComponent(componentId, 'up');
+                    break;
+                    
+                case '↓':
+                case 'moveDown':
+                    await this.moveComponent(componentId, 'down');
+                    break;
+            }
+        } finally {
+            // Remove from pending actions
+            this.pendingActions.delete(actionKey);
         }
     }
 
@@ -500,6 +538,23 @@ class ComponentManager {
         return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
 
+    /**
+     * Disable all control buttons for a component
+     * @param {string} componentId - Component ID
+     */
+    disableComponentControls(componentId) {
+        const element = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (!element) return;
+        
+        const controlButtons = element.querySelectorAll('.control-btn');
+        controlButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.style.pointerEvents = 'none';
+        });
+    }
+    
     /**
      * Show notification
      * @param {string} message - Message to show

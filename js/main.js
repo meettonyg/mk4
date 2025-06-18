@@ -1,9 +1,13 @@
 /**
  * Main entry point for the Guestify Media Kit Builder
- * FINAL, ROBUST VERSION
+ * Enhanced Version with Improved State Management
  */
 
-// Core Architecture Modules
+// Import the conditional loader to use enhanced or legacy systems
+import { initializeSystems, shouldUseEnhancedInit } from './core/conditional-loader.js';
+import { mediaKitBuilderInit } from './core/media-kit-builder-init.js';
+
+// Core Architecture Modules (loaded conditionally)
 import { stateManager } from './services/state-manager.js';
 import { componentManager } from './components/component-manager.js';
 import { componentRenderer } from './components/component-renderer.js';
@@ -27,35 +31,58 @@ import './modals/template-library.js';
 // --- Main Initialization Sequence ---
 
 async function initializeBuilder() {
-    console.log('Guestify Media Kit Builder: Initializing...');
+    // Prevent multiple initializations
+    if (window.mediaKitBuilderInitialized) {
+        console.log('Media Kit Builder already initialized, skipping...');
+        return;
+    }
     
-    // 1. Set up globals
+    window.mediaKitBuilderInitialized = true;
+    console.log('Guestify Media Kit Builder: Starting initialization...');
+    
+    // Set up globals first
     setupGlobalPluginUrl();
-
-    // 2. Initialize all UI modules
-    setupCoreUI();
-
-    // 3. Initialize the core architectural managers in order
-    await componentManager.init();
-    componentRenderer.init();
-    historyService.init();
     
-    if (window.gmkbDesignPanel) {
-        window.gmkbDesignPanel.init();
+    try {
+        // Initialize the appropriate systems based on feature flags
+        await initializeSystems();
+        console.log('Systems initialized based on feature flags');
+        
+        // Always use enhanced initialization when available
+        if (shouldUseEnhancedInit()) {
+            console.log('Using enhanced initialization...');
+            // Enhanced init handles everything including UI setup
+            // Remove the duplicate initialization from media-kit-builder-init.js
+            return; // Let media-kit-builder-init.js handle everything
+        } else {
+            console.log('Using legacy initialization...');
+            // Legacy initialization
+            setupCoreUI();
+            await componentManager.init();
+            componentRenderer.init();
+            historyService.init();
+            
+            if (window.gmkbDesignPanel) {
+                window.gmkbDesignPanel.init();
+            }
+            
+            // Load data
+            const urlParams = new URLSearchParams(window.location.search);
+            const mediaKitId = urlParams.get('media_kit_id');
+            if (mediaKitId) {
+                await loadMediaKitFromServer(mediaKitId);
+            } else {
+                loadMediaKitFromStorage();
+            }
+            
+            setupSaveSystem();
+        }
+        
+        console.log('Media Kit Builder initialization complete');
+        
+    } catch (error) {
+        console.error('Failed to initialize Media Kit Builder:', error);
     }
-    
-    // 4. Load data. The renderer is now fully initialized and subscribed.
-    const urlParams = new URLSearchParams(window.location.search);
-    const mediaKitId = urlParams.get('media_kit_id');
-    if (mediaKitId) {
-        await loadMediaKitFromServer(mediaKitId);
-    } else {
-        loadMediaKitFromStorage();
-    }
-    
-    // 5. Final setup
-    setupSaveSystem();
-    console.log('System Initialization Complete.');
 }
 
 function loadMediaKitFromStorage() {
@@ -133,12 +160,13 @@ function setupGlobalPluginUrl() {
 
 // --- Global Listeners & Exports ---
 
+// Use the legacy initialization for compatibility
 document.addEventListener('DOMContentLoaded', initializeBuilder);
 
-// Make managers globally accessible
-window.stateManager = stateManager;
-window.componentManager = componentManager;
-window.componentRenderer = componentRenderer;
+// The enhanced initialization will auto-start when its module loads
+
+// Managers are made globally accessible by the conditional loader
+// These exports are for backward compatibility
 window.historyService = historyService;
 
 // Make UI setup functions globally accessible for component renderer
@@ -147,9 +175,19 @@ window.setupContentEditableUpdates = setupContentEditableUpdates;
 
 // Debug helpers
 window.gmkbDebug = { 
-    stateManager, 
-    componentManager, 
-    componentRenderer, 
-    historyService, 
-    getState: () => stateManager?.getState() 
+    getState: () => window.stateManager?.getState(),
+    getManagers: () => ({
+        stateManager: window.stateManager,
+        componentManager: window.componentManager,
+        componentRenderer: window.componentRenderer,
+        historyService: window.historyService,
+        enhancedStateManager: window.enhancedStateManager,
+        enhancedComponentManager: window.enhancedComponentManager,
+        enhancedComponentRenderer: window.enhancedComponentRenderer
+    }),
+    checkEnhanced: () => ({
+        usingEnhancedState: window.stateManager === window.enhancedStateManager,
+        usingEnhancedComponent: window.componentManager === window.enhancedComponentManager,
+        usingEnhancedRenderer: window.componentRenderer === window.enhancedComponentRenderer
+    })
 };

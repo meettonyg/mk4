@@ -4,7 +4,6 @@
 
 import { showModal, hideModal, setupModalClose } from './modal-base.js';
 import { showUpgradePrompt } from '../utils/helpers.js';
-import { addComponentToZone } from '../components/component-manager.js';
 import { markUnsaved } from '../services/save-service.js';
 import { getComponentInfo } from '../components/dynamic-component-loader.js';
 
@@ -108,27 +107,20 @@ export function setupComponentLibraryModal() {
                 const preview = document.getElementById('media-kit-preview');
                 const hasComponents = preview && preview.querySelector('[data-component-id]');
                 
-                if (!hasComponents) {
-                    // First component - add directly to preview
-                    await addComponentToZone(actualComponentType, preview);
+                // Use the global component manager (will be enhanced if enabled)
+                if (window.componentManager) {
+                    await window.componentManager.addComponent(actualComponentType);
                     
-                    // Hide empty state and show primary drop zone
-                    const emptyState = document.getElementById('empty-state');
-                    if (emptyState) {
-                        emptyState.style.display = 'none';
+                    // Hide empty state if this was the first component
+                    if (!hasComponents) {
+                        const emptyState = document.getElementById('empty-state');
+                        if (emptyState) {
+                            emptyState.style.display = 'none';
+                        }
+                        preview.classList.add('has-components');
                     }
-                    
-                    // Add has-components class to preview
-                    preview.classList.add('has-components');
                 } else {
-                    // Look for empty drop zones
-                    const firstEmptyDropZone = document.querySelector('.drop-zone.drop-zone--empty');
-                    if (firstEmptyDropZone) {
-                        await addComponentToZone(actualComponentType, firstEmptyDropZone);
-                    } else {
-                        // Add at the end
-                        await componentManager.addComponent(actualComponentType);
-                    }
+                    console.error('Component manager not available');
                 }
                 
                 hideComponentLibraryModal();

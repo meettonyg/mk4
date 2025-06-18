@@ -271,3 +271,159 @@
     overflow-y: auto;
     flex: 1;
 }
+
+/* Component deletion states */
+.component-deleting {
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+    transition: opacity 0.2s ease;
+}
+
+.component-deleting .control-btn {
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
+
+.component-removing {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Prevent control button interaction during actions */
+.control-btn[disabled] {
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
+
+/* Visual feedback for pending actions */
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+/* Ensure control buttons can't be clicked multiple times rapidly */
+.control-btn[data-listener-attached] {
+    user-select: none;
+}
+
+/* Enhanced Component Animation States */
+
+/* Component added animation */
+.component-added {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Component moving state */
+.component-moving {
+    transition: transform 0.3s ease;
+    opacity: 0.8;
+}
+
+/* Component reordered animation */
+.component-reordered {
+    animation: bounce 0.3s ease;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Component meta states */
+[data-component-id].is-deleting {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+}
+
+[data-component-id].is-deleting::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(239, 68, 68, 0.1);
+    z-index: 1;
+}
+
+[data-component-id].is-moving {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: scale(1.02);
+    z-index: 10;
+}
+
+[data-component-id].is-dirty {
+    position: relative;
+}
+
+[data-component-id].is-dirty::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid rgba(59, 130, 246, 0.5);
+    border-radius: inherit;
+    pointer-events: none;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Render queue indicator */
+.preview.is-rendering::before {
+    content: 'Updating...';
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 1000;
+    animation: fadeInOut 1s ease infinite;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Enhanced drop zone states */
+.drop-zone.is-replacing {
+    background: rgba(14, 165, 233, 0.1);
+    border-color: #0ea5e9;
+    animation: pulse 0.3s ease;
+}
+
+/* Smooth transitions for all component state changes */
+[data-component-id] {
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}

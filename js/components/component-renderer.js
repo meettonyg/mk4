@@ -80,7 +80,10 @@ class ComponentRenderer {
         for (const element of domElements) {
             if (!stateIds.includes(element.getAttribute('data-component-id'))) {
                 console.log(`Removing component: ${element.getAttribute('data-component-id')}`);
-                element.remove();
+                // Add transition class before removal
+                element.classList.add('component-removing');
+                // Small delay to allow CSS transition if needed
+                setTimeout(() => element.remove(), 100);
             }
         }
 
@@ -193,18 +196,35 @@ class ComponentRenderer {
         setTimeout(() => {
             const element = this.previewContainer.querySelector(`[data-component-id="${componentId}"]`);
             if (!element) return;
+            
+            // Skip if component is being deleted
+            if (element.classList.contains('component-deleting')) {
+                return;
+            }
 
             // Set up control buttons
             const controlButtons = element.querySelectorAll('.control-btn');
             controlButtons.forEach(btn => {
-                // Remove any existing listeners to prevent duplicates
-                const newBtn = btn.cloneNode(true);
-                btn.parentNode.replaceChild(newBtn, btn);
+                // Check if listener is already attached
+                if (btn.hasAttribute('data-listener-attached')) {
+                    return;
+                }
                 
-                // Add new listener
-                newBtn.addEventListener('click', (e) => {
+                // Mark as having listener
+                btn.setAttribute('data-listener-attached', 'true');
+                
+                // Add click listener
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     e.stopPropagation();
-                    const action = newBtn.textContent.trim();
+                    
+                    // Double-check component still exists in state
+                    if (!window.stateManager || !window.stateManager.getComponent(componentId)) {
+                        console.warn(`Component ${componentId} no longer exists in state`);
+                        return;
+                    }
+                    
+                    const action = btn.textContent.trim();
                     console.log(`Control button clicked: ${action} for component ${componentId}`);
                     
                     if (window.componentManager && window.componentManager.handleControlAction) {

@@ -3,8 +3,11 @@
  * Loads pre-configured templates from JSON files
  */
 
-import { stateManager } from './state-manager.js';
-import { componentManager } from '../components/component-manager.js';
+import { isFeatureEnabled } from '../core/feature-flags.js';
+
+// Use window references to get the current active managers
+const getStateManager = () => window.stateManager;
+const getComponentManager = () => window.componentManager;
 
 class TemplateLoader {
     constructor() {
@@ -82,6 +85,7 @@ class TemplateLoader {
             await this.loadComponentsFromTemplate(templateData);
             
             // Update metadata
+            const stateManager = getStateManager();
             if (stateManager) {
                 stateManager.updateMetadata({
                     templateId: templateId,
@@ -101,6 +105,7 @@ class TemplateLoader {
      * Clear existing components
      */
     async clearExistingComponents() {
+        const stateManager = getStateManager();
         if (!stateManager) return;
         
         // Get all component IDs
@@ -124,7 +129,10 @@ class TemplateLoader {
      * @param {Object} templateData - Template data
      */
     async loadComponentsFromTemplate(templateData) {
-        if (!templateData.components || !componentManager) return;
+        const stateManager = getStateManager();
+        const componentManager = getComponentManager();
+        
+        if (!templateData.components || !componentManager || !stateManager) return;
         
         // Hide empty state
         const emptyState = document.getElementById('empty-state');
@@ -132,44 +140,74 @@ class TemplateLoader {
             emptyState.style.display = 'none';
         }
         
-        // Disable rendering during batch update
-        if (window.componentRenderer) {
-            window.componentRenderer.disableRendering = true;
-        }
+        // Use enhanced batch updates if available
+        const useEnhancedBatch = isFeatureEnabled('USE_BATCH_UPDATES') && 
+                                stateManager.batchUpdate && 
+                                typeof stateManager.batchUpdate === 'function';
         
-        // Collect all components to add
-        const componentsToAdd = [];
-        
-        // Process each component from the template
-        for (const [index, component] of templateData.components.entries()) {
-            try {
-                // Generate component ID
-                const componentId = `${component.type}-${Date.now()}-${index}`;
-                componentsToAdd.push({
-                    id: componentId,
-                    type: component.type,
-                    data: component.data,
-                    order: index
-                });
-            } catch (error) {
-                console.error(`Failed to prepare component ${component.type}:`, error);
-            }
-        }
-        
-        // Add all components at once
-        if (componentsToAdd.length > 0) {
-            // Initialize all components in state without triggering individual renders
-            componentsToAdd.forEach(comp => {
-                stateManager.initComponent(comp.id, comp.type, comp.data, true); // Skip notifications
+        if (useEnhancedBatch) {
+            // Use enhanced batch update
+            await stateManager.batchUpdate(async () => {
+                // Process each component from the template
+                for (const [index, component] of templateData.components.entries()) {
+                    try {
+                        // Generate component ID
+                        const componentId = `${component.type}-${Date.now()}-${index}`;
+                        
+                        // Initialize component
+                        stateManager.initComponent(componentId, component.type, component.data, true);
+                        
+                        // Set order
+                        const comp = stateManager.getComponent(componentId);
+                        if (comp) {
+                            comp.order = index;
+                        }
+                    } catch (error) {
+                        console.error(`Failed to add component ${component.type}:`, error);
+                    }
+                }
             });
-            
-            // Re-enable rendering
+        } else {
+            // Fallback to legacy method
+            // Disable rendering during batch update
             if (window.componentRenderer) {
-                window.componentRenderer.disableRendering = false;
+                window.componentRenderer.disableRendering = true;
             }
             
-            // Now trigger a single render for all components
-            stateManager.notifyGlobalListeners();
+            // Collect all components to add
+            const componentsToAdd = [];
+            
+            // Process each component from the template
+            for (const [index, component] of templateData.components.entries()) {
+                try {
+                    // Generate component ID
+                    const componentId = `${component.type}-${Date.now()}-${index}`;
+                    componentsToAdd.push({
+                        id: componentId,
+                        type: component.type,
+                        data: component.data,
+                        order: index
+                    });
+                } catch (error) {
+                    console.error(`Failed to prepare component ${component.type}:`, error);
+                }
+            }
+            
+            // Add all components at once
+            if (componentsToAdd.length > 0) {
+                // Initialize all components in state without triggering individual renders
+                componentsToAdd.forEach(comp => {
+                    stateManager.initComponent(comp.id, comp.type, comp.data, true); // Skip notifications
+                });
+                
+                // Re-enable rendering
+                if (window.componentRenderer) {
+                    window.componentRenderer.disableRendering = false;
+                }
+                
+                // Now trigger a single render for all components
+                stateManager.notifyGlobalListeners();
+            }
         }
         
         // Mark as unsaved
