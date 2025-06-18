@@ -258,6 +258,14 @@ class EnhancedComponentManager {
             switch (action) {
                 case 'delete':
                     if (confirm('Are you sure you want to delete this component?')) {
+                        // Force DOM cleanup before state removal
+                        const element = document.querySelector(`[data-component-id="${componentId}"]`);
+                        if (element) {
+                            element.classList.add('component-deleting');
+                            element.style.opacity = '0.5';
+                            element.style.pointerEvents = 'none';
+                        }
+                        
                         // Don't set pending action here - removeComponent will handle it
                         await this.removeComponent(componentId);
                     } else {
@@ -311,40 +319,29 @@ class EnhancedComponentManager {
         // Get the order for the new component
         const components = enhancedStateManager.getOrderedComponents();
         const sourceIndex = components.findIndex(c => c.id === sourceComponentId);
+        const newOrder = sourceIndex >= 0 ? sourceIndex + 1 : components.length;
         
+        // Use the proper state manager method to add the component
         await enhancedStateManager.batchUpdate(async () => {
-            // Initialize new component with empty data first
-            enhancedStateManager.initComponent(newComponentId, sourceComponent.type, {}, true);
+            // First init the component with proper notification
+            enhancedStateManager.initComponent(newComponentId, sourceComponent.type, newData, true);
             
-            // Now directly set the component data in state to override any defaults
-            if (enhancedStateManager.baseManager.state.components[newComponentId]) {
-                enhancedStateManager.baseManager.state.components[newComponentId].data = JSON.parse(JSON.stringify(newData));
-                console.log('Directly set duplicated data:', enhancedStateManager.baseManager.state.components[newComponentId].data);
-            }
+            // Then update the order of all components
+            const allComponents = enhancedStateManager.getOrderedComponents();
+            const componentIds = allComponents.map(c => c.id);
             
-            // Calculate new order to place after source
-            if (sourceIndex >= 0) {
-                // Get fresh component list after adding new component
-                const updatedComponents = enhancedStateManager.getOrderedComponents();
-                const componentIds = updatedComponents.map(c => c.id);
-                const currentNewIndex = componentIds.indexOf(newComponentId);
+            // Find where the new component was placed
+            const newIndex = componentIds.indexOf(newComponentId);
+            if (newIndex > -1) {
+                // Remove from current position
+                componentIds.splice(newIndex, 1);
+                // Insert after source component
+                const sourceCurrentIndex = componentIds.indexOf(sourceComponentId);
+                componentIds.splice(sourceCurrentIndex + 1, 0, newComponentId);
                 
-                if (currentNewIndex > -1 && currentNewIndex !== sourceIndex + 1) {
-                    // Remove from current position
-                    componentIds.splice(currentNewIndex, 1);
-                    // Insert after source
-                    componentIds.splice(sourceIndex + 1, 0, newComponentId);
-                    // Reorder without notification (we're in batch mode)
-                    enhancedStateManager.baseManager.reorderComponents(componentIds);
-                }
+                // Reorder with proper notification
+                enhancedStateManager.reorderComponents(componentIds);
             }
-            
-            // Skip data binding initialization for now - it might be overwriting data
-            // const schema = await this.loadComponentSchema(sourceComponent.type);
-            // if (schema && schema.settings && Object.keys(schema.settings).length > 0) {
-            //     const { dataBindingEngine } = await import('../services/data-binding-engine.js');
-            //     await dataBindingEngine.initializeComponent(newComponentId, sourceComponent.type, schema, newData);
-            // }
         });
         
         // Dispatch event

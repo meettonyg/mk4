@@ -15,14 +15,15 @@ const loadingPromises = new Map();
  * @returns {Promise<string>} - The rendered component HTML
  */
 export async function renderComponent(componentType, componentId = null, props = {}) {
-    console.log(`renderComponent called - Type: ${componentType}, ID: ${componentId}`);
+    console.log(`renderComponent called - Type: ${componentType}, ID: ${componentId}, Props:`, props);
     
     try {
         // Add componentId to props for the template
         const propsWithId = { ...props, componentId };
         
         // First try REST API
-        if (guestifyData.restUrl) {
+        if (guestifyData && guestifyData.restUrl && guestifyData.restNonce) {
+            console.log('Trying REST API:', `${guestifyData.restUrl}guestify/v1/render-component`);
             const response = await fetch(`${guestifyData.restUrl}guestify/v1/render-component`, {
                 method: 'POST',
                 headers: {
@@ -37,33 +38,54 @@ export async function renderComponent(componentType, componentId = null, props =
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.success) {
-                    return wrapComponentWithControls(data.html, componentType, componentId);
+                console.log('REST API response:', data);
+                if (data.success && data.html) {
+                    console.log('REST API returned HTML:', data.html.substring(0, 100) + '...');
+                    const wrappedHtml = wrapComponentWithControls(data.html, componentType, componentId);
+                    console.log('Wrapped HTML:', wrappedHtml.substring(0, 100) + '...');
+                    return wrappedHtml;
+                } else {
+                    console.error('REST API response missing success or html:', data);
                 }
+            } else {
+                console.error('REST API failed:', response.status, response.statusText);
             }
         }
 
         // Fallback to AJAX
-        const formData = new FormData();
-        formData.append('action', 'guestify_render_component');
-        formData.append('component', componentType);
-        formData.append('props', JSON.stringify(propsWithId));
-        formData.append('nonce', guestifyData.nonce);
+        if (guestifyData && guestifyData.ajaxUrl) {
+            console.log('Trying AJAX fallback:', guestifyData.ajaxUrl);
+            const formData = new FormData();
+            formData.append('action', 'guestify_render_component');
+            formData.append('component', componentType);
+            formData.append('props', JSON.stringify(propsWithId));
+            if (guestifyData.nonce) {
+                formData.append('nonce', guestifyData.nonce);
+            }
 
-        const ajaxResponse = await fetch(guestifyData.ajaxUrl, {
-            method: 'POST',
-            body: formData
-        });
+            const ajaxResponse = await fetch(guestifyData.ajaxUrl, {
+                method: 'POST',
+                body: formData
+            });
 
-        const ajaxData = await ajaxResponse.json();
-        if (ajaxData.success) {
-            return wrapComponentWithControls(ajaxData.data.html, componentType, componentId);
+            const ajaxData = await ajaxResponse.json();
+            console.log('AJAX response:', ajaxData);
+            if (ajaxData.success && ajaxData.data && ajaxData.data.html) {
+                console.log('AJAX returned HTML:', ajaxData.data.html.substring(0, 100) + '...');
+                const wrappedHtml = wrapComponentWithControls(ajaxData.data.html, componentType, componentId);
+                console.log('Wrapped HTML:', wrappedHtml.substring(0, 100) + '...');
+                return wrappedHtml;
+            } else {
+                console.error('AJAX response missing success or html:', ajaxData);
+            }
         }
 
-        throw new Error('Failed to render component');
+        throw new Error(`Failed to render component: ${componentType}`);
     } catch (error) {
         console.error('Error rendering component:', error);
-        return '<div class="error-component">Failed to load component</div>';
+        console.log('Using fallback template for:', componentType);
+        // Return a fallback template for common components
+        return getFallbackTemplate(componentType, componentId, props);
     }
 }
 
@@ -152,6 +174,111 @@ export function getComponentInfo(componentType) {
     }
     
     return null;
+}
+
+/**
+ * Get fallback template for common components
+ */
+function getFallbackTemplate(componentType, componentId, props) {
+    console.log('Using fallback template for:', componentType, 'with props:', props);
+    
+    // Escape HTML to prevent XSS
+    const escapeHtml = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    };
+    
+    const templates = {
+        hero: `
+            <div class="hero editable-element" data-element="hero" data-component="hero" data-component-id="${componentId}" data-component-type="hero">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <div class="hero__avatar">
+                    <img src="${props.image || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50' text-anchor='middle' x='50' fill='%2364748b'%3E${((props.name || 'Your Name').substring(0, 2).toUpperCase())}%3C/text%3E%3C/svg%3E`}" alt="Profile Avatar">
+                </div>
+                <h1 class="hero__name" contenteditable="true" data-setting="name">${escapeHtml(props.name || 'Your Name')}</h1>
+                <div class="hero__title" contenteditable="true" data-setting="title">${escapeHtml(props.title || 'Your Professional Title')}</div>
+                <p class="hero__bio" contenteditable="true" data-setting="bio">${escapeHtml(props.bio || props.description || 'Brief introduction about yourself and your expertise.')}</p>
+            </div>
+        `,
+        biography: `
+            <div class="biography editable-element" data-element="biography" data-component="biography" data-component-id="${componentId}" data-component-type="biography">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <h2 class="biography__title" contenteditable="true" data-setting="title">${escapeHtml(props.title || 'About Me')}</h2>
+                <div class="biography__content" contenteditable="true" data-setting="content">${escapeHtml(props.content || 'Tell your story here...')}</div>
+            </div>
+        `,
+        stats: `
+            <div class="stats editable-element" data-element="stats" data-component="stats" data-component-id="${componentId}" data-component-type="stats">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <div class="stats__grid">
+                    <div class="stats__item">
+                        <div class="stats__number" contenteditable="true" data-setting="stat1_value">${escapeHtml(props.stat1_value || '100+')}</div>
+                        <div class="stats__label" contenteditable="true" data-setting="stat1_label">${escapeHtml(props.stat1_label || 'Speaking Events')}</div>
+                    </div>
+                    <div class="stats__item">
+                        <div class="stats__number" contenteditable="true" data-setting="stat2_value">${escapeHtml(props.stat2_value || '50K+')}</div>
+                        <div class="stats__label" contenteditable="true" data-setting="stat2_label">${escapeHtml(props.stat2_label || 'Audience Reached')}</div>
+                    </div>
+                    <div class="stats__item">
+                        <div class="stats__number" contenteditable="true" data-setting="stat3_value">${escapeHtml(props.stat3_value || '10+')}</div>
+                        <div class="stats__label" contenteditable="true" data-setting="stat3_label">${escapeHtml(props.stat3_label || 'Years Experience')}</div>
+                    </div>
+                </div>
+            </div>
+        `,
+        'call-to-action': `
+            <div class="call-to-action editable-element" data-element="call-to-action" data-component="call-to-action" data-component-id="${componentId}" data-component-type="call-to-action">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <h2 class="call-to-action__title" contenteditable="true" data-setting="title">${escapeHtml(props.title || 'Ready to Work Together?')}</h2>
+                <p class="call-to-action__description" contenteditable="true" data-setting="description">${escapeHtml(props.description || 'Let\'s discuss how I can help your audience.')}</p>
+                <a href="${props.buttonUrl || '#'}" class="call-to-action__button">
+                    <span contenteditable="true" data-setting="buttonText">${escapeHtml(props.buttonText || 'Get in Touch')}</span>
+                </a>
+            </div>
+        `
+    };
+    
+    // Return the template if found, otherwise a generic component
+    if (templates[componentType]) {
+        return templates[componentType];
+    }
+    
+    // Generic fallback for unknown component types
+    return `
+        <div class="${componentType} editable-element" data-element="${componentType}" data-component="${componentType}" data-component-id="${componentId}" data-component-type="${componentType}">
+            <div class="element-controls">
+                <button class="control-btn" title="Move Up">↑</button>
+                <button class="control-btn" title="Move Down">↓</button>
+                <button class="control-btn" title="Duplicate">⧉</button>
+                <button class="control-btn" title="Delete">×</button>
+            </div>
+            <div class="component-content">
+                <p>Component type: ${componentType}</p>
+                <p>ID: ${componentId}</p>
+            </div>
+        </div>
+    `;
 }
 
 /**

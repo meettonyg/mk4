@@ -244,6 +244,10 @@ class EnhancedComponentRenderer {
         try {
             // Use requestAnimationFrame for DOM updates
             await new Promise(resolve => requestAnimationFrame(resolve));
+            
+            // Before processing, check for orphaned DOM elements
+            this.cleanupOrphanedElements(state);
+            
             // Group changes by type for efficient processing
             const grouped = {
                 add: [],
@@ -303,13 +307,33 @@ class EnhancedComponentRenderer {
     }
     
     /**
+     * Clean up DOM elements that don't exist in state
+     */
+    cleanupOrphanedElements(state) {
+        const stateComponentIds = new Set(Object.keys(state.components || {}));
+        const domElements = this.previewContainer.querySelectorAll('[data-component-id]');
+        
+        domElements.forEach(element => {
+            const componentId = element.getAttribute('data-component-id');
+            if (!stateComponentIds.has(componentId)) {
+                // Check if this is a component being deleted (has the deleting class)
+                if (!element.classList.contains('component-deleting')) {
+                    console.warn(`Removing orphaned DOM element: ${componentId}`);
+                    element.remove();
+                    this.componentCache.delete(componentId);
+                }
+            }
+        });
+    }
+    
+    /**
      * Add a component to the DOM
      */
     async addComponent(componentId, component) {
         // Check if already exists
         if (this.previewContainer.querySelector(`[data-component-id="${componentId}"]`)) {
             console.log(`Component ${componentId} already exists in DOM`);
-            return;
+            return null;
         }
         
         console.log(`Adding component: ${componentId}`);
@@ -318,14 +342,30 @@ class EnhancedComponentRenderer {
             // Render component HTML
             const html = await renderComponent(component.type, componentId, component.data);
             
+            if (!html || html.trim() === '') {
+                console.error(`No HTML returned for component ${componentId}`);
+                return null;
+            }
+            
             // Create element
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
+            tempDiv.innerHTML = html.trim();
             const element = tempDiv.firstElementChild;
             
             if (!element) {
-                console.error(`Failed to create element for component ${componentId}`);
+                console.error(`Failed to create element for component ${componentId}, HTML was:`, html);
                 return null;
+            }
+            
+            // Validate it's a proper element
+            if (element.nodeType !== 1) {
+                console.error(`Invalid element type for component ${componentId}:`, element.nodeType);
+                return null;
+            }
+            
+            // Ensure componentId is set
+            if (!element.getAttribute('data-component-id')) {
+                element.setAttribute('data-component-id', componentId);
             }
             
             // Set up the element before adding to DOM
@@ -346,6 +386,8 @@ class EnhancedComponentRenderer {
      * Batch add components for performance
      */
     async batchAdd(addChanges, fragment) {
+        console.log(`Batch adding ${addChanges.length} components`);
+        
         // Render all components in parallel
         const renderPromises = addChanges.map(async (change) => {
             const element = await this.addComponent(change.id, change.component);
@@ -354,26 +396,53 @@ class EnhancedComponentRenderer {
         
         const results = await Promise.all(renderPromises);
         
+        // Log any failed renders
+        const failed = results.filter(r => !r.element);
+        if (failed.length > 0) {
+            console.error(`Failed to render ${failed.length} components:`, failed.map(f => f.change.id));
+        }
+        
         // Sort by order and add to fragment
-        results
+        const successful = results
             .filter(r => r.element)
-            .sort((a, b) => a.change.component.order - b.change.component.order)
-            .forEach(({ element }) => {
-                fragment.appendChild(element);
-            });
+            .sort((a, b) => a.change.component.order - b.change.component.order);
+            
+        console.log(`Successfully rendered ${successful.length} components`);
+        
+        if (successful.length === 0) {
+            console.warn('No components successfully rendered!');
+            return;
+        }
+        
+        // Clone elements before adding to fragment to avoid issues
+        const elementsToAdd = [];
+        successful.forEach(({ element }) => {
+            elementsToAdd.push(element);
+            fragment.appendChild(element);
+        });
         
         // Single DOM update
         if (fragment.childNodes.length > 0) {
+            console.log(`Appending ${fragment.childNodes.length} nodes to preview container`);
             this.previewContainer.appendChild(fragment);
+            
+            // Verify elements were added
+            elementsToAdd.forEach(element => {
+                if (!this.previewContainer.contains(element)) {
+                    console.error('Element was not added to DOM:', element);
+                }
+            });
             
             // Trigger animations after DOM update
             requestAnimationFrame(() => {
-                fragment.childNodes.forEach(node => {
-                    if (node.nodeType === 1) { // Element node
-                        node.classList.add('component-added');
+                elementsToAdd.forEach(element => {
+                    if (this.previewContainer.contains(element)) {
+                        element.classList.add('component-added');
                     }
                 });
             });
+        } else {
+            console.error('Fragment has no child nodes after adding components!');
         }
     }
     
@@ -385,6 +454,10 @@ class EnhancedComponentRenderer {
             const element = this.previewContainer.querySelector(`[data-component-id="${change.id}"]`);
             if (element) {
                 element.remove();
+                this.componentCache.delete(change.id);
+            } else {
+                // Component not in DOM but in state - this is expected if already cleaned up
+                // Still remove from cache if it exists
                 this.componentCache.delete(change.id);
             }
         });
@@ -429,7 +502,13 @@ class EnhancedComponentRenderer {
         const element = this.previewContainer.querySelector(`[data-component-id="${componentId}"]`);
         if (!element) {
             console.log(`Component ${componentId} not found, adding instead`);
-            await this.addComponent(componentId, component);
+            const newElement = await this.addComponent(componentId, component);
+            if (newElement) {
+                // Find the correct position and insert
+                const insertPoint = this.findInsertionPoint(component.order);
+                this.previewContainer.insertBefore(newElement, insertPoint);
+                newElement.classList.add('component-added');
+            }
             return;
         }
         
@@ -555,7 +634,7 @@ class EnhancedComponentRenderer {
             
             // Check if component still exists in state
             if (!enhancedStateManager.getComponent(componentId)) {
-                console.warn(`Component ${componentId} no longer exists in state`);
+                // This is normal during deletion animation - just return silently
                 return;
             }
             
@@ -564,6 +643,9 @@ class EnhancedComponentRenderer {
             // Use the enhanced component manager
             if (window.enhancedComponentManager) {
                 window.enhancedComponentManager.handleControlAction(action, componentId);
+            } else if (window.componentManager) {
+                // Fallback to regular component manager
+                window.componentManager.handleControlAction(action, componentId);
             }
         });
         

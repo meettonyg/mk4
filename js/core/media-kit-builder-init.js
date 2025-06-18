@@ -22,6 +22,8 @@ import { setupComponentLibraryModal } from '../modals/component-library.js';
 import { setupGlobalSettings } from '../modals/global-settings.js';
 import { setupExportSystem } from '../modals/export.js';
 
+
+
 class MediaKitBuilderInit {
     constructor() {
         this.initialized = false;
@@ -98,6 +100,7 @@ class MediaKitBuilderInit {
         });
         
         enhancedComponentRenderer.init();
+        
         
         console.log('Core services initialized');
     }

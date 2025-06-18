@@ -1,0 +1,79 @@
+/**
+ * Media Kit Builder - Component Render Fix Integration
+ * Run this in the browser console to activate the fix if not already loaded
+ */
+
+(async function() {
+    console.log('🔧 Media Kit Builder Component Render Fix Integration');
+    console.log('================================================');
+    
+    // Step 1: Check current state
+    console.group('📊 Current System State');
+    const enhanced = window.gmkbDebug?.checkEnhanced?.() || {};
+    console.log('Using Enhanced State Manager:', enhanced.usingEnhancedState || false);
+    console.log('Using Enhanced Component Manager:', enhanced.usingEnhancedComponent || false);
+    console.log('Using Enhanced Renderer:', enhanced.usingEnhancedRenderer || false);
+    
+    // Check if render fix is loaded
+    const renderFixLoaded = window.componentRenderFix?.initialized || false;
+    console.log('Render Fix Loaded:', renderFixLoaded);
+    console.groupEnd();
+    
+    // Step 2: Load render fix if not already loaded
+    if (!renderFixLoaded) {
+        console.group('🔄 Loading Component Render Fix');
+        try {
+            const module = await import('/wp-content/plugins/guestify-media-kit-builder/js/fixes/component-render-fix.js');
+            if (module.componentRenderFix && !module.componentRenderFix.initialized) {
+                module.componentRenderFix.init();
+            }
+            console.log('✅ Component render fix loaded successfully');
+        } catch (error) {
+            console.error('❌ Failed to load render fix:', error);
+            console.log('Alternative: Copy and paste the render fix code directly');
+        }
+        console.groupEnd();
+    }
+    
+    // Step 3: Check state/DOM sync
+    console.group('🔍 State/DOM Synchronization Check');
+    if (window.mkDiag?.state) {
+        const synced = window.mkDiag.state();
+        if (!synced) {
+            console.warn('⚠️ State and DOM are out of sync!');
+            console.log('Running auto-recovery...');
+            await window.mkDiag.recover();
+        } else {
+            console.log('✅ State and DOM are synchronized');
+        }
+    } else {
+        console.log('Diagnostic tools not available yet');
+    }
+    console.groupEnd();
+    
+    // Step 4: Run quick test
+    console.group('🧪 Quick Component Test');
+    console.log('Running automated test...');
+    try {
+        await import('/wp-content/plugins/guestify-media-kit-builder/js/fixes/test-component-render.js');
+    } catch (error) {
+        console.log('Could not load automated test. Manual testing recommended.');
+        console.log('1. Try duplicating a component (⧉ button)');
+        console.log('2. Try deleting a component (× button)');
+        console.log('3. Check console for any errors');
+    }
+    console.groupEnd();
+    
+    // Step 5: Provide recovery commands
+    console.group('🛠️ Available Recovery Commands');
+    console.log('window.mkDiag.state() - Check state/DOM sync');
+    console.log('window.mkDiag.recover() - Recover missing components');
+    console.log('window.mkDiag.checkSync() - Force sync check');
+    console.log('window.mkDiag.forceRender() - Force re-render all');
+    console.log('window.recoverComponents() - Alternative recovery method');
+    console.groupEnd();
+    
+    console.log('\n✨ Integration complete! The render fix is now active.');
+    console.log('If you still experience issues, please check the console for errors.');
+    
+})();
