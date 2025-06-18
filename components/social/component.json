@@ -6,5 +6,198 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 4
+  "order": 4,
+  "sections": {
+    "platforms": {
+      "title": "Social Platforms",
+      "order": 1
+    },
+    "layout": {
+      "title": "Layout & Display",
+      "order": 2
+    },
+    "appearance": {
+      "title": "Styling",
+      "order": 3
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "order": 4
+    }
+  },
+  "settings": {
+    "social_twitter": {
+      "type": "text",
+      "label": "Twitter / X",
+      "default": "",
+      "placeholder": "https://twitter.com/yourusername",
+      "section": "platforms"
+    },
+    "social_linkedin": {
+      "type": "text",
+      "label": "LinkedIn",
+      "default": "",
+      "placeholder": "https://linkedin.com/in/yourusername",
+      "section": "platforms"
+    },
+    "social_instagram": {
+      "type": "text",
+      "label": "Instagram",
+      "default": "",
+      "placeholder": "https://instagram.com/yourusername",
+      "section": "platforms"
+    },
+    "social_facebook": {
+      "type": "text",
+      "label": "Facebook",
+      "default": "",
+      "placeholder": "https://facebook.com/yourusername",
+      "section": "platforms"
+    },
+    "social_youtube": {
+      "type": "text",
+      "label": "YouTube",
+      "default": "",
+      "placeholder": "https://youtube.com/@yourusername",
+      "section": "platforms"
+    },
+    "social_tiktok": {
+      "type": "text",
+      "label": "TikTok",
+      "default": "",
+      "placeholder": "https://tiktok.com/@yourusername",
+      "section": "platforms"
+    },
+    "social_pinterest": {
+      "type": "text",
+      "label": "Pinterest",
+      "default": "",
+      "placeholder": "https://pinterest.com/yourusername",
+      "section": "platforms"
+    },
+    "social_medium": {
+      "type": "text",
+      "label": "Medium",
+      "default": "",
+      "placeholder": "https://medium.com/@yourusername",
+      "section": "platforms"
+    },
+    "layout": {
+      "type": "select",
+      "label": "Layout",
+      "default": "horizontal",
+      "section": "layout",
+      "options": [
+        {"value": "horizontal", "label": "Horizontal"},
+        {"value": "vertical", "label": "Vertical"},
+        {"value": "grid", "label": "Grid"}
+      ],
+      "previewSelector": ".social-component",
+      "updateMethod": "class",
+      "classPrefix": "layout--"
+    },
+    "icon_style": {
+      "type": "select",
+      "label": "Icon Style",
+      "default": "solid",
+      "section": "appearance",
+      "options": [
+        {"value": "solid", "label": "Solid"},
+        {"value": "outline", "label": "Outline"},
+        {"value": "minimal", "label": "Minimal"},
+        {"value": "branded", "label": "Branded Colors"}
+      ],
+      "previewSelector": ".social-component",
+      "updateMethod": "class",
+      "classPrefix": "icon-style--"
+    },
+    "icon_size": {
+      "type": "select",
+      "label": "Icon Size",
+      "default": "medium",
+      "section": "appearance",
+      "options": [
+        {"value": "small", "label": "Small"},
+        {"value": "medium", "label": "Medium"},
+        {"value": "large", "label": "Large"}
+      ],
+      "previewSelector": ".social-component",
+      "updateMethod": "class",
+      "classPrefix": "icon-size--"
+    },
+    "icon_shape": {
+      "type": "select",
+      "label": "Icon Shape",
+      "default": "circle",
+      "section": "appearance",
+      "options": [
+        {"value": "circle", "label": "Circle"},
+        {"value": "square", "label": "Square"},
+        {"value": "rounded", "label": "Rounded"},
+        {"value": "none", "label": "No Background"}
+      ],
+      "previewSelector": ".social-component",
+      "updateMethod": "class",
+      "classPrefix": "icon-shape--"
+    },
+    "animation": {
+      "type": "select",
+      "label": "Animation",
+      "default": "none",
+      "section": "appearance",
+      "options": [
+        {"value": "none", "label": "None"},
+        {"value": "pulse", "label": "Pulse"},
+        {"value": "bounce", "label": "Bounce"},
+        {"value": "shake", "label": "Shake"}
+      ],
+      "previewSelector": ".social-component",
+      "updateMethod": "class",
+      "classPrefix": "animation--"
+    },
+    "icon_color": {
+      "type": "color",
+      "label": "Icon Color",
+      "default": "#ffffff",
+      "section": "appearance",
+      "previewSelector": ".social-icon",
+      "updateMethod": "style.color"
+    },
+    "background_color": {
+      "type": "color",
+      "label": "Background Color",
+      "default": "#4f46e5",
+      "section": "appearance",
+      "previewSelector": ".social-icon",
+      "updateMethod": "style.backgroundColor"
+    },
+    "hover_color": {
+      "type": "color",
+      "label": "Hover Color",
+      "default": "#3730a3",
+      "section": "appearance",
+      "previewSelector": ".social-component",
+      "updateMethod": "style.--social-hover-color"
+    },
+    "show_labels": {
+      "type": "checkbox",
+      "label": "Show Labels",
+      "default": false,
+      "section": "layout",
+      "previewSelector": ".social-label",
+      "updateMethod": "visibility"
+    },
+    "open_new_tab": {
+      "type": "checkbox",
+      "label": "Open Links in New Tab",
+      "default": true,
+      "section": "advanced"
+    },
+    "add_rel_nofollow": {
+      "type": "checkbox",
+      "label": "Add rel=\"nofollow\" to Links",
+      "default": false,
+      "section": "advanced"
+    }
+  }
 }

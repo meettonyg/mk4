@@ -1,7 +1,10 @@
 /**
  * Social Component Panel Script
- * Handles the dynamic functionality of the social design panel
+ * Schema-driven approach with DataBindingEngine
  */
+
+import { dataBindingEngine } from '../../js/services/data-binding-engine.js';
+import { stateManager } from '../../js/services/state-manager.js';
 
 // Register this component's panel handler
 window.componentPanelHandlers = window.componentPanelHandlers || {};
@@ -12,376 +15,54 @@ window.componentPanelHandlers['social'] = function(element, schema) {
 /**
  * Initialize social panel
  * @param {HTMLElement} element - The social component element
- * @param {Object} schema - Component schema (optional)
+ * @param {Object} schema - Component schema
  */
 function initializeSocialPanel(element, schema) {
-    // Log schema if available
-    if (schema) {
-        console.log('Social component schema:', schema);
-    }
+    if (!element) return;
     
-    // Setup social profile inputs
-    setupSocialProfileInputs(element);
-    
-    // Setup custom social links
-    setupCustomSocialLinks(element);
-    
-    // Handle icon style change
-    const iconStyleSelect = document.querySelector('[data-property="icon_style"]');
-    if (iconStyleSelect) {
-        // Get initial value
-        const currentStyle = element.getAttribute('data-icon-style') || 'solid';
-        iconStyleSelect.value = currentStyle;
-        
-        // Add change listener
-        iconStyleSelect.addEventListener('change', function() {
-            // Update data attribute
-            element.setAttribute('data-icon-style', this.value);
-            
-            // Update classes
-            element.classList.remove('icon-style--solid', 'icon-style--outline', 'icon-style--minimal', 'icon-style--branded');
-            element.classList.add('icon-style--' + this.value);
-            
-            // Handle branded colors specially
-            const iconColor = document.querySelector('[data-property="icon_color"]');
-            const bgColor = document.querySelector('[data-property="background_color"]');
-            
-            if (this.value === 'branded') {
-                if (iconColor) iconColor.disabled = true;
-                if (bgColor) bgColor.disabled = true;
-                
-                // Set each social icon to its branded color
-                const socialIcons = element.querySelectorAll('.social-icon');
-                socialIcons.forEach(icon => {
-                    const platform = icon.getAttribute('data-platform');
-                    if (platform) {
-                        icon.style.backgroundColor = getBrandedColor(platform);
-                        icon.style.color = '#ffffff';
-                    }
-                });
-            } else {
-                if (iconColor) iconColor.disabled = false;
-                if (bgColor) bgColor.disabled = false;
-                
-                // Reset to selected colors
-                const iconColorValue = document.querySelector('[data-property="icon_color"]').value;
-                const bgColorValue = document.querySelector('[data-property="background_color"]').value;
-                
-                const socialIcons = element.querySelectorAll('.social-icon');
-                socialIcons.forEach(icon => {
-                    icon.style.backgroundColor = bgColorValue;
-                    icon.style.color = iconColorValue;
-                });
-            }
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-    
-    // Handle icon size change
-    const iconSizeSelect = document.querySelector('[data-property="icon_size"]');
-    if (iconSizeSelect) {
-        // Get initial value
-        const currentSize = element.getAttribute('data-icon-size') || 'medium';
-        iconSizeSelect.value = currentSize;
-        
-        // Add change listener
-        iconSizeSelect.addEventListener('change', function() {
-            // Update data attribute
-            element.setAttribute('data-icon-size', this.value);
-            
-            // Update classes
-            element.classList.remove('icon-size--small', 'icon-size--medium', 'icon-size--large');
-            element.classList.add('icon-size--' + this.value);
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-    
-    // Handle layout change
-    const layoutSelect = document.querySelector('[data-property="layout"]');
-    if (layoutSelect) {
-        // Get initial value
-        const currentLayout = element.getAttribute('data-layout') || 'horizontal';
-        layoutSelect.value = currentLayout;
-        
-        // Add change listener
-        layoutSelect.addEventListener('change', function() {
-            // Update data attribute
-            element.setAttribute('data-layout', this.value);
-            
-            // Update classes
-            element.classList.remove('layout--horizontal', 'layout--vertical', 'layout--grid');
-            element.classList.add('layout--' + this.value);
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-    
-    // Handle icon shape change
-    const iconShapeSelect = document.querySelector('[data-property="icon_shape"]');
-    if (iconShapeSelect) {
-        // Get initial value
-        const currentShape = element.getAttribute('data-icon-shape') || 'circle';
-        iconShapeSelect.value = currentShape;
-        
-        // Add change listener
-        iconShapeSelect.addEventListener('change', function() {
-            // Update data attribute
-            element.setAttribute('data-icon-shape', this.value);
-            
-            // Update classes
-            element.classList.remove('icon-shape--circle', 'icon-shape--square', 'icon-shape--rounded', 'icon-shape--none');
-            element.classList.add('icon-shape--' + this.value);
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-    
-    // Handle animation change
-    const animationSelect = document.querySelector('[data-property="animation"]');
-    if (animationSelect) {
-        // Get initial value
-        const currentAnimation = element.getAttribute('data-animation') || 'none';
-        animationSelect.value = currentAnimation;
-        
-        // Add change listener
-        animationSelect.addEventListener('change', function() {
-            // Update data attribute
-            element.setAttribute('data-animation', this.value);
-            
-            // Update classes
-            element.classList.remove('animation--none', 'animation--pulse', 'animation--bounce', 'animation--shake');
-            element.classList.add('animation--' + this.value);
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-    
-    // Handle show labels toggle
-    const showLabelsCheckbox = document.querySelector('[data-property="show_labels"]');
-    if (showLabelsCheckbox) {
-        // Get initial state
-        showLabelsCheckbox.checked = element.hasAttribute('data-show-labels');
-        
-        // Add change listener
-        showLabelsCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                element.setAttribute('data-show-labels', 'true');
-            } else {
-                element.removeAttribute('data-show-labels');
-            }
-            
-            // Update labels visibility
-            const labels = element.querySelectorAll('.social-label');
-            labels.forEach(label => {
-                label.style.display = this.checked ? '' : 'none';
-            });
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-    
-    // Handle open in new tab toggle
-    const openNewTabCheckbox = document.querySelector('[data-property="open_new_tab"]');
-    if (openNewTabCheckbox) {
-        // Get initial state
-        const socialLinks = element.querySelectorAll('.social-link');
-        if (socialLinks.length > 0) {
-            openNewTabCheckbox.checked = socialLinks[0].getAttribute('target') === '_blank';
-        }
-        
-        // Add change listener
-        openNewTabCheckbox.addEventListener('change', function() {
-            const socialLinks = element.querySelectorAll('.social-link');
-            socialLinks.forEach(link => {
-                if (this.checked) {
-                    link.setAttribute('target', '_blank');
-                } else {
-                    link.removeAttribute('target');
-                }
-            });
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-    
-    // Handle nofollow toggle
-    const nofollowCheckbox = document.querySelector('[data-property="add_rel_nofollow"]');
-    if (nofollowCheckbox) {
-        // Get initial state
-        const socialLinks = element.querySelectorAll('.social-link');
-        if (socialLinks.length > 0) {
-            nofollowCheckbox.checked = socialLinks[0].getAttribute('rel')?.includes('nofollow') || false;
-        }
-        
-        // Add change listener
-        nofollowCheckbox.addEventListener('change', function() {
-            const socialLinks = element.querySelectorAll('.social-link');
-            socialLinks.forEach(link => {
-                if (this.checked) {
-                    link.setAttribute('rel', 'nofollow noopener');
-                } else {
-                    link.setAttribute('rel', 'noopener');
-                }
-            });
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-    
-    // Setup color pickers
-    setupColorPicker('icon_color', element, function(color) {
-        // Only apply if not using branded colors
-        if (element.getAttribute('data-icon-style') !== 'branded') {
-            const socialIcons = element.querySelectorAll('.social-icon');
-            socialIcons.forEach(icon => {
-                icon.style.color = color;
-            });
-        }
-    });
-    
-    setupColorPicker('background_color', element, function(color) {
-        // Only apply if not using branded colors
-        if (element.getAttribute('data-icon-style') !== 'branded') {
-            const socialIcons = element.querySelectorAll('.social-icon');
-            socialIcons.forEach(icon => {
-                icon.style.backgroundColor = color;
-            });
-        }
-    });
-    
-    setupColorPicker('hover_color', element, function(color) {
-        element.style.setProperty('--social-hover-color', color);
-    });
-}
-
-/**
- * Setup social profile inputs
- * @param {HTMLElement} element - The component element
- */
-function setupSocialProfileInputs(element) {
-    const socialInputs = document.querySelectorAll('[data-property^="social_"], [data-property$="_url"]');
-    
-    socialInputs.forEach(input => {
-        const platform = input.getAttribute('data-property').replace('social_', '').replace('_url', '');
-        
-        // Get initial value
-        const socialLink = element.querySelector(`.social-link[data-platform="${platform}"]`);
-        if (socialLink) {
-            input.value = socialLink.getAttribute('href') || '';
-        }
-        
-        // Add input listener
-        input.addEventListener('input', function() {
-            updateSocialIcon(element, platform, this.value);
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    });
-}
-
-/**
- * Update social icon visibility and link
- * @param {HTMLElement} element - The component element
- * @param {string} platform - The social platform
- * @param {string} url - The URL to link to
- */
-function updateSocialIcon(element, platform, url) {
-    let socialIcon = element.querySelector(`.social-icon[data-platform="${platform}"]`);
-    const socialContainer = element.querySelector('.social-icons-container');
-    
-    if (!socialContainer) return;
-    
-    // If URL is empty, remove the icon
-    if (!url) {
-        if (socialIcon) {
-            socialIcon.parentElement.remove();
-        }
+    const componentId = element.getAttribute('data-component-id');
+    if (!componentId) {
+        console.error('Component ID not found on element');
         return;
     }
     
-    // If icon doesn't exist, create it
-    if (!socialIcon) {
-        const iconLink = document.createElement('a');
-        iconLink.className = 'social-link';
-        iconLink.setAttribute('href', url);
-        iconLink.setAttribute('data-platform', platform);
-        
-        // Add target and rel attributes based on settings
-        const openNewTab = document.querySelector('[data-property="open_new_tab"]').checked;
-        const addNofollow = document.querySelector('[data-property="add_rel_nofollow"]').checked;
-        
-        if (openNewTab) {
-            iconLink.setAttribute('target', '_blank');
-        }
-        
-        iconLink.setAttribute('rel', addNofollow ? 'nofollow noopener' : 'noopener');
-        
-        // Create icon
-        const icon = document.createElement('div');
-        icon.className = 'social-icon';
-        icon.setAttribute('data-platform', platform);
-        
-        // Set icon content
-        icon.innerHTML = getSocialIconSvg(platform);
-        
-        // Set styles based on current settings
-        const iconStyle = element.getAttribute('data-icon-style') || 'solid';
-        if (iconStyle === 'branded') {
-            icon.style.backgroundColor = getBrandedColor(platform);
-            icon.style.color = '#ffffff';
-        } else {
-            const bgColor = document.querySelector('[data-property="background_color"]').value;
-            const iconColor = document.querySelector('[data-property="icon_color"]').value;
-            
-            icon.style.backgroundColor = bgColor;
-            icon.style.color = iconColor;
-        }
-        
-        // Add label if needed
-        const showLabels = element.hasAttribute('data-show-labels');
-        if (showLabels) {
-            const label = document.createElement('span');
-            label.className = 'social-label';
-            label.textContent = getPlatformName(platform);
-            iconLink.appendChild(label);
-        }
-        
-        iconLink.appendChild(icon);
-        socialContainer.appendChild(iconLink);
-    } else {
-        // Update existing icon
-        const iconLink = socialIcon.closest('.social-link');
-        if (iconLink) {
-            iconLink.setAttribute('href', url);
-        }
-    }
+    // Add custom social links container
+    setupCustomSocialLinksUI(element, componentId);
+    
+    // Bind special behavior for branded colors
+    setupBrandedColorsToggle(componentId);
+    
+    // Handle platform link updates
+    setupPlatformLinkHandlers(componentId);
 }
 
 /**
- * Setup custom social links functionality
+ * Setup custom social links UI
  * @param {HTMLElement} element - The component element
+ * @param {string} componentId - Component ID
  */
-function setupCustomSocialLinks(element) {
+function setupCustomSocialLinksUI(element, componentId) {
+    // Add custom links section to the panel
+    const panelContent = document.querySelector('.element-editor__content');
+    if (!panelContent) return;
+    
+    // Check if container already exists
+    let customLinksSection = document.getElementById('custom-social-links-section');
+    if (customLinksSection) return;
+    
+    // Create custom links section
+    customLinksSection = document.createElement('div');
+    customLinksSection.id = 'custom-social-links-section';
+    customLinksSection.className = 'form-section';
+    customLinksSection.innerHTML = `
+        <h4 class="form-section__title">Custom Links</h4>
+        <div id="custom-social-links" class="custom-links-container"></div>
+        <button id="add-social-link-btn" class="add-item-btn">Add Custom Link</button>
+    `;
+    
+    panelContent.appendChild(customLinksSection);
+    
+    // Setup custom links container
     const customLinksContainer = document.getElementById('custom-social-links');
     const addLinkBtn = document.getElementById('add-social-link-btn');
     
@@ -413,6 +94,153 @@ function setupCustomSocialLinks(element) {
         // Update component
         updateCustomLinksInComponent(element);
     });
+}
+
+/**
+ * Setup special handling for branded colors toggle
+ * @param {string} componentId - Component ID
+ */
+function setupBrandedColorsToggle(componentId) {
+    // Listen for changes to icon_style setting
+    stateManager.subscribe(componentId, (state) => {
+        if (state.icon_style !== undefined) {
+            const iconColorInput = document.querySelector('[data-setting="icon_color"]');
+            const bgColorInput = document.querySelector('[data-setting="background_color"]');
+            const iconColorTextInput = document.querySelector('[data-setting="icon_color-text"]');
+            const bgColorTextInput = document.querySelector('[data-setting="background_color-text"]');
+            
+            // Disable color inputs if using branded colors
+            const isBranded = state.icon_style === 'branded';
+            
+            if (iconColorInput) iconColorInput.disabled = isBranded;
+            if (bgColorInput) bgColorInput.disabled = isBranded;
+            if (iconColorTextInput) iconColorTextInput.disabled = isBranded;
+            if (bgColorTextInput) bgColorTextInput.disabled = isBranded;
+            
+            // Apply branded colors if selected
+            if (isBranded) {
+                applyBrandedColors(componentId);
+            }
+        }
+    });
+}
+
+/**
+ * Apply branded colors to social icons
+ * @param {string} componentId - Component ID
+ */
+function applyBrandedColors(componentId) {
+    const element = document.querySelector(`[data-component-id="${componentId}"]`);
+    if (!element) return;
+    
+    const socialIcons = element.querySelectorAll('.social-icon');
+    socialIcons.forEach(icon => {
+        const platform = icon.getAttribute('data-platform');
+        if (platform) {
+            icon.style.backgroundColor = getBrandedColor(platform);
+            icon.style.color = '#ffffff';
+        }
+    });
+}
+
+/**
+ * Setup platform link handlers
+ * @param {string} componentId - Component ID
+ */
+function setupPlatformLinkHandlers(componentId) {
+    // Listen for changes to platform links
+    const platforms = ['twitter', 'linkedin', 'instagram', 'facebook', 'youtube', 'tiktok', 'pinterest', 'medium'];
+    
+    platforms.forEach(platform => {
+        stateManager.subscribe(componentId, (state) => {
+            if (state[`social_${platform}`] !== undefined) {
+                updateSocialIcon(componentId, platform, state[`social_${platform}`]);
+            }
+        });
+    });
+}
+
+/**
+ * Update social icon visibility and link
+ * @param {string} componentId - Component ID
+ * @param {string} platform - The social platform
+ * @param {string} url - The URL to link to
+ */
+function updateSocialIcon(componentId, platform, url) {
+    const element = document.querySelector(`[data-component-id="${componentId}"]`);
+    if (!element) return;
+    
+    let socialIcon = element.querySelector(`.social-icon[data-platform="${platform}"]`);
+    const socialContainer = element.querySelector('.social-icons-container');
+    
+    if (!socialContainer) return;
+    
+    // If URL is empty, remove the icon
+    if (!url) {
+        if (socialIcon) {
+            const iconLink = socialIcon.closest('.social-link');
+            if (iconLink) {
+                iconLink.remove();
+            }
+        }
+        return;
+    }
+    
+    // If icon doesn't exist, create it
+    if (!socialIcon) {
+        const iconLink = document.createElement('a');
+        iconLink.className = 'social-link';
+        iconLink.setAttribute('href', url);
+        iconLink.setAttribute('data-platform', platform);
+        
+        // Add target and rel attributes based on settings
+        const openNewTab = stateManager.getComponentSetting(componentId, 'open_new_tab');
+        const addNofollow = stateManager.getComponentSetting(componentId, 'add_rel_nofollow');
+        
+        if (openNewTab) {
+            iconLink.setAttribute('target', '_blank');
+        }
+        
+        iconLink.setAttribute('rel', addNofollow ? 'nofollow noopener' : 'noopener');
+        
+        // Create icon
+        const icon = document.createElement('div');
+        icon.className = 'social-icon';
+        icon.setAttribute('data-platform', platform);
+        
+        // Set icon content
+        icon.innerHTML = getSocialIconSvg(platform);
+        
+        // Set styles based on current settings
+        const iconStyle = stateManager.getComponentSetting(componentId, 'icon_style') || 'solid';
+        if (iconStyle === 'branded') {
+            icon.style.backgroundColor = getBrandedColor(platform);
+            icon.style.color = '#ffffff';
+        } else {
+            const bgColor = stateManager.getComponentSetting(componentId, 'background_color');
+            const iconColor = stateManager.getComponentSetting(componentId, 'icon_color');
+            
+            icon.style.backgroundColor = bgColor;
+            icon.style.color = iconColor;
+        }
+        
+        // Add label if needed
+        const showLabels = stateManager.getComponentSetting(componentId, 'show_labels');
+        const label = document.createElement('span');
+        label.className = 'social-label';
+        label.textContent = getPlatformName(platform);
+        label.style.display = showLabels ? '' : 'none';
+        iconLink.appendChild(label);
+        
+        iconLink.appendChild(icon);
+        socialContainer.appendChild(iconLink);
+    } else {
+        // Update existing icon
+        const iconLink = socialIcon.closest('.social-link');
+        if (iconLink) {
+            iconLink.setAttribute('href', url);
+        }
+    }
 }
 
 /**
@@ -466,6 +294,9 @@ function addCustomLinkToPanel(label, url, index) {
 function updateCustomLinksInComponent(element) {
     if (!element) return;
     
+    const componentId = element.getAttribute('data-component-id');
+    if (!componentId) return;
+    
     const socialContainer = element.querySelector('.social-icons-container');
     if (!socialContainer) return;
     
@@ -489,8 +320,8 @@ function updateCustomLinksInComponent(element) {
             iconLink.setAttribute('data-platform', 'custom');
             
             // Add target and rel attributes based on settings
-            const openNewTab = document.querySelector('[data-property="open_new_tab"]').checked;
-            const addNofollow = document.querySelector('[data-property="add_rel_nofollow"]').checked;
+            const openNewTab = stateManager.getComponentSetting(componentId, 'open_new_tab');
+            const addNofollow = stateManager.getComponentSetting(componentId, 'add_rel_nofollow');
             
             if (openNewTab) {
                 iconLink.setAttribute('target', '_blank');
@@ -512,17 +343,17 @@ function updateCustomLinksInComponent(element) {
             `;
             
             // Set styles based on current settings
-            const iconStyle = element.getAttribute('data-icon-style') || 'solid';
+            const iconStyle = stateManager.getComponentSetting(componentId, 'icon_style') || 'solid';
             if (iconStyle !== 'branded') {
-                const bgColor = document.querySelector('[data-property="background_color"]').value;
-                const iconColor = document.querySelector('[data-property="icon_color"]').value;
+                const bgColor = stateManager.getComponentSetting(componentId, 'background_color');
+                const iconColor = stateManager.getComponentSetting(componentId, 'icon_color');
                 
                 icon.style.backgroundColor = bgColor;
                 icon.style.color = iconColor;
             }
             
             // Add label
-            const showLabels = element.hasAttribute('data-show-labels');
+            const showLabels = stateManager.getComponentSetting(componentId, 'show_labels');
             const label = document.createElement('span');
             label.className = 'social-label';
             label.textContent = labelInput.value;
@@ -537,75 +368,6 @@ function updateCustomLinksInComponent(element) {
     // Trigger save
     const event = new Event('change', { bubbles: true });
     element.dispatchEvent(event);
-}
-
-/**
- * Setup a color picker
- * @param {string} property - The property name
- * @param {HTMLElement} element - The component element
- * @param {Function} applyCallback - Callback to apply the color
- */
-function setupColorPicker(property, element, applyCallback) {
-    const colorInput = document.querySelector(`[data-property="${property}"]`);
-    const textInput = colorInput?.nextElementSibling;
-    
-    if (!colorInput || !textInput) return;
-    
-    // Disable if using branded colors for icon/bg color
-    if ((property === 'icon_color' || property === 'background_color') && 
-        element.getAttribute('data-icon-style') === 'branded') {
-        colorInput.disabled = true;
-        textInput.disabled = true;
-    }
-    
-    // Get current color if available
-    let currentColor;
-    
-    if (property === 'hover_color') {
-        currentColor = getComputedStyle(element).getPropertyValue('--social-hover-color');
-    } else if (property === 'icon_color') {
-        const firstIcon = element.querySelector('.social-icon');
-        if (firstIcon) {
-            currentColor = getComputedStyle(firstIcon).color;
-        }
-    } else if (property === 'background_color') {
-        const firstIcon = element.querySelector('.social-icon');
-        if (firstIcon) {
-            currentColor = getComputedStyle(firstIcon).backgroundColor;
-        }
-    }
-    
-    if (currentColor && currentColor !== '') {
-        const hex = rgbToHex(currentColor);
-        colorInput.value = hex;
-        textInput.value = hex;
-    }
-    
-    // Sync color and text inputs
-    colorInput.addEventListener('input', function() {
-        textInput.value = this.value;
-        if (applyCallback) {
-            applyCallback(this.value);
-        }
-        
-        // Trigger save
-        const event = new Event('change', { bubbles: true });
-        element.dispatchEvent(event);
-    });
-    
-    textInput.addEventListener('input', function() {
-        // Validate hex color
-        if (/^#[0-9A-F]{6}$/i.test(this.value)) {
-            colorInput.value = this.value;
-            if (applyCallback) {
-                applyCallback(this.value);
-            }
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        }
-    });
 }
 
 /**
@@ -735,33 +497,12 @@ function getPlatformName(platform) {
 }
 
 /**
- * Convert RGB to HEX color
- * @param {string} rgb - RGB color string
- * @returns {string} - HEX color string
- */
-function rgbToHex(rgb) {
-    // If already a hex color, return as is
-    if (rgb.startsWith('#')) {
-        return rgb;
-    }
-    
-    // Extract RGB values
-    const rgbMatch = rgb.match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
-    if (!rgbMatch) return '#000000'; // Default to black
-    
-    const r = parseInt(rgbMatch[1], 10);
-    const g = parseInt(rgbMatch[2], 10);
-    const b = parseInt(rgbMatch[3], 10);
-    
-    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-}
-
-/**
  * Escape HTML for safe insertion
  * @param {string} text - Text to escape
  * @returns {string} - Escaped text
  */
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
