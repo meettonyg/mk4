@@ -5,6 +5,7 @@
 
 import enhancedStateManager from './enhanced-state-manager.js';
 import { dataBindingEngine } from '../services/data-binding-engine.js';
+import { schemaValidator } from './schema-validator.js';
 
 class EnhancedComponentManager {
     constructor() {
@@ -432,6 +433,10 @@ class EnhancedComponentManager {
         if (window.guestifyData?.componentSchemas?.[componentType]) {
             const schema = window.guestifyData.componentSchemas[componentType];
             console.log(`Loaded schema for ${componentType} from localized data`);
+            
+            // Validate schema in non-blocking way
+            this.validateSchemaAsync(componentType, schema);
+            
             return schema;
         }
         
@@ -448,6 +453,10 @@ class EnhancedComponentManager {
                     const response = await fetch(path);
                     if (response.ok) {
                         const schema = await response.json();
+                        
+                        // Validate schema in non-blocking way
+                        this.validateSchemaAsync(componentType, schema);
+                        
                         return schema;
                     }
                 } catch (e) {
@@ -537,6 +546,27 @@ class EnhancedComponentManager {
      */
     generateComponentId(type) {
         return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    /**
+     * Validate schema asynchronously to avoid blocking
+     */
+    async validateSchemaAsync(componentType, schema) {
+        // Run validation in next tick to avoid blocking
+        setTimeout(() => {
+            try {
+                schemaValidator.validateSchema(componentType, schema);
+            } catch (error) {
+                console.error(`Schema validation error for ${componentType}:`, error);
+            }
+        }, 0);
+    }
+    
+    /**
+     * Get schema validation summary (for debugging)
+     */
+    getSchemaValidationSummary() {
+        return schemaValidator.getValidationSummary();
     }
 }
 

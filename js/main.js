@@ -27,6 +27,9 @@ import { setupGlobalSettings } from './modals/global-settings.js';
 import { setupExportSystem } from './modals/export.js';
 import './modals/template-library.js';
 
+// Import schema validation utilities (loads mkSchema global)
+import './utils/schema-validation-utils.js';
+
 
 // --- Main Initialization Sequence ---
 
