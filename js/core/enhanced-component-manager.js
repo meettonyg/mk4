@@ -503,6 +503,71 @@ class EnhancedComponentManager {
             return schema;
         }
         
+        // Provide fallback schemas for common components
+        const fallbackSchemas = {
+            'social-links': {
+                name: 'Social Links',
+                settings: {
+                    twitter: { type: 'text', label: 'Twitter URL', default: '' },
+                    linkedin: { type: 'text', label: 'LinkedIn URL', default: '' },
+                    facebook: { type: 'text', label: 'Facebook URL', default: '' },
+                    instagram: { type: 'text', label: 'Instagram URL', default: '' }
+                }
+            },
+            'social': {
+                name: 'Social Links',
+                settings: {
+                    twitter: { type: 'text', label: 'Twitter URL', default: '' },
+                    linkedin: { type: 'text', label: 'LinkedIn URL', default: '' },
+                    facebook: { type: 'text', label: 'Facebook URL', default: '' },
+                    instagram: { type: 'text', label: 'Instagram URL', default: '' }
+                }
+            },
+            'testimonials': {
+                name: 'Testimonials',
+                settings: {
+                    testimonial1_text: { type: 'textarea', label: 'Testimonial 1', default: 'Great speaker!' },
+                    testimonial1_author: { type: 'text', label: 'Author 1', default: 'John Doe' },
+                    testimonial2_text: { type: 'textarea', label: 'Testimonial 2', default: '' },
+                    testimonial2_author: { type: 'text', label: 'Author 2', default: '' }
+                }
+            },
+            'contact-form': {
+                name: 'Contact Form',
+                settings: {
+                    title: { type: 'text', label: 'Form Title', default: 'Get in Touch' },
+                    email: { type: 'text', label: 'Contact Email', default: '' }
+                }
+            },
+            'faq': {
+                name: 'FAQ',
+                settings: {
+                    title: { type: 'text', label: 'Section Title', default: 'Frequently Asked Questions' },
+                    question1: { type: 'text', label: 'Question 1', default: '' },
+                    answer1: { type: 'textarea', label: 'Answer 1', default: '' }
+                }
+            },
+            'logo-showcase': {
+                name: 'Logo Showcase',
+                settings: {
+                    title: { type: 'text', label: 'Section Title', default: 'As Featured In' }
+                }
+            },
+            'guest-introduction': {
+                name: 'Guest Introduction',
+                settings: {
+                    title: { type: 'text', label: 'Title', default: 'About Your Speaker' },
+                    content: { type: 'textarea', label: 'Introduction', default: '' }
+                }
+            }
+        };
+        
+        // Check if we have a fallback schema
+        if (fallbackSchemas[componentType]) {
+            console.log(`Using fallback schema for ${componentType}`);
+            return fallbackSchemas[componentType];
+        }
+        
         // Fallback to fetching if not in localized data
         try {
             const paths = [

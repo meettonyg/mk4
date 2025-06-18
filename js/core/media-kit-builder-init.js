@@ -121,28 +121,36 @@ class MediaKitBuilderInit {
                 // Disable rendering during load
                 document.dispatchEvent(new CustomEvent('disable-rendering'));
                 
-                // Load state with skipInitialRender option
-                enhancedStateManager.loadSerializedState(data, { 
-                    skipInitialRender: true 
-                });
-                
-                // Re-enable rendering
-                document.dispatchEvent(new CustomEvent('enable-rendering'));
-                
-                // Force a single render
-                document.dispatchEvent(new CustomEvent('force-render'));
-                
-                console.log('State restored successfully');
+                try {
+                    // Load state with skipInitialRender option
+                    enhancedStateManager.loadSerializedState(data, { 
+                        skipInitialRender: true 
+                    });
+                    
+                    console.log('State restored successfully');
+                } finally {
+                    // ALWAYS re-enable rendering, even if there was an error
+                    document.dispatchEvent(new CustomEvent('enable-rendering'));
+                    
+                    // Force a single render
+                    document.dispatchEvent(new CustomEvent('force-render'));
+                }
                 
             } catch (error) {
                 console.error('Failed to restore state:', error);
                 this.showError('Failed to load saved data');
+                
+                // Ensure rendering is enabled
+                document.dispatchEvent(new CustomEvent('enable-rendering'));
                 
                 // Clear corrupted data
                 localStorage.removeItem('mediaKitData');
             }
         } else {
             console.log('No saved state found, starting fresh');
+            
+            // Ensure rendering is enabled
+            document.dispatchEvent(new CustomEvent('enable-rendering'));
         }
     }
     

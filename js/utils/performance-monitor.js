@@ -299,6 +299,12 @@ class PerformanceMonitor {
             };
         } else {
             const summary = todaySummary[operation];
+            
+            // Ensure values array exists (for data loaded from localStorage)
+            if (!summary.values) {
+                summary.values = [];
+            }
+            
             summary.min = Math.min(summary.min, duration);
             summary.max = Math.max(summary.max, duration);
             summary.sum += duration;
@@ -376,6 +382,15 @@ class PerformanceMonitor {
             if (historyData) {
                 const parsed = JSON.parse(historyData);
                 Object.entries(parsed).forEach(([date, summary]) => {
+                    // Ensure each operation has required properties
+                    Object.keys(summary).forEach(operation => {
+                        if (summary[operation] && !summary[operation].values) {
+                            summary[operation].values = [];
+                        }
+                        if (summary[operation] && !summary[operation].sum) {
+                            summary[operation].sum = (summary[operation].avg || 0) * (summary[operation].count || 1);
+                        }
+                    });
                     this.dailySummaries.set(date, summary);
                 });
             }
@@ -438,7 +453,7 @@ class PerformanceMonitor {
             date: today,
             operations: Object.entries(summary).reduce((acc, [op, data]) => {
                 acc[op] = {
-                    avg: Math.round(data.avg || 0),
+                    avg: Math.round((data.sum / data.count) || 0),
                     p95: Math.round(data.p95 || 0),
                     count: data.count || 0
                 };
