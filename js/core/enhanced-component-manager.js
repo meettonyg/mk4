@@ -6,6 +6,7 @@
 import enhancedStateManager from './enhanced-state-manager.js';
 import { dataBindingEngine } from '../services/data-binding-engine.js';
 import { schemaValidator } from './schema-validator.js';
+import { performanceMonitor } from '../utils/performance-monitor.js';
 
 class EnhancedComponentManager {
     constructor() {
@@ -126,9 +127,12 @@ class EnhancedComponentManager {
      * Add a component (state only - no DOM manipulation)
      */
     async addComponent(componentType, targetZoneId = null) {
+        const perfEnd = performanceMonitor.start('component-add', { type: componentType });
+        
         // Validate component type
         if (!this.isValidComponentType(componentType)) {
             console.error(`Invalid component type: ${componentType}`);
+            perfEnd();
             return null;
         }
         
@@ -174,10 +178,12 @@ class EnhancedComponentManager {
                 detail: { componentId, componentType: mappedType }
             }));
             
+            perfEnd();
             return componentId;
             
         } catch (error) {
             console.error('Error adding component:', error);
+            perfEnd();
             throw error;
         }
     }
@@ -186,9 +192,12 @@ class EnhancedComponentManager {
      * Remove a component (state only - no DOM manipulation)
      */
     async removeComponent(componentId) {
+        const perfEnd = performanceMonitor.start('component-remove', { componentId });
+        
         // Check for pending actions
         if (enhancedStateManager.isPendingAction('delete', componentId)) {
             console.log(`Delete action already pending for ${componentId}`);
+            perfEnd();
             return;
         }
         
@@ -210,6 +219,7 @@ class EnhancedComponentManager {
             document.dispatchEvent(new CustomEvent('component-removed', {
                 detail: { componentId }
             }));
+            perfEnd();
         }, 300);
     }
     
@@ -252,6 +262,8 @@ class EnhancedComponentManager {
      * Execute control action
      */
     async executeControlAction(action, componentId) {
+        const perfEnd = performanceMonitor.start('control-action', { action, componentId });
+        
         // Save any active edits first
         await this.saveActiveEditableContent();
         
@@ -298,6 +310,8 @@ class EnhancedComponentManager {
             console.error(`Error executing ${action}:`, error);
             // Clear pending action on error
             enhancedStateManager.clearPendingAction(action, componentId);
+        } finally {
+            perfEnd();
         }
     }
     
@@ -305,9 +319,12 @@ class EnhancedComponentManager {
      * Duplicate a component
      */
     async duplicateComponent(sourceComponentId) {
+        const perfEnd = performanceMonitor.start('component-duplicate', { sourceComponentId });
+        
         const sourceComponent = enhancedStateManager.getComponent(sourceComponentId);
         if (!sourceComponent) {
             console.error('Source component not found');
+            perfEnd();
             return;
         }
         
@@ -350,6 +367,7 @@ class EnhancedComponentManager {
             detail: { sourceComponentId, newComponentId }
         }));
         
+        perfEnd();
         return newComponentId;
     }
     
@@ -357,14 +375,22 @@ class EnhancedComponentManager {
      * Move component up or down
      */
     async moveComponent(componentId, direction) {
+        const perfEnd = performanceMonitor.start('component-move', { componentId, direction });
+        
         const components = enhancedStateManager.getOrderedComponents();
         const currentIndex = components.findIndex(c => c.id === componentId);
         
-        if (currentIndex === -1) return;
+        if (currentIndex === -1) {
+            perfEnd();
+            return;
+        }
         
         const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
         
-        if (newIndex < 0 || newIndex >= components.length) return;
+        if (newIndex < 0 || newIndex >= components.length) {
+            perfEnd();
+            return;
+        }
         
         // Update meta state for animation
         enhancedStateManager.updateComponentMeta(componentId, { isMoving: true });
@@ -385,6 +411,8 @@ class EnhancedComponentManager {
         document.dispatchEvent(new CustomEvent('component-moved', {
             detail: { componentId, direction }
         }));
+        
+        perfEnd();
     }
     
     /**
@@ -405,8 +433,14 @@ class EnhancedComponentManager {
     async loadComponentSchema(componentType) {
         // Check cache
         if (this.loadedSchemas.has(componentType)) {
-            return this.loadedSchemas.get(componentType);
+            performanceMonitor.trackCache('schema', true);
+            const perfEnd = performanceMonitor.start('schema-load-cached', { type: componentType });
+            const schema = this.loadedSchemas.get(componentType);
+            perfEnd();
+            return schema;
         }
+        
+        performanceMonitor.trackCache('schema', false);
         
         // If already loading, return the existing promise
         if (this.schemaLoadingPromises.has(componentType)) {
@@ -417,13 +451,17 @@ class EnhancedComponentManager {
         const loadingPromise = this._loadSchemaInternal(componentType);
         this.schemaLoadingPromises.set(componentType, loadingPromise);
         
+        const perfEnd = performanceMonitor.start('schema-load', { type: componentType });
+        
         try {
             const schema = await loadingPromise;
             this.loadedSchemas.set(componentType, schema);
             this.schemaLoadingPromises.delete(componentType);
+            perfEnd();
             return schema;
         } catch (error) {
             this.schemaLoadingPromises.delete(componentType);
+            perfEnd();
             throw error;
         }
     }

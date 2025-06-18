@@ -4,6 +4,7 @@
  */
 
 import { stateManager as BaseStateManager } from '../services/state-manager.js';
+import { performanceMonitor } from '../utils/performance-monitor.js';
 
 class EnhancedStateManager {
     constructor() {
@@ -134,9 +135,13 @@ class EnhancedStateManager {
      * Enhanced batch update with proper notification queuing
      */
     async batchUpdate(updateFn) {
+        const perfEnd = performanceMonitor.start('state-batch-update');
+        
         if (this.batchMode) {
             // Already in batch mode, just execute
-            return await updateFn();
+            const result = await updateFn();
+            perfEnd();
+            return result;
         }
         
         this.batchMode = true;
@@ -178,6 +183,8 @@ class EnhancedStateManager {
                 // Use the bound method to ensure proper 'this' context
                 originalNotifyGlobal.call(this.baseManager);
             }
+            
+            perfEnd();
         }
     }
     
@@ -225,6 +232,8 @@ class EnhancedStateManager {
      * Load serialized state with meta support
      */
     loadSerializedState(serializedState, options = {}) {
+        const perfEnd = performanceMonitor.start('state-load');
+        
         // Clear existing meta
         this.componentMeta.clear();
         
@@ -256,6 +265,8 @@ class EnhancedStateManager {
                 this.baseManager.notifyGlobalListeners = originalNotify;
             }, 0);
         }
+        
+        perfEnd();
     }
     
     /**

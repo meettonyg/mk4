@@ -30,6 +30,9 @@ import './modals/template-library.js';
 // Import schema validation utilities (loads mkSchema global)
 import './utils/schema-validation-utils.js';
 
+// Import performance monitor
+import './utils/performance-monitor.js';
+
 
 // --- Main Initialization Sequence ---
 
@@ -82,6 +85,11 @@ async function initializeBuilder() {
         }
         
         console.log('Media Kit Builder initialization complete');
+        
+        // Log performance monitoring availability
+        if (window.mkPerf) {
+            console.log('Performance monitoring available. Use mkPerf.report() to view metrics.');
+        }
         
     } catch (error) {
         console.error('Failed to initialize Media Kit Builder:', error);

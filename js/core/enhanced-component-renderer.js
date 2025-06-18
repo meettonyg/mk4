@@ -5,6 +5,7 @@
 
 import { renderComponent } from '../components/dynamic-component-loader.js';
 import enhancedStateManager from './enhanced-state-manager.js';
+import { performanceMonitor } from '../utils/performance-monitor.js';
 
 class EnhancedComponentRenderer {
     constructor() {
@@ -238,6 +239,8 @@ class EnhancedComponentRenderer {
      * Process changes efficiently
      */
     async processChanges(changes, state) {
+        const perfEnd = performanceMonitor.start('full-render', { changeCount: changes.length });
+        
         this.isRendering = true;
         this.renderStartTime = Date.now();
         
@@ -293,6 +296,7 @@ class EnhancedComponentRenderer {
             // ALWAYS reset isRendering, even on error
             this.isRendering = false;
             this.renderStartTime = null; // Clear render start time
+            perfEnd();
             
             // Process any queued renders after reset
             if (this.renderQueue.size > 0) {
@@ -330,9 +334,12 @@ class EnhancedComponentRenderer {
      * Add a component to the DOM
      */
     async addComponent(componentId, component) {
+        const perfEnd = performanceMonitor.start('component-render', { componentId, type: component.type });
+        
         // Check if already exists
         if (this.previewContainer.querySelector(`[data-component-id="${componentId}"]`)) {
             console.log(`Component ${componentId} already exists in DOM`);
+            perfEnd();
             return null;
         }
         
@@ -375,9 +382,11 @@ class EnhancedComponentRenderer {
             // Cache the element
             this.componentCache.set(componentId, element);
             
+            perfEnd();
             return element;
         } catch (error) {
             console.error(`Error rendering component ${componentId}:`, error);
+            perfEnd();
             return null;
         }
     }
@@ -499,6 +508,8 @@ class EnhancedComponentRenderer {
      * Update a component in the DOM
      */
     async updateComponent(componentId, component, oldData) {
+        const perfEnd = performanceMonitor.start('dom-update', { componentId });
+        
         const element = this.previewContainer.querySelector(`[data-component-id="${componentId}"]`);
         if (!element) {
             console.log(`Component ${componentId} not found, adding instead`);
@@ -546,6 +557,8 @@ class EnhancedComponentRenderer {
                 element.classList.remove('component-moving');
             }
         }
+        
+        perfEnd();
     }
     
     /**
@@ -805,9 +818,13 @@ class EnhancedComponentRenderer {
      * Force render all components
      */
     forceRender() {
+        const perfEnd = performanceMonitor.start('full-render', { forced: true });
+        
         const state = enhancedStateManager.getState();
         this.lastState = null; // Force full render
         this.onStateChange(state);
+        
+        perfEnd();
     }
     
     /**

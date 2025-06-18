@@ -4,6 +4,7 @@
  */
 
 import { stateManager } from './state-manager.js';
+import { performanceMonitor } from '../utils/performance-monitor.js';
 
 class DataBindingEngine {
     constructor() {
@@ -18,6 +19,8 @@ class DataBindingEngine {
      * @param {Object} schema - Component schema from component.json
      */
     async initializeComponent(componentId, componentType, schema) {
+        const perfEnd = performanceMonitor.start('data-binding-init', { componentId, componentType });
+        
         this.componentSchemas.set(componentId, schema);
         
         // Set default values in state
@@ -30,6 +33,8 @@ class DataBindingEngine {
         
         // Create bindings for this component
         this.createBindings(componentId, schema);
+        
+        perfEnd();
     }
 
     /**
@@ -101,11 +106,19 @@ class DataBindingEngine {
      * @param {Object} state - Component state
      */
     updatePreview(componentId, state) {
+        const perfEnd = performanceMonitor.start('data-binding-update', { componentId });
+        
         const componentBindings = this.bindings.get(componentId);
-        if (!componentBindings) return;
+        if (!componentBindings) {
+            perfEnd();
+            return;
+        }
         
         const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
-        if (!componentElement) return;
+        if (!componentElement) {
+            perfEnd();
+            return;
+        }
         
         Object.entries(state).forEach(([settingKey, value]) => {
             const binding = componentBindings.get(settingKey);
@@ -113,6 +126,8 @@ class DataBindingEngine {
             
             this.applyUpdate(componentElement, binding, value);
         });
+        
+        perfEnd();
     }
 
     /**

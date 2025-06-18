@@ -5,6 +5,7 @@
 
 import { setState, getState } from '../state.js';
 import { stateManager } from './state-manager.js';
+import { performanceMonitor } from '../utils/performance-monitor.js';
 
 /**
  * Set up save system
@@ -30,6 +31,8 @@ export function setupSaveSystem() {
  * Save the media kit
  */
 export function saveMediaKit() {
+    const perfEnd = performanceMonitor.start('state-save');
+    
     const saveBtn = document.getElementById('save-btn');
     const statusText = document.querySelector('.toolbar__status span');
     
@@ -61,6 +64,8 @@ export function saveMediaKit() {
     // Store state hash for change detection
     localStorage.setItem('gmkb_last_saved_state', JSON.stringify(mediaKitData));
     
+    perfEnd();
+    
     // Simulate server save operation
     setTimeout(() => {
         setState('isUnsaved', false);
@@ -79,6 +84,8 @@ export function saveMediaKit() {
  * Auto-save the media kit
  */
 function autoSave() {
+    const perfEnd = performanceMonitor.start('state-save', { auto: true });
+    
     const statusText = document.querySelector('.toolbar__status span');
     if (statusText) statusText.textContent = 'Auto-saving...';
     
@@ -96,6 +103,7 @@ function autoSave() {
     localStorage.setItem('mediaKitData', JSON.stringify(mediaKitData));
     localStorage.setItem('gmkb_last_saved_state', JSON.stringify(mediaKitData));
     
+    perfEnd();
     console.log('Media kit auto-saved');
     
     setTimeout(() => {

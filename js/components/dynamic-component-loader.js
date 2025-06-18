@@ -3,6 +3,8 @@
  * Fetches component templates from the server with caching for performance
  */
 
+import { performanceMonitor } from '../utils/performance-monitor.js';
+
 // Template cache and loading promises for performance
 const templateCache = new Map();
 const loadingPromises = new Map();
@@ -238,6 +240,9 @@ export async function renderComponent(componentType, componentId = null, props =
         
         // Check if template is in cache
         if (templateCache.has(cacheKey)) {
+            performanceMonitor.trackCache('template', true);
+            const perfEnd = performanceMonitor.start('template-load-cached', { type: componentType });
+            
             cacheStats.hits++;
             const cachedTemplate = templateCache.get(cacheKey);
             const renderTime = performance.now() - startTime;
@@ -246,7 +251,9 @@ export async function renderComponent(componentType, componentId = null, props =
             console.log(`🚀 [Cache HIT] ${componentType} rendered in ${renderTime.toFixed(2)}ms (Cache hit rate: ${cacheStats.getHitRate()}%)`);
             
             // Hydrate the cached template with props and wrap with controls
-            return wrapAndHydrate(cachedTemplate, componentType, componentId, props);
+            const result = wrapAndHydrate(cachedTemplate, componentType, componentId, props);
+            perfEnd();
+            return result;
         }
         
         // Cache miss - check if already loading
@@ -255,6 +262,9 @@ export async function renderComponent(componentType, componentId = null, props =
             const template = await loadingPromises.get(cacheKey);
             return wrapAndHydrate(template, componentType, componentId, props);
         }
+        
+        performanceMonitor.trackCache('template', false);
+        const perfEnd = performanceMonitor.start('template-load', { type: componentType });
         
         cacheStats.misses++;
         console.log(`📡 [Cache MISS] Fetching ${componentType} from server...`);
@@ -277,7 +287,9 @@ export async function renderComponent(componentType, componentId = null, props =
                 loadingPromises.delete(cacheKey);
                 
                 // Hydrate and return
-                return wrapAndHydrate(template, componentType, componentId, props);
+                const result = wrapAndHydrate(template, componentType, componentId, props);
+                perfEnd();
+                return result;
             }
             
             throw new Error('Empty template received from server');
@@ -285,6 +297,7 @@ export async function renderComponent(componentType, componentId = null, props =
         } catch (fetchError) {
             // Clean up loading promise on error
             loadingPromises.delete(cacheKey);
+            perfEnd();
             throw fetchError;
         }
         
