@@ -101,12 +101,21 @@ function extractTemplateFromHtml(html, props) {
     const imgElements = temp.querySelectorAll('img[src]');
     imgElements.forEach(img => {
         const src = img.getAttribute('src');
-        // Check if this src matches any prop value
-        Object.entries(props).forEach(([key, value]) => {
-            if (value && String(value) === src) {
-                img.setAttribute('src', `{{${key}}}`);
-            }
-        });
+        // Check if this src matches any prop value or is a placeholder
+        if (src && (src.includes('TEMPLATE_') || src.includes('template_'))) {
+            // Find the corresponding prop key
+            Object.entries(props).forEach(([key, value]) => {
+                if (key.includes('image') || key.includes('avatar') || key.includes('photo')) {
+                    img.setAttribute('src', `{{${key}}}`);
+                }
+            });
+        } else {
+            Object.entries(props).forEach(([key, value]) => {
+                if (value && String(value) === src) {
+                    img.setAttribute('src', `{{${key}}}`);
+                }
+            });
+        }
     });
     
     // Handle href attributes
@@ -197,7 +206,7 @@ function getDefaultPropsForComponent(componentType) {
             title: 'TEMPLATE_TITLE',
             bio: 'TEMPLATE_BIO',
             description: 'TEMPLATE_DESCRIPTION',
-            image: 'TEMPLATE_IMAGE'
+            image: 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%22%20height=%22100%22%3E%3Crect%20width=%22100%22%20height=%22100%22%20fill=%22%23ddd%22/%3E%3C/svg%3E'
         },
         biography: {
             title: 'TEMPLATE_TITLE',

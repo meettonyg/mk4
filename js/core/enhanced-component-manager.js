@@ -114,13 +114,31 @@ class EnhancedComponentManager {
             'podcast': 'podcast-player',
             'video': 'video-intro',
             'hero-section': 'hero',
-            'Hero Section': 'hero'
+            'Hero Section': 'hero',
+            // Additional mappings for common components
+            'social': 'social-links',
+            'questions': 'faq',
+            'contact': 'contact-form',
+            'testimonials': 'testimonials',
+            'logo-grid': 'logo-showcase',
+            'guest-intro': 'guest-introduction'
         };
         
         const mappedType = componentMap[componentType] || componentType;
+        
+        // Extended list of valid components
+        const validComponents = [
+            'hero', 'biography', 'stats', 'call-to-action', 'topics', 
+            'social-links', 'faq', 'contact-form', 'testimonials', 
+            'logo-showcase', 'guest-introduction', 'photo-gallery',
+            'video-intro', 'podcast-player', 'booking-calendar',
+            'social', 'questions', 'contact', 'logo-grid', 'guest-intro'
+        ];
+        
         return this.componentRegistry.has(mappedType) || 
                this.loadedSchemas.has(mappedType) ||
-               ['hero', 'biography', 'stats', 'call-to-action', 'topics', 'social-links'].includes(mappedType);
+               validComponents.includes(mappedType) ||
+               validComponents.includes(componentType);
     }
     
     /**
@@ -148,7 +166,14 @@ class EnhancedComponentManager {
             'podcast': 'podcast-player',
             'video': 'video-intro',
             'hero-section': 'hero',
-            'Hero Section': 'hero'
+            'Hero Section': 'hero',
+            // Additional mappings
+            'social': 'social-links',
+            'questions': 'faq',
+            'contact': 'contact-form',
+            'testimonials': 'testimonials',
+            'logo-grid': 'logo-showcase',
+            'guest-intro': 'guest-introduction'
         };
         
         const mappedType = componentMap[componentType] || componentType;
