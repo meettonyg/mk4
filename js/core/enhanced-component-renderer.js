@@ -18,6 +18,7 @@ class EnhancedComponentRenderer {
         this.lastState = null;
         this.renderDebounceTimer = null; // Add missing property
         this.renderStartTime = null; // Track when rendering starts
+        this.healthCheckInterval = null; // Health check timer
     }
     
     /**
@@ -56,29 +57,44 @@ class EnhancedComponentRenderer {
      * Setup health check to prevent stuck rendering
      */
     setupHealthCheck() {
-        // Check every 5 seconds if renderer is stuck
-        setInterval(() => {
-            if (this.isRendering && this.renderQueue.size > 0) {
+        // Check every 1 second if renderer is stuck (more aggressive)
+        this.healthCheckInterval = setInterval(() => {
+            if (this.isRendering) {
                 const now = Date.now();
-                // If rendering for more than 2 seconds, assume stuck
+                // If rendering for more than 500ms, assume stuck
                 if (!this.renderStartTime) {
                     this.renderStartTime = now;
-                } else if (now - this.renderStartTime > 2000) {
-                    console.warn('Renderer appears stuck, forcing reset...');
-                    this.isRendering = false;
-                    this.renderStartTime = null;
-                    
-                    // Process queued renders
-                    if (this.renderQueue.size > 0) {
-                        const nextState = Array.from(this.renderQueue)[this.renderQueue.size - 1];
-                        this.renderQueue.clear();
-                        setTimeout(() => this.onStateChange(nextState), 100);
-                    }
+                } else if (now - this.renderStartTime > 500) {
+                    console.warn(`Renderer stuck for ${now - this.renderStartTime}ms, forcing immediate reset`);
+                    this.forceReset();
                 }
             } else {
                 this.renderStartTime = null;
             }
-        }, 5000);
+        }, 1000);
+    }
+    
+    /**
+     * Force reset the renderer
+     */
+    forceReset() {
+        this.isRendering = false;
+        this.renderStartTime = null;
+        
+        // Process last queued state if any
+        if (this.renderQueue.size > 0) {
+            const states = Array.from(this.renderQueue);
+            this.renderQueue.clear();
+            
+            // Process only the last state
+            const lastState = states[states.length - 1];
+            console.log('Processing last queued state after reset');
+            
+            // Use setTimeout to avoid immediate re-entry
+            setTimeout(() => {
+                this.onStateChange(lastState);
+            }, 10);
+        }
     }
     
     /**
@@ -134,22 +150,24 @@ class EnhancedComponentRenderer {
         }
         
         // Check if stuck and recover immediately
-        if (this.isRendering && this.renderStartTime) {
-            const renderDuration = Date.now() - this.renderStartTime;
-            if (renderDuration > 1000) {
-                console.warn(`Renderer stuck for ${renderDuration}ms, forcing recovery`);
-                this.isRendering = false;
-                this.renderStartTime = null;
-                // Clear the queue and process this state instead
-                this.renderQueue.clear();
+        if (this.isRendering) {
+            const renderDuration = this.renderStartTime ? Date.now() - this.renderStartTime : 0;
+            if (renderDuration > 300) { // Lower threshold for faster recovery
+                console.warn(`Renderer stuck for ${renderDuration}ms, forcing immediate recovery`);
+                this.forceReset();
+                // Don't return - process this state change after reset
+            } else {
+                // Still rendering but not stuck yet
+                console.log('Already rendering, queueing state change');
+                this.renderQueue.add(newState);
+                return;
             }
         }
         
-        // Skip if already rendering
+        // If we get here and still rendering, something is wrong
         if (this.isRendering) {
-            console.log('Already rendering, queueing state change');
-            this.renderQueue.add(newState);
-            return;
+            console.error('Renderer still in rendering state after recovery check!');
+            this.forceReset();
         }
         
         // Debounce rapid state changes
@@ -643,9 +661,19 @@ class EnhancedComponentRenderer {
             this.stateUnsubscribe();
         }
         
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+        }
+        
+        if (this.renderDebounceTimer) {
+            clearTimeout(this.renderDebounceTimer);
+        }
+        
         this.initialized = false;
         this.componentCache.clear();
         this.renderQueue.clear();
+        this.isRendering = false;
+        this.renderStartTime = null;
     }
 }
 
