@@ -135,15 +135,25 @@ export function setupComponentLibraryModal() {
  */
 export function showComponentLibraryModal() {
     console.log('showComponentLibraryModal called');
-    const modal = document.getElementById('component-library-overlay');
+    let modal = document.getElementById('component-library-overlay');
+    
+    // Create modal if it doesn't exist
+    if (!modal) {
+        console.log('Modal not found, creating it...');
+        createComponentLibraryModal();
+        modal = document.getElementById('component-library-overlay');
+    }
+    
     if (modal) {
         console.log('Modal found, showing...');
         modal.style.display = 'flex';
         // Ensure it's visible
         modal.style.opacity = '1';
         modal.style.visibility = 'visible';
+        // Populate it if needed
+        populateComponentLibrary();
     } else {
-        console.error('Component library modal not found!');
+        console.error('Failed to create component library modal!');
     }
 }
 
@@ -167,6 +177,55 @@ function filterComponents(category) {
             card.style.display = 'none';
         }
     });
+}
+
+/**
+ * Create the component library modal HTML
+ */
+function createComponentLibraryModal() {
+    const modal = document.createElement('div');
+    modal.id = 'component-library-overlay';
+    modal.className = 'modal-overlay';
+    modal.style.display = 'none';
+    
+    modal.innerHTML = `
+        <div class="modal modal--library">
+            <div class="library__header">
+                <h2>Component Library</h2>
+                <button class="modal__close" id="close-library">×</button>
+            </div>
+            <div class="library__body">
+                <div class="library__sidebar">
+                    <h3>Categories</h3>
+                    <div class="category-list">
+                        <div class="category-item active" data-category="all">All Components</div>
+                        <div class="category-item" data-category="essential">Essential</div>
+                        <div class="category-item" data-category="media">Media & Content</div>
+                        <div class="category-item" data-category="premium">Premium</div>
+                    </div>
+                </div>
+                <div class="library__main">
+                    <div class="library__search">
+                        <input type="text" id="component-search" placeholder="Search components..." />
+                    </div>
+                    <div class="component-grid" id="free-components">
+                        <!-- Free components will be populated here -->
+                    </div>
+                    <div class="premium-section">
+                        <h3>Premium Components</h3>
+                        <div class="component-grid" id="premium-components">
+                            <!-- Premium components will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Setup close functionality
+    setupModalClose('component-library-overlay', 'close-library');
 }
 
 /**

@@ -12,6 +12,8 @@ class EnhancedComponentManager {
         this.loadedSchemas = new Map();
         this.initialized = false;
         this.controlDebounceTimer = null;
+        this.schemaLoadingPromises = new Map(); // Prevent duplicate loads
+        this.pendingActions = new Set(); // Track pending actions
     }
     
     /**
@@ -242,7 +244,7 @@ class EnhancedComponentManager {
         
         this.controlDebounceTimer = setTimeout(async () => {
             await this.executeControlAction(mappedAction, componentId);
-        }, 300);
+        }, 150); // Reduced debounce time for better responsiveness
     }
     
     /**
@@ -400,7 +402,7 @@ class EnhancedComponentManager {
     }
     
     /**
-     * Load component schema
+     * Load component schema with deduplication
      */
     async loadComponentSchema(componentType) {
         // Check cache
@@ -408,10 +410,30 @@ class EnhancedComponentManager {
             return this.loadedSchemas.get(componentType);
         }
         
+        // If already loading, return the existing promise
+        if (this.schemaLoadingPromises.has(componentType)) {
+            return this.schemaLoadingPromises.get(componentType);
+        }
+        
+        // Create loading promise
+        const loadingPromise = this._loadSchemaInternal(componentType);
+        this.schemaLoadingPromises.set(componentType, loadingPromise);
+        
+        try {
+            const schema = await loadingPromise;
+            this.loadedSchemas.set(componentType, schema);
+            this.schemaLoadingPromises.delete(componentType);
+            return schema;
+        } catch (error) {
+            this.schemaLoadingPromises.delete(componentType);
+            throw error;
+        }
+    }
+    
+    async _loadSchemaInternal(componentType) {
         // First check localized schemas from PHP
         if (window.guestifyData?.componentSchemas?.[componentType]) {
             const schema = window.guestifyData.componentSchemas[componentType];
-            this.loadedSchemas.set(componentType, schema);
             console.log(`Loaded schema for ${componentType} from localized data`);
             return schema;
         }
@@ -429,7 +451,6 @@ class EnhancedComponentManager {
                     const response = await fetch(path);
                     if (response.ok) {
                         const schema = await response.json();
-                        this.loadedSchemas.set(componentType, schema);
                         return schema;
                     }
                 } catch (e) {
@@ -469,7 +490,7 @@ class EnhancedComponentManager {
     }
     
     /**
-     * Save active contenteditable content
+     * Save active contenteditable content - batched for performance
      */
     async saveActiveEditableContent() {
         const activeElement = document.activeElement;
@@ -479,14 +500,37 @@ class EnhancedComponentManager {
             await new Promise(resolve => setTimeout(resolve, 50));
         }
         
-        // Check for any unsaved changes
-        const editables = document.querySelectorAll('[contenteditable="true"][data-original-content]');
-        editables.forEach(editable => {
-            const originalContent = editable.getAttribute('data-original-content');
-            if (originalContent !== null && originalContent !== editable.textContent) {
-                editable.blur();
+        // Batch save all editable content
+        const editableElements = document.querySelectorAll('[contenteditable="true"]');
+        const updates = [];
+
+        editableElements.forEach(element => {
+            const componentEl = element.closest('[data-component-id]');
+            if (componentEl) {
+                const componentId = componentEl.getAttribute('data-component-id');
+                const fieldName = element.getAttribute('data-field-name');
+                if (componentId && fieldName) {
+                    updates.push({
+                        componentId,
+                        fieldName,
+                        value: element.innerHTML
+                    });
+                }
             }
         });
+
+        // Batch update state
+        if (updates.length > 0) {
+            await enhancedStateManager.batchUpdate(async () => {
+                updates.forEach(update => {
+                    enhancedStateManager.updateComponentData(
+                        update.componentId,
+                        update.fieldName,
+                        update.value
+                    );
+                });
+            });
+        }
         
         return new Promise(resolve => setTimeout(resolve, 50));
     }

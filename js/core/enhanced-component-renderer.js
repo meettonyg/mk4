@@ -57,21 +57,17 @@ class EnhancedComponentRenderer {
      * Setup health check to prevent stuck rendering
      */
     setupHealthCheck() {
-        // Check every 1 second if renderer is stuck (more aggressive)
+        // Less aggressive health check - only log warnings, don't force resets
         this.healthCheckInterval = setInterval(() => {
-            if (this.isRendering) {
-                const now = Date.now();
-                // If rendering for more than 500ms, assume stuck
-                if (!this.renderStartTime) {
-                    this.renderStartTime = now;
-                } else if (now - this.renderStartTime > 500) {
-                    console.warn(`Renderer stuck for ${now - this.renderStartTime}ms, forcing immediate reset`);
-                    this.forceReset();
+            if (this.isRendering && this.renderStartTime) {
+                const renderDuration = Date.now() - this.renderStartTime;
+                if (renderDuration > 1000) {
+                    console.warn(`Renderer taking longer than expected: ${renderDuration}ms`);
+                    // Don't force reset - let the render complete naturally
+                    // Only log for debugging purposes
                 }
-            } else {
-                this.renderStartTime = null;
             }
-        }, 1000);
+        }, 2000); // Check less frequently
     }
     
     /**
@@ -105,6 +101,8 @@ class EnhancedComponentRenderer {
         
         if (existingComponents.length === 0) {
             this.updateEmptyState(true);
+            // Also setup empty state buttons if they already exist
+            this.setupEmptyStateButtons();
         } else {
             // Setup interactivity for existing components
             existingComponents.forEach(element => {
@@ -149,25 +147,12 @@ class EnhancedComponentRenderer {
             return;
         }
         
-        // Check if stuck and recover immediately
+        // Check if already rendering
         if (this.isRendering) {
-            const renderDuration = this.renderStartTime ? Date.now() - this.renderStartTime : 0;
-            if (renderDuration > 300) { // Lower threshold for faster recovery
-                console.warn(`Renderer stuck for ${renderDuration}ms, forcing immediate recovery`);
-                this.forceReset();
-                // Don't return - process this state change after reset
-            } else {
-                // Still rendering but not stuck yet
-                console.log('Already rendering, queueing state change');
-                this.renderQueue.add(newState);
-                return;
-            }
-        }
-        
-        // If we get here and still rendering, something is wrong
-        if (this.isRendering) {
-            console.error('Renderer still in rendering state after recovery check!');
-            this.forceReset();
+            // Queue the state change for later
+            console.log('Already rendering, queueing state change');
+            this.renderQueue.add(newState);
+            return;
         }
         
         // Debounce rapid state changes
@@ -198,7 +183,7 @@ class EnhancedComponentRenderer {
                 this.renderQueue.clear();
                 await this.onStateChange(nextState);
             }
-        }, 50); // 50ms debounce
+        }, 16); // 16ms debounce (one frame)
     }
     
     /**
@@ -254,9 +239,11 @@ class EnhancedComponentRenderer {
      */
     async processChanges(changes, state) {
         this.isRendering = true;
-        this.renderStartTime = Date.now(); // Track when rendering starts
+        this.renderStartTime = Date.now();
         
         try {
+            // Use requestAnimationFrame for DOM updates
+            await new Promise(resolve => requestAnimationFrame(resolve));
             // Group changes by type for efficient processing
             const grouped = {
                 add: [],
@@ -269,24 +256,27 @@ class EnhancedComponentRenderer {
                 grouped[change.type].push(change);
             });
             
-            // Process removals first
-            for (const change of grouped.remove) {
-                await this.removeComponent(change.id);
+            // Batch DOM operations
+            const fragment = document.createDocumentFragment();
+            
+            // Process removals first (fast)
+            if (grouped.remove.length > 0) {
+                this.batchRemove(grouped.remove);
             }
             
-            // Process additions
-            for (const change of grouped.add) {
-                await this.addComponent(change.id, change.component);
+            // Process additions (potentially slow - optimize)
+            if (grouped.add.length > 0) {
+                await this.batchAdd(grouped.add, fragment);
             }
             
-            // Process updates
-            for (const change of grouped.update) {
-                await this.updateComponent(change.id, change.component, change.oldData);
+            // Process updates (fast)
+            if (grouped.update.length > 0) {
+                await this.batchUpdate(grouped.update);
             }
             
             // Process reorders last
             if (grouped.reorder.length > 0) {
-                await this.reorderComponents(state);
+                this.batchReorder(state);
             }
             
             // Update empty state
@@ -324,34 +314,112 @@ class EnhancedComponentRenderer {
         
         console.log(`Adding component: ${componentId}`);
         
-        // Render component HTML
-        const html = await renderComponent(component.type, componentId, component.data);
-        
-        // Create element
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        const element = tempDiv.firstElementChild;
-        
-        if (!element) {
-            console.error(`Failed to create element for component ${componentId}`);
-            return;
+        try {
+            // Render component HTML
+            const html = await renderComponent(component.type, componentId, component.data);
+            
+            // Create element
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const element = tempDiv.firstElementChild;
+            
+            if (!element) {
+                console.error(`Failed to create element for component ${componentId}`);
+                return null;
+            }
+            
+            // Set up the element before adding to DOM
+            this.setupComponentInteractivity(element);
+            this.trackContentEditable(element);
+            
+            // Cache the element
+            this.componentCache.set(componentId, element);
+            
+            return element;
+        } catch (error) {
+            console.error(`Error rendering component ${componentId}:`, error);
+            return null;
         }
-        
-        // Find insertion point based on order
-        const insertionPoint = this.findInsertionPoint(component.order);
-        this.previewContainer.insertBefore(element, insertionPoint);
-        
-        // Setup interactivity
-        this.setupComponentInteractivity(element);
-        this.trackContentEditable(element);
-        
-        // Cache the element
-        this.componentCache.set(componentId, element);
-        
-        // Trigger animation
-        requestAnimationFrame(() => {
-            element.classList.add('component-added');
+    }
+    
+    /**
+     * Batch add components for performance
+     */
+    async batchAdd(addChanges, fragment) {
+        // Render all components in parallel
+        const renderPromises = addChanges.map(async (change) => {
+            const element = await this.addComponent(change.id, change.component);
+            return { element, change };
         });
+        
+        const results = await Promise.all(renderPromises);
+        
+        // Sort by order and add to fragment
+        results
+            .filter(r => r.element)
+            .sort((a, b) => a.change.component.order - b.change.component.order)
+            .forEach(({ element }) => {
+                fragment.appendChild(element);
+            });
+        
+        // Single DOM update
+        if (fragment.childNodes.length > 0) {
+            this.previewContainer.appendChild(fragment);
+            
+            // Trigger animations after DOM update
+            requestAnimationFrame(() => {
+                fragment.childNodes.forEach(node => {
+                    if (node.nodeType === 1) { // Element node
+                        node.classList.add('component-added');
+                    }
+                });
+            });
+        }
+    }
+    
+    /**
+     * Batch remove components
+     */
+    batchRemove(removeChanges) {
+        removeChanges.forEach(change => {
+            const element = this.previewContainer.querySelector(`[data-component-id="${change.id}"]`);
+            if (element) {
+                element.remove();
+                this.componentCache.delete(change.id);
+            }
+        });
+    }
+    
+    /**
+     * Batch update components
+     */
+    async batchUpdate(updateChanges) {
+        // Updates are usually fast, can process individually
+        for (const change of updateChanges) {
+            await this.updateComponent(change.id, change.component, change.oldData);
+        }
+    }
+    
+    /**
+     * Batch reorder components
+     */
+    batchReorder(state) {
+        const components = Object.entries(state.components)
+            .map(([id, comp]) => ({ id, ...comp }))
+            .sort((a, b) => a.order - b.order);
+        
+        // Create a fragment with all components in correct order
+        const fragment = document.createDocumentFragment();
+        
+        components.forEach(component => {
+            const element = this.previewContainer.querySelector(`[data-component-id="${component.id}"]`);
+            if (element) {
+                fragment.appendChild(element);
+            }
+        });
+        
+        // Single DOM update
+        this.previewContainer.appendChild(fragment);
     }
     
     /**
@@ -595,20 +663,34 @@ class EnhancedComponentRenderer {
         this.previewContainer.appendChild(emptyState);
         
         // Setup empty state buttons
+        this.setupEmptyStateButtons();
+    }
+    
+    /**
+     * Setup empty state button event listeners
+     */
+    setupEmptyStateButtons() {
+        // Use setTimeout to ensure DOM is ready
         setTimeout(() => {
             const addBtn = document.getElementById('add-first-component');
             const loadBtn = document.getElementById('load-template');
             
-            if (addBtn) {
+            if (addBtn && !addBtn.hasAttribute('data-listener-attached')) {
+                addBtn.setAttribute('data-listener-attached', 'true');
                 addBtn.addEventListener('click', () => {
+                    console.log('Add Component button clicked');
                     document.dispatchEvent(new CustomEvent('show-component-library'));
                 });
+                console.log('Add Component button listener attached');
             }
             
-            if (loadBtn) {
+            if (loadBtn && !loadBtn.hasAttribute('data-listener-attached')) {
+                loadBtn.setAttribute('data-listener-attached', 'true');
                 loadBtn.addEventListener('click', () => {
+                    console.log('Load Template button clicked');
                     document.dispatchEvent(new CustomEvent('show-template-library'));
                 });
+                console.log('Load Template button listener attached');
             }
         }, 100);
     }

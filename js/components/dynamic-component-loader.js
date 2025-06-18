@@ -1,7 +1,11 @@
 /**
  * Dynamic Component Loader
- * Fetches component templates from the server instead of using hard-coded templates
+ * Fetches component templates from the server with caching for performance
  */
+
+// Template cache and loading promises for performance
+const templateCache = new Map();
+const loadingPromises = new Map();
 
 /**
  * Render a component by fetching its template from the server
@@ -148,6 +152,14 @@ export function getComponentInfo(componentType) {
     }
     
     return null;
+}
+
+/**
+ * Clear template cache
+ */
+export function clearTemplateCache() {
+    templateCache.clear();
+    loadingPromises.clear();
 }
 
 /**
