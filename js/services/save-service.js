@@ -31,19 +31,21 @@ export function setupSaveSystem() {
  */
 export function saveMediaKit() {
     const saveBtn = document.getElementById('save-btn');
-    const statusDot = document.querySelector('.toolbar__status-dot');
     const statusText = document.querySelector('.toolbar__status span');
-
+    
     // Update UI to show saving state
     if (saveBtn) saveBtn.disabled = true;
-    if (statusDot) statusDot.classList.add('toolbar__status-dot--saving');
+    const statusDot = document.querySelector('.toolbar__status-dot');
     if (statusText) statusText.textContent = 'Saving...';
+    if (statusDot) statusDot.classList.add('toolbar__status-dot--saving');
+
 
     // Use the global window.stateManager to ensure we get the correct instance
     if (!window.stateManager) {
         console.error('State manager not available, cannot save');
         if (statusText) statusText.textContent = 'Save failed - refresh page';
         if (saveBtn) saveBtn.disabled = false;
+        if (statusDot) statusDot.classList.remove('toolbar__status-dot--saving');
         return;
     }
 

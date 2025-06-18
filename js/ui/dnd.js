@@ -54,17 +54,24 @@ export function setupDragAndDrop() {
             
             const draggedComponent = getState('draggedComponent');
             if (draggedComponent) {
-                // Check if premium component
-                const componentElement = document.querySelector(`[data-component="${draggedComponent}"]`);
-                if (componentElement && componentElement.classList.contains('component-item--premium')) {
-                    showUpgradePrompt();
-                    return;
+                // Add loading state to the drop zone
+                this.classList.add('is-loading');
+                try {
+                    // Check if premium component
+                    const componentElement = document.querySelector(`[data-component="${draggedComponent}"]`);
+                    if (componentElement && componentElement.classList.contains('component-item--premium')) {
+                        showUpgradePrompt();
+                        return;
+                    }
+                    
+                    // Add component asynchronously
+                    await addComponentToZone(draggedComponent, this);
+                    markUnsaved();
+                    // State is now automatically tracked by stateManager
+                } finally {
+                    // Remove loading state in a finally block to ensure it's always removed
+                    setTimeout(() => this.classList.remove('is-loading'), 300);
                 }
-                
-                // Add component asynchronously
-                await addComponentToZone(draggedComponent, this);
-                markUnsaved();
-                // State is now automatically tracked by stateManager
             }
         });
 

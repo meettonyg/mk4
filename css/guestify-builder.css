@@ -5,6 +5,7 @@
 
 /* Base styles */
 @import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/base.css');
+@import url('modules/loading.css');
 
 /* Layout Modules */
 @import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/toolbar.css');

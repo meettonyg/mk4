@@ -62,7 +62,14 @@ class TemplateLoader {
             throw new Error(`Template ${templateId} not found`);
         }
         
+        const previewContainer = document.getElementById('preview-container');
+        
         try {
+            // Add loading state
+            if (previewContainer) {
+                previewContainer.classList.add('is-loading');
+            }
+
             // Construct the URL for the template file
             const baseUrl = window.guestifyMediaKitBuilder?.pluginUrl || 
                           window.guestifyData?.pluginUrl || 
@@ -98,6 +105,11 @@ class TemplateLoader {
         } catch (error) {
             console.error('Error loading template:', error);
             throw error;
+        } finally {
+            if (previewContainer) {
+                 // Use a timeout to ensure the UI has time to render before removing the loader
+                setTimeout(() => previewContainer.classList.remove('is-loading'), 500);
+            }
         }
     }
     
