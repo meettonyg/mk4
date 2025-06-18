@@ -3,6 +3,14 @@
  * Handles the dynamic functionality of the photo gallery design panel
  */
 
+// Ensure toast notification system is available
+(function() {
+    const script = document.createElement('script');
+    script.src = '../js/utils/toast-polyfill.js';
+    script.async = true;
+    document.head.appendChild(script);
+})();
+
 // Register this component's panel handler
 window.componentPanelHandlers = window.componentPanelHandlers || {};
 window.componentPanelHandlers['photo-gallery'] = function(element) {
@@ -128,7 +136,7 @@ function addPhotoToPanel(src, caption, index) {
     if (changePhotoBtn) {
         changePhotoBtn.addEventListener('click', function() {
             // This would typically use the WordPress media uploader
-            alert('Photo change functionality would open media browser here');
+            window.historyService.showToast('Photo change functionality would open media browser here', 'info', 3000, true);
             
             // Update component after selection
             const element = document.querySelector('.editable-element--selected');

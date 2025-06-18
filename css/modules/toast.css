@@ -1,0 +1,137 @@
+/**
+ * Toast Notification Styles
+ * Modern, accessible toast notifications for user feedback
+ */
+
+.gmkb-toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 350px;
+    width: 100%;
+}
+
+.gmkb-toast {
+    background-color: #ffffff;
+    color: #1e293b;
+    border-left: 4px solid #3b82f6;
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-size: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 100%;
+}
+
+.gmkb-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* Toast variants */
+.gmkb-toast--success {
+    border-left-color: #10b981;
+}
+
+.gmkb-toast--success:before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 11.08V12a10 10 0 1 1-5.93-9.14'%3E%3C/path%3E%3Cpolyline points='22 4 12 14.01 9 11.01'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.gmkb-toast--error {
+    border-left-color: #ef4444;
+}
+
+.gmkb-toast--error:before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='%23ef4444' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='15' y1='9' x2='9' y2='15'%3E%3C/line%3E%3Cline x1='9' y1='9' x2='15' y2='15'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.gmkb-toast--info {
+    border-left-color: #3b82f6;
+}
+
+.gmkb-toast--info:before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='16' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='8' x2='12.01' y2='8'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.gmkb-toast--warning {
+    border-left-color: #f59e0b;
+}
+
+.gmkb-toast--warning:before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    margin-right: 10px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'%3E%3C/path%3E%3Cline x1='12' y1='9' x2='12' y2='13'%3E%3C/line%3E%3Cline x1='12' y1='17' x2='12.01' y2='17'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Close button for dismissible toasts */
+.gmkb-toast__close {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: auto;
+    padding: 0 0 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+}
+
+.gmkb-toast__close:hover {
+    color: #334155;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .gmkb-toast-container {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+}
+
+/* Animation for when toast is closed manually */
+.gmkb-toast.closing {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+/* Accessibility */
+.gmkb-toast {
+    outline: none;
+    aria-live: polite;
+}

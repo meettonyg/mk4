@@ -3,6 +3,14 @@
  * Handles the dynamic functionality of the testimonials design panel
  */
 
+// Ensure toast notification system is available
+(function() {
+    const script = document.createElement('script');
+    script.src = '../js/utils/toast-polyfill.js';
+    script.async = true;
+    document.head.appendChild(script);
+})();
+
 // Register this component's panel handler
 window.componentPanelHandlers = window.componentPanelHandlers || {};
 window.componentPanelHandlers['testimonials'] = function(element, schema) {
@@ -109,7 +117,7 @@ function addTestimonialToPanel(text, authorName, authorTitle, index) {
         uploadBtn.addEventListener('click', function() {
             // This would typically use the WordPress media uploader
             // For now, we'll just use a placeholder
-            alert('Image upload functionality would open media browser here');
+            window.historyService.showToast('Image upload functionality would open media browser here', 'info', 3000, true);
             
             // Update component after selection
             updateTestimonialsInComponent(element);
