@@ -123,6 +123,8 @@ function guestify_media_kit_builder_enqueue_scripts() {
             'restUrl' => esc_url_raw(rest_url()),
             'restNonce' => wp_create_nonce('wp_rest'),
             'pluginUrl' => $plugin_url,
+            'pluginVersion' => GUESTIFY_VERSION, // Add version for cache invalidation
+            'pluginVersion' => GUESTIFY_VERSION, // Add plugin version for cache invalidation
             'components' => $components_array, // Ensure it's a proper array
             'categories' => $component_discovery->getCategories(),
             'componentSchemas' => $component_schemas, // Add schemas for immediate access

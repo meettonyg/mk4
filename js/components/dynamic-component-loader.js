@@ -7,6 +7,219 @@
 const templateCache = new Map();
 const loadingPromises = new Map();
 
+// Get cache version from plugin data
+const getCacheVersion = () => window.guestifyData?.pluginVersion || '1.0.0';
+
+// Cache statistics for performance monitoring
+const cacheStats = {
+    hits: 0,
+    misses: 0,
+    totalTime: 0,
+    cachedTime: 0,
+    getHitRate() {
+        const total = this.hits + this.misses;
+        return total > 0 ? ((this.hits / total) * 100).toFixed(1) : 0;
+    },
+    getAverageTime() {
+        const total = this.hits + this.misses;
+        return total > 0 ? (this.totalTime / total).toFixed(0) : 0;
+    },
+    getAverageCachedTime() {
+        return this.hits > 0 ? (this.cachedTime / this.hits).toFixed(0) : 0;
+    },
+    report() {
+        console.log(`[Template Cache] Hit Rate: ${this.getHitRate()}% (${this.hits} hits, ${this.misses} misses)`);
+        console.log(`[Template Cache] Avg Time: ${this.getAverageTime()}ms (Cached: ${this.getAverageCachedTime()}ms)`);
+    }
+};
+
+/**
+ * Hydrate a template with props by replacing placeholders
+ * @param {string} template - Template with {{placeholder}} syntax
+ * @param {object} props - Props to replace in template
+ * @returns {string} - Hydrated HTML
+ */
+function hydrateTemplate(template, props) {
+    // Handle nested props and escaping
+    return template.replace(/\{\{\s*([\w\.]+)\s*\}\}/g, (match, propPath) => {
+        // Support nested props like 'user.name'
+        const value = propPath.split('.').reduce((obj, key) => obj?.[key], props);
+        
+        // Escape HTML to prevent XSS
+        if (value !== undefined && value !== null) {
+            const div = document.createElement('div');
+            div.textContent = String(value);
+            return div.innerHTML;
+        }
+        
+        return '';
+    });
+}
+
+/**
+ * Wrap and hydrate template with props and controls
+ * @param {string} template - Raw template HTML
+ * @param {string} componentType - Component type
+ * @param {string} componentId - Component ID
+ * @param {object} props - Component props
+ * @returns {string} - Final HTML with controls
+ */
+function wrapAndHydrate(template, componentType, componentId, props) {
+    const propsWithId = { ...props, componentId };
+    const hydratedHtml = hydrateTemplate(template, propsWithId);
+    return wrapComponentWithControls(hydratedHtml, componentType, componentId);
+}
+
+/**
+ * Extract template with placeholders from rendered HTML
+ * @param {string} html - Rendered HTML with actual values
+ * @param {object} props - Props used to render the HTML
+ * @returns {string} - Template with {{placeholder}} syntax
+ */
+function extractTemplateFromHtml(html, props) {
+    let template = html;
+    
+    // Create a map of data-setting attributes to prop keys
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // Find all elements with data-setting attributes
+    const settingElements = temp.querySelectorAll('[data-setting]');
+    settingElements.forEach(el => {
+        const settingKey = el.getAttribute('data-setting');
+        const content = el.innerHTML.trim();
+        
+        // Replace the content with a placeholder
+        if (content) {
+            el.innerHTML = `{{${settingKey}}}`;
+        }
+    });
+    
+    // Also handle common attributes that might contain props
+    const imgElements = temp.querySelectorAll('img[src]');
+    imgElements.forEach(img => {
+        const src = img.getAttribute('src');
+        // Check if this src matches any prop value
+        Object.entries(props).forEach(([key, value]) => {
+            if (value && String(value) === src) {
+                img.setAttribute('src', `{{${key}}}`);
+            }
+        });
+    });
+    
+    // Handle href attributes
+    const linkElements = temp.querySelectorAll('a[href]');
+    linkElements.forEach(link => {
+        const href = link.getAttribute('href');
+        Object.entries(props).forEach(([key, value]) => {
+            if (value && String(value) === href) {
+                link.setAttribute('href', `{{${key}}}`);
+            }
+        });
+    });
+    
+    return temp.innerHTML;
+}
+
+/**
+ * Fetch template from server
+ * @param {string} componentType - Component type to fetch
+ * @param {object} sampleProps - Sample props to use for fetching
+ * @returns {Promise<string>} - Template HTML with placeholders
+ */
+async function fetchTemplateFromServer(componentType, sampleProps = {}) {
+    // Use default sample props based on component type
+    const defaultProps = getDefaultPropsForComponent(componentType);
+    const propsToUse = { ...defaultProps, ...sampleProps };
+    
+    // First try REST API
+    if (guestifyData && guestifyData.restUrl && guestifyData.restNonce) {
+        console.log('Fetching via REST API:', `${guestifyData.restUrl}guestify/v1/render-component`);
+        const response = await fetch(`${guestifyData.restUrl}guestify/v1/render-component`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': guestifyData.restNonce
+            },
+            body: JSON.stringify({
+                component: componentType,
+                props: propsToUse
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.html) {
+                // Extract template from the rendered HTML
+                return extractTemplateFromHtml(data.html, propsToUse);
+            }
+        }
+    }
+
+    // Fallback to AJAX
+    if (guestifyData && guestifyData.ajaxUrl) {
+        console.log('Fetching via AJAX fallback:', guestifyData.ajaxUrl);
+        const formData = new FormData();
+        formData.append('action', 'guestify_render_component');
+        formData.append('component', componentType);
+        formData.append('props', JSON.stringify(propsToUse));
+        if (guestifyData.nonce) {
+            formData.append('nonce', guestifyData.nonce);
+        }
+
+        const ajaxResponse = await fetch(guestifyData.ajaxUrl, {
+            method: 'POST',
+            body: formData
+        });
+
+        const ajaxData = await ajaxResponse.json();
+        if (ajaxData.success && ajaxData.data && ajaxData.data.html) {
+            // Extract template from the rendered HTML
+            return extractTemplateFromHtml(ajaxData.data.html, propsToUse);
+        }
+    }
+
+    throw new Error(`Failed to fetch template for: ${componentType}`);
+}
+
+/**
+ * Get default props for a component type
+ * @param {string} componentType - Component type
+ * @returns {object} - Default props
+ */
+function getDefaultPropsForComponent(componentType) {
+    // These are sample values that will be replaced with placeholders
+    const defaults = {
+        hero: {
+            name: 'TEMPLATE_NAME',
+            title: 'TEMPLATE_TITLE',
+            bio: 'TEMPLATE_BIO',
+            description: 'TEMPLATE_DESCRIPTION',
+            image: 'TEMPLATE_IMAGE'
+        },
+        biography: {
+            title: 'TEMPLATE_TITLE',
+            content: 'TEMPLATE_CONTENT'
+        },
+        stats: {
+            stat1_value: 'TEMPLATE_STAT1_VALUE',
+            stat1_label: 'TEMPLATE_STAT1_LABEL',
+            stat2_value: 'TEMPLATE_STAT2_VALUE',
+            stat2_label: 'TEMPLATE_STAT2_LABEL',
+            stat3_value: 'TEMPLATE_STAT3_VALUE',
+            stat3_label: 'TEMPLATE_STAT3_LABEL'
+        },
+        'call-to-action': {
+            title: 'TEMPLATE_TITLE',
+            description: 'TEMPLATE_DESCRIPTION',
+            buttonText: 'TEMPLATE_BUTTON_TEXT',
+            buttonUrl: 'TEMPLATE_BUTTON_URL'
+        }
+    };
+    
+    return defaults[componentType] || {};
+}
+
 /**
  * Render a component by fetching its template from the server
  * @param {string} componentType - The type/slug of the component
@@ -15,75 +228,70 @@ const loadingPromises = new Map();
  * @returns {Promise<string>} - The rendered component HTML
  */
 export async function renderComponent(componentType, componentId = null, props = {}) {
+    const startTime = performance.now();
     console.log(`renderComponent called - Type: ${componentType}, ID: ${componentId}, Props:`, props);
     
     try {
-        // Add componentId to props for the template
-        const propsWithId = { ...props, componentId };
+        // Generate cache key with version
+        const cacheVersion = getCacheVersion();
+        const cacheKey = `${componentType}-${cacheVersion}`;
         
-        // First try REST API
-        if (guestifyData && guestifyData.restUrl && guestifyData.restNonce) {
-            console.log('Trying REST API:', `${guestifyData.restUrl}guestify/v1/render-component`);
-            const response = await fetch(`${guestifyData.restUrl}guestify/v1/render-component`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': guestifyData.restNonce
-                },
-                body: JSON.stringify({
-                    component: componentType,
-                    props: propsWithId
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('REST API response:', data);
-                if (data.success && data.html) {
-                    console.log('REST API returned HTML:', data.html.substring(0, 100) + '...');
-                    const wrappedHtml = wrapComponentWithControls(data.html, componentType, componentId);
-                    console.log('Wrapped HTML:', wrappedHtml.substring(0, 100) + '...');
-                    return wrappedHtml;
-                } else {
-                    console.error('REST API response missing success or html:', data);
-                }
-            } else {
-                console.error('REST API failed:', response.status, response.statusText);
-            }
+        // Check if template is in cache
+        if (templateCache.has(cacheKey)) {
+            cacheStats.hits++;
+            const cachedTemplate = templateCache.get(cacheKey);
+            const renderTime = performance.now() - startTime;
+            cacheStats.cachedTime += renderTime;
+            cacheStats.totalTime += renderTime;
+            console.log(`🚀 [Cache HIT] ${componentType} rendered in ${renderTime.toFixed(2)}ms (Cache hit rate: ${cacheStats.getHitRate()}%)`);
+            
+            // Hydrate the cached template with props and wrap with controls
+            return wrapAndHydrate(cachedTemplate, componentType, componentId, props);
         }
-
-        // Fallback to AJAX
-        if (guestifyData && guestifyData.ajaxUrl) {
-            console.log('Trying AJAX fallback:', guestifyData.ajaxUrl);
-            const formData = new FormData();
-            formData.append('action', 'guestify_render_component');
-            formData.append('component', componentType);
-            formData.append('props', JSON.stringify(propsWithId));
-            if (guestifyData.nonce) {
-                formData.append('nonce', guestifyData.nonce);
-            }
-
-            const ajaxResponse = await fetch(guestifyData.ajaxUrl, {
-                method: 'POST',
-                body: formData
-            });
-
-            const ajaxData = await ajaxResponse.json();
-            console.log('AJAX response:', ajaxData);
-            if (ajaxData.success && ajaxData.data && ajaxData.data.html) {
-                console.log('AJAX returned HTML:', ajaxData.data.html.substring(0, 100) + '...');
-                const wrappedHtml = wrapComponentWithControls(ajaxData.data.html, componentType, componentId);
-                console.log('Wrapped HTML:', wrappedHtml.substring(0, 100) + '...');
-                return wrappedHtml;
-            } else {
-                console.error('AJAX response missing success or html:', ajaxData);
-            }
+        
+        // Cache miss - check if already loading
+        if (loadingPromises.has(cacheKey)) {
+            console.log(`⏳ [Cache] Waiting for ${componentType} template to load...`);
+            const template = await loadingPromises.get(cacheKey);
+            return wrapAndHydrate(template, componentType, componentId, props);
         }
-
-        throw new Error(`Failed to render component: ${componentType}`);
+        
+        cacheStats.misses++;
+        console.log(`📡 [Cache MISS] Fetching ${componentType} from server...`);
+        
+        // Create loading promise to prevent duplicate fetches
+        const loadingPromise = fetchTemplateFromServer(componentType, props);
+        loadingPromises.set(cacheKey, loadingPromise);
+        
+        try {
+            const template = await loadingPromise;
+            
+            if (template) {
+                // Cache the raw template
+                templateCache.set(cacheKey, template);
+                const renderTime = performance.now() - startTime;
+                cacheStats.totalTime += renderTime;
+                console.log(`✅ [Cache] ${componentType} fetched and cached in ${renderTime.toFixed(2)}ms (Cache hit rate: ${cacheStats.getHitRate()}%)`);
+                
+                // Remove from loading promises
+                loadingPromises.delete(cacheKey);
+                
+                // Hydrate and return
+                return wrapAndHydrate(template, componentType, componentId, props);
+            }
+            
+            throw new Error('Empty template received from server');
+            
+        } catch (fetchError) {
+            // Clean up loading promise on error
+            loadingPromises.delete(cacheKey);
+            throw fetchError;
+        }
+        
     } catch (error) {
         console.error('Error rendering component:', error);
-        console.log('Using fallback template for:', componentType);
+        const renderTime = performance.now() - startTime;
+        console.log(`❌ Using fallback template for ${componentType} (${renderTime.toFixed(2)}ms)`);
         // Return a fallback template for common components
         return getFallbackTemplate(componentType, componentId, props);
     }
@@ -287,6 +495,35 @@ function getFallbackTemplate(componentType, componentId, props) {
 export function clearTemplateCache() {
     templateCache.clear();
     loadingPromises.clear();
+    console.log('[Template Cache] Cache cleared');
+    
+    // Reset stats but keep history
+    cacheStats.hits = 0;
+    cacheStats.misses = 0;
+    cacheStats.totalTime = 0;
+    cacheStats.cachedTime = 0;
+}
+
+/**
+ * Get cache statistics
+ * @returns {object} Cache statistics
+ */
+export function getCacheStats() {
+    return {
+        ...cacheStats,
+        cacheSize: templateCache.size,
+        templates: Array.from(templateCache.keys())
+    };
+}
+
+// Expose cache monitoring globally for debugging
+if (typeof window !== 'undefined') {
+    window.mkTemplateCache = {
+        stats: cacheStats,
+        clear: clearTemplateCache,
+        getStats: getCacheStats,
+        report: () => cacheStats.report()
+    };
 }
 
 /**
