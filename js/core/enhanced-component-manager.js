@@ -46,8 +46,13 @@ class EnhancedComponentManager {
         if (window.guestifyData && window.guestifyData.components) {
             window.guestifyData.components.forEach(component => {
                 this.componentRegistry.set(component.name, component);
+                // Also register by directory name if different
+                if (component.directory && component.directory !== component.name) {
+                    this.componentRegistry.set(component.directory, component);
+                }
             });
             console.log(`Loaded ${this.componentRegistry.size} components from guestifyData`);
+            console.log('Available components:', Array.from(this.componentRegistry.keys()));
             return;
         }
         
@@ -72,12 +77,39 @@ class EnhancedComponentManager {
                 if (data.success && data.components) {
                     data.components.forEach(component => {
                         this.componentRegistry.set(component.name, component);
+                        // Also register by directory name if different
+                        if (component.directory && component.directory !== component.name) {
+                            this.componentRegistry.set(component.directory, component);
+                        }
                     });
                     console.log(`Loaded ${this.componentRegistry.size} components via AJAX`);
+                    console.log('Available components:', Array.from(this.componentRegistry.keys()));
                 }
             }
         } catch (error) {
             console.error('Failed to load component registry:', error);
+        }
+        
+        // If no components found, register known components from directory structure
+        // This ensures the system works even if server data is missing
+        if (this.componentRegistry.size === 0) {
+            console.log('No components loaded from server, registering known components...');
+            const knownComponents = [
+                'biography', 'booking-calendar', 'call-to-action', 'contact', 
+                'guest-intro', 'hero', 'logo-grid', 'photo-gallery', 
+                'podcast-player', 'questions', 'social', 'stats', 
+                'testimonials', 'topics', 'video-intro'
+            ];
+            
+            knownComponents.forEach(componentName => {
+                this.componentRegistry.set(componentName, {
+                    name: componentName,
+                    directory: componentName,
+                    fallback: true
+                });
+            });
+            
+            console.log(`Registered ${this.componentRegistry.size} fallback components`);
         }
     }
     
@@ -114,31 +146,25 @@ class EnhancedComponentManager {
             'podcast': 'podcast-player',
             'video': 'video-intro',
             'hero-section': 'hero',
-            'Hero Section': 'hero',
-            // Additional mappings for common components
-            'social': 'social-links',
-            'questions': 'faq',
-            'contact': 'contact-form',
-            'testimonials': 'testimonials',
-            'logo-grid': 'logo-showcase',
-            'guest-intro': 'guest-introduction'
+            'Hero Section': 'hero'
         };
         
         const mappedType = componentMap[componentType] || componentType;
         
-        // Extended list of valid components
-        const validComponents = [
-            'hero', 'biography', 'stats', 'call-to-action', 'topics', 
-            'social-links', 'faq', 'contact-form', 'testimonials', 
-            'logo-showcase', 'guest-introduction', 'photo-gallery',
-            'video-intro', 'podcast-player', 'booking-calendar',
-            'social', 'questions', 'contact', 'logo-grid', 'guest-intro'
-        ];
+        // Check against dynamically loaded component registry
+        // This includes ALL components discovered from the server
+        const isValid = this.componentRegistry.has(mappedType) || 
+                       this.componentRegistry.has(componentType) ||
+                       this.loadedSchemas.has(mappedType) ||
+                       this.loadedSchemas.has(componentType);
         
-        return this.componentRegistry.has(mappedType) || 
-               this.loadedSchemas.has(mappedType) ||
-               validComponents.includes(mappedType) ||
-               validComponents.includes(componentType);
+        if (!isValid) {
+            console.log(`Component type '${componentType}' (mapped: '${mappedType}') not found in:`);
+            console.log('- Registry:', Array.from(this.componentRegistry.keys()));
+            console.log('- Loaded schemas:', Array.from(this.loadedSchemas.keys()));
+        }
+        
+        return isValid;
     }
     
     /**
@@ -166,14 +192,7 @@ class EnhancedComponentManager {
             'podcast': 'podcast-player',
             'video': 'video-intro',
             'hero-section': 'hero',
-            'Hero Section': 'hero',
-            // Additional mappings
-            'social': 'social-links',
-            'questions': 'faq',
-            'contact': 'contact-form',
-            'testimonials': 'testimonials',
-            'logo-grid': 'logo-showcase',
-            'guest-intro': 'guest-introduction'
+            'Hero Section': 'hero'
         };
         
         const mappedType = componentMap[componentType] || componentType;
@@ -503,63 +522,11 @@ class EnhancedComponentManager {
             return schema;
         }
         
-        // Provide fallback schemas for common components
+        // Provide fallback schemas for components that truly don't exist on server
+        // Remove schemas for components that actually exist (social, questions, contact, etc.)
         const fallbackSchemas = {
-            'social-links': {
-                name: 'Social Links',
-                settings: {
-                    twitter: { type: 'text', label: 'Twitter URL', default: '' },
-                    linkedin: { type: 'text', label: 'LinkedIn URL', default: '' },
-                    facebook: { type: 'text', label: 'Facebook URL', default: '' },
-                    instagram: { type: 'text', label: 'Instagram URL', default: '' }
-                }
-            },
-            'social': {
-                name: 'Social Links',
-                settings: {
-                    twitter: { type: 'text', label: 'Twitter URL', default: '' },
-                    linkedin: { type: 'text', label: 'LinkedIn URL', default: '' },
-                    facebook: { type: 'text', label: 'Facebook URL', default: '' },
-                    instagram: { type: 'text', label: 'Instagram URL', default: '' }
-                }
-            },
-            'testimonials': {
-                name: 'Testimonials',
-                settings: {
-                    testimonial1_text: { type: 'textarea', label: 'Testimonial 1', default: 'Great speaker!' },
-                    testimonial1_author: { type: 'text', label: 'Author 1', default: 'John Doe' },
-                    testimonial2_text: { type: 'textarea', label: 'Testimonial 2', default: '' },
-                    testimonial2_author: { type: 'text', label: 'Author 2', default: '' }
-                }
-            },
-            'contact-form': {
-                name: 'Contact Form',
-                settings: {
-                    title: { type: 'text', label: 'Form Title', default: 'Get in Touch' },
-                    email: { type: 'text', label: 'Contact Email', default: '' }
-                }
-            },
-            'faq': {
-                name: 'FAQ',
-                settings: {
-                    title: { type: 'text', label: 'Section Title', default: 'Frequently Asked Questions' },
-                    question1: { type: 'text', label: 'Question 1', default: '' },
-                    answer1: { type: 'textarea', label: 'Answer 1', default: '' }
-                }
-            },
-            'logo-showcase': {
-                name: 'Logo Showcase',
-                settings: {
-                    title: { type: 'text', label: 'Section Title', default: 'As Featured In' }
-                }
-            },
-            'guest-introduction': {
-                name: 'Guest Introduction',
-                settings: {
-                    title: { type: 'text', label: 'Title', default: 'About Your Speaker' },
-                    content: { type: 'textarea', label: 'Introduction', default: '' }
-                }
-            }
+            // Only include schemas for components that genuinely need fallbacks
+            // Most components should load from server
         };
         
         // Check if we have a fallback schema

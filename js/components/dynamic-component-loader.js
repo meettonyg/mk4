@@ -225,6 +225,34 @@ function getDefaultPropsForComponent(componentType) {
             description: 'TEMPLATE_DESCRIPTION',
             buttonText: 'TEMPLATE_BUTTON_TEXT',
             buttonUrl: 'TEMPLATE_BUTTON_URL'
+        },
+        'guest-intro': {
+            title: 'TEMPLATE_TITLE',
+            content: 'TEMPLATE_CONTENT',
+            image: 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%22%20height=%22100%22%3E%3Crect%20width=%22100%22%20height=%22100%22%20fill=%22%23ddd%22/%3E%3C/svg%3E'
+        },
+        social: {
+            twitter: 'TEMPLATE_TWITTER',
+            linkedin: 'TEMPLATE_LINKEDIN',
+            facebook: 'TEMPLATE_FACEBOOK',
+            instagram: 'TEMPLATE_INSTAGRAM'
+        },
+        questions: {
+            title: 'TEMPLATE_TITLE',
+            question1: 'TEMPLATE_QUESTION1',
+            answer1: 'TEMPLATE_ANSWER1'
+        },
+        contact: {
+            title: 'TEMPLATE_TITLE',
+            email: 'TEMPLATE_EMAIL',
+            phone: 'TEMPLATE_PHONE'
+        },
+        testimonials: {
+            testimonial1_text: 'TEMPLATE_TESTIMONIAL1_TEXT',
+            testimonial1_author: 'TEMPLATE_TESTIMONIAL1_AUTHOR'
+        },
+        'logo-grid': {
+            title: 'TEMPLATE_TITLE'
         }
     };
     
@@ -485,6 +513,93 @@ function getFallbackTemplate(componentType, componentId, props) {
                 <a href="${props.buttonUrl || '#'}" class="call-to-action__button">
                     <span contenteditable="true" data-setting="buttonText">${escapeHtml(props.buttonText || 'Get in Touch')}</span>
                 </a>
+            </div>
+        `,
+        'guest-intro': `
+            <div class="guest-intro editable-element" data-element="guest-intro" data-component="guest-intro" data-component-id="${componentId}" data-component-type="guest-intro">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <h2 class="guest-intro__title" contenteditable="true" data-setting="title">${escapeHtml(props.title || 'About Your Speaker')}</h2>
+                <div class="guest-intro__content" contenteditable="true" data-setting="content">${escapeHtml(props.content || 'Introduction content here...')}</div>
+            </div>
+        `,
+        social: `
+            <div class="social editable-element" data-element="social" data-component="social" data-component-id="${componentId}" data-component-type="social">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <div class="social__links">
+                    <a href="${props.twitter || '#'}" class="social__link" data-setting="twitter">Twitter</a>
+                    <a href="${props.linkedin || '#'}" class="social__link" data-setting="linkedin">LinkedIn</a>
+                    <a href="${props.facebook || '#'}" class="social__link" data-setting="facebook">Facebook</a>
+                    <a href="${props.instagram || '#'}" class="social__link" data-setting="instagram">Instagram</a>
+                </div>
+            </div>
+        `,
+        questions: `
+            <div class="questions editable-element" data-element="questions" data-component="questions" data-component-id="${componentId}" data-component-type="questions">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <h2 class="questions__title" contenteditable="true" data-setting="title">${escapeHtml(props.title || 'Frequently Asked Questions')}</h2>
+                <div class="questions__item">
+                    <h3 class="questions__question" contenteditable="true" data-setting="question1">${escapeHtml(props.question1 || 'Question 1?')}</h3>
+                    <p class="questions__answer" contenteditable="true" data-setting="answer1">${escapeHtml(props.answer1 || 'Answer 1...')}</p>
+                </div>
+            </div>
+        `,
+        contact: `
+            <div class="contact editable-element" data-element="contact" data-component="contact" data-component-id="${componentId}" data-component-type="contact">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <h2 class="contact__title" contenteditable="true" data-setting="title">${escapeHtml(props.title || 'Contact Information')}</h2>
+                <p class="contact__email" contenteditable="true" data-setting="email">${escapeHtml(props.email || 'email@example.com')}</p>
+                <p class="contact__phone" contenteditable="true" data-setting="phone">${escapeHtml(props.phone || '(555) 123-4567')}</p>
+            </div>
+        `,
+        testimonials: `
+            <div class="testimonials editable-element" data-element="testimonials" data-component="testimonials" data-component-id="${componentId}" data-component-type="testimonials">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <div class="testimonials__item">
+                    <blockquote class="testimonials__text" contenteditable="true" data-setting="testimonial1_text">${escapeHtml(props.testimonial1_text || 'Great speaker with valuable insights!')}</blockquote>
+                    <cite class="testimonials__author" contenteditable="true" data-setting="testimonial1_author">${escapeHtml(props.testimonial1_author || '- John Doe')}</cite>
+                </div>
+            </div>
+        `,
+        'logo-grid': `
+            <div class="logo-grid editable-element" data-element="logo-grid" data-component="logo-grid" data-component-id="${componentId}" data-component-type="logo-grid">
+                <div class="element-controls">
+                    <button class="control-btn" title="Move Up">↑</button>
+                    <button class="control-btn" title="Move Down">↓</button>
+                    <button class="control-btn" title="Duplicate">⧉</button>
+                    <button class="control-btn" title="Delete">×</button>
+                </div>
+                <h2 class="logo-grid__title" contenteditable="true" data-setting="title">${escapeHtml(props.title || 'As Featured In')}</h2>
+                <div class="logo-grid__logos">
+                    <div class="logo-grid__placeholder">Logo 1</div>
+                    <div class="logo-grid__placeholder">Logo 2</div>
+                    <div class="logo-grid__placeholder">Logo 3</div>
+                    <div class="logo-grid__placeholder">Logo 4</div>
+                </div>
             </div>
         `
     };
