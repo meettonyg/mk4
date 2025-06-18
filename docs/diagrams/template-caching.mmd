@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant App
+    participant Cache
+    participant Server
+    
+    App->>Cache: Request template for Component X
+    
+    alt Template in cache
+        Cache-->>App: Return cached template
+    else Template not cached
+        Cache-->>App: Cache miss
+        App->>Server: Fetch template
+        Server-->>App: Return template HTML
+        App->>Cache: Store template
+        App->>App: Process template
+    end
+    
+    App->>App: Hydrate with component data
+    App->>DOM: Render component

@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant User
+    participant UI
+    participant CompManager as Component Manager
+    participant StateManager as State Manager
+    participant Renderer as Component Renderer
+    participant DOM
+    
+    User->>UI: Performs action
+    UI->>CompManager: Dispatches action
+    CompManager->>StateManager: Updates state
+    StateManager-->>CompManager: Confirms update
+    StateManager->>Renderer: Notifies of state change
+    Renderer->>Renderer: Calculates DOM changes
+    Renderer->>DOM: Updates only changed elements
+    DOM-->>User: Displays changes

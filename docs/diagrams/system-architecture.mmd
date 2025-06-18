@@ -1,0 +1,33 @@
+graph TD
+    subgraph Core Systems
+        StateManager[Enhanced State Manager]
+        ComponentManager[Enhanced Component Manager]
+        ComponentRenderer[Enhanced Component Renderer]
+        SchemaValidator[Schema Validator]
+    end
+    
+    subgraph Services
+        TemplateLoader[Template Loader]
+        DataBindingEngine[Data Binding Engine]
+        HistoryService[History Service]
+        SaveService[Save Service]
+    end
+    
+    subgraph UI
+        ComponentLibrary[Component Library]
+        ControlPanel[Control Panel]
+        PreviewPane[Preview Pane]
+        TemplateLibrary[Template Library]
+    end
+    
+    StateManager <--> ComponentManager
+    ComponentManager <--> SchemaValidator
+    StateManager --> ComponentRenderer
+    ComponentRenderer --> PreviewPane
+    ComponentManager <--> TemplateLoader
+    ComponentManager <--> DataBindingEngine
+    StateManager <--> HistoryService
+    StateManager <--> SaveService
+    ComponentLibrary --> ComponentManager
+    ControlPanel --> ComponentManager
+    TemplateLibrary --> StateManager

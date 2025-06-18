@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Initialize: User adds component
+    Initialize --> Render: Initial render
+    Render --> DOM: First appears in DOM
+    DOM --> Interact: User edits component
+    Interact --> StateUpdate: Data changes
+    StateUpdate --> Render: Re-render with changes
+    DOM --> Remove: User deletes component
+    Remove --> Animate: Deletion animation
+    Animate --> [*]: Component removed from DOM
