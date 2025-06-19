@@ -14,6 +14,7 @@ class InitializationTracker {
         this.failedSteps = new Set();
         this.stepTimings = new Map();
         this.dependencyGraph = new Map();
+        this.timeoutHandlers = new Map(); // Store timeout IDs for cancellation
         
         // Track initialization state
         this.startTime = null;
@@ -102,10 +103,19 @@ class InitializationTracker {
         
         step.attempts++;
         
-        // Create timeout promise
+        // Create timeout promise with cancellation
+        let timeoutId;
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error(`Timeout: ${name} took longer than ${step.timeout}ms`)), step.timeout);
+            timeoutId = setTimeout(() => {
+                // Only reject if the step hasn't completed yet
+                if (!this.completedSteps.has(name) && !this.failedSteps.has(name)) {
+                    reject(new Error(`Timeout: ${name} took longer than ${step.timeout}ms`));
+                }
+            }, step.timeout);
         });
+        
+        // Store timeout ID for cancellation
+        this.timeoutHandlers.set(name, timeoutId);
         
         return {
             startTime,
@@ -132,6 +142,13 @@ class InitializationTracker {
         
         // Mark as completed
         this.completedSteps.add(name);
+        
+        // Cancel timeout if it exists
+        const timeoutId = this.timeoutHandlers.get(name);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            this.timeoutHandlers.delete(name);
+        }
         
         // Log completion
         this.logger.logInitComplete(name, timing.startTime, result);
@@ -160,6 +177,13 @@ class InitializationTracker {
         }
         
         this.failedSteps.add(name);
+        
+        // Cancel timeout if it exists
+        const timeoutId = this.timeoutHandlers.get(name);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            this.timeoutHandlers.delete(name);
+        }
         
         // Log failure
         this.logger.logInitError(name, error, {
@@ -387,6 +411,12 @@ class InitializationTracker {
         this.status = 'idle';
         this.startTime = null;
         this.endTime = null;
+        
+        // Cancel all pending timeouts
+        this.timeoutHandlers.forEach((timeoutId) => {
+            clearTimeout(timeoutId);
+        });
+        this.timeoutHandlers.clear();
         
         // Reset attempt counts
         this.steps.forEach(step => {

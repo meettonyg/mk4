@@ -5,6 +5,7 @@
  * 
  * Phase 2A Enhancement: Added modal validation and promise-based sequencing
  * Phase 2B Enhancement: Integrated comprehensive logging system
+ * Phase 2B Fix: Properly handle timeout promises to prevent unhandled rejections
  */
 
 import { performanceMonitor } from '../utils/performance-monitor.js';
@@ -20,7 +21,7 @@ class InitializationManager {
         this.startTime = Date.now();
         this.retryCount = 0;
         this.maxRetries = 1; // Reduced from 3 for faster performance
-        this.version = '2.0-phase2b'; // Version tracking for cache busting
+        this.version = '2.0-phase2b-fixed'; // Version tracking for cache busting
         this.logger = structuredLogger;
         this.tracker = initializationTracker;
         this.errorBoundary = errorBoundary;
@@ -84,6 +85,39 @@ class InitializationManager {
     }
 
     /**
+     * Execute a step with proper timeout handling
+     */
+    async executeStep(stepName, stepFunction) {
+        const stepInfo = await this.tracker.startStep(stepName);
+        
+        if (stepInfo.skipped) {
+            return; // Step was skipped due to dependencies or already completed
+        }
+        
+        try {
+            // Execute the step function
+            await stepFunction();
+            
+            // Mark step as complete
+            this.tracker.completeStep(stepName);
+            this.recordStep(stepName, 'success');
+            
+        } catch (error) {
+            // Mark step as failed
+            const failResult = this.tracker.failStep(stepName, error);
+            this.recordStep(stepName, 'failed');
+            
+            // Only throw if it's a critical error and no retry is possible
+            if (failResult.retry) {
+                // Retry the step
+                return this.executeStep(stepName, stepFunction);
+            }
+            
+            throw error;
+        }
+    }
+
+    /**
      * Main initialization method that runs through all required steps
      * @returns {Promise<boolean>} Success status
      */
@@ -94,68 +128,14 @@ class InitializationManager {
         const initStart = this.logger.logInitStart('initialization-sequence', []);
 
         try {
-            // Step 1: Validate prerequisites (now async to wait for full DOM ready)
-            const prereqStart = await this.tracker.startStep('prerequisites');
-            await this.errorBoundary.wrapAsync('INIT', 
-                () => this.validatePrerequisites(),
-                { errorType: 'InitializationError' }
-            )();
-            this.tracker.completeStep('prerequisites');
-            this.recordStep('prerequisites', 'success');
-
-            // Step 2: Load and validate systems
-            const systemsStart = await this.tracker.startStep('systems');
-            await this.errorBoundary.wrapAsync('INIT', 
-                () => this.loadSystems(),
-                { errorType: 'InitializationError' }
-            )();
-            this.tracker.completeStep('systems');
-            this.recordStep('systems', 'success');
-
-            // Step 3: Setup core UI components
-            const uiStart = await this.tracker.startStep('core-ui');
-            await this.errorBoundary.wrapAsync('INIT', 
-                () => this.setupCoreUI(),
-                { errorType: 'InitializationError' }
-            )();
-            this.tracker.completeStep('core-ui');
-            this.recordStep('core-ui', 'success');
-
-            // Step 4: Wait for modal HTML to be fully loaded
-            const modalHtmlStart = await this.tracker.startStep('modal-html');
-            await this.errorBoundary.wrapAsync('INIT', 
-                () => this.waitForModalHTML(),
-                { errorType: 'InitializationError', fallback: null }
-            )();
-            this.tracker.completeStep('modal-html');
-            this.recordStep('modal-html', 'success');
-
-            // Step 5: Setup all modals with proper event listeners
-            const modalsStart = await this.tracker.startStep('modals');
-            await this.errorBoundary.wrapAsync('INIT', 
-                () => this.setupModals(),
-                { errorType: 'InitializationError', fallback: null }
-            )();
-            this.tracker.completeStep('modals');
-            this.recordStep('modals', 'success');
-
-            // Step 6: Validate modal setup
-            const validationStart = await this.tracker.startStep('modal-validation');
-            await this.errorBoundary.wrapAsync('INIT', 
-                () => this.validateModalSetup(),
-                { errorType: 'InitializationError', fallback: null }
-            )();
-            this.tracker.completeStep('modal-validation');
-            this.recordStep('modal-validation', 'success');
-
-            // Step 7: Restore state and finalize
-            const stateStart = await this.tracker.startStep('state');
-            await this.errorBoundary.wrapAsync('INIT', 
-                () => this.restoreState(),
-                { errorType: 'InitializationError' }
-            )();
-            this.tracker.completeStep('state');
-            this.recordStep('state', 'success');
+            // Execute each step with proper error handling
+            await this.executeStep('prerequisites', () => this.validatePrerequisites());
+            await this.executeStep('systems', () => this.loadSystems());
+            await this.executeStep('core-ui', () => this.setupCoreUI());
+            await this.executeStep('modal-html', () => this.waitForModalHTML());
+            await this.executeStep('modals', () => this.setupModals());
+            await this.executeStep('modal-validation', () => this.validateModalSetup());
+            await this.executeStep('state', () => this.restoreState());
 
             this.state = 'complete';
             const duration = Date.now() - this.startTime;
@@ -282,33 +262,6 @@ class InitializationManager {
             guestifyData: !!window.guestifyData,
             pluginUrl: window.guestifyData?.pluginUrl
         });
-    }
-
-    /**
-     * Waits for guestifyData to be available with timeout and retries
-     * @param {number} timeout - Maximum wait time in ms (reduced for performance)
-     * @returns {Promise<object|null>} guestifyData object or null
-     */
-    async waitForGuestifyData(timeout = 500) {
-        const startTime = Date.now();
-        const checkInterval = 25; // Reduced from 50ms for faster response
-        
-        while (Date.now() - startTime < timeout) {
-            if (window.guestifyData?.pluginUrl) {
-                return window.guestifyData;
-            }
-            
-            // Check for inline backup data
-            if (window.guestifyDataBackup?.pluginUrl) {
-                console.log('📦 InitializationManager: Using backup guestifyData');
-                window.guestifyData = window.guestifyDataBackup;
-                return window.guestifyData;
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, checkInterval));
-        }
-        
-        return null;
     }
 
     /**

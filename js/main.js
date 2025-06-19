@@ -259,14 +259,15 @@ function safeInitializeBuilder() {
     initializeBuilder();
 }
 
-// Single DOMContentLoaded listener - the source of truth for initialization timing
-document.addEventListener('DOMContentLoaded', safeInitializeBuilder);
-
-// Additional safety net for cases where DOMContentLoaded already fired
-if (document.readyState !== 'loading') {
-    // DOM is already ready, start immediately
+// Check if we need to wait for DOMContentLoaded or start immediately
+if (document.readyState === 'loading') {
+    // DOM is still loading, wait for DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', safeInitializeBuilder);
+} else {
+    // DOM is already ready (interactive or complete), start immediately
     structuredLogger.info('INIT', 'DOM was already ready, starting initialization immediately', {
         readyState: document.readyState
     });
-    safeInitializeBuilder();
+    // Use setTimeout to ensure this runs after current script execution
+    setTimeout(safeInitializeBuilder, 0);
 }
