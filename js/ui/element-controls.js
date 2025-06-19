@@ -5,7 +5,8 @@
 
 import { markUnsaved } from '../services/save-service.js';
 import { selectElement } from './element-editor.js';
-import { componentManager } from '../components/component-manager.js';
+// **FIX**: Import enhanced component manager instead of legacy
+import { enhancedComponentManager } from '../core/enhanced-component-manager.js';
 
 /**
  * Setup event listeners for element control buttons
@@ -45,16 +46,16 @@ function handleControlButtonClick(e) {
 
     switch (action) {
         case 'Move Up':
-            componentManager.moveComponent(componentId, 'up');
+            enhancedComponentManager.moveComponent(componentId, 'up');
             break;
         case 'Move Down':
-            componentManager.moveComponent(componentId, 'down');
+            enhancedComponentManager.moveComponent(componentId, 'down');
             break;
         case 'Duplicate':
-            componentManager.duplicateComponent(componentId);
+            enhancedComponentManager.duplicateComponent(componentId);
             break;
         case 'Delete':
-            componentManager.removeComponent(componentId);
+            enhancedComponentManager.removeComponent(componentId);
             break;
     }
     

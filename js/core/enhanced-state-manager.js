@@ -24,7 +24,8 @@ class EnhancedStateManager {
                 title: 'My Media Kit',
                 theme: 'default',
                 lastModified: new Date().toISOString()
-            }
+            },
+            layout: [] // **FIX**: Ensure layout array exists from the start
         };
         
         this.listeners = this.baseManager.listeners || new Map();
@@ -35,6 +36,11 @@ class EnhancedStateManager {
         
         // Proxy the base manager methods
         this.setupProxy();
+        
+        // **FIX**: Ensure base manager state also has layout
+        if (!this.baseManager.state.layout) {
+            this.baseManager.state.layout = [];
+        }
     }
     
     /**
@@ -45,7 +51,7 @@ class EnhancedStateManager {
         const proxyMethods = [
             'subscribe', 'subscribeGlobal', 'getState', 'getSerializableState',
             'updateMetadata', 'undo', 'redo', 'clearState', 'getComponentSetting',
-            'reorderComponents', 'saveHistory', 'cloneState', 'restoreState',
+            'saveHistory', 'cloneState', 'restoreState',
             'notifyListeners', 'notifyGlobalListeners', 'loadState'
         ];
         
@@ -243,9 +249,23 @@ class EnhancedStateManager {
         // Copy the updated state
         this.state = this.baseManager.state;
         
+        // **FIX**: Ensure state has required structure
+        if (!this.state.components) this.state.components = {};
+        if (!this.state.metadata) this.state.metadata = {};
+        if (!Array.isArray(this.state.layout)) {
+            // If layout is missing, create it from the component keys ordered by their order property
+            console.warn('State loaded without layout array. Reconstructing from components.');
+            const orderedComponents = Object.entries(this.state.components)
+                .sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+                .map(([id]) => id);
+            this.state.layout = orderedComponents;
+        }
+        
+        // Re-sync the base manager's state with the sanitized version
+        this.baseManager.state = this.state;
+        
         // Initialize meta for loaded components
-        const state = this.baseManager.getState();
-        Object.keys(state.components || {}).forEach(componentId => {
+        Object.keys(this.state.components || {}).forEach(componentId => {
             this.componentMeta.set(componentId, {
                 isDeleting: false,
                 isMoving: false,
@@ -276,6 +296,205 @@ class EnhancedStateManager {
         // This is handled by the component renderer
         // Just trigger a global update
         this.baseManager.notifyGlobalListeners();
+    }
+    
+    /**
+     * Add a component with all its data in a single atomic operation
+     */
+    async addComponent(componentId, componentType, componentData, insertAfterId = null) {
+        const perfEnd = performanceMonitor.start('state-add-component', { componentId, componentType });
+        
+        await this.batchUpdate(async () => {
+            // Initialize component meta
+            this.componentMeta.set(componentId, {
+                isDeleting: false,
+                isMoving: false,
+                isDirty: false,
+                lastModified: Date.now()
+            });
+            
+            // Add component to state with all data in one operation
+            this.baseManager.initComponent(componentId, componentType, componentData, true);
+            
+            // **FIX**: Ensure layout array exists and add the new component
+            if (!Array.isArray(this.state.layout)) {
+                this.state.layout = this.getOrderedComponents().map(c => c.id);
+            }
+            
+            // Add to layout array
+            if (insertAfterId) {
+                const afterIndex = this.state.layout.indexOf(insertAfterId);
+                if (afterIndex >= 0) {
+                    this.state.layout.splice(afterIndex + 1, 0, componentId);
+                } else {
+                    this.state.layout.push(componentId);
+                }
+            } else {
+                this.state.layout.push(componentId);
+            }
+            
+            // Update component orders to match layout
+            this.state.layout.forEach((id, index) => {
+                if (this.state.components[id]) {
+                    this.state.components[id].order = index;
+                }
+            });
+            
+            // **FIX**: Sync layout back to base manager
+            this.baseManager.state.layout = [...this.state.layout];
+        });
+        
+        perfEnd();
+        return componentId;
+    }
+    
+    /**
+     * Update component data (enhanced version)
+     */
+    updateComponentData(componentId, key, value, skipHistory = false) {
+        // Update meta
+        const meta = this.componentMeta.get(componentId);
+        if (meta) {
+            meta.isDirty = true;
+            meta.lastModified = Date.now();
+        }
+        
+        // Use base manager's updateComponent method
+        return this.baseManager.updateComponent(componentId, key, value);
+    }
+    
+    /**
+     * Get state for a specific component
+     */
+    getStateForComponent(componentId) {
+        return this.baseManager.getComponent(componentId);
+    }
+    
+    /**
+     * Get the layout array, ensuring it always exists
+     */
+    getLayout() {
+        // Ensure layout exists
+        if (!Array.isArray(this.state.layout)) {
+            this.state.layout = this.getOrderedComponents().map(c => c.id);
+        }
+        return [...this.state.layout];
+    }
+    
+    /**
+     * Override removeComponent to maintain layout array
+     */
+    removeComponent(componentId) {
+        console.log(`EnhancedStateManager: removeComponent - ${componentId}`);
+        
+        // Remove from layout array if it exists
+        if (Array.isArray(this.state.layout)) {
+            const index = this.state.layout.indexOf(componentId);
+            if (index > -1) {
+                this.state.layout.splice(index, 1);
+                // **FIX**: Sync layout back to base manager
+                this.baseManager.state.layout = [...this.state.layout];
+            }
+        }
+        
+        // Clean up meta
+        this.componentMeta.delete(componentId);
+        
+        // Call base implementation
+        return this.baseManager.removeComponent(componentId);
+    }
+    
+    /**
+     * Override moveComponent to maintain layout array
+     */
+    moveComponent(componentId, direction) {
+        const layout = this.getLayout();
+        const currentIndex = layout.indexOf(componentId);
+        
+        if (currentIndex === -1) return;
+        
+        let newIndex;
+        if (direction === 'up' && currentIndex > 0) {
+            newIndex = currentIndex - 1;
+        } else if (direction === 'down' && currentIndex < layout.length - 1) {
+            newIndex = currentIndex + 1;
+        } else {
+            return;
+        }
+        
+        // Remove from current position
+        layout.splice(currentIndex, 1);
+        // Insert at new position
+        layout.splice(newIndex, 0, componentId);
+        
+        // Update state
+        this.state.layout = layout;
+        
+        // **FIX**: Sync layout back to base manager
+        this.baseManager.state.layout = layout;
+        
+        // Update component orders to match layout
+        layout.forEach((id, index) => {
+            if (this.state.components[id]) {
+                this.state.components[id].order = index;
+            }
+        });
+        
+        // Notify listeners
+        this.baseManager.notifyGlobalListeners();
+    }
+    
+    /**
+     * Override reorderComponents to use layout array
+     */
+    reorderComponents(componentIds = null) {
+        if (componentIds && Array.isArray(componentIds)) {
+            // Update layout array
+            this.state.layout = [...componentIds];
+            
+            // **FIX**: Sync layout back to base manager
+            this.baseManager.state.layout = this.state.layout;
+            
+            // Update component orders to match
+            componentIds.forEach((id, index) => {
+                if (this.state.components[id]) {
+                    this.state.components[id].order = index;
+                }
+            });
+        } else {
+            // Auto-reorder based on current order
+            this.state.layout = this.getOrderedComponents().map(c => c.id);
+            this.baseManager.state.layout = this.state.layout;
+        }
+        
+        // Call base implementation to update orders and notify
+        this.baseManager.reorderComponents(componentIds || this.state.layout);
+    }
+    
+    /**
+     * Override getState to ensure layout is included
+     */
+    getState() {
+        const state = this.baseManager.getState();
+        
+        // Ensure layout array exists in returned state
+        if (!state.layout) {
+            state.layout = this.getLayout();
+        }
+        
+        return state;
+    }
+    
+    /**
+     * Override getSerializableState to include layout
+     */
+    getSerializableState() {
+        const serializedState = this.baseManager.getSerializableState();
+        
+        // Add layout array to serialized state
+        serializedState.layout = this.getLayout();
+        
+        return serializedState;
     }
 }
 

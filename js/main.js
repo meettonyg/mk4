@@ -54,12 +54,16 @@ async function initializeBuilder() {
         await initializeSystems();
         console.log('Systems initialized based on feature flags');
         
-        // Always use enhanced initialization when available
+        // Check if we should use enhanced initialization
         if (shouldUseEnhancedInit()) {
             console.log('Using enhanced initialization...');
-            // Enhanced init handles everything including UI setup
-            // Remove the duplicate initialization from media-kit-builder-init.js
-            return; // Let media-kit-builder-init.js handle everything
+            // **FIX**: Manually trigger the enhanced initialization
+            // Don't just return - make sure it actually runs
+            await mediaKitBuilderInit.initialize();
+            
+            // **ADDITIONAL FIX**: Also setup core UI in case enhanced init misses something
+            // This ensures tabs and modals work regardless of initialization path
+            setupCoreUI();
         } else {
             console.log('Using legacy initialization...');
             // Legacy initialization

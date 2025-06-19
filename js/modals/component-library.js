@@ -13,10 +13,34 @@ import { getComponentInfo } from '../components/dynamic-component-loader.js';
 export function setupComponentLibraryModal() {
     setupModalClose('component-library-overlay', 'close-library');
     
-    // Setup button click handler - will work for both initial and dynamically created buttons
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('#add-component-btn')) {
+    // **FIX**: Setup multiple button handlers for different buttons that open component library
+    // Handle main add component button
+    const addComponentBtn = document.getElementById('add-component-btn');
+    if (addComponentBtn) {
+        addComponentBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Add component button clicked');
             showComponentLibraryModal();
+        });
+    }
+    
+    // Handle first component button in empty state
+    const addFirstComponentBtn = document.getElementById('add-first-component');
+    if (addFirstComponentBtn) {
+        addFirstComponentBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Add first component button clicked');
+            showComponentLibraryModal();
+        });
+    }
+    
+    // Also use event delegation for dynamically created buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#add-component-btn') || e.target.closest('#add-first-component')) {
+            if (!e.defaultPrevented) {
+                e.preventDefault();
+                showComponentLibraryModal();
+            }
         }
     });
     
@@ -92,16 +116,9 @@ export function setupComponentLibraryModal() {
             if (isPremium) {
                 showUpgradePrompt();
             } else {
-                // Map display names to component types
-                const componentTypeMap = {
-                    'Hero Section': 'hero',
-                    'Biography': 'biography',
-                    'Topics': 'topics',
-                    'Social Links': 'social'
-                };
-                
-                // Use mapped type if available
-                const actualComponentType = componentTypeMap[componentType] || componentType;
+                // **FIX**: No need for componentTypeMap - use the directory name directly
+                // The data-component attribute already contains the correct component type
+                const actualComponentType = componentType;
                 
                 // Check if this is the first component (empty state)
                 const preview = document.getElementById('media-kit-preview');
@@ -146,10 +163,8 @@ export function showComponentLibraryModal() {
     
     if (modal) {
         console.log('Modal found, showing...');
-        modal.style.display = 'flex';
-        // Ensure it's visible
-        modal.style.opacity = '1';
-        modal.style.visibility = 'visible';
+        // Use the showModal function from modal-base
+        showModal('component-library-overlay');
         // Populate it if needed
         populateComponentLibrary();
     } else {
@@ -192,7 +207,7 @@ function createComponentLibraryModal() {
         <div class="modal modal--library">
             <div class="library__header">
                 <h2>Component Library</h2>
-                <button class="modal__close" id="close-library">×</button>
+                <button class="modal__close" id="close-library" type="button">×</button>
             </div>
             <div class="library__body">
                 <div class="library__sidebar">

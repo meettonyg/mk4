@@ -12,15 +12,7 @@ import { setupSaveSystem, saveMediaKit } from '../services/save-service.js';
 import { setupShareSystem } from '../services/share-service.js';
 import { setupKeyboardShortcuts } from '../services/keyboard-service.js';
 
-// Import UI modules that were in main.js
-import { setupTabs } from '../ui/tabs.js';
-import { setupPreviewToggle } from '../ui/preview.js';
-import { setupDragAndDrop } from '../ui/dnd.js';
-import { setupElementSelection, setupContentEditableUpdates } from '../ui/element-editor.js';
-import { setupLayoutOptions } from '../ui/layout.js';
-import { setupComponentLibraryModal } from '../modals/component-library.js';
-import { setupGlobalSettings } from '../modals/global-settings.js';
-import { setupExportSystem } from '../modals/export.js';
+// **FIX**: Remove UI imports - we'll import them dynamically in initializeUI()
 
 
 
@@ -42,6 +34,9 @@ class MediaKitBuilderInit {
         console.log('Media Kit Builder: Starting enhanced initialization...');
         
         try {
+            // **FIX**: Ensure DOM is ready before initialization
+            await this.waitForDOM();
+            
             // Phase 1: Core services
             await this.initializeCoreServices();
             
@@ -69,6 +64,17 @@ class MediaKitBuilderInit {
         } catch (error) {
             console.error('Media Kit Builder initialization failed:', error);
             this.showError('Failed to initialize Media Kit Builder');
+        }
+    }
+    
+    /**
+     * Wait for DOM to be ready
+     */
+    async waitForDOM() {
+        if (document.readyState === 'loading') {
+            await new Promise(resolve => {
+                document.addEventListener('DOMContentLoaded', resolve);
+            });
         }
     }
     
@@ -160,16 +166,36 @@ class MediaKitBuilderInit {
     async initializeUI() {
         console.log('Initializing UI...');
         
-        // Setup core UI components from main.js
-        setupTabs();
-        setupPreviewToggle();
-        setupDragAndDrop();
-        setupElementSelection();
-        setupContentEditableUpdates();
-        setupLayoutOptions();
-        setupComponentLibraryModal();
-        setupGlobalSettings();
-        setupExportSystem();
+        // **FIX**: Import and setup UI components directly
+        try {
+            // Import UI modules
+            const { setupTabs } = await import('../ui/tabs.js');
+            const { setupPreviewToggle } = await import('../ui/preview.js');
+            const { setupDragAndDrop } = await import('../ui/dnd.js');
+            const { setupElementSelection, setupContentEditableUpdates } = await import('../ui/element-editor.js');
+            const { setupLayoutOptions } = await import('../ui/layout.js');
+            const { setupComponentLibraryModal } = await import('../modals/component-library.js');
+            const { setupGlobalSettings } = await import('../modals/global-settings.js');
+            const { setupExportSystem } = await import('../modals/export.js');
+            
+            // Setup core UI components
+            setupTabs();
+            setupPreviewToggle();
+            setupDragAndDrop();
+            setupElementSelection();
+            setupContentEditableUpdates();
+            setupLayoutOptions();
+            setupComponentLibraryModal();
+            setupGlobalSettings();
+            setupExportSystem();
+            
+            // Make UI setup functions globally accessible for component renderer
+            window.setupElementSelection = setupElementSelection;
+            window.setupContentEditableUpdates = setupContentEditableUpdates;
+            
+        } catch (error) {
+            console.error('Error setting up UI components:', error);
+        }
         
         // Initialize toolbar
         await this.initializeToolbar();
@@ -179,10 +205,6 @@ class MediaKitBuilderInit {
         
         // Initialize modals
         await this.initializeModals();
-        
-        // Make UI setup functions globally accessible for component renderer
-        window.setupElementSelection = setupElementSelection;
-        window.setupContentEditableUpdates = setupContentEditableUpdates;
         
         console.log('UI initialized');
     }
@@ -321,6 +343,11 @@ class MediaKitBuilderInit {
         if (loadTemplateBtn && !loadTemplateBtn.hasAttribute('data-init')) {
             loadTemplateBtn.setAttribute('data-init', 'true');
             
+            // **FIX**: Add click handler directly
+            loadTemplateBtn.addEventListener('click', () => {
+                document.dispatchEvent(new CustomEvent('show-template-library'));
+            });
+            
             // Import template library module from correct location
             import('../modals/template-library.js').then(() => {
                 console.log('Template library loaded');
@@ -431,23 +458,23 @@ class MediaKitBuilderInit {
 // Create and export singleton instance
 const mediaKitBuilderInit = new MediaKitBuilderInit();
 
-// Auto-initialize when DOM is ready and only if enhanced init is enabled
-if (window.guestifyData?.features?.useEnhancedInit || window.mediaKitFeatures?.FEATURES?.USE_ENHANCED_INITIALIZATION) {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check if not already initialized by main.js
-            if (!window.mediaKitBuilderInitialized) {
-                window.mediaKitBuilderInitialized = true;
-                mediaKitBuilderInit.initialize();
-            }
-        });
-    } else {
-        // DOM already loaded
-        if (!window.mediaKitBuilderInitialized) {
-            window.mediaKitBuilderInitialized = true;
+// Auto-initialize when module loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        // Check if we should use enhanced init
+        const FEATURES = window.guestifyData?.features || {};
+        if (FEATURES.USE_ENHANCED_INITIALIZATION !== false) {
             mediaKitBuilderInit.initialize();
         }
-    }
+    });
+} else {
+    // DOM already loaded, check if we should initialize
+    setTimeout(() => {
+        const FEATURES = window.guestifyData?.features || {};
+        if (FEATURES.USE_ENHANCED_INITIALIZATION !== false && !window.mediaKitBuilderInitialized) {
+            mediaKitBuilderInit.initialize();
+        }
+    }, 100);
 }
 
 // Export for manual initialization if needed

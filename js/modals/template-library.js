@@ -46,7 +46,7 @@ function createTemplateModal() {
         <div class="modal modal--large">
             <div class="modal__header">
                 <h2 class="modal__title">Choose a Template</h2>
-                <button class="modal__close" id="close-template-library">×</button>
+                <button class="modal__close" id="close-template-library" type="button">×</button>
             </div>
             <div class="modal__body">
                 <div class="template-grid" id="template-grid">
@@ -68,9 +68,7 @@ function showTemplateLibrary() {
     if (modal) {
         console.log('Template modal found, showing...');
         populateTemplates();
-        modal.style.display = 'flex';
-        modal.style.opacity = '1';
-        modal.style.visibility = 'visible';
+        showModal('template-library-modal');
     } else {
         console.error('Template library modal not found!');
     }

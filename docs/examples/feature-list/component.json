@@ -1,0 +1,148 @@
+{
+  "name": "Feature List",
+  "category": "content",
+  "icon": "list.svg",
+  "description": "Showcase your key features or services with customizable layouts",
+  "isPremium": false,
+  "version": "1.0.0",
+  "order": 10,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Key Features",
+      "placeholder": "Enter section title",
+      "previewSelector": ".feature-list__title",
+      "updateMethod": "textContent",
+      "section": "content"
+    },
+    "subtitle": {
+      "type": "textarea",
+      "label": "Section Description",
+      "default": "What makes you unique",
+      "rows": 2,
+      "placeholder": "Brief description of your features",
+      "previewSelector": ".feature-list__subtitle",
+      "updateMethod": "textContent",
+      "section": "content"
+    },
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": [
+        {"value": "grid", "label": "Grid Layout"},
+        {"value": "list", "label": "List Layout"},
+        {"value": "cards", "label": "Card Layout"}
+      ],
+      "previewSelector": ".feature-list",
+      "updateMethod": "class",
+      "classPrefix": "layout-",
+      "section": "appearance"
+    },
+    "columns": {
+      "type": "range",
+      "label": "Grid Columns",
+      "default": 3,
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "previewSelector": ".feature-list__grid",
+      "updateMethod": "style.gridTemplateColumns",
+      "transform": "value => `repeat(${value}, 1fr)`",
+      "section": "appearance",
+      "showIf": {
+        "field": "layout",
+        "value": "grid"
+      }
+    },
+    "icon_style": {
+      "type": "select",
+      "label": "Icon Style",
+      "default": "circle",
+      "options": [
+        {"value": "circle", "label": "Circle"},
+        {"value": "square", "label": "Square"},
+        {"value": "none", "label": "No Background"}
+      ],
+      "previewSelector": ".feature-icon",
+      "updateMethod": "class",
+      "classPrefix": "icon-style-",
+      "section": "appearance"
+    },
+    "primary_color": {
+      "type": "color",
+      "label": "Primary Color",
+      "default": "#3b82f6",
+      "previewSelector": ".feature-list",
+      "updateMethod": "style.setProperty",
+      "propertyName": "--primary-color",
+      "section": "appearance"
+    },
+    "show_descriptions": {
+      "type": "checkbox",
+      "label": "Show Feature Descriptions",
+      "default": true,
+      "previewSelector": ".feature-item__description",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    },
+    "features": {
+      "type": "repeater",
+      "label": "Features",
+      "section": "features",
+      "fields": {
+        "icon": {
+          "type": "text",
+          "label": "Icon (Emoji)",
+          "default": "✨",
+          "placeholder": "Enter emoji"
+        },
+        "title": {
+          "type": "text",
+          "label": "Feature Title",
+          "default": "Feature Title",
+          "placeholder": "Enter feature title"
+        },
+        "description": {
+          "type": "textarea",
+          "label": "Feature Description",
+          "default": "Describe this feature",
+          "rows": 2,
+          "placeholder": "Brief description"
+        }
+      },
+      "default": [
+        {
+          "icon": "🚀",
+          "title": "Fast Performance",
+          "description": "Lightning-fast load times for better user experience"
+        },
+        {
+          "icon": "🔒",
+          "title": "Secure & Reliable",
+          "description": "Built with security best practices in mind"
+        },
+        {
+          "icon": "📱",
+          "title": "Mobile Responsive",
+          "description": "Looks great on all devices and screen sizes"
+        }
+      ]
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Content",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Appearance",
+      "order": 2
+    },
+    "features": {
+      "title": "Features",
+      "order": 3
+    }
+  }
+}
