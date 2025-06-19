@@ -29,5 +29,5 @@ export const featureFlags = {
     // --- Data & Schema Flags ---
     ENABLE_SCHEMA_VALIDATION: true, // Validate component props against a schema
     ENABLE_AUTO_SAVE: true,
-    ENABLE_PRESET_TEMPLATES: true,
+    ENABLE_PRESET_TEMPLATES: true, // Changed from false to true
 };

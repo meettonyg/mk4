@@ -139,6 +139,7 @@
     <?php include plugin_dir_path(__FILE__) . '../partials/global-settings-modal.php'; ?>
     <?php include plugin_dir_path(__FILE__) . '../partials/export-modal.php'; ?>
     <?php include plugin_dir_path(__FILE__) . '../partials/component-library-modal.php'; ?>
+    <?php include plugin_dir_path(__FILE__) . '../partials/template-library-modal.php'; ?>
 
     <!-- Backup data script for race condition prevention -->
     <script type="text/javascript">

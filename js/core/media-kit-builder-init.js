@@ -39,11 +39,11 @@ import {
 /**
  * Initializes the entire Media Kit Builder application with the enhanced architecture.
  */
-export function initializeEnhancedBuilder() {
+export async function initializeEnhancedBuilder() {
     console.log('Media Kit Builder: Starting enhanced initialization...');
 
     // 1. Validate prerequisites first
-    validatePrerequisites();
+    await validatePrerequisites();
 
     // 2. Initialize services that don't depend on the DOM.
     keyboardService.init();
@@ -56,9 +56,14 @@ export function initializeEnhancedBuilder() {
     // FIX: This section is now called directly. The entry point (main.js)
     // is the single source of truth for DOM readiness, so we don't need another listener here.
     initializeUI();
-    initializeFeatureSystems();
+    
+    // 5. Initialize feature systems with a small delay to ensure DOM is fully ready
+    // This prevents race conditions with modal HTML loading
+    setTimeout(() => {
+        initializeFeatureSystems();
+    }, 50);
 
-    // 5. Set up Global Event Listeners like autosave.
+    // 6. Set up Global Event Listeners like autosave.
     setupGlobalEventListeners();
 
     console.log('Media Kit Builder: Enhanced initialization complete.');
@@ -69,6 +74,22 @@ export function initializeEnhancedBuilder() {
  */
 function validatePrerequisites() {
     console.log('🔍 Validating prerequisites...');
+    
+    // Wait for DOM to be fully ready including all included PHP files
+    if (document.readyState !== 'complete') {
+        console.log('⏳ Waiting for document.readyState to be complete...');
+        return new Promise(resolve => {
+            const checkReady = () => {
+                if (document.readyState === 'complete') {
+                    console.log('✅ Document fully loaded');
+                    resolve();
+                } else {
+                    setTimeout(checkReady, 10);
+                }
+            };
+            checkReady();
+        });
+    }
     
     // Check for required DOM elements
     const requiredElements = [
@@ -102,6 +123,7 @@ function validatePrerequisites() {
     window.GUESTIFY_PLUGIN_URL = window.guestifyData.pluginUrl;
     
     console.log('✅ Prerequisites validated successfully');
+    return Promise.resolve();
 }
 
 /**

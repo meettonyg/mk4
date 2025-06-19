@@ -26,7 +26,7 @@ class InitializationManager {
         const perfEnd = performanceMonitor.start('initialization-sequence');
 
         try {
-            // Step 1: Validate prerequisites
+            // Step 1: Validate prerequisites (now async to wait for full DOM ready)
             await this.validatePrerequisites();
             this.recordStep('prerequisites', 'success');
 
@@ -78,6 +78,22 @@ class InitializationManager {
      */
     async validatePrerequisites() {
         console.log('🔍 InitializationManager: Validating prerequisites...');
+        
+        // Wait for DOM to be fully ready including all included PHP files
+        if (document.readyState !== 'complete') {
+            console.log('⏳ InitializationManager: Waiting for document.readyState to be complete...');
+            await new Promise(resolve => {
+                const checkReady = () => {
+                    if (document.readyState === 'complete') {
+                        console.log('✅ InitializationManager: Document fully loaded');
+                        resolve();
+                    } else {
+                        setTimeout(checkReady, 10);
+                    }
+                };
+                checkReady();
+            });
+        }
         
         // Quick check - if guestifyData is already available, skip waiting
         if (window.guestifyData?.pluginUrl) {

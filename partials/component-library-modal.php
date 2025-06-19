@@ -53,7 +53,7 @@
                     <p>Essential components included with your Guestify account</p>
                 </div>
                 
-                <div class="components-grid" id="free-components">
+                <div class="components-grid" id="component-grid">
                     <div class="component-card" data-category="hero" data-component="hero">
                         <div class="component-preview preview-hero">
                             <div class="mini-avatar"></div>
@@ -167,6 +167,11 @@
                     </div>
                 </div>
             </div>
+        </div>
+        
+        <div class="library__footer">
+            <button class="btn btn--secondary" id="cancel-component-button">Cancel</button>
+            <button class="btn btn--primary" id="add-component-button">Add Selected</button>
         </div>
     </div>
 </div>

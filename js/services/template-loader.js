@@ -32,7 +32,7 @@ class TemplateLoader {
         this.selectedTemplate = null;
     }
 
-    init() {
+    init(retryCount = 0) {
         // Assign DOM elements inside init(), which is called after the DOM is ready.
         this.modal = document.getElementById('template-library-modal');
         this.grid = document.getElementById('template-grid');
@@ -40,9 +40,27 @@ class TemplateLoader {
         this.cancelButton = document.getElementById('cancel-template-button');
         this.openButton = document.getElementById('load-template');
 
-        if (!featureFlags.ENABLE_PRESET_TEMPLATES || !this.modal) {
-            console.warn('Template library feature is disabled or modal not found.');
+        if (!featureFlags.ENABLE_PRESET_TEMPLATES) {
+            console.warn('Template library feature is disabled.');
             return;
+        }
+        
+        if (!this.modal) {
+            if (retryCount < 5) {
+                const delay = Math.min(100 * Math.pow(2, retryCount), 1000);
+                console.warn(`Template library modal not found (attempt ${retryCount + 1}/5), retrying in ${delay}ms...`);
+                setTimeout(() => {
+                    this.init(retryCount + 1);
+                }, delay);
+                return;
+            } else {
+                console.error('Template library modal still not found after 5 retries.');
+                return;
+            }
+        }
+        
+        if (retryCount > 0) {
+            console.log(`✅ Template library modal found on retry ${retryCount}! Setting up...`);
         }
 
         // The button in the empty state dispatches a custom event.
@@ -50,6 +68,17 @@ class TemplateLoader {
 
         this.loadButton?.addEventListener('click', () => this.loadSelectedTemplate());
         this.cancelButton?.addEventListener('click', () => this.hide());
+        
+        // CLOSE BUTTON (× in upper right)
+        const closeButton = document.getElementById('close-template-library');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                console.log('Template library close button (×) clicked');
+                this.hide();
+            });
+        } else {
+            console.warn('Template library close button not found (close-template-library)');
+        }
 
         this.populateTemplateGrid();
         console.log('TemplateLoader initialized.');
