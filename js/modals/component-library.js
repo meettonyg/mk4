@@ -22,14 +22,14 @@ let componentLibraryModal, componentGrid, addComponentButton, cancelComponentBut
  */
 export function setupComponentLibrary() {
     // Assign DOM elements here, inside the setup function, which is called after DOMContentLoaded.
-    componentLibraryModal = document.getElementById('component-library-modal');
+    componentLibraryModal = document.getElementById('component-library-overlay');
     componentGrid = document.getElementById('component-grid');
     addComponentButton = document.getElementById('add-component-button');
     cancelComponentButton = document.getElementById('cancel-component-button');
     componentSearchInput = document.getElementById('component-search');
 
     if (!componentLibraryModal) {
-        console.warn('Component library modal not found, skipping setup.');
+        console.warn('Component library modal not found (looking for component-library-overlay), skipping setup.');
         return;
     }
 

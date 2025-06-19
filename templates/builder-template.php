@@ -139,4 +139,21 @@
     <?php include plugin_dir_path(__FILE__) . '../partials/global-settings-modal.php'; ?>
     <?php include plugin_dir_path(__FILE__) . '../partials/export-modal.php'; ?>
     <?php include plugin_dir_path(__FILE__) . '../partials/component-library-modal.php'; ?>
+
+    <!-- Backup data script for race condition prevention -->
+    <script type="text/javascript">
+        // Create backup guestifyData in case PHP localization has timing issues
+        window.guestifyDataBackup = window.guestifyData || {
+            pluginUrl: '<?php echo esc_js(GUESTIFY_PLUGIN_URL); ?>',
+            components: [],
+            validation: {
+                pluginUrl: true,
+                components: false,
+                timestamp: <?php echo time(); ?>
+            },
+            dataReady: true
+        };
+        window.guestifyDataReady = true;
+        console.log('📦 Backup guestifyData created in template');
+    </script>
 </div>

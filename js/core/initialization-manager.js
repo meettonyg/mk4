@@ -13,7 +13,7 @@ class InitializationManager {
         this.errors = [];
         this.startTime = Date.now();
         this.retryCount = 0;
-        this.maxRetries = 3;
+        this.maxRetries = 1; // Reduced from 3 for faster performance
     }
 
     /**
@@ -79,18 +79,19 @@ class InitializationManager {
     async validatePrerequisites() {
         console.log('🔍 InitializationManager: Validating prerequisites...');
         
-        // Wait for guestifyData with timeout
-        const guestifyData = await this.waitForGuestifyData();
-        if (!guestifyData) {
-            throw new Error('guestifyData not available - PHP localization failed');
+        // Quick check - if guestifyData is already available, skip waiting
+        if (window.guestifyData?.pluginUrl) {
+            console.log('✅ InitializationManager: guestifyData already available');
+        } else {
+            // Wait for guestifyData with shorter timeout for better performance
+            const guestifyData = await this.waitForGuestifyData(500); // Reduced from 2000ms
+            if (!guestifyData) {
+                throw new Error('guestifyData not available - PHP localization failed');
+            }
         }
 
-        // Validate required DOM elements
-        const requiredElements = [
-            'media-kit-preview',
-            'preview-container'
-        ];
-
+        // Validate required DOM elements (quick check)
+        const requiredElements = ['media-kit-preview', 'preview-container'];
         for (const elementId of requiredElements) {
             if (!document.getElementById(elementId)) {
                 throw new Error(`Required DOM element not found: ${elementId}`);
@@ -98,24 +99,24 @@ class InitializationManager {
         }
 
         // Validate plugin URL
-        if (!guestifyData.pluginUrl) {
+        if (!window.guestifyData.pluginUrl) {
             throw new Error('Plugin URL not available in guestifyData');
         }
 
         // Set global plugin URL for other modules
-        window.GUESTIFY_PLUGIN_URL = guestifyData.pluginUrl;
+        window.GUESTIFY_PLUGIN_URL = window.guestifyData.pluginUrl;
         
         console.log('✅ InitializationManager: Prerequisites validated');
     }
 
     /**
      * Waits for guestifyData to be available with timeout and retries
-     * @param {number} timeout - Maximum wait time in ms
+     * @param {number} timeout - Maximum wait time in ms (reduced for performance)
      * @returns {Promise<object|null>} guestifyData object or null
      */
-    async waitForGuestifyData(timeout = 2000) {
+    async waitForGuestifyData(timeout = 500) {
         const startTime = Date.now();
-        const checkInterval = 50;
+        const checkInterval = 25; // Reduced from 50ms for faster response
         
         while (Date.now() - startTime < timeout) {
             if (window.guestifyData?.pluginUrl) {

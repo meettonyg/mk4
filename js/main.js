@@ -182,17 +182,32 @@ async function attemptFallbackInitialization(originalError) {
     }
 }
 
-// Single DOMContentLoaded listener - the source of truth for initialization timing
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOM ready, starting Media Kit Builder initialization...');
+// Global flag to prevent double initialization
+let initializationStarted = false;
+
+// Expose globally for debugging
+window.initializationStarted = () => initializationStarted;
+
+/**
+ * Safe initialization wrapper that prevents double execution
+ */
+function safeInitializeBuilder() {
+    if (initializationStarted) {
+        console.log('⚠️ Initialization already started, skipping duplicate call');
+        return;
+    }
+    
+    initializationStarted = true;
+    console.log('📄 Starting Media Kit Builder initialization...');
     initializeBuilder();
-});
+}
+
+// Single DOMContentLoaded listener - the source of truth for initialization timing
+document.addEventListener('DOMContentLoaded', safeInitializeBuilder);
 
 // Additional safety net for cases where DOMContentLoaded already fired
-if (document.readyState === 'loading') {
-    // DOM hasn't finished loading, event listener will handle it
-} else {
+if (document.readyState !== 'loading') {
     // DOM is already ready, start immediately
     console.log('📄 DOM was already ready, starting initialization immediately...');
-    initializeBuilder();
+    safeInitializeBuilder();
 }
