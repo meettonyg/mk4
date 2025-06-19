@@ -1,11 +1,22 @@
 /**
- * Enhanced Component Renderer
- * Intelligent diff-based rendering with optimized updates
+ * @file enhanced-component-renderer.js
+ * @description Intelligent diff-based rendering with optimized updates. This is the primary renderer
+ * for the new architecture, handling state changes and DOM updates efficiently.
+ *
+ * This version includes fixes for module imports to align with the new architecture.
  */
 
-import { renderComponent } from '../components/dynamic-component-loader.js';
-import enhancedStateManager from './enhanced-state-manager.js';
-import { performanceMonitor } from '../utils/performance-monitor.js';
+// FIX: Corrected import to use the named export for dynamicComponentLoader.
+import {
+    dynamicComponentLoader
+} from '../components/dynamic-component-loader.js';
+// FIX: Corrected import to use the named export for enhancedStateManager.
+import {
+    enhancedStateManager
+} from './enhanced-state-manager.js';
+import {
+    performanceMonitor
+} from '../utils/performance-monitor.js';
 
 class EnhancedComponentRenderer {
     constructor() {
@@ -24,16 +35,16 @@ class EnhancedComponentRenderer {
 
     init() {
         if (this.initialized) return;
-        
+
         this.previewContainer = document.getElementById('media-kit-preview');
         if (!this.previewContainer) return;
-        
+
         this.initializeFromDOM();
-        
+
         this.stateUnsubscribe = enhancedStateManager.subscribeGlobal((state) => {
             this.onStateChange(state);
         });
-        
+
         this.healthCheckInterval = setInterval(() => this.healthCheck(), 5000);
         this.initialized = true;
     }
@@ -47,12 +58,10 @@ class EnhancedComponentRenderer {
                     this.componentCache.set(element.id, element);
                 }
             });
-            
-            // **FIX**: Check empty state on initialization
+
             this.updateEmptyState(initialState);
         }
-        
-        // **FIX**: Setup empty state button event listeners
+
         this.setupEmptyStateListeners();
     }
 
@@ -86,7 +95,7 @@ class EnhancedComponentRenderer {
             } finally {
                 this.isRendering = false;
                 this.renderStartTime = null;
-                
+
                 if (this.renderQueue.size > 0) {
                     const nextState = this.renderQueue.values().next().value;
                     this.renderQueue.clear();
@@ -130,10 +139,9 @@ class EnhancedComponentRenderer {
             }
         });
 
-        // **FIX**: Handle missing layout arrays gracefully
         const oldLayout = oldState.layout || [];
         const newLayout = newState.layout || enhancedStateManager.getLayout();
-        
+
         if (JSON.stringify(oldLayout) !== JSON.stringify(newLayout)) {
             newLayout.forEach(id => {
                 if (!changes.added.has(id) && !changes.removed.has(id)) {
@@ -155,13 +163,11 @@ class EnhancedComponentRenderer {
             await this.updateComponents(changes.updated, newState);
         }
         if (changes.moved.size > 0) {
-            // **FIX**: Get layout from state manager to ensure it exists
             const state = enhancedStateManager.getState();
             this.reorderComponents(state.layout);
         }
         this.cleanupOrphanedElements(newState);
-        
-        // **FIX**: Handle empty state display
+
         this.updateEmptyState(newState);
     }
 
@@ -183,9 +189,10 @@ class EnhancedComponentRenderer {
                 console.error(`State for new component ${id} not found!`);
                 return null;
             }
-            return this.renderComponent(id, componentState.type, componentState.data);
+            // FIX: Use the new dynamicComponentLoader instance
+            return this.renderComponentWithLoader(id, componentState.type, componentState.data);
         });
-        
+
         const renderedComponents = await Promise.all(renderPromises);
         renderedComponents.forEach(comp => {
             if (comp) {
@@ -195,8 +202,7 @@ class EnhancedComponentRenderer {
         });
 
         this.previewContainer.appendChild(fragment);
-        
-        // **FIX**: Ensure we get a valid layout array from state manager
+
         const state = enhancedStateManager.getState();
         this.reorderComponents(state.layout);
     }
@@ -206,7 +212,10 @@ class EnhancedComponentRenderer {
             const componentState = newState.components[id];
             const oldElement = this.componentCache.get(id) || document.getElementById(id);
             if (oldElement && componentState) {
-                const { element: newElement } = await this.renderComponent(id, componentState.type, componentState.data);
+                const {
+                    element: newElement
+                    // FIX: Use the new dynamicComponentLoader instance
+                } = await this.renderComponentWithLoader(id, componentState.type, componentState.data);
                 if (oldElement.innerHTML !== newElement.innerHTML) {
                     oldElement.replaceWith(newElement);
                     this.componentCache.set(id, newElement);
@@ -215,12 +224,10 @@ class EnhancedComponentRenderer {
         });
         await Promise.all(updatePromises);
     }
-    
+
     reorderComponents(layout) {
-        // **FIX**: Add defensive check to prevent crashes
         if (!Array.isArray(layout)) {
             console.error('Renderer Error: reorderComponents called with invalid layout:', layout);
-            // Try to get layout from state manager
             const state = enhancedStateManager.getState();
             layout = state.layout || [];
             if (!Array.isArray(layout) || layout.length === 0) {
@@ -228,14 +235,16 @@ class EnhancedComponentRenderer {
                 return;
             }
         }
-        
-        const perfEnd = performanceMonitor.start('reorder-components', { count: layout.length });
-        
+
+        const perfEnd = performanceMonitor.start('reorder-components', {
+            count: layout.length
+        });
+
         const elementMap = new Map();
         Array.from(this.previewContainer.children).forEach(child => {
             elementMap.set(child.id, child);
         });
-        
+
         layout.forEach((componentId, index) => {
             const element = elementMap.get(componentId);
             if (element) {
@@ -245,29 +254,43 @@ class EnhancedComponentRenderer {
                 }
             }
         });
-        
+
         perfEnd();
     }
 
-    async renderComponent(id, type, props) {
+    /**
+     * Renders a component using the dynamic component loader.
+     * @param {string} id - The unique ID of the component instance.
+     * @param {string} type - The component type.
+     * @param {object} props - The properties for the component.
+     * @returns {Promise<{id: string, element: HTMLElement}>}
+     */
+    async renderComponentWithLoader(id, type, props) {
         try {
-            const template = await renderComponent(type, id, props);
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = template.trim();
-            const element = tempDiv.firstElementChild;
+            // FIX: Correctly call the method on the imported loader instance
+            const element = await dynamicComponentLoader.renderComponent({
+                type,
+                id,
+                props
+            });
             if (!element) throw new Error('Template produced no element');
-            element.id = id;
-            return { id, element };
+            return {
+                id,
+                element
+            };
         } catch (error) {
             console.error(`Error rendering component ${id} (${type}):`, error);
             const errorElement = document.createElement('div');
             errorElement.id = id;
             errorElement.className = 'component-error';
             errorElement.textContent = `Error rendering ${type}.`;
-            return { id, element: errorElement };
+            return {
+                id,
+                element: errorElement
+            };
         }
     }
-    
+
     cloneState(state) {
         return state ? JSON.parse(JSON.stringify(state)) : null;
     }
@@ -301,18 +324,18 @@ class EnhancedComponentRenderer {
         this.renderQueue.clear();
         this.isRendering = false;
     }
-    
+
     /**
      * Update empty state visibility based on component count
      */
     updateEmptyState(state) {
         const emptyStateEl = document.getElementById('empty-state');
         const dropZone = document.querySelector('.drop-zone--primary');
-        
+
         if (!emptyStateEl) return;
-        
+
         const hasComponents = Object.keys(state.components || {}).length > 0;
-        
+
         if (hasComponents) {
             // Hide empty state
             emptyStateEl.style.display = 'none';
@@ -323,14 +346,14 @@ class EnhancedComponentRenderer {
             if (dropZone) dropZone.style.display = 'none'; // Keep drop zone hidden
         }
     }
-    
+
     /**
      * Setup event listeners for empty state buttons
      */
     setupEmptyStateListeners() {
         const addFirstComponentBtn = document.getElementById('add-first-component');
         const loadTemplateBtn = document.getElementById('load-template');
-        
+
         if (addFirstComponentBtn && !addFirstComponentBtn.hasAttribute('data-listener-attached')) {
             addFirstComponentBtn.setAttribute('data-listener-attached', 'true');
             addFirstComponentBtn.addEventListener('click', () => {
@@ -340,7 +363,7 @@ class EnhancedComponentRenderer {
                 document.dispatchEvent(event);
             });
         }
-        
+
         if (loadTemplateBtn && !loadTemplateBtn.hasAttribute('data-listener-attached')) {
             loadTemplateBtn.setAttribute('data-listener-attached', 'true');
             loadTemplateBtn.addEventListener('click', () => {

@@ -1,326 +1,191 @@
 /**
- * Component library modal functionality
+ * @file component-library.js
+ * @description This file manages the component library modal, allowing users to add new components to their media kit.
+ *
+ * This version includes a fix to move DOM element lookups inside the setup function,
+ * ensuring the elements exist before the script tries to access them. This resolves race
+ * condition errors on application startup.
  */
 
-import { showModal, hideModal, setupModalClose } from './modal-base.js';
-import { showUpgradePrompt } from '../utils/helpers.js';
-import { markUnsaved } from '../services/save-service.js';
-import { getComponentInfo } from '../components/dynamic-component-loader.js';
+import {
+    hideModal,
+    showModal
+} from './modal-base.js';
+
+// Define variables at the top level, but assign them inside the setup function
+// to prevent trying to access DOM elements before they are ready.
+let componentLibraryModal, componentGrid, addComponentButton, cancelComponentButton, componentSearchInput;
 
 /**
- * Set up component library modal
+ * Sets up the component library, including event listeners and component rendering.
+ * This function is called once the DOM is ready.
  */
-export function setupComponentLibraryModal() {
-    setupModalClose('component-library-overlay', 'close-library');
-    
-    // **FIX**: Setup multiple button handlers for different buttons that open component library
-    // Handle main add component button
-    const addComponentBtn = document.getElementById('add-component-btn');
-    if (addComponentBtn) {
-        addComponentBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Add component button clicked');
+export function setupComponentLibrary() {
+    // Assign DOM elements here, inside the setup function, which is called after DOMContentLoaded.
+    componentLibraryModal = document.getElementById('component-library-modal');
+    componentGrid = document.getElementById('component-grid');
+    addComponentButton = document.getElementById('add-component-button');
+    cancelComponentButton = document.getElementById('cancel-component-button');
+    componentSearchInput = document.getElementById('component-search');
+
+    if (!componentLibraryModal) {
+        console.warn('Component library modal not found, skipping setup.');
+        return;
+    }
+
+    // This is the button in the main UI that opens the modal
+    const openComponentLibraryButton = document.getElementById('add-component');
+    if (openComponentLibraryButton) {
+        openComponentLibraryButton.addEventListener('click', () => {
             showComponentLibraryModal();
         });
     }
-    
-    // Handle first component button in empty state
-    const addFirstComponentBtn = document.getElementById('add-first-component');
-    if (addFirstComponentBtn) {
-        addFirstComponentBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Add first component button clicked');
-            showComponentLibraryModal();
-        });
-    }
-    
-    // Also use event delegation for dynamically created buttons
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('#add-component-btn') || e.target.closest('#add-first-component')) {
-            if (!e.defaultPrevented) {
-                e.preventDefault();
-                showComponentLibraryModal();
-            }
-        }
-    });
-    
-    // Listen for custom event to show component library
-    document.addEventListener('show-component-library', function() {
-        console.log('Received show-component-library event');
+
+    // This is the button in the "empty state" UI
+    // We add a global listener for a custom event instead of a direct click listener
+    // to avoid coupling this module with the renderer.
+    document.addEventListener('show-component-library', () => {
         showComponentLibraryModal();
     });
-    
-    // Populate modal with dynamic components
-    populateComponentLibrary();
-    
-    // Re-populate when components are loaded dynamically
-    document.addEventListener('componentsLoaded', function() {
-        populateComponentLibrary();
-    });
 
-    // Category filtering in modal
-    const categoryItems = document.querySelectorAll('.category-item');
-    const categoryFilter = document.getElementById('category-filter');
-    
-    categoryItems.forEach(item => {
-        item.addEventListener('click', function() {
-            categoryItems.forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-            
-            const category = this.getAttribute('data-category');
-            filterComponents(category);
-            if (categoryFilter) categoryFilter.value = category;
-        });
-    });
 
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', function() {
-            const category = this.value;
-            filterComponents(category);
-            categoryItems.forEach(i => i.classList.remove('active'));
-            const matchingSidebarItem = document.querySelector(`.category-item[data-category="${category}"]`);
-            if (matchingSidebarItem) matchingSidebarItem.classList.add('active');
+    if (cancelComponentButton) {
+        cancelComponentButton.addEventListener('click', () => {
+            hideComponentLibraryModal();
+            clearSelection();
         });
     }
 
-    // Search functionality in modal
-    const componentSearch = document.getElementById('component-search');
-    if (componentSearch) {
-        componentSearch.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const cards = document.querySelectorAll('.component-card');
-            
-            cards.forEach(card => {
-                const title = card.querySelector('h4').textContent.toLowerCase();
-                const description = card.querySelector('p').textContent.toLowerCase();
-                
-                if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
-    }
-
-    // Component selection in modal - use event delegation for dynamic content
-    const libraryMain = document.querySelector('.library__main');
-    if (libraryMain) {
-        libraryMain.addEventListener('click', async function(e) {
-            const card = e.target.closest('.component-card');
-            if (!card) return;
-            
-            const componentType = card.getAttribute('data-component');
-            const isPremium = card.classList.contains('component-card--premium');
-            
-            if (isPremium) {
-                showUpgradePrompt();
-            } else {
-                // **FIX**: No need for componentTypeMap - use the directory name directly
-                // The data-component attribute already contains the correct component type
-                const actualComponentType = componentType;
-                
-                // Check if this is the first component (empty state)
-                const preview = document.getElementById('media-kit-preview');
-                const hasComponents = preview && preview.querySelector('[data-component-id]');
-                
-                // Use the global component manager (will be enhanced if enabled)
-                if (window.componentManager) {
-                    await window.componentManager.addComponent(actualComponentType);
-                    
-                    // Hide empty state if this was the first component
-                    if (!hasComponents) {
-                        const emptyState = document.getElementById('empty-state');
-                        if (emptyState) {
-                            emptyState.style.display = 'none';
-                        }
-                        preview.classList.add('has-components');
-                    }
-                } else {
-                    console.error('Component manager not available');
-                }
-                
-                hideComponentLibraryModal();
-                markUnsaved();
+    if (addComponentButton) {
+        addComponentButton.addEventListener('click', () => {
+            const selectedComponents = getSelectedComponents();
+            if (selectedComponents.length > 0) {
+                selectedComponents.forEach(async (componentType) => {
+                    // Use the globally available component manager
+                    await window.componentManager.addComponent(componentType, {});
+                });
             }
+            hideComponentLibraryModal();
+            clearSelection();
         });
     }
-}
 
-/**
- * Show the component library modal
- */
-export function showComponentLibraryModal() {
-    console.log('showComponentLibraryModal called');
-    let modal = document.getElementById('component-library-overlay');
-    
-    // Create modal if it doesn't exist
-    if (!modal) {
-        console.log('Modal not found, creating it...');
-        createComponentLibraryModal();
-        modal = document.getElementById('component-library-overlay');
+    if (componentSearchInput) {
+        componentSearchInput.addEventListener('input', handleSearch);
     }
-    
-    if (modal) {
-        console.log('Modal found, showing...');
-        // Use the showModal function from modal-base
-        showModal('component-library-overlay');
-        // Populate it if needed
-        populateComponentLibrary();
-    } else {
-        console.error('Failed to create component library modal!');
+
+    populateComponentGrid();
+    console.log('Component Library setup complete.');
+}
+
+
+/**
+ * Populates the component grid with available components from the global `guestifyData`.
+ * Each component is rendered as a card with a checkbox for selection.
+ */
+function populateComponentGrid() {
+    if (!componentGrid || !window.guestifyData || !window.guestifyData.components) {
+        console.error('Component grid or guestifyData is not available.');
+        return;
     }
+
+    componentGrid.innerHTML = ''; // Clear existing components
+
+    window.guestifyData.components.forEach(component => {
+        const card = document.createElement('div');
+        card.className = 'component-card';
+        card.dataset.componentType = component.type;
+
+        const icon = component.icon ? `<i class="fa ${component.icon}"></i>` : '';
+        const title = `<h6>${component.title}</h6>`;
+        const description = `<p>${component.description}</p>`;
+
+        card.innerHTML = `
+            <div class="component-card-content">
+                ${icon}
+                ${title}
+                ${description}
+            </div>
+            <div class="component-card-checkbox">
+                <input type="checkbox" id="checkbox-${component.type}" name="component-checkbox">
+            </div>
+        `;
+
+        card.addEventListener('click', (event) => {
+            if (event.target.type !== 'checkbox') {
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+            }
+            card.classList.toggle('selected', card.querySelector('input[type="checkbox"]').checked);
+        });
+
+        componentGrid.appendChild(card);
+    });
 }
 
 /**
- * Hide the component library modal
+ * Handles the search functionality for the component library.
+ * Filters components based on the user's input.
+ * @param {Event} event - The input event from the search field.
  */
-export function hideComponentLibraryModal() {
-    hideModal('component-library-overlay');
-}
+function handleSearch(event) {
+    const searchTerm = event.target.value.toLowerCase();
+    const cards = componentGrid.querySelectorAll('.component-card');
 
-/**
- * Filter components by category
- * @param {string} category - The category to filter by
- */
-function filterComponents(category) {
-    const cards = document.querySelectorAll('.component-card');
     cards.forEach(card => {
-        if (category === 'all' || card.getAttribute('data-category') === category) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
+        const title = card.querySelector('h6').textContent.toLowerCase();
+        const description = card.querySelector('p').textContent.toLowerCase();
+        const isVisible = title.includes(searchTerm) || description.includes(searchTerm);
+        card.style.display = isVisible ? '' : 'none';
+    });
+}
+
+/**
+ * Gets the list of selected component types from the component grid.
+ * @returns {string[]} An array of selected component type strings.
+ */
+function getSelectedComponents() {
+    const selected = [];
+    const checkboxes = componentGrid.querySelectorAll('input[type="checkbox"]:checked');
+    checkboxes.forEach(checkbox => {
+        const card = checkbox.closest('.component-card');
+        if (card) {
+            selected.push(card.dataset.componentType);
+        }
+    });
+    return selected;
+}
+
+/**
+ * Clears the selection state of all components in the grid.
+ */
+function clearSelection() {
+    const checkboxes = componentGrid.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        const card = checkbox.closest('.component-card');
+        if (card) {
+            card.classList.remove('selected');
         }
     });
 }
 
 /**
- * Create the component library modal HTML
+ * Shows the component library modal.
  */
-function createComponentLibraryModal() {
-    const modal = document.createElement('div');
-    modal.id = 'component-library-overlay';
-    modal.className = 'modal-overlay';
-    modal.style.display = 'none';
-    
-    modal.innerHTML = `
-        <div class="modal modal--library">
-            <div class="library__header">
-                <h2>Component Library</h2>
-                <button class="modal__close" id="close-library" type="button">×</button>
-            </div>
-            <div class="library__body">
-                <div class="library__sidebar">
-                    <h3>Categories</h3>
-                    <div class="category-list">
-                        <div class="category-item active" data-category="all">All Components</div>
-                        <div class="category-item" data-category="essential">Essential</div>
-                        <div class="category-item" data-category="media">Media & Content</div>
-                        <div class="category-item" data-category="premium">Premium</div>
-                    </div>
-                </div>
-                <div class="library__main">
-                    <div class="library__search">
-                        <input type="text" id="component-search" placeholder="Search components..." />
-                    </div>
-                    <div class="component-grid" id="free-components">
-                        <!-- Free components will be populated here -->
-                    </div>
-                    <div class="premium-section">
-                        <h3>Premium Components</h3>
-                        <div class="component-grid" id="premium-components">
-                            <!-- Premium components will be populated here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Setup close functionality
-    setupModalClose('component-library-overlay', 'close-library');
-}
-
-/**
- * Populate component library with dynamic components
- */
-function populateComponentLibrary() {
-    if (!guestifyData.categories) return;
-    
-    const freeComponentsGrid = document.getElementById('free-components');
-    const premiumComponentsGrid = document.getElementById('premium-components');
-    
-    if (!freeComponentsGrid || !premiumComponentsGrid) return;
-    
-    // Clear existing content
-    freeComponentsGrid.innerHTML = '';
-    premiumComponentsGrid.innerHTML = '';
-    
-    // Populate components by category
-    Object.entries(guestifyData.categories).forEach(([categoryName, components]) => {
-        components.forEach(component => {
-            const card = createComponentCard(component, categoryName);
-            
-            if (component.isPremium) {
-                premiumComponentsGrid.appendChild(card);
-            } else {
-                freeComponentsGrid.appendChild(card);
-            }
-        });
-    });
-}
-
-/**
- * Create a component card for the library
- * @param {object} component - Component data
- * @param {string} categoryName - Category name
- * @returns {HTMLElement} - The card element
- */
-function createComponentCard(component, categoryName) {
-    const card = document.createElement('div');
-    card.className = 'component-card';
-    if (component.isPremium) {
-        card.className += ' component-card--premium';
+function showComponentLibraryModal() {
+    if (componentLibraryModal) {
+        showModal(componentLibraryModal);
+    } else {
+        console.error('Component library modal could not be shown because it was not found.');
     }
-    card.setAttribute('data-category', categoryName);
-    card.setAttribute('data-component', component.directory);
-    
-    // Create preview based on component type
-    const preview = createComponentPreview(component.directory, component.name);
-    
-    card.innerHTML = `
-        ${preview}
-        <div class="component-info">
-            <h4>${component.name}</h4>
-            <p>${component.description || 'Add ' + component.name + ' to your media kit'}</p>
-        </div>
-    `;
-    
-    return card;
 }
 
 /**
- * Create component preview HTML
- * @param {string} componentType - Component type/directory
- * @param {string} componentName - Component display name
- * @returns {string} - Preview HTML
+ * Hides the component library modal.
  */
-function createComponentPreview(componentType, componentName) {
-    // Map component types to preview styles
-    const previewMap = {
-        'hero': '<div class="component-preview preview-hero"><div class="mini-avatar"></div><div class="mini-name">John Doe</div><div class="mini-title">Professional Title</div></div>',
-        'biography': '<div class="component-preview preview-bio"><div class="mini-lines"></div><div class="mini-lines"></div><div class="mini-lines"></div><div class="mini-lines"></div></div>',
-        'topics': '<div class="component-preview preview-topics"><div class="mini-topic"></div><div class="mini-topic"></div><div class="mini-topic"></div><div class="mini-topic"></div></div>',
-        'social': '<div class="component-preview preview-social"><div class="mini-social"></div><div class="mini-social"></div><div class="mini-social"></div></div>',
-        'stats': '<div class="component-preview preview-stats"><div class="mini-stat"><div class="mini-stat-number">1.2M</div><div class="mini-stat-label">Followers</div></div><div class="mini-stat"><div class="mini-stat-number">150+</div><div class="mini-stat-label">Shows</div></div></div>',
-        'logo-grid': '<div class="component-preview" style="background: #f8fafc; padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;"><div style="background: #e2e8f0; aspect-ratio: 1; border-radius: 2px;"></div><div style="background: #e2e8f0; aspect-ratio: 1; border-radius: 2px;"></div><div style="background: #e2e8f0; aspect-ratio: 1; border-radius: 2px;"></div><div style="background: #e2e8f0; aspect-ratio: 1; border-radius: 2px;"></div></div>',
-        'video-intro': '<div class="component-preview" style="background: #1e293b; display: flex; align-items: center; justify-content: center;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2"><polygon points="5,3 19,12 5,21"></polygon></svg></div>',
-        'photo-gallery': '<div class="component-preview" style="background: #f8fafc; padding: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px;"><div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div><div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div><div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div><div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div></div>',
-        'guest-intro': '<div class="component-preview" style="background: #f8fafc; padding: 10px;"><div style="text-align: center; margin-bottom: 5px;"><div style="font-size: 8px; color: #64748b; text-transform: uppercase;">Introducing</div><div style="font-size: 12px; font-weight: bold; color: #1e293b;">Guest Name</div></div><div style="font-size: 8px; color: #64748b; margin-bottom: 5px;">Professional Title</div><div style="display: flex; gap: 2px; font-size: 8px; color: #475569;"><span>•</span><span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Topic 1</span></div><div style="display: flex; gap: 2px; font-size: 8px; color: #475569;"><span>•</span><span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Topic 2</span></div></div>',
-        'default': '<div class="component-preview" style="background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #64748b;"><div style="text-align: center; font-size: 10px;">' + componentName + '</div></div>'
-    };
-    
-    return previewMap[componentType] || previewMap['default'];
+function hideComponentLibraryModal() {
+    if (componentLibraryModal) {
+        hideModal(componentLibraryModal);
+    }
 }

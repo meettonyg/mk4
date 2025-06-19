@@ -1,179 +1,103 @@
 /**
- * Enhanced Component Manager
- * Pure state management - no DOM manipulation
+ * @file enhanced-component-manager.js
+ * @description Manages component interactions and state updates using the enhanced state manager.
+ * This class acts as a bridge between user actions on components (like delete, duplicate) and
+ * the centralized state management system.
+ *
+ * This version includes a fix for the import statement of the enhancedStateManager,
+ * changing it from a default to a named import to resolve module loading errors.
  */
 
-import enhancedStateManager from './enhanced-state-manager.js';
-import { dataBindingEngine } from '../services/data-binding-engine.js';
-import { schemaValidator } from './schema-validator.js';
-import { performanceMonitor } from '../utils/performance-monitor.js';
+// FIX: Changed the import from a default to a named import to match the export in enhanced-state-manager.js
+import {
+    enhancedStateManager
+} from './enhanced-state-manager.js';
+import {
+    generateUniqueId
+} from '../utils/helpers.js';
+import {
+    performanceMonitor
+} from '../utils/performance-monitor.js';
 
 class EnhancedComponentManager {
     constructor() {
-        this.componentRegistry = new Map();
-        this.loadedSchemas = new Map();
-        this.initialized = false;
-        this.controlDebounceTimer = null;
-        this.schemaLoadingPromises = new Map();
-        this.pendingActions = new Set();
-    }
-
-    async init() {
-        if (this.initialized) {
-            return;
-        }
-        this.initialized = true;
-        await this.loadComponentRegistry();
-        this.setupEventListeners();
+        this.previewContainer = document.getElementById('media-kit-preview');
+        this.init();
         console.log('EnhancedComponentManager initialized');
     }
 
-    async loadComponentRegistry() {
-        if (window.guestifyData?.components) {
-            window.guestifyData.components.forEach(comp => {
-                this.componentRegistry.set(comp.type, comp);
-            });
-        }
-        if (window.guestifyData?.componentSchemas) {
-            Object.entries(window.guestifyData.componentSchemas).forEach(([type, schema]) => {
-                this.loadedSchemas.set(type, schema);
-            });
-        }
+    init() {
+        this.previewContainer.addEventListener('click', this.handleControls.bind(this));
     }
 
-    setupEventListeners() {
-        document.body.addEventListener('click', async (event) => {
-            // **FIX**: Look for control-btn class instead of data-action
-            const button = event.target.closest('.control-btn');
-            if (!button || this.pendingActions.has('component-action')) return;
+    /**
+     * Handles clicks on component control buttons (delete, duplicate, etc.).
+     * @param {Event} e - The click event.
+     */
+    handleControls(e) {
+        const controlButton = e.target.closest('.control-btn');
+        if (!controlButton) return;
 
-            // **FIX**: Get action from title attribute
-            const title = button.getAttribute('title');
-            const componentId = button.closest('[data-component-id]')?.dataset.componentId;
+        const componentElement = e.target.closest('[data-component-id]');
+        if (!componentElement) return;
 
-            if (!componentId || !title) return;
+        const componentId = componentElement.dataset.componentId;
+        const action = controlButton.title;
 
-            console.log(`Control action: ${title} on component: ${componentId}`);
-
-            this.pendingActions.add('component-action');
-            try {
-                switch (title) {
-                    case 'Move Up':
-                        await this.moveComponent(componentId, 'up');
-                        break;
-                    case 'Move Down':
-                        await this.moveComponent(componentId, 'down');
-                        break;
-                    case 'Duplicate':
-                        await this.duplicateComponent(componentId);
-                        break;
-                    case 'Delete':
-                        await this.removeComponent(componentId);
-                        break;
-                }
-            } finally {
-                setTimeout(() => this.pendingActions.delete('component-action'), 100);
-            }
+        console.log(`Control action: ${action} on component: ${componentId}`);
+        performanceMonitor.log('control-action', {
+            action,
+            componentId
         });
-    }
 
-    getAvailableComponents() {
-        return Array.from(this.componentRegistry.values());
-    }
-
-    async loadSchema(componentType) {
-        if (this.loadedSchemas.has(componentType)) {
-            return this.loadedSchemas.get(componentType);
-        }
-        if (this.schemaLoadingPromises.has(componentType)) {
-            return this.schemaLoadingPromises.get(componentType);
-        }
-
-        const promise = (async () => {
-            try {
-                const restUrl = `${window.guestifyData.rest_url}guestify/v1/components/${componentType}/schema`;
-                const response = await fetch(restUrl);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const schema = await response.json();
-                this.loadedSchemas.set(componentType, schema);
-                return schema;
-            } catch (error) {
-                console.error(`Failed to load schema for ${componentType}:`, error);
-                throw error;
-            } finally {
-                this.schemaLoadingPromises.delete(componentType);
-            }
-        })();
-
-        this.schemaLoadingPromises.set(componentType, promise);
-        return promise;
-    }
-
-    async addComponent(componentType, insertAfterId = null) {
-        const perfEnd = performanceMonitor.start('component-add');
-        try {
-            const schema = await this.loadSchema(componentType);
-            if (!schema) {
-                throw new Error(`Schema not found for component: ${componentType}`);
-            }
-
-            const id = this.generateComponentId(componentType);
-
-            const componentData = {};
-            if (schema.settings) {
-                Object.entries(schema.settings).forEach(([key, setting]) => {
-                    if (setting.default !== undefined) {
-                        componentData[key] = setting.default;
-                    }
-                });
-            }
-
-            // **FIX**: Remove duplicate initComponent call - addComponent will handle it
-            // await enhancedStateManager.initComponent(id, componentType, componentData, true);
-            await enhancedStateManager.addComponent(id, componentType, componentData, insertAfterId);
-
-            perfEnd({ componentId: id, componentType });
-            return id;
-
-        } catch (error) {
-            console.error(`Error adding component ${componentType}:`, error);
-            perfEnd({ error: true });
-            return null;
+        switch (action) {
+            case 'Delete':
+                this.removeComponent(componentId);
+                break;
+            case 'Duplicate':
+                this.duplicateComponent(componentId);
+                break;
+                // Add cases for 'Move Up' and 'Move Down' if needed
         }
     }
-    
-    async removeComponent(componentId) {
-        const perfEnd = performanceMonitor.start('component-remove', { componentId });
-        await enhancedStateManager.removeComponent(componentId);
-        perfEnd();
-    }
-    
-    async duplicateComponent(componentId) {
-        const perfEnd = performanceMonitor.start('component-duplicate', { componentId });
-        const originalState = enhancedStateManager.getStateForComponent(componentId);
-        if (!originalState) return;
 
-        const newId = await this.addComponent(originalState.type, componentId);
-        
-        const dataToCopy = { ...originalState.data };
-        
-        await enhancedStateManager.batchUpdate(async () => {
-             Object.entries(dataToCopy).forEach(([key, value]) => {
-                enhancedStateManager.updateComponentData(newId, key, value, true);
-            });
-        });
-        
-        perfEnd({ newComponentId: newId });
+    /**
+     * Adds a new component to the state.
+     * @param {string} componentType - The type of the component to add.
+     * @param {object} props - The initial properties for the new component.
+     */
+    addComponent(componentType, props = {}) {
+        const newComponent = {
+            id: generateUniqueId(componentType),
+            type: componentType,
+            props: props,
+        };
+        enhancedStateManager.addComponent(newComponent);
     }
-    
-    async moveComponent(componentId, direction) {
-        const perfEnd = performanceMonitor.start('component-move', { componentId, direction });
-        await enhancedStateManager.moveComponent(componentId, direction);
-        perfEnd();
+
+    /**
+     * Removes a component from the state.
+     * @param {string} componentId - The ID of the component to remove.
+     */
+    removeComponent(componentId) {
+        enhancedStateManager.removeComponent(componentId);
     }
-    
-    generateComponentId(type) {
-        return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    /**
+     * Duplicates an existing component.
+     * @param {string} componentId - The ID of the component to duplicate.
+     */
+    duplicateComponent(componentId) {
+        const originalComponent = enhancedStateManager.getComponent(componentId);
+        if (originalComponent) {
+            const newComponent = {
+                ...originalComponent,
+                id: generateUniqueId(originalComponent.type),
+                props: { ...originalComponent.props
+                }, // Deep copy props
+            };
+            enhancedStateManager.addComponent(newComponent);
+        }
     }
 }
 

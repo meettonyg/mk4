@@ -1,130 +1,84 @@
 /**
- * Save functionality
- * Enhanced with state manager integration
+ * @file save-service.js
+ * @description Manages saving the media kit state to localStorage.
+ *
+ * This version includes a fix to correctly import the 'state' object and
+ * use its 'getState' method, aligning it with the updated module structure.
  */
+import {
+    state
+} from '../state.js';
+import {
+    showToast
+} from '../utils/toast-polyfill.js';
 
-import { setState, getState } from '../state.js';
-import { stateManager } from './state-manager.js';
-import { performanceMonitor } from '../utils/performance-monitor.js';
+const SAVE_KEY = 'guestifyMediaKitState';
 
-/**
- * Set up save system
- */
-export function setupSaveSystem() {
-    const saveBtn = document.getElementById('save-btn');
-
-    if (saveBtn) {
-        saveBtn.addEventListener('click', function() {
-            saveMediaKit();
-        });
+class SaveService {
+    constructor() {
+        this.autosaveInterval = null;
     }
 
-    // Auto-save every 30 seconds
-    setInterval(() => {
-        if (isUnsaved()) {
-            autoSave();
+    /**
+     * Saves the current state of the media kit to localStorage.
+     */
+    saveState() {
+        try {
+            // FIX: Call the getState() method on the imported 'state' object.
+            const currentState = state.getState();
+            const serializedState = JSON.stringify(currentState);
+            localStorage.setItem(SAVE_KEY, serializedState);
+            console.log('Media kit state saved.');
+        } catch (error) {
+            console.error('Error saving state:', error);
+            showToast('Error: Could not save your work.', 'error');
         }
-    }, 30000);
-}
-
-/**
- * Save the media kit
- */
-export function saveMediaKit() {
-    const perfEnd = performanceMonitor.start('state-save');
-    
-    const saveBtn = document.getElementById('save-btn');
-    const statusText = document.querySelector('.toolbar__status span');
-    
-    // Update UI to show saving state
-    if (saveBtn) saveBtn.disabled = true;
-    const statusDot = document.querySelector('.toolbar__status-dot');
-    if (statusText) statusText.textContent = 'Saving...';
-    if (statusDot) statusDot.classList.add('toolbar__status-dot--saving');
-
-
-    // Use the global window.stateManager to ensure we get the correct instance
-    if (!window.stateManager) {
-        console.error('State manager not available, cannot save');
-        if (statusText) statusText.textContent = 'Save failed - refresh page';
-        if (saveBtn) saveBtn.disabled = false;
-        if (statusDot) statusDot.classList.remove('toolbar__status-dot--saving');
-        return;
     }
 
-    // Get data directly from the state manager
-    const mediaKitData = window.stateManager.getSerializableState();
-    
-    // Log the schema-based data structure
-    console.log('Saving media kit data from state manager:', mediaKitData);
-
-    // Save to localStorage for now
-    localStorage.setItem('mediaKitData', JSON.stringify(mediaKitData));
-    
-    // Store state hash for change detection
-    localStorage.setItem('gmkb_last_saved_state', JSON.stringify(mediaKitData));
-    
-    perfEnd();
-    
-    // Simulate server save operation
-    setTimeout(() => {
-        setState('isUnsaved', false);
-        if (saveBtn) saveBtn.disabled = false;
-        if (statusDot) statusDot.classList.remove('toolbar__status-dot--saving');
-        if (statusText) statusText.textContent = 'Saved';
-        
-        console.log('Media kit saved successfully');
-    }, 1500);
-}
-
-// collectComponentData function has been removed
-// We now use stateManager.getSerializableState() instead
-
-/**
- * Auto-save the media kit
- */
-function autoSave() {
-    const perfEnd = performanceMonitor.start('state-save', { auto: true });
-    
-    const statusText = document.querySelector('.toolbar__status span');
-    if (statusText) statusText.textContent = 'Auto-saving...';
-    
-    // Check if state manager is available
-    if (!window.stateManager) {
-        console.error('State manager not available, cannot auto-save');
-        if (statusText) statusText.textContent = 'Auto-save failed';
-        return;
+    /**
+     * Loads the media kit state from localStorage.
+     * @returns {object|null} The loaded state object, or null if no state is saved.
+     */
+    loadState() {
+        try {
+            const savedState = localStorage.getItem(SAVE_KEY);
+            if (savedState) {
+                const parsedState = JSON.parse(savedState);
+                console.log('Media kit state loaded.');
+                return parsedState;
+            }
+        } catch (error) {
+            console.error('Error loading state:', error);
+            showToast('Error: Could not load previously saved work.', 'error');
+        }
+        return null;
     }
-    
-    // Get data from state manager
-    const mediaKitData = window.stateManager.getSerializableState();
-    
-    // Save to localStorage
-    localStorage.setItem('mediaKitData', JSON.stringify(mediaKitData));
-    localStorage.setItem('gmkb_last_saved_state', JSON.stringify(mediaKitData));
-    
-    perfEnd();
-    console.log('Media kit auto-saved');
-    
-    setTimeout(() => {
-        setState('isUnsaved', false);
-        if (statusText) statusText.textContent = 'Saved';
-    }, 1000);
+
+    /**
+     * Starts the autosave functionality.
+     * @param {number} interval - The interval in milliseconds for autosaving.
+     */
+    startAutosave(interval = 5000) {
+        if (this.autosaveInterval) {
+            clearInterval(this.autosaveInterval);
+        }
+        this.autosaveInterval = setInterval(() => {
+            this.saveState();
+            showToast('Auto-saved!', 'info', 1500);
+        }, interval);
+        console.log(`Autosave started with a ${interval}ms interval.`);
+    }
+
+    /**
+     * Stops the autosave functionality.
+     */
+    stopAutosave() {
+        if (this.autosaveInterval) {
+            clearInterval(this.autosaveInterval);
+            this.autosaveInterval = null;
+            console.log('Autosave stopped.');
+        }
+    }
 }
 
-/**
- * Mark the media kit as unsaved
- */
-export function markUnsaved() {
-    setState('isUnsaved', true);
-    const statusText = document.querySelector('.toolbar__status span');
-    if (statusText) statusText.textContent = 'Unsaved changes';
-}
-
-/**
- * Check if the media kit is unsaved
- * @returns {boolean} Whether the media kit is unsaved
- */
-export function isUnsaved() {
-    return getState('isUnsaved');
-}
+export const saveService = new SaveService();

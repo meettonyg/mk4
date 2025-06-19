@@ -112,29 +112,57 @@ function guestify_media_kit_builder_enqueue_scripts() {
     // Get existing component data from any saved state
     $saved_state = get_option('guestify_media_kit_state', array());
     
-    // Localize script with WordPress data
+    // Prepare data for localization with validation
+    $localized_data = [
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'ajax_url' => admin_url('admin-ajax.php'), // Duplicate for compatibility
+        'nonce' => wp_create_nonce('guestify_media_kit_builder'),
+        'restUrl' => esc_url_raw(rest_url()),
+        'restNonce' => wp_create_nonce('wp_rest'),
+        'pluginUrl' => $plugin_url,
+        'pluginVersion' => GUESTIFY_VERSION,
+        'components' => $components_array, // Ensure it's a proper array
+        'categories' => $component_discovery->getCategories(),
+        'componentSchemas' => $component_schemas, // Add schemas for immediate access
+        'initialState' => $saved_state, // Add any saved state
+        'features' => array( // Add feature flags from PHP
+            'useEnhancedInit' => true,
+            'useBatchUpdates' => true,
+            'usePendingActions' => true
+        ),
+        // Add data validation flags
+        'dataReady' => true,
+        'timestamp' => time(),
+        'validation' => array(
+            'pluginUrl' => !empty($plugin_url),
+            'components' => is_array($components_array) && count($components_array) > 0,
+            'schemas' => is_array($component_schemas) && count($component_schemas) > 0
+        )
+    ];
+    
+    // Validate critical data before localizing
+    if (empty($plugin_url)) {
+        error_log('Media Kit Builder: Critical error - Plugin URL is empty during script localization');
+        // Set a fallback URL
+        $localized_data['pluginUrl'] = plugin_dir_url(dirname(__FILE__));
+    }
+    
+    if (empty($components_array)) {
+        error_log('Media Kit Builder: Warning - No components found during script localization');
+    }
+    
+    // Localize script with validated WordPress data
     wp_localize_script(
         'guestify-builder-script',
         'guestifyData',
-        [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'ajax_url' => admin_url('admin-ajax.php'), // Duplicate for compatibility
-            'nonce' => wp_create_nonce('guestify_media_kit_builder'),
-            'restUrl' => esc_url_raw(rest_url()),
-            'restNonce' => wp_create_nonce('wp_rest'),
-            'pluginUrl' => $plugin_url,
-            'pluginVersion' => GUESTIFY_VERSION, // Add version for cache invalidation
-            'pluginVersion' => GUESTIFY_VERSION, // Add plugin version for cache invalidation
-            'components' => $components_array, // Ensure it's a proper array
-            'categories' => $component_discovery->getCategories(),
-            'componentSchemas' => $component_schemas, // Add schemas for immediate access
-            'initialState' => $saved_state, // Add any saved state
-            'features' => array( // Add feature flags from PHP
-                'useEnhancedInit' => true,
-                'useBatchUpdates' => true,
-                'usePendingActions' => true
-            )
-        ]
+        $localized_data
+    );
+    
+    // Add inline script to set data ready flag and provide backup
+    wp_add_inline_script(
+        'guestify-builder-script',
+        'window.guestifyDataBackup = ' . wp_json_encode($localized_data) . '; window.guestifyDataReady = true;',
+        'before'
     );
 }
 // Run on a hook that fires before template_redirect.

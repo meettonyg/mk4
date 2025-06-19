@@ -1,208 +1,198 @@
 /**
- * Main entry point for the Guestify Media Kit Builder
- * Enhanced Version with Improved State Management
+ * @file main.js
+ * @description Main entry point for the Guestify Media Kit Builder.
+ * This file is responsible for waiting for the DOM to be ready and then
+ * kicking off the entire application initialization sequence with proper
+ * race condition prevention and error handling.
  */
 
-// Import the conditional loader to use enhanced or legacy systems
-import { initializeSystems, shouldUseEnhancedInit } from './core/conditional-loader.js';
-import { mediaKitBuilderInit } from './core/media-kit-builder-init.js';
+import {
+    initializationManager
+} from './core/initialization-manager.js';
+import {
+    performanceMonitor
+} from './utils/performance-monitor.js';
 
-// Core Architecture Modules (loaded conditionally)
-import { stateManager } from './services/state-manager.js';
-import { componentManager } from './components/component-manager.js';
-import { componentRenderer } from './components/component-renderer.js';
-import { historyService } from './services/history-service.js';
+// Expose global objects for debugging and monitoring
+window.mk = {};
+window.mkPerf = performanceMonitor;
 
-// All other UI, Service, and Modal imports remain the same...
-import { setupTabs } from './ui/tabs.js';
-import { setupPreviewToggle } from './ui/preview.js';
-import { setupDragAndDrop } from './ui/dnd.js';
-import { setupElementSelection, setupContentEditableUpdates } from './ui/element-editor.js';
-import { setupLayoutOptions } from './ui/layout.js';
-import { setupSaveSystem } from './services/save-service.js';
-import { setupKeyboardShortcuts } from './services/keyboard-service.js';
-import { setupShareSystem } from './services/share-service.js';
-import { setupComponentLibraryModal } from './modals/component-library.js';
-import { setupGlobalSettings } from './modals/global-settings.js';
-import { setupExportSystem } from './modals/export.js';
-import './modals/template-library.js';
-
-// Import schema validation utilities (loads mkSchema global)
-import './utils/schema-validation-utils.js';
-
-// Import performance monitor
-import './utils/performance-monitor.js';
-
-
-// --- Main Initialization Sequence ---
-
+/**
+ * Enhanced initialization function that uses the initialization manager
+ * to prevent race conditions and provide proper error handling.
+ */
 async function initializeBuilder() {
-    // Prevent multiple initializations
-    if (window.mediaKitBuilderInitialized) {
-        console.log('Media Kit Builder already initialized, skipping...');
-        return;
-    }
-    
-    window.mediaKitBuilderInitialized = true;
-    console.log('Guestify Media Kit Builder: Starting initialization...');
-    
-    // Set up globals first
-    setupGlobalPluginUrl();
+    console.log('🚀 Guestify Media Kit Builder: Starting enhanced initialization...');
     
     try {
-        // Initialize the appropriate systems based on feature flags
-        await initializeSystems();
-        console.log('Systems initialized based on feature flags');
+        // Use the initialization manager to handle the complete sequence
+        const success = await initializationManager.initialize();
         
-        // Check if we should use enhanced initialization
-        if (shouldUseEnhancedInit()) {
-            console.log('Using enhanced initialization...');
-            // **FIX**: Manually trigger the enhanced initialization
-            // Don't just return - make sure it actually runs
-            await mediaKitBuilderInit.initialize();
+        if (success) {
+            console.log('✅ Media Kit Builder: Initialization successful!');
+            console.log('📊 Performance monitoring available. Use mkPerf.report() to view metrics.');
+            console.log('🔧 Debug tools available: window.initManager.getStatus()');
             
-            // **ADDITIONAL FIX**: Also setup core UI in case enhanced init misses something
-            // This ensures tabs and modals work regardless of initialization path
-            setupCoreUI();
+            // Dispatch custom event for any external listeners
+            window.dispatchEvent(new CustomEvent('mediaKitBuilderReady', {
+                detail: {
+                    status: initializationManager.getStatus(),
+                    timestamp: Date.now()
+                }
+            }));
         } else {
-            console.log('Using legacy initialization...');
-            // Legacy initialization
-            setupCoreUI();
-            await componentManager.init();
-            componentRenderer.init();
-            historyService.init();
-            
-            if (window.gmkbDesignPanel) {
-                window.gmkbDesignPanel.init();
-            }
-            
-            // Load data
-            const urlParams = new URLSearchParams(window.location.search);
-            const mediaKitId = urlParams.get('media_kit_id');
-            if (mediaKitId) {
-                await loadMediaKitFromServer(mediaKitId);
-            } else {
-                loadMediaKitFromStorage();
-            }
-            
-            setupSaveSystem();
-        }
-        
-        console.log('Media Kit Builder initialization complete');
-        
-        // Log performance monitoring availability
-        if (window.mkPerf) {
-            console.log('Performance monitoring available. Use mkPerf.report() to view metrics.');
+            throw new Error('Initialization manager returned false');
         }
         
     } catch (error) {
-        console.error('Failed to initialize Media Kit Builder:', error);
+        console.error('❌ Media Kit Builder: Initialization failed:', error);
+        
+        // Show user-friendly error message
+        showInitializationError(error);
+        
+        // Dispatch error event
+        window.dispatchEvent(new CustomEvent('mediaKitBuilderError', {
+            detail: {
+                error: error.message,
+                status: initializationManager.getStatus(),
+                timestamp: Date.now()
+            }
+        }));
+        
+        // Attempt fallback initialization
+        attemptFallbackInitialization(error);
     }
 }
 
-function loadMediaKitFromStorage() {
-    const savedData = localStorage.getItem('mediaKitData');
-    if (!savedData) {
-        console.log('No saved data. Starting with a blank canvas.');
-        componentRenderer.updateEmptyState();
-        return;
+/**
+ * Shows a user-friendly error message when initialization fails
+ * @param {Error} error - The initialization error
+ */
+function showInitializationError(error) {
+    // Try to find the preview container to show error
+    const previewContainer = document.getElementById('media-kit-preview');
+    if (previewContainer) {
+        previewContainer.innerHTML = `
+            <div class="initialization-error" style="
+                padding: 40px;
+                text-align: center;
+                background: #fee;
+                border: 2px solid #f88;
+                border-radius: 8px;
+                margin: 20px;
+                color: #d44;
+            ">
+                <h2>⚠️ Initialization Error</h2>
+                <p><strong>The Media Kit Builder failed to start properly.</strong></p>
+                <p>Error: ${error.message}</p>
+                <p style="margin-top: 20px;">
+                    <button onclick="location.reload()" style="
+                        background: #d44;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">Try Again</button>
+                </p>
+                <details style="margin-top: 20px; text-align: left;">
+                    <summary style="cursor: pointer;">Debug Information</summary>
+                    <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 10px; overflow: auto;">${JSON.stringify(initializationManager.getStatus(), null, 2)}</pre>
+                </details>
+            </div>
+        `;
     }
+}
 
-    console.log('Saved data found. Loading into state manager.');
+/**
+ * Attempts a fallback initialization using legacy methods
+ * @param {Error} originalError - The original initialization error
+ */
+async function attemptFallbackInitialization(originalError) {
+    console.log('🔄 Attempting fallback initialization...');
+    
     try {
-        const mediaKitData = JSON.parse(savedData);
-        // This is the key: simply load the state. The renderer will react.
-        stateManager.loadSerializedState(mediaKitData);
-        localStorage.setItem('gmkb_last_saved_state', savedData);
-        if (window.historyService?.showToast) {
-            window.historyService.showToast('Your last session was restored.');
+        // Try to load systems manually
+        const { initializeSystems } = await import('./core/conditional-loader.js');
+        const { featureFlags } = await import('./core/feature-flags.js');
+        
+        // Validate basic requirements
+        if (!window.guestifyData?.pluginUrl) {
+            throw new Error('Cannot proceed: guestifyData still not available');
         }
-    } catch (error) {
-        console.error('Error loading media kit from localStorage:', error);
-        localStorage.removeItem('mediaKitData');
-    }
-}
-
-function setupCoreUI() {
-    setupTabs();
-    setupPreviewToggle();
-    setupDragAndDrop();
-    setupElementSelection();
-    setupContentEditableUpdates();
-    setupLayoutOptions();
-    setupKeyboardShortcuts();
-    setupComponentLibraryModal();
-    setupGlobalSettings();
-    setupExportSystem();
-    setupShareSystem();
-}
-
-async function loadMediaKitFromServer(mediaKitId) {
-    console.log(`Loading media kit ID: ${mediaKitId} from server.`);
-    try {
-        const ajaxUrl = window.ajaxurl || window.gmkb_data?.ajax_url || '/wp-content/plugins/guestify-media-kit-builder/admin-ajax.php';
-        const response = await fetch(ajaxUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                action: 'gmkb_load_media_kit',
-                media_kit_id: mediaKitId,
-                nonce: window.gmkb_data?.nonce || ''
-            })
+        
+        // Set plugin URL manually
+        window.GUESTIFY_PLUGIN_URL = window.guestifyData.pluginUrl;
+        
+        // Load systems
+        initializeSystems(featureFlags);
+        
+        // Try manual initialization
+        if (window.initializer && typeof window.initializer === 'function') {
+            await window.initializer();
+            console.log('✅ Fallback initialization successful');
+            
+            // Update error display with success message
+            const errorEl = document.querySelector('.initialization-error');
+            if (errorEl) {
+                errorEl.style.background = '#efe';
+                errorEl.style.borderColor = '#8f8';
+                errorEl.style.color = '#484';
+                errorEl.innerHTML = `
+                    <h2>✅ Recovery Successful</h2>
+                    <p>The application has been recovered using fallback initialization.</p>
+                    <p><button onclick="location.reload()" style="
+                        background: #484;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">Reload for Clean Start</button></p>
+                `;
+            }
+        } else {
+            throw new Error('Fallback: No initializer function available');
+        }
+        
+    } catch (fallbackError) {
+        console.error('❌ Fallback initialization also failed:', fallbackError);
+        console.error('📋 Original error was:', originalError);
+        
+        // Log comprehensive failure information
+        console.group('🚨 Complete Initialization Failure');
+        console.log('Available globals:', {
+            guestifyData: !!window.guestifyData,
+            guestifyDataBackup: !!window.guestifyDataBackup,
+            guestifyDataReady: !!window.guestifyDataReady,
+            stateManager: !!window.stateManager,
+            componentManager: !!window.componentManager,
+            renderer: !!window.renderer,
+            initializer: !!window.initializer
         });
-        const data = await response.json();
-        if (data.success) {
-            stateManager.loadSerializedState(data.data.state);
-            console.log('Media kit loaded successfully from server.');
-        } else {
-            console.error('Failed to load media kit from server:', data.data);
-        }
-    } catch (error) {
-        console.error('Error loading media kit from server:', error);
+        console.log('DOM readiness:', document.readyState);
+        console.log('Required elements:', {
+            preview: !!document.getElementById('media-kit-preview'),
+            sidebar: !!document.querySelector('.sidebar'),
+            toolbar: !!document.querySelector('.toolbar')
+        });
+        console.groupEnd();
     }
 }
 
-function setupGlobalPluginUrl() {
-    window.guestifyMediaKitBuilder = window.guestifyMediaKitBuilder || {};
-    let pluginUrl = window.guestifyData?.pluginUrl || window.gmkb_data?.plugin_url || '';
-    if (!pluginUrl) {
-        const scriptTag = document.querySelector('script[src*="guestify-media-kit-builder"]');
-        pluginUrl = scriptTag ? (scriptTag.src.match(/(.*\/guestify-media-kit-builder\/)/)?.[1] || '/wp-content/plugins/guestify-media-kit-builder/') : '/wp-content/plugins/guestify-media-kit-builder/';
-    }
-    window.guestifyMediaKitBuilder.pluginUrl = pluginUrl.endsWith('/') ? pluginUrl : `${pluginUrl}/`;
-    console.log('Plugin URL set to:', window.guestifyMediaKitBuilder.pluginUrl);
+// Single DOMContentLoaded listener - the source of truth for initialization timing
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM ready, starting Media Kit Builder initialization...');
+    initializeBuilder();
+});
+
+// Additional safety net for cases where DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    // DOM hasn't finished loading, event listener will handle it
+} else {
+    // DOM is already ready, start immediately
+    console.log('📄 DOM was already ready, starting initialization immediately...');
+    initializeBuilder();
 }
-
-// --- Global Listeners & Exports ---
-
-// Use the legacy initialization for compatibility
-document.addEventListener('DOMContentLoaded', initializeBuilder);
-
-// The enhanced initialization will auto-start when its module loads
-
-// Managers are made globally accessible by the conditional loader
-// These exports are for backward compatibility
-window.historyService = historyService;
-
-// Make UI setup functions globally accessible for component renderer
-window.setupElementSelection = setupElementSelection;
-window.setupContentEditableUpdates = setupContentEditableUpdates;
-
-// Debug helpers
-window.gmkbDebug = { 
-    getState: () => window.stateManager?.getState(),
-    getManagers: () => ({
-        stateManager: window.stateManager,
-        componentManager: window.componentManager,
-        componentRenderer: window.componentRenderer,
-        historyService: window.historyService,
-        enhancedStateManager: window.enhancedStateManager,
-        enhancedComponentManager: window.enhancedComponentManager,
-        enhancedComponentRenderer: window.enhancedComponentRenderer
-    }),
-    checkEnhanced: () => ({
-        usingEnhancedState: window.stateManager === window.enhancedStateManager,
-        usingEnhancedComponent: window.componentManager === window.enhancedComponentManager,
-        usingEnhancedRenderer: window.componentRenderer === window.enhancedComponentRenderer
-    })
-};

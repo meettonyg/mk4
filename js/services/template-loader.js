@@ -1,251 +1,128 @@
 /**
- * Template Loading Service
- * Loads pre-configured templates from JSON files
+ * @file template-loader.js
+ * @description Manages loading preset templates into the media kit.
+ *
+ * This version has been updated to use the new featureFlags object and the
+ * enhancedStateManager, resolving module import errors and aligning with the new architecture.
+ * It also defers DOM element lookups until the DOM is ready.
  */
 
-import { isFeatureEnabled } from '../core/feature-flags.js';
-
-// Use window references to get the current active managers
-const getStateManager = () => window.stateManager;
-const getComponentManager = () => window.componentManager;
+import {
+    enhancedStateManager
+} from '../core/enhanced-state-manager.js';
+import {
+    featureFlags
+} from '../core/feature-flags.js';
+import {
+    hideModal,
+    showModal
+} from '../modals/modal-base.js';
+import {
+    showToast
+} from '../utils/toast-polyfill.js';
 
 class TemplateLoader {
     constructor() {
-        this.templates = [];
-        this.loadAvailableTemplates();
+        // Define properties but don't assign DOM elements yet.
+        this.modal = null;
+        this.grid = null;
+        this.loadButton = null;
+        this.cancelButton = null;
+        this.openButton = null;
+        this.selectedTemplate = null;
     }
-    
-    /**
-     * Load available templates
-     */
-    async loadAvailableTemplates() {
-        // Define available templates
-        this.templates = [
-            {
-                id: 'professional-speaker',
-                name: 'Professional Speaker',
-                description: 'Perfect for keynote speakers and conference presenters',
-                thumbnail: '/wp-content/plugins/guestify-media-kit-builder/assets/templates/speaker.jpg',
-                file: 'professional-speaker.json'
-            },
-            {
-                id: 'podcast-host',
-                name: 'Podcast Host',
-                description: 'Ideal for podcast hosts and audio content creators',
-                thumbnail: '/wp-content/plugins/guestify-media-kit-builder/assets/templates/podcast.jpg',
-                file: 'podcast-host.json'
-            },
-            {
-                id: 'minimal-professional',
-                name: 'Minimal Professional',
-                description: 'Clean and simple layout for any professional',
-                thumbnail: '/wp-content/plugins/guestify-media-kit-builder/assets/templates/minimal.jpg',
-                file: 'minimal-professional.json'
-            }
-        ];
-    }
-    
-    /**
-     * Get available templates
-     */
-    getTemplates() {
-        return this.templates;
-    }
-    
-    /**
-     * Load a specific template
-     * @param {string} templateId - Template ID
-     */
-    async loadTemplate(templateId) {
-        const template = this.templates.find(t => t.id === templateId);
-        if (!template) {
-            throw new Error(`Template ${templateId} not found`);
-        }
-        
-        const previewContainer = document.getElementById('preview-container');
-        
-        try {
-            // Add loading state
-            if (previewContainer) {
-                previewContainer.classList.add('is-loading');
-            }
 
-            // Construct the URL for the template file
-            const baseUrl = window.guestifyMediaKitBuilder?.pluginUrl || 
-                          window.guestifyData?.pluginUrl || 
-                          '/wp-content/plugins/guestify-media-kit-builder/';
-            
-            const templateUrl = `${baseUrl}templates/presets/${template.file}`;
-            
-            // Fetch the template data
-            const response = await fetch(templateUrl);
+    init() {
+        // Assign DOM elements inside init(), which is called after the DOM is ready.
+        this.modal = document.getElementById('template-library-modal');
+        this.grid = document.getElementById('template-grid');
+        this.loadButton = document.getElementById('load-template-button');
+        this.cancelButton = document.getElementById('cancel-template-button');
+        this.openButton = document.getElementById('load-template');
+
+        if (!featureFlags.ENABLE_PRESET_TEMPLATES || !this.modal) {
+            console.warn('Template library feature is disabled or modal not found.');
+            return;
+        }
+
+        // The button in the empty state dispatches a custom event.
+        document.addEventListener('show-template-library', () => this.show());
+
+        this.loadButton?.addEventListener('click', () => this.loadSelectedTemplate());
+        this.cancelButton?.addEventListener('click', () => this.hide());
+
+        this.populateTemplateGrid();
+        console.log('TemplateLoader initialized.');
+    }
+
+    show() {
+        if (this.modal) {
+            showModal(this.modal);
+        }
+    }
+
+    hide() {
+        if (this.modal) {
+            hideModal(this.modal);
+        }
+    }
+
+    populateTemplateGrid() {
+        if (!this.grid || !window.guestifyData || !window.guestifyData.templates) {
+            return;
+        }
+
+        this.grid.innerHTML = '';
+        window.guestifyData.templates.forEach(template => {
+            const card = document.createElement('div');
+            card.className = 'template-card';
+            card.dataset.templateId = template.id;
+            card.innerHTML = `
+                <img src="${template.thumbnail || ''}" alt="${template.name}" class="template-thumbnail">
+                <div class="template-name">${template.name}</div>
+            `;
+            card.addEventListener('click', () => {
+                this.selectTemplate(card, template.id);
+            });
+            this.grid.appendChild(card);
+        });
+    }
+
+    selectTemplate(cardElement, templateId) {
+        const currentlySelected = this.grid.querySelector('.template-card.selected');
+        if (currentlySelected) {
+            currentlySelected.classList.remove('selected');
+        }
+
+        cardElement.classList.add('selected');
+        this.selectedTemplate = templateId;
+    }
+
+    async loadSelectedTemplate() {
+        if (!this.selectedTemplate) {
+            showToast('Please select a template first.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${window.guestifyData.pluginUrl}templates/presets/${this.selectedTemplate}.json`);
             if (!response.ok) {
-                throw new Error(`Failed to load template: ${response.statusText}`);
+                throw new Error(`Template file not found for ${this.selectedTemplate}`);
             }
-            
             const templateData = await response.json();
-            
-            // Clear existing components
-            await this.clearExistingComponents();
-            
-            // Load components from template
-            await this.loadComponentsFromTemplate(templateData);
-            
-            // Update metadata
-            const stateManager = getStateManager();
-            if (stateManager) {
-                stateManager.updateMetadata({
-                    templateId: templateId,
-                    templateName: templateData.name
-                });
+
+            if (templateData && templateData.layout && templateData.components) {
+                enhancedStateManager.setInitialState(templateData);
+                showToast(`Template '${this.selectedTemplate}' loaded successfully.`, 'success');
+                this.hide();
+            } else {
+                throw new Error('Invalid template file format.');
             }
-            
-            return templateData;
-            
         } catch (error) {
             console.error('Error loading template:', error);
-            throw error;
-        } finally {
-            if (previewContainer) {
-                 // Use a timeout to ensure the UI has time to render before removing the loader
-                setTimeout(() => previewContainer.classList.remove('is-loading'), 500);
-            }
-        }
-    }
-    
-    /**
-     * Clear existing components
-     */
-    async clearExistingComponents() {
-        const stateManager = getStateManager();
-        if (!stateManager) return;
-        
-        // Get all component IDs
-        const state = stateManager.getState();
-        const componentIds = Object.keys(state.components || {});
-        
-        // Remove each component
-        componentIds.forEach(id => {
-            stateManager.removeComponent(id);
-        });
-        
-        // Clear the preview
-        const preview = document.getElementById('media-kit-preview');
-        if (preview) {
-            preview.innerHTML = '';
-        }
-    }
-    
-    /**
-     * Load components from template data
-     * @param {Object} templateData - Template data
-     */
-    async loadComponentsFromTemplate(templateData) {
-        const stateManager = getStateManager();
-        const componentManager = getComponentManager();
-        
-        if (!templateData.components || !componentManager || !stateManager) return;
-        
-        // Hide empty state
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) {
-            emptyState.style.display = 'none';
-        }
-        
-        // Use enhanced batch updates if available
-        const useEnhancedBatch = isFeatureEnabled('USE_BATCH_UPDATES') && 
-                                stateManager.batchUpdate && 
-                                typeof stateManager.batchUpdate === 'function';
-        
-        if (useEnhancedBatch) {
-            // Use enhanced batch update
-            await stateManager.batchUpdate(async () => {
-                // Process each component from the template
-                for (const [index, component] of templateData.components.entries()) {
-                    try {
-                        // Generate component ID
-                        const componentId = `${component.type}-${Date.now()}-${index}`;
-                        
-                        // Initialize component
-                        stateManager.initComponent(componentId, component.type, component.data, true);
-                        
-                        // Set order
-                        const comp = stateManager.getComponent(componentId);
-                        if (comp) {
-                            comp.order = index;
-                        }
-                    } catch (error) {
-                        console.error(`Failed to add component ${component.type}:`, error);
-                    }
-                }
-            });
-        } else {
-            // Fallback to legacy method
-            // Disable rendering during batch update
-            if (window.componentRenderer) {
-                window.componentRenderer.disableRendering = true;
-            }
-            
-            // Collect all components to add
-            const componentsToAdd = [];
-            
-            // Process each component from the template
-            for (const [index, component] of templateData.components.entries()) {
-                try {
-                    // Generate component ID
-                    const componentId = `${component.type}-${Date.now()}-${index}`;
-                    componentsToAdd.push({
-                        id: componentId,
-                        type: component.type,
-                        data: component.data,
-                        order: index
-                    });
-                } catch (error) {
-                    console.error(`Failed to prepare component ${component.type}:`, error);
-                }
-            }
-            
-            // Add all components at once
-            if (componentsToAdd.length > 0) {
-                // Initialize all components in state without triggering individual renders
-                componentsToAdd.forEach(comp => {
-                    stateManager.initComponent(comp.id, comp.type, comp.data, true); // Skip notifications
-                });
-                
-                // Re-enable rendering
-                if (window.componentRenderer) {
-                    window.componentRenderer.disableRendering = false;
-                }
-                
-                // Now trigger a single render for all components
-                stateManager.notifyGlobalListeners();
-            }
-        }
-        
-        // Mark as unsaved
-        if (window.markUnsaved) {
-            window.markUnsaved();
-        }
-        
-        // Show success notification
-        this.showNotification(`Template "${templateData.name}" loaded successfully`);
-    }
-    
-    /**
-     * Show notification
-     * @param {string} message - Message to show
-     */
-    showNotification(message) {
-        if (window.historyService && window.historyService.showToast) {
-            window.historyService.showToast(message);
-        } else {
-            console.log(message);
+            showToast(`Error loading template: ${error.message}`, 'error');
         }
     }
 }
 
-// Create singleton instance
 export const templateLoader = new TemplateLoader();
-
-// Make it globally available
-window.templateLoader = templateLoader;

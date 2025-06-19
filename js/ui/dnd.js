@@ -1,85 +1,92 @@
 /**
- * Drag and drop functionality for components
+ * @file dnd.js
+ * @description Handles all drag and drop functionality for the Media Kit Builder.
+ * This includes dragging components from the sidebar to the preview area.
+ *
+ * This version has been updated to use the new enhancedComponentManager for adding components,
+ * resolving module errors and aligning with the new architecture.
  */
 
-import { getState, setState } from '../state.js';
-import { markUnsaved } from '../services/save-service.js';
-import { addComponentToZone } from '../components/component-manager.js';
-import { showUpgradePrompt } from '../utils/helpers.js';
-import { showComponentLibraryModal } from '../modals/component-library.js';
+// FIX: Import the enhancedComponentManager which is now responsible for all component actions.
+import {
+    enhancedComponentManager
+} from '../core/enhanced-component-manager.js';
+
+let draggedItem = null;
 
 /**
- * Set up drag and drop functionality
+ * Initializes all drag and drop event listeners.
  */
-export function setupDragAndDrop() {
-    const dropZones = document.querySelectorAll('.drop-zone');
-    
-    // Use event delegation for dynamically created component items
-    const componentsTab = document.getElementById('components-tab');
-    if (componentsTab) {
-        // Component drag start - using event delegation
-        componentsTab.addEventListener('dragstart', function(e) {
-            const item = e.target.closest('.component-item[draggable="true"]');
-            if (!item) return;
-            
-            setState('draggedComponent', item.getAttribute('data-component'));
-            item.classList.add('component-item--dragging');
-            e.dataTransfer.effectAllowed = 'copy';
-        });
-        
-        componentsTab.addEventListener('dragend', function(e) {
-            const item = e.target.closest('.component-item[draggable="true"]');
-            if (!item) return;
-            
-            item.classList.remove('component-item--dragging');
-            setState('draggedComponent', null);
-        });
+export function initializeDragAndDrop() {
+    const componentItems = document.querySelectorAll('.component-item');
+    const dropZone = document.getElementById('media-kit-preview');
+
+    // Add drag listeners to all component items in the sidebar
+    componentItems.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+    });
+
+    // Add drop listeners to the main preview area
+    if (dropZone) {
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragenter', handleDragEnter);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+    }
+}
+
+function handleDragStart(e) {
+    draggedItem = e.target.closest('.component-item');
+    if (draggedItem) {
+        // Add a class to give visual feedback
+        draggedItem.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'copy';
+        // Set the data to be transferred (the component type)
+        e.dataTransfer.setData('text/plain', draggedItem.dataset.component);
+    }
+}
+
+function handleDragEnd() {
+    // Clean up visual feedback class
+    if (draggedItem) {
+        draggedItem.classList.remove('dragging');
+    }
+    draggedItem = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault(); // Necessary to allow for dropping
+    e.dataTransfer.dropEffect = 'copy';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    const previewContainer = e.target.closest('#media-kit-preview');
+    if (previewContainer) {
+        previewContainer.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    const previewContainer = e.target.closest('#media-kit-preview');
+    if (previewContainer) {
+        previewContainer.classList.remove('drag-over');
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const previewContainer = e.target.closest('#media-kit-preview');
+    if (previewContainer) {
+        previewContainer.classList.remove('drag-over');
     }
 
-    // Drop zone functionality
-    dropZones.forEach(zone => {
-        zone.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-            this.classList.add('drop-zone--drag-over');
-        });
+    const componentType = e.dataTransfer.getData('text/plain');
 
-        zone.addEventListener('dragleave', function() {
-            this.classList.remove('drop-zone--drag-over');
-        });
-
-        zone.addEventListener('drop', async function(e) {
-            e.preventDefault();
-            this.classList.remove('drop-zone--drag-over');
-            
-            const draggedComponent = getState('draggedComponent');
-            if (draggedComponent) {
-                // Add loading state to the drop zone
-                this.classList.add('is-loading');
-                try {
-                    // Check if premium component
-                    const componentElement = document.querySelector(`[data-component="${draggedComponent}"]`);
-                    if (componentElement && componentElement.classList.contains('component-item--premium')) {
-                        showUpgradePrompt();
-                        return;
-                    }
-                    
-                    // Add component asynchronously
-                    await addComponentToZone(draggedComponent, this);
-                    markUnsaved();
-                    // State is now automatically tracked by stateManager
-                } finally {
-                    // Remove loading state in a finally block to ensure it's always removed
-                    setTimeout(() => this.classList.remove('is-loading'), 300);
-                }
-            }
-        });
-
-        // Click to add component
-        zone.addEventListener('click', function() {
-            if (this.classList.contains('drop-zone--empty')) {
-                showComponentLibraryModal();
-            }
-        });
-    });
+    if (componentType) {
+        // FIX: Use the enhancedComponentManager to add the component.
+        // This single call handles state updates and triggers the renderer.
+        enhancedComponentManager.addComponent(componentType);
+    }
 }

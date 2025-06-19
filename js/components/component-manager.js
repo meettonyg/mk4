@@ -1,633 +1,149 @@
 /**
- * Enhanced Component Manager
- * Manages component lifecycle with centralized state management
+ * @file component-manager.js
+ * @description This file contains the ComponentManager class, which is responsible for managing components
+ * in the media kit builder. It handles adding, removing, and updating components, as well as managing their state.
+ *
+ * This version has been updated to work with the new DynamicComponentLoader, resolving module import errors.
  */
+import {
+    dynamicComponentLoader
+} from './dynamic-component-loader.js';
+import {
+    state
+} from '../state.js';
+import {
+    showToast
+} from '../utils/toast-polyfill.js';
+import {
+    generateUniqueId
+} from '../utils/helpers.js';
+import {
+    designPanel
+} from '../ui/design-panel.js';
 
-import { stateManager } from '../services/state-manager.js';
-import { dataBindingEngine } from '../services/data-binding-engine.js';
-import { selectElement } from '../ui/element-editor.js';
-import { renderComponent } from './dynamic-component-loader.js';
 
+/**
+ * Manages components in the media kit builder.
+ * @class ComponentManager
+ */
 class ComponentManager {
     constructor() {
-        this.componentRegistry = new Map();
-        this.loadedSchemas = new Map();
-        this.initialized = false;
-        this.pendingActions = new Set(); // Track pending actions to prevent duplicates
-        this.controlActionDebounce = new Map(); // Debounce control actions
+        this.previewContainer = document.getElementById('media-kit-preview');
     }
 
     /**
-     * Initialize the component manager
+     * Adds a new component to the media kit.
+     * @param {string} componentType - The type of component to add.
+     * @param {object} props - The initial properties for the component.
+     * @param {boolean} skipRender - If true, skips rendering the component.
      */
-    async init() {
-        if (this.initialized) {
-            console.log('ComponentManager already initialized');
-            return;
-        }
-        
-        this.initialized = true;
-        
-        // Load component registry
-        await this.loadComponentRegistry();
-        
-        // Subscribe to state changes
-        stateManager.subscribeGlobal((state) => {
-            this.onStateChange(state);
-        });
-        
-        // Listen for component events
-        this.setupEventListeners();
-    }
-
-    /**
-     * Load available components from the server
-     */
-    async loadComponentRegistry() {
-        // Check if components are already available from guestifyData
-        if (window.guestifyData && window.guestifyData.components) {
-            // Use pre-loaded components
-            window.guestifyData.components.forEach(component => {
-                this.componentRegistry.set(component.name, component);
-            });
-            console.log(`Loaded ${this.componentRegistry.size} components from guestifyData`);
-            return;
-        }
-        
-        // Fallback to AJAX if needed
-        try {
-            const ajaxUrl = window.ajaxurl || window.gmkb_data?.ajax_url || '/wp-admin/admin-ajax.php';
-            const nonce = window.gmkb_data?.nonce || window.guestifyData?.nonce || '';
-            
-            const response = await fetch(ajaxUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    action: 'guestify_get_components', // Match the registered action
-                    nonce: nonce
-                })
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    data.data.forEach(component => {
-                        this.componentRegistry.set(component.name, component);
-                    });
-                    console.log(`Loaded ${this.componentRegistry.size} components via AJAX`);
-                } else {
-                    console.error('Component loading failed:', data.data || 'Unknown error');
-                }
-            } else {
-                console.error('Component loading failed with status:', response.status);
-            }
-        } catch (error) {
-            console.error('Failed to load component registry:', error);
-            // Try to load from component discovery if available
-            this.loadFromDiscovery();
-        }
-    }
-    
-    /**
-     * Load components from discovery system
-     */
-    loadFromDiscovery() {
-        // Check if component data is available from PHP
-        const componentElements = document.querySelectorAll('[data-component-type]');
-        const foundTypes = new Set();
-        
-        componentElements.forEach(el => {
-            const type = el.getAttribute('data-component-type');
-            if (type && !foundTypes.has(type)) {
-                foundTypes.add(type);
-                this.componentRegistry.set(type, {
-                    name: type,
-                    type: type
-                });
-            }
-        });
-        
-        if (foundTypes.size > 0) {
-            console.log(`Discovered ${foundTypes.size} component types from DOM`);
-        }
-    }
-
-    /**
-     * Setup event listeners
-     */
-    setupEventListeners() {
-        // Listen for component add requests
-        document.addEventListener('add-component', async (e) => {
-            await this.addComponent(e.detail.type, e.detail.targetId, e.detail.position);
-        });
-        
-        // Listen for component remove requests
-        document.addEventListener('remove-component', (e) => {
-            this.removeComponent(e.detail.componentId);
-        });
-        
-        // Listen for component reorder
-        document.addEventListener('reorder-components', (e) => {
-            this.reorderComponents(e.detail.componentIds);
-        });
-    }
-
-    /**
-     * Add a component to the media kit
-     * @param {string} componentType - Component type
-     * @param {string} targetId - Target container or component ID
-     * @param {string} position - Position relative to target ('before', 'after', 'inside')
-     */
-    async addComponent(componentType, targetId = null, position = 'inside') {
-        console.log(`Adding component: ${componentType}`);
-        
-        // Map common component aliases
-        const componentMap = {
-            'bio': 'biography',
-            'calendar': 'booking-calendar',
-            'cta': 'call-to-action',
-            'gallery': 'photo-gallery',
-            'podcast': 'podcast-player',
-            'video': 'video-intro',
-            'hero-section': 'hero',  // Map Hero Section to hero
-            'Hero Section': 'hero'   // Handle display name too
+    async addComponent(componentType, props = {}, skipRender = false) {
+        const newComponent = {
+            id: generateUniqueId(componentType),
+            type: componentType,
+            props: props,
         };
-        
-        // Use mapped name if available
-        const mappedType = componentMap[componentType] || componentType;
-        const componentId = this.generateComponentId(mappedType);
-        
-        try {
-            // Load component schema if not already loaded
-            if (!this.loadedSchemas.has(mappedType)) {
-                const schema = await this.loadComponentSchema(mappedType);
-                if (schema) {
-                    this.loadedSchemas.set(mappedType, schema);
-                } else {
-                    // Create a minimal schema if loading fails
-                    console.warn(`Schema not found for ${mappedType}, using minimal schema`);
-                    const minimalSchema = {
-                        name: mappedType.charAt(0).toUpperCase() + mappedType.slice(1),
-                        type: mappedType,
-                        settings: {}
-                    };
-                    this.loadedSchemas.set(mappedType, minimalSchema);
-                }
-            }
-            
-            const schema = this.loadedSchemas.get(mappedType);
-            
-            // Batch the component initialization to prevent multiple renders
-            await stateManager.batchUpdate(async () => {
-                // Initialize component in state manager first
-                stateManager.initComponent(componentId, mappedType, {}, true);
-                
-                // Initialize component in data binding engine (if schema has settings)
-                if (schema.settings && Object.keys(schema.settings).length > 0) {
-                    await dataBindingEngine.initializeComponent(componentId, mappedType, schema);
-                }
-            });
-            
-            // Wait for the component to be rendered by the state change
-            await new Promise((resolve) => {
-                const checkInterval = setInterval(() => {
-                    const element = document.querySelector(`[data-component-id="${componentId}"]`);
-                    if (element) {
-                        clearInterval(checkInterval);
-                        resolve();
-                    }
-                }, 50);
-                
-                // Timeout after 2 seconds
-                setTimeout(() => {
-                    clearInterval(checkInterval);
-                    resolve();
-                }, 2000);
-            });
-            
-            // Now select the component
-            const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
-            if (componentElement) {
-                selectElement(componentElement);
-                
-                // Dispatch component selected event for design panel
-                document.dispatchEvent(new CustomEvent('component-selected', {
-                    detail: { componentId, componentType: mappedType }
-                }));
-            }
-            
-            // Show success notification
-            this.showNotification(`${schema.name} component added successfully`);
-            
-            // Return the component ID for the caller
-            return componentId;
-            
-        } catch (error) {
-            console.error('Error adding component:', error);
-            this.showNotification('Failed to add component', 'error');
-            throw error; // Re-throw to be caught by addComponentToZone
+
+        state.addComponent(newComponent);
+
+        if (!skipRender) {
+            await this.renderComponent(newComponent.id);
         }
+
+        showToast(`Component "${componentType}" added.`);
+        return newComponent.id;
     }
 
     /**
-     * Add component to a drop zone (legacy support)
-     * @param {string} componentType - Component type
-     * @param {HTMLElement} zone - Drop zone element
+     * Renders a single component into the preview container.
+     * @param {string} componentId - The ID of the component to render.
      */
-    async addComponentToZone(componentType, zone) {
-        console.log(`Adding component ${componentType} to zone`);
-        
-        try {
-            // Simply add the component to state
-            // The Component Renderer will handle all DOM updates
-            const componentId = await this.addComponent(componentType);
-            
-            // Return the component ID for the caller
-            return componentId;
-            
-        } catch (error) {
-            console.error('Failed to add component to zone:', error);
-            throw error;
+    async renderComponent(componentId) {
+        const component = state.getComponent(componentId);
+        if (!component) {
+            console.error(`Component with id ${componentId} not found`);
+            return;
+        }
+
+        // FIX: Use the dynamicComponentLoader object and pass a single options object.
+        const newElement = await dynamicComponentLoader.renderComponent({
+            type: component.type,
+            id: component.id,
+            props: component.props
+        });
+
+        if (newElement) {
+            this.previewContainer.appendChild(newElement);
+            this.attachEventListeners(newElement);
         }
     }
 
     /**
-     * Remove a component
-     * @param {string} componentId - Component ID
+     * Removes a component from the media kit.
+     * @param {string} componentId - The ID of the component to remove.
      */
     removeComponent(componentId) {
-        // First, mark the component as being deleted in the DOM
-        const element = document.querySelector(`[data-component-id="${componentId}"]`);
-        if (element) {
-            element.classList.add('component-deleting');
-            element.style.opacity = '0.5';
-            element.style.pointerEvents = 'none';
+        const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (componentElement) {
+            componentElement.remove();
+            state.removeComponent(componentId);
+            showToast('Component removed.');
         }
-        
-        // Only remove from state - Component Renderer will handle DOM removal
-        stateManager.removeComponent(componentId);
-        
-        // Show notification
-        this.showNotification('Component removed');
     }
 
     /**
-     * Reorder components
-     * @param {Array<string>} componentIds - Ordered array of component IDs
+     * Updates a component's properties and re-renders it.
+     * @param {string} componentId - The ID of the component to update.
+     * @param {object} newProps - The new properties to apply.
      */
-    reorderComponents(componentIds) {
-        // Only update state - Component Renderer will handle DOM reordering
-        stateManager.reorderComponents(componentIds);
-    }
+    async updateComponent(componentId, newProps) {
+        state.updateComponent(componentId, newProps);
 
-    /**
-     * Duplicate a component
-     * @param {string} sourceComponentId - ID of component to duplicate
-     */
-    async duplicateComponent(sourceComponentId) {
-        console.log('=== duplicateComponent CALLED ===');
-        console.log('Source component ID:', sourceComponentId);
-        
-        const sourceComponent = stateManager.getComponent(sourceComponentId);
-        if (!sourceComponent) {
-            console.log('Source component not found');
-            return;
-        }
-        
-        console.log('Source component type:', sourceComponent.type);
-        console.log('Source component data:', sourceComponent.data);
-        
-        const newComponentId = this.generateComponentId(sourceComponent.type);
-        
-        // Copy component data
-        const newData = { ...sourceComponent.data };
-        
-        // Ensure schema is loaded for this component type
-        if (!this.loadedSchemas.has(sourceComponent.type)) {
-            console.log('Loading schema for component type:', sourceComponent.type);
-            const schema = await this.loadComponentSchema(sourceComponent.type);
-            if (schema) {
-                this.loadedSchemas.set(sourceComponent.type, schema);
+        const oldElement = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (oldElement) {
+            const component = state.getComponent(componentId);
+            // FIX: Use the dynamicComponentLoader object and pass a single options object.
+            const newElement = await dynamicComponentLoader.renderComponent({
+                type: component.type,
+                id: component.id,
+                props: component.props
+            });
+
+            if (newElement) {
+                oldElement.replaceWith(newElement);
+                this.attachEventListeners(newElement);
             }
         }
-        
-        // Get the order for the new component (place it after the source)
-        const components = stateManager.getOrderedComponents();
-        const sourceIndex = components.findIndex(c => c.id === sourceComponentId);
-        const newOrder = sourceIndex >= 0 ? sourceComponent.order + 0.5 : components.length;
-        
-        // Initialize new component with copied data
-        console.log('Creating duplicate with ID:', newComponentId);
-        stateManager.initComponent(newComponentId, sourceComponent.type, newData);
-        
-        // Update the order to place it after the source
-        const newComponents = stateManager.getOrderedComponents();
-        const componentIds = newComponents.map(c => c.id);
-        const newIndex = componentIds.indexOf(newComponentId);
-        
-        if (newIndex > -1 && sourceIndex >= 0) {
-            // Move the new component to be right after the source
-            componentIds.splice(newIndex, 1);
-            componentIds.splice(sourceIndex + 1, 0, newComponentId);
-            stateManager.reorderComponents(componentIds);
-        }
-        
-        this.showNotification('Component duplicated');
-        console.log('Duplicate component created successfully');
     }
 
     /**
-     * Load component schema
-     * @param {string} componentType - Component type
-     * @returns {Object|null} Component schema
+     * Attaches event listeners to component controls.
+     * @param {HTMLElement} componentElement - The component element.
      */
-    async loadComponentSchema(componentType) {
-        try {
-            // Try multiple possible paths
-            const paths = [
-                `/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/component.json`,
-                `${window.guestifyData?.pluginUrl || ''}/components/${componentType}/component.json`,
-                `${window.location.origin}/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/component.json`
-            ];
-            
-            for (const path of paths) {
-                try {
-                    const response = await fetch(path);
-                    if (response.ok) {
-                        const schema = await response.json();
-                        console.log(`Loaded schema for ${componentType} from ${path}`);
-                        return schema;
-                    }
-                } catch (e) {
-                    // Try next path
-                }
-            }
-            
-            console.warn(`Could not load schema for ${componentType} from any path`);
-        } catch (error) {
-            console.error(`Failed to load schema for ${componentType}:`, error);
-        }
-        return null;
-    }
+    attachEventListeners(componentElement) {
+        const componentId = componentElement.dataset.componentId;
 
-    // REMOVED: insertComponentIntoDOM method
-    // All DOM manipulation is now handled by Component Renderer
-
-    // REMOVED: makeComponentInteractive method
-    // Component interactivity is now handled by Component Renderer
-
-    /**
-     * Handle control button actions
-     * @param {string} action - Action to perform
-     * @param {string} componentId - Component ID
-     */
-    async handleControlAction(action, componentId) {
-        // Create unique key for this action
-        const actionKey = `${action}-${componentId}`;
-        
-        // Check if this action is already pending
-        if (this.pendingActions.has(actionKey)) {
-            console.log(`Action ${actionKey} already in progress, skipping`);
-            return;
-        }
-        
-        // Debounce rapid clicks (300ms)
-        if (this.controlActionDebounce.has(actionKey)) {
-            clearTimeout(this.controlActionDebounce.get(actionKey));
-        }
-        
-        this.controlActionDebounce.set(actionKey, setTimeout(() => {
-            this.controlActionDebounce.delete(actionKey);
-        }, 300));
-        
-        // Mark action as pending
-        this.pendingActions.add(actionKey);
-        
-        try {
-            // Save any active contenteditable changes before any action
-            await this.saveActiveEditableContent();
-            
-            switch (action) {
-                case '×':
-                case 'delete':
-                    if (confirm('Are you sure you want to delete this component?')) {
-                        // Immediately disable controls on the component
-                        this.disableComponentControls(componentId);
-                        this.removeComponent(componentId);
-                    }
-                    break;
-                    
-                case '⧉':
-                case 'duplicate':
-                    await this.duplicateComponent(componentId);
-                    break;
-                    
-                case '↑':
-                case 'moveUp':
-                    await this.moveComponent(componentId, 'up');
-                    break;
-                    
-                case '↓':
-                case 'moveDown':
-                    await this.moveComponent(componentId, 'down');
-                    break;
-            }
-        } finally {
-            // Remove from pending actions
-            this.pendingActions.delete(actionKey);
-        }
-    }
-
-    /**
-     * Move component up or down
-     * @param {string} componentId - Component ID
-     * @param {string} direction - 'up' or 'down'
-     */
-    async moveComponent(componentId, direction) {
-        // Save any active contenteditable changes before moving
-        await this.saveActiveEditableContent();
-        
-        const components = stateManager.getOrderedComponents();
-        const currentIndex = components.findIndex(c => c.id === componentId);
-        
-        if (currentIndex === -1) return;
-        
-        const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-        
-        if (newIndex < 0 || newIndex >= components.length) return;
-        
-        // Swap positions
-        const componentIds = components.map(c => c.id);
-        [componentIds[currentIndex], componentIds[newIndex]] = [componentIds[newIndex], componentIds[currentIndex]];
-        
-        this.reorderComponents(componentIds);
-    }
-
-    /**
-     * Find setting key for an editable element
-     * @param {HTMLElement} element - Editable element
-     * @param {string} componentId - Component ID
-     * @returns {string|null} Setting key
-     */
-    findSettingKeyForElement(element, componentId) {
-        // Check if element has data-setting attribute
-        if (element.hasAttribute('data-setting')) {
-            return element.getAttribute('data-setting');
-        }
-        
-        // Try to infer from class name
-        const component = stateManager.getComponent(componentId);
-        if (!component) return null;
-        
-        const schema = this.loadedSchemas.get(component.type);
-        if (!schema || !schema.settings) return null;
-        
-        // Look for matching selector
-        for (const [key, setting] of Object.entries(schema.settings)) {
-            if (setting.previewSelector) {
-                const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
-                const matches = componentElement.querySelectorAll(setting.previewSelector);
-                
-                if (Array.from(matches).includes(element)) {
-                    return key;
-                }
-            }
-        }
-        
-        return null;
-    }
-
-    /**
-     * Save any active contenteditable content
-     * This ensures unsaved changes are preserved before actions like move/delete
-     */
-    saveActiveEditableContent() {
-        // Find the currently focused element
-        const activeElement = document.activeElement;
-        
-        // Check if it's a contenteditable element
-        if (activeElement && activeElement.contentEditable === 'true') {
-            // Trigger blur to save the content
-            activeElement.blur();
-            
-            // Small delay to ensure state is updated
-            return new Promise(resolve => setTimeout(resolve, 50));
-        }
-        
-        // Also check for any contenteditable with unsaved changes
-        const editables = document.querySelectorAll('[contenteditable="true"]');
-        editables.forEach(editable => {
-            const originalContent = editable.getAttribute('data-original-content');
-            if (originalContent !== null && originalContent !== editable.textContent) {
-                // Trigger blur to save changes
-                editable.blur();
+        // Edit listener
+        componentElement.addEventListener('click', (e) => {
+            if (!e.target.closest('.element-controls')) {
+                designPanel.load(componentId);
             }
         });
-        
-        return Promise.resolve();
-    }
-    
-    /**
-     * Generate unique component ID
-     * @param {string} type - Component type
-     * @returns {string} Unique ID
-     */
-    generateComponentId(type) {
-        return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    }
 
-    /**
-     * Disable all control buttons for a component
-     * @param {string} componentId - Component ID
-     */
-    disableComponentControls(componentId) {
-        const element = document.querySelector(`[data-component-id="${componentId}"]`);
-        if (!element) return;
-        
-        const controlButtons = element.querySelectorAll('.control-btn');
-        controlButtons.forEach(btn => {
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.style.cursor = 'not-allowed';
-            btn.style.pointerEvents = 'none';
-        });
-    }
-    
-    /**
-     * Show notification
-     * @param {string} message - Message to show
-     * @param {string} type - Notification type ('success', 'error', 'info')
-     */
-    showNotification(message, type = 'success') {
-        // Use history service's toast if available
-        if (window.historyService && window.historyService.showToast) {
-            window.historyService.showToast(message);
-        } else {
-            // Fallback to console
-            console.log(`[${type}] ${message}`);
+
+        const controls = componentElement.querySelector('.element-controls');
+        if (controls) {
+            controls.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+
+                if (button.title === 'Delete') {
+                    this.removeComponent(componentId);
+                }
+                // Add other control handlers here (move, duplicate)
+            });
         }
     }
-
-    /**
-     * Handle state changes
-     * @param {Object} state - New state
-     */
-    onStateChange(state) {
-        // Could be used for updating UI based on global state changes
-    }
-
-    /**
-     * Get component template (legacy support)
-     * @deprecated Use renderComponent instead
-     */
-    getComponentTemplate(componentType) {
-        console.warn('getComponentTemplate is deprecated. Use renderComponent instead.');
-        return '<div>Legacy template - please update to use renderComponent</div>';
-    }
 }
 
-// Create singleton instance
-let componentManager = null;
-
-// Ensure single initialization
-function getComponentManager() {
-    if (!componentManager) {
-        componentManager = new ComponentManager();
-    }
-    return componentManager;
-}
-
-// Initialize only once when DOM is ready
-let initialized = false;
-function initializeOnce() {
-    if (initialized) return;
-    initialized = true;
-    
-    const manager = getComponentManager();
-    manager.init().catch(error => {
-        console.error('Component manager initialization failed:', error);
-    });
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeOnce);
-} else {
-    initializeOnce();
-}
-
-// Get the singleton for exports
-componentManager = getComponentManager();
-
-// Export functions for backward compatibility
-export async function addComponentToZone(componentType, zone) {
-    return componentManager.addComponentToZone(componentType, zone);
-}
-
-export function getComponentTemplate(componentType) {
-    return componentManager.getComponentTemplate(componentType);
-}
-
-// Export the manager instance for direct access
-export { componentManager };
+export const componentManager = new ComponentManager();
