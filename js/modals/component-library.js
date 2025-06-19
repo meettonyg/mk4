@@ -3,12 +3,15 @@
  * @description This file manages the component library modal, allowing users to add new components to their media kit.
  *
  * Enhanced version with promise-based setup and proper validation to prevent race conditions.
+ * Phase 2B Enhancement: Integrated comprehensive logging
  */
 
 import {
     hideModal,
     showModal
 } from './modal-base.js';
+import { structuredLogger } from '../utils/structured-logger.js';
+import { errorBoundary } from '../utils/error-boundary.js';
 
 // Module-level variables for DOM elements
 let componentLibraryModal, componentGrid, addComponentButton, cancelComponentButton, componentSearchInput;
@@ -18,25 +21,44 @@ let componentLibraryModal, componentGrid, addComponentButton, cancelComponentBut
  * @returns {Promise<void>} Resolves when setup is complete
  */
 export async function setupComponentLibrary() {
-    console.log('📚 Setting up Component Library...');
+    const setupStart = performance.now();
+    structuredLogger.info('MODAL', 'Setting up Component Library');
     
     try {
         // Validate and assign DOM elements
-        await validateAndAssignElements();
+        await errorBoundary.wrapAsync('MODAL', 
+            validateAndAssignElements,
+            { errorType: 'InitializationError' }
+        )();
         
         // Setup event listeners
-        setupEventListeners();
+        errorBoundary.catch('MODAL', 
+            setupEventListeners,
+            { errorType: 'InitializationError' }
+        )();
         
         // Populate the component grid
-        populateComponentGrid();
+        errorBoundary.catch('MODAL', 
+            populateComponentGrid,
+            { errorType: 'InitializationError' }
+        )();
         
         // Mark setup as complete
         componentLibraryModal.setAttribute('data-listener-attached', 'true');
         
-        console.log('✅ Component Library setup complete.');
+        structuredLogger.info('MODAL', 'Component Library setup complete', {
+            duration: performance.now() - setupStart,
+            elementsFound: {
+                modal: !!componentLibraryModal,
+                grid: !!componentGrid,
+                addButton: !!addComponentButton,
+                cancelButton: !!cancelComponentButton,
+                searchInput: !!componentSearchInput
+            }
+        });
         
     } catch (error) {
-        console.error('❌ Component Library setup failed:', error);
+        structuredLogger.error('MODAL', 'Component Library setup failed', error);
         throw error;
     }
 }
@@ -55,6 +77,8 @@ async function validateAndAssignElements() {
     
     const missingElements = [];
     
+    structuredLogger.debug('MODAL', 'Validating Component Library elements', { required: Object.keys(requiredElements) });
+    
     for (const [elementId, varName] of Object.entries(requiredElements)) {
         const element = document.getElementById(elementId);
         if (!element) {
@@ -70,33 +94,44 @@ async function validateAndAssignElements() {
     }
     
     if (missingElements.length > 0) {
+        structuredLogger.error('MODAL', 'Component Library: Required elements not found', null, {
+            missing: missingElements,
+            found: Object.keys(requiredElements).filter(id => !missingElements.includes(id))
+        });
         throw new Error(`Component Library: Required elements not found: ${missingElements.join(', ')}`);
     }
+    
+    structuredLogger.debug('MODAL', 'All Component Library elements validated successfully');
 }
 
 /**
  * Sets up all event listeners for the component library
  */
 function setupEventListeners() {
+    let listenersAttached = 0;
+    
     // Main UI button that opens the modal
     const openComponentLibraryButton = document.getElementById('add-component');
     if (openComponentLibraryButton) {
         openComponentLibraryButton.addEventListener('click', () => {
+            structuredLogger.debug('UI', 'Component Library button clicked (add-component)');
             showComponentLibraryModal();
         });
+        listenersAttached++;
     }
     
     // SIDEBAR Add Component button
     const sidebarAddComponentButton = document.getElementById('add-component-btn');
     if (sidebarAddComponentButton) {
         sidebarAddComponentButton.addEventListener('click', () => {
-            console.log('Sidebar Add Component button clicked');
+            structuredLogger.debug('UI', 'Sidebar Add Component button clicked');
             showComponentLibraryModal();
         });
         // Mark button as having listener attached for validation
         sidebarAddComponentButton.setAttribute('data-listener-attached', 'true');
+        listenersAttached++;
     } else {
-        console.warn('Sidebar Add Component button not found (add-component-btn)');
+        structuredLogger.warn('UI', 'Sidebar Add Component button not found', { elementId: 'add-component-btn' });
     }
 
     // Empty state button event
@@ -108,30 +143,34 @@ function setupEventListeners() {
     const addFirstComponentButton = document.getElementById('add-first-component');
     if (addFirstComponentButton) {
         addFirstComponentButton.addEventListener('click', () => {
-            console.log('Empty state Add Component button clicked');
+            structuredLogger.debug('UI', 'Empty state Add Component button clicked');
             showComponentLibraryModal();
         });
-        console.log('✅ Empty state Add Component button listener attached');
+        structuredLogger.debug('UI', 'Empty state Add Component button listener attached');
+        listenersAttached++;
     } else {
-        console.warn('Empty state Add Component button not found (add-first-component)');
+        structuredLogger.warn('UI', 'Empty state Add Component button not found', { elementId: 'add-first-component' });
     }
 
     // Cancel button
     if (cancelComponentButton) {
         cancelComponentButton.addEventListener('click', () => {
+            structuredLogger.debug('UI', 'Component Library cancel button clicked');
             hideComponentLibraryModal();
             clearSelection();
         });
+        listenersAttached++;
     }
     
     // Close button (× in upper right)
     const closeComponentLibraryButton = document.getElementById('close-library');
     if (closeComponentLibraryButton) {
         closeComponentLibraryButton.addEventListener('click', () => {
-            console.log('Component library close button (×) clicked');
+            structuredLogger.debug('UI', 'Component library close button (×) clicked');
             hideComponentLibraryModal();
             clearSelection();
         });
+        listenersAttached++;
     }
 
     // Add button in modal footer
@@ -139,12 +178,14 @@ function setupEventListeners() {
         addComponentButton.addEventListener('click', async () => {
             const selectedComponents = getSelectedComponents();
             if (selectedComponents.length > 0) {
+                structuredLogger.info('UI', 'Adding components', { components: selectedComponents });
+                
                 for (const componentType of selectedComponents) {
                     // Use the globally available component manager
                     if (window.componentManager) {
                         await window.componentManager.addComponent(componentType, {});
                     } else {
-                        console.error('Component manager not available');
+                        structuredLogger.error('UI', 'Component manager not available');
                     }
                 }
             }
@@ -156,12 +197,14 @@ function setupEventListeners() {
     // Search input
     if (componentSearchInput) {
         componentSearchInput.addEventListener('input', handleSearch);
+        listenersAttached++;
     }
     
     // Category filter dropdown
     const categoryFilter = document.getElementById('category-filter');
     if (categoryFilter) {
         categoryFilter.addEventListener('change', handleCategoryFilter);
+        listenersAttached++;
     }
     
     // Category sidebar items
@@ -169,11 +212,24 @@ function setupEventListeners() {
     categoryItems.forEach(item => {
         item.addEventListener('click', (e) => {
             const category = e.target.dataset.category;
+            structuredLogger.debug('UI', 'Category item clicked', { category });
             filterByCategory(category);
             // Update active state
             document.querySelectorAll('.category-item').forEach(i => i.classList.remove('category-item--active'));
             e.target.classList.add('category-item--active');
         });
+        listenersAttached++;
+    });
+    
+    structuredLogger.debug('MODAL', 'Component Library event listeners setup complete', {
+        listenersAttached,
+        buttons: {
+            mainButton: !!openComponentLibraryButton,
+            sidebarButton: !!sidebarAddComponentButton,
+            emptyStateButton: !!addFirstComponentButton,
+            cancelButton: !!cancelComponentButton,
+            closeButton: !!closeComponentLibraryButton
+        }
     });
 }
 
@@ -183,7 +239,7 @@ function setupEventListeners() {
  */
 function populateComponentGrid() {
     if (!componentGrid) {
-        console.error('Component grid element not available.');
+        structuredLogger.error('MODAL', 'Component grid element not available');
         return;
     }
     
@@ -192,16 +248,21 @@ function populateComponentGrid() {
 
     // Check if we have guestifyData components
     if (window.guestifyData?.components && Array.isArray(window.guestifyData.components)) {
-        console.log(`Loading ${window.guestifyData.components.length} components from guestifyData`);
+        structuredLogger.info('MODAL', 'Loading components from guestifyData', {
+            count: window.guestifyData.components.length
+        });
         
         window.guestifyData.components.forEach(component => {
             const card = createComponentCard(component);
             componentGrid.appendChild(card);
         });
         
-        console.log(`✅ Component library populated with ${window.guestifyData.components.length} components`);
+        structuredLogger.info('MODAL', 'Component library populated', {
+            count: window.guestifyData.components.length,
+            source: 'guestifyData'
+        });
     } else {
-        console.warn('No components found in guestifyData, using existing HTML components');
+        structuredLogger.warn('MODAL', 'No components found in guestifyData, using existing HTML components');
         // Components are already in the HTML from the PHP template
         // Just add the click handlers to existing cards
         setupExistingCards();
@@ -266,7 +327,9 @@ function setupExistingCards() {
             card.classList.toggle('selected', card.querySelector('input[type="checkbox"]')?.checked || false);
         });
     });
-    console.log(`✅ Added click handlers to ${existingCards.length} existing component cards`);
+    structuredLogger.debug('MODAL', 'Added click handlers to existing component cards', {
+        count: existingCards.length
+    });
 }
 
 /**
@@ -344,7 +407,7 @@ function getSelectedComponents() {
             }
         }
     });
-    console.log('Selected components:', selected);
+    structuredLogger.debug('MODAL', 'Components selected', { selected });
     return selected;
 }
 
@@ -367,9 +430,10 @@ function clearSelection() {
  */
 function showComponentLibraryModal() {
     if (componentLibraryModal) {
+        structuredLogger.debug('MODAL', 'Showing Component Library modal');
         showModal('component-library-overlay'); // Pass the ID string, not the element
     } else {
-        console.error('Component library modal could not be shown because it was not found.');
+        structuredLogger.error('MODAL', 'Component library modal could not be shown because it was not found');
     }
 }
 
@@ -378,6 +442,7 @@ function showComponentLibraryModal() {
  */
 function hideComponentLibraryModal() {
     if (componentLibraryModal) {
+        structuredLogger.debug('MODAL', 'Hiding Component Library modal');
         hideModal('component-library-overlay'); // Pass the ID string, not the element
     }
 }

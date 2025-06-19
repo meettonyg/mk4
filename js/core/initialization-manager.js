@@ -4,9 +4,13 @@
  * This state machine ensures proper sequencing of initialization steps with validation and error handling.
  * 
  * Phase 2A Enhancement: Added modal validation and promise-based sequencing
+ * Phase 2B Enhancement: Integrated comprehensive logging system
  */
 
 import { performanceMonitor } from '../utils/performance-monitor.js';
+import { structuredLogger } from '../utils/structured-logger.js';
+import { initializationTracker } from '../utils/initialization-tracker.js';
+import { errorBoundary } from '../utils/error-boundary.js';
 
 class InitializationManager {
     constructor() {
@@ -16,7 +20,67 @@ class InitializationManager {
         this.startTime = Date.now();
         this.retryCount = 0;
         this.maxRetries = 1; // Reduced from 3 for faster performance
-        this.version = '2.0-phase2a'; // Version tracking for cache busting
+        this.version = '2.0-phase2b'; // Version tracking for cache busting
+        this.logger = structuredLogger;
+        this.tracker = initializationTracker;
+        this.errorBoundary = errorBoundary;
+        
+        // Register initialization steps with tracker
+        this.registerInitSteps();
+    }
+
+    /**
+     * Register all initialization steps with the tracker
+     */
+    registerInitSteps() {
+        this.tracker.registerStep('prerequisites', {
+            description: 'Validate DOM ready and guestifyData availability',
+            critical: true,
+            timeout: 5000
+        });
+        
+        this.tracker.registerStep('systems', {
+            description: 'Load and validate core systems',
+            dependencies: ['prerequisites'],
+            critical: true,
+            timeout: 3000
+        });
+        
+        this.tracker.registerStep('core-ui', {
+            description: 'Setup tabs, layout, and empty state',
+            dependencies: ['systems'],
+            critical: true,
+            timeout: 2000
+        });
+        
+        this.tracker.registerStep('modal-html', {
+            description: 'Wait for modal HTML elements to load',
+            dependencies: ['core-ui'],
+            critical: false,
+            timeout: 3000
+        });
+        
+        this.tracker.registerStep('modals', {
+            description: 'Setup modal event listeners and handlers',
+            dependencies: ['modal-html'],
+            critical: false,
+            timeout: 3000,
+            retryCount: 1
+        });
+        
+        this.tracker.registerStep('modal-validation', {
+            description: 'Validate modal setup',
+            dependencies: ['modals'],
+            critical: false,
+            timeout: 1000
+        });
+        
+        this.tracker.registerStep('state', {
+            description: 'Restore application state',
+            dependencies: ['modal-validation'],
+            critical: true,
+            timeout: 2000
+        });
     }
 
     /**
@@ -24,42 +88,84 @@ class InitializationManager {
      * @returns {Promise<boolean>} Success status
      */
     async initialize() {
-        console.log(`🚀 InitializationManager v${this.version}: Starting Media Kit Builder initialization...`);
+        this.logger.info('INIT', `InitializationManager v${this.version}: Starting Media Kit Builder initialization`);
         this.state = 'initializing';
         const perfEnd = performanceMonitor.start('initialization-sequence');
+        const initStart = this.logger.logInitStart('initialization-sequence', []);
 
         try {
             // Step 1: Validate prerequisites (now async to wait for full DOM ready)
-            await this.validatePrerequisites();
+            const prereqStart = await this.tracker.startStep('prerequisites');
+            await this.errorBoundary.wrapAsync('INIT', 
+                () => this.validatePrerequisites(),
+                { errorType: 'InitializationError' }
+            )();
+            this.tracker.completeStep('prerequisites');
             this.recordStep('prerequisites', 'success');
 
             // Step 2: Load and validate systems
-            await this.loadSystems();
+            const systemsStart = await this.tracker.startStep('systems');
+            await this.errorBoundary.wrapAsync('INIT', 
+                () => this.loadSystems(),
+                { errorType: 'InitializationError' }
+            )();
+            this.tracker.completeStep('systems');
             this.recordStep('systems', 'success');
 
             // Step 3: Setup core UI components
-            await this.setupCoreUI();
+            const uiStart = await this.tracker.startStep('core-ui');
+            await this.errorBoundary.wrapAsync('INIT', 
+                () => this.setupCoreUI(),
+                { errorType: 'InitializationError' }
+            )();
+            this.tracker.completeStep('core-ui');
             this.recordStep('core-ui', 'success');
 
             // Step 4: Wait for modal HTML to be fully loaded
-            await this.waitForModalHTML();
+            const modalHtmlStart = await this.tracker.startStep('modal-html');
+            await this.errorBoundary.wrapAsync('INIT', 
+                () => this.waitForModalHTML(),
+                { errorType: 'InitializationError', fallback: null }
+            )();
+            this.tracker.completeStep('modal-html');
             this.recordStep('modal-html', 'success');
 
             // Step 5: Setup all modals with proper event listeners
-            await this.setupModals();
+            const modalsStart = await this.tracker.startStep('modals');
+            await this.errorBoundary.wrapAsync('INIT', 
+                () => this.setupModals(),
+                { errorType: 'InitializationError', fallback: null }
+            )();
+            this.tracker.completeStep('modals');
             this.recordStep('modals', 'success');
 
             // Step 6: Validate modal setup
-            await this.validateModalSetup();
+            const validationStart = await this.tracker.startStep('modal-validation');
+            await this.errorBoundary.wrapAsync('INIT', 
+                () => this.validateModalSetup(),
+                { errorType: 'InitializationError', fallback: null }
+            )();
+            this.tracker.completeStep('modal-validation');
             this.recordStep('modal-validation', 'success');
 
             // Step 7: Restore state and finalize
-            await this.restoreState();
+            const stateStart = await this.tracker.startStep('state');
+            await this.errorBoundary.wrapAsync('INIT', 
+                () => this.restoreState(),
+                { errorType: 'InitializationError' }
+            )();
+            this.tracker.completeStep('state');
             this.recordStep('state', 'success');
 
             this.state = 'complete';
             const duration = Date.now() - this.startTime;
-            console.log(`✅ InitializationManager: Initialization complete in ${duration}ms`);
+            this.logger.logInitComplete('initialization-sequence', initStart, {
+                totalSteps: this.steps.length,
+                duration
+            });
+            
+            // Generate initialization report
+            this.logger.generateInitReport();
             
             perfEnd();
             return true;
@@ -68,20 +174,31 @@ class InitializationManager {
             this.state = 'failed';
             this.errors.push(error);
             
-            console.error('❌ InitializationManager: Initialization failed:', error);
+            this.logger.logInitError('initialization-sequence', error, {
+                retryCount: this.retryCount,
+                steps: this.steps
+            });
+            
+            // Log detailed failure info
             this.logFailureDetails();
             
             // Attempt recovery if retries available
             if (this.retryCount < this.maxRetries) {
-                console.log(`🔄 InitializationManager: Attempting retry ${this.retryCount + 1}/${this.maxRetries}`);
+                this.logger.info('INIT', `Attempting retry ${this.retryCount + 1}/${this.maxRetries}`);
                 this.retryCount++;
                 this.state = 'pending';
                 this.errors = [];
+                this.tracker.reset();
                 
                 // Wait before retry with exponential backoff
-                await new Promise(resolve => setTimeout(resolve, Math.pow(2, this.retryCount) * 200));
+                const retryDelay = Math.pow(2, this.retryCount) * 200;
+                this.logger.debug('INIT', `Waiting ${retryDelay}ms before retry`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
                 return await this.initialize();
             }
+            
+            // Generate error report
+            this.logger.generateErrorReport();
             
             perfEnd();
             throw error;
@@ -92,15 +209,19 @@ class InitializationManager {
      * Validates that all prerequisites are available before starting
      */
     async validatePrerequisites() {
-        console.log('🔍 InitializationManager: Validating prerequisites...');
+        this.logger.info('INIT', 'Validating prerequisites');
         
         // Wait for DOM to be fully ready including all included PHP files
         if (document.readyState !== 'complete') {
-            console.log('⏳ InitializationManager: Waiting for document.readyState to be complete...');
+            this.logger.debug('INIT', 'Waiting for document.readyState to be complete');
+            const domStart = performance.now();
+            
             await new Promise(resolve => {
                 const checkReady = () => {
                     if (document.readyState === 'complete') {
-                        console.log('✅ InitializationManager: Document fully loaded');
+                        this.logger.info('INIT', 'Document fully loaded', {
+                            duration: performance.now() - domStart
+                        });
                         resolve();
                     } else {
                         setTimeout(checkReady, 10);
@@ -112,21 +233,41 @@ class InitializationManager {
         
         // Quick check - if guestifyData is already available, skip waiting
         if (window.guestifyData?.pluginUrl) {
-            console.log('✅ InitializationManager: guestifyData already available');
+            this.logger.debug('INIT', 'guestifyData already available');
         } else {
             // Wait for guestifyData with shorter timeout for better performance
-            const guestifyData = await this.waitForGuestifyData(500); // Reduced from 2000ms
-            if (!guestifyData) {
-                throw new Error('guestifyData not available - PHP localization failed');
+            const guestifyDataResult = await this.logger.checkRaceCondition(
+                'INIT',
+                () => window.guestifyData?.pluginUrl,
+                { timeout: 500, expectedValue: true }
+            );
+            
+            if (!guestifyDataResult.success) {
+                // Try backup data
+                if (window.guestifyDataBackup?.pluginUrl) {
+                    this.logger.warn('INIT', 'Using backup guestifyData');
+                    window.guestifyData = window.guestifyDataBackup;
+                } else {
+                    throw new Error('guestifyData not available - PHP localization failed');
+                }
             }
         }
 
         // Validate required DOM elements (quick check)
         const requiredElements = ['media-kit-preview', 'preview-container'];
+        const missingElements = [];
+        
         for (const elementId of requiredElements) {
             if (!document.getElementById(elementId)) {
-                throw new Error(`Required DOM element not found: ${elementId}`);
+                missingElements.push(elementId);
             }
+        }
+        
+        if (missingElements.length > 0) {
+            this.logger.error('INIT', 'Required DOM elements not found', null, {
+                missing: missingElements
+            });
+            throw new Error(`Required DOM elements not found: ${missingElements.join(', ')}`);
         }
 
         // Validate plugin URL
@@ -137,7 +278,10 @@ class InitializationManager {
         // Set global plugin URL for other modules
         window.GUESTIFY_PLUGIN_URL = window.guestifyData.pluginUrl;
         
-        console.log('✅ InitializationManager: Prerequisites validated');
+        this.logger.info('INIT', 'Prerequisites validated', {
+            guestifyData: !!window.guestifyData,
+            pluginUrl: window.guestifyData?.pluginUrl
+        });
     }
 
     /**
@@ -171,7 +315,7 @@ class InitializationManager {
      * Loads and validates core systems
      */
     async loadSystems() {
-        console.log('⚙️ InitializationManager: Loading systems...');
+        this.logger.info('INIT', 'Loading systems');
         
         // Import the conditional loader
         const { initializeSystems } = await import('./conditional-loader.js');
@@ -188,35 +332,40 @@ class InitializationManager {
             }
         }
         
-        console.log('✅ InitializationManager: Systems loaded and validated');
+        this.logger.info('INIT', 'Systems loaded and validated', {
+            globals: requiredGlobals.reduce((acc, name) => {
+                acc[name] = !!window[name];
+                return acc;
+            }, {})
+        });
     }
 
     /**
      * Sets up core UI components (excluding modals)
      */
     async setupCoreUI() {
-        console.log('🎨 InitializationManager: Setting up core UI...');
+        this.logger.info('INIT', 'Setting up core UI');
         
         try {
             // Direct imports to avoid issues
             const { setupTabs } = await import('../ui/tabs.js');
             const { initializeLayout, updateEmptyState } = await import('../ui/layout.js');
             
-            console.log('  - Setting up tabs...');
+            this.logger.debug('UI', 'Setting up tabs');
             setupTabs();
             
-            console.log('  - Initializing layout...');
+            this.logger.debug('UI', 'Initializing layout');
             initializeLayout();
             
-            console.log('  - Updating empty state...');
+            this.logger.debug('UI', 'Updating empty state');
             updateEmptyState();
             
             // Validate core UI components are responsive
             await this.validateUIComponents();
             
-            console.log('✅ InitializationManager: Core UI setup complete');
+            this.logger.info('UI', 'Core UI setup complete');
         } catch (error) {
-            console.error('❌ Failed to setup core UI:', error);
+            this.logger.error('UI', 'Failed to setup core UI', error);
             throw error;
         }
     }
@@ -225,7 +374,7 @@ class InitializationManager {
      * Waits for modal HTML elements to be fully loaded in the DOM
      */
     async waitForModalHTML() {
-        console.log('⏳ InitializationManager: Waiting for modal HTML...');
+        this.logger.info('MODAL', 'Waiting for modal HTML elements');
         
         const modalIds = [
             'component-library-overlay',
@@ -250,10 +399,13 @@ class InitializationManager {
                 }
             }
             
-            console.log(`  Found: ${foundModals.length}/${modalIds.length} modals`);
+            this.logger.debug('MODAL', `Found ${foundModals.length}/${modalIds.length} modals`, {
+                found: foundModals,
+                missing: missingModals
+            });
             
             if (missingModals.length === 0) {
-                console.log('✅ InitializationManager: All modal HTML elements found');
+                this.logger.info('MODAL', 'All modal HTML elements found');
                 // Additional delay to ensure any dynamic content is ready
                 await new Promise(resolve => setTimeout(resolve, 200));
                 return;
@@ -265,8 +417,11 @@ class InitializationManager {
         // Log which modals are missing but continue
         const finalCheck = modalIds.filter(id => !document.getElementById(id));
         if (finalCheck.length > 0) {
-            console.warn(`⚠️ InitializationManager: Some modals not found after ${maxWaitTime}ms:`, finalCheck);
-            console.warn('Continuing with available modals...');
+            this.logger.warn('MODAL', `Some modals not found after ${maxWaitTime}ms`, {
+                missing: finalCheck,
+                timeout: maxWaitTime
+            });
+            this.logger.warn('MODAL', 'Continuing with available modals');
         }
     }
 
@@ -274,7 +429,7 @@ class InitializationManager {
      * Sets up all modal systems with proper event listeners
      */
     async setupModals() {
-        console.log('🔧 InitializationManager: Setting up modals...');
+        this.logger.info('MODAL', 'Setting up modal systems');
         
         try {
             // Use dynamic imports with cache busting
@@ -321,18 +476,21 @@ class InitializationManager {
             
             for (const modal of modalSetups) {
                 try {
-                    console.log(`  Setting up ${modal.name}...`);
+                    this.logger.debug('MODAL', `Setting up ${modal.name}`);
+                    const setupStart = performance.now();
                     await modal.setup();
-                    console.log(`  ✅ ${modal.name} setup complete`);
+                    this.logger.info('MODAL', `${modal.name} setup complete`, {
+                        duration: performance.now() - setupStart
+                    });
                 } catch (error) {
-                    console.error(`  ❌ Failed to setup ${modal.name}:`, error);
+                    this.logger.error('MODAL', `Failed to setup ${modal.name}`, error);
                     // Continue with other modals even if one fails
                 }
             }
             
-            console.log('✅ InitializationManager: Modal setup phase complete');
+            this.logger.info('MODAL', 'Modal setup phase complete');
         } catch (error) {
-            console.error('❌ Modal initialization error:', error);
+            this.logger.error('MODAL', 'Modal initialization error', error);
             // Don't throw - allow initialization to continue
         }
     }
@@ -341,7 +499,7 @@ class InitializationManager {
      * Validates that modal event listeners are properly attached
      */
     async validateModalSetup() {
-        console.log('🔍 InitializationManager: Validating modal setup...');
+        this.logger.info('MODAL', 'Validating modal setup');
         
         const validations = [
             {
@@ -368,24 +526,32 @@ class InitializationManager {
             const modal = document.getElementById(validation.modalId);
             
             if (!button) {
-                console.warn(`  ⚠️ ${validation.name} button not found (${validation.buttonId})`);
+                this.logger.warn('MODAL', `${validation.name} button not found`, {
+                    buttonId: validation.buttonId
+                });
                 issues.push(`${validation.name} button missing`);
             } else if (button.hasAttribute('data-listener-attached')) {
-                console.log(`  ✅ ${validation.name} button has listener`);
+                this.logger.debug('MODAL', `${validation.name} button has listener`);
             } else {
-                console.warn(`  ⚠️ ${validation.name} button may not have listener`);
+                this.logger.warn('MODAL', `${validation.name} button may not have listener`, {
+                    buttonId: validation.buttonId
+                });
             }
             
             if (!modal) {
-                console.warn(`  ⚠️ ${validation.name} modal not found (${validation.modalId})`);
+                this.logger.warn('MODAL', `${validation.name} modal not found`, {
+                    modalId: validation.modalId
+                });
                 issues.push(`${validation.name} modal missing`);
             }
         }
         
         if (issues.length === 0) {
-            console.log('✅ InitializationManager: Modal validation passed');
+            this.logger.info('MODAL', 'Modal validation passed');
         } else {
-            console.warn('⚠️ InitializationManager: Some modal elements missing, but continuing');
+            this.logger.warn('MODAL', 'Some modal elements missing, but continuing', {
+                issues
+            });
         }
     }
 
@@ -405,7 +571,7 @@ class InitializationManager {
         
         for (const selector of uiElements) {
             if (!document.querySelector(selector)) {
-                console.warn(`UI element not found: ${selector}`);
+                this.logger.warn('UI', `UI element not found: ${selector}`);
             }
         }
     }
@@ -414,17 +580,19 @@ class InitializationManager {
      * Restores application state and finalizes initialization
      */
     async restoreState() {
-        console.log('💾 InitializationManager: Restoring state...');
+        this.logger.info('STATE', 'Restoring application state');
         
         // State restoration is handled by the enhanced initialization
         // Just validate that state manager is responsive
         if (window.stateManager && typeof window.stateManager.getState === 'function') {
             const state = window.stateManager.getState();
-            console.log('📊 InitializationManager: State manager responsive, components:', 
-                Object.keys(state.components || {}).length);
+            this.logger.info('STATE', 'State manager responsive', {
+                componentCount: Object.keys(state.components || {}).length,
+                hasGlobalSettings: !!state.globalSettings
+            });
         }
         
-        console.log('✅ InitializationManager: State restoration complete');
+        this.logger.info('STATE', 'State restoration complete');
     }
 
     /**
@@ -443,19 +611,26 @@ class InitializationManager {
      * Logs detailed failure information for debugging
      */
     logFailureDetails() {
-        console.group('🚨 InitializationManager: Failure Details');
-        console.log('State:', this.state);
-        console.log('Retry count:', this.retryCount);
-        console.log('Completed steps:', this.steps);
-        console.log('Errors:', this.errors);
-        console.log('Available globals:', {
-            guestifyData: !!window.guestifyData,
-            stateManager: !!window.stateManager,
-            componentManager: !!window.componentManager,
-            renderer: !!window.renderer,
-            initializer: !!window.initializer
-        });
-        console.groupEnd();
+        const details = {
+            state: this.state,
+            retryCount: this.retryCount,
+            completedSteps: this.steps,
+            errors: this.errors,
+            availableGlobals: {
+                guestifyData: !!window.guestifyData,
+                stateManager: !!window.stateManager,
+                componentManager: !!window.componentManager,
+                renderer: !!window.renderer,
+                initializer: !!window.initializer
+            },
+            trackerSummary: this.tracker.getSummary()
+        };
+        
+        this.logger.error('INIT', 'Initialization failure details', null, details);
+        
+        // Generate reports
+        this.tracker.generateDependencyGraph();
+        this.tracker.generateTimeline();
     }
 
     /**

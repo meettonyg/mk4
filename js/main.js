@@ -4,6 +4,8 @@
  * This file is responsible for waiting for the DOM to be ready and then
  * kicking off the entire application initialization sequence with proper
  * race condition prevention and error handling.
+ * 
+ * Phase 2B Enhancement: Integrated comprehensive logging system
  */
 
 import {
@@ -12,26 +14,74 @@ import {
 import {
     performanceMonitor
 } from './utils/performance-monitor.js';
+import {
+    structuredLogger
+} from './utils/structured-logger.js';
+import {
+    errorBoundary
+} from './utils/error-boundary.js';
 
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;
+
+// Expose logging console commands
+window.mkLog = {
+    report: () => structuredLogger.generateInitReport(),
+    errors: () => structuredLogger.generateErrorReport(),
+    timing: () => structuredLogger.generateTimingReport(),
+    export: (format = 'json') => structuredLogger.exportLogs(format),
+    setLevel: (level) => structuredLogger.setLogLevel(level),
+    clear: () => structuredLogger.clear(),
+    search: (query) => structuredLogger.search(query),
+    performance: () => window.mkPerf.report(),
+    errorBoundary: () => errorBoundary.generateReport(),
+    help: () => {
+        console.log('📚 Media Kit Builder Logging Commands:');
+        console.log('  mkLog.report()      - Show initialization report');
+        console.log('  mkLog.errors()      - Show error report');
+        console.log('  mkLog.timing()      - Show timing report');
+        console.log('  mkLog.export()      - Export logs (json/csv)');
+        console.log('  mkLog.setLevel()    - Set log level (debug/info/warn/error)');
+        console.log('  mkLog.clear()       - Clear all logs');
+        console.log('  mkLog.search(query) - Search logs');
+        console.log('  mkLog.performance() - Show performance metrics');
+        console.log('  mkLog.errorBoundary() - Show error boundary report');
+        console.log('\n📊 Performance Commands:');
+        console.log('  mkPerf.report()     - Show performance report');
+        console.log('  mkPerf.reset()      - Reset metrics');
+        console.log('  mkPerf.setDebugMode(true/false) - Toggle debug mode');
+    }
+};
+
+// Log initial setup
+structuredLogger.info('INIT', 'Media Kit Builder main.js loaded', {
+    globals: {
+        guestifyData: !!window.guestifyData,
+        mkPerf: !!window.mkPerf,
+        mkLog: !!window.mkLog
+    }
+});
 
 /**
  * Enhanced initialization function that uses the initialization manager
  * to prevent race conditions and provide proper error handling.
  */
 async function initializeBuilder() {
-    console.log('🚀 Guestify Media Kit Builder: Starting enhanced initialization...');
+    structuredLogger.info('INIT', 'Guestify Media Kit Builder: Starting enhanced initialization');
     
     try {
         // Use the initialization manager to handle the complete sequence
         const success = await initializationManager.initialize();
         
         if (success) {
-            console.log('✅ Media Kit Builder: Initialization successful!');
-            console.log('📊 Performance monitoring available. Use mkPerf.report() to view metrics.');
-            console.log('🔧 Debug tools available: window.initManager.getStatus()');
+            structuredLogger.info('INIT', 'Media Kit Builder initialization successful!', {
+                status: initializationManager.getStatus()
+            });
+            
+            console.log('\n✅ Media Kit Builder Ready!');
+            console.log('📊 Logging commands available. Type mkLog.help() for a list.');
+            console.log('🔧 Debug tools: window.initManager.getStatus()');
             
             // Dispatch custom event for any external listeners
             window.dispatchEvent(new CustomEvent('mediaKitBuilderReady', {
@@ -45,7 +95,7 @@ async function initializeBuilder() {
         }
         
     } catch (error) {
-        console.error('❌ Media Kit Builder: Initialization failed:', error);
+        structuredLogger.error('INIT', 'Media Kit Builder initialization failed', error);
         
         // Show user-friendly error message
         showInitializationError(error);
@@ -110,7 +160,9 @@ function showInitializationError(error) {
  * @param {Error} originalError - The original initialization error
  */
 async function attemptFallbackInitialization(originalError) {
-    console.log('🔄 Attempting fallback initialization...');
+    structuredLogger.warn('INIT', 'Attempting fallback initialization', {
+        originalError: originalError.message
+    });
     
     try {
         // Try to load systems manually
@@ -119,6 +171,7 @@ async function attemptFallbackInitialization(originalError) {
         
         // Validate basic requirements
         if (!window.guestifyData?.pluginUrl) {
+            structuredLogger.error('INIT', 'Cannot proceed: guestifyData still not available');
             throw new Error('Cannot proceed: guestifyData still not available');
         }
         
@@ -131,7 +184,7 @@ async function attemptFallbackInitialization(originalError) {
         // Try manual initialization
         if (window.initializer && typeof window.initializer === 'function') {
             await window.initializer();
-            console.log('✅ Fallback initialization successful');
+            structuredLogger.info('INIT', 'Fallback initialization successful');
             
             // Update error display with success message
             const errorEl = document.querySelector('.initialization-error');
@@ -158,27 +211,31 @@ async function attemptFallbackInitialization(originalError) {
         }
         
     } catch (fallbackError) {
-        console.error('❌ Fallback initialization also failed:', fallbackError);
-        console.error('📋 Original error was:', originalError);
+        structuredLogger.error('INIT', 'Fallback initialization also failed', fallbackError, {
+            originalError: originalError.message
+        });
         
         // Log comprehensive failure information
-        console.group('🚨 Complete Initialization Failure');
-        console.log('Available globals:', {
-            guestifyData: !!window.guestifyData,
-            guestifyDataBackup: !!window.guestifyDataBackup,
-            guestifyDataReady: !!window.guestifyDataReady,
-            stateManager: !!window.stateManager,
-            componentManager: !!window.componentManager,
-            renderer: !!window.renderer,
-            initializer: !!window.initializer
+        structuredLogger.error('INIT', 'Complete initialization failure', null, {
+            availableGlobals: {
+                guestifyData: !!window.guestifyData,
+                guestifyDataBackup: !!window.guestifyDataBackup,
+                guestifyDataReady: !!window.guestifyDataReady,
+                stateManager: !!window.stateManager,
+                componentManager: !!window.componentManager,
+                renderer: !!window.renderer,
+                initializer: !!window.initializer
+            },
+            domReadiness: document.readyState,
+            requiredElements: {
+                preview: !!document.getElementById('media-kit-preview'),
+                sidebar: !!document.querySelector('.sidebar'),
+                toolbar: !!document.querySelector('.toolbar')
+            }
         });
-        console.log('DOM readiness:', document.readyState);
-        console.log('Required elements:', {
-            preview: !!document.getElementById('media-kit-preview'),
-            sidebar: !!document.querySelector('.sidebar'),
-            toolbar: !!document.querySelector('.toolbar')
-        });
-        console.groupEnd();
+        
+        // Generate comprehensive error report
+        structuredLogger.generateErrorReport();
     }
 }
 
@@ -193,12 +250,12 @@ window.initializationStarted = () => initializationStarted;
  */
 function safeInitializeBuilder() {
     if (initializationStarted) {
-        console.log('⚠️ Initialization already started, skipping duplicate call');
+        structuredLogger.warn('INIT', 'Initialization already started, skipping duplicate call');
         return;
     }
     
     initializationStarted = true;
-    console.log('📄 Starting Media Kit Builder initialization...');
+    structuredLogger.info('INIT', 'Starting Media Kit Builder initialization from DOMContentLoaded');
     initializeBuilder();
 }
 
@@ -208,6 +265,8 @@ document.addEventListener('DOMContentLoaded', safeInitializeBuilder);
 // Additional safety net for cases where DOMContentLoaded already fired
 if (document.readyState !== 'loading') {
     // DOM is already ready, start immediately
-    console.log('📄 DOM was already ready, starting initialization immediately...');
+    structuredLogger.info('INIT', 'DOM was already ready, starting initialization immediately', {
+        readyState: document.readyState
+    });
     safeInitializeBuilder();
 }
