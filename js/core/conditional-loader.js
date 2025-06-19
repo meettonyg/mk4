@@ -135,7 +135,29 @@ function selectSystems(flags) {
     // Select Initializer
     if (flags.USE_ENHANCED_INITIALIZATION) {
         console.log('🔧 Using enhanced initialization');
-        systems.initializer = initializeEnhancedBuilder;
+        // Create a custom initializer that only initializes core services
+        systems.initializer = async () => {
+            // Only initialize core services, not UI
+            const { keyboardService } = await import('../services/keyboard-service.js');
+            const { saveService } = await import('../services/save-service.js');
+            
+            keyboardService.init();
+            enhancedComponentRenderer.init();
+            
+            // Restore state
+            const savedState = saveService.loadState();
+            if (savedState && Object.keys(savedState.components).length > 0) {
+                console.log('📦 Found saved data, loading...');
+                enhancedStateManager.setInitialState(savedState);
+            }
+            
+            // Setup autosave
+            enhancedStateManager.subscribeGlobal(state => {
+                saveService.saveState(state);
+            });
+            
+            console.log('✅ Core services initialized');
+        };
         systems.initializerType = 'enhanced';
     } else {
         console.log('🔧 Using enhanced initialization (legacy not available)');

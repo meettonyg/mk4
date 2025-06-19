@@ -38,32 +38,19 @@ import {
 
 /**
  * Initializes the entire Media Kit Builder application with the enhanced architecture.
+ * This is now called by the initialization manager to ensure proper sequencing.
  */
 export async function initializeEnhancedBuilder() {
     console.log('Media Kit Builder: Starting enhanced initialization...');
 
-    // 1. Validate prerequisites first
-    await validatePrerequisites();
-
-    // 2. Initialize services that don't depend on the DOM.
+    // 1. Initialize services that don't depend on the DOM.
     keyboardService.init();
     enhancedComponentRenderer.init();
 
-    // 3. Restore State from localStorage.
+    // 2. Restore State from localStorage.
     restoreState();
 
-    // 4. Initialize UI Components and Features.
-    // FIX: This section is now called directly. The entry point (main.js)
-    // is the single source of truth for DOM readiness, so we don't need another listener here.
-    initializeUI();
-    
-    // 5. Initialize feature systems with a small delay to ensure DOM is fully ready
-    // This prevents race conditions with modal HTML loading
-    setTimeout(() => {
-        initializeFeatureSystems();
-    }, 50);
-
-    // 6. Set up Global Event Listeners like autosave.
+    // 3. Set up Global Event Listeners like autosave.
     setupGlobalEventListeners();
 
     console.log('Media Kit Builder: Enhanced initialization complete.');
@@ -143,8 +130,9 @@ function restoreState() {
 
 /**
  * Sets up core UI elements of the builder.
+ * Exported so it can be called by the initialization manager.
  */
-function initializeUI() {
+export function initializeUI() {
     console.log('Initializing UI...');
     setupTabs();
     initializeLayout(); // Sets up drag-and-drop
@@ -154,8 +142,9 @@ function initializeUI() {
 
 /**
  * Initializes feature-specific systems like modals.
+ * This is now called by the initialization manager after ensuring modal HTML is ready.
  */
-function initializeFeatureSystems() {
+export function initializeFeatureSystems() {
     console.log('Initializing feature systems...');
     setupComponentLibrary();
     templateLoader.init();

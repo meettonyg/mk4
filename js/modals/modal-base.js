@@ -4,25 +4,43 @@
 
 /**
  * Show a modal
- * @param {string} modalId - The ID of the modal to show
+ * @param {string|HTMLElement} modalIdOrElement - The ID of the modal or the modal element itself
  */
-export function showModal(modalId) {
-    const modal = document.getElementById(modalId);
+export function showModal(modalIdOrElement) {
+    let modal;
+    if (typeof modalIdOrElement === 'string') {
+        modal = document.getElementById(modalIdOrElement);
+    } else if (modalIdOrElement instanceof HTMLElement) {
+        modal = modalIdOrElement;
+    }
+    
     if (modal) {
         modal.style.display = 'flex';
+        modal.classList.add('modal--open');
         // Ensure close handlers are set up
         setupModalCloseHandlers(modal);
+        console.log('Modal shown:', modal.id || 'unknown');
+    } else {
+        console.error('Modal not found:', modalIdOrElement);
     }
 }
 
 /**
  * Hide a modal
- * @param {string} modalId - The ID of the modal to hide
+ * @param {string|HTMLElement} modalIdOrElement - The ID of the modal or the modal element itself
  */
-export function hideModal(modalId) {
-    const modal = document.getElementById(modalId);
+export function hideModal(modalIdOrElement) {
+    let modal;
+    if (typeof modalIdOrElement === 'string') {
+        modal = document.getElementById(modalIdOrElement);
+    } else if (modalIdOrElement instanceof HTMLElement) {
+        modal = modalIdOrElement;
+    }
+    
     if (modal) {
         modal.style.display = 'none';
+        modal.classList.remove('modal--open');
+        console.log('Modal hidden:', modal.id || 'unknown');
     }
 }
 
@@ -70,19 +88,22 @@ function setupModalCloseHandlers(modal) {
     modal.setAttribute('data-close-handlers-setup', 'true');
     
     // Find all close buttons within the modal
-    const closeBtns = modal.querySelectorAll('.modal__close, [data-close-modal]');
+    const closeBtns = modal.querySelectorAll('.modal__close, [data-close-modal], .library__close');
     closeBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             modal.style.display = 'none';
+            modal.classList.remove('modal--open');
         });
     });
     
-    // Click outside to close
+    // Click outside to close (only on the overlay element itself)
     modal.addEventListener('click', function(e) {
+        // Check if click is on the modal backdrop itself (not its children)
         if (e.target === this) {
             modal.style.display = 'none';
+            modal.classList.remove('modal--open');
         }
     });
 }
@@ -98,9 +119,16 @@ function initializeGlobalModalHandlers() {
     // ESC key closes any open modal
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            const openModals = document.querySelectorAll('.modal-overlay[style*="flex"], .modal-overlay[style*="block"]');
+            // Look for any visible modals with various class names
+            const openModals = document.querySelectorAll(
+                '.modal-overlay[style*="flex"], .modal-overlay[style*="block"], ' +
+                '.library-modal[style*="flex"], .library-modal[style*="block"], ' +
+                '.modal[style*="flex"], .modal[style*="block"], ' +
+                '.modal--open'
+            );
             openModals.forEach(modal => {
                 modal.style.display = 'none';
+                modal.classList.remove('modal--open');
             });
         }
     });
@@ -108,12 +136,13 @@ function initializeGlobalModalHandlers() {
     // Global click handler for dynamically created modals
     document.addEventListener('click', (e) => {
         // Handle close button clicks
-        if (e.target.matches('.modal__close, [data-close-modal]')) {
+        if (e.target.matches('.modal__close, [data-close-modal], .library__close')) {
             e.preventDefault();
             e.stopPropagation();
-            const modal = e.target.closest('.modal-overlay');
+            const modal = e.target.closest('.modal-overlay, .library-modal, .modal');
             if (modal) {
                 modal.style.display = 'none';
+                modal.classList.remove('modal--open');
             }
         }
     }, true);

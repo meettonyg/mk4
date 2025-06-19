@@ -2,6 +2,8 @@
  * @file initialization-manager.js
  * @description Manages the initialization sequence for the Media Kit Builder to prevent race conditions.
  * This state machine ensures proper sequencing of initialization steps with validation and error handling.
+ * 
+ * Phase 2A Enhancement: Added modal validation and promise-based sequencing
  */
 
 import { performanceMonitor } from '../utils/performance-monitor.js';
@@ -14,6 +16,7 @@ class InitializationManager {
         this.startTime = Date.now();
         this.retryCount = 0;
         this.maxRetries = 1; // Reduced from 3 for faster performance
+        this.version = '2.0-phase2a'; // Version tracking for cache busting
     }
 
     /**
@@ -21,7 +24,7 @@ class InitializationManager {
      * @returns {Promise<boolean>} Success status
      */
     async initialize() {
-        console.log('🚀 InitializationManager: Starting Media Kit Builder initialization...');
+        console.log(`🚀 InitializationManager v${this.version}: Starting Media Kit Builder initialization...`);
         this.state = 'initializing';
         const perfEnd = performanceMonitor.start('initialization-sequence');
 
@@ -34,11 +37,23 @@ class InitializationManager {
             await this.loadSystems();
             this.recordStep('systems', 'success');
 
-            // Step 3: Setup UI components
-            await this.setupUI();
-            this.recordStep('ui', 'success');
+            // Step 3: Setup core UI components
+            await this.setupCoreUI();
+            this.recordStep('core-ui', 'success');
 
-            // Step 4: Restore state and finalize
+            // Step 4: Wait for modal HTML to be fully loaded
+            await this.waitForModalHTML();
+            this.recordStep('modal-html', 'success');
+
+            // Step 5: Setup all modals with proper event listeners
+            await this.setupModals();
+            this.recordStep('modals', 'success');
+
+            // Step 6: Validate modal setup
+            await this.validateModalSetup();
+            this.recordStep('modal-validation', 'success');
+
+            // Step 7: Restore state and finalize
             await this.restoreState();
             this.recordStep('state', 'success');
 
@@ -177,22 +192,201 @@ class InitializationManager {
     }
 
     /**
-     * Sets up UI components and validates they're working
+     * Sets up core UI components (excluding modals)
      */
-    async setupUI() {
-        console.log('🎨 InitializationManager: Setting up UI...');
+    async setupCoreUI() {
+        console.log('🎨 InitializationManager: Setting up core UI...');
         
-        // Call the main initializer
-        if (typeof window.initializer === 'function') {
-            await window.initializer();
-        } else {
-            throw new Error('window.initializer is not a function');
+        try {
+            // Direct imports to avoid issues
+            const { setupTabs } = await import('../ui/tabs.js');
+            const { initializeLayout, updateEmptyState } = await import('../ui/layout.js');
+            
+            console.log('  - Setting up tabs...');
+            setupTabs();
+            
+            console.log('  - Initializing layout...');
+            initializeLayout();
+            
+            console.log('  - Updating empty state...');
+            updateEmptyState();
+            
+            // Validate core UI components are responsive
+            await this.validateUIComponents();
+            
+            console.log('✅ InitializationManager: Core UI setup complete');
+        } catch (error) {
+            console.error('❌ Failed to setup core UI:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Waits for modal HTML elements to be fully loaded in the DOM
+     */
+    async waitForModalHTML() {
+        console.log('⏳ InitializationManager: Waiting for modal HTML...');
+        
+        const modalIds = [
+            'component-library-overlay',
+            'template-library-modal',
+            'global-settings-modal',
+            'export-modal'
+        ];
+        
+        const maxWaitTime = 3000; // Increased to 3 seconds
+        const checkInterval = 100; // Increased interval
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            const foundModals = [];
+            const missingModals = [];
+            
+            for (const modalId of modalIds) {
+                if (document.getElementById(modalId)) {
+                    foundModals.push(modalId);
+                } else {
+                    missingModals.push(modalId);
+                }
+            }
+            
+            console.log(`  Found: ${foundModals.length}/${modalIds.length} modals`);
+            
+            if (missingModals.length === 0) {
+                console.log('✅ InitializationManager: All modal HTML elements found');
+                // Additional delay to ensure any dynamic content is ready
+                await new Promise(resolve => setTimeout(resolve, 200));
+                return;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
         }
         
-        // Validate UI components are responsive
-        await this.validateUIComponents();
+        // Log which modals are missing but continue
+        const finalCheck = modalIds.filter(id => !document.getElementById(id));
+        if (finalCheck.length > 0) {
+            console.warn(`⚠️ InitializationManager: Some modals not found after ${maxWaitTime}ms:`, finalCheck);
+            console.warn('Continuing with available modals...');
+        }
+    }
+
+    /**
+     * Sets up all modal systems with proper event listeners
+     */
+    async setupModals() {
+        console.log('🔧 InitializationManager: Setting up modals...');
         
-        console.log('✅ InitializationManager: UI setup complete');
+        try {
+            // Use dynamic imports with cache busting
+            const timestamp = Date.now();
+            
+            // Import modal setup functions
+            const componentLibraryModule = await import(`../modals/component-library.js?t=${timestamp}`);
+            const templateLoaderModule = await import(`../services/template-loader.js?t=${timestamp}`);
+            const globalSettingsModule = await import(`../modals/global-settings.js?t=${timestamp}`);
+            
+            // Setup each modal system with error handling
+            const modalSetups = [
+                { 
+                    name: 'Component Library', 
+                    setup: async () => {
+                        if (componentLibraryModule.setupComponentLibrary) {
+                            await componentLibraryModule.setupComponentLibrary();
+                        } else {
+                            console.warn('setupComponentLibrary function not found');
+                        }
+                    }
+                },
+                { 
+                    name: 'Template Loader', 
+                    setup: async () => {
+                        if (templateLoaderModule.templateLoader?.init) {
+                            await templateLoaderModule.templateLoader.init();
+                        } else {
+                            console.warn('templateLoader.init not found');
+                        }
+                    }
+                },
+                { 
+                    name: 'Global Settings', 
+                    setup: async () => {
+                        if (globalSettingsModule.globalSettings?.init) {
+                            await globalSettingsModule.globalSettings.init();
+                        } else {
+                            console.warn('globalSettings.init not found');
+                        }
+                    }
+                }
+            ];
+            
+            for (const modal of modalSetups) {
+                try {
+                    console.log(`  Setting up ${modal.name}...`);
+                    await modal.setup();
+                    console.log(`  ✅ ${modal.name} setup complete`);
+                } catch (error) {
+                    console.error(`  ❌ Failed to setup ${modal.name}:`, error);
+                    // Continue with other modals even if one fails
+                }
+            }
+            
+            console.log('✅ InitializationManager: Modal setup phase complete');
+        } catch (error) {
+            console.error('❌ Modal initialization error:', error);
+            // Don't throw - allow initialization to continue
+        }
+    }
+
+    /**
+     * Validates that modal event listeners are properly attached
+     */
+    async validateModalSetup() {
+        console.log('🔍 InitializationManager: Validating modal setup...');
+        
+        const validations = [
+            {
+                buttonId: 'add-component-btn',
+                modalId: 'component-library-overlay',
+                name: 'Component Library'
+            },
+            {
+                buttonId: 'load-template',
+                modalId: 'template-library-modal',
+                name: 'Template Library'
+            },
+            {
+                buttonId: 'global-theme-btn',
+                modalId: 'global-settings-modal',
+                name: 'Global Settings'
+            }
+        ];
+        
+        const issues = [];
+        
+        for (const validation of validations) {
+            const button = document.getElementById(validation.buttonId);
+            const modal = document.getElementById(validation.modalId);
+            
+            if (!button) {
+                console.warn(`  ⚠️ ${validation.name} button not found (${validation.buttonId})`);
+                issues.push(`${validation.name} button missing`);
+            } else if (button.hasAttribute('data-listener-attached')) {
+                console.log(`  ✅ ${validation.name} button has listener`);
+            } else {
+                console.warn(`  ⚠️ ${validation.name} button may not have listener`);
+            }
+            
+            if (!modal) {
+                console.warn(`  ⚠️ ${validation.name} modal not found (${validation.modalId})`);
+                issues.push(`${validation.name} modal missing`);
+            }
+        }
+        
+        if (issues.length === 0) {
+            console.log('✅ InitializationManager: Modal validation passed');
+        } else {
+            console.warn('⚠️ InitializationManager: Some modal elements missing, but continuing');
+        }
     }
 
     /**
@@ -274,7 +468,8 @@ class InitializationManager {
             steps: this.steps,
             errors: this.errors,
             retryCount: this.retryCount,
-            duration: Date.now() - this.startTime
+            duration: Date.now() - this.startTime,
+            version: this.version
         };
     }
 }

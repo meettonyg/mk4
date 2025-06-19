@@ -32,42 +32,59 @@ class TemplateLoader {
         this.selectedTemplate = null;
     }
 
-    init(retryCount = 0) {
+    async init() {
+        console.log('📁 Setting up Template Loader...');
+        
         // Assign DOM elements inside init(), which is called after the DOM is ready.
         this.modal = document.getElementById('template-library-modal');
         this.grid = document.getElementById('template-grid');
         this.loadButton = document.getElementById('load-template-button');
         this.cancelButton = document.getElementById('cancel-template-button');
-        this.openButton = document.getElementById('load-template');
+        this.openButton = document.getElementById('load-template-btn') || document.getElementById('load-template');
 
         if (!featureFlags.ENABLE_PRESET_TEMPLATES) {
             console.warn('Template library feature is disabled.');
-            return;
+            return Promise.resolve();
         }
         
+        // Validate required elements
         if (!this.modal) {
-            if (retryCount < 5) {
-                const delay = Math.min(100 * Math.pow(2, retryCount), 1000);
-                console.warn(`Template library modal not found (attempt ${retryCount + 1}/5), retrying in ${delay}ms...`);
-                setTimeout(() => {
-                    this.init(retryCount + 1);
-                }, delay);
-                return;
-            } else {
-                console.error('Template library modal still not found after 5 retries.');
-                return;
-            }
+            throw new Error('Template Loader: Modal not found (template-library-overlay)');
         }
         
-        if (retryCount > 0) {
-            console.log(`✅ Template library modal found on retry ${retryCount}! Setting up...`);
+        if (!this.grid) {
+            throw new Error('Template Loader: Grid not found (template-grid)');
         }
 
         // The button in the empty state dispatches a custom event.
         document.addEventListener('show-template-library', () => this.show());
+        
+        // Empty state "Load Template" button (in preview area) - same ID as toolbar button
+        const emptyStateTemplateButton = document.getElementById('load-template');
+        if (emptyStateTemplateButton && !emptyStateTemplateButton.hasAttribute('data-listener-attached')) {
+            emptyStateTemplateButton.addEventListener('click', () => {
+                console.log('Empty state Load Template button clicked');
+                this.show();
+            });
+            emptyStateTemplateButton.setAttribute('data-listener-attached', 'true');
+            console.log('✅ Template Loader: Empty state button listener attached');
+        }
+        
+        // Setup main open button
+        if (this.openButton) {
+            this.openButton.addEventListener('click', () => this.show());
+            this.openButton.setAttribute('data-listener-attached', 'true');
+            console.log('✅ Template Loader: Open button listener attached');
+        }
 
-        this.loadButton?.addEventListener('click', () => this.loadSelectedTemplate());
-        this.cancelButton?.addEventListener('click', () => this.hide());
+        // Setup modal buttons
+        if (this.loadButton) {
+            this.loadButton.addEventListener('click', () => this.loadSelectedTemplate());
+        }
+        
+        if (this.cancelButton) {
+            this.cancelButton.addEventListener('click', () => this.hide());
+        }
         
         // CLOSE BUTTON (× in upper right)
         const closeButton = document.getElementById('close-template-library');
@@ -81,18 +98,19 @@ class TemplateLoader {
         }
 
         this.populateTemplateGrid();
-        console.log('TemplateLoader initialized.');
+        console.log('✅ Template Loader: Setup complete');
+        return Promise.resolve();
     }
 
     show() {
         if (this.modal) {
-            showModal(this.modal);
+            showModal('template-library-modal'); // Pass the ID string, not the element
         }
     }
 
     hide() {
         if (this.modal) {
-            hideModal(this.modal);
+            hideModal('template-library-modal'); // Pass the ID string, not the element
         }
     }
 
