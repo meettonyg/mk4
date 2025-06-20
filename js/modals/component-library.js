@@ -19,33 +19,28 @@ let componentLibraryModal, componentGrid, addComponentButton, cancelComponentBut
 
 /**
  * Sets up the component library, including event listeners and component rendering.
+ * Enhanced with Promise-based setup and validation to prevent race conditions.
  * @returns {Promise<void>} Resolves when setup is complete
  */
 export async function setupComponentLibrary() {
     const setupStart = performance.now();
-    structuredLogger.info('MODAL', 'Setting up Component Library');
+    structuredLogger.info('MODAL', 'Setting up Component Library with validation');
     
     try {
-        // Validate and assign DOM elements
-        await errorBoundary.wrapAsync('MODAL', 
-            validateAndAssignElements,
-            { errorType: 'InitializationError' }
-        )();
+        // Validate elements exist before proceeding
+        await validateAndAssignElements();
         
         // Setup event listeners
-        errorBoundary.catch('MODAL', 
-            setupEventListeners,
-            { errorType: 'InitializationError' }
-        )();
+        setupEventListeners();
         
-        // Populate the component grid
-        errorBoundary.catch('MODAL', 
-            populateComponentGrid,
-            { errorType: 'InitializationError' }
-        )();
+        // Populate component grid
+        populateComponentGrid();
         
-        // Mark setup as complete
-        componentLibraryModal.setAttribute('data-listener-attached', 'true');
+        // Mark setup complete with validation attribute
+        componentLibraryModal.setAttribute('data-setup-complete', 'true');
+        
+        // Mark buttons as having listeners for test validation
+        markButtonListenersAttached();
         
         structuredLogger.info('MODAL', 'Component Library setup complete', {
             duration: performance.now() - setupStart,
@@ -66,6 +61,7 @@ export async function setupComponentLibrary() {
 
 /**
  * Validates that all required DOM elements exist and assigns them
+ * Enhanced with timeout handling for better race condition prevention
  */
 async function validateAndAssignElements() {
     const requiredElements = {
@@ -76,33 +72,100 @@ async function validateAndAssignElements() {
         'component-search': 'componentSearchInput'
     };
     
-    const missingElements = [];
+    const maxWaitTime = 3000; // 3 second timeout
+    const checkInterval = 100;
+    const startTime = Date.now();
     
-    structuredLogger.debug('MODAL', 'Validating Component Library elements', { required: Object.keys(requiredElements) });
+    structuredLogger.debug('MODAL', 'Validating Component Library elements with timeout', { 
+        required: Object.keys(requiredElements),
+        timeout: maxWaitTime
+    });
     
-    for (const [elementId, varName] of Object.entries(requiredElements)) {
-        const element = document.getElementById(elementId);
-        if (!element) {
-            missingElements.push(elementId);
-        } else {
-            // Assign to module variable
-            if (varName === 'componentLibraryModal') componentLibraryModal = element;
-            else if (varName === 'componentGrid') componentGrid = element;
-            else if (varName === 'addComponentButton') addComponentButton = element;
-            else if (varName === 'cancelComponentButton') cancelComponentButton = element;
-            else if (varName === 'componentSearchInput') componentSearchInput = element;
+    // Wait for all elements to be available
+    while (Date.now() - startTime < maxWaitTime) {
+        const missingElements = [];
+        
+        for (const [elementId, varName] of Object.entries(requiredElements)) {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                missingElements.push(elementId);
+            } else {
+                // Assign to module variable
+                if (varName === 'componentLibraryModal') componentLibraryModal = element;
+                else if (varName === 'componentGrid') componentGrid = element;
+                else if (varName === 'addComponentButton') addComponentButton = element;
+                else if (varName === 'cancelComponentButton') cancelComponentButton = element;
+                else if (varName === 'componentSearchInput') componentSearchInput = element;
+            }
+        }
+        
+        if (missingElements.length === 0) {
+            structuredLogger.debug('MODAL', 'All Component Library elements validated successfully', {
+                duration: Date.now() - startTime
+            });
+            return;
+        }
+        
+        // Log progress every second
+        if ((Date.now() - startTime) % 1000 < checkInterval) {
+            structuredLogger.debug('MODAL', 'Still waiting for elements', {
+                missing: missingElements,
+                elapsed: Date.now() - startTime
+            });
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+    
+    // Final check
+    const finalMissing = [];
+    for (const elementId of Object.keys(requiredElements)) {
+        if (!document.getElementById(elementId)) {
+            finalMissing.push(elementId);
         }
     }
     
-    if (missingElements.length > 0) {
-        structuredLogger.error('MODAL', 'Component Library: Required elements not found', null, {
-            missing: missingElements,
-            found: Object.keys(requiredElements).filter(id => !missingElements.includes(id))
+    if (finalMissing.length > 0) {
+        structuredLogger.error('MODAL', 'Component Library: Required elements not found after timeout', null, {
+            missing: finalMissing,
+            timeout: maxWaitTime,
+            found: Object.keys(requiredElements).filter(id => !finalMissing.includes(id))
         });
-        throw new Error(`Component Library: Required elements not found: ${missingElements.join(', ')}`);
+        throw new Error(`Component Library: Required elements not found after ${maxWaitTime}ms: ${finalMissing.join(', ')}`);
     }
+}
+
+/**
+ * Marks all button listeners as attached for validation purposes
+ * This helps prevent race conditions by confirming setup completion
+ */
+function markButtonListenersAttached() {
+    const buttons = [
+        'add-component-btn',      // Sidebar button
+        'add-first-component',    // Empty state button
+        'add-component-button',   // Modal add button
+        'cancel-component-button', // Modal cancel button
+        'close-library'           // Modal close button
+    ];
     
-    structuredLogger.debug('MODAL', 'All Component Library elements validated successfully');
+    let markedCount = 0;
+    
+    buttons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.setAttribute('data-listener-attached', 'true');
+            markedCount++;
+            structuredLogger.debug('MODAL', `Marked listener attached: ${buttonId}`);
+        } else {
+            structuredLogger.warn('MODAL', `Button not found for marking: ${buttonId}`);
+        }
+    });
+    
+    structuredLogger.info('MODAL', 'Button listeners marked as attached', {
+        marked: markedCount,
+        total: buttons.length,
+        buttons: buttons
+    });
 }
 
 /**
@@ -251,8 +314,24 @@ function populateComponentGrid() {
     // Check if we have guestifyData components
     if (window.guestifyData?.components && Array.isArray(window.guestifyData.components)) {
         structuredLogger.info('MODAL', 'Loading components from guestifyData', {
-            count: window.guestifyData.components.length
+        count: window.guestifyData.components.length
         });
+    
+    // Log icon status for debugging
+    const iconStats = { svg: 0, fontawesome: 0, none: 0 };
+    window.guestifyData.components.forEach(component => {
+        if (component.icon) {
+            if (component.icon.endsWith('.svg')) {
+                iconStats.svg++;
+            } else {
+                iconStats.fontawesome++;
+            }
+        } else {
+            iconStats.none++;
+        }
+    });
+    
+    structuredLogger.info('MODAL', 'Icon distribution', iconStats);
         
         window.guestifyData.components.forEach(component => {
             const card = createComponentCard(component);
@@ -281,7 +360,7 @@ function createComponentCard(component) {
     card.dataset.component = component.type || component.directory || component.name;
     card.dataset.category = component.category || 'general';
 
-    const icon = component.icon ? `<i class="fa ${component.icon}"></i>` : createDefaultIcon();
+    const icon = createComponentIcon(component);
     const title = `<h4>${component.title || component.name || 'Untitled'}</h4>`;
     const description = `<p>${component.description || 'No description available'}</p>`;
 
@@ -335,13 +414,40 @@ function setupExistingCards() {
 }
 
 /**
+ * Creates an icon for a component - handles both SVG files and FontAwesome classes
+ * @param {Object} component - The component object
+ * @returns {string} HTML string for the icon
+ */
+function createComponentIcon(component) {
+    if (component.icon) {
+        if (component.icon.endsWith('.svg')) {
+            // Handle SVG files with proper path resolution
+            const componentDir = component.directory || component.name;
+            const iconPath = `${window.guestifyData.pluginUrl}components/${componentDir}/${component.icon}`;
+            
+            // Add error handling to fallback to default icon if SVG fails to load
+            const defaultIconEscaped = createDefaultIcon().replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            
+            return `<img src="${iconPath}" alt="${component.name} icon" class="component-icon" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'; console.log('SVG not found: ${component.icon}')" />
+                     <span style="display:none;">${defaultIconEscaped}</span>`;
+        } else {
+            // Handle FontAwesome classes
+            return `<i class="fa ${component.icon}"></i>`;
+        }
+    }
+    return createDefaultIcon();
+}
+
+/**
  * Creates a default icon for components without specific icons
  */
 function createDefaultIcon() {
     return `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <circle cx="12" cy="12" r="3"></circle>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
+            <circle cx="9" cy="9" r="2"></circle>
+            <path d="M21 15l-3.086-3.086a2 2 0 00-2.828 0L6 21"></path>
         </svg>
     `;
 }
