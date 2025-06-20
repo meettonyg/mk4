@@ -53,6 +53,9 @@ class Guestify_Media_Kit_Builder {
         // Initialize enhanced schema-driven system
         require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-init.php';
         
+        // Initialize REST API endpoints
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/api/rest-api-templates.php';
+        
         // Initialize component system
         $this->component_discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components');
         $this->component_discovery->scan();

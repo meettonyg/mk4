@@ -177,8 +177,18 @@ class TemplateLoader {
             const card = document.createElement('div');
             card.className = 'template-card';
             card.dataset.templateId = template.id;
+            // Use CSS placeholder instead of missing images
+            const thumbnailHtml = template.thumbnail ? 
+                `<img src="${template.thumbnail}" alt="${template.name}" class="template-thumbnail" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : '';
+            
             card.innerHTML = `
-                <img src="${template.thumbnail || ''}" alt="${template.name}" class="template-thumbnail">
+                ${thumbnailHtml}
+                <div class="template-thumbnail-placeholder" style="${template.thumbnail ? 'display:none;' : 'display:flex;'} width:100%; height:150px; background:#f3f4f6; align-items:center; justify-content:center; color:#6b7280; font-size:14px; text-align:center; padding:20px;">
+                    <div>
+                        <div style="font-size:48px; margin-bottom:10px;">📄</div>
+                        <div>${template.name}</div>
+                    </div>
+                </div>
                 <div class="template-name">${template.name}</div>
             `;
             card.addEventListener('click', () => {

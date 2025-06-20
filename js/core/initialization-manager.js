@@ -47,9 +47,17 @@ class InitializationManager {
             timeout: 3000
         });
         
+        this.tracker.registerStep('templates', {
+            description: 'Preload all component templates',
+            dependencies: ['systems'],
+            critical: false,
+            timeout: 5000,
+            retryCount: 2
+        });
+        
         this.tracker.registerStep('core-ui', {
             description: 'Setup tabs, layout, and empty state',
-            dependencies: ['systems'],
+            dependencies: ['templates'],
             critical: true,
             timeout: 2000
         });
@@ -131,6 +139,7 @@ class InitializationManager {
             // Execute each step with proper error handling
             await this.executeStep('prerequisites', () => this.validatePrerequisites());
             await this.executeStep('systems', () => this.loadSystems());
+            await this.executeStep('templates', () => this.preloadTemplates());
             await this.executeStep('core-ui', () => this.setupCoreUI());
             await this.executeStep('modal-html', () => this.waitForModalHTML());
             await this.executeStep('modals', () => this.setupModals());
@@ -293,6 +302,41 @@ class InitializationManager {
         });
     }
 
+    /**
+     * Preloads all component templates to eliminate race conditions
+     */
+    async preloadTemplates() {
+        this.logger.info('TEMPLATES', 'Starting template preload');
+        
+        try {
+            // Import template preloader
+            const { templatePreloader } = await import('../services/template-preloader.js');
+            
+            // Initialize and preload templates
+            const preloadStart = performance.now();
+            const success = await templatePreloader.init();
+            
+            if (!success) {
+                this.logger.warn('TEMPLATES', 'Template preload returned false, but continuing');
+            }
+            
+            // Get preloader status for logging
+            const status = templatePreloader.getStatus();
+            
+            this.logger.info('TEMPLATES', 'Template preload complete', {
+                success,
+                duration: performance.now() - preloadStart,
+                templatesLoaded: status.cacheStats.size,
+                cacheHitRate: status.cacheStats.hitRate
+            });
+            
+        } catch (error) {
+            // Template preloading is non-critical - log error but continue
+            this.logger.error('TEMPLATES', 'Template preload failed', error);
+            this.logger.warn('TEMPLATES', 'Continuing without preloaded templates - will fetch on demand');
+        }
+    }
+    
     /**
      * Sets up core UI components (excluding modals)
      */

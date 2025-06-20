@@ -119,12 +119,30 @@ function guestify_media_kit_builder_enqueue_scripts() {
         'nonce' => wp_create_nonce('guestify_media_kit_builder'),
         'restUrl' => esc_url_raw(rest_url()),
         'restNonce' => wp_create_nonce('wp_rest'),
+        'siteUrl' => home_url(), // Add site URL for REST API calls
         'pluginUrl' => $plugin_url,
         'pluginVersion' => GUESTIFY_VERSION,
         'components' => $components_array, // Ensure it's a proper array
         'categories' => $component_discovery->getCategories(),
         'componentSchemas' => $component_schemas, // Add schemas for immediate access
         'initialState' => $saved_state, // Add any saved state
+        'templates' => array( // Add preset templates for template library
+            array(
+                'id' => 'basic',
+                'name' => 'Basic Kit',
+                'thumbnail' => '' // Placeholder will be used
+            ),
+            array(
+                'id' => 'professional',
+                'name' => 'Professional Kit',
+                'thumbnail' => '' // Placeholder will be used
+            ),
+            array(
+                'id' => 'creative',
+                'name' => 'Creative Kit',
+                'thumbnail' => '' // Placeholder will be used
+            )
+        ),
         'features' => array( // Add feature flags from PHP
             'useEnhancedInit' => true,
             'useBatchUpdates' => true,
