@@ -17,6 +17,18 @@ import {
 import {
     performanceMonitor
 } from '../utils/performance-monitor.js';
+import {
+    uiRegistry
+} from './ui-registry.js';
+import {
+    eventBus
+} from './event-bus.js';
+import {
+    structuredLogger
+} from '../utils/structured-logger.js';
+import {
+    showToast
+} from '../utils/toast-polyfill.js';
 
 class EnhancedComponentRenderer {
     constructor() {
@@ -31,6 +43,158 @@ class EnhancedComponentRenderer {
         this.renderDebounceTimer = null;
         this.renderStartTime = null;
         this.healthCheckInterval = null;
+        this.logger = structuredLogger;
+        
+        // UI Registry integration
+        this.registeredComponents = new Set();
+        this.updateHandlers = new Map();
+        
+        // Setup UI registry event listeners
+        this.setupUIRegistryListeners();
+        
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
+    }
+    
+    /**
+     * Setup keyboard shortcuts for undo/redo and other functions
+     */
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (event) => {
+            // Only handle shortcuts when not in input fields
+            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) {
+                return;
+            }
+            
+            // Undo: Ctrl+Z (or Cmd+Z on Mac)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+                event.preventDefault();
+                this.handleUndo();
+                return;
+            }
+            
+            // Redo: Ctrl+Y or Ctrl+Shift+Z (or Cmd+Y/Cmd+Shift+Z on Mac)
+            if ((event.ctrlKey || event.metaKey) && 
+                (event.key === 'y' || (event.key === 'z' && event.shiftKey))) {
+                event.preventDefault();
+                this.handleRedo();
+                return;
+            }
+            
+            // Save: Ctrl+S (or Cmd+S on Mac)
+            if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                event.preventDefault();
+                this.handleSave();
+                return;
+            }
+            
+            // Performance monitor toggle: Ctrl+Shift+P
+            if (event.ctrlKey && event.shiftKey && event.key === 'P') {
+                event.preventDefault();
+                this.togglePerformanceMonitor();
+                return;
+            }
+        });
+        
+        this.logger.debug('RENDER', 'Keyboard shortcuts setup complete');
+    }
+    
+    /**
+     * Handle undo shortcut
+     */
+    handleUndo() {
+        if (window.stateHistory && window.stateHistory.canUndo()) {
+            const success = window.stateHistory.undo();
+            if (success) {
+                this.logger.info('UI', 'Undo performed via keyboard shortcut');
+                showToast('Undone', 'info', 1000);
+            }
+        } else {
+            this.logger.debug('UI', 'Cannot undo: no history available');
+        }
+    }
+    
+    /**
+     * Handle redo shortcut
+     */
+    handleRedo() {
+        if (window.stateHistory && window.stateHistory.canRedo()) {
+            const success = window.stateHistory.redo();
+            if (success) {
+                this.logger.info('UI', 'Redo performed via keyboard shortcut');
+                showToast('Redone', 'info', 1000);
+            }
+        } else {
+            this.logger.debug('UI', 'Cannot redo: no future history available');
+        }
+    }
+    
+    /**
+     * Handle save shortcut
+     */
+    handleSave() {
+        if (window.saveService) {
+            window.saveService.saveState();
+            this.logger.info('UI', 'Save performed via keyboard shortcut');
+            showToast('Saved', 'success', 1000);
+        }
+    }
+    
+    /**
+     * Toggle performance monitor
+     */
+    togglePerformanceMonitor() {
+        if (window.mkPerf) {
+            window.mkPerf.report();
+            this.logger.info('UI', 'Performance monitor toggled via keyboard shortcut');
+        }
+    }
+    
+    /**
+     * Setup UI registry event listeners
+     */
+    setupUIRegistryListeners() {
+        // Listen for components that need re-rendering
+        eventBus.on('ui:component-needs-render', (event) => {
+            this.handleComponentRerenderRequest(event.data);
+        });
+        
+        // Listen for batch update completion
+        eventBus.on('ui:batch-update-complete', (event) => {
+            this.logger.debug('RENDER', `UI batch update completed`, event.data);
+        });
+    }
+    
+    /**
+     * Handle component re-render requests from UI registry
+     */
+    async handleComponentRerenderRequest({ componentId, element, state }) {
+        try {
+            const perfEnd = performanceMonitor.start('component-rerender', { componentId });
+            
+            // Re-render component with new state
+            const { element: newElement } = await this.renderComponentWithLoader(
+                componentId, 
+                state.type, 
+                state.props || state.data
+            );
+            
+            // Replace in DOM
+            element.replaceWith(newElement);
+            
+            // Update cache
+            this.componentCache.set(componentId, newElement);
+            
+            // Re-register with UI registry
+            this.registerComponentWithUIRegistry(componentId, newElement, state);
+            
+            perfEnd();
+            
+            this.logger.debug('RENDER', `Component re-rendered: ${componentId}`);
+            
+        } catch (error) {
+            this.logger.error('RENDER', `Failed to re-render component: ${componentId}`, error);
+        }
     }
 
     init() {
@@ -172,25 +336,49 @@ class EnhancedComponentRenderer {
     }
 
     removeComponents(componentIds) {
+        const perfEnd = performanceMonitor.start('remove-components', {
+            count: componentIds.size
+        });
+        
         componentIds.forEach(id => {
             const element = this.componentCache.get(id) || document.getElementById(id);
             if (element) {
                 element.remove();
                 this.componentCache.delete(id);
+                
+                // Unregister from UI registry
+                if (this.registeredComponents.has(id)) {
+                    const unregister = this.updateHandlers.get(id);
+                    if (unregister) {
+                        unregister();
+                    }
+                    this.updateHandlers.delete(id);
+                    this.registeredComponents.delete(id);
+                    
+                    this.logger.debug('RENDER', `Unregistered component from UI registry: ${id}`);
+                }
             }
         });
+        
+        perfEnd();
+        
+        this.logger.debug('RENDER', `Removed ${componentIds.size} components`);
     }
 
     async renderNewComponents(componentIds, newState) {
+        const perfEnd = performanceMonitor.start('render-new-components', {
+            count: componentIds.size
+        });
+        
         const fragment = document.createDocumentFragment();
         const renderPromises = Array.from(componentIds).map(id => {
             const componentState = newState.components[id];
             if (!componentState) {
-                console.error(`State for new component ${id} not found!`);
+                this.logger.error('RENDER', `State for new component ${id} not found!`);
                 return null;
             }
             // FIX: Use the new dynamicComponentLoader instance
-            return this.renderComponentWithLoader(id, componentState.type, componentState.data);
+            return this.renderComponentWithLoader(id, componentState.type, componentState.props || componentState.data);
         });
 
         const renderedComponents = await Promise.all(renderPromises);
@@ -198,6 +386,10 @@ class EnhancedComponentRenderer {
             if (comp) {
                 fragment.appendChild(comp.element);
                 this.componentCache.set(comp.id, comp.element);
+                
+                // Register with UI registry
+                const componentState = newState.components[comp.id];
+                this.registerComponentWithUIRegistry(comp.id, comp.element, componentState);
             }
         });
 
@@ -205,24 +397,105 @@ class EnhancedComponentRenderer {
 
         const state = enhancedStateManager.getState();
         this.reorderComponents(state.layout);
+        
+        perfEnd();
+        
+        this.logger.debug('RENDER', `Rendered ${componentIds.size} new components`);
+    }
+    
+    /**
+     * Register component with UI registry for reactive updates
+     */
+    registerComponentWithUIRegistry(componentId, element, componentState) {
+        if (this.registeredComponents.has(componentId)) {
+            // Already registered, update registration
+            uiRegistry.unregister(componentId);
+        }
+        
+        // Create update function for this component type
+        const updateFn = this.createUpdateFunction(componentState.type);
+        
+        // Register with UI registry
+        const unregister = uiRegistry.register(componentId, element, updateFn, {
+            updateOn: ['props', 'data'], // Only update on props/data changes
+            componentType: componentState.type
+        });
+        
+        // Store unregister function
+        this.updateHandlers.set(componentId, unregister);
+        this.registeredComponents.add(componentId);
+        
+        this.logger.debug('RENDER', `Registered component with UI registry: ${componentId}`);
+    }
+    
+    /**
+     * Create update function for component type
+     */
+    createUpdateFunction(componentType) {
+        return (element, newState, context) => {
+            // For now, trigger a re-render event
+            // In the future, this could be more granular per component type
+            eventBus.emit('ui:component-needs-render', {
+                componentId: element.getAttribute('data-component-id'),
+                element,
+                state: newState
+            });
+        };
     }
 
     async updateComponents(componentIds, newState) {
-        const updatePromises = Array.from(componentIds).map(async (id) => {
+        const perfEnd = performanceMonitor.start('update-components', {
+            count: componentIds.size
+        });
+        
+        // Use UI registry for efficient updates where possible
+        const uiRegistryUpdates = [];
+        const fallbackUpdates = [];
+        
+        componentIds.forEach(id => {
+            if (this.registeredComponents.has(id)) {
+                // Use UI registry for efficient update
+                uiRegistryUpdates.push(id);
+            } else {
+                // Fallback to full re-render
+                fallbackUpdates.push(id);
+            }
+        });
+        
+        // Process UI registry updates (these are handled automatically by the registry)
+        uiRegistryUpdates.forEach(id => {
+            uiRegistry.forceUpdate(id);
+        });
+        
+        // Process fallback updates
+        const updatePromises = fallbackUpdates.map(async (id) => {
             const componentState = newState.components[id];
             const oldElement = this.componentCache.get(id) || document.getElementById(id);
             if (oldElement && componentState) {
                 const {
                     element: newElement
                     // FIX: Use the new dynamicComponentLoader instance
-                } = await this.renderComponentWithLoader(id, componentState.type, componentState.data);
+                } = await this.renderComponentWithLoader(id, componentState.type, componentState.props || componentState.data);
+                
+                // Compare content before replacing
                 if (oldElement.innerHTML !== newElement.innerHTML) {
                     oldElement.replaceWith(newElement);
                     this.componentCache.set(id, newElement);
+                    
+                    // Register new element with UI registry
+                    this.registerComponentWithUIRegistry(id, newElement, componentState);
                 }
             }
         });
+        
         await Promise.all(updatePromises);
+        
+        perfEnd();
+        
+        this.logger.debug('RENDER', `Updated ${componentIds.size} components`, {
+            uiRegistryUpdates: uiRegistryUpdates.length,
+            fallbackUpdates: fallbackUpdates.length
+        });
     }
 
     reorderComponents(layout) {
@@ -319,10 +592,60 @@ class EnhancedComponentRenderer {
         if (this.stateUnsubscribe) this.stateUnsubscribe();
         if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
         if (this.renderDebounceTimer) clearTimeout(this.renderDebounceTimer);
+        
+        // Clean up UI registry registrations
+        this.registeredComponents.forEach(componentId => {
+            const unregister = this.updateHandlers.get(componentId);
+            if (unregister) {
+                unregister();
+            }
+        });
+        
         this.initialized = false;
         this.componentCache.clear();
         this.renderQueue.clear();
+        this.registeredComponents.clear();
+        this.updateHandlers.clear();
         this.isRendering = false;
+        
+        this.logger.info('RENDER', 'Enhanced component renderer destroyed');
+    }
+    
+    /**
+     * Get renderer statistics
+     */
+    getStats() {
+        return {
+            initialized: this.initialized,
+            cachedComponents: this.componentCache.size,
+            registeredWithUIRegistry: this.registeredComponents.size,
+            queueSize: this.renderQueue.size,
+            isRendering: this.isRendering,
+            renderStartTime: this.renderStartTime
+        };
+    }
+    
+    /**
+     * Debug renderer state
+     */
+    debug() {
+        console.group('%c🎨 Enhanced Component Renderer Debug', 'font-size: 14px; font-weight: bold; color: #9C27B0');
+        
+        const stats = this.getStats();
+        console.log('Renderer Stats:', stats);
+        
+        console.log('Component Cache:');
+        console.table(Array.from(this.componentCache.keys()).map(id => ({
+            componentId: id,
+            hasElement: !!this.componentCache.get(id),
+            registeredWithUIRegistry: this.registeredComponents.has(id)
+        })));
+        
+        if (this.renderQueue.size > 0) {
+            console.log('Render Queue:', Array.from(this.renderQueue));
+        }
+        
+        console.groupEnd();
     }
 
     /**
@@ -357,20 +680,18 @@ class EnhancedComponentRenderer {
         if (addFirstComponentBtn && !addFirstComponentBtn.hasAttribute('data-listener-attached')) {
             addFirstComponentBtn.setAttribute('data-listener-attached', 'true');
             addFirstComponentBtn.addEventListener('click', () => {
-                console.log('Add first component clicked');
-                // Trigger component library modal directly via event
-                const event = new CustomEvent('show-component-library');
-                document.dispatchEvent(event);
+                this.logger.debug('UI', 'Add first component clicked');
+                // Trigger component library modal via event bus
+                eventBus.emit('ui:show-component-library');
             });
         }
 
         if (loadTemplateBtn && !loadTemplateBtn.hasAttribute('data-listener-attached')) {
             loadTemplateBtn.setAttribute('data-listener-attached', 'true');
             loadTemplateBtn.addEventListener('click', () => {
-                console.log('Load template clicked');
-                // Trigger template library modal
-                const event = new CustomEvent('show-template-library');
-                document.dispatchEvent(event);
+                this.logger.debug('UI', 'Load template clicked');
+                // Trigger template library modal via event bus
+                eventBus.emit('ui:show-template-library');
             });
         }
     }

@@ -12,6 +12,7 @@ import {
 } from './modal-base.js';
 import { structuredLogger } from '../utils/structured-logger.js';
 import { errorBoundary } from '../utils/error-boundary.js';
+import { eventBus } from '../core/event-bus.js';
 
 // Module-level variables for DOM elements
 let componentLibraryModal, componentGrid, addComponentButton, cancelComponentButton, componentSearchInput;
@@ -134,8 +135,9 @@ function setupEventListeners() {
         structuredLogger.warn('UI', 'Sidebar Add Component button not found', { elementId: 'add-component-btn' });
     }
 
-    // Empty state button event
-    document.addEventListener('show-component-library', () => {
+    // Empty state button event - using event bus
+    eventBus.on('ui:show-component-library', () => {
+        structuredLogger.debug('UI', 'Component library requested via event bus');
         showComponentLibraryModal();
     });
     

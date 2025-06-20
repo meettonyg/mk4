@@ -24,6 +24,7 @@ import {
 } from '../utils/toast-polyfill.js';
 import { structuredLogger } from '../utils/structured-logger.js';
 import { errorBoundary } from '../utils/error-boundary.js';
+import { eventBus } from '../core/event-bus.js';
 
 class TemplateLoader {
     constructor() {
@@ -72,9 +73,9 @@ class TemplateLoader {
                 openButton: !!this.openButton
             });
 
-            // The button in the empty state dispatches a custom event.
-            document.addEventListener('show-template-library', () => {
-                structuredLogger.debug('TEMPLATE', 'Show template library event received');
+            // The button in the empty state dispatches a custom event - using event bus.
+            eventBus.on('ui:show-template-library', () => {
+                structuredLogger.debug('TEMPLATE', 'Show template library event received via event bus');
                 this.show();
             });
             
