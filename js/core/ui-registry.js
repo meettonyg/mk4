@@ -2,9 +2,11 @@
  * UI Registry for Reactive Component Updates
  * Provides fine-grained subscriptions for efficient UI updates
  * Part of Phase 3: Enhanced State Integration
+ * 
+ * PHASE 3 FIX: Removed circular dependency with enhancedStateManager
  */
 
-import { enhancedStateManager } from './enhanced-state-manager.js';
+// REMOVED: import { enhancedStateManager } from './enhanced-state-manager.js';
 import { eventBus } from './event-bus.js';
 import { structuredLogger } from '../utils/structured-logger.js';
 import { performanceMonitor } from '../utils/performance-monitor.js';
@@ -31,12 +33,26 @@ class UIRegistry {
 
     /**
      * Setup global state change listener
+     * PHASE 3 FIX: Access enhancedStateManager through window to avoid circular dependency
      */
     setupStateListener() {
-        // Subscribe to state changes
-        enhancedStateManager.subscribeGlobal((state) => {
-            this.handleStateChange(state);
-        });
+        // Subscribe to state changes - access via window to avoid circular dependency
+        const subscribeWhenReady = () => {
+            const stateManager = window.enhancedStateManager;
+            if (stateManager && stateManager.subscribeGlobal) {
+                stateManager.subscribeGlobal((state) => {
+                    this.handleStateChange(state);
+                });
+                
+                this.logger.debug('UI', 'State change subscription established');
+            } else {
+                // Retry after a short delay if state manager not ready
+                setTimeout(subscribeWhenReady, 100);
+            }
+        };
+        
+        // Start subscription process
+        subscribeWhenReady();
 
         // Listen for specific component events
         eventBus.on('state:component-added', (event) => {
@@ -261,12 +277,20 @@ class UIRegistry {
 
     /**
      * Update a specific component
+     * PHASE 3 FIX: Access enhancedStateManager through window
      */
     updateComponent(componentId) {
         const component = this.components.get(componentId);
         if (!component) return;
 
-        const state = enhancedStateManager.getState();
+        // Access state manager through window
+        const stateManager = window.enhancedStateManager;
+        if (!stateManager) {
+            this.logger.warn('UI', 'Enhanced state manager not available for component update');
+            return;
+        }
+
+        const state = stateManager.getState();
         const componentState = state.components[componentId];
         
         if (!componentState) {

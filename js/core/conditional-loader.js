@@ -35,6 +35,20 @@ import {
     performanceMonitor
 } from '../utils/performance-monitor.js';
 
+// PHASE 3 SYSTEM IMPORTS - Import to trigger global exposure
+import {
+    stateValidator
+} from './state-validator.js';
+import {
+    uiRegistry
+} from './ui-registry.js';
+import {
+    stateHistory
+} from './state-history.js';
+import {
+    eventBus
+} from './event-bus.js';
+
 /**
  * Synchronously initializes the appropriate systems based on feature flags.
  * This prevents race conditions by avoiding dynamic imports.
@@ -64,6 +78,15 @@ export function initializeSystems(flags) {
     window.componentManager = selectedSystems.componentManager;
     window.renderer = selectedSystems.renderer;
     window.initializer = selectedSystems.initializer;
+    
+    // PHASE 3 FIX: Expose enhanced state manager globally
+    if (selectedSystems.stateManagerType === 'enhanced') {
+        window.enhancedStateManager = selectedSystems.stateManager;
+        console.log('✅ Enhanced State Manager exposed globally');
+    }
+    
+    // PHASE 3 FIX: Initialize and expose Phase 3 systems
+    initializePhase3Systems();
     
     console.log('✅ ConditionalLoader: Systems loaded and validated');
     console.log('📊 ConditionalLoader: System selection:', {
@@ -238,3 +261,75 @@ export function getSystemInfo() {
 
 // Expose system info globally for debugging
 window.getSystemInfo = getSystemInfo;
+
+/**
+ * Initialize Phase 3 systems and ensure global exposure
+ * PHASE 3 FIX: Explicitly initialize systems that may not auto-expose
+ */
+function initializePhase3Systems() {
+    console.log('🚀 ConditionalLoader: Initializing Phase 3 systems...');
+    
+    // Ensure all Phase 3 systems are globally exposed
+    window.stateValidator = stateValidator;
+    window.uiRegistry = uiRegistry;
+    window.stateHistory = stateHistory;
+    window.eventBus = eventBus;
+    window.saveService = null; // Will be set by save service import
+    
+    // Log system availability for debugging
+    const phase3Systems = {
+        stateValidator: !!window.stateValidator,
+        uiRegistry: !!window.uiRegistry,
+        stateHistory: !!window.stateHistory,
+        eventBus: !!window.eventBus,
+        enhancedStateManager: !!window.enhancedStateManager
+    };
+    
+    console.log('📊 ConditionalLoader: Phase 3 systems status:', phase3Systems);
+    
+    const workingSystems = Object.values(phase3Systems).filter(Boolean).length;
+    console.log(`✅ ConditionalLoader: ${workingSystems}/5 Phase 3 systems initialized`);
+    
+    // Initialize keyboard shortcuts for state history
+    if (window.stateHistory && document) {
+        setupKeyboardShortcuts();
+    }
+}
+
+/**
+ * Setup keyboard shortcuts for undo/redo functionality
+ * PHASE 3 FIX: Wire up Ctrl+Z and Ctrl+Y to state history
+ */
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (event) => {
+        // Check for Ctrl+Z (undo)
+        if (event.ctrlKey && event.key === 'z' && !event.shiftKey) {
+            event.preventDefault();
+            if (window.stateHistory && window.stateHistory.canUndo()) {
+                window.stateHistory.undo();
+                console.log('↩️ Undo triggered via Ctrl+Z');
+            }
+        }
+        
+        // Check for Ctrl+Y or Ctrl+Shift+Z (redo)
+        if ((event.ctrlKey && event.key === 'y') || 
+            (event.ctrlKey && event.shiftKey && event.key === 'z')) {
+            event.preventDefault();
+            if (window.stateHistory && window.stateHistory.canRedo()) {
+                window.stateHistory.redo();
+                console.log('↪️ Redo triggered via Ctrl+Y');
+            }
+        }
+        
+        // Check for Ctrl+S (manual save)
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault();
+            if (window.saveService && window.saveService.saveState) {
+                window.saveService.saveState();
+                console.log('💾 Manual save triggered via Ctrl+S');
+            }
+        }
+    });
+    
+    console.log('⌨️ ConditionalLoader: Keyboard shortcuts initialized (Ctrl+Z, Ctrl+Y, Ctrl+S)');
+}

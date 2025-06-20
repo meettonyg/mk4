@@ -2,9 +2,11 @@
  * State History for Time-Travel Debugging
  * Tracks all state changes for debugging and undo/redo functionality
  * Part of Phase 3: Enhanced State Integration
+ * 
+ * PHASE 3 FIX: Removed circular dependency with enhancedStateManager
  */
 
-import { enhancedStateManager } from './enhanced-state-manager.js';
+// REMOVED: import { enhancedStateManager } from './enhanced-state-manager.js';
 import { eventBus } from './event-bus.js';
 import { structuredLogger } from '../utils/structured-logger.js';
 
@@ -33,14 +35,31 @@ class StateHistory {
 
     /**
      * Setup automatic state tracking
+     * PHASE 3 FIX: Access enhancedStateManager through window to avoid circular dependency
      */
     setupStateTracking() {
-        // Subscribe to state changes
-        enhancedStateManager.subscribeGlobal((state) => {
-            if (!this.isNavigating && this.isEnabled) {
-                this.captureSnapshot(state);
+        // Subscribe to state changes - access via window to avoid circular dependency
+        const getStateManager = () => window.enhancedStateManager;
+        
+        // Set up subscription when state manager becomes available
+        const subscribeWhenReady = () => {
+            const stateManager = getStateManager();
+            if (stateManager && stateManager.subscribeGlobal) {
+                stateManager.subscribeGlobal((state) => {
+                    if (!this.isNavigating && this.isEnabled) {
+                        this.captureSnapshot(state);
+                    }
+                });
+                
+                this.logger.debug('HISTORY', 'State tracking subscription established');
+            } else {
+                // Retry after a short delay if state manager not ready
+                setTimeout(subscribeWhenReady, 100);
             }
-        });
+        };
+        
+        // Start subscription process
+        subscribeWhenReady();
 
         // Listen for transaction events
         eventBus.on('state:transaction-applied', (event) => {
@@ -175,10 +194,18 @@ class StateHistory {
 
     /**
      * Navigate to previous state (undo)
+     * PHASE 3 FIX: Access enhancedStateManager through window
      */
     undo() {
         if (!this.canUndo()) {
             this.logger.warn('HISTORY', 'Cannot undo: at beginning of history');
+            return false;
+        }
+
+        // Access state manager through window
+        const stateManager = window.enhancedStateManager;
+        if (!stateManager) {
+            this.logger.error('HISTORY', 'Enhanced state manager not available for undo');
             return false;
         }
 
@@ -195,7 +222,7 @@ class StateHistory {
         });
 
         // Apply state
-        enhancedStateManager.applyTransaction({
+        stateManager.applyTransaction({
             type: 'SET_STATE',
             payload: state
         });
@@ -212,10 +239,18 @@ class StateHistory {
 
     /**
      * Navigate to next state (redo)
+     * PHASE 3 FIX: Access enhancedStateManager through window
      */
     redo() {
         if (!this.canRedo()) {
             this.logger.warn('HISTORY', 'Cannot redo: at end of history');
+            return false;
+        }
+
+        // Access state manager through window
+        const stateManager = window.enhancedStateManager;
+        if (!stateManager) {
+            this.logger.error('HISTORY', 'Enhanced state manager not available for redo');
             return false;
         }
 
@@ -232,7 +267,7 @@ class StateHistory {
         });
 
         // Apply state
-        enhancedStateManager.applyTransaction({
+        stateManager.applyTransaction({
             type: 'SET_STATE',
             payload: state
         });
@@ -249,6 +284,7 @@ class StateHistory {
 
     /**
      * Jump to specific point in history
+     * PHASE 3 FIX: Access enhancedStateManager through window
      */
     jumpTo(index) {
         if (index < 0 || index >= this.history.length) {
@@ -256,6 +292,13 @@ class StateHistory {
         }
 
         if (index === this.currentIndex) {
+            return false;
+        }
+
+        // Access state manager through window
+        const stateManager = window.enhancedStateManager;
+        if (!stateManager) {
+            this.logger.error('HISTORY', 'Enhanced state manager not available for jumpTo');
             return false;
         }
 
@@ -274,7 +317,7 @@ class StateHistory {
         });
 
         // Apply state
-        enhancedStateManager.applyTransaction({
+        stateManager.applyTransaction({
             type: 'SET_STATE',
             payload: state
         });

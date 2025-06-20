@@ -46,6 +46,9 @@ export async function initializeEnhancedBuilder() {
     // 1. Initialize services that don't depend on the DOM.
     keyboardService.init();
     enhancedComponentRenderer.init();
+    
+    // PHASE 3 FIX: Expose save service globally
+    window.saveService = saveService;
 
     // 2. Restore State from localStorage.
     restoreState();

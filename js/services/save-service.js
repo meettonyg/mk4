@@ -4,10 +4,10 @@
  *
  * Phase 3 Update: Migrated to use enhancedStateManager with validation,
  * state history integration, and improved error handling.
+ * 
+ * PHASE 3 FIX: Removed circular dependency with enhancedStateManager
  */
-import {
-    enhancedStateManager
-} from '../core/enhanced-state-manager.js';
+// REMOVED: import { enhancedStateManager } from '../core/enhanced-state-manager.js';
 import {
     stateValidator
 } from '../core/state-validator.js';
@@ -68,13 +68,24 @@ class SaveService {
     /**
      * Saves the current state of the media kit to localStorage with validation.
      * @param {object} [stateToSave] - Optional state to save, defaults to current state
+     * PHASE 3 FIX: Access enhancedStateManager through window
      */
     saveState(stateToSave = null) {
         const perfEnd = performanceMonitor.start('state-save');
         
         try {
-            // Get current state from enhanced state manager
-            const currentState = stateToSave || enhancedStateManager.getState();
+            // Get current state from enhanced state manager via window
+            const stateManager = window.enhancedStateManager;
+            if (!stateManager && !stateToSave) {
+                this.logger.warn('SAVE', 'Enhanced state manager not available and no state provided');
+                return;
+            }
+            
+            const currentState = stateToSave || (stateManager ? stateManager.getState() : null);
+            
+            if (!currentState) {
+                throw new Error('No state available to save');
+            }
             
             // Validate state before saving
             const validation = stateValidator.validateState(currentState, { autoRecover: true });
@@ -371,9 +382,17 @@ class SaveService {
     
     /**
      * Export state data
+     * PHASE 3 FIX: Access enhancedStateManager through window
      */
     exportState() {
-        const state = enhancedStateManager.getState();
+        const stateManager = window.enhancedStateManager;
+        if (!stateManager) {
+            this.logger.error('SAVE', 'Enhanced state manager not available for export');
+            showToast('Error: Cannot export - state manager not available', 'error');
+            return;
+        }
+        
+        const state = stateManager.getState();
         const exportData = {
             ...state,
             meta: {
@@ -400,6 +419,7 @@ class SaveService {
     
     /**
      * Import state data
+     * PHASE 3 FIX: Access enhancedStateManager through window
      */
     async importState(file) {
         try {
@@ -415,8 +435,15 @@ class SaveService {
             
             const finalState = validation.recovered ? validation.fixed : importedData;
             
-            // Load into state manager
-            enhancedStateManager.setInitialState(finalState);
+            // Load into state manager via window
+            const stateManager = window.enhancedStateManager;
+            if (!stateManager) {
+                this.logger.error('SAVE', 'Enhanced state manager not available for import');
+                showToast('Error: Cannot import - state manager not available', 'error');
+                return;
+            }
+            
+            stateManager.setInitialState(finalState);
             
             this.logger.info('SAVE', 'State imported successfully');
             showToast('Media kit imported successfully', 'success');
