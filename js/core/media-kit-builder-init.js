@@ -3,8 +3,9 @@
  * @description Initializes the Media Kit Builder application, including core services and UI components.
  * This is the main entry point for the enhanced, feature-flag-driven initialization sequence.
  *
- * This version includes a critical fix to remove a redundant DOMContentLoaded listener, which was
- * creating a race condition and preventing UI components from initializing correctly.
+ * REFACTORED: This version centralizes state restoration and saving within the
+ * EnhancedStateManager, removing redundant logic and ensuring the correct
+ * initialization sequence is followed for reliable component rendering.
  */
 import {
     enhancedStateManager
@@ -22,9 +23,7 @@ import {
 import {
     setupTabs
 } from '../ui/tabs.js';
-import {
-    saveService
-} from '../services/save-service.js';
+// REMOVED: saveService is no longer needed here for loading or subscribing.
 import {
     templateLoader
 } from '../services/template-loader.js';
@@ -38,121 +37,45 @@ import {
 
 /**
  * Initializes the entire Media Kit Builder application with the enhanced architecture.
- * This is now called by the initialization manager to ensure proper sequencing.
+ * This function orchestrates the startup sequence to ensure all systems are ready.
  */
 export async function initializeEnhancedBuilder() {
     console.log('Media Kit Builder: Starting enhanced initialization...');
 
     // 1. Initialize services that don't depend on the DOM.
     keyboardService.init();
+
+    // 2. The renderer MUST be initialized before the state manager
+    //    so it can subscribe to state changes before any data is loaded.
     enhancedComponentRenderer.init();
-    
-    // PHASE 3 FIX: Expose save service globally
-    window.saveService = saveService;
 
-    // 2. Restore State from localStorage.
-    restoreState();
+    // 3. Initialize core UI elements that are always present in the DOM.
+    initializeUI();
 
-    // 3. Set up Global Event Listeners like autosave.
-    setupGlobalEventListeners();
-    
-    // CRITICAL FIX: Always call initializeAfterSystems to trigger auto-load
-    if (enhancedStateManager && enhancedStateManager.initializeAfterSystems) {
-        console.log('🔧 Triggering state manager post-system initialization...');
-        enhancedStateManager.initializeAfterSystems();
-        console.log('✅ State manager post-system initialization complete');
-    }
+    // 4. Initialize feature systems like modals.
+    initializeFeatureSystems();
 
-    console.log('Media Kit Builder: Enhanced initialization complete.');
-}
+    // 5. Let the state manager handle its own state restoration.
+    //    This method will correctly load from localStorage and notify all subscribers,
+    //    including the renderer, to trigger the initial render.
+    enhancedStateManager.initializeAfterSystems();
 
-/**
- * Validates prerequisites before initialization
- */
-function validatePrerequisites() {
-    console.log('🔍 Validating prerequisites...');
-    
-    // Wait for DOM to be fully ready including all included PHP files
-    if (document.readyState !== 'complete') {
-        console.log('⏳ Waiting for document.readyState to be complete...');
-        return new Promise(resolve => {
-            const checkReady = () => {
-                if (document.readyState === 'complete') {
-                    console.log('✅ Document fully loaded');
-                    resolve();
-                } else {
-                    setTimeout(checkReady, 10);
-                }
-            };
-            checkReady();
-        });
-    }
-    
-    // Check for required DOM elements
-    const requiredElements = [
-        'media-kit-preview',
-        'preview-container'
-    ];
-    
-    for (const elementId of requiredElements) {
-        if (!document.getElementById(elementId)) {
-            throw new Error(`Required DOM element not found: ${elementId}`);
-        }
-    }
-    
-    // Check for guestifyData
-    if (!window.guestifyData) {
-        // Try backup data
-        if (window.guestifyDataBackup) {
-            console.log('📦 Using backup guestifyData');
-            window.guestifyData = window.guestifyDataBackup;
-        } else {
-            throw new Error('guestifyData not available and no backup found');
-        }
-    }
-    
-    // Validate plugin URL
-    if (!window.guestifyData.pluginUrl) {
-        throw new Error('Plugin URL not available in guestifyData');
-    }
-    
-    // Set global plugin URL
-    window.GUESTIFY_PLUGIN_URL = window.guestifyData.pluginUrl;
-    
-    console.log('✅ Prerequisites validated successfully');
-    return Promise.resolve();
-}
-
-/**
- * Restores the application state from localStorage.
- */
-function restoreState() {
-    console.log('💾 Restoring state...');
-    const savedState = saveService.loadState();
-    if (savedState && Object.keys(savedState.components).length > 0) {
-        console.log('📦 Found saved data, loading...');
-        enhancedStateManager.setInitialState(savedState);
-    } else {
-        console.log('🆕 No saved state found, starting with a clean slate.');
-    }
-    console.log('✅ State restored successfully.');
+    console.log('✅ Enhanced initialization complete.');
 }
 
 /**
  * Sets up core UI elements of the builder.
- * Exported so it can be called by the initialization manager.
  */
 export function initializeUI() {
     console.log('Initializing UI...');
     setupTabs();
-    initializeLayout(); // Sets up drag-and-drop
-    updateEmptyState(); // Now that the DOM is ready, check the empty state.
+    initializeLayout();
+    updateEmptyState();
     console.log('UI initialized.');
 }
 
 /**
  * Initializes feature-specific systems like modals.
- * This is now called by the initialization manager after ensuring modal HTML is ready.
  */
 export function initializeFeatureSystems() {
     console.log('Initializing feature systems...');
@@ -162,14 +85,9 @@ export function initializeFeatureSystems() {
     console.log('Feature systems initialized.');
 }
 
-/**
- * Sets up global event listeners for the application.
- */
-function setupGlobalEventListeners() {
-    console.log('Setting up event listeners...');
-    // Autosave the state whenever it changes.
-    enhancedStateManager.subscribeGlobal(state => {
-        saveService.saveState(state);
-    });
-    console.log('Event listeners setup complete.');
-}
+// REMOVED: The `restoreState` function is no longer needed.
+// The logic is now correctly handled by `enhancedStateManager.initializeAfterSystems()`.
+
+// REMOVED: The `setupGlobalEventListeners` function is no longer needed.
+// Auto-saving is now handled internally by the Enhanced State Manager.
+

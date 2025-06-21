@@ -757,8 +757,21 @@ class InitializationManager {
     async restoreState() {
         this.logger.info('STATE', 'Restoring application state');
         
-        // State restoration is handled by the enhanced initialization
-        // Just validate that state manager is responsive
+        // CRITICAL: Call the registered initializer to complete enhanced initialization
+        if (window.initializer && typeof window.initializer === 'function') {
+            this.logger.info('STATE', 'Calling registered initializer for enhanced initialization');
+            try {
+                await window.initializer();
+                this.logger.info('STATE', 'Registered initializer completed successfully');
+            } catch (error) {
+                this.logger.error('STATE', 'Registered initializer failed', error);
+                // Continue anyway - this shouldn't break the whole initialization
+            }
+        } else {
+            this.logger.warn('STATE', 'No registered initializer found - enhanced features may not work');
+        }
+        
+        // Validate that state manager is responsive
         if (window.stateManager && typeof window.stateManager.getState === 'function') {
             const state = window.stateManager.getState();
             this.logger.info('STATE', 'State manager responsive', {
