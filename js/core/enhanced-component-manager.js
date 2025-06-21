@@ -32,14 +32,14 @@ class EnhancedComponentManager {
      */
     init() {
         if (this.isInitialized) {
-            return; // Already initialized
+            return true; // Already initialized
         }
         
-        // Find preview container when we actually need it
+        // Find the preview container - there is only one correct element
         this.previewContainer = document.getElementById('media-kit-preview');
         
         if (!this.previewContainer) {
-            console.warn('EnhancedComponentManager: media-kit-preview not found, will retry on first use');
+            console.warn('EnhancedComponentManager: media-kit-preview element not found, initialization deferred');
             return false;
         }
         

@@ -460,11 +460,65 @@ export class SchemaValidator {
     }
 
     /**
-     * Enable strict mode (for future use)
+     * General validation method for any object against a schema
+     * This method provides compatibility with the state validator
+     * @param {object} data - The data to validate
+     * @param {object} schema - The schema to validate against (can be ignored for now)
+     * @returns {object} Validation result
      */
-    enableStrictMode() {
-        console.warn('Strict schema validation mode is not yet implemented. Currently running in warning-only mode.');
-        // Future: window.guestifyData.features.strictSchemaValidation = true;
+    validate(data, schema) {
+        try {
+            // For now, implement a simple validation that accepts most data
+            // This ensures compatibility while we focus on the main architectural issues
+            
+            if (!data || typeof data !== 'object') {
+                return {
+                    valid: false,
+                    errors: [{ message: 'Data must be an object' }]
+                };
+            }
+            
+            // Check for basic state structure if it looks like a state object
+            if (data.hasOwnProperty('components') || data.hasOwnProperty('layout')) {
+                // This looks like a state object
+                if (!data.components || typeof data.components !== 'object') {
+                    return {
+                        valid: false,
+                        errors: [{ message: 'State must have components object' }]
+                    };
+                }
+                
+                if (!Array.isArray(data.layout)) {
+                    return {
+                        valid: false,
+                        errors: [{ message: 'State must have layout array' }]
+                    };
+                }
+            }
+            
+            // Check for basic transaction structure if it looks like a transaction
+            if (data.hasOwnProperty('type') && data.hasOwnProperty('payload')) {
+                // This looks like a transaction
+                if (!data.type || typeof data.type !== 'string') {
+                    return {
+                        valid: false,
+                        errors: [{ message: 'Transaction must have a type string' }]
+                    };
+                }
+            }
+            
+            // If we get here, the data passes basic validation
+            return {
+                valid: true,
+                errors: []
+            };
+            
+        } catch (error) {
+            return {
+                valid: false,
+                errors: [{ message: error.message }]
+            };
+        }
     }
 }
 

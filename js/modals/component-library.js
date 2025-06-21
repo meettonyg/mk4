@@ -777,11 +777,11 @@ function createComponentIcon(component) {
             }
             
             // Add error handling to fallback to default icon if SVG fails to load
-            const defaultIconEscaped = createDefaultIcon().replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const defaultIcon = createDefaultIcon();
             
             return `<img src="${iconPath}" alt="${component.name || component.type} icon" class="component-icon" 
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'; console.log('SVG not found: ${component.icon}')" />
-                     <span style="display:none;">${defaultIconEscaped}</span>`;
+                     <span style="display:none;">${defaultIcon}</span>`;
         } else if (component.icon.startsWith('fa-')) {
             // Handle FontAwesome classes (with or without fa- prefix)
             return `<i class="fa ${component.icon}"></i>`;
@@ -795,7 +795,7 @@ function createComponentIcon(component) {
 
 /**
  * Creates a default icon for components without specific icons
- * Enhanced with better styling and accessibility
+ * FIXED: Removed string escaping that was causing malformed SVG attributes
  */
 function createDefaultIcon() {
     return `

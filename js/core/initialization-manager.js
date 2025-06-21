@@ -274,55 +274,59 @@ class InitializationManager {
     }
 
     /**
-     * Loads and validates core systems
+     * Validates that core systems are already loaded and available
+     * In the new architecture, systems are loaded in main.js before calling this
      */
     async loadSystems() {
-        this.logger.info('INIT', 'Loading systems');
+        this.logger.info('INIT', 'Validating core systems (already loaded by main.js)');
         
-        // Import the conditional loader
-        const { initializeSystems } = await import('./conditional-loader.js');
-        const { featureFlags } = await import('./feature-flags.js');
-        
-        // Initialize systems synchronously
-        const selectedSystems = initializeSystems(featureFlags);
-        
-        // CRITICAL FIX: Initialize enhanced component manager if it was selected
-        if (selectedSystems.componentManagerType === 'enhanced' && window.enhancedComponentManager) {
-            // Call init() to setup DOM-dependent parts when DOM is ready
-            const initResult = window.enhancedComponentManager.init();
-            if (initResult) {
-                this.logger.info('INIT', 'Enhanced component manager initialized successfully');
-            } else {
-                this.logger.warn('INIT', 'Enhanced component manager init deferred (DOM not ready)');
-            }
-        }
+        // In the new architecture, systems are already loaded by main.js
+        // We just need to validate they're available
         
         // Validate that all required globals are set
         const requiredGlobals = ['stateManager', 'componentManager', 'renderer', 'initializer'];
+        const missingGlobals = [];
+        
         for (const global of requiredGlobals) {
             if (!window[global]) {
-                throw new Error(`Required global not set: window.${global}`);
+                missingGlobals.push(global);
             }
         }
         
-        // ENHANCED: Check for enhanced systems specifically
-        const enhancedSystems = {
-            enhancedStateManager: !!window.enhancedStateManager,
-            enhancedComponentManager: !!window.enhancedComponentManager
-        };
+        if (missingGlobals.length > 0) {
+            throw new Error(`Required globals not available: ${missingGlobals.join(', ')}. Systems must be loaded before calling initialization manager.`);
+        }
         
-        this.logger.info('INIT', 'Systems loaded and validated', {
+        // CRITICAL FIX: Initialize enhanced component manager if it was selected
+        if (window.enhancedComponentManager && typeof window.enhancedComponentManager.init === 'function') {
+            // Don't try to initialize here - the builder template may not be loaded yet
+            // This will be handled later in the modal setup phase when DOM is complete
+            this.logger.info('INIT', 'Enhanced component manager initialization deferred to modal setup phase');
+        }
+        
+        // CRITICAL FIX: Initialize enhanced component renderer
+        if (window.renderer && typeof window.renderer.init === 'function') {
+            this.logger.info('INIT', 'Enhanced component renderer initialization deferred to modal setup phase');
+        }
+        
+        // Log system availability
+        const systemInfo = {
             globals: requiredGlobals.reduce((acc, name) => {
                 acc[name] = !!window[name];
                 return acc;
             }, {}),
-            enhanced: enhancedSystems,
-            systemSelection: selectedSystems ? {
-                stateManager: selectedSystems.stateManagerType,
-                componentManager: selectedSystems.componentManagerType,
-                renderer: selectedSystems.rendererType
-            } : 'unknown'
-        });
+            enhanced: {
+                enhancedStateManager: !!window.enhancedStateManager,
+                enhancedComponentManager: !!window.enhancedComponentManager
+            },
+            systemTypes: {
+                stateManager: window.stateManager?.constructor?.name || 'Unknown',
+                componentManager: window.componentManager?.constructor?.name || 'Unknown',
+                renderer: window.renderer?.constructor?.name || 'Unknown'
+            }
+        };
+        
+        this.logger.info('INIT', 'Core systems validated', systemInfo);
     }
 
     /**
@@ -511,6 +515,35 @@ class InitializationManager {
         try {
             // Step 1: Ensure all modal HTML elements are ready
             await this.ensureModalElementsReady();
+            
+            // Step 1.5: NOW initialize enhanced component manager when all DOM is ready
+            if (window.enhancedComponentManager && typeof window.enhancedComponentManager.init === 'function') {
+                if (!window.enhancedComponentManager.isInitialized) {
+                    this.logger.info('MODAL', 'Initializing enhanced component manager now that DOM is complete');
+                    const initResult = window.enhancedComponentManager.init();
+                    if (initResult) {
+                        this.logger.info('MODAL', 'Enhanced component manager initialized successfully');
+                    } else {
+                        this.logger.error('MODAL', 'Enhanced component manager initialization failed - media-kit-preview element still not found');
+                        // This is a critical issue that needs investigation
+                        const previewExists = !!document.getElementById('media-kit-preview');
+                        this.logger.error('MODAL', `media-kit-preview element exists: ${previewExists}`);
+                    }
+                } else {
+                    this.logger.info('MODAL', 'Enhanced component manager already initialized');
+                }
+            }
+            
+            // Step 1.6: CRITICAL - Initialize enhanced component renderer
+            if (window.renderer && typeof window.renderer.init === 'function') {
+                if (!window.renderer.initialized) {
+                    this.logger.info('MODAL', 'Initializing enhanced component renderer now that DOM is complete');
+                    window.renderer.init();
+                    this.logger.info('MODAL', 'Enhanced component renderer initialized - now listening for state changes');
+                } else {
+                    this.logger.info('MODAL', 'Enhanced component renderer already initialized');
+                }
+            }
             
             // Step 2: Setup each modal system sequentially
             await this.setupComponentLibraryModal();
