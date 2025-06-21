@@ -54,118 +54,20 @@
                 </div>
                 
                 <div class="components-grid" id="component-grid">
-                    <div class="component-card" data-category="hero" data-component="hero">
-                        <div class="component-preview preview-hero">
-                            <div class="mini-avatar"></div>
-                            <div class="mini-name">John Doe</div>
-                            <div class="mini-title">Professional Title</div>
-                        </div>
-                        <div class="component-info">
-                            <h4>Hero Section</h4>
-                            <p>Profile section with name, title and bio</p>
-                        </div>
-                    </div>
-                    
-                    <div class="component-card" data-category="biography" data-component="biography">
-                        <div class="component-preview preview-bio">
-                            <div class="mini-lines"></div>
-                            <div class="mini-lines"></div>
-                            <div class="mini-lines"></div>
-                            <div class="mini-lines"></div>
-                        </div>
-                        <div class="component-info">
-                            <h4>Biography</h4>
-                            <p>Full-width text biography section</p>
-                        </div>
-                    </div>
-                    
-                    <div class="component-card" data-category="topics" data-component="topics">
-                        <div class="component-preview preview-topics">
-                            <div class="mini-topic"></div>
-                            <div class="mini-topic"></div>
-                            <div class="mini-topic"></div>
-                            <div class="mini-topic"></div>
-                        </div>
-                        <div class="component-info">
-                            <h4>Topics</h4>
-                            <p>Grid layout for speaking topics</p>
-                        </div>
-                    </div>
-                    
-                    <div class="component-card" data-category="social" data-component="social">
-                        <div class="component-preview preview-social">
-                            <div class="mini-social"></div>
-                            <div class="mini-social"></div>
-                            <div class="mini-social"></div>
-                        </div>
-                        <div class="component-info">
-                            <h4>Social Links</h4>
-                            <p>Social media icon links</p>
-                        </div>
-                    </div>
-
-                    <div class="component-card" data-category="stats" data-component="stats">
-                        <div class="component-preview preview-stats">
-                            <div class="mini-stat">
-                                <div class="mini-stat-number">1.2M</div>
-                                <div class="mini-stat-label">Followers</div>
-                            </div>
-                            <div class="mini-stat">
-                                <div class="mini-stat-number">150+</div>
-                                <div class="mini-stat-label">Shows</div>
-                            </div>
-                        </div>
-                        <div class="component-info">
-                            <h4>Statistics</h4>
-                            <p>Display key metrics and numbers</p>
-                        </div>
-                    </div>
-
-                    <div class="component-card" data-category="media" data-component="logo-grid">
-                        <div class="component-preview" style="background: #f8fafc; padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
-                            <div style="background: #e2e8f0; aspect-ratio: 1; border-radius: 2px;"></div>
-                            <div style="background: #e2e8f0; aspect-ratio: 1; border-radius: 2px;"></div>
-                            <div style="background: #e2e8f0; aspect-ratio: 1; border-radius: 2px;"></div>
-                            <div style="background: #e2e8f0; aspect-ratio: 1; border-radius: 2px;"></div>
-                        </div>
-                        <div class="component-info">
-                            <h4>Logo Grid</h4>
-                            <p>Showcase client and partner logos</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="library__section-header" style="margin-top: 30px;">
-                    <h3>Premium Components</h3>
-                    <p>Advanced components available with Guestify Pro</p>
-                </div>
-                
-                <div class="components-grid" id="premium-components">
-                    <div class="component-card component-card--premium" data-category="media" data-component="video-intro">
-                        <div class="component-preview" style="background: #1e293b; display: flex; align-items: center; justify-content: center;">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2">
-                                <polygon points="5,3 19,12 5,21"></polygon>
+                    <!-- Loading placeholder - will be replaced by JavaScript -->
+                    <div class="component-grid-loading" id="component-grid-loading">
+                        <div class="loading-spinner">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12a9 9 0 11-6.219-8.56"/>
                             </svg>
                         </div>
-                        <div class="component-info">
-                            <h4>Video Introduction</h4>
-                            <p>Embedded video player for introductions</p>
-                        </div>
+                        <p>Loading components...</p>
                     </div>
-                    
-                    <div class="component-card component-card--premium" data-category="media" data-component="image-gallery">
-                        <div class="component-preview" style="background: #f8fafc; padding: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px;">
-                            <div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div>
-                            <div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div>
-                            <div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div>
-                            <div style="background: #cbd5e1; aspect-ratio: 1; border-radius: 2px;"></div>
-                        </div>
-                        <div class="component-info">
-                            <h4>Image Gallery</h4>
-                            <p>Professional photo gallery with lightbox</p>
-                        </div>
-                    </div>
+                    <!-- Component cards will be populated by JavaScript -->
                 </div>
+                
+                <!-- Premium components will be mixed with free components in the main grid -->
+                <!-- JavaScript will handle section headers and premium styling dynamically -->
             </div>
         </div>
         

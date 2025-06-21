@@ -47,6 +47,49 @@
     animation: pulse 1.5s ease-in-out infinite;
 }
 
+/* Component Grid Loading State - Phase 3 Enhancement */
+.component-grid-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    text-align: center;
+    background: transparent;
+    border-radius: 8px;
+    min-height: 200px;
+}
+
+.component-grid-loading .loading-spinner {
+    margin-bottom: 16px;
+    color: #0ea5e9;
+}
+
+.component-grid-loading .loading-spinner svg {
+    width: 32px;
+    height: 32px;
+    stroke: #0ea5e9;
+    stroke-width: 2;
+}
+
+.component-grid-loading p {
+    color: #64748b;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    letter-spacing: 0.025em;
+}
+
+/* Spinner Animation */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 0.6; }
     50% { opacity: 1; }
@@ -446,6 +489,72 @@
 .component-card-checkbox label {
     cursor: pointer;
     display: block;
+}
+
+/* Component Selection Visual Feedback - Phase 3 Enhancement */
+.component-card {
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.component-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #e2e8f0;
+}
+
+.component-card.selected {
+    border-color: #0ea5e9;
+    background: rgba(14, 165, 233, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+.component-card.selected .component-card-checkbox input[type="checkbox"] {
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+}
+
+.component-card--premium {
+    position: relative;
+    background: linear-gradient(135deg, #fefbff, #f8fafc);
+    border: 1px solid #e2e8f0;
+}
+
+.component-card--premium::before {
+    content: 'PRO';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 3;
+    letter-spacing: 0.5px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.component-card--premium.selected::before {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+}
+
+.component-card--premium:hover {
+    background: linear-gradient(135deg, #fef7ff, #f1f5f9);
+    border-color: #cbd5e1;
+}
+
+.component-card--premium.selected {
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+    border-color: #0ea5e9;
 }
 
 /* Smooth transitions for all component state changes */

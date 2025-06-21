@@ -299,8 +299,8 @@ function setupEventListeners() {
 }
 
 /**
- * Populates the component grid with available components from the global `guestifyData`.
- * Each component is rendered as a card with a checkbox for selection.
+ * Unified component population system - single source of truth
+ * Populates both free and premium components with proper loading states
  */
 function populateComponentGrid() {
     if (!componentGrid) {
@@ -308,61 +308,382 @@ function populateComponentGrid() {
         return;
     }
     
-    // Clear existing components first
-    componentGrid.innerHTML = ''; 
-
-    // Check if we have guestifyData components
-    if (window.guestifyData?.components && Array.isArray(window.guestifyData.components)) {
-        structuredLogger.info('MODAL', 'Loading components from guestifyData', {
-        count: window.guestifyData.components.length
-        });
+    const populateStart = performance.now();
+    structuredLogger.info('MODAL', 'Starting unified component population');
     
-    // Log icon status for debugging
-    const iconStats = { svg: 0, fontawesome: 0, none: 0 };
-    window.guestifyData.components.forEach(component => {
-        if (component.icon) {
-            if (component.icon.endsWith('.svg')) {
-                iconStats.svg++;
-            } else {
-                iconStats.fontawesome++;
-            }
-        } else {
-            iconStats.none++;
+    // Show loading state first
+    showLoadingState();
+    
+    // Use setTimeout to ensure loading state is visible
+    setTimeout(() => {
+        try {
+            // Get components from guestifyData or use fallback
+            const components = getComponentsData();
+            
+            // Clear grid and populate with unified components
+            clearGridAndPopulate(components);
+            
+            // Hide loading state after population
+            hideLoadingState();
+            
+            structuredLogger.info('MODAL', 'Component grid population complete', {
+                count: components.length,
+                duration: performance.now() - populateStart,
+                source: 'unified system'
+            });
+        } catch (error) {
+            structuredLogger.error('MODAL', 'Component population failed', error);
+            hideLoadingState();
+            showErrorState();
         }
-    });
-    
-    structuredLogger.info('MODAL', 'Icon distribution', iconStats);
+    }, 100); // Small delay to ensure loading state is visible
+}
+
+/**
+ * Shows loading state in the component grid
+ */
+function showLoadingState() {
+    const loadingElement = document.getElementById('component-grid-loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'flex';
+        loadingElement.style.flexDirection = 'column';
+        loadingElement.style.alignItems = 'center';
+        loadingElement.style.justifyContent = 'center';
+        loadingElement.style.padding = '40px';
+        loadingElement.style.color = '#6b7280';
         
-        window.guestifyData.components.forEach(component => {
-            const card = createComponentCard(component);
-            componentGrid.appendChild(card);
-        });
-        
-        structuredLogger.info('MODAL', 'Component library populated', {
-            count: window.guestifyData.components.length,
-            source: 'guestifyData'
-        });
-    } else {
-        structuredLogger.warn('MODAL', 'No components found in guestifyData, using existing HTML components');
-        // Components are already in the HTML from the PHP template
-        // Just add the click handlers to existing cards
-        setupExistingCards();
+        // Add CSS animation for spinner
+        const spinner = loadingElement.querySelector('.loading-spinner svg');
+        if (spinner) {
+            spinner.style.animation = 'spin 1s linear infinite';
+        }
     }
 }
 
 /**
- * Creates a component card element
+ * Hides loading state
  */
-function createComponentCard(component) {
+function hideLoadingState() {
+    const loadingElement = document.getElementById('component-grid-loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'none';
+    }
+}
+
+/**
+ * Shows error state when component loading fails
+ */
+function showErrorState() {
+    const loadingElement = document.getElementById('component-grid-loading');
+    if (loadingElement) {
+        loadingElement.innerHTML = `
+            <div class="loading-error">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <p>Failed to load components. Please refresh the page.</p>
+            </div>
+        `;
+        loadingElement.style.display = 'flex';
+    }
+}
+
+/**
+ * Gets components data from guestifyData or provides fallback
+ * Enhanced to ensure premium property exists on all components and guarantee premium components
+ */
+function getComponentsData() {
+    let components = [];
+    
+    // Try to get from guestifyData first
+    if (window.guestifyData?.components && Array.isArray(window.guestifyData.components)) {
+        structuredLogger.info('MODAL', 'Using components from guestifyData', {
+            count: window.guestifyData.components.length
+        });
+        
+        // Enhance guestifyData components with premium property if missing
+        components = window.guestifyData.components.map(component => {
+            // Determine if component should be premium based on type or name
+            const premiumTypes = ['video-intro', 'image-gallery', 'testimonials', 'podcast-player', 'contact-form', 'calendar'];
+            const isPremium = component.premium === true || 
+                            premiumTypes.includes(component.type) || 
+                            premiumTypes.includes(component.name);
+            
+            return {
+                ...component,
+                premium: isPremium
+            };
+        });
+    } else {
+        // Use fallback components if guestifyData is not available
+        structuredLogger.warn('MODAL', 'guestifyData not available, using fallback components');
+        components = getFallbackComponents();
+    }
+    
+    // Ensure we always have at least some premium components
+    const premiumCount = components.filter(c => c.premium).length;
+    if (premiumCount === 0) {
+        structuredLogger.info('MODAL', 'No premium components detected, adding guaranteed premium components');
+        
+        // Add guaranteed premium components
+        const guaranteedPremium = [
+            {
+                type: 'video-intro',
+                name: 'video-intro',
+                title: 'Video Introduction',
+                description: 'Embedded video player for introductions',
+                category: 'media',
+                icon: 'fa-play',
+                premium: true
+            },
+            {
+                type: 'testimonials',
+                name: 'testimonials',
+                title: 'Testimonials',
+                description: 'Client testimonials and reviews',
+                category: 'social',
+                icon: 'fa-quote-left',
+                premium: true
+            },
+            {
+                type: 'image-gallery',
+                name: 'image-gallery',
+                title: 'Image Gallery',
+                description: 'Professional photo gallery with lightbox',
+                category: 'media',
+                icon: 'fa-images',
+                premium: true
+            },
+            {
+                type: 'podcast-player',
+                name: 'podcast-player',
+                title: 'Podcast Player',
+                description: 'Embedded podcast player',
+                category: 'media',
+                icon: 'fa-headphones',
+                premium: true
+            }
+        ];
+        
+        components = [...components, ...guaranteedPremium];
+    }
+    
+    structuredLogger.info('MODAL', 'Final component data prepared', {
+        total: components.length,
+        premium: components.filter(c => c.premium).length,
+        free: components.filter(c => !c.premium).length
+    });
+    
+    return components;
+}
+
+/**
+ * Provides fallback components when guestifyData is not available
+ * Enhanced with proper premium markings and better component variety
+ */
+function getFallbackComponents() {
+    return [
+        // Free Components
+        {
+            type: 'hero',
+            name: 'hero',
+            title: 'Hero Section',
+            description: 'Profile section with name, title and bio',
+            category: 'hero',
+            icon: 'fa-user',
+            premium: false
+        },
+        {
+            type: 'biography',
+            name: 'biography',
+            title: 'Biography',
+            description: 'Full-width text biography section',
+            category: 'biography',
+            icon: 'file-text.svg',
+            premium: false
+        },
+        {
+            type: 'topics',
+            name: 'topics',
+            title: 'Topics',
+            description: 'Grid layout for speaking topics',
+            category: 'topics',
+            icon: 'list.svg',
+            premium: false
+        },
+        {
+            type: 'social',
+            name: 'social',
+            title: 'Social Links',
+            description: 'Social media icon links',
+            category: 'social',
+            icon: 'linkedin.svg',
+            premium: false
+        },
+        {
+            type: 'stats',
+            name: 'stats',
+            title: 'Statistics',
+            description: 'Display key metrics and numbers',
+            category: 'stats',
+            icon: 'fa-chart-bar',
+            premium: false
+        },
+        {
+            type: 'logo-grid',
+            name: 'logo-grid',
+            title: 'Logo Grid',
+            description: 'Showcase client and partner logos',
+            category: 'media',
+            icon: 'fa-th',
+            premium: false
+        },
+        
+        // Premium Components
+        {
+            type: 'video-intro',
+            name: 'video-intro',
+            title: 'Video Introduction',
+            description: 'Embedded video player for introductions',
+            category: 'media',
+            icon: 'fa-play',
+            premium: true
+        },
+        {
+            type: 'image-gallery',
+            name: 'image-gallery',
+            title: 'Image Gallery',
+            description: 'Professional photo gallery with lightbox',
+            category: 'media',
+            icon: 'fa-images',
+            premium: true
+        },
+        {
+            type: 'testimonials',
+            name: 'testimonials',
+            title: 'Testimonials',
+            description: 'Client testimonials and reviews',
+            category: 'social',
+            icon: 'message-square.svg',
+            premium: true
+        },
+        {
+            type: 'podcast-player',
+            name: 'podcast-player',
+            title: 'Podcast Player',
+            description: 'Embedded podcast player',
+            category: 'media',
+            icon: 'headphones.svg',
+            premium: true
+        }
+    ];
+}
+
+/**
+ * Clears the grid and populates with components
+ * Enhanced to preserve loading element and remove any hardcoded components
+ */
+function clearGridAndPopulate(components) {
+    // Store reference to loading element before clearing
+    const loadingElement = document.getElementById('component-grid-loading');
+    
+    // Clear ALL existing content except loading element (including any hardcoded cards)
+    const elementsToRemove = [];
+    for (const child of componentGrid.children) {
+        if (child.id !== 'component-grid-loading') {
+            elementsToRemove.push(child);
+        }
+    }
+    elementsToRemove.forEach(element => {
+        structuredLogger.debug('MODAL', 'Removing existing element', {
+            className: element.className,
+            dataComponent: element.dataset?.component,
+            dataSource: element.dataset?.source || 'unknown'
+        });
+        element.remove();
+    });
+    
+    // Ensure we start with a completely clean grid
+    structuredLogger.info('MODAL', 'Grid cleared, starting fresh population');
+    
+    // Group components by premium status
+    const freeComponents = components.filter(c => !c.premium);
+    const premiumComponents = components.filter(c => c.premium);
+    
+    structuredLogger.debug('MODAL', 'Component categorization', {
+        freeCount: freeComponents.length,
+        premiumCount: premiumComponents.length,
+        total: components.length
+    });
+    
+    // Add free components section
+    if (freeComponents.length > 0) {
+        addSectionHeader('Free Components', 'Essential components included with your Guestify account');
+        freeComponents.forEach(component => {
+            const card = createComponentCard(component, false);
+            componentGrid.appendChild(card);
+        });
+    }
+    
+    // Add premium components section if any exist
+    if (premiumComponents.length > 0) {
+        addSectionHeader('Premium Components', 'Advanced components available with Guestify Pro', true);
+        premiumComponents.forEach(component => {
+            const card = createComponentCard(component, true);
+            componentGrid.appendChild(card);
+        });
+    }
+    
+    structuredLogger.info('MODAL', 'Component grid populated with dynamic components only', {
+        freeComponents: freeComponents.length,
+        premiumComponents: premiumComponents.length,
+        total: components.length,
+        allDynamic: true
+    });
+}
+
+/**
+ * Adds a section header to the component grid
+ */
+function addSectionHeader(title, description, isTopMargin = false) {
+    const header = document.createElement('div');
+    header.className = 'library__section-header';
+    if (isTopMargin) {
+        header.style.marginTop = '30px';
+    }
+    
+    header.innerHTML = `
+        <h3>${title}</h3>
+        <p>${description}</p>
+    `;
+    
+    componentGrid.appendChild(header);
+}
+
+/**
+ * Creates a component card element with proper premium styling and selection
+ * Enhanced to ensure proper data attributes and dynamic identification
+ * @param {Object} component - The component object
+ * @param {boolean} isPremium - Whether this is a premium component
+ */
+function createComponentCard(component, isPremium = false) {
     const card = document.createElement('div');
-    card.className = 'component-card';
+    card.className = isPremium ? 'component-card component-card--premium' : 'component-card';
+    
+    // Enhanced data attributes for proper identification
     card.dataset.componentType = component.type || component.directory || component.name;
     card.dataset.component = component.type || component.directory || component.name;
     card.dataset.category = component.category || 'general';
+    card.dataset.premium = isPremium ? 'true' : 'false';
+    card.dataset.source = 'dynamic'; // Mark as dynamically created
+    card.dataset.generated = Date.now(); // Add timestamp for debugging
 
     const icon = createComponentIcon(component);
     const title = `<h4>${component.title || component.name || 'Untitled'}</h4>`;
     const description = `<p>${component.description || 'No description available'}</p>`;
+    const componentId = component.type || component.name || 'unknown';
 
     card.innerHTML = `
         <div class="component-card-content">
@@ -375,46 +696,42 @@ function createComponentCard(component) {
             </div>
         </div>
         <div class="component-card-checkbox">
-            <input type="checkbox" id="checkbox-${component.type || component.name}" name="component-checkbox">
+            <input type="checkbox" id="checkbox-${componentId}" name="component-checkbox" ${isPremium ? 'data-premium="true"' : ''}>
         </div>
     `;
 
+    // Add click handler for selection
     card.addEventListener('click', (event) => {
+        // Don't toggle if clicking directly on checkbox
         if (event.target.type !== 'checkbox') {
             const checkbox = card.querySelector('input[type="checkbox"]');
             if (checkbox) {
                 checkbox.checked = !checkbox.checked;
+                // Dispatch change event for any listeners
+                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
             }
         }
-        card.classList.toggle('selected', card.querySelector('input[type="checkbox"]')?.checked || false);
+        
+        // Update visual selection state
+        const isSelected = card.querySelector('input[type="checkbox"]')?.checked || false;
+        card.classList.toggle('selected', isSelected);
+        
+        structuredLogger.debug('MODAL', `Component ${isSelected ? 'selected' : 'deselected'}`, {
+            component: componentId,
+            isPremium,
+            category: component.category,
+            source: 'dynamic'
+        });
     });
 
     return card;
 }
 
-/**
- * Sets up click handlers for existing component cards in the HTML
- */
-function setupExistingCards() {
-    const existingCards = componentGrid.querySelectorAll('.component-card');
-    existingCards.forEach(card => {
-        card.addEventListener('click', (event) => {
-            if (event.target.type !== 'checkbox') {
-                const checkbox = card.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                }
-            }
-            card.classList.toggle('selected', card.querySelector('input[type="checkbox"]')?.checked || false);
-        });
-    });
-    structuredLogger.debug('MODAL', 'Added click handlers to existing component cards', {
-        count: existingCards.length
-    });
-}
+
 
 /**
  * Creates an icon for a component - handles both SVG files and FontAwesome classes
+ * Enhanced with better fallback handling and premium component styling
  * @param {Object} component - The component object
  * @returns {string} HTML string for the icon
  */
@@ -422,18 +739,29 @@ function createComponentIcon(component) {
     if (component.icon) {
         if (component.icon.endsWith('.svg')) {
             // Handle SVG files with proper path resolution
-            const componentDir = component.directory || component.name;
-            const iconPath = `${window.guestifyData.pluginUrl}components/${componentDir}/${component.icon}`;
+            const componentDir = component.directory || component.name || component.type;
+            let iconPath;
+            
+            // Use pluginUrl if available, otherwise construct path
+            if (window.guestifyData?.pluginUrl) {
+                iconPath = `${window.guestifyData.pluginUrl}components/${componentDir}/${component.icon}`;
+            } else {
+                // Fallback path construction
+                iconPath = `/wp-content/plugins/guestify-media-kit-builder/components/${componentDir}/${component.icon}`;
+            }
             
             // Add error handling to fallback to default icon if SVG fails to load
             const defaultIconEscaped = createDefaultIcon().replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             
-            return `<img src="${iconPath}" alt="${component.name} icon" class="component-icon" 
+            return `<img src="${iconPath}" alt="${component.name || component.type} icon" class="component-icon" 
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'; console.log('SVG not found: ${component.icon}')" />
                      <span style="display:none;">${defaultIconEscaped}</span>`;
-        } else {
-            // Handle FontAwesome classes
+        } else if (component.icon.startsWith('fa-')) {
+            // Handle FontAwesome classes (with or without fa- prefix)
             return `<i class="fa ${component.icon}"></i>`;
+        } else {
+            // Handle other icon formats or assume FontAwesome
+            return `<i class="fa fa-${component.icon}"></i>`;
         }
     }
     return createDefaultIcon();
@@ -441,10 +769,11 @@ function createComponentIcon(component) {
 
 /**
  * Creates a default icon for components without specific icons
+ * Enhanced with better styling and accessibility
  */
 function createDefaultIcon() {
     return `
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="component-icon-default">
             <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
             <circle cx="9" cy="9" r="2"></circle>
             <path d="M21 15l-3.086-3.086a2 2 0 00-2.828 0L6 21"></path>
