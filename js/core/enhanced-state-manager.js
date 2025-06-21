@@ -839,33 +839,38 @@ class EnhancedStateManager {
     
     /**
      * GEMINI FIX: Auto-load saved state during initialization
-     * This ensures components persist after page refresh
+     * Now orchestrates the entire loading process with single state update and notification
      */
     autoLoadSavedState() {
         try {
             const loadedState = this.loadStateFromStorage();
             if (loadedState) {
-                this.logger.info('STATE', 'Auto-loaded saved state on initialization', {
+                this.logger.info('STATE', 'Auto-loading saved state on initialization', {
                     components: Object.keys(loadedState.components).length,
                     layout: loadedState.layout.length
                 });
                 
-                // GEMINI FIX: Ensure renderer processes the loaded components
-                // First notify subscribers to trigger rendering
+                // Set the main state object
+                this.state = loadedState;
+                
+                // Single, authoritative notification to all subscribers including renderer
                 this.notifySubscribers();
                 
-                // Then emit state change event to ensure all systems are aware
-                setTimeout(() => {
-                    this.eventBus.emit('state:loaded-and-ready', {
-                        state: loadedState,
-                        source: 'auto-load',
-                        componentCount: Object.keys(loadedState.components).length
-                    });
-                    
-                    this.logger.info('STATE', 'Auto-loaded state rendered', {
-                        components: Object.keys(loadedState.components).length
-                    });
-                }, 100); // Small delay to ensure renderer is ready
+                // Emit events for other systems
+                this.eventBus.emit('state:loaded-from-storage', {
+                    state: loadedState,
+                    metadata: { source: 'auto-load' }
+                });
+                
+                this.eventBus.emit('state:loaded-and-ready', {
+                    state: loadedState,
+                    source: 'auto-load',
+                    componentCount: Object.keys(loadedState.components).length
+                });
+                
+                this.logger.info('STATE', 'Auto-loaded state set and subscribers notified', {
+                    components: Object.keys(loadedState.components).length
+                });
                 
             } else {
                 this.logger.info('STATE', 'No saved state found, starting with empty state');
@@ -935,7 +940,7 @@ class EnhancedStateManager {
     
     /**
      * GEMINI FIX: Direct state loading from localStorage
-     * Loads state on initialization or refresh
+     * NOW ONLY parses and returns data - does not set state or notify subscribers
      */
     loadStateFromStorage() {
         try {
@@ -947,7 +952,7 @@ class EnhancedStateManager {
             
             const parsedState = JSON.parse(savedState);
             
-            // Validate and set state
+            // Return the raw data without setting state or notifying
             const loadedState = {
                 layout: parsedState.layout || [],
                 components: parsedState.components || {},
@@ -955,19 +960,10 @@ class EnhancedStateManager {
                 version: this.SAVE_VERSION
             };
             
-            this.state = loadedState;
-            
-            this.logger.info('STATE', 'State loaded from localStorage', {
+            this.logger.info('STATE', 'State data parsed from localStorage', {
                 components: Object.keys(loadedState.components).length,
                 layout: loadedState.layout.length,
                 version: parsedState.meta?.version || 'unknown'
-            });
-            
-            // Notify subscribers
-            this.notifySubscribers();
-            this.eventBus.emit('state:loaded-from-storage', {
-                state: loadedState,
-                metadata: parsedState.meta
             });
             
             return loadedState;

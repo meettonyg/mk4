@@ -55,6 +55,13 @@ export async function initializeEnhancedBuilder() {
 
     // 3. Set up Global Event Listeners like autosave.
     setupGlobalEventListeners();
+    
+    // CRITICAL FIX: Always call initializeAfterSystems to trigger auto-load
+    if (enhancedStateManager && enhancedStateManager.initializeAfterSystems) {
+        console.log('🔧 Triggering state manager post-system initialization...');
+        enhancedStateManager.initializeAfterSystems();
+        console.log('✅ State manager post-system initialization complete');
+    }
 
     console.log('Media Kit Builder: Enhanced initialization complete.');
 }
