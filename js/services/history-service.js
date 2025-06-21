@@ -1,6 +1,7 @@
 /**
  * Enhanced History Service
  * Manages undo/redo functionality using the centralized state manager
+ * GEMINI FIX: Updated to use enhanced state history system as primary
  */
 
 import { stateManager } from './state-manager.js';
@@ -8,6 +9,7 @@ import { stateManager } from './state-manager.js';
 export class HistoryService {
     constructor() {
         this.isInitialized = false;
+        this.logger = window.structuredLogger || console;
     }
 
     /**
@@ -40,10 +42,17 @@ export class HistoryService {
             }
         });
         
-        // Subscribe to state changes to update UI
-        stateManager.subscribeGlobal(() => {
-            this.updateUI();
-        });
+        // GEMINI FIX: Subscribe to enhanced state manager if available
+        if (window.enhancedStateManager && window.enhancedStateManager.subscribeGlobal) {
+            window.enhancedStateManager.subscribeGlobal(() => {
+                this.updateUI();
+            });
+        } else {
+            // Fallback to legacy state manager
+            stateManager.subscribeGlobal(() => {
+                this.updateUI();
+            });
+        }
         
         this.isInitialized = true;
         this.updateUI();
@@ -51,9 +60,27 @@ export class HistoryService {
 
     /**
      * Perform undo operation
+     * GEMINI FIX: Use enhanced state history system
      * @returns {boolean} Success
      */
     undo() {
+        // Try enhanced state history first
+        if (window.stateHistory && window.stateHistory.canUndo()) {
+            const success = window.stateHistory.undo();
+            
+            if (success) {
+                this.showToast('Change undone');
+                
+                // Dispatch event for other components
+                document.dispatchEvent(new CustomEvent('history-undo', {
+                    detail: { state: window.enhancedStateManager?.getState() }
+                }));
+            }
+            
+            return success;
+        }
+        
+        // Fallback to legacy state manager
         const success = stateManager.undo();
         
         if (success) {
@@ -70,10 +97,29 @@ export class HistoryService {
 
     /**
      * Perform redo operation
+     * GEMINI FIX: Use enhanced state history system
      * @returns {boolean} Success
      */
     redo() {
+        // Try enhanced state history first
+        if (window.stateHistory && window.stateHistory.canRedo()) {
+            const success = window.stateHistory.redo();
+            
+            if (success) {
+                this.showToast('Change redone');
+                
+                // Dispatch event for other components
+                document.dispatchEvent(new CustomEvent('history-redo', {
+                    detail: { state: window.enhancedStateManager?.getState() }
+                }));
+            }
+            
+            return success;
+        }
+        
+        // Fallback to legacy state manager
         const success = stateManager.redo();
+        
         
         if (success) {
             this.showToast('Change redone');
@@ -89,10 +135,13 @@ export class HistoryService {
 
     /**
      * Update UI elements based on history state
+     * GEMINI FIX: Enhanced UI update with better selectors
      */
     updateUI() {
         const canUndo = this.canUndo();
         const canRedo = this.canRedo();
+        
+        this.logger.debug?.('HISTORY-UI', 'Updating UI state', { canUndo, canRedo });
         
         // Update undo button - try multiple selectors
         const undoSelectors = ['[data-action="undo"]', '#undo-btn', '.undo-btn'];
@@ -137,19 +186,31 @@ export class HistoryService {
 
     /**
      * Check if undo is available
+     * GEMINI FIX: Use enhanced state history system
      * @returns {boolean}
      */
     canUndo() {
-        // Check internal state manager history
+        // Try enhanced state history first
+        if (window.stateHistory) {
+            return window.stateHistory.canUndo();
+        }
+        
+        // Fallback to legacy state manager
         return stateManager.historyIndex > 0;
     }
 
     /**
      * Check if redo is available
+     * GEMINI FIX: Use enhanced state history system
      * @returns {boolean}
      */
     canRedo() {
-        // Check internal state manager history
+        // Try enhanced state history first
+        if (window.stateHistory) {
+            return window.stateHistory.canRedo();
+        }
+        
+        // Fallback to legacy state manager
         return stateManager.historyIndex < stateManager.history.length - 1;
     }
 

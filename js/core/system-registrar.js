@@ -2,6 +2,8 @@
  * @file system-registrar.js
  * @description A central, lightweight registry for core application systems.
  * This module is designed to be dependency-free to avoid circular dependencies.
+ * 
+ * GEMINI FIX: Added historyService to allowed systems list for undo/redo integration
  */
 
 const systems = {
@@ -14,6 +16,7 @@ const systems = {
     stateHistory: null,
     eventBus: null,
     saveService: null,
+    historyService: null,  // GEMINI FIX: Added historyService to allowed systems
 };
 
 export const systemRegistrar = {

@@ -27,6 +27,9 @@ import { uiRegistry } from './ui-registry.js';
 import { stateHistory } from './state-history.js';
 import { eventBus } from './event-bus.js';
 
+// GEMINI FIX: Import history service for undo/redo integration
+import { historyService } from '../services/history-service.js';
+
 /**
  * Selects and registers the appropriate systems based on feature flags.
  * @param {object} flags - The feature flag configuration object.
@@ -100,6 +103,11 @@ export function selectAndRegisterSystems(flags) {
     systemRegistrar.register('stateHistory', stateHistory);
     systemRegistrar.register('eventBus', eventBus);
     
+    // GEMINI FIX: Register and expose history service globally
+    systemRegistrar.register('historyService', historyService);
+    window.historyService = historyService;
+    console.log('✅ History Service: Registered and exposed globally');
+    
     // Save service will be registered later when imported
     systemRegistrar.register('saveService', null);
 
@@ -137,6 +145,12 @@ function createEnhancedInitializer() {
             // Register save service now that it's imported
             systemRegistrar.register('saveService', saveService);
 
+            // GEMINI FIX: Initialize history service for undo/redo
+            if (historyService && historyService.init) {
+                historyService.init();
+                console.log('✅ History Service initialized');
+            }
+
             // Initialize services
             keyboardService.init();
             
@@ -144,21 +158,15 @@ function createEnhancedInitializer() {
                 enhancedComponentRenderer.init();
             }
 
-            // Restore state
-            const savedState = saveService.loadState();
-            if (savedState && Object.keys(savedState.components || {}).length > 0) {
-                console.log('📦 Found saved data, loading...');
-                if (enhancedStateManager && enhancedStateManager.setInitialState) {
-                    enhancedStateManager.setInitialState(savedState);
-                }
+            // GEMINI FIX: Now that renderer is initialized, trigger state manager's post-system init
+            if (enhancedStateManager && enhancedStateManager.initializeAfterSystems) {
+                enhancedStateManager.initializeAfterSystems();
+                console.log('✅ Enhanced State Manager post-system initialization complete');
             }
 
-            // Setup autosave
-            if (enhancedStateManager && enhancedStateManager.subscribeGlobal) {
-                enhancedStateManager.subscribeGlobal(state => {
-                    saveService.saveState(state);
-                });
-            }
+            // GEMINI FIX: State loading now handled automatically by enhanced state manager
+            // Removed duplicate state loading logic
+            // Autosave is also handled internally by enhanced state manager
 
             console.log('✅ Enhanced initializer: Core services initialized');
         } catch (error) {

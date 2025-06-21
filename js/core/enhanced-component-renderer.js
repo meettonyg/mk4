@@ -626,6 +626,47 @@ class EnhancedComponentRenderer {
     }
     
     /**
+     * Manual render method - forces a complete re-render of all components
+     * GEMINI FIX: Added missing render method for manual triggering
+     */
+    async render() {
+        if (!this.initialized) {
+            this.logger.warn('RENDER', 'Cannot render: renderer not initialized');
+            return false;
+        }
+        
+        try {
+            const state = enhancedStateManager.getState();
+            const componentCount = Object.keys(state.components || {}).length;
+            
+            this.logger.info('RENDER', `Manual render triggered for ${componentCount} components`);
+            
+            if (componentCount === 0) {
+                this.updateEmptyState(state);
+                return true;
+            }
+            
+            // Clear existing components
+            this.previewContainer.innerHTML = '';
+            this.componentCache.clear();
+            
+            // Re-render all components
+            const componentIds = Object.keys(state.components);
+            await this.renderNewComponents(new Set(componentIds), state);
+            
+            // Update empty state
+            this.updateEmptyState(state);
+            
+            this.logger.info('RENDER', `Manual render complete: ${componentCount} components rendered`);
+            return true;
+            
+        } catch (error) {
+            this.logger.error('RENDER', 'Manual render failed', error);
+            return false;
+        }
+    }
+    
+    /**
      * Debug renderer state
      */
     debug() {

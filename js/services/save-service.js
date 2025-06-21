@@ -43,7 +43,7 @@ class SaveService {
         // Setup event listeners
         this.setupEventListeners();
         
-        this.logger.info('SAVE', 'Save service initialized');
+        this.logger.info('SAVE', 'Legacy save service initialized (saving disabled - enhanced state manager authoritative)');
     }
     
     /**
@@ -92,22 +92,18 @@ class SaveService {
     
     /**
      * Setup event listeners for automatic saving
+     * GEMINI FIX: Disabled automatic saving to prevent dual state management conflict
      */
     setupEventListeners() {
-        // Listen for state changes from enhanced state manager
-        eventBus.on('state:changed', (event) => {
-            if (!event.data.batch) {
-                // Debounced save for individual changes
-                this.debouncedSave();
-            }
-        });
+        // DISABLED: Legacy automatic saving to prevent race conditions
+        // The enhanced state manager now handles all saving operations
         
-        // Listen for batch complete events
-        eventBus.on('state:batch-complete', () => {
-            this.saveState();
-        });
+        this.logger.info('SAVE', 'Legacy automatic saving disabled - enhanced state manager is authoritative');
         
-        this.logger.debug('SAVE', 'Event listeners setup complete');
+        // Keep save:state-loaded listener for backwards compatibility
+        eventBus.on('save:state-loaded', (event) => {
+            this.logger.debug('SAVE', 'State load event received', event.data);
+        });
     }
 
     /**
@@ -396,15 +392,11 @@ class SaveService {
 
     /**
      * Debounced save to prevent excessive saves during rapid changes
+     * GEMINI FIX: Disabled to prevent dual state management
      */
     debouncedSave() {
-        if (this.saveTimeout) {
-            clearTimeout(this.saveTimeout);
-        }
-        this.saveTimeout = setTimeout(() => {
-            this.saveState();
-            this.saveTimeout = null;
-        }, 1000); // 1 second debounce
+        this.logger.debug('SAVE', 'Legacy debounced save called but disabled - enhanced state manager handles saving');
+        // No-op: Enhanced state manager handles all saving
     }
     
     /**

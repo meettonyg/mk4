@@ -12,9 +12,6 @@ import {
     showToast
 } from '../utils/toast-polyfill.js';
 import {
-    saveService
-} from '../services/save-service.js';
-import {
     stateValidator
 } from './state-validator.js';
 import {
@@ -23,9 +20,13 @@ import {
 import {
     structuredLogger
 } from '../utils/structured-logger.js';
+import {
+    performanceMonitor
+} from '../utils/performance-monitor.js';
 
 // FIX: Removed the import for enhancedComponentRenderer to break the circular dependency.
 // The state manager should not be aware of the renderer. The renderer subscribes to the state manager instead.
+// GEMINI FIX: Removed legacy saveService import - enhanced state manager now handles all saving directly.
 
 class EnhancedStateManager {
     constructor() {
@@ -51,7 +52,27 @@ class EnhancedStateManager {
         this.subscriberNotificationTimeout = null;
         this.saveTimeout = null;
         
-        this.logger.info('STATE', 'Enhanced State Manager initialized with validation and event bus');
+        // GEMINI FIX: Built-in save management
+        this.SAVE_KEY = 'guestifyMediaKitState';
+        this.SAVE_VERSION = '2.0.0';
+        
+        this.logger.info('STATE', 'Enhanced State Manager initialized with validation, event bus, and direct saving');
+        
+        // GEMINI FIX: Don't auto-load in constructor - wait for proper initialization
+        // this.autoLoadSavedState(); // MOVED TO PROPER INIT SEQUENCE
+    }
+
+    /**
+     * GEMINI FIX: Proper initialization after all systems are ready
+     * This ensures auto-load happens AFTER renderer is subscribed
+     */
+    initializeAfterSystems() {
+        this.logger.info('STATE', 'Enhanced State Manager: Starting post-system initialization');
+        
+        // Now it's safe to auto-load because renderer is subscribed
+        this.autoLoadSavedState();
+        
+        this.logger.info('STATE', 'Enhanced State Manager: Post-system initialization complete');
     }
 
     /**
@@ -268,8 +289,8 @@ class EnhancedStateManager {
         this.notifySubscribers();
         this.eventBus.emit('state:changed', { state: this.state, batch: true });
         
-        // Immediate save for batch operations (no debounce)
-        saveService.saveState(this.state);
+        // GEMINI FIX: Direct save for batch operations (no debounce)
+        this.saveStateToStorage(this.state);
         
         this.logger.info('STATE', `Batch processed: ${batchId}`, {
             duration: `${batchDuration.toFixed(2)}ms`,
@@ -470,7 +491,7 @@ class EnhancedStateManager {
                 this.notifySubscribers();
                 this.eventBus.emit('state:changed', { state: this.state });
                 
-                // Debounced save for performance
+                // GEMINI FIX: Debounced save for performance - direct save
                 this.debouncedSave();
             }
             
@@ -504,27 +525,29 @@ class EnhancedStateManager {
     /**
      * Sets the initial state of the application, often from a loaded template or localStorage.
      * @param {object} initialData - The full state object to load.
+     * GEMINI FIX: Simplified - no auto-loading here since it's handled by initializeAfterSystems
      */
     async setInitialState(initialData) {
         if (!initialData || typeof initialData !== 'object') {
-            console.warn('setInitialState received invalid data. Initializing with default empty state.');
-            this.state = {
-                layout: [],
-                components: {},
-                globalSettings: {}
-            };
-        } else {
-            this.state = {
-                layout: initialData.layout || [],
-                components: initialData.components || {},
-                globalSettings: initialData.globalSettings || {}
-            };
+            this.logger.info('STATE', 'No initial data provided - using current state or empty state');
+            // Don't auto-load here - it's handled by initializeAfterSystems at the right time
+            return;
         }
+        
+        // Set provided state
+        this.state = {
+            layout: initialData.layout || [],
+            components: initialData.components || {},
+            globalSettings: initialData.globalSettings || {},
+            version: this.SAVE_VERSION
+        };
 
-        console.log('Initial state set:', this.state);
+        this.logger.info('STATE', 'Initial state set from provided data:', {
+            components: Object.keys(this.state.components).length,
+            layout: this.state.layout.length
+        });
 
-        // Notify subscribers about the new state. The renderer, which subscribes
-        // during its own init phase, will pick up this change and render the initial layout.
+        // Notify subscribers about the new state
         this.notifySubscribers();
     }
 
@@ -705,20 +728,23 @@ class EnhancedStateManager {
         this.logger.info('STATE', `Rolled back transaction: ${lastTransaction.type}`);
         this.notifySubscribers();
         this.eventBus.emit('state:rollback', { transaction: lastTransaction });
-        saveService.saveState(this.state);
+        
+        // GEMINI FIX: Direct save after rollback
+        this.saveStateToStorage(this.state);
         
         return true;
     }
     
     /**
      * Debounced save to prevent excessive saves during rapid changes
+     * GEMINI FIX: Direct localStorage saving instead of legacy service
      */
     debouncedSave() {
         if (this.saveTimeout) {
             clearTimeout(this.saveTimeout);
         }
         this.saveTimeout = setTimeout(() => {
-            saveService.saveState(this.state);
+            this.saveStateToStorage(this.state);
             this.saveTimeout = null;
         }, 1000); // 1 second debounce
     }
@@ -809,6 +835,169 @@ class EnhancedStateManager {
         this.transactionHistory = [];
         
         this.logger.info('STATE', 'Enhanced State Manager destroyed');
+    }
+    
+    /**
+     * GEMINI FIX: Auto-load saved state during initialization
+     * This ensures components persist after page refresh
+     */
+    autoLoadSavedState() {
+        try {
+            const loadedState = this.loadStateFromStorage();
+            if (loadedState) {
+                this.logger.info('STATE', 'Auto-loaded saved state on initialization', {
+                    components: Object.keys(loadedState.components).length,
+                    layout: loadedState.layout.length
+                });
+                
+                // GEMINI FIX: Ensure renderer processes the loaded components
+                // First notify subscribers to trigger rendering
+                this.notifySubscribers();
+                
+                // Then emit state change event to ensure all systems are aware
+                setTimeout(() => {
+                    this.eventBus.emit('state:loaded-and-ready', {
+                        state: loadedState,
+                        source: 'auto-load',
+                        componentCount: Object.keys(loadedState.components).length
+                    });
+                    
+                    this.logger.info('STATE', 'Auto-loaded state rendered', {
+                        components: Object.keys(loadedState.components).length
+                    });
+                }, 100); // Small delay to ensure renderer is ready
+                
+            } else {
+                this.logger.info('STATE', 'No saved state found, starting with empty state');
+            }
+        } catch (error) {
+            this.logger.error('STATE', 'Error auto-loading saved state', error);
+            // Continue with empty state if loading fails
+        }
+    }
+    
+    /**
+     * GEMINI FIX: Direct state saving to localStorage
+     * Replaces reliance on legacy save service
+     */
+    saveStateToStorage(state = null) {
+        const perfEnd = performanceMonitor.start('state-save-direct');
+        
+        try {
+            const stateToSave = state || this.state;
+            
+            // Add metadata
+            const saveData = {
+                ...stateToSave,
+                meta: {
+                    version: this.SAVE_VERSION,
+                    savedAt: new Date().toISOString(),
+                    componentsCount: Object.keys(stateToSave.components || {}).length,
+                    layoutLength: (stateToSave.layout || []).length
+                }
+            };
+            
+            // Create backup first
+            const existingSave = localStorage.getItem(this.SAVE_KEY);
+            if (existingSave) {
+                try {
+                    localStorage.setItem(this.SAVE_KEY + '_backup', existingSave);
+                } catch (backupError) {
+                    this.logger.warn('STATE', 'Error creating backup', backupError);
+                }
+            }
+            
+            // Save to localStorage
+            localStorage.setItem(this.SAVE_KEY, JSON.stringify(saveData));
+            
+            perfEnd();
+            
+            this.logger.info('STATE', 'State saved directly to localStorage', {
+                components: Object.keys(stateToSave.components || {}).length,
+                layout: (stateToSave.layout || []).length
+            });
+            
+            // Emit save event
+            this.eventBus.emit('state:saved-to-storage', {
+                state: stateToSave,
+                metadata: saveData.meta
+            });
+            
+            return true;
+            
+        } catch (error) {
+            perfEnd();
+            this.logger.error('STATE', 'Error saving state to localStorage', error);
+            showToast('Error: Could not save your work. ' + error.message, 'error');
+            return false;
+        }
+    }
+    
+    /**
+     * GEMINI FIX: Direct state loading from localStorage
+     * Loads state on initialization or refresh
+     */
+    loadStateFromStorage() {
+        try {
+            const savedState = localStorage.getItem(this.SAVE_KEY);
+            if (!savedState) {
+                this.logger.info('STATE', 'No saved state found in localStorage');
+                return null;
+            }
+            
+            const parsedState = JSON.parse(savedState);
+            
+            // Validate and set state
+            const loadedState = {
+                layout: parsedState.layout || [],
+                components: parsedState.components || {},
+                globalSettings: parsedState.globalSettings || {},
+                version: this.SAVE_VERSION
+            };
+            
+            this.state = loadedState;
+            
+            this.logger.info('STATE', 'State loaded from localStorage', {
+                components: Object.keys(loadedState.components).length,
+                layout: loadedState.layout.length,
+                version: parsedState.meta?.version || 'unknown'
+            });
+            
+            // Notify subscribers
+            this.notifySubscribers();
+            this.eventBus.emit('state:loaded-from-storage', {
+                state: loadedState,
+                metadata: parsedState.meta
+            });
+            
+            return loadedState;
+            
+        } catch (error) {
+            this.logger.error('STATE', 'Error loading state from localStorage', error);
+            
+            // Try backup
+            try {
+                const backupState = localStorage.getItem(this.SAVE_KEY + '_backup');
+                if (backupState) {
+                    const parsedBackup = JSON.parse(backupState);
+                    this.state = {
+                        layout: parsedBackup.layout || [],
+                        components: parsedBackup.components || {},
+                        globalSettings: parsedBackup.globalSettings || {},
+                        version: this.SAVE_VERSION
+                    };
+                    
+                    this.logger.info('STATE', 'Loaded from backup after main save failed');
+                    showToast('Loaded from backup - main save was corrupted', 'warning');
+                    return this.state;
+                }
+            } catch (backupError) {
+                this.logger.error('STATE', 'Backup loading also failed', backupError);
+            }
+            
+            showToast('Error: Could not load previously saved work', 'error');
+            return null;
+        }
     }
 }
 

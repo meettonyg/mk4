@@ -74,56 +74,95 @@ class StateHistory {
 
     /**
      * Capture a state snapshot
+     * GEMINI FIX: Added error handling to prevent snapshot failures
      */
     captureSnapshot(state, metadata = {}) {
         if (!this.isEnabled) return;
-
-        // If we're not at the end, remove future history
-        if (this.currentIndex < this.history.length - 1) {
-            this.history = this.history.slice(0, this.currentIndex + 1);
-        }
-
-        // Create snapshot
-        const snapshot = {
-            id: this.generateSnapshotId(),
-            state: this.compressState(state),
-            timestamp: Date.now(),
-            metadata: {
-                ...metadata,
-                componentCount: Object.keys(state.components || {}).length,
-                layoutLength: (state.layout || []).length
+        
+        try {
+            // Validate state input
+            if (!state || typeof state !== 'object') {
+                this.logger.warn('HISTORY', 'Invalid state provided for snapshot, skipping');
+                return;
             }
-        };
 
-        // Add to history
-        this.history.push(snapshot);
-        this.currentIndex++;
-        this.stats.snapshots++;
+            // If we're not at the end, remove future history
+            if (this.currentIndex < this.history.length - 1) {
+                this.history = this.history.slice(0, this.currentIndex + 1);
+            }
 
-        // Store additional metadata
-        this.metadata.set(snapshot.id, {
-            size: JSON.stringify(snapshot.state).length,
-            ...metadata
-        });
+            // Create snapshot with error handling
+            const snapshot = {
+                id: this.generateSnapshotId(),
+                state: this.compressState(state),
+                timestamp: Date.now(),
+                metadata: {
+                    ...metadata,
+                    componentCount: Object.keys(state.components || {}).length,
+                    layoutLength: (state.layout || []).length
+                }
+            };
 
-        // Trim history if needed
-        if (this.history.length > this.maxSize) {
-            const removed = this.history.shift();
-            this.metadata.delete(removed.id);
-            this.currentIndex--;
+            // Add to history
+            this.history.push(snapshot);
+            this.currentIndex++;
+            this.stats.snapshots++;
+
+            // Store additional metadata with error handling
+            try {
+                this.metadata.set(snapshot.id, {
+                    size: JSON.stringify(snapshot.state).length,
+                    ...metadata
+                });
+            } catch (metadataError) {
+                this.logger.warn('HISTORY', 'Error storing metadata', metadataError);
+            }
+
+            // Trim history if needed
+            if (this.history.length > this.maxSize) {
+                const removed = this.history.shift();
+                this.metadata.delete(removed.id);
+                this.currentIndex--;
+            }
+
+            this.logger.debug('HISTORY', `State snapshot captured`, {
+                id: snapshot.id,
+                index: this.currentIndex,
+                total: this.history.length
+            });
+
+            // Emit event with error handling
+            try {
+                eventBus.emit('history:snapshot-captured', {
+                    snapshot,
+                    index: this.currentIndex
+                });
+            } catch (eventError) {
+                this.logger.warn('HISTORY', 'Error emitting snapshot event', eventError);
+            }
+        } catch (error) {
+            this.logger.error('HISTORY', 'Error capturing state snapshot', error);
+            // Don't throw - just log and continue
         }
-
-        this.logger.debug('HISTORY', `State snapshot captured`, {
-            id: snapshot.id,
-            index: this.currentIndex,
-            total: this.history.length
-        });
-
-        // Emit event
-        eventBus.emit('history:snapshot-captured', {
-            snapshot,
-            index: this.currentIndex
-        });
+    }
+    
+    /**
+     * Save snapshot for external calls (like from save-service)
+     * GEMINI FIX: Enhanced with error handling and validation
+     */
+    saveSnapshot(state, label = 'manual-save') {
+        try {
+            if (!state || typeof state !== 'object') {
+                this.logger.debug('HISTORY', 'Invalid state for external snapshot, skipping');
+                return false;
+            }
+            
+            this.captureSnapshot(state, { label, external: true });
+            return true;
+        } catch (error) {
+            this.logger.warn('HISTORY', 'Error in external snapshot save', error);
+            return false;
+        }
     }
 
     /**
