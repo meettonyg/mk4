@@ -48,11 +48,6 @@
             </div>
             
             <div class="library__main">
-                <div class="library__section-header">
-                    <h3>Free Components</h3>
-                    <p>Essential components included with your Guestify account</p>
-                </div>
-                
                 <div class="components-grid" id="component-grid">
                     <!-- Loading placeholder - will be replaced by JavaScript -->
                     <div class="component-grid-loading" id="component-grid-loading">
@@ -63,11 +58,8 @@
                         </div>
                         <p>Loading components...</p>
                     </div>
-                    <!-- Component cards will be populated by JavaScript -->
+                    <!-- Component cards will be populated dynamically by JavaScript -->
                 </div>
-                
-                <!-- Premium components will be mixed with free components in the main grid -->
-                <!-- JavaScript will handle section headers and premium styling dynamically -->
             </div>
         </div>
         

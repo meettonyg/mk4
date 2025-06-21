@@ -79,10 +79,15 @@ export function initializeSystems(flags) {
     window.renderer = selectedSystems.renderer;
     window.initializer = selectedSystems.initializer;
     
-    // PHASE 3 FIX: Expose enhanced state manager globally
+    // PHASE 3 FIX: Expose enhanced systems globally
     if (selectedSystems.stateManagerType === 'enhanced') {
         window.enhancedStateManager = selectedSystems.stateManager;
         console.log('✅ Enhanced State Manager exposed globally');
+    }
+    
+    if (selectedSystems.componentManagerType === 'enhanced') {
+        window.enhancedComponentManager = selectedSystems.componentManager;
+        console.log('✅ Enhanced Component Manager exposed globally');
     }
     
     // PHASE 3 FIX: Initialize and expose Phase 3 systems

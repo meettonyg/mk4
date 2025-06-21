@@ -242,18 +242,42 @@ function setupEventListeners() {
     if (addComponentButton) {
         addComponentButton.addEventListener('click', async () => {
             const selectedComponents = getSelectedComponents();
-            if (selectedComponents.length > 0) {
+            if (selectedComponents.length === 0) {
+                structuredLogger.warn('UI', 'No components selected for addition');
+                return;
+            }
+            
+            // Disable button during processing
+            addComponentButton.disabled = true;
+            addComponentButton.textContent = 'Adding...';
+            
+            try {
                 structuredLogger.info('UI', 'Adding components', { components: selectedComponents });
                 
                 for (const componentType of selectedComponents) {
-                    // Use the globally available component manager
-                    if (window.componentManager) {
+                    // Use the globally available enhanced component manager
+                    if (window.enhancedComponentManager) {
+                        await window.enhancedComponentManager.addComponent(componentType, {});
+                        structuredLogger.debug('UI', `Component added: ${componentType}`);
+                    } else if (window.componentManager) {
+                        // Fallback to legacy component manager
                         await window.componentManager.addComponent(componentType, {});
+                        structuredLogger.debug('UI', `Component added via legacy manager: ${componentType}`);
                     } else {
-                        structuredLogger.error('UI', 'Component manager not available');
+                        structuredLogger.error('UI', 'No component manager available');
+                        throw new Error('Component manager not found');
                     }
                 }
+                
+                structuredLogger.info('UI', 'All components added successfully', { count: selectedComponents.length });
+            } catch (error) {
+                structuredLogger.error('UI', 'Failed to add components', error);
+            } finally {
+                // Re-enable button
+                addComponentButton.disabled = false;
+                addComponentButton.textContent = 'Add Selected';
             }
+            
             hideComponentLibraryModal();
             clearSelection();
         });
@@ -583,7 +607,7 @@ function getFallbackComponents() {
 
 /**
  * Clears the grid and populates with components
- * Enhanced to preserve loading element and remove any hardcoded components
+ * Enhanced to exclude section headers from component grid area
  */
 function clearGridAndPopulate(components) {
     // Store reference to loading element before clearing
@@ -618,25 +642,19 @@ function clearGridAndPopulate(components) {
         total: components.length
     });
     
-    // Add free components section
-    if (freeComponents.length > 0) {
-        addSectionHeader('Free Components', 'Essential components included with your Guestify account');
-        freeComponents.forEach(component => {
-            const card = createComponentCard(component, false);
-            componentGrid.appendChild(card);
-        });
-    }
+    // Add free components directly (no section header in grid)
+    freeComponents.forEach(component => {
+        const card = createComponentCard(component, false);
+        componentGrid.appendChild(card);
+    });
     
-    // Add premium components section if any exist
-    if (premiumComponents.length > 0) {
-        addSectionHeader('Premium Components', 'Advanced components available with Guestify Pro', true);
-        premiumComponents.forEach(component => {
-            const card = createComponentCard(component, true);
-            componentGrid.appendChild(card);
-        });
-    }
+    // Add premium components directly (no section header in grid) 
+    premiumComponents.forEach(component => {
+        const card = createComponentCard(component, true);
+        componentGrid.appendChild(card);
+    });
     
-    structuredLogger.info('MODAL', 'Component grid populated with dynamic components only', {
+    structuredLogger.info('MODAL', 'Component grid populated with components only (no headers)', {
         freeComponents: freeComponents.length,
         premiumComponents: premiumComponents.length,
         total: components.length,
@@ -695,32 +713,20 @@ function createComponentCard(component, isPremium = false) {
                 ${description}
             </div>
         </div>
-        <div class="component-card-checkbox">
-            <input type="checkbox" id="checkbox-${componentId}" name="component-checkbox" ${isPremium ? 'data-premium="true"' : ''}>
-        </div>
     `;
 
-    // Add click handler for selection
+    // Add click handler for card-based selection
     card.addEventListener('click', (event) => {
-        // Don't toggle if clicking directly on checkbox
-        if (event.target.type !== 'checkbox') {
-            const checkbox = card.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                checkbox.checked = !checkbox.checked;
-                // Dispatch change event for any listeners
-                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        }
+        // Toggle selection state
+        const isCurrentlySelected = card.classList.contains('selected');
+        card.classList.toggle('selected', !isCurrentlySelected);
         
-        // Update visual selection state
-        const isSelected = card.querySelector('input[type="checkbox"]')?.checked || false;
-        card.classList.toggle('selected', isSelected);
-        
-        structuredLogger.debug('MODAL', `Component ${isSelected ? 'selected' : 'deselected'}`, {
+        structuredLogger.debug('MODAL', `Component ${!isCurrentlySelected ? 'selected' : 'deselected'}`, {
             component: componentId,
             isPremium,
             category: component.category,
-            source: 'dynamic'
+            source: 'dynamic',
+            selectionMethod: 'card-click'
         });
     });
 
@@ -833,18 +839,15 @@ function filterByCategory(category) {
  */
 function getSelectedComponents() {
     const selected = [];
-    const checkboxes = componentGrid.querySelectorAll('input[type="checkbox"]:checked');
-    checkboxes.forEach(checkbox => {
-        const card = checkbox.closest('.component-card');
-        if (card) {
-            // Try multiple data attributes for compatibility
-            const componentType = card.dataset.componentType || card.dataset.component;
-            if (componentType) {
-                selected.push(componentType);
-            }
+    const selectedCards = componentGrid.querySelectorAll('.component-card.selected');
+    selectedCards.forEach(card => {
+        // Try multiple data attributes for compatibility
+        const componentType = card.dataset.componentType || card.dataset.component;
+        if (componentType) {
+            selected.push(componentType);
         }
     });
-    structuredLogger.debug('MODAL', 'Components selected', { selected });
+    structuredLogger.debug('MODAL', 'Components selected', { selected, method: 'card-class' });
     return selected;
 }
 
@@ -852,14 +855,11 @@ function getSelectedComponents() {
  * Clears the selection state of all components in the grid.
  */
 function clearSelection() {
-    const checkboxes = componentGrid.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = false;
-        const card = checkbox.closest('.component-card');
-        if (card) {
-            card.classList.remove('selected');
-        }
+    const selectedCards = componentGrid.querySelectorAll('.component-card.selected');
+    selectedCards.forEach(card => {
+        card.classList.remove('selected');
     });
+    structuredLogger.debug('MODAL', 'Selection cleared', { clearedCount: selectedCards.length });
 }
 
 /**
