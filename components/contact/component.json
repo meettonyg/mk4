@@ -1,7 +1,7 @@
 {
   "name": "Contact",
   "category": "media",
-  "icon": "mail.svg",
+  "icon": "contact-info.svg",
   "description": "Contact form or contact information",
   "isPremium": false,
   "dependencies": [],

@@ -1,7 +1,7 @@
 {
   "name": "Hero",
   "category": "essential",
-  "icon": "user.svg",
+  "icon": "hero-minimal.svg",
   "description": "Hero section for your media kit",
   "isPremium": false,
   "dependencies": [],

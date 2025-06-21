@@ -1,7 +1,7 @@
 {
   "name": "Call to Action",
   "category": "essential",
-  "icon": "arrow-right-circle.svg",
+  "icon": "cta.svg",
   "description": "Prompt visitors to take a specific action",
   "isPremium": false,
   "dependencies": [],

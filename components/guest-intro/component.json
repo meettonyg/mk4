@@ -1,7 +1,7 @@
 {
   "name": "Guest Intro",
   "category": "essential",
-  "icon": "mic.svg",
+  "icon": "guest-intro.svg",
   "description": "Professional introduction for podcast guests and speakers",
   "isPremium": false,
   "dependencies": [],

@@ -1,7 +1,7 @@
 {
   "name": "Biography",
   "category": "essential",
-  "icon": "file-text.svg",
+  "icon": "bio-standard.svg",
   "description": "Biography section for your media kit",
   "isPremium": false,
   "dependencies": [],

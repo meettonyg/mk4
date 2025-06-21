@@ -1,0 +1,3436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guestify Media Kit Builder v2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .builder-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Top Toolbar - Reduced height from 60px to 48px */
+        .top-toolbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 1000;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toolbar-center {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0ea5e9;
+        }
+
+        .guest-name {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .toolbar-btn {
+            background: #404040;
+            border: none;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .toolbar-btn:hover {
+            background: #505050;
+        }
+
+        .toolbar-btn.primary {
+            background: #0ea5e9;
+        }
+
+        .toolbar-btn.primary:hover {
+            background: #0284c7;
+        }
+
+        .toolbar-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .toolbar-btn.export {
+            background: #059669;
+        }
+
+        .toolbar-btn.export:hover {
+            background: #047857;
+        }
+
+        .preview-toggle {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .preview-toggle button {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .preview-toggle button.active {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        /* Status Indicator */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .status-dot.saving {
+            background: #f59e0b;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Left Sidebar - Reduced width from 340px to 300px */
+        .left-sidebar {
+            width: 300px;
+            background: #2a2a2a;
+            border-right: 1px solid #404040;
+            margin-top: 48px;
+            height: calc(100vh - 48px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid #404040;
+            background: #333;
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            padding: 10px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .sidebar-tab.active {
+            color: #0ea5e9;
+            border-bottom-color: #0ea5e9;
+            background: #2a2a2a;
+        }
+
+        .sidebar-tab:hover:not(.active) {
+            color: #e2e8f0;
+            background: #3a3a3a;
+        }
+
+        .sidebar-content {
+            padding: 16px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Component Categories */
+        .components-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .premium-badge {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .component-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .component-item {
+            background: #333;
+            border: 1px solid #404040;
+            border-radius: 6px;
+            padding: 10px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            text-align: center;
+            position: relative;
+            user-select: none;
+        }
+
+        .component-item:hover {
+            border-color: #0ea5e9;
+            background: #3a3a3a;
+            transform: translateY(-1px);
+        }
+
+        .component-item:active {
+            cursor: grabbing;
+        }
+
+        .component-item.premium::after {
+            content: '🔒';
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            font-size: 9px;
+        }
+
+        .component-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .component-icon {
+            width: 20px;
+            height: 20px;
+            margin: 0 auto 6px;
+            stroke: #94a3b8;
+        }
+
+        .component-item:hover .component-icon {
+            stroke: #0ea5e9;
+        }
+
+        .component-name {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .component-item:hover .component-name {
+            color: #e2e8f0;
+        }
+
+        /* Design Tab */
+        .element-editor {
+            padding-top: 8px;
+        }
+
+        .editor-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .editor-subtitle {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 8px 10px;
+            color: #fff;
+            font-size: 13px;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 70px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .color-input {
+            width: 32px;
+            height: 28px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-input::-webkit-color-swatch {
+            border: none;
+            border-radius: 3px;
+        }
+
+        /* Global Theme Controls */
+        .theme-controls-section {
+            border-top: 1px solid #404040;
+            padding-top: 16px;
+            margin-top: 16px;
+        }
+
+        .global-settings-btn {
+            width: 100%;
+            background: #059669;
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .global-settings-btn:hover {
+            background: #047857;
+        }
+
+        /* Layout Options */
+        .layout-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .layout-option {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .layout-option:hover {
+            border-color: #0ea5e9;
+            background: #3a3a3a;
+        }
+
+        .layout-option.active {
+            background: #0ea5e9;
+            border-color: #0ea5e9;
+        }
+
+        .layout-preview {
+            width: 100%;
+            height: 32px;
+            background: #555;
+            border-radius: 3px;
+            margin-bottom: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .layout-preview.full-width {
+            background: #666;
+        }
+
+        .layout-preview.two-column::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 48%;
+            height: 100%;
+            background: #777;
+            border-radius: 3px;
+        }
+
+        .layout-preview.two-column::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 48%;
+            height: 100%;
+            background: #777;
+            border-radius: 3px;
+        }
+
+        .layout-preview.sidebar::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 65%;
+            height: 100%;
+            background: #777;
+            border-radius: 3px;
+        }
+
+        .layout-preview.sidebar::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 30%;
+            height: 100%;
+            background: #777;
+            border-radius: 3px;
+        }
+
+        .layout-name {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .layout-option.active .layout-name {
+            color: white;
+        }
+
+        /* Main Preview Area */
+        .preview-area {
+            flex: 1;
+            margin-top: 48px;
+            height: calc(100vh - 48px);
+            overflow: auto;
+            background: #1a1a1a;
+            position: relative;
+        }
+
+        .preview-container {
+            max-width: 900px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            min-height: 500px;
+        }
+
+        .preview-container.mobile-preview {
+            max-width: 375px;
+            margin: 15px auto;
+        }
+
+        .preview-container.tablet-preview {
+            max-width: 768px;
+            margin: 20px auto;
+        }
+
+        /* Media Kit Preview Styles */
+        .media-kit-preview {
+            color: #1a1a1a;
+            min-height: 500px;
+            position: relative;
+        }
+
+        /* Drop Zones */
+        .drop-zone {
+            min-height: 50px;
+            border: 2px dashed transparent;
+            border-radius: 6px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #0ea5e9;
+            background: rgba(14, 165, 233, 0.05);
+        }
+
+        .drop-zone.empty {
+            border-color: #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .drop-zone.empty::before {
+            content: 'Drop a component here or click to add';
+            color: #94a3b8;
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        .drop-zone:hover.empty {
+            border-color: #0ea5e9;
+            background: rgba(14, 165, 233, 0.03);
+        }
+
+        /* Editable Elements */
+        .editable-element {
+            position: relative;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            margin: 8px 0;
+        }
+
+        .editable-element:hover {
+            outline: 2px dashed #0ea5e9;
+            outline-offset: 3px;
+        }
+
+        .editable-element.selected {
+            outline: 2px solid #0ea5e9;
+            outline-offset: 3px;
+        }
+
+        .element-controls {
+            position: absolute;
+            top: -26px;
+            right: 0;
+            background: #1a1a1a;
+            border-radius: 4px;
+            padding: 3px;
+            display: none;
+            gap: 3px;
+            z-index: 100;
+        }
+
+        .editable-element:hover .element-controls,
+        .editable-element.selected .element-controls {
+            display: flex;
+        }
+
+        .control-btn {
+            background: #333;
+            border: none;
+            color: #94a3b8;
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding: 50px 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            position: relative;
+        }
+
+        .hero-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: #64748b;
+            overflow: hidden;
+        }
+
+        .hero-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hero-name {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #1e293b;
+            outline: none;
+        }
+
+        .hero-title {
+            font-size: 16px;
+            color: #64748b;
+            margin-bottom: 16px;
+            outline: none;
+        }
+
+        .hero-bio {
+            max-width: 450px;
+            margin: 0 auto;
+            line-height: 1.5;
+            color: #475569;
+            outline: none;
+        }
+
+        /* Content Sections */
+        .content-section {
+            padding: 30px;
+        }
+
+        .section-title-mk {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1e293b;
+            outline: none;
+        }
+
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .topic-item {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #0ea5e9;
+            outline: none;
+        }
+
+        /* Stats Component Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0ea5e9;
+            display: block;
+            outline: none;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+            outline: none;
+        }
+
+        /* CTA Component Styles */
+        .cta-section {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 8px;
+        }
+
+        .cta-button {
+            background: #0ea5e9;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .cta-button:hover {
+            background: #0284c7;
+            transform: translateY(-1px);
+        }
+
+        /* Logo Grid Component Styles */
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .logo-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            min-height: 60px;
+        }
+
+        .logo-placeholder {
+            color: #94a3b8;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        /* Testimonial Component Styles */
+        .testimonial-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #0ea5e9;
+            margin-bottom: 16px;
+        }
+
+        .testimonial-quote {
+            font-style: italic;
+            color: #475569;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .testimonial-author {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+            outline: none;
+        }
+
+        .testimonial-role {
+            font-size: 12px;
+            color: #64748b;
+            outline: none;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 30px;
+        }
+
+        .social-link {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .social-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+        }
+
+        /* Add Component Button */
+        .add-component-btn {
+            width: 100%;
+            margin-top: 16px;
+            padding: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Section Management */
+        .section-controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .section-btn {
+            background: #333;
+            border: 1px solid #555;
+            color: #94a3b8;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .section-btn:hover {
+            border-color: #0ea5e9;
+            color: #0ea5e9;
+        }
+
+        /* Upgrade Prompt */
+        .upgrade-prompt {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 6px;
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .upgrade-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .upgrade-text {
+            font-size: 12px;
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+
+        .upgrade-btn {
+            background: white;
+            color: #f5576c;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        .upgrade-btn:hover {
+            background: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+        /* Global Settings Modal */
+        .global-settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #2a2a2a;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal:hover {
+            background: #404040;
+            color: #e2e8f0;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .theme-palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .palette-option {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .palette-option:hover {
+            border-color: #0ea5e9;
+        }
+
+        .palette-option.active {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+        }
+
+        .palette-option.blue {
+            background: linear-gradient(45deg, #dbeafe 0%, #3b82f6 100%);
+        }
+
+        .palette-option.green {
+            background: linear-gradient(45deg, #dcfce7 0%, #10b981 100%);
+        }
+
+        .palette-option.purple {
+            background: linear-gradient(45deg, #f3e8ff 0%, #8b5cf6 100%);
+        }
+
+        .palette-option.orange {
+            background: linear-gradient(45deg, #fed7aa 0%, #f97316 100%);
+        }
+
+        .palette-option.pink {
+            background: linear-gradient(45deg, #fce7f3 0%, #ec4899 100%);
+        }
+
+        .palette-option.gray {
+            background: linear-gradient(45deg, #f1f5f9 0%, #64748b 100%);
+        }
+
+        /* Export Modal */
+        .export-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .export-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .export-option {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 6px;
+            padding: 16px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            color: #e2e8f0;
+        }
+
+        .export-option:hover {
+            border-color: #0ea5e9;
+            background: #3a3a3a;
+        }
+
+        .export-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .export-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .export-description {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 1200px) {
+            .left-sidebar {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .builder-container {
+                flex-direction: column;
+            }
+            
+            .left-sidebar {
+                width: 100%;
+                height: 200px;
+                margin-top: 48px;
+                border-right: none;
+                border-bottom: 1px solid #404040;
+            }
+            
+            .preview-area {
+                margin-top: 0;
+                height: calc(100vh - 248px);
+            }
+
+            .top-toolbar {
+                padding: 0 12px;
+            }
+
+            .toolbar-left {
+                gap: 8px;
+            }
+
+            .guest-name {
+                display: none;
+            }
+
+            .component-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+
+            .component-item {
+                padding: 6px;
+            }
+
+            .component-name {
+                font-size: 10px;
+            }
+
+            .component-icon {
+                width: 16px;
+                height: 16px;
+                margin-bottom: 3px;
+            }
+
+            .toolbar-btn {
+                padding: 4px 6px;
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .preview-container {
+                margin: 15px 10px;
+                border-radius: 6px;
+            }
+
+            .hero-section {
+                padding: 30px 20px;
+            }
+
+            .hero-name {
+                font-size: 24px;
+            }
+
+            .hero-title {
+                font-size: 14px;
+            }
+
+            .content-section {
+                padding: 20px;
+            }
+
+            .topics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #404040;
+            border-top: 2px solid #0ea5e9;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Transitions */
+        .editable-element [contenteditable] {
+            transition: all 0.2s ease;
+        }
+
+        .editable-element [contenteditable]:focus {
+            background: rgba(14, 165, 233, 0.05);
+            border-radius: 3px;
+            padding: 3px;
+        }
+
+        /* Component Library Modal */
+        .component-library-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 30px;
+        }
+
+        .component-library-modal {
+            background: #f8f9fa;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 900px;
+            height: 85vh;
+            max-height: 700px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .library-header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .library-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .library-title svg {
+            width: 20px;
+            height: 20px;
+            stroke: #64748b;
+        }
+
+        .library-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .library-search {
+            position: relative;
+        }
+
+        .library-search input {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 10px 6px 30px;
+            font-size: 13px;
+            width: 200px;
+            color: #1e293b;
+        }
+
+        .library-search input:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+        }
+
+        .library-search svg {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            stroke: #64748b;
+        }
+
+        .category-filter {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 13px;
+            color: #1e293b;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        .close-library {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+
+        .close-library:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .library-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .library-sidebar {
+            width: 160px;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .category-list {
+            list-style: none;
+        }
+
+        .category-item {
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #64748b;
+            transition: all 0.2s ease;
+            margin-bottom: 3px;
+        }
+
+        .category-item:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .category-item.active {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .library-main {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .section-header {
+            margin-bottom: 16px;
+        }
+
+        .section-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+
+        .section-header p {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .component-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .component-card:hover {
+            border-color: #0ea5e9;
+            box-shadow: 0 3px 10px rgba(14, 165, 233, 0.15);
+        }
+
+        .component-card.premium {
+            position: relative;
+        }
+
+        .component-card.premium::before {
+            content: 'PRO';
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .component-preview {
+            height: 100px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .component-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Component Preview Styles */
+        .preview-hero {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .preview-bio {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .preview-topics {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .preview-social {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .preview-stats {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .preview-contact {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .preview-testimonials {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .preview-cta {
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        .component-info {
+            padding: 10px;
+        }
+
+        .component-info h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 3px;
+        }
+
+        .component-info p {
+            font-size: 10px;
+            color: #64748b;
+            line-height: 1.3;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .component-library-modal {
+                margin: 15px;
+                max-width: calc(100vw - 30px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .component-library-modal {
+                height: 90vh;
+                margin: 10px;
+            }
+            
+            .library-sidebar {
+                display: none;
+            }
+            
+            .components-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="builder-container">
+        <div class="top-toolbar">
+            <div class="toolbar-left">
+                <div class="logo">Guestify</div>
+                <div class="guest-name">Editing: Daniel Jackson's Media Kit</div>
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Saved</span>
+                </div>
+            </div>
+            
+            <div class="toolbar-center">
+                <div class="preview-toggle">
+                    <button class="active" data-preview="desktop">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        Desktop
+                    </button>
+                    <button data-preview="tablet">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                        </svg>
+                        Tablet
+                    </button>
+                    <button data-preview="mobile">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                        </svg>
+                        Mobile
+                    </button>
+                </div>
+            </div>
+            
+            <div class="toolbar-right">
+                <button class="toolbar-btn" id="global-theme-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    Theme
+                </button>
+                <button class="toolbar-btn export" id="export-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7,10 12,15 17,10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export
+                </button>
+                <button class="toolbar-btn" id="share-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    Share
+                </button>
+                <button class="toolbar-btn" id="undo-btn" disabled>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 7v6h6"></path>
+                        <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+                    </svg>
+                </button>
+                <button class="toolbar-btn" id="redo-btn" disabled>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 7v6h-6"></path>
+                        <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path>
+                    </svg>
+                </button>
+                <button class="toolbar-btn primary" id="save-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                        <polyline points="7,3 7,8 15,8"></polyline>
+                    </svg>
+                    Save
+                </button>
+            </div>
+        </div>
+
+        <div class="left-sidebar">
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="components">Components</button>
+                <button class="sidebar-tab" data-tab="design">Design</button>
+                <button class="sidebar-tab" data-tab="layout">Layout</button>
+            </div>
+
+            <div class="sidebar-content">
+                <div id="components-tab" class="tab-content active">
+                    <div class="components-section">
+                        <div class="section-title">Essential Components</div>
+                        <div class="component-grid">
+                            <div class="component-item" draggable="true" data-component="hero">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                <div class="component-name">Hero</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-component="bio">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14,2 14,8 20,8"></polyline>
+                                </svg>
+                                <div class="component-name">Biography</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-component="topics">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4l2 3 2-3h4a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-4l-2-3z"></path>
+                                </svg>
+                                <div class="component-name">Topics</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-component="social">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                                    <rect x="2" y="9" width="4" height="12"></rect>
+                                    <circle cx="4" cy="4" r="2"></circle>
+                                </svg>
+                                <div class="component-name">Social</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-component="stats">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 20V10"></path>
+                                    <path d="M12 20V4"></path>
+                                    <path d="M6 20v-6"></path>
+                                </svg>
+                                <div class="component-name">Stats</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-component="cta">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M7 7h10v3l3-3-3-3v3H7z"></path>
+                                    <path d="M17 17H7v-3l-3 3 3 3v-3h10z"></path>
+                                </svg>
+                                <div class="component-name">Call to Action</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="components-section">
+                        <div class="section-title">Media & Content</div>
+                        <div class="component-grid">
+                            <div class="component-item" draggable="true" data-component="logo-grid">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                </svg>
+                                <div class="component-name">Logo Grid</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-component="testimonials">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                <div class="component-name">Testimonials</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-component="contact">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                                <div class="component-name">Contact</div>
+                            </div>
+                            <div class="component-item" draggable="true" data-component="questions">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                    <path d="M12 17h.01"></path>
+                                </svg>
+                                <div class="component-name">Questions</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="components-section">
+                        <div class="section-title">
+                            Premium Components
+                            <span class="premium-badge">PRO</span>
+                        </div>
+                        <div class="component-grid">
+                            <div class="component-item premium" draggable="true" data-component="video">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                                </svg>
+                                <div class="component-name">Video Intro</div>
+                            </div>
+                            <div class="component-item premium" draggable="true" data-component="gallery">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                    <polyline points="21,15 16,10 5,21"></polyline>
+                                </svg>
+                                <div class="component-name">Photo Gallery</div>
+                            </div>
+                            <div class="component-item premium" draggable="true" data-component="calendar">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                <div class="component-name">Booking Calendar</div>
+                            </div>
+                            <div class="component-item premium" draggable="true" data-component="podcast">
+                                <svg class="component-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                                </svg>
+                                <div class="component-name">Podcast Player</div>
+                            </div>
+                        </div>
+
+                        <div class="upgrade-prompt">
+                            <div class="upgrade-title">Unlock Premium Components</div>
+                            <div class="upgrade-text">Get advanced components and unlimited customization.</div>
+                            <button class="upgrade-btn">Upgrade to Pro</button>
+                        </div>
+                    </div>
+
+                    <button class="toolbar-btn add-component-btn" id="add-component-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Component
+                    </button>
+                </div>
+
+                <div id="design-tab" class="tab-content">
+                    <div class="element-editor" id="element-editor">
+                        <div class="editor-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Hero Section
+                        </div>
+                        <div class="editor-subtitle">Click on any element to edit its properties</div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-input" value="Daniel Jackson" id="hero-name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Professional Title</label>
+                            <input type="text" class="form-input" value="Astral Engineer" id="hero-title">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Bio Description</label>
+                            <textarea class="form-input form-textarea" id="hero-bio">Expert in ancient technology and quantum physics. Leading researcher in astral projection and interdimensional travel with over 15 years of experience.</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Background Color</label>
+                            <div class="color-picker">
+                                <input type="color" class="color-input" value="#f8fafc" id="hero-bg-color">
+                                <input type="text" class="form-input" value="#f8fafc" id="hero-bg-text" style="flex: 1;">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Text Color</label>
+                            <div class="color-picker">
+                                <input type="color" class="color-input" value="#1e293b" id="hero-text-color">
+                                <input type="text" class="form-input" value="#1e293b" id="hero-text-text" style="flex: 1;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="theme-controls-section">
+                        <button class="global-settings-btn" id="global-settings-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            Global Theme Settings
+                        </button>
+                    </div>
+                </div>
+
+                <div id="layout-tab" class="tab-content">
+                    <div class="section-title">Section Layouts</div>
+                    <div class="layout-options">
+                        <div class="layout-option active" data-layout="full-width">
+                            <div class="layout-preview full-width"></div>
+                            <div class="layout-name">Full Width</div>
+                        </div>
+                        <div class="layout-option" data-layout="two-column">
+                            <div class="layout-preview two-column"></div>
+                            <div class="layout-name">Two Column</div>
+                        </div>
+                        <div class="layout-option" data-layout="sidebar">
+                            <div class="layout-preview sidebar"></div>
+                            <div class="layout-name">Main + Sidebar</div>
+                        </div>
+                        <div class="layout-option" data-layout="three-column">
+                            <div class="layout-preview three-column"></div>
+                            <div class="layout-name">Three Column</div>
+                        </div>
+                    </div>
+                    
+                    <div class="section-controls">
+                        <button class="section-btn" id="add-section-btn">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add Section
+                        </button>
+                        <button class="section-btn" id="duplicate-section-btn">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Duplicate
+                        </button>
+                    </div>
+
+                    <div class="section-title" style="margin-top: 24px;">Global Settings</div>
+                    <div class="form-group">
+                        <label class="form-label">Max Width</label>
+                        <input type="text" class="form-input" value="900px" id="global-max-width">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Section Spacing</label>
+                        <input type="text" class="form-input" value="30px" id="global-spacing">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-area">
+            <div class="preview-container" id="preview-container">
+                <div class="media-kit-preview" id="media-kit-preview">
+                    <div class="hero-section editable-element selected" data-element="hero" data-component="hero">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <div class="hero-avatar">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50' text-anchor='middle' x='50' fill='%2364748b'%3EDJ%3C/text%3E%3C/svg%3E" alt="Profile Avatar">
+                        </div>
+                        <h1 class="hero-name" contenteditable="true" id="preview-name">Daniel Jackson</h1>
+                        <div class="hero-title" contenteditable="true" id="preview-title">Astral Engineer</div>
+                        <p class="hero-bio" contenteditable="true" id="preview-bio">Expert in ancient technology and quantum physics. Leading researcher in astral projection and interdimensional travel with over 15 years of experience.</p>
+                    </div>
+
+                    <div class="drop-zone empty" data-zone="1"></div>
+
+                    <div class="content-section editable-element" data-element="topics" data-component="topics">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <h2 class="section-title-mk" contenteditable="true">Speaking Topics</h2>
+                        <div class="topics-grid">
+                            <div class="topic-item" contenteditable="true">Quantum Physics</div>
+                            <div class="topic-item" contenteditable="true">Space Exploration</div>
+                            <div class="topic-item" contenteditable="true">Ancient Civilizations</div>
+                            <div class="topic-item" contenteditable="true">Technology Innovation</div>
+                        </div>
+                    </div>
+
+                    <div class="drop-zone empty" data-zone="2"></div>
+
+                    <div class="social-links editable-element" data-element="social" data-component="social">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <a href="#" class="social-link" title="Twitter">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" title="LinkedIn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
+                                <circle cx="4" cy="4" r="2"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" title="Instagram">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                                <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="drop-zone empty" data-zone="3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Settings Modal -->
+        <div class="global-settings-modal" id="global-settings-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Global Theme Settings</div>
+                    <button class="close-modal" id="close-global-settings">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Color Palette</label>
+                        <div class="theme-palette">
+                            <div class="palette-option blue active" data-palette="blue"></div>
+                            <div class="palette-option green" data-palette="green"></div>
+                            <div class="palette-option purple" data-palette="purple"></div>
+                            <div class="palette-option orange" data-palette="orange"></div>
+                            <div class="palette-option pink" data-palette="pink"></div>
+                            <div class="palette-option gray" data-palette="gray"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Primary Font</label>
+                        <select class="form-input" id="primary-font">
+                            <option value="Inter">Inter</option>
+                            <option value="Roboto">Roboto</option>
+                            <option value="Open Sans">Open Sans</option>
+                            <option value="Lato">Lato</option>
+                            <option value="Montserrat">Montserrat</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Secondary Font</label>
+                        <select class="form-input" id="secondary-font">
+                            <option value="Georgia">Georgia</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Playfair Display">Playfair Display</option>
+                            <option value="Merriweather">Merriweather</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Border Radius</label>
+                        <input type="range" class="form-input" id="border-radius" min="0" max="20" value="8">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div class="export-modal" id="export-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Export Your Media Kit</div>
+                    <button class="close-modal" id="close-export-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="export-options">
+                        <div class="export-option" data-export="pdf">
+                            <div class="export-icon">📄</div>
+                            <div class="export-title">PDF Document</div>
+                            <div class="export-description">Download as a PDF file</div>
+                        </div>
+                        <div class="export-option" data-export="image">
+                            <div class="export-icon">🖼️</div>
+                            <div class="export-title">Image (PNG)</div>
+                            <div class="export-description">Export as high-res image</div>
+                        </div>
+                        <div class="export-option" data-export="html">
+                            <div class="export-icon">🌐</div>
+                            <div class="export-title">Web Page</div>
+                            <div class="export-description">Get shareable web link</div>
+                        </div>
+                        <div class="export-option" data-export="embed">
+                            <div class="export-icon">📱</div>
+                            <div class="export-title">Embed Code</div>
+                            <div class="export-description">Embed on your website</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Component Library Modal -->
+        <div class="component-library-overlay" id="component-library-overlay">
+            <div class="component-library-modal">
+                <div class="library-header">
+                    <div class="library-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14,2 14,8 20,8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10,9 9,9 8,9"></polyline>
+                        </svg>
+                        Component Library
+                    </div>
+                    <div class="library-controls">
+                        <select class="category-filter" id="category-filter">
+                            <option value="all">All Categories</option>
+                            <option value="hero">Hero Sections</option>
+                            <option value="biography">Biography</option>
+                            <option value="topics">Topics</option>
+                            <option value="social">Social Links</option>
+                            <option value="media">Media</option>
+                            <option value="contact">Contact</option>
+                            <option value="stats">Statistics</option>
+                        </select>
+                        <div class="library-search">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <input type="text" placeholder="Search components..." id="component-search">
+                        </div>
+                        <button class="close-library" id="close-library">&times;</button>
+                    </div>
+                </div>
+                
+                <div class="library-content">
+                    <div class="library-sidebar">
+                        <ul class="category-list">
+                            <li class="category-item active" data-category="all">All Components</li>
+                            <li class="category-item" data-category="hero">Hero Sections</li>
+                            <li class="category-item" data-category="biography">Biography</li>
+                            <li class="category-item" data-category="topics">Topics & Skills</li>
+                            <li class="category-item" data-category="social">Social Links</li>
+                            <li class="category-item" data-category="media">Media & Gallery</li>
+                            <li class="category-item" data-category="contact">Contact Info</li>
+                            <li class="category-item" data-category="stats">Statistics</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="library-main">
+                        <div class="section-header">
+                            <h3>Free Components</h3>
+                            <p>Essential components included with your Guestify account</p>
+                        </div>
+                        
+                        <div class="components-grid" id="free-components">
+                            <div class="component-card" data-category="hero" data-component="hero-minimal">
+                                <div class="component-preview preview-hero">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#dbeafe"/>
+                                        <circle cx="60" cy="28" r="12" fill="#94a3b8"/>
+                                        <rect x="36" y="46" width="48" height="4" rx="2" fill="#1e293b"/>
+                                        <rect x="42" y="54" width="36" height="3" rx="1.5" fill="#64748b"/>
+                                        <rect x="24" y="62" width="72" height="2" rx="1" fill="#64748b"/>
+                                        <rect x="30" y="67" width="60" height="2" rx="1" fill="#64748b"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Minimal Hero</h4>
+                                    <p>Clean, centered hero with name and title</p>
+                                </div>
+                            </div>
+                            
+                            <div class="component-card" data-category="biography" data-component="bio-standard">
+                                <div class="component-preview preview-bio">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#f1f5f9"/>
+                                        <rect x="12" y="16" width="96" height="4" rx="2" fill="#64748b"/>
+                                        <rect x="12" y="24" width="84" height="4" rx="2" fill="#94a3b8"/>
+                                        <rect x="12" y="32" width="90" height="4" rx="2" fill="#94a3b8"/>
+                                        <rect x="12" y="40" width="78" height="4" rx="2" fill="#cbd5e1"/>
+                                        <rect x="12" y="48" width="72" height="4" rx="2" fill="#cbd5e1"/>
+                                        <rect x="12" y="56" width="66" height="4" rx="2" fill="#e2e8f0"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Standard Biography</h4>
+                                    <p>Full-width text biography section</p>
+                                </div>
+                            </div>
+                            
+                            <div class="component-card" data-category="topics" data-component="topics-grid">
+                                <div class="component-preview preview-topics">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#f1f5f9"/>
+                                        <rect x="12" y="16" width="45" height="24" rx="4" fill="#dbeafe" stroke="#0ea5e9" stroke-width="1"/>
+                                        <rect x="63" y="16" width="45" height="24" rx="4" fill="#dbeafe" stroke="#0ea5e9" stroke-width="1"/>
+                                        <rect x="12" y="46" width="45" height="24" rx="4" fill="#dbeafe" stroke="#0ea5e9" stroke-width="1"/>
+                                        <rect x="63" y="46" width="45" height="24" rx="4" fill="#dbeafe" stroke="#0ea5e9" stroke-width="1"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Topics Grid</h4>
+                                    <p>Grid layout for speaking topics</p>
+                                </div>
+                            </div>
+                            
+                            <div class="component-card" data-category="social" data-component="social-icons">
+                                <div class="component-preview preview-social">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#f1f5f9"/>
+                                        <circle cx="36" cy="40" r="10" fill="#0ea5e9"/>
+                                        <circle cx="60" cy="40" r="10" fill="#0ea5e9"/>
+                                        <circle cx="84" cy="40" r="10" fill="#0ea5e9"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Social Icons</h4>
+                                    <p>Horizontal row of social media icons</p>
+                                </div>
+                            </div>
+
+                            <div class="component-card" data-category="stats" data-component="stats-grid">
+                                <div class="component-preview preview-stats">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#f1f5f9"/>
+                                        <rect x="12" y="16" width="45" height="48" rx="4" fill="white" stroke="#e2e8f0"/>
+                                        <rect x="63" y="16" width="45" height="48" rx="4" fill="white" stroke="#e2e8f0"/>
+                                        <rect x="18" y="24" width="33" height="6" rx="3" fill="#0ea5e9"/>
+                                        <rect x="69" y="24" width="33" height="6" rx="3" fill="#0ea5e9"/>
+                                        <rect x="21" y="36" width="27" height="3" rx="1.5" fill="#94a3b8"/>
+                                        <rect x="72" y="36" width="27" height="3" rx="1.5" fill="#94a3b8"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Statistics</h4>
+                                    <p>Display key metrics and numbers</p>
+                                </div>
+                            </div>
+
+                            <div class="component-card" data-category="media" data-component="logo-grid">
+                                <div class="component-preview">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#f1f5f9"/>
+                                        <rect x="12" y="16" width="45" height="24" rx="4" fill="white" stroke="#e2e8f0"/>
+                                        <rect x="63" y="16" width="45" height="24" rx="4" fill="white" stroke="#e2e8f0"/>
+                                        <rect x="12" y="46" width="45" height="24" rx="4" fill="white" stroke="#e2e8f0"/>
+                                        <rect x="63" y="46" width="45" height="24" rx="4" fill="white" stroke="#e2e8f0"/>
+                                        <rect x="24" y="23" width="21" height="10" rx="2" fill="#cbd5e1"/>
+                                        <rect x="75" y="23" width="21" height="10" rx="2" fill="#cbd5e1"/>
+                                        <rect x="24" y="53" width="21" height="10" rx="2" fill="#cbd5e1"/>
+                                        <rect x="75" y="53" width="21" height="10" rx="2" fill="#cbd5e1"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Logo Grid</h4>
+                                    <p>Showcase client and partner logos</p>
+                                </div>
+                            </div>
+
+                            <div class="component-card" data-category="contact" data-component="contact-info">
+                                <div class="component-preview preview-contact">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#f1f5f9"/>
+                                        <circle cx="24" cy="28" r="5" fill="#0ea5e9"/>
+                                        <rect x="36" y="25" width="60" height="3" rx="1.5" fill="#94a3b8"/>
+                                        <circle cx="24" cy="40" r="5" fill="#0ea5e9"/>
+                                        <rect x="36" y="37" width="54" height="3" rx="1.5" fill="#94a3b8"/>
+                                        <circle cx="24" cy="52" r="5" fill="#0ea5e9"/>
+                                        <rect x="36" y="49" width="48" height="3" rx="1.5" fill="#94a3b8"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Contact Info</h4>
+                                    <p>Email, phone, and website details</p>
+                                </div>
+                            </div>
+
+                            <div class="component-card" data-category="testimonials" data-component="testimonials">
+                                <div class="component-preview preview-testimonials">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#f1f5f9"/>
+                                        <rect x="12" y="16" width="96" height="48" rx="4" fill="white" stroke="#0ea5e9" stroke-width="2"/>
+                                        <path d="M24 28 L27 25 L33 31" stroke="#0ea5e9" stroke-width="2" fill="none"/>
+                                        <rect x="39" y="26" width="54" height="3" rx="1.5" fill="#94a3b8"/>
+                                        <rect x="21" y="36" width="72" height="3" rx="1.5" fill="#cbd5e1"/>
+                                        <rect x="21" y="42" width="66" height="3" rx="1.5" fill="#cbd5e1"/>
+                                        <rect x="21" y="52" width="36" height="3" rx="1.5" fill="#0ea5e9"/>
+                                        <rect x="21" y="57" width="30" height="2" rx="1" fill="#94a3b8"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Testimonials</h4>
+                                    <p>Client reviews and recommendations</p>
+                                </div>
+                            </div>
+
+                            <div class="component-card" data-category="media" data-component="cta">
+                                <div class="component-preview preview-cta">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#dbeafe"/>
+                                        <rect x="24" y="28" width="72" height="4" rx="2" fill="#1e293b"/>
+                                        <rect x="30" y="36" width="60" height="3" rx="1.5" fill="#64748b"/>
+                                        <rect x="42" y="48" width="36" height="8" rx="4" fill="#0ea5e9"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Call to Action</h4>
+                                    <p>Button to encourage engagement</p>
+                                </div>
+                            </div>
+
+                            <div class="component-card" data-category="media" data-component="questions">
+                                <div class="component-preview">
+                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="120" height="80" rx="6" fill="#f1f5f9"/>
+                                        <circle cx="24" cy="22" r="5" fill="#0ea5e9"/>
+                                        <path d="M22 20 Q24 18 26 20 Q24 22 22 20" stroke="white" stroke-width="1.2" fill="none"/>
+                                        <rect x="36" y="20" width="60" height="3" rx="1.5" fill="#94a3b8"/>
+                                        <rect x="36" y="25" width="54" height="2" rx="1" fill="#cbd5e1"/>
+                                        <circle cx="24" cy="40" r="5" fill="#0ea5e9"/>
+                                        <path d="M22 38 Q24 36 26 38 Q24 40 22 38" stroke="white" stroke-width="1.2" fill="none"/>
+                                        <rect x="36" y="38" width="66" height="3" rx="1.5" fill="#94a3b8"/>
+                                        <rect x="36" y="43" width="48" height="2" rx="1" fill="#cbd5e1"/>
+                                        <circle cx="24" cy="58" r="5" fill="#0ea5e9"/>
+                                        <path d="M22 56 Q24 54 26 56 Q24 58 22 56" stroke="white" stroke-width="1.2" fill="none"/>
+                                        <rect x="36" y="56" width="57" height="3" rx="1.5" fill="#94a3b8"/>
+                                        <rect x="36" y="61" width="42" height="2" rx="1" fill="#cbd5e1"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Interview Questions</h4>
+                                    <p>Suggested questions for interviews</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section-header" style="margin-top: 30px;">
+                            <h3>Premium Components</h3>
+                            <p>Advanced components available with Guestify Pro</p>
+                        </div>
+                        
+                        <div class="components-grid" id="premium-components">
+                            <div class="component-card premium" data-category="media" data-component="video-intro">
+                                <div class="component-preview">
+                                    <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="80" height="60" rx="4" fill="#1e293b"/>
+                                        <rect x="8" y="12" width="64" height="36" rx="3" fill="#334155"/>
+                                        <path d="M32 22 L48 30 L32 38 Z" fill="#0ea5e9"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Video Introduction</h4>
+                                    <p>Embedded video player for introductions</p>
+                                </div>
+                            </div>
+                            
+                            <div class="component-card premium" data-category="media" data-component="image-gallery">
+                                <div class="component-preview">
+                                    <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="80" height="60" rx="4" fill="#f1f5f9"/>
+                                        <rect x="8" y="12" width="28" height="20" rx="2" fill="#cbd5e1"/>
+                                        <rect x="40" y="12" width="32" height="20" rx="2" fill="#cbd5e1"/>
+                                        <rect x="8" y="36" width="32" height="12" rx="2" fill="#cbd5e1"/>
+                                        <rect x="44" y="36" width="28" height="12" rx="2" fill="#cbd5e1"/>
+                                        <circle cx="18" cy="18" r="2" fill="#94a3b8"/>
+                                        <circle cx="50" cy="18" r="2" fill="#94a3b8"/>
+                                        <circle cx="18" cy="42" r="2" fill="#94a3b8"/>
+                                        <circle cx="54" cy="42" r="2" fill="#94a3b8"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Image Gallery</h4>
+                                    <p>Professional photo gallery with lightbox</p>
+                                </div>
+                            </div>
+
+                            <div class="component-card premium" data-category="tools" data-component="calendar">
+                                <div class="component-preview preview-cta">
+                                    <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="80" height="60" rx="4" fill="#f1f5f9"/>
+                                        <rect x="8" y="16" width="64" height="36" rx="3" fill="white" stroke="#e2e8f0"/>
+                                        <rect x="8" y="12" width="64" height="8" rx="3" fill="#0ea5e9"/>
+                                        <rect x="16" y="8" width="2" height="8" rx="1" fill="#64748b"/>
+                                        <rect x="62" y="8" width="2" height="8" rx="1" fill="#64748b"/>
+                                        <rect x="16" y="24" width="4" height="4" rx="1" fill="#cbd5e1"/>
+                                        <rect x="24" y="24" width="4" height="4" rx="1" fill="#cbd5e1"/>
+                                        <rect x="32" y="24" width="4" height="4" rx="1" fill="#0ea5e9"/>
+                                        <rect x="40" y="24" width="4" height="4" rx="1" fill="#cbd5e1"/>
+                                        <rect x="48" y="24" width="4" height="4" rx="1" fill="#cbd5e1"/>
+                                        <rect x="56" y="24" width="4" height="4" rx="1" fill="#cbd5e1"/>
+                                        <rect x="16" y="32" width="4" height="4" rx="1" fill="#cbd5e1"/>
+                                        <rect x="24" y="32" width="4" height="4" rx="1" fill="#cbd5e1"/>
+                                        <rect x="32" y="32" width="4" height="4" rx="1" fill="#cbd5e1"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Booking Calendar</h4>
+                                    <p>Interactive calendar for scheduling</p>
+                                </div>
+                            </div>
+
+                            <div class="component-card premium" data-category="media" data-component="podcast-player">
+                                <div class="component-preview">
+                                    <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="80" height="60" rx="4" fill="#f1f5f9"/>
+                                        <rect x="8" y="20" width="64" height="20" rx="3" fill="white" stroke="#e2e8f0"/>
+                                        <circle cx="20" cy="30" r="6" fill="#0ea5e9"/>
+                                        <path d="M18 27 L22 30 L18 33 Z" fill="white"/>
+                                        <rect x="30" y="28" width="32" height="2" rx="1" fill="#cbd5e1"/>
+                                        <rect x="30" y="32" width="24" height="1.5" rx="0.75" fill="#94a3b8"/>
+                                        <circle cx="60" cy="30" r="2" fill="#94a3b8"/>
+                                    </svg>
+                                </div>
+                                <div class="component-info">
+                                    <h4>Podcast Player</h4>
+                                    <p>Embedded audio player for shows</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let draggedComponent = null;
+        let selectedElement = null;
+        let undoStack = [];
+        let redoStack = [];
+        let isUnsaved = false;
+        let currentTheme = 'blue';
+
+        // Initialize the builder
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeBuilder();
+        });
+
+        function initializeBuilder() {
+            setupTabs();
+            setupPreviewToggle();
+            setupDragAndDrop();
+            setupElementSelection();
+            setupLiveEditing();
+            setupFormUpdates();
+            setupLayoutOptions();
+            setupSaveSystem();
+            setupKeyboardShortcuts();
+            setupComponentLibraryModal();
+            setupGlobalSettings();
+            setupExportSystem();
+            setupShareSystem();
+            console.log('Guestify Media Kit Builder v2 initialized');
+        }
+
+        // Tab switching functionality
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.sidebar-tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Update active states
+                    tabs.forEach(t => t.classList.remove('active'));
+                    contents.forEach(c => c.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(tabName + '-tab').classList.add('active');
+                });
+            });
+        }
+
+        // Enhanced preview toggle (desktop/tablet/mobile)
+        function setupPreviewToggle() {
+            const toggleButtons = document.querySelectorAll('.preview-toggle button');
+            const container = document.getElementById('preview-container');
+
+            toggleButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    toggleButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const previewType = this.getAttribute('data-preview');
+                    container.classList.remove('mobile-preview', 'tablet-preview');
+                    
+                    if (previewType === 'mobile') {
+                        container.classList.add('mobile-preview');
+                    } else if (previewType === 'tablet') {
+                        container.classList.add('tablet-preview');
+                    }
+                });
+            });
+        }
+
+        // Enhanced drag and drop functionality
+        function setupDragAndDrop() {
+            const componentItems = document.querySelectorAll('.component-item[draggable="true"]');
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            // Component drag start
+            componentItems.forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    draggedComponent = this.getAttribute('data-component');
+                    this.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+
+                item.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                    draggedComponent = null;
+                });
+            });
+
+            // Drop zone functionality
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    this.classList.add('drag-over');
+                });
+
+                zone.addEventListener('dragleave', function() {
+                    this.classList.remove('drag-over');
+                });
+
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    
+                    if (draggedComponent) {
+                        // Check if premium component
+                        const componentElement = document.querySelector(`[data-component="${draggedComponent}"]`);
+                        if (componentElement && componentElement.classList.contains('premium')) {
+                            showUpgradePrompt();
+                            return;
+                        }
+                        
+                        addComponentToZone(draggedComponent, this);
+                        markUnsaved();
+                        saveCurrentState();
+                    }
+                });
+
+                // Click to add component
+                zone.addEventListener('click', function() {
+                    if (this.classList.contains('empty')) {
+                        showComponentLibraryModal();
+                    }
+                });
+            });
+        }
+
+        // Element selection
+        function setupElementSelection() {
+            const editableElements = document.querySelectorAll('.editable-element');
+
+            editableElements.forEach(element => {
+                element.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    selectElement(this);
+                });
+            });
+
+            // Deselect when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.editable-element') && 
+                    !e.target.closest('.left-sidebar') && 
+                    !e.target.closest('.component-library-modal') &&
+                    !e.target.closest('.global-settings-modal') &&
+                    !e.target.closest('.export-modal')) {
+                    deselectAllElements();
+                }
+            });
+        }
+
+        function selectElement(element) {
+            // Remove selection from all elements
+            document.querySelectorAll('.editable-element').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            // Select clicked element
+            element.classList.add('selected');
+            selectedElement = element;
+
+            // Update design panel
+            updateDesignPanel(element);
+
+            // Switch to design tab
+            document.querySelector('.sidebar-tab[data-tab="design"]').click();
+        }
+
+        function deselectAllElements() {
+            document.querySelectorAll('.editable-element').forEach(el => {
+                el.classList.remove('selected');
+            });
+            selectedElement = null;
+        }
+
+        // Enhanced live editing functionality
+        function setupLiveEditing() {
+            // Sync form inputs with preview elements
+            const nameInput = document.getElementById('hero-name');
+            const titleInput = document.getElementById('hero-title');
+            const bioInput = document.getElementById('hero-bio');
+            const bgColorInput = document.getElementById('hero-bg-color');
+            const textColorInput = document.getElementById('hero-text-color');
+
+            if (nameInput) {
+                nameInput.addEventListener('input', function() {
+                    const preview = document.getElementById('preview-name');
+                    if (preview) preview.textContent = this.value;
+                    markUnsaved();
+                });
+            }
+
+            if (titleInput) {
+                titleInput.addEventListener('input', function() {
+                    const preview = document.getElementById('preview-title');
+                    if (preview) preview.textContent = this.value;
+                    markUnsaved();
+                });
+            }
+
+            if (bioInput) {
+                bioInput.addEventListener('input', function() {
+                    const preview = document.getElementById('preview-bio');
+                    if (preview) preview.textContent = this.value;
+                    markUnsaved();
+                });
+            }
+
+            if (bgColorInput) {
+                bgColorInput.addEventListener('input', function() {
+                    const heroSection = document.querySelector('.hero-section');
+                    if (heroSection) {
+                        heroSection.style.background = `linear-gradient(135deg, ${this.value} 0%, ${adjustBrightness(this.value, -10)} 100%)`;
+                    }
+                    document.getElementById('hero-bg-text').value = this.value;
+                    markUnsaved();
+                });
+            }
+
+            if (textColorInput) {
+                textColorInput.addEventListener('input', function() {
+                    const heroName = document.querySelector('.hero-name');
+                    if (heroName) heroName.style.color = this.value;
+                    document.getElementById('hero-text-text').value = this.value;
+                    markUnsaved();
+                });
+            }
+
+            // Setup contenteditable live updates
+            setupContentEditableUpdates();
+        }
+
+        function setupContentEditableUpdates() {
+            const editableElements = document.querySelectorAll('[contenteditable="true"]');
+            
+            editableElements.forEach(element => {
+                element.addEventListener('blur', function() {
+                    markUnsaved();
+                    saveCurrentState();
+                });
+
+                element.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.blur();
+                    }
+                });
+            });
+        }
+
+        // Form updates and design panel
+        function setupFormUpdates() {
+            const colorInputs = document.querySelectorAll('.color-input');
+            colorInputs.forEach(input => {
+                const textInput = input.nextElementSibling;
+                
+                input.addEventListener('input', function() {
+                    if (textInput) textInput.value = this.value;
+                });
+
+                if (textInput) {
+                    textInput.addEventListener('input', function() {
+                        if (isValidColor(this.value)) {
+                            input.value = this.value;
+                        }
+                    });
+                }
+            });
+        }
+
+        function updateDesignPanel(element) {
+            const elementType = element.getAttribute('data-element');
+            const editor = document.getElementById('element-editor');
+            
+            if (!editor) return;
+
+            // Update editor title and icon based on element type
+            const title = editor.querySelector('.editor-title');
+            if (title) {
+                const iconMap = {
+                    'hero': '👤',
+                    'topics': '💬',
+                    'social': '🔗',
+                    'bio': '📝',
+                    'contact': '📧',
+                    'questions': '❓',
+                    'stats': '📊',
+                    'cta': '🎯',
+                    'logo-grid': '🏢',
+                    'testimonials': '💬'
+                };
+                
+                const elementNames = {
+                    'hero': 'Hero Section',
+                    'topics': 'Topics Section',
+                    'social': 'Social Links',
+                    'bio': 'Biography',
+                    'contact': 'Contact Information',
+                    'questions': 'Interview Questions',
+                    'stats': 'Statistics',
+                    'cta': 'Call to Action',
+                    'logo-grid': 'Logo Grid',
+                    'testimonials': 'Testimonials'
+                };
+
+                title.innerHTML = `
+                    <span style="font-size: 16px;">${iconMap[elementType] || '⚙️'}</span>
+                    ${elementNames[elementType] || 'Element Settings'}
+                `;
+            }
+
+            // Show relevant form controls based on element type
+            showRelevantControls(elementType);
+        }
+
+        function showRelevantControls(elementType) {
+            // This would dynamically show/hide relevant form controls
+            console.log('Updating controls for:', elementType);
+        }
+
+        // Layout options
+        function setupLayoutOptions() {
+            const layoutOptions = document.querySelectorAll('.layout-option');
+            
+            layoutOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    layoutOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const layout = this.getAttribute('data-layout');
+                    applyLayout(layout);
+                    markUnsaved();
+                });
+            });
+        }
+
+        function applyLayout(layoutType) {
+            console.log('Applying layout:', layoutType);
+            // Implementation would depend on your specific layout system
+        }
+
+        // Enhanced save system
+        function setupSaveSystem() {
+            const saveBtn = document.getElementById('save-btn');
+
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function() {
+                    saveMediaKit();
+                });
+            }
+
+            // Auto-save every 30 seconds
+            setInterval(() => {
+                if (isUnsaved) {
+                    autoSave();
+                }
+            }, 30000);
+        }
+
+        function saveMediaKit() {
+            const saveBtn = document.getElementById('save-btn');
+            const statusDot = document.querySelector('.status-dot');
+            const statusText = document.querySelector('.status-indicator span');
+
+            // Update UI to show saving state
+            if (saveBtn) saveBtn.disabled = true;
+            if (statusDot) statusDot.classList.add('saving');
+            if (statusText) statusText.textContent = 'Saving...';
+
+            // Simulate save operation
+            setTimeout(() => {
+                isUnsaved = false;
+                if (saveBtn) saveBtn.disabled = false;
+                if (statusDot) statusDot.classList.remove('saving');
+                if (statusText) statusText.textContent = 'Saved';
+                
+                console.log('Media kit saved successfully');
+            }, 1500);
+        }
+
+        function autoSave() {
+            const statusText = document.querySelector('.status-indicator span');
+            if (statusText) statusText.textContent = 'Auto-saving...';
+            
+            setTimeout(() => {
+                isUnsaved = false;
+                if (statusText) statusText.textContent = 'Saved';
+            }, 1000);
+        }
+
+        function markUnsaved() {
+            isUnsaved = true;
+            const statusText = document.querySelector('.status-indicator span');
+            if (statusText) statusText.textContent = 'Unsaved changes';
+        }
+
+        // Global Settings System
+        function setupGlobalSettings() {
+            const globalSettingsBtn = document.getElementById('global-settings-btn');
+            const globalThemeBtn = document.getElementById('global-theme-btn');
+            const closeGlobalSettings = document.getElementById('close-global-settings');
+            const globalSettingsModal = document.getElementById('global-settings-modal');
+            const paletteOptions = document.querySelectorAll('.palette-option');
+
+            if (globalSettingsBtn) {
+                globalSettingsBtn.addEventListener('click', showGlobalSettings);
+            }
+
+            if (globalThemeBtn) {
+                globalThemeBtn.addEventListener('click', showGlobalSettings);
+            }
+
+            if (closeGlobalSettings) {
+                closeGlobalSettings.addEventListener('click', hideGlobalSettings);
+            }
+
+            if (globalSettingsModal) {
+                globalSettingsModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        hideGlobalSettings();
+                    }
+                });
+            }
+
+            // Palette selection
+            paletteOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    paletteOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const palette = this.getAttribute('data-palette');
+                    applyThemePalette(palette);
+                });
+            });
+
+            // Font changes
+            const primaryFont = document.getElementById('primary-font');
+            const secondaryFont = document.getElementById('secondary-font');
+
+            if (primaryFont) {
+                primaryFont.addEventListener('change', function() {
+                    applyPrimaryFont(this.value);
+                });
+            }
+
+            if (secondaryFont) {
+                secondaryFont.addEventListener('change', function() {
+                    applySecondaryFont(this.value);
+                });
+            }
+        }
+
+        function showGlobalSettings() {
+            const modal = document.getElementById('global-settings-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function hideGlobalSettings() {
+            const modal = document.getElementById('global-settings-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function applyThemePalette(palette) {
+            currentTheme = palette;
+            const preview = document.getElementById('media-kit-preview');
+            
+            // Remove existing theme classes
+            preview.classList.remove('theme-blue', 'theme-green', 'theme-purple', 'theme-orange', 'theme-pink', 'theme-gray');
+            
+            // Add new theme class
+            preview.classList.add(`theme-${palette}`);
+            
+            // Update CSS variables based on palette
+            const paletteColors = {
+                blue: { primary: '#3b82f6', secondary: '#dbeafe', accent: '#1e40af' },
+                green: { primary: '#10b981', secondary: '#dcfce7', accent: '#047857' },
+                purple: { primary: '#8b5cf6', secondary: '#f3e8ff', accent: '#7c3aed' },
+                orange: { primary: '#f97316', secondary: '#fed7aa', accent: '#ea580c' },
+                pink: { primary: '#ec4899', secondary: '#fce7f3', accent: '#db2777' },
+                gray: { primary: '#64748b', secondary: '#f1f5f9', accent: '#475569' }
+            };
+
+            const colors = paletteColors[palette];
+            if (colors) {
+                document.documentElement.style.setProperty('--theme-primary', colors.primary);
+                document.documentElement.style.setProperty('--theme-secondary', colors.secondary);
+                document.documentElement.style.setProperty('--theme-accent', colors.accent);
+            }
+
+            markUnsaved();
+        }
+
+        function applyPrimaryFont(fontFamily) {
+            document.documentElement.style.setProperty('--primary-font', fontFamily);
+            markUnsaved();
+        }
+
+        function applySecondaryFont(fontFamily) {
+            document.documentElement.style.setProperty('--secondary-font', fontFamily);
+            markUnsaved();
+        }
+
+        // Export System
+        function setupExportSystem() {
+            const exportBtn = document.getElementById('export-btn');
+            const closeExportModal = document.getElementById('close-export-modal');
+            const exportModal = document.getElementById('export-modal');
+            const exportOptions = document.querySelectorAll('.export-option');
+
+            if (exportBtn) {
+                exportBtn.addEventListener('click', showExportModal);
+            }
+
+            if (closeExportModal) {
+                closeExportModal.addEventListener('click', hideExportModal);
+            }
+
+            if (exportModal) {
+                exportModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        hideExportModal();
+                    }
+                });
+            }
+
+            exportOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const exportType = this.getAttribute('data-export');
+                    handleExport(exportType);
+                });
+            });
+        }
+
+        function showExportModal() {
+            const modal = document.getElementById('export-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function hideExportModal() {
+            const modal = document.getElementById('export-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function handleExport(type) {
+            switch(type) {
+                case 'pdf':
+                    exportToPDF();
+                    break;
+                case 'image':
+                    exportToImage();
+                    break;
+                case 'html':
+                    exportToHTML();
+                    break;
+                case 'embed':
+                    generateEmbedCode();
+                    break;
+            }
+            hideExportModal();
+        }
+
+        function exportToPDF() {
+            // Simulate PDF export
+            console.log('Exporting to PDF...');
+            alert('PDF export functionality would be implemented here using libraries like jsPDF or html2canvas + jsPDF');
+        }
+
+        function exportToImage() {
+            // Simulate image export
+            console.log('Exporting to Image...');
+            alert('Image export functionality would be implemented here using html2canvas');
+        }
+
+        function exportToHTML() {
+            // Simulate HTML export
+            console.log('Generating shareable link...');
+            const shareableUrl = `https://guestify.com/share/${generateShareId()}`;
+            prompt('Your shareable link:', shareableUrl);
+        }
+
+        function generateEmbedCode() {
+            // Simulate embed code generation
+            const embedCode = `<iframe src="https://guestify.com/embed/${generateShareId()}" width="100%" height="600" frameborder="0"></iframe>`;
+            prompt('Embed code for your website:', embedCode);
+        }
+
+        function generateShareId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        // Share System
+        function setupShareSystem() {
+            const shareBtn = document.getElementById('share-btn');
+
+            if (shareBtn) {
+                shareBtn.addEventListener('click', function() {
+                    const shareUrl = `https://guestify.com/share/${generateShareId()}`;
+                    
+                    if (navigator.share) {
+                        navigator.share({
+                            title: 'Daniel Jackson\'s Media Kit',
+                            text: 'Check out my professional media kit created with Guestify',
+                            url: shareUrl
+                        });
+                    } else {
+                        // Fallback for browsers without Web Share API
+                        navigator.clipboard.writeText(shareUrl).then(() => {
+                            alert('Share link copied to clipboard!');
+                        });
+                    }
+                });
+            }
+        }
+
+        // Enhanced component management with new components
+        function addComponentToZone(componentType, zone) {
+            const template = getComponentTemplate(componentType);
+            zone.classList.remove('empty');
+            zone.innerHTML = template;
+            
+            // Make the new element selectable
+            const newElement = zone.querySelector('.editable-element');
+            if (newElement) {
+                newElement.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    selectElement(this);
+                });
+                
+                // Select the newly added element
+                selectElement(newElement);
+            }
+            
+            console.log(`Added ${componentType} component`);
+        }
+
+        function getComponentTemplate(componentType) {
+            const templates = {
+                'hero': `
+                    <div class="hero-section editable-element" data-element="hero" data-component="hero">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <div class="hero-avatar">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50' text-anchor='middle' x='50' fill='%2364748b'%3EDJ%3C/text%3E%3C/svg%3E" alt="Profile Avatar">
+                        </div>
+                        <h1 class="hero-name" contenteditable="true">New Hero Section</h1>
+                        <div class="hero-title" contenteditable="true">Your Professional Title</div>
+                        <p class="hero-bio" contenteditable="true">Briefly introduce yourself and your expertise.</p>
+                    </div>
+                `,
+                'bio': `
+                    <div class="content-section editable-element" data-element="bio" data-component="bio">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <h2 class="section-title-mk" contenteditable="true">About Me</h2>
+                        <p contenteditable="true">Add your full biography and professional background here. This is where you can share your story, expertise, and what makes you unique as a speaker or expert in your field.</p>
+                    </div>
+                `,
+                'topics': `
+                    <div class="content-section editable-element" data-element="topics" data-component="topics">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <h2 class="section-title-mk" contenteditable="true">Speaking Topics</h2>
+                        <div class="topics-grid">
+                            <div class="topic-item" contenteditable="true">Topic 1</div>
+                            <div class="topic-item" contenteditable="true">Topic 2</div>
+                            <div class="topic-item" contenteditable="true">Topic 3</div>
+                            <div class="topic-item" contenteditable="true">Topic 4</div>
+                        </div>
+                    </div>
+                `,
+                'social': `
+                    <div class="social-links editable-element" data-element="social" data-component="social">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <a href="#" class="social-link" title="Twitter">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" title="LinkedIn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/>
+                                <circle cx="4" cy="4" r="2"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link" title="Instagram">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                                <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                            </svg>
+                        </a>
+                    </div>
+                `,
+                'stats': `
+                    <div class="content-section editable-element" data-element="stats" data-component="stats">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <h2 class="section-title-mk" contenteditable="true">Key Statistics</h2>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-number" contenteditable="true">1.2M</span>
+                                <div class="stat-label" contenteditable="true">Followers</div>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" contenteditable="true">150+</span>
+                                <div class="stat-label" contenteditable="true">Podcast Shows</div>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" contenteditable="true">500K</span>
+                                <div class="stat-label" contenteditable="true">Downloads</div>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" contenteditable="true">5</span>
+                                <div class="stat-label" contenteditable="true">Years Experience</div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'cta': `
+                    <div class="content-section editable-element" data-element="cta" data-component="cta">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <div class="cta-section">
+                            <h2 class="section-title-mk" contenteditable="true">Ready to Connect?</h2>
+                            <p contenteditable="true">Let's discuss how we can work together on your next project or podcast.</p>
+                            <a href="#" class="cta-button" contenteditable="true">Book a Meeting</a>
+                        </div>
+                    </div>
+                `,
+                'logo-grid': `
+                    <div class="content-section editable-element" data-element="logo-grid" data-component="logo-grid">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <h2 class="section-title-mk" contenteditable="true">Featured On</h2>
+                        <div class="logo-grid">
+                            <div class="logo-item">
+                                <div class="logo-placeholder">Click to add logo</div>
+                            </div>
+                            <div class="logo-item">
+                                <div class="logo-placeholder">Click to add logo</div>
+                            </div>
+                            <div class="logo-item">
+                                <div class="logo-placeholder">Click to add logo</div>
+                            </div>
+                            <div class="logo-item">
+                                <div class="logo-placeholder">Click to add logo</div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'testimonials': `
+                    <div class="content-section editable-element" data-element="testimonials" data-component="testimonials">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <h2 class="section-title-mk" contenteditable="true">What People Say</h2>
+                        <div class="testimonial-card">
+                            <p class="testimonial-quote" contenteditable="true">"An incredible speaker with deep insights into quantum physics and ancient technology. Highly recommended!"</p>
+                            <div class="testimonial-author" contenteditable="true">Sarah Mitchell</div>
+                            <div class="testimonial-role" contenteditable="true">Host, The Science Podcast</div>
+                        </div>
+                    </div>
+                `,
+                'contact': `
+                    <div class="content-section editable-element" data-element="contact" data-component="contact">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <h2 class="section-title-mk" contenteditable="true">Contact Information</h2>
+                        <div class="contact-info">
+                            <p contenteditable="true">📧 your.email@example.com</p>
+                            <p contenteditable="true">📱 +1 (555) 123-4567</p>
+                            <p contenteditable="true">🌐 www.yourwebsite.com</p>
+                        </div>
+                    </div>
+                `,
+                'questions': `
+                    <div class="content-section editable-element" data-element="questions" data-component="questions">
+                        <div class="element-controls">
+                            <button class="control-btn" title="Move Up">↑</button>
+                            <button class="control-btn" title="Move Down">↓</button>
+                            <button class="control-btn" title="Duplicate">⧉</button>
+                            <button class="control-btn" title="Delete">×</button>
+                        </div>
+                        <h2 class="section-title-mk" contenteditable="true">Interview Questions</h2>
+                        <div class="questions-list">
+                            <div class="question-item" contenteditable="true">What inspired you to become an expert in your field?</div>
+                            <div class="question-item" contenteditable="true">What's the most common misconception about your industry?</div>
+                            <div class="question-item" contenteditable="true">What advice would you give to someone starting out?</div>
+                        </div>
+                    </div>
+                `
+            };
+            
+            return templates[componentType] || '<div class="content-section"><p>Component template not found</p></div>';
+        }
+
+        // Component Library Modal Management
+        function setupComponentLibraryModal() {
+            const openLibraryBtn = document.getElementById('add-component-btn');
+            const closeLibraryBtn = document.getElementById('close-library');
+            const componentLibraryOverlay = document.getElementById('component-library-overlay');
+            const categoryItems = document.querySelectorAll('.category-item');
+            const categoryFilter = document.getElementById('category-filter');
+            const componentSearch = document.getElementById('component-search');
+
+            if (openLibraryBtn) {
+                openLibraryBtn.addEventListener('click', showComponentLibraryModal);
+            }
+            if (closeLibraryBtn) {
+                closeLibraryBtn.addEventListener('click', hideComponentLibraryModal);
+            }
+            if (componentLibraryOverlay) {
+                componentLibraryOverlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        hideComponentLibraryModal();
+                    }
+                });
+            }
+
+            // Category filtering in modal
+            categoryItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    categoryItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const category = this.getAttribute('data-category');
+                    filterComponents(category);
+                    if (categoryFilter) categoryFilter.value = category;
+                });
+            });
+
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', function() {
+                    const category = this.value;
+                    filterComponents(category);
+                    categoryItems.forEach(i => i.classList.remove('active'));
+                    const matchingSidebarItem = document.querySelector(`.category-item[data-category="${category}"]`);
+                    if (matchingSidebarItem) matchingSidebarItem.classList.add('active');
+                });
+            }
+
+            // Search functionality in modal
+            if (componentSearch) {
+                componentSearch.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const cards = document.querySelectorAll('.component-card');
+                    
+                    cards.forEach(card => {
+                        const title = card.querySelector('h4').textContent.toLowerCase();
+                        const description = card.querySelector('p').textContent.toLowerCase();
+                        
+                        if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            // Component selection in modal
+            document.querySelectorAll('.component-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const componentType = this.getAttribute('data-component');
+                    const isPremium = this.classList.contains('premium');
+                    
+                    if (isPremium) {
+                        showUpgradePrompt();
+                    } else {
+                        const firstEmptyDropZone = document.querySelector('.drop-zone.empty');
+                        if (firstEmptyDropZone) {
+                            addComponentToZone(componentType, firstEmptyDropZone);
+                            hideComponentLibraryModal();
+                            markUnsaved();
+                            saveCurrentState();
+                        } else {
+                            alert('Please make space for a new component by moving or deleting an existing one, or dragging to an empty drop zone.');
+                        }
+                    }
+                });
+            });
+        }
+
+        function showComponentLibraryModal() {
+            const modal = document.getElementById('component-library-overlay');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function hideComponentLibraryModal() {
+            const modal = document.getElementById('component-library-overlay');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function filterComponents(category) {
+            const cards = document.querySelectorAll('.component-card');
+            cards.forEach(card => {
+                if (category === 'all' || card.getAttribute('data-category') === category) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function showUpgradePrompt() {
+            alert('This is a premium component. Upgrade to Pro to unlock advanced features!');
+        }
+
+        // Keyboard shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 's':
+                            e.preventDefault();
+                            saveMediaKit();
+                            break;
+                        case 'z':
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                redo();
+                            } else {
+                                undo();
+                            }
+                            break;
+                        case 'e':
+                            e.preventDefault();
+                            showExportModal();
+                            break;
+                    }
+                }
+                
+                if (e.key === 'Delete' && selectedElement) {
+                    deleteSelectedElement();
+                }
+            });
+        }
+
+        // Undo/Redo functionality
+        function saveCurrentState() {
+            const state = document.getElementById('media-kit-preview').innerHTML;
+            undoStack.push(state);
+            redoStack = [];
+            
+            // Limit undo stack to 50 items
+            if (undoStack.length > 50) {
+                undoStack.shift();
+            }
+            
+            // Update button states
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+            if (undoBtn) undoBtn.disabled = false;
+            if (redoBtn) redoBtn.disabled = true;
+        }
+
+        function undo() {
+            if (undoStack.length > 0) {
+                const currentState = document.getElementById('media-kit-preview').innerHTML;
+                redoStack.push(currentState);
+                
+                const previousState = undoStack.pop();
+                document.getElementById('media-kit-preview').innerHTML = previousState;
+                
+                // Re-attach event listeners
+                setupElementSelection(); 
+                setupContentEditableUpdates();
+
+                // Update button states
+                const undoBtn = document.getElementById('undo-btn');
+                const redoBtn = document.getElementById('redo-btn');
+                if (undoBtn) undoBtn.disabled = undoStack.length === 0;
+                if (redoBtn) redoBtn.disabled = false;
+                
+                markUnsaved();
+            }
+        }
+
+        function redo() {
+            if (redoStack.length > 0) {
+                const currentState = document.getElementById('media-kit-preview').innerHTML;
+                undoStack.push(currentState);
+                
+                const nextState = redoStack.pop();
+                document.getElementById('media-kit-preview').innerHTML = nextState;
+                
+                // Re-attach event listeners
+                setupElementSelection(); 
+                setupContentEditableUpdates();
+
+                // Update button states
+                const undoBtn = document.getElementById('undo-btn');
+                const redoBtn = document.getElementById('redo-btn');
+                if (undoBtn) undoBtn.disabled = false;
+                if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+                
+                markUnsaved();
+            }
+        }
+
+        function deleteSelectedElement() {
+            if (selectedElement && selectedElement.getAttribute('data-component') !== 'hero') {
+                selectedElement.remove();
+                selectedElement = null;
+                markUnsaved();
+                saveCurrentState();
+            }
+        }
+
+        // Utility functions
+        function isValidColor(color) {
+            const s = new Option().style;
+            s.color = color;
+            return s.color !== '';
+        }
+
+        function adjustBrightness(color, percent) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+
+        // Initialize the first state for undo/redo
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                saveCurrentState();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

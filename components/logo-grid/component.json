@@ -1,7 +1,7 @@
 {
   "name": "Logo Grid",
   "category": "media",
-  "icon": "grid.svg",
+  "icon": "logo-grid.svg",
   "description": "Display logos of companies, clients, or partners",
   "isPremium": false,
   "dependencies": [],

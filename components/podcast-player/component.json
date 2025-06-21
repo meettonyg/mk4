@@ -1,7 +1,7 @@
 {
   "name": "Podcast Player",
   "category": "premium",
-  "icon": "headphones.svg",
+  "icon": "podcast-player.svg",
   "description": "Showcase your podcast episodes or audio content",
   "isPremium": true,
   "dependencies": [],

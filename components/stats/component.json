@@ -1,7 +1,7 @@
 {
   "name": "Stats",
   "category": "essential",
-  "icon": "bar-chart.svg",
+  "icon": "stats-grid.svg",
   "description": "Display key statistics and metrics",
   "isPremium": false,
   "dependencies": [],

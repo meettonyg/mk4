@@ -1,7 +1,7 @@
 {
   "name": "Photo Gallery",
   "category": "premium",
-  "icon": "image.svg",
+  "icon": "image-gallery.svg",
   "description": "Display a gallery of photos or images",
   "isPremium": true,
   "dependencies": [],

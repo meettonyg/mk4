@@ -1,7 +1,7 @@
 {
   "name": "Testimonials",
   "category": "media",
-  "icon": "message-square.svg",
+  "icon": "testimonials.svg",
   "description": "Display testimonials from clients or colleagues",
   "isPremium": false,
   "dependencies": [],

@@ -1,7 +1,7 @@
 {
   "name": "Video Intro",
   "category": "premium",
-  "icon": "video.svg",
+  "icon": "video-intro.svg",
   "description": "Feature a video introduction or showcase",
   "isPremium": true,
   "dependencies": [],

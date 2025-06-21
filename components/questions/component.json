@@ -1,7 +1,7 @@
 {
   "name": "Questions",
   "category": "media",
-  "icon": "help-circle.svg",
+  "icon": "questions.svg",
   "description": "FAQ or frequently asked questions section",
   "isPremium": false,
   "dependencies": [],

@@ -21,13 +21,46 @@ import {
 
 class EnhancedComponentManager {
     constructor() {
-        this.previewContainer = document.getElementById('media-kit-preview');
-        this.init();
-        console.log('EnhancedComponentManager initialized');
+        this.previewContainer = null; // Will be set when DOM is ready
+        this.isInitialized = false;
+        console.log('EnhancedComponentManager created (DOM-independent)');
     }
 
+    /**
+     * Initialize the component manager - call this when DOM is ready
+     * This method is safe to call multiple times
+     */
     init() {
+        if (this.isInitialized) {
+            return; // Already initialized
+        }
+        
+        // Find preview container when we actually need it
+        this.previewContainer = document.getElementById('media-kit-preview');
+        
+        if (!this.previewContainer) {
+            console.warn('EnhancedComponentManager: media-kit-preview not found, will retry on first use');
+            return false;
+        }
+        
+        // Set up event listeners
         this.previewContainer.addEventListener('click', this.handleControls.bind(this));
+        this.isInitialized = true;
+        
+        console.log('EnhancedComponentManager initialized successfully');
+        return true;
+    }
+    
+    /**
+     * Ensures the component manager is initialized before use
+     * @returns {boolean} True if ready, false if DOM not available
+     */
+    ensureInitialized() {
+        if (this.isInitialized) {
+            return true;
+        }
+        
+        return this.init();
     }
 
     /**
@@ -35,6 +68,12 @@ class EnhancedComponentManager {
      * @param {Event} e - The click event.
      */
     handleControls(e) {
+        // Ensure we're initialized before handling events
+        if (!this.ensureInitialized()) {
+            console.warn('EnhancedComponentManager: Cannot handle controls, DOM not ready');
+            return;
+        }
+        
         const controlButton = e.target.closest('.control-btn');
         if (!controlButton) return;
 
@@ -67,12 +106,24 @@ class EnhancedComponentManager {
      * @param {object} props - The initial properties for the new component.
      */
     addComponent(componentType, props = {}) {
+        // Ensure component manager is initialized (but don't require DOM for state operations)
+        this.ensureInitialized();
+        
+        console.log(`EnhancedComponentManager: Adding component ${componentType}`, props);
+        
         const newComponent = {
             id: generateUniqueId(componentType),
             type: componentType,
             props: props,
         };
-        enhancedStateManager.addComponent(newComponent);
+        
+        try {
+            enhancedStateManager.addComponent(newComponent);
+            console.log(`EnhancedComponentManager: Successfully added component ${componentType} with ID ${newComponent.id}`);
+        } catch (error) {
+            console.error(`EnhancedComponentManager: Failed to add component ${componentType}:`, error);
+            throw error;
+        }
     }
 
     /**

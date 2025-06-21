@@ -33,23 +33,10 @@ export const stateSchema = {
                         },
                         type: {
                             type: "string",
-                            enum: [
-                                "hero",
-                                "topics",
-                                "testimonials",
-                                "faq",
-                                "stats",
-                                "features",
-                                "cta",
-                                "gallery",
-                                "video",
-                                "map",
-                                "team",
-                                "pricing",
-                                "newsletter",
-                                "social",
-                                "custom"
-                            ]
+                            description: "Component type identifier",
+                            minLength: 1,
+                            maxLength: 50
+                            // Removed enum restriction to allow all component types
                         },
                         props: {
                             type: "object",
@@ -265,11 +252,8 @@ export const validationConstraints = {
     maxComponentIdLength: 100,
     maxCustomCSSLength: 10000,
     maxCustomJSLength: 10000,
-    supportedComponentTypes: [
-        "hero", "topics", "testimonials", "faq", "stats",
-        "features", "cta", "gallery", "video", "map",
-        "team", "pricing", "newsletter", "social", "custom"
-    ]
+    // Removed supportedComponentTypes - now accepting all component types
+    // Components are validated by the component discovery system instead
 };
 
 /**

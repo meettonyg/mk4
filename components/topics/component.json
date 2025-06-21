@@ -1,7 +1,7 @@
 {
   "name": "Topics",
   "category": "essential",
-  "icon": "list.svg",
+  "icon": "topics-grid.svg",
   "description": "Display topics or areas of expertise",
   "isPremium": false,
   "dependencies": [],

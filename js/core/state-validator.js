@@ -55,18 +55,14 @@ class StateValidator {
             }
         });
 
-        // Invalid component type
+        // Invalid component type - this should be less common now that we accept all types
         this.errorRecoveryStrategies.set('invalid-type', {
-            detect: (error, context) => error.message.includes('enum') && context.transaction?.payload?.type,
+            detect: (error, context) => error.message.includes('type') && context.transaction?.payload?.type,
             recover: (error, context) => {
-                this.logger.warn('STATE', `Invalid component type: ${context.transaction.payload.type}, defaulting to 'custom'`);
-                return {
-                    ...context.transaction,
-                    payload: {
-                        ...context.transaction.payload,
-                        type: 'custom'
-                    }
-                };
+                // Just log a warning but allow the type through
+                this.logger.warn('STATE', `Component type validation warning for: ${context.transaction.payload.type}`);
+                // Return the transaction as-is since we now accept all component types
+                return context.transaction;
             }
         });
 
@@ -543,9 +539,7 @@ class StateValidator {
             if (id && component && component.type) {
                 repaired.components[id] = {
                     id,
-                    type: validationConstraints.supportedComponentTypes.includes(component.type) 
-                        ? component.type 
-                        : 'custom',
+                    type: component.type || 'custom',  // Use component type as-is or default to 'custom'
                     props: component.props || {},
                     data: component.data || component.props || {}
                 };

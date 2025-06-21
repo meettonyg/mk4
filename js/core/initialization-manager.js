@@ -284,7 +284,18 @@ class InitializationManager {
         const { featureFlags } = await import('./feature-flags.js');
         
         // Initialize systems synchronously
-        initializeSystems(featureFlags);
+        const selectedSystems = initializeSystems(featureFlags);
+        
+        // CRITICAL FIX: Initialize enhanced component manager if it was selected
+        if (selectedSystems.componentManagerType === 'enhanced' && window.enhancedComponentManager) {
+            // Call init() to setup DOM-dependent parts when DOM is ready
+            const initResult = window.enhancedComponentManager.init();
+            if (initResult) {
+                this.logger.info('INIT', 'Enhanced component manager initialized successfully');
+            } else {
+                this.logger.warn('INIT', 'Enhanced component manager init deferred (DOM not ready)');
+            }
+        }
         
         // Validate that all required globals are set
         const requiredGlobals = ['stateManager', 'componentManager', 'renderer', 'initializer'];
@@ -294,11 +305,23 @@ class InitializationManager {
             }
         }
         
+        // ENHANCED: Check for enhanced systems specifically
+        const enhancedSystems = {
+            enhancedStateManager: !!window.enhancedStateManager,
+            enhancedComponentManager: !!window.enhancedComponentManager
+        };
+        
         this.logger.info('INIT', 'Systems loaded and validated', {
             globals: requiredGlobals.reduce((acc, name) => {
                 acc[name] = !!window[name];
                 return acc;
-            }, {})
+            }, {}),
+            enhanced: enhancedSystems,
+            systemSelection: selectedSystems ? {
+                stateManager: selectedSystems.stateManagerType,
+                componentManager: selectedSystems.componentManagerType,
+                renderer: selectedSystems.rendererType
+            } : 'unknown'
         });
     }
 

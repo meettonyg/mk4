@@ -42,6 +42,14 @@ export async function setupComponentLibrary() {
         // Mark buttons as having listeners for test validation
         markButtonListenersAttached();
         
+        // Expose functions globally for testing
+        window.componentLibraryAPI = {
+            getSelectedComponents,
+            clearSelection,
+            showComponentLibraryModal,
+            hideComponentLibraryModal
+        };
+        
         structuredLogger.info('MODAL', 'Component Library setup complete', {
             duration: performance.now() - setupStart,
             elementsFound: {
@@ -50,7 +58,8 @@ export async function setupComponentLibrary() {
                 addButton: !!addComponentButton,
                 cancelButton: !!cancelComponentButton,
                 searchInput: !!componentSearchInput
-            }
+            },
+            apiExposed: !!window.componentLibraryAPI
         });
         
     } catch (error) {
@@ -255,17 +264,28 @@ function setupEventListeners() {
                 structuredLogger.info('UI', 'Adding components', { components: selectedComponents });
                 
                 for (const componentType of selectedComponents) {
-                    // Use the globally available enhanced component manager
-                    if (window.enhancedComponentManager) {
+                    // ROOT CAUSE FIXED: Use enhanced component manager with comprehensive logging
+                    console.log('🔍 Component addition attempt:', {
+                        componentType,
+                        enhancedManagerAvailable: !!window.enhancedComponentManager,
+                        legacyManagerAvailable: !!window.componentManager,
+                        enhancedManagerType: typeof window.enhancedComponentManager,
+                        legacyManagerType: typeof window.componentManager
+                    });
+                    
+                    if (window.enhancedComponentManager && typeof window.enhancedComponentManager.addComponent === 'function') {
+                        console.log(`✅ Using enhanced component manager for ${componentType}`);
                         await window.enhancedComponentManager.addComponent(componentType, {});
-                        structuredLogger.debug('UI', `Component added: ${componentType}`);
-                    } else if (window.componentManager) {
-                        // Fallback to legacy component manager
+                        structuredLogger.debug('UI', `Component added via enhanced manager: ${componentType}`);
+                    } else if (window.componentManager && typeof window.componentManager.addComponent === 'function') {
+                        console.log(`🛠️ Using legacy component manager for ${componentType}`);
                         await window.componentManager.addComponent(componentType, {});
                         structuredLogger.debug('UI', `Component added via legacy manager: ${componentType}`);
                     } else {
-                        structuredLogger.error('UI', 'No component manager available');
-                        throw new Error('Component manager not found');
+                        const errorMsg = 'No component manager available';
+                        console.error('❌', errorMsg);
+                        structuredLogger.error('UI', errorMsg);
+                        throw new Error(errorMsg);
                     }
                 }
                 
