@@ -1,29 +1,28 @@
 /**
  * @file enhanced-component-manager.js
- * @description Manages component interactions and state updates using the enhanced state manager.
- * This class acts as a bridge between user actions on components (like delete, duplicate) and
- * the centralized state management system.
- *
- * This version includes a fix for the import statement of the enhancedStateManager,
- * changing it from a default to a named import to resolve module loading errors.
+ * @description Manages component-related actions like adding, removing, and handling UI controls.
+ * It acts as an intermediary between the UI and the state manager for component operations.
  */
 
-// FIX: Changed the import from a default to a named import to match the export in enhanced-state-manager.js
 import {
     enhancedStateManager
 } from './enhanced-state-manager.js';
 import {
-    generateUniqueId
-} from '../utils/helpers.js';
+    structuredLogger
+} from '../utils/structured-logger.js';
 import {
     performanceMonitor
 } from '../utils/performance-monitor.js';
+import {
+    generateUniqueId
+} from '../utils/helpers.js';
 
 class EnhancedComponentManager {
     constructor() {
-        this.previewContainer = null; // Will be set when DOM is ready
+        this.logger = structuredLogger;
+        this.previewContainer = null;
         this.isInitialized = false;
-        console.log('EnhancedComponentManager created (DOM-independent)');
+        this.logger.info('INIT', 'Enhanced Component Manager created');
     }
 
     /**
@@ -39,16 +38,23 @@ class EnhancedComponentManager {
         this.previewContainer = document.getElementById('media-kit-preview');
         
         if (!this.previewContainer) {
-            console.warn('EnhancedComponentManager: media-kit-preview element not found, initialization deferred');
+            this.logger.warn('INIT', 'media-kit-preview element not found, initialization deferred');
             return false;
         }
         
         // Set up event listeners
-        this.previewContainer.addEventListener('click', this.handleControls.bind(this));
+        this.setupEventListeners();
         this.isInitialized = true;
         
-        console.log('EnhancedComponentManager initialized successfully');
+        this.logger.info('INIT', 'Enhanced Component Manager initialized successfully');
         return true;
+    }
+    
+    /**
+     * Setup event listeners for component controls
+     */
+    setupEventListeners() {
+        this.previewContainer.addEventListener('click', this.handleControls.bind(this));
     }
     
     /**
@@ -64,39 +70,60 @@ class EnhancedComponentManager {
     }
 
     /**
-     * Handles clicks on component control buttons (delete, duplicate, etc.).
-     * @param {Event} e - The click event.
+     * Get component and action from event
      */
-    handleControls(e) {
+    getComponentAndAction(event) {
+        const controlButton = event.target.closest('.control-btn');
+        const componentElement = controlButton?.closest('[data-component-id]');
+        const componentId = componentElement?.dataset.componentId;
+        const action = controlButton?.title;
+        return { componentId, action };
+    }
+
+    /**
+     * Handles clicks on component control buttons (delete, duplicate, etc.).
+     * @param {Event} event - The click event.
+     */
+    handleControls(event) {
         // Ensure we're initialized before handling events
         if (!this.ensureInitialized()) {
-            console.warn('EnhancedComponentManager: Cannot handle controls, DOM not ready');
+            this.logger.warn('CONTROL', 'Cannot handle controls, DOM not ready');
             return;
         }
         
-        const controlButton = e.target.closest('.control-btn');
-        if (!controlButton) return;
+        const { componentId, action } = this.getComponentAndAction(event);
+        if (!componentId || !action) return;
 
-        const componentElement = e.target.closest('[data-component-id]');
-        if (!componentElement) return;
-
-        const componentId = componentElement.dataset.componentId;
-        const action = controlButton.title;
-
-        console.log(`Control action: ${action} on component: ${componentId}`);
-        performanceMonitor.log('control-action', {
+        const perfEnd = performanceMonitor.start('control-action', {
             action,
             componentId
         });
+        this.logger.info('CONTROL', `Action: ${action}`, { componentId });
 
-        switch (action) {
-            case 'Delete':
-                this.removeComponent(componentId);
-                break;
-            case 'Duplicate':
-                this.duplicateComponent(componentId);
-                break;
-                // Add cases for 'Move Up' and 'Move Down' if needed
+        try {
+            switch (action) {
+                case 'Delete':
+                    this.removeComponent(componentId);
+                    break;
+                case 'Duplicate':
+                    this.duplicateComponent(componentId);
+                    break;
+                case 'Move Up':
+                    enhancedStateManager.moveComponent(componentId, 'up');
+                    break;
+                case 'Move Down':
+                    enhancedStateManager.moveComponent(componentId, 'down');
+                    break;
+                case 'Edit':
+                    this.editComponent(componentId);
+                    break;
+                default:
+                    this.logger.warn('CONTROL', `Unknown control action: ${action}`, { componentId });
+            }
+        } catch (error) {
+            this.logger.error('CONTROL', `Failed to execute control action: ${action}`, error, { componentId });
+        } finally {
+            perfEnd();
         }
     }
 
@@ -109,7 +136,7 @@ class EnhancedComponentManager {
         // Ensure component manager is initialized (but don't require DOM for state operations)
         this.ensureInitialized();
         
-        console.log(`EnhancedComponentManager: Adding component ${componentType}`, props);
+        this.logger.info('COMPONENT', `Adding component ${componentType}`, props);
         
         const newComponent = {
             id: generateUniqueId(componentType),
@@ -119,9 +146,9 @@ class EnhancedComponentManager {
         
         try {
             enhancedStateManager.addComponent(newComponent);
-            console.log(`EnhancedComponentManager: Successfully added component ${componentType} with ID ${newComponent.id}`);
+            this.logger.info('COMPONENT', `Successfully added component ${componentType}`, { id: newComponent.id });
         } catch (error) {
-            console.error(`EnhancedComponentManager: Failed to add component ${componentType}:`, error);
+            this.logger.error('COMPONENT', `Failed to add component ${componentType}`, error);
             throw error;
         }
     }
@@ -131,7 +158,12 @@ class EnhancedComponentManager {
      * @param {string} componentId - The ID of the component to remove.
      */
     removeComponent(componentId) {
-        enhancedStateManager.removeComponent(componentId);
+        try {
+            enhancedStateManager.removeComponent(componentId);
+            this.logger.info('COMPONENT', 'Component removed', { componentId });
+        } catch (error) {
+            this.logger.error('COMPONENT', 'Failed to remove component', error, { componentId });
+        }
     }
 
     /**
@@ -139,16 +171,35 @@ class EnhancedComponentManager {
      * @param {string} componentId - The ID of the component to duplicate.
      */
     duplicateComponent(componentId) {
-        const originalComponent = enhancedStateManager.getComponent(componentId);
-        if (originalComponent) {
-            const newComponent = {
-                ...originalComponent,
-                id: generateUniqueId(originalComponent.type),
-                props: { ...originalComponent.props
-                }, // Deep copy props
-            };
-            enhancedStateManager.addComponent(newComponent);
+        try {
+            const originalComponent = enhancedStateManager.getComponent(componentId);
+            if (originalComponent) {
+                const newComponent = {
+                    ...originalComponent,
+                    id: generateUniqueId(originalComponent.type),
+                    props: { ...originalComponent.props }, // Deep copy props
+                };
+                enhancedStateManager.addComponent(newComponent);
+                this.logger.info('COMPONENT', 'Component duplicated', { 
+                    originalId: componentId, 
+                    newId: newComponent.id 
+                });
+            } else {
+                this.logger.warn('COMPONENT', 'Cannot duplicate - component not found', { componentId });
+            }
+        } catch (error) {
+            this.logger.error('COMPONENT', 'Failed to duplicate component', error, { componentId });
         }
+    }
+
+    /**
+     * Opens edit panel for component
+     * @param {string} componentId - The ID of the component to edit
+     */
+    editComponent(componentId) {
+        this.logger.info('CONTROL', 'Edit action triggered', { componentId });
+        // TODO: Implement edit panel opening logic
+        // This would typically emit an event or call a method to open the design panel
     }
 }
 
