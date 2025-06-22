@@ -3,7 +3,13 @@
  * Photo Gallery Component Template
  */
 ?>
-<div class="photo-gallery-component">
+<div class="photo-gallery-component editable-element" data-element="photo-gallery" data-component="photo-gallery" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="photo-gallery">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
+    </div>
     <h2 class="photo-gallery-title"><?php echo $title ?? 'Photo Gallery'; ?></h2>
     <?php if (isset($description)): ?>
         <div class="photo-gallery-description"><?php echo $description; ?></div>

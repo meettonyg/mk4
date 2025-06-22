@@ -3,7 +3,13 @@
  * Video Intro Component Template
  */
 ?>
-<div class="video-intro-component">
+<div class="video-intro-component editable-element" data-element="video-intro" data-component="video-intro" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="video-intro">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
+    </div>
     <h2 class="video-intro-title"><?php echo $title ?? 'Video Introduction'; ?></h2>
     <?php if (isset($description)): ?>
         <div class="video-intro-description"><?php echo $description; ?></div>

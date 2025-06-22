@@ -3,7 +3,13 @@
  * Podcast Player Component Template
  */
 ?>
-<div class="podcast-player-component">
+<div class="podcast-player-component editable-element" data-element="podcast-player" data-component="podcast-player" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="podcast-player">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
+    </div>
     <h2 class="podcast-player-title"><?php echo $title ?? 'Podcast Episodes'; ?></h2>
     <?php if (isset($description)): ?>
         <div class="podcast-player-description"><?php echo $description; ?></div>

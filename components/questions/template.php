@@ -3,7 +3,13 @@
  * Questions Component Template
  */
 ?>
-<div class="questions-component">
+<div class="questions-component editable-element" data-element="questions" data-component="questions" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="questions">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
+    </div>
     <h2 class="questions-title"><?php echo $title ?? 'Frequently Asked Questions'; ?></h2>
     <?php if (isset($description)): ?>
         <div class="questions-description"><?php echo $description; ?></div>

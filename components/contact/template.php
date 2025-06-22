@@ -3,7 +3,13 @@
  * Contact Component Template
  */
 ?>
-<div class="contact-component">
+<div class="contact-component editable-element" data-element="contact" data-component="contact" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="contact">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
+    </div>
     <h2 class="contact-title"><?php echo $title ?? 'Contact Me'; ?></h2>
     <?php if (isset($description)): ?>
         <div class="contact-description"><?php echo $description; ?></div>

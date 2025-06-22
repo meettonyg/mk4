@@ -3,7 +3,13 @@
  * Testimonials Component Template
  */
 ?>
-<div class="testimonials-component">
+<div class="testimonials-component editable-element" data-element="testimonials" data-component="testimonials" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="testimonials">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
+    </div>
     <h2 class="testimonials-title"><?php echo $title ?? 'Testimonials'; ?></h2>
     <?php if (isset($description)): ?>
         <div class="testimonials-description"><?php echo $description; ?></div>

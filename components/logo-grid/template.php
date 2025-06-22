@@ -3,7 +3,13 @@
  * Logo Grid Component Template
  */
 ?>
-<div class="logo-grid-component">
+<div class="logo-grid-component editable-element" data-element="logo-grid" data-component="logo-grid" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="logo-grid">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
+    </div>
     <h2 class="logo-grid-title"><?php echo $title ?? 'Featured In'; ?></h2>
     <?php if (isset($description)): ?>
         <div class="logo-grid-description"><?php echo $description; ?></div>

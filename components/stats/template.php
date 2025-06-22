@@ -3,7 +3,13 @@
  * Stats Component Template
  */
 ?>
-<div class="content-section" data-element="stats" data-component="stats">
+<div class="content-section editable-element" data-element="stats" data-component="stats" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="stats">
+    <div class="element-controls">
+        <button class="control-btn" title="Move Up">↑</button>
+        <button class="control-btn" title="Move Down">↓</button>
+        <button class="control-btn" title="Duplicate">⧉</button>
+        <button class="control-btn" title="Delete">×</button>
+    </div>
     <h2 class="section-title"><?php echo esc_html($title ?? 'Key Statistics'); ?></h2>
     <div class="stats-grid">
         <?php if (isset($stats) && !empty($stats)): ?>
