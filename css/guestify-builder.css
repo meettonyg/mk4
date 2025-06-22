@@ -562,6 +562,103 @@
     transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* GEMINI FIX: Component Selection and Element Controls Styles */
+/* Selected component highlighting */
+[data-component-id].selected {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 2px;
+    background: rgba(14, 165, 233, 0.05);
+    position: relative;
+    z-index: 10;
+}
+
+/* Element controls container */
+.element-controls {
+    position: absolute;
+    top: -30px;
+    right: -2px;
+    display: flex;
+    gap: 4px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 20;
+}
+
+/* Control buttons */
+.control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.control-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+    transform: scale(1.1);
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+/* Specific control button colors */
+.control-btn[title="Delete"]:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.control-btn[title="Duplicate"]:hover {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.control-btn[title="Move Up"]:hover,
+.control-btn[title="Move Down"]:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+/* Ensure controls are visible on hover */
+[data-component-id]:hover .element-controls {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Hide controls by default, show on selection */
+.element-controls {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+[data-component-id].selected .element-controls {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Ensure component has space for controls */
+[data-component-id] {
+    position: relative;
+    margin-top: 40px; /* Space for controls */
+}
+
+/* First component doesn't need top margin */
+[data-component-id]:first-child {
+    margin-top: 20px;
+}
+
 /* Component Library SVG Icon Support - Phase 1 Enhancement */
 .component-icon {
     width: 32px;
@@ -570,6 +667,15 @@
     flex-shrink: 0;
     display: block;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Click feedback for components */
+[data-component-id]:hover {
+    cursor: pointer;
+}
+
+[data-component-id]:active {
+    transform: scale(0.998);
 }
 
 /* Ensure consistent sizing for both SVG and FontAwesome icons in component cards */

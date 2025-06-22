@@ -366,6 +366,7 @@ class InitializationManager {
     
     /**
      * Sets up core UI components (excluding modals)
+     * FIXED: Now properly initializes left sidebar design panel integration
      */
     async setupCoreUI() {
         this.logger.info('INIT', 'Setting up core UI');
@@ -375,6 +376,10 @@ class InitializationManager {
             const { setupTabs } = await import('../ui/tabs.js');
             const { initializeLayout, updateEmptyState } = await import('../ui/layout.js');
             
+            // FIXED: Import and initialize element editor and design panel for left sidebar
+            const { elementEditor } = await import('../ui/element-editor.js');
+            const { designPanel } = await import('../ui/design-panel.js');
+            
             this.logger.debug('UI', 'Setting up tabs');
             setupTabs();
             
@@ -383,6 +388,20 @@ class InitializationManager {
             
             this.logger.debug('UI', 'Updating empty state');
             updateEmptyState();
+            
+            // FIXED: Initialize element editor and design panel for left sidebar
+            this.logger.debug('UI', 'Initializing element editor for left sidebar');
+            // Element editor initializes automatically via constructor
+            
+            this.logger.debug('UI', 'Initializing design panel for left sidebar');
+            // Design panel now targets existing element-editor in left sidebar
+            
+            // FIXED: Expose globally for testing and debugging
+            window.elementEditor = elementEditor;
+            window.designPanel = designPanel;
+            window.selectElement = (await import('../ui/element-editor.js')).selectElement;
+            
+            this.logger.info('UI', 'Element editor and design panel initialized for left sidebar integration');
             
             // Validate core UI components are responsive
             await this.validateUIComponents();
