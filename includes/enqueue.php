@@ -406,15 +406,34 @@ class GMKB_Enhanced_Script_Manager {
             $localized_data
         );
         
-        // CRITICAL FIX: Add inline backup script for immediate availability
-        $backup_script = 'window.guestifyDataBackup = ' . wp_json_encode($localized_data) . ';
-                         window.guestifyDataReady = true;
-                         window.guestifyInitTimestamp = ' . time() . ';
-                         console.log("GMKB Phase 1: Data localized successfully", {
-                             components: ' . count($components_data['components']) . ',
-                             schemas: ' . count($component_schemas) . ',
-                             loadTime: ' . round((microtime(true) - $start_time) * 1000, 2) . 'ms
-                         });';
+        // CRITICAL FIX: Enhanced backup script with error handling and multiple execution points
+        $backup_script = '
+        /* CRITICAL FIX: Create backup data immediately with comprehensive error handling */
+        (function() {
+            try {
+                window.guestifyDataBackup = ' . wp_json_encode($localized_data) . ';
+                window.guestifyDataReady = true;
+                window.guestifyInitTimestamp = ' . time() . ';
+                
+                // CRITICAL FIX: Validate backup was created successfully
+                if (!window.guestifyDataBackup || !window.guestifyDataBackup.pluginUrl) {
+                    console.error("GMKB CRITICAL: Backup data creation failed");
+                    window.guestifyBackupFailed = true;
+                } else {
+                    window.guestifyBackupReady = true;
+                    console.log("✅ GMKB Phase 1: Backup data created successfully", {
+                        components: ' . count($components_data['components']) . ',
+                        schemas: ' . count($component_schemas) . ',
+                        loadTime: ' . round((microtime(true) - $start_time) * 1000, 2) . 'ms,
+                        backupSize: JSON.stringify(window.guestifyDataBackup).length
+                    });
+                }
+            } catch (error) {
+                console.error("GMKB CRITICAL: Backup script execution failed:", error);
+                window.guestifyBackupError = error.message;
+            }
+        })();
+        ';
         
         wp_add_inline_script('guestify-builder-script', $backup_script, 'before');
         
@@ -562,21 +581,34 @@ class GMKB_Enhanced_Script_Manager {
         ?>
         <!-- CRITICAL FIX: Ultra-early data injection to prevent race conditions -->
         <script id="gmkb-critical-data" type="text/javascript">
-            /* Inject critical data immediately - available before any other scripts */
-            window.guestifyData = <?php echo wp_json_encode($critical_data); ?>;
-            window.guestifyDataReady = true;
-            window.guestifyCriticalDataLoaded = true;
-            window.gmkbIsolated = true;
-            
-            /* Critical data validation */
-            if (!window.guestifyData.pluginUrl) {
-                console.error('GMKB CRITICAL: Plugin URL missing from critical data injection');
+        /* Inject critical data immediately - available before any other scripts */
+        window.guestifyData = <?php echo wp_json_encode($critical_data); ?>;
+        window.guestifyDataReady = true;
+        window.guestifyCriticalDataLoaded = true;
+        window.gmkbIsolated = true;
+        
+        /* CRITICAL FIX: Create early backup data to prevent race conditions */
+        window.guestifyDataBackup = <?php echo wp_json_encode($critical_data); ?>;
+        window.guestifyBackupReady = true;
+        
+        /* Critical data validation */
+        if (!window.guestifyData.pluginUrl) {
+        console.error('GMKB CRITICAL: Plugin URL missing from critical data injection');
+        }
+        
+        /* CRITICAL FIX: Validate backup data creation */
+            if (!window.guestifyDataBackup || !window.guestifyDataBackup.pluginUrl) {
+                console.error('GMKB CRITICAL: Early backup creation failed');
+                window.guestifyBackupFailed = true;
+            } else {
+                console.log('✅ GMKB Phase 1: Early backup data created successfully');
             }
             
             console.log('🚀 GMKB Phase 1: Critical data injected at priority 1', {
                 pluginUrl: window.guestifyData.pluginUrl,
                 timestamp: window.guestifyData.timestamp,
-                isolated: window.gmkbIsolated
+                isolated: window.gmkbIsolated,
+                backupReady: window.guestifyBackupReady
             });
         </script>
         <?php

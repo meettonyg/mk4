@@ -26,8 +26,229 @@ class InitializationManager {
         this.tracker = initializationTracker;
         this.errorBoundary = errorBoundary;
         
+        // CRITICAL FIX: Integration tracking flags
+        this.trackerIntegrated = false;
+        this.trackerReady = false;
+        this.integrationValidated = false;
+        
+        // CRITICAL FIX: Emergency circuit breaker to prevent cascade failures
+        this.circuitBreaker = {
+            state: 'CLOSED', // CLOSED, OPEN, HALF_OPEN
+            failureCount: 0,
+            maxFailures: 3, // Trip after 3 system failures
+            resetTimeout: 10000, // Reset after 10 seconds
+            lastFailureTime: 0,
+            consecutiveSuccesses: 0,
+            requiredSuccesses: 2, // Successes needed to close from HALF_OPEN
+            isTripped: false
+        };
+        
+        // CRITICAL FIX: Initialize tracker integration
+        this.initializeTrackerIntegration();
+        
         // Register initialization steps with tracker
         this.registerInitSteps();
+    }
+
+    /**
+     * CRITICAL FIX: Initialize tracker integration with comprehensive validation
+     */
+    initializeTrackerIntegration() {
+        try {
+            // Validate tracker is available and has required methods
+            if (!this.tracker) {
+                throw new Error('Initialization tracker not available');
+            }
+            
+            const requiredMethods = ['registerStep', 'startStep', 'completeStep', 'failStep', 'reset', 'getSummary'];
+            const missingMethods = requiredMethods.filter(method => typeof this.tracker[method] !== 'function');
+            
+            if (missingMethods.length > 0) {
+                throw new Error(`Tracker missing required methods: ${missingMethods.join(', ')}`);
+            }
+            
+            // Initialize tracker state
+            this.tracker.reset();
+            
+            // Expose tracker globally for testing and debugging
+            window.initTracker = this.tracker;
+            
+            // Set integration flags
+            this.trackerReady = true;
+            this.trackerIntegrated = true;
+            
+            this.logger.info('INIT', 'Initialization tracker integration successful', {
+                availableMethods: Object.keys(this.tracker).filter(key => typeof this.tracker[key] === 'function'),
+                trackerIntegrated: this.trackerIntegrated,
+                trackerReady: this.trackerReady
+            });
+            
+        } catch (error) {
+            this.trackerIntegrated = false;
+            this.trackerReady = false;
+            this.logger.error('INIT', 'Tracker integration failed', error);
+            
+            // Create fallback tracker to prevent crashes
+            this.tracker = this.createFallbackTracker();
+            this.logger.warn('INIT', 'Using fallback tracker - some functionality may be limited');
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Create fallback tracker for graceful degradation
+     */
+    createFallbackTracker() {
+        return {
+            registerStep: () => {},
+            startStep: (name) => ({ skipped: false }),
+            completeStep: () => {},
+            failStep: (name, error) => ({ retry: false }),
+            reset: () => {},
+            getSummary: () => ({ steps: [], errors: [] }),
+            generateDependencyGraph: () => {},
+            generateTimeline: () => {}
+        };
+    }
+    
+    /**
+     * CRITICAL FIX: Check if circuit breaker allows operation
+     */
+    checkCircuitBreaker() {
+        const now = Date.now();
+        
+        // If circuit is OPEN, check if enough time has passed to try HALF_OPEN
+        if (this.circuitBreaker.state === 'OPEN') {
+            if (now - this.circuitBreaker.lastFailureTime > this.circuitBreaker.resetTimeout) {
+                this.circuitBreaker.state = 'HALF_OPEN';
+                this.circuitBreaker.consecutiveSuccesses = 0;
+                this.logger.info('CIRCUIT', 'Circuit breaker moved to HALF_OPEN state - testing recovery');
+            } else {
+                return false; // Still open, reject operation
+            }
+        }
+        
+        return true; // CLOSED or HALF_OPEN allows operation
+    }
+    
+    /**
+     * CRITICAL FIX: Record successful operation for circuit breaker
+     */
+    recordCircuitSuccess(operation) {
+        if (this.circuitBreaker.state === 'HALF_OPEN') {
+            this.circuitBreaker.consecutiveSuccesses++;
+            
+            if (this.circuitBreaker.consecutiveSuccesses >= this.circuitBreaker.requiredSuccesses) {
+                this.circuitBreaker.state = 'CLOSED';
+                this.circuitBreaker.failureCount = 0;
+                this.circuitBreaker.isTripped = false;
+                this.logger.info('CIRCUIT', 'Circuit breaker CLOSED - system recovered', {
+                    operation,
+                    consecutiveSuccesses: this.circuitBreaker.consecutiveSuccesses
+                });
+            }
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Record failure and update circuit breaker state
+     */
+    recordCircuitFailure(operation, error) {
+        this.circuitBreaker.failureCount++;
+        this.circuitBreaker.lastFailureTime = Date.now();
+        this.circuitBreaker.consecutiveSuccesses = 0;
+        
+        if (this.circuitBreaker.failureCount >= this.circuitBreaker.maxFailures) {
+            this.circuitBreaker.state = 'OPEN';
+            this.circuitBreaker.isTripped = true;
+            
+            this.logger.error('CIRCUIT', 'Circuit breaker OPENED - too many failures', error, {
+                operation,
+                failureCount: this.circuitBreaker.failureCount,
+                maxFailures: this.circuitBreaker.maxFailures,
+                resetTimeout: this.circuitBreaker.resetTimeout
+            });
+            
+            // Show user-friendly error message
+            this.showCircuitBreakerError(operation, error);
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Show user-friendly circuit breaker error
+     */
+    showCircuitBreakerError(operation, error) {
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'circuit-breaker-error';
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            max-width: 400px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        `;
+        
+        errorDiv.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 8px;">⚠️ System Protection Active</div>
+            <div style="margin-bottom: 12px;">Too many initialization failures detected. System temporarily suspended to prevent cascade failures.</div>
+            <div style="margin-bottom: 12px;">Operation: ${operation}</div>
+            <button id="circuit-breaker-retry" style="
+                background: white;
+                color: #dc3545;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                margin-right: 8px;
+            ">Retry Now</button>
+            <button id="circuit-breaker-dismiss" style="
+                background: rgba(255,255,255,0.2);
+                color: white;
+                border: 1px solid white;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+            ">Dismiss</button>
+        `;
+        
+        // Remove existing error if present
+        const existing = document.getElementById('circuit-breaker-error');
+        if (existing) {
+            existing.remove();
+        }
+        
+        document.body.appendChild(errorDiv);
+        
+        // Add event listeners
+        document.getElementById('circuit-breaker-retry')?.addEventListener('click', () => {
+            this.circuitBreaker.state = 'HALF_OPEN';
+            this.circuitBreaker.consecutiveSuccesses = 0;
+            errorDiv.remove();
+            this.logger.info('CIRCUIT', 'Manual circuit breaker reset by user');
+            
+            // Attempt to restart initialization
+            this.initialize().catch(err => {
+                this.logger.error('CIRCUIT', 'Manual retry failed', err);
+            });
+        });
+        
+        document.getElementById('circuit-breaker-dismiss')?.addEventListener('click', () => {
+            errorDiv.remove();
+        });
+        
+        // Auto-remove after 30 seconds
+        setTimeout(() => {
+            if (document.contains(errorDiv)) {
+                errorDiv.remove();
+            }
+        }, 30000);
     }
 
     /**
@@ -93,9 +314,16 @@ class InitializationManager {
     }
 
     /**
-     * Execute a step with proper timeout handling
+     * Execute a step with proper timeout handling and circuit breaker protection
      */
     async executeStep(stepName, stepFunction) {
+        // CRITICAL FIX: Check circuit breaker before executing
+        if (!this.checkCircuitBreaker()) {
+            const error = new Error(`Circuit breaker OPEN - operation '${stepName}' blocked to prevent cascade failure`);
+            this.logger.warn('CIRCUIT', `Step '${stepName}' blocked by circuit breaker`, error);
+            throw error;
+        }
+        
         const stepInfo = await this.tracker.startStep(stepName);
         
         if (stepInfo.skipped) {
@@ -110,15 +338,27 @@ class InitializationManager {
             this.tracker.completeStep(stepName);
             this.recordStep(stepName, 'success');
             
+            // CRITICAL FIX: Record success for circuit breaker
+            this.recordCircuitSuccess(stepName);
+            
         } catch (error) {
             // Mark step as failed
             const failResult = this.tracker.failStep(stepName, error);
             this.recordStep(stepName, 'failed');
             
+            // CRITICAL FIX: Record failure for circuit breaker
+            this.recordCircuitFailure(stepName, error);
+            
             // Only throw if it's a critical error and no retry is possible
             if (failResult.retry) {
-                // Retry the step
-                return this.executeStep(stepName, stepFunction);
+                // Check circuit breaker again before retry
+                if (this.checkCircuitBreaker()) {
+                    // Retry the step
+                    return this.executeStep(stepName, stepFunction);
+                } else {
+                    this.logger.warn('CIRCUIT', `Retry of '${stepName}' blocked by circuit breaker`);
+                    throw new Error(`Retry blocked by circuit breaker for step: ${stepName}`);
+                }
             }
             
             throw error;
@@ -885,7 +1125,38 @@ class InitializationManager {
             errors: this.errors,
             retryCount: this.retryCount,
             duration: Date.now() - this.startTime,
-            version: this.version
+            version: this.version,
+            
+            // CRITICAL FIX: Tracker integration status for testing
+            trackerIntegrated: this.trackerIntegrated,
+            trackerReady: this.trackerReady,
+            integrationValidated: this.integrationValidated,
+            
+            // Additional tracker information
+            trackerSummary: this.tracker ? this.tracker.getSummary() : null,
+            trackerAvailable: !!this.tracker,
+            
+            // Enhanced debugging information
+            enhancedStatus: {
+                managerInitialized: true,
+                trackerMethods: this.tracker ? Object.keys(this.tracker).filter(key => typeof this.tracker[key] === 'function') : [],
+                globalExposure: {
+                    initManager: !!window.initManager,
+                    initTracker: !!window.initTracker
+                }
+            },
+            
+            // CRITICAL FIX: Circuit breaker status for testing and monitoring
+            circuitBreaker: {
+                state: this.circuitBreaker.state,
+                failureCount: this.circuitBreaker.failureCount,
+                maxFailures: this.circuitBreaker.maxFailures,
+                isTripped: this.circuitBreaker.isTripped,
+                consecutiveSuccesses: this.circuitBreaker.consecutiveSuccesses,
+                lastFailureTime: this.circuitBreaker.lastFailureTime,
+                resetTimeout: this.circuitBreaker.resetTimeout,
+                operational: this.circuitBreaker.state !== 'OPEN'
+            }
         };
     }
 }
