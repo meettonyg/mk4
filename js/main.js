@@ -145,7 +145,7 @@ async function initializeBuilder() {
         
         // Step 2: Register enhanced systems with system registrar
         console.log('🚀 Registering enhanced systems...');
-        registerEnhancedSystems();
+        await registerEnhancedSystems(); // Now async due to Phase 3 systems
         
         // Step 3: Initialize core systems (now that they're registered)
         console.log('🚀 Initializing enhanced core systems...');
@@ -154,31 +154,60 @@ async function initializeBuilder() {
         // Step 4: Validate that enhanced component manager is available
         await validateEnhancedComponentManager();
         
-        // Step 5: Use initialization manager for remaining setup
-        console.log('🚀 Running initialization manager sequence...');
+        // Step 5: Use initialization manager for complete setup
+        console.log('🚀 Running complete initialization sequence...');
         const success = await runInitializationSequence();
         
         if (success) {
             const duration = performance.now() - startTime;
             structuredLogger.info('INIT', 'Media Kit Builder initialization successful!', {
                 duration,
-                architecture: 'new-registrar-based'
+                architecture: 'enhanced-registrar-based',
+                systems: {
+                    coreRegistered: !!window.stateManager && !!window.componentManager && !!window.renderer,
+                    uiInitialized: true,
+                    featuresInitialized: true
+                }
             });
             
-            console.log('\n✅ Media Kit Builder Ready!');
+            console.log('\n🎉 Media Kit Builder Ready!');
             console.log('📊 Logging commands available. Type mkLog.help() for a list.');
             console.log('🔧 Debug tools: window.getEnhancedSystemInfo(), window.systemRegistrar.list()');
+            console.log('🧪 Architecture test: testArchitectureFix()');
+            
+            // GEMINI FIX: Validate all critical systems are available
+            const systemCheck = {
+                stateManager: !!window.stateManager,
+                componentManager: !!window.componentManager,
+                enhancedComponentManager: !!window.enhancedComponentManager,
+                renderer: !!window.renderer,
+                addComponentMethod: typeof window.enhancedComponentManager?.addComponent === 'function',
+                updateComponentMethod: typeof window.enhancedComponentManager?.updateComponent === 'function'
+            };
+            
+            console.log('🔍 Final system check:', systemCheck);
+            
+            const criticalMissing = Object.entries(systemCheck)
+                .filter(([key, value]) => !value)
+                .map(([key]) => key);
+            
+            if (criticalMissing.length > 0) {
+                console.warn('⚠️ Some critical systems missing:', criticalMissing);
+            } else {
+                console.log('✅ All critical systems verified and ready!');
+            }
             
             // Dispatch custom event for any external listeners
             window.dispatchEvent(new CustomEvent('mediaKitBuilderReady', {
                 detail: {
                     duration,
-                    architecture: 'registrar-based',
-                    timestamp: Date.now()
+                    architecture: 'enhanced-registrar-based',
+                    timestamp: Date.now(),
+                    systemCheck
                 }
             }));
         } else {
-            throw new Error('Initialization manager returned false');
+            throw new Error('Initialization sequence failed');
         }
         
     } catch (error) {
@@ -277,23 +306,47 @@ async function validateEnhancedComponentManager() {
 
 /**
  * Runs the initialization sequence using the initialization manager
+ * GEMINI FIX: Simplified since initializer system now handles UI and features
  */
 async function runInitializationSequence() {
     try {
-        // Use a simplified initialization sequence since core systems are already loaded
-        return await initializationManager.initialize();
+        // The initialization manager now handles everything including UI and features
+        // through the registered initializer system
+        console.log('🚀 Running initialization manager sequence...');
+        const initManagerSuccess = await initializationManager.initialize();
+        
+        if (initManagerSuccess) {
+            console.log('✅ Initialization manager completed successfully');
+            return true;
+        }
+        
+        throw new Error('Initialization manager returned false');
+        
     } catch (error) {
         console.error('❌ Initialization manager failed:', error);
         
-        // Try direct initializer if available
-        if (window.initializer && typeof window.initializer === 'function') {
+        // Try direct initializer if available as fallback
+        if (window.initializer && typeof window.initializer.initialize === 'function') {
             console.log('🔄 Trying direct initializer as fallback...');
             try {
-                await window.initializer();
+                await window.initializer.initialize();
                 console.log('✅ Direct initializer succeeded');
                 return true;
             } catch (initError) {
                 console.error('❌ Direct initializer also failed:', initError);
+                throw initError;
+            }
+        }
+        
+        // Legacy fallback
+        if (window.initializer && typeof window.initializer === 'function') {
+            console.log('🔄 Trying legacy initializer as fallback...');
+            try {
+                await window.initializer();
+                console.log('✅ Legacy initializer succeeded');
+                return true;
+            } catch (initError) {
+                console.error('❌ Legacy initializer also failed:', initError);
                 throw initError;
             }
         }

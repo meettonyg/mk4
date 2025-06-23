@@ -776,12 +776,21 @@ class InitializationManager {
     async restoreState() {
         this.logger.info('STATE', 'Restoring application state');
         
-        // CRITICAL: Call the registered initializer to complete enhanced initialization
-        if (window.initializer && typeof window.initializer === 'function') {
+        // GEMINI FIX: Call the registered initializer to complete enhanced initialization
+        if (window.initializer) {
             this.logger.info('STATE', 'Calling registered initializer for enhanced initialization');
             try {
-                await window.initializer();
-                this.logger.info('STATE', 'Registered initializer completed successfully');
+                // Check if it's the new object-based initializer
+                if (typeof window.initializer.initialize === 'function') {
+                    await window.initializer.initialize();
+                    this.logger.info('STATE', 'Object-based initializer completed successfully');
+                } else if (typeof window.initializer === 'function') {
+                    // Legacy function-based initializer
+                    await window.initializer();
+                    this.logger.info('STATE', 'Function-based initializer completed successfully');
+                } else {
+                    this.logger.warn('STATE', 'Initializer found but no initialize method or function available');
+                }
             } catch (error) {
                 this.logger.error('STATE', 'Registered initializer failed', error);
                 // Continue anyway - this shouldn't break the whole initialization

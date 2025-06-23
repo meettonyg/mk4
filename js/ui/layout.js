@@ -3,16 +3,12 @@
  * @description Manages the layout of the media kit, including drag-and-drop functionality
  * and the empty state display.
  *
- * This version is updated to use the modern componentManager for adding components,
- * resolving module import errors and aligning with the new architecture.
+ * GEMINI FIX: Updated to use globally available enhancedComponentManager instead of importing
+ * from outdated path. This aligns with the new architecture where systems are registered globally.
  */
 import {
     state
 } from '../state.js';
-// FIX: The componentManager is now the single point of contact for adding components.
-import {
-    componentManager
-} from '../components/component-manager.js';
 
 let dragCounter = 0;
 
@@ -62,9 +58,19 @@ export function initializeLayout() {
         previewContainer.classList.remove('drag-over');
         const componentType = e.dataTransfer.getData('text/plain');
         if (componentType) {
-            // FIX: Use the componentManager to add the new component.
-            // This properly updates the state and triggers a re-render.
-            componentManager.addComponent(componentType);
+            // GEMINI FIX: Use the globally available enhancedComponentManager
+            // This is registered and available on window by the time layout.js runs
+            if (window.enhancedComponentManager && typeof window.enhancedComponentManager.addComponent === 'function') {
+                window.enhancedComponentManager.addComponent(componentType);
+            } else {
+                console.error('Enhanced component manager not available for drag-and-drop');
+                // Fallback to legacy component manager if available
+                if (window.componentManager && typeof window.componentManager.addComponent === 'function') {
+                    window.componentManager.addComponent(componentType);
+                } else {
+                    console.error('No component manager available for adding component:', componentType);
+                }
+            }
         }
     });
 

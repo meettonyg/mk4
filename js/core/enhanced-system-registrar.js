@@ -1,14 +1,23 @@
 /**
  * @file enhanced-system-registrar.js
  * @description Registers enhanced systems with the system registrar
- * Replaces the functionality that was in conditional-loader.js
+ * GEMINI FIX: Converted to static imports to eliminate race conditions
  */
 
 import { systemRegistrar } from './system-registrar.js';
 import { performanceMonitor } from '../utils/performance-monitor.js';
 
+// GEMINI FIX: Static imports to eliminate race conditions for core systems
+import { enhancedStateManager } from './enhanced-state-manager.js';
+import { enhancedComponentManager } from './enhanced-component-manager.js';
+import { enhancedComponentRenderer } from './enhanced-component-renderer.js';
+
+// GEMINI FIX: Import the initializer system
+import { initializer } from './media-kit-builder-init.js';
+
 /**
  * Registers all enhanced systems with the system registrar
+ * GEMINI FIX: Now synchronous for core systems, async for optional Phase 3 systems
  */
 export async function registerEnhancedSystems() {
     const perfEnd = performanceMonitor.start('register-enhanced-systems');
@@ -16,118 +25,122 @@ export async function registerEnhancedSystems() {
     console.log('🔧 Enhanced System Registrar: Starting system registration...');
     
     try {
-        // Import enhanced systems with error handling
-        console.log('📦 Importing enhanced systems...');
+        // GEMINI FIX: Validate core systems are available (they should be since they're static imports)
+        console.log('📦 Validating core enhanced systems...');
         
-        let enhancedStateManager, enhancedComponentManager, enhancedComponentRenderer;
+        // Add comprehensive validation
+        const validationResults = {
+            stateManager: !!enhancedStateManager,
+            componentManager: !!enhancedComponentManager,
+            renderer: !!enhancedComponentRenderer,
+            stateManagerMethods: typeof enhancedStateManager?.addComponent === 'function',
+            componentManagerMethods: typeof enhancedComponentManager?.addComponent === 'function',
+            rendererMethods: typeof enhancedComponentRenderer?.init === 'function'
+        };
+        
+        console.log('🔍 System validation results:', validationResults);
+        
+        if (!enhancedStateManager) {
+            throw new Error('Enhanced State Manager not available after static import');
+        }
+        
+        if (!enhancedComponentManager) {
+            throw new Error('Enhanced Component Manager not available after static import');
+        }
+        
+        if (!enhancedComponentRenderer) {
+            throw new Error('Enhanced Component Renderer not available after static import');
+        }
+        
+        console.log('✅ All core enhanced systems validated');
+        
+        // Register Core Enhanced Systems (synchronous)
+        console.log('📝 Registering core enhanced systems...');
+        
+        // State Manager
+        systemRegistrar.register('stateManager', enhancedStateManager);
+        console.log('✅ State Manager: Enhanced');
+        
+        // Component Manager - CRITICAL
+        systemRegistrar.register('componentManager', enhancedComponentManager);
+        console.log('✅ Component Manager: Enhanced');
+        
+        // Renderer
+        systemRegistrar.register('renderer', enhancedComponentRenderer);
+        console.log('✅ Renderer: Enhanced');
+        
+        // GEMINI FIX: Register the initializer system
+        systemRegistrar.register('initializer', initializer);
+        console.log('✅ Initializer: Enhanced');
+        
+        // Validate enhanced component manager
+        console.log('🔍 Enhanced Component Manager validation:', {
+            imported: !!enhancedComponentManager,
+            type: typeof enhancedComponentManager,
+            constructor: enhancedComponentManager?.constructor?.name,
+            hasAddComponent: typeof enhancedComponentManager?.addComponent === 'function',
+            hasInit: typeof enhancedComponentManager?.init === 'function',
+            hasUpdateComponent: typeof enhancedComponentManager?.updateComponent === 'function'
+        });
+        
+        // GEMINI FIX: Validate initializer system
+        console.log('🔍 Initializer validation:', {
+            imported: !!initializer,
+            type: typeof initializer,
+            constructor: initializer?.constructor?.name,
+            hasInitialize: typeof initializer?.initialize === 'function',
+            getStatus: initializer?.getStatus()
+        });
+        
+        // Register Phase 3 Systems (optional - async imports)
+        console.log('📝 Registering Phase 3 systems...');
+        
+        // Import Phase 3 systems with error handling
         let stateValidator, uiRegistry, stateHistory, eventBus;
         
         try {
-            const stateManagerModule = await import('./enhanced-state-manager.js');
-            enhancedStateManager = stateManagerModule.enhancedStateManager;
-            console.log('✅ Enhanced State Manager imported:', !!enhancedStateManager);
-        } catch (error) {
-            console.error('❌ Enhanced State Manager import failed:', error);
-            throw new Error(`Enhanced State Manager import failed: ${error.message}`);
-        }
-        
-        try {
-            const componentManagerModule = await import('./enhanced-component-manager.js');
-            enhancedComponentManager = componentManagerModule.enhancedComponentManager;
-            console.log('✅ Enhanced Component Manager imported:', !!enhancedComponentManager);
-        } catch (error) {
-            console.error('❌ Enhanced Component Manager import failed:', error);
-            throw new Error(`Enhanced Component Manager import failed: ${error.message}`);
-        }
-        
-        try {
-            const rendererModule = await import('./enhanced-component-renderer.js');
-            enhancedComponentRenderer = rendererModule.enhancedComponentRenderer;
-            console.log('✅ Enhanced Component Renderer imported:', !!enhancedComponentRenderer);
-        } catch (error) {
-            console.error('❌ Enhanced Component Renderer import failed:', error);
-            throw new Error(`Enhanced Component Renderer import failed: ${error.message}`);
-        }
-        
-        // Import Phase 3 systems (optional)
-        try {
             const stateValidatorModule = await import('./state-validator.js');
             stateValidator = stateValidatorModule.stateValidator;
-            console.log('✅ State Validator imported:', !!stateValidator);
+            if (stateValidator) {
+                systemRegistrar.register('stateValidator', stateValidator);
+                console.log('✅ State Validator: Available');
+            }
         } catch (error) {
-            console.error('⚠️ State Validator import failed:', error);
-            // Don't throw - this is optional
+            console.warn('⚠️ State Validator not available:', error.message);
         }
         
         try {
             const uiRegistryModule = await import('./ui-registry.js');
             uiRegistry = uiRegistryModule.uiRegistry;
-            console.log('✅ UI Registry imported:', !!uiRegistry);
+            if (uiRegistry) {
+                systemRegistrar.register('uiRegistry', uiRegistry);
+                console.log('✅ UI Registry: Available');
+            }
         } catch (error) {
-            console.error('⚠️ UI Registry import failed:', error);
-            // Don't throw - this is optional
+            console.warn('⚠️ UI Registry not available:', error.message);
         }
         
         try {
             const stateHistoryModule = await import('./state-history.js');
             stateHistory = stateHistoryModule.stateHistory;
-            console.log('✅ State History imported:', !!stateHistory);
+            if (stateHistory) {
+                systemRegistrar.register('stateHistory', stateHistory);
+                console.log('✅ State History: Available');
+            }
         } catch (error) {
-            console.error('⚠️ State History import failed:', error);
-            // Don't throw - this is optional
+            console.warn('⚠️ State History not available:', error.message);
         }
         
         try {
             const eventBusModule = await import('./event-bus.js');
             eventBus = eventBusModule.eventBus;
-            console.log('✅ Event Bus imported:', !!eventBus);
+            if (eventBus) {
+                systemRegistrar.register('eventBus', eventBus);
+                console.log('✅ Event Bus: Available');
+            }
         } catch (error) {
-            console.error('⚠️ Event Bus import failed:', error);
-            // Don't throw - this is optional
+            console.warn('⚠️ Event Bus not available:', error.message);
         }
-        
-        // Register Core Enhanced Systems
-        console.log('📝 Registering core enhanced systems...');
-        
-        // State Manager
-        if (enhancedStateManager) {
-            systemRegistrar.register('stateManager', enhancedStateManager);
-            console.log('✅ State Manager: Enhanced');
-        } else {
-            throw new Error('Enhanced State Manager is null after import');
-        }
-        
-        // Component Manager - CRITICAL
-        if (enhancedComponentManager) {
-            systemRegistrar.register('componentManager', enhancedComponentManager);
-            console.log('✅ Component Manager: Enhanced');
-            
-            // Validate enhanced component manager
-            console.log('🔍 Enhanced Component Manager validation:', {
-                imported: !!enhancedComponentManager,
-                type: typeof enhancedComponentManager,
-                constructor: enhancedComponentManager?.constructor?.name,
-                hasAddComponent: typeof enhancedComponentManager?.addComponent === 'function',
-                hasInit: typeof enhancedComponentManager?.init === 'function'
-            });
-        } else {
-            throw new Error('Enhanced Component Manager is null after import');
-        }
-        
-        // Renderer
-        if (enhancedComponentRenderer) {
-            systemRegistrar.register('renderer', enhancedComponentRenderer);
-            console.log('✅ Renderer: Enhanced');
-        } else {
-            throw new Error('Enhanced Component Renderer is null after import');
-        }
-        
-        // Register Phase 3 Systems (optional)
-        console.log('📝 Registering Phase 3 systems...');
-        if (stateValidator) systemRegistrar.register('stateValidator', stateValidator);
-        if (uiRegistry) systemRegistrar.register('uiRegistry', uiRegistry);
-        if (stateHistory) systemRegistrar.register('stateHistory', stateHistory);
-        if (eventBus) systemRegistrar.register('eventBus', eventBus);
         
         // Services will be registered later when imported
         systemRegistrar.register('saveService', null);
@@ -138,8 +151,8 @@ export async function registerEnhancedSystems() {
         console.log('✅ Enhanced System Registrar: Registration complete');
         console.log('📋 Registered systems:', registeredSystems);
         
-        if (registeredSystems.length < 3) {
-            throw new Error(`Only ${registeredSystems.length} systems registered, expected at least 3`);
+        if (registeredSystems.length < 4) {
+            throw new Error(`Only ${registeredSystems.length} systems registered, expected at least 4 (stateManager, componentManager, renderer, initializer)`);
         }
         
         perfEnd();
@@ -175,6 +188,13 @@ export function getEnhancedSystemInfo() {
             stateManager: registeredSystems.stateManager?.constructor?.name || 'Unknown',
             componentManager: registeredSystems.componentManager?.constructor?.name || 'Unknown',
             renderer: registeredSystems.renderer?.constructor?.name || 'Unknown'
+        },
+        methods: {
+            componentManagerAddComponent: typeof registeredSystems.componentManager?.addComponent === 'function',
+            componentManagerUpdateComponent: typeof registeredSystems.componentManager?.updateComponent === 'function',
+            enhancedComponentManagerAddComponent: typeof window.enhancedComponentManager?.addComponent === 'function',
+            enhancedComponentManagerUpdateComponent: typeof window.enhancedComponentManager?.updateComponent === 'function',
+            initializerInitialize: typeof registeredSystems.initializer?.initialize === 'function'
         }
     };
 }

@@ -101,6 +101,9 @@ class EnhancedComponentManager {
         this.logger.info('CONTROL', `Action: ${action}`, { componentId });
 
         try {
+            // GEMINI FIX: Enhanced control action handling with performance tracking
+            const actionPerfEnd = performanceMonitor.start(`control-${action.toLowerCase().replace(' ', '-')}`, { componentId });
+            
             switch (action) {
                 case 'Delete':
                     this.removeComponent(componentId);
@@ -119,7 +122,12 @@ class EnhancedComponentManager {
                     break;
                 default:
                     this.logger.warn('CONTROL', `Unknown control action: ${action}`, { componentId });
+                    actionPerfEnd();
+                    return; // Exit early for unknown actions
             }
+            
+            actionPerfEnd();
+            this.logger.info('CONTROL', `Successfully executed ${action}`, { componentId });
         } catch (error) {
             this.logger.error('CONTROL', `Failed to execute control action: ${action}`, error, { componentId });
         } finally {
@@ -194,11 +202,17 @@ class EnhancedComponentManager {
 
     /**
      * Updates a component's properties in the state.
-     * GEMINI FIX: Added missing updateComponent method required by design panel.
+     * GEMINI FIX: Enhanced updateComponent method required by design panel.
      * @param {string} componentId - The ID of the component to update.
      * @param {object} newProps - The new properties to apply to the component.
      */
     updateComponent(componentId, newProps) {
+        // Ensure component manager is initialized
+        if (!this.ensureInitialized()) {
+            this.logger.warn('COMPONENT', 'Cannot update component, DOM not ready', { componentId });
+            throw new Error('Component manager not initialized');
+        }
+        
         try {
             this.logger.info('COMPONENT', `Updating component ${componentId}`, newProps);
             
@@ -207,24 +221,24 @@ class EnhancedComponentManager {
             
             if (!currentComponent) {
                 this.logger.warn('COMPONENT', 'Cannot update - component not found', { componentId });
-                return;
+                throw new Error(`Component ${componentId} not found in state`);
             }
             
-            // Merge new props with existing props
-            const updatedComponent = {
-                ...currentComponent,
-                props: {
-                    ...currentComponent.props,
-                    ...newProps
-                }
-            };
+            // GEMINI FIX: Use the enhanced state manager's updateComponent method directly
+            // This method expects componentId and newProps, not a full component object
+            enhancedStateManager.updateComponent(componentId, newProps);
             
-            // Update the component in state
-            enhancedStateManager.updateComponent(componentId, updatedComponent);
+            this.logger.info('COMPONENT', `Successfully updated component ${componentId}`, {
+                updatedProps: Object.keys(newProps)
+            });
             
-            this.logger.info('COMPONENT', `Successfully updated component ${componentId}`);
+            return true;
+            
         } catch (error) {
-            this.logger.error('COMPONENT', `Failed to update component ${componentId}`, error);
+            this.logger.error('COMPONENT', `Failed to update component ${componentId}`, error, {
+                newProps,
+                hasComponent: !!enhancedStateManager.getComponent(componentId)
+            });
             throw error;
         }
     }
@@ -235,8 +249,53 @@ class EnhancedComponentManager {
      */
     editComponent(componentId) {
         this.logger.info('CONTROL', 'Edit action triggered', { componentId });
-        // TODO: Implement edit panel opening logic
-        // This would typically emit an event or call a method to open the design panel
+        
+        try {
+            // GEMINI FIX: Emit event to open design panel
+            if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                window.eventBus.emit('ui:open-design-panel', {
+                    componentId,
+                    component: enhancedStateManager.getComponent(componentId)
+                });
+            } else {
+                // Fallback to direct method call if event bus not available
+                if (window.designPanel && typeof window.designPanel.open === 'function') {
+                    window.designPanel.open(componentId);
+                } else {
+                    this.logger.warn('CONTROL', 'Design panel system not available', { componentId });
+                }
+            }
+        } catch (error) {
+            this.logger.error('CONTROL', 'Failed to open edit panel', error, { componentId });
+        }
+    }
+    
+    /**
+     * GEMINI FIX: Get component manager status for debugging
+     * @returns {object} Status information
+     */
+    getStatus() {
+        return {
+            isInitialized: this.isInitialized,
+            hasPreviewContainer: !!this.previewContainer,
+            previewContainerId: this.previewContainer?.id || null,
+            componentCount: Object.keys(enhancedStateManager.getState().components || {}).length,
+            methods: {
+                addComponent: typeof this.addComponent === 'function',
+                updateComponent: typeof this.updateComponent === 'function',
+                removeComponent: typeof this.removeComponent === 'function',
+                duplicateComponent: typeof this.duplicateComponent === 'function'
+            }
+        };
+    }
+    
+    /**
+     * GEMINI FIX: Manual initialization retry for debugging
+     * @returns {boolean} True if successful
+     */
+    forceInitialization() {
+        this.isInitialized = false;
+        return this.init();
     }
 }
 
