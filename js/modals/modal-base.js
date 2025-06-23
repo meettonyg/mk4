@@ -1,6 +1,12 @@
 /**
- * Base modal functionality
+ * Base modal functionality - FIXED VERSION
+ * 
+ * This version resolves the event handler conflicts that were causing
+ * the modal closing functionality to fail in diagnostic tests.
  */
+
+// Track active modals for ESC key handling
+let activeModals = new Set();
 
 /**
  * Show a modal
@@ -15,11 +21,24 @@ export function showModal(modalIdOrElement) {
     }
     
     if (modal) {
+        // Show the modal
         modal.style.display = 'flex';
         modal.classList.add('modal--open');
-        // Ensure close handlers are set up
+        
+        // Set up close handlers if not already done
         setupModalCloseHandlers(modal);
+        
         console.log('Modal shown:', modal.id || 'unknown');
+        
+        // Add to active modals tracking for ESC key handling
+        activeModals.add(modal);
+        console.log('Modal added to active set. Total active:', activeModals.size);
+        
+        // Focus management for accessibility
+        const firstFocusable = modal.querySelector('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusable) {
+            setTimeout(() => firstFocusable.focus(), 100);
+        }
     } else {
         console.error('Modal not found:', modalIdOrElement);
     }
@@ -38,74 +57,110 @@ export function hideModal(modalIdOrElement) {
     }
     
     if (modal) {
+        // Hide the modal
         modal.style.display = 'none';
         modal.classList.remove('modal--open');
+        
         console.log('Modal hidden:', modal.id || 'unknown');
+        
+        // Remove from active modals tracking
+        activeModals.delete(modal);
+        console.log('Modal removed from active set. Total active:', activeModals.size);
+        
+        // Return focus to the element that opened the modal if available
+        const opener = modal.dataset.openedBy;
+        if (opener) {
+            const openerElement = document.getElementById(opener);
+            if (openerElement) {
+                openerElement.focus();
+            }
+            delete modal.dataset.openedBy;
+        }
+    } else {
+        console.error('Modal not found for hiding:', modalIdOrElement);
     }
 }
 
 /**
- * Setup modal close events
+ * Setup modal close events - LEGACY COMPATIBILITY
+ * This function is kept for backward compatibility but now uses the improved close handler system
  * @param {string} modalId - The ID of the modal
  * @param {string} closeButtonId - The ID of the close button
  */
 export function setupModalClose(modalId, closeButtonId) {
     const modal = document.getElementById(modalId);
-    const closeBtn = closeButtonId ? document.getElementById(closeButtonId) : null;
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => hideModal(modalId));
-    }
-    
-    // Also look for any close button within the modal
     if (modal) {
-        const modalCloseBtns = modal.querySelectorAll('.modal__close, [data-close-modal]');
-        modalCloseBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                hideModal(modalId);
-            });
-        });
-    }
-
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                hideModal(modalId);
-            }
-        });
+        setupModalCloseHandlers(modal);
+        console.log('Legacy setupModalClose called for:', modalId);
     }
 }
 
 /**
- * Setup all close handlers for a modal element
+ * Setup all close handlers for a modal element - IMPROVED VERSION
+ * This is the main function that sets up all close functionality
  * @param {HTMLElement} modal - The modal element
  */
 function setupModalCloseHandlers(modal) {
-    if (!modal || modal.hasAttribute('data-close-handlers-setup')) return;
+    if (!modal) {
+        console.error('setupModalCloseHandlers: modal element is null');
+        return;
+    }
     
+    // Prevent duplicate setup
+    if (modal.hasAttribute('data-close-handlers-setup')) {
+        console.log('Close handlers already setup for modal:', modal.id);
+        return;
+    }
+    
+    console.log('Setting up close handlers for modal:', modal.id);
+    
+    // Mark as setup to prevent duplicates
     modal.setAttribute('data-close-handlers-setup', 'true');
     
-    // Find all close buttons within the modal
-    const closeBtns = modal.querySelectorAll('.modal__close, [data-close-modal], .library__close');
-    closeBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            modal.style.display = 'none';
-            modal.classList.remove('modal--open');
+    // 1. CLOSE BUTTON HANDLERS
+    // Find all possible close buttons with various selectors
+    const closeSelectors = [
+        '.modal__close',
+        '.library__close', 
+        '[data-close-modal]',
+        '.close-modal',
+        '.btn-close',
+        '[aria-label*="close" i]',
+        '[title*="close" i]'
+    ];
+    
+    closeSelectors.forEach(selector => {
+        const closeBtns = modal.querySelectorAll(selector);
+        closeBtns.forEach(btn => {
+            // Remove any existing listeners to prevent duplicates
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            // Add the close handler
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Close button clicked:', selector, 'for modal:', modal.id);
+                hideModal(modal);
+            });
         });
     });
     
-    // Click outside to close (only on the overlay element itself)
-    modal.addEventListener('click', function(e) {
-        // Check if click is on the modal backdrop itself (not its children)
-        if (e.target === this) {
-            modal.style.display = 'none';
-            modal.classList.remove('modal--open');
+    // 2. BACKDROP CLICK HANDLER
+    // Click outside modal to close (only on the modal overlay itself)
+    const backdropHandler = function(e) {
+        // Only close if clicking directly on the modal overlay (not its children)
+        if (e.target === modal) {
+            console.log('Backdrop clicked for modal:', modal.id);
+            hideModal(modal);
         }
-    });
+    };
+    
+    // Remove existing backdrop listener if any
+    modal.removeEventListener('click', backdropHandler);
+    modal.addEventListener('click', backdropHandler);
+    
+    console.log('Close handlers setup complete for modal:', modal.id);
 }
 
 // Global initialization for all modals
@@ -115,35 +170,84 @@ if (document.readyState === 'loading') {
     initializeGlobalModalHandlers();
 }
 
+/**
+ * Global initialization for all modals - IMPROVED VERSION
+ */
 function initializeGlobalModalHandlers() {
-    // ESC key closes any open modal
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            // Look for any visible modals with various class names
-            const openModals = document.querySelectorAll(
-                '.modal-overlay[style*="flex"], .modal-overlay[style*="block"], ' +
-                '.library-modal[style*="flex"], .library-modal[style*="block"], ' +
-                '.modal[style*="flex"], .modal[style*="block"], ' +
-                '.modal--open'
-            );
-            openModals.forEach(modal => {
-                modal.style.display = 'none';
-                modal.classList.remove('modal--open');
-            });
-        }
-    });
+    console.log('Initializing global modal handlers');
     
-    // Global click handler for dynamically created modals
-    document.addEventListener('click', (e) => {
-        // Handle close button clicks
-        if (e.target.matches('.modal__close, [data-close-modal], .library__close')) {
-            e.preventDefault();
-            e.stopPropagation();
-            const modal = e.target.closest('.modal-overlay, .library-modal, .modal');
-            if (modal) {
-                modal.style.display = 'none';
-                modal.classList.remove('modal--open');
+    // ESC key closes the topmost modal - ENHANCED VERSION
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            console.log('ESC key detected, active modals:', activeModals.size);
+            
+            if (activeModals.size > 0) {
+                // Get the last modal that was opened (topmost)
+                const modalsArray = Array.from(activeModals);
+                const topmostModal = modalsArray[modalsArray.length - 1];
+                
+                if (topmostModal && (topmostModal.offsetParent !== null || topmostModal.classList.contains('modal--open'))) {
+                    console.log('ESC key pressed, closing modal:', topmostModal.id);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hideModal(topmostModal);
+                } else {
+                    console.log('ESC key pressed but modal not visible:', topmostModal?.id);
+                }
+            } else {
+                console.log('ESC key pressed but no active modals');
             }
         }
     }, true);
+    
+    // Global click handler for dynamically created close buttons
+    document.addEventListener('click', (e) => {
+        // Handle close button clicks that might not have been set up yet
+        if (e.target.matches('.modal__close, [data-close-modal], .library__close, .close-modal, .btn-close')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const modal = e.target.closest('.modal-overlay, .library-modal, .modal, [id*="modal"], [id*="overlay"]');
+            if (modal) {
+                console.log('Global close button handler triggered for modal:', modal.id);
+                hideModal(modal);
+            }
+        }
+    }, true);
+    
+    console.log('Global modal handlers initialized');
+}
+
+/**
+ * DEBUG: Get active modals count for testing
+ * @returns {number} Number of currently active modals
+ */
+export function getActiveModalsCount() {
+    return activeModals.size;
+}
+
+/**
+ * DEBUG: Get active modals array for testing
+ * @returns {Array} Array of active modal elements
+ */
+export function getActiveModals() {
+    return Array.from(activeModals);
+}
+
+/**
+ * DEBUG: Force clear all active modals (for testing)
+ */
+export function clearActiveModals() {
+    console.log('DEBUG: Clearing all active modals');
+    activeModals.clear();
+}
+
+// Expose debug functions globally for testing
+if (typeof window !== 'undefined') {
+    window.modalDebug = {
+        getActiveModalsCount,
+        getActiveModals,
+        clearActiveModals,
+        showModal,
+        hideModal
+    };
 }

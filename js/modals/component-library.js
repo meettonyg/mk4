@@ -183,13 +183,14 @@ function markButtonListenersAttached() {
 function setupEventListeners() {
     let listenersAttached = 0;
     
-    // Main UI button that opens the modal
+    // Main UI button that opens the modal (if exists)
     const openComponentLibraryButton = document.getElementById('add-component');
     if (openComponentLibraryButton) {
         openComponentLibraryButton.addEventListener('click', () => {
             structuredLogger.debug('UI', 'Component Library button clicked (add-component)');
             showComponentLibraryModal();
         });
+        openComponentLibraryButton.setAttribute('data-listener-attached', 'true');
         listenersAttached++;
     }
     
@@ -220,10 +221,12 @@ function setupEventListeners() {
             structuredLogger.debug('UI', 'Empty state Add Component button clicked');
             showComponentLibraryModal();
         });
+        // Mark button as having listener attached for validation
+        addFirstComponentButton.setAttribute('data-listener-attached', 'true');
         structuredLogger.debug('UI', 'Empty state Add Component button listener attached');
         listenersAttached++;
     } else {
-        structuredLogger.warn('UI', 'Empty state Add Component button not found', { elementId: 'add-first-component' });
+        structuredLogger.debug('UI', 'Empty state Add Component button not found (likely hidden)', { elementId: 'add-first-component' });
     }
 
     // Cancel button
