@@ -15,6 +15,10 @@ import { enhancedComponentRenderer } from './enhanced-component-renderer.js';
 // CRITICAL FIX: Import the initializer system
 import { initializer } from './media-kit-builder-init.js';
 
+// CRITICAL FIX: Import missing template loading systems that caused 287s timeout
+import { dynamicComponentLoader } from '../components/dynamic-component-loader.js';
+import { templateCache } from '../utils/template-cache.js';
+
 /**
  * Registers all enhanced systems with the system registrar
  * CRITICAL FIX: Now fully synchronous for predictable initialization
@@ -28,14 +32,18 @@ export async function registerEnhancedSystems() {
         // CRITICAL FIX: Validate core systems are available (they should be since they're static imports)
         console.log('📦 Validating core enhanced systems...');
         
-        // Add comprehensive validation
+        // Add comprehensive validation including missing template systems
         const validationResults = {
             stateManager: !!enhancedStateManager,
             componentManager: !!enhancedComponentManager,
             renderer: !!enhancedComponentRenderer,
+            dynamicComponentLoader: !!dynamicComponentLoader,
+            templateCache: !!templateCache,
             stateManagerMethods: typeof enhancedStateManager?.addComponent === 'function',
             componentManagerMethods: typeof enhancedComponentManager?.addComponent === 'function',
-            rendererMethods: typeof enhancedComponentRenderer?.init === 'function'
+            rendererMethods: typeof enhancedComponentRenderer?.init === 'function',
+            loaderMethods: typeof dynamicComponentLoader?.renderComponent === 'function',
+            cacheMethods: typeof templateCache?.get === 'function'
         };
         
         console.log('🔍 System validation results:', validationResults);
@@ -52,7 +60,15 @@ export async function registerEnhancedSystems() {
             throw new Error('Enhanced Component Renderer not available after static import');
         }
         
-        console.log('✅ All core enhanced systems validated');
+        if (!dynamicComponentLoader) {
+            throw new Error('Dynamic Component Loader not available after static import - this was causing 287s timeout!');
+        }
+        
+        if (!templateCache) {
+            throw new Error('Template Cache not available after static import - this was causing template system failures!');
+        }
+        
+        console.log('✅ All core enhanced systems validated (including template loading infrastructure)');        
         
         // Register Core Enhanced Systems (synchronous)
         console.log('📝 Registering core enhanced systems...');
@@ -72,6 +88,18 @@ export async function registerEnhancedSystems() {
         // CRITICAL FIX: Register the initializer system
         systemRegistrar.register('initializer', initializer);
         console.log('✅ Initializer: Enhanced');
+        
+        // CRITICAL FIX: Register missing template loading systems (ROOT CAUSE OF 287s TIMEOUT)
+        systemRegistrar.register('dynamicComponentLoader', dynamicComponentLoader);
+        console.log('✅ Dynamic Component Loader: Enhanced (FIXES 287s timeout)');
+        
+        systemRegistrar.register('templateCache', templateCache);
+        console.log('✅ Template Cache: Enhanced (FIXES template system failures)');
+        
+        // CRITICAL FIX: Expose template systems globally for compatibility
+        window.dynamicComponentLoader = dynamicComponentLoader;
+        window.mkTemplateCache = templateCache;
+        console.log('✅ Template systems exposed globally: dynamicComponentLoader, mkTemplateCache');
         
         // Validate enhanced component manager
         console.log('🔍 Enhanced Component Manager validation:', {
@@ -109,11 +137,19 @@ export async function registerEnhancedSystems() {
         console.log('✅ Enhanced System Registrar: Core registration complete');
         console.log('📋 Registered systems:', registeredSystems);
         
-        // CRITICAL FIX: Remove overly strict validation that was causing timing issues
-        // The core 4 systems are what matter - Phase 3 systems are optional enhancements
-        // that upgrade asynchronously and shouldn't block initialization
-        if (registeredSystems.length < 4) { // Only require core 4 systems
-            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 4`);
+        // CRITICAL FIX: Validate all 6 core systems including template loading infrastructure
+        // These are required for proper functionality - template systems were missing causing failures
+        if (registeredSystems.length < 6) { // Require all 6 core systems (was 4, missing template systems)
+            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 6 (state, component, renderer, initializer, loader, cache)`);
+        }
+        
+        // Validate critical template systems are working
+        if (!window.dynamicComponentLoader) {
+            throw new Error('CRITICAL: dynamicComponentLoader not exposed globally - template loading will fail');
+        }
+        
+        if (!window.mkTemplateCache) {
+            throw new Error('CRITICAL: mkTemplateCache not exposed globally - template caching will fail');
         }
         
         perfEnd();
@@ -220,19 +256,25 @@ export function getEnhancedSystemInfo() {
             componentManager: !!window.componentManager,
             enhancedComponentManager: !!window.enhancedComponentManager,
             renderer: !!window.renderer,
-            initializer: !!window.initializer
+            initializer: !!window.initializer,
+            dynamicComponentLoader: !!window.dynamicComponentLoader,
+            mkTemplateCache: !!window.mkTemplateCache
         },
         types: {
             stateManager: registeredSystems.stateManager?.constructor?.name || 'Unknown',
             componentManager: registeredSystems.componentManager?.constructor?.name || 'Unknown',
-            renderer: registeredSystems.renderer?.constructor?.name || 'Unknown'
+            renderer: registeredSystems.renderer?.constructor?.name || 'Unknown',
+            dynamicComponentLoader: registeredSystems.dynamicComponentLoader?.constructor?.name || 'Unknown',
+            templateCache: registeredSystems.templateCache?.constructor?.name || 'Unknown'
         },
         methods: {
             componentManagerAddComponent: typeof registeredSystems.componentManager?.addComponent === 'function',
             componentManagerUpdateComponent: typeof registeredSystems.componentManager?.updateComponent === 'function',
             enhancedComponentManagerAddComponent: typeof window.enhancedComponentManager?.addComponent === 'function',
             enhancedComponentManagerUpdateComponent: typeof window.enhancedComponentManager?.updateComponent === 'function',
-            initializerInitialize: typeof registeredSystems.initializer?.initialize === 'function'
+            initializerInitialize: typeof registeredSystems.initializer?.initialize === 'function',
+            dynamicComponentLoaderRender: typeof window.dynamicComponentLoader?.renderComponent === 'function',
+            templateCacheGet: typeof window.mkTemplateCache?.get === 'function'
         }
     };
 }

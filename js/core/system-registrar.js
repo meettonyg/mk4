@@ -17,6 +17,8 @@ const systems = {
     eventBus: null,
     saveService: null,
     historyService: null,  // GEMINI FIX: Added historyService to allowed systems
+    dynamicComponentLoader: null,  // CRITICAL FIX: Add template loading systems
+    templateCache: null  // CRITICAL FIX: Add template caching system
 };
 
 export const systemRegistrar = {
