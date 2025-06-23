@@ -17,6 +17,10 @@ import { performanceMonitor } from './utils/performance-monitor.js';
 import { structuredLogger } from './utils/structured-logger.js';
 import { errorBoundary } from './utils/error-boundary.js';
 
+// GEMINI FIX: Import component managers directly for immediate global exposure
+import { componentManager } from './components/component-manager.js';
+import { enhancedComponentManager } from './core/enhanced-component-manager.js';
+
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;
@@ -130,6 +134,15 @@ async function initializeBuilder() {
     const startTime = performance.now();
     
     try {
+        // GEMINI FIX: Expose component managers globally IMMEDIATELY
+        console.log('🔧 GEMINI FIX: Exposing component managers globally...');
+        window.componentManager = componentManager;
+        window.enhancedComponentManager = enhancedComponentManager;
+        console.log('✅ Component managers exposed globally:', {
+            componentManager: !!window.componentManager,
+            enhancedComponentManager: !!window.enhancedComponentManager
+        });
+        
         // Step 1: Validate prerequisites
         await validatePrerequisites();
         
@@ -137,9 +150,9 @@ async function initializeBuilder() {
         console.log('🚀 Step 1: Selecting and registering systems...');
         selectAndRegisterSystems(featureFlags);
         
-        // Step 3: Initialize systems and expose them globally
+        // Step 3: Initialize systems and expose them globally  
         console.log('🚀 Step 2: Initializing core systems...');
-        initializeCoreSystems();
+        await initializeCoreSystems();
         
         // Step 4: Validate that enhanced component manager is available
         await validateEnhancedComponentManager();

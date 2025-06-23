@@ -193,6 +193,43 @@ class EnhancedComponentManager {
     }
 
     /**
+     * Updates a component's properties in the state.
+     * GEMINI FIX: Added missing updateComponent method required by design panel.
+     * @param {string} componentId - The ID of the component to update.
+     * @param {object} newProps - The new properties to apply to the component.
+     */
+    updateComponent(componentId, newProps) {
+        try {
+            this.logger.info('COMPONENT', `Updating component ${componentId}`, newProps);
+            
+            // Get the current component from state
+            const currentComponent = enhancedStateManager.getComponent(componentId);
+            
+            if (!currentComponent) {
+                this.logger.warn('COMPONENT', 'Cannot update - component not found', { componentId });
+                return;
+            }
+            
+            // Merge new props with existing props
+            const updatedComponent = {
+                ...currentComponent,
+                props: {
+                    ...currentComponent.props,
+                    ...newProps
+                }
+            };
+            
+            // Update the component in state
+            enhancedStateManager.updateComponent(componentId, updatedComponent);
+            
+            this.logger.info('COMPONENT', `Successfully updated component ${componentId}`);
+        } catch (error) {
+            this.logger.error('COMPONENT', `Failed to update component ${componentId}`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Opens edit panel for component
      * @param {string} componentId - The ID of the component to edit
      */
