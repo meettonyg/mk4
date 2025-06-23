@@ -626,6 +626,37 @@ class EnhancedComponentRenderer {
     }
     
     /**
+     * CRITICAL FIX: Add missing renderComponent method for system registrar interface
+     * This method provides the standardized interface expected by the system registrar
+     */
+    async renderComponent(componentConfig) {
+        try {
+            if (!componentConfig || (!componentConfig.type && !componentConfig.id)) {
+                throw new Error('Invalid component configuration: missing type or id');
+            }
+            
+            // Handle different input formats for maximum compatibility
+            const config = {
+                id: componentConfig.id || `component-${Date.now()}`,
+                type: componentConfig.type || componentConfig.componentType,
+                props: componentConfig.props || componentConfig.data || {}
+            };
+            
+            this.logger.debug('RENDER', `renderComponent called for ${config.type}`, config);
+            
+            // Use existing renderComponentWithLoader method
+            const result = await this.renderComponentWithLoader(config.id, config.type, config.props);
+            
+            this.logger.debug('RENDER', `renderComponent completed for ${config.type}`);
+            return result;
+            
+        } catch (error) {
+            this.logger.error('RENDER', 'renderComponent failed', error);
+            throw error;
+        }
+    }
+    
+    /**
      * Manual render method - forces a complete re-render of all components
      * GEMINI FIX: Added missing render method for manual triggering
      */
