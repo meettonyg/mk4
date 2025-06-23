@@ -41,6 +41,7 @@ class EnhancedStateManager {
         this.transactionHistory = [];
         this.isBatching = false;
         this.isValidationEnabled = true;
+        this.isNotifyingSubscribers = false; // CRITICAL FIX: Coordination flag
         this.logger = structuredLogger;
         this.eventBus = eventBus;
         
@@ -95,18 +96,30 @@ class EnhancedStateManager {
     }
 
     /**
-     * Notifies all subscribers of a state change with performance optimization.
+     * CRITICAL FIX: Enhanced subscriber notification with render coordination
+     * Prevents Race Condition 5 (concurrent state updates vs rendering)
      */
     notifySubscribers() {
         if (this.subscriberNotificationTimeout) {
             clearTimeout(this.subscriberNotificationTimeout);
         }
         
-        // Debounce subscriber notifications for performance
+        // CRITICAL FIX: Check if renderer is currently rendering to prevent conflicts
+        if (window.renderer && window.renderer.isRendering) {
+            this.logger.debug('STATE', 'Deferring notification - renderer is busy');
+            // Defer notification until render is complete
+            setTimeout(() => this.notifySubscribers(), 50);
+            return;
+        }
+        
+        // CRITICAL FIX: Coordinated notification with render locking
         this.subscriberNotificationTimeout = setTimeout(() => {
             const startTime = performance.now();
             
-            this.logger.debug('STATE', `Notifying ${this.subscribers.length} subscribers`);
+            // CRITICAL FIX: Signal that state notification is in progress
+            this.isNotifyingSubscribers = true;
+            
+            this.logger.debug('STATE', `Coordinated notification to ${this.subscribers.length} subscribers`);
             
             let errorCount = 0;
             this.subscribers.forEach((callback, index) => {
@@ -139,8 +152,10 @@ class EnhancedStateManager {
                 this.logger.warn('STATE', `Subscriber notification took ${duration.toFixed(2)}ms (slow)`);
             }
             
+            // CRITICAL FIX: Clear notification flag
+            this.isNotifyingSubscribers = false;
             this.subscriberNotificationTimeout = null;
-        }, 16); // ~60fps debounce
+        }, 8); // CRITICAL FIX: Faster debounce for better responsiveness
     }
 
     /**
@@ -649,6 +664,24 @@ class EnhancedStateManager {
     }
     
     /**
+     * CRITICAL FIX: Check if state manager is busy (for render coordination)
+     */
+    isBusy() {
+        return this.isBatching || this.isNotifyingSubscribers || this.transactionQueue.length > 0;
+    }
+    
+    /**
+     * CRITICAL FIX: Wait for state manager to be ready
+     */
+    async waitUntilReady(timeout = 1000) {
+        const start = performance.now();
+        while (this.isBusy() && (performance.now() - start) < timeout) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        return !this.isBusy();
+    }
+    
+    /**
      * Get performance statistics
      */
     getPerformanceStats() {
@@ -662,6 +695,8 @@ class EnhancedStateManager {
             queueSize: this.transactionQueue.length,
             historySize: this.transactionHistory.length,
             validationEnabled: this.isValidationEnabled,
+            isBusy: this.isBusy(), // CRITICAL FIX: Add busy status
+            isNotifyingSubscribers: this.isNotifyingSubscribers,
             averageTransactionTime: recentTransactions.length > 0 
                 ? (recentTransactions.reduce((sum, tx) => sum + (tx.duration || 0), 0) / recentTransactions.length).toFixed(2) + 'ms'
                 : 'N/A',

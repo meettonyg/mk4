@@ -141,20 +141,10 @@
     <?php include plugin_dir_path(__FILE__) . '../partials/component-library-modal.php'; ?>
     <?php include plugin_dir_path(__FILE__) . '../partials/template-library-modal.php'; ?>
 
-    <!-- Backup data script for race condition prevention -->
+    <!-- FIXED: Race condition eliminated via proper WordPress script loading + selective dequeuing -->
     <script type="text/javascript">
-        // Create backup guestifyData in case PHP localization has timing issues
-        window.guestifyDataBackup = window.guestifyData || {
-            pluginUrl: '<?php echo esc_js(GUESTIFY_PLUGIN_URL); ?>',
-            components: [],
-            validation: {
-                pluginUrl: true,
-                components: false,
-                timestamp: <?php echo time(); ?>
-            },
-            dataReady: true
-        };
-        window.guestifyDataReady = true;
-        console.log('📦 Backup guestifyData created in template');
+        // Template loaded timestamp for debugging
+        window.guestifyTemplateLoadedAt = <?php echo time(); ?>;
+        console.log('🏠 Builder template ready - using proper WordPress script loading with selective dequeuing');
     </script>
 </div>

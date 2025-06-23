@@ -195,12 +195,13 @@ class InitializationManager {
     }
 
     /**
-     * Validates that all prerequisites are available before starting
+     * CRITICAL FIX: Enhanced prerequisites validation
+     * Now ensures complete DOM readiness including all PHP includes
      */
     async validatePrerequisites() {
-        this.logger.info('INIT', 'Validating prerequisites');
+        this.logger.info('INIT', 'Validating prerequisites with enhanced DOM readiness check');
         
-        // Wait for DOM to be fully ready including all included PHP files
+        // CRITICAL FIX: Wait for DOM to be fully ready including all included PHP files
         if (document.readyState !== 'complete') {
             this.logger.debug('INIT', 'Waiting for document.readyState to be complete');
             const domStart = performance.now();
@@ -220,29 +221,22 @@ class InitializationManager {
             });
         }
         
-        // Quick check - if guestifyData is already available, skip waiting
-        if (window.guestifyData?.pluginUrl) {
-            this.logger.debug('INIT', 'guestifyData already available');
-        } else {
-            // Wait for guestifyData with shorter timeout for better performance
-            const guestifyDataResult = await this.logger.checkRaceCondition(
-                'INIT',
-                () => window.guestifyData?.pluginUrl,
-                { timeout: 500, expectedValue: true }
-            );
-            
-            if (!guestifyDataResult.success) {
-                // Try backup data
-                if (window.guestifyDataBackup?.pluginUrl) {
-                    this.logger.warn('INIT', 'Using backup guestifyData');
-                    window.guestifyData = window.guestifyDataBackup;
-                } else {
-                    throw new Error('guestifyData not available - PHP localization failed');
-                }
-            }
+        // CRITICAL FIX: Additional wait for all PHP includes to be processed
+        // This ensures modal HTML from PHP includes is fully loaded
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // CRITICAL FIX: guestifyData should now be immediately available due to proper WordPress script loading
+        if (!window.guestifyData?.pluginUrl) {
+            throw new Error('guestifyData not available - WordPress script loading failed. Check dequeuing function.');
         }
+        
+        this.logger.debug('INIT', 'guestifyData validated via proper WordPress loading', {
+            pluginUrl: window.guestifyData.pluginUrl,
+            timestamp: window.guestifyInitTimestamp,
+            loadMethod: 'wordpress-standard'
+        });
 
-        // Validate required DOM elements (quick check)
+        // CRITICAL FIX: Enhanced DOM validation for core elements
         const requiredElements = ['media-kit-preview', 'preview-container'];
         const missingElements = [];
         
@@ -259,17 +253,13 @@ class InitializationManager {
             throw new Error(`Required DOM elements not found: ${missingElements.join(', ')}`);
         }
 
-        // Validate plugin URL
-        if (!window.guestifyData.pluginUrl) {
-            throw new Error('Plugin URL not available in guestifyData');
-        }
-
         // Set global plugin URL for other modules
         window.GUESTIFY_PLUGIN_URL = window.guestifyData.pluginUrl;
         
-        this.logger.info('INIT', 'Prerequisites validated', {
+        this.logger.info('INIT', 'Prerequisites validated successfully', {
             guestifyData: !!window.guestifyData,
-            pluginUrl: window.guestifyData?.pluginUrl
+            pluginUrl: window.guestifyData?.pluginUrl,
+            domElements: requiredElements.length
         });
     }
 
@@ -414,10 +404,11 @@ class InitializationManager {
     }
 
     /**
-     * Waits for modal HTML elements to be fully loaded in the DOM
+     * CRITICAL FIX: Enhanced modal HTML loading validation
+     * Ensures all modal HTML from PHP includes is fully loaded
      */
     async waitForModalHTML() {
-        this.logger.info('MODAL', 'Waiting for modal HTML elements');
+        this.logger.info('MODAL', 'Enhanced validation for modal HTML elements');
         
         const modalIds = [
             'component-library-overlay',
@@ -426,8 +417,9 @@ class InitializationManager {
             'export-modal'
         ];
         
-        const maxWaitTime = 3000; // Increased to 3 seconds
-        const checkInterval = 100; // Increased interval
+        // CRITICAL FIX: Reduced timeout since PHP includes should be processed by now
+        const maxWaitTime = 2000;
+        const checkInterval = 50; // Faster checking
         const startTime = Date.now();
         
         while (Date.now() - startTime < maxWaitTime) {
@@ -435,36 +427,69 @@ class InitializationManager {
             const missingModals = [];
             
             for (const modalId of modalIds) {
-                if (document.getElementById(modalId)) {
-                    foundModals.push(modalId);
+                const element = document.getElementById(modalId);
+                if (element) {
+                    // CRITICAL FIX: Validate element is fully loaded (has child elements)
+                    if (element.children.length > 0) {
+                        foundModals.push(modalId);
+                    } else {
+                        missingModals.push(`${modalId} (empty)`);
+                    }
                 } else {
                     missingModals.push(modalId);
                 }
             }
             
-            this.logger.debug('MODAL', `Found ${foundModals.length}/${modalIds.length} modals`, {
+            this.logger.debug('MODAL', `Modal validation: ${foundModals.length}/${modalIds.length} ready`, {
                 found: foundModals,
                 missing: missingModals
             });
             
             if (missingModals.length === 0) {
-                this.logger.info('MODAL', 'All modal HTML elements found');
-                // Additional delay to ensure any dynamic content is ready
-                await new Promise(resolve => setTimeout(resolve, 200));
+                this.logger.info('MODAL', 'All modal HTML elements validated and ready');
+                // CRITICAL FIX: Additional validation for modal structure
+                await this.validateModalStructure(modalIds);
                 return;
             }
             
             await new Promise(resolve => setTimeout(resolve, checkInterval));
         }
         
-        // Log which modals are missing but continue
-        const finalCheck = modalIds.filter(id => !document.getElementById(id));
+        // CRITICAL FIX: Enhanced error reporting for missing modals
+        const finalCheck = modalIds.filter(id => {
+            const element = document.getElementById(id);
+            return !element || element.children.length === 0;
+        });
+        
         if (finalCheck.length > 0) {
-            this.logger.warn('MODAL', `Some modals not found after ${maxWaitTime}ms`, {
+            this.logger.warn('MODAL', `Modal validation failed after ${maxWaitTime}ms`, {
                 missing: finalCheck,
-                timeout: maxWaitTime
+                timeout: maxWaitTime,
+                domState: document.readyState
             });
-            this.logger.warn('MODAL', 'Continuing with available modals');
+            this.logger.warn('MODAL', 'Continuing - some modal functionality may be limited');
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Validate modal internal structure
+     */
+    async validateModalStructure(modalIds) {
+        this.logger.debug('MODAL', 'Validating modal internal structure');
+        
+        for (const modalId of modalIds) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                // Check for common modal elements
+                const hasContent = modal.querySelector('.modal-content') || modal.querySelector('.modal-body');
+                const hasCloseButton = modal.querySelector('[data-action="close"]') || modal.querySelector('.close');
+                
+                this.logger.debug('MODAL', `Modal structure: ${modalId}`, {
+                    children: modal.children.length,
+                    hasContent: !!hasContent,
+                    hasCloseButton: !!hasCloseButton
+                });
+            }
         }
     }
 

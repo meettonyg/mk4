@@ -85,6 +85,7 @@ class Guestify_Media_Kit_Builder {
     /**
      * If the current page is the media kit builder, this function hijacks the
      * template rendering to output a clean, isolated HTML document.
+     * FIXED: Proper WordPress script loading with selective dequeuing for isolation
      */
     public function isolated_builder_template_takeover() {
         // Change 'media-kit-builder' to the actual slug of your page
@@ -106,8 +107,11 @@ class Guestify_Media_Kit_Builder {
                 body, html { margin: 0; padding: 0; overflow: hidden; height: 100vh; width: 100vw; background: #1a1a1a; }
             </style>
             <?php
-            // Manually print the registered styles and scripts for a clean head
-            wp_print_styles('guestify-media-kit-builder-styles');
+            // PROPER FIX: Use WordPress standard approach
+            // guestify_isolate_builder_assets() will have already dequeued unwanted assets
+            // This ensures proper script loading order (fixes race condition)
+            // while only loading our allowed assets (maintains isolation)
+            wp_head();
             ?>
         </head>
         <body class="media-kit-builder-isolated">
@@ -115,8 +119,9 @@ class Guestify_Media_Kit_Builder {
             // Render the builder content via the shortcode
             echo do_shortcode('[guestify_media_kit]');
 
-            // Manually print the registered footer scripts
-            wp_print_scripts(['sortable-js', 'guestify-builder-script']);
+            // PROPER FIX: Use WordPress standard footer loading
+            // Only our allowed scripts will be output
+            wp_footer();
             ?>
         </body>
         </html>

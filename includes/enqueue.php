@@ -185,6 +185,18 @@ function guestify_media_kit_builder_enqueue_scripts() {
         'window.guestifyDataBackup = ' . wp_json_encode($localized_data) . '; window.guestifyDataReady = true;',
         'before'
     );
+    
+    // CRITICAL FIX: Actually ENQUEUE the scripts and styles on media kit page
+    if (is_page('guestify-media-kit')) {
+        wp_enqueue_style('guestify-media-kit-builder-styles');
+        wp_enqueue_script('sortable-js');
+        wp_enqueue_script('guestify-builder-script');
+        
+        // Log successful enqueuing for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('Media Kit Builder: Scripts and styles enqueued successfully');
+        }
+    }
 }
-// Run on a hook that fires before template_redirect.
-add_action('wp_loaded', 'guestify_media_kit_builder_enqueue_scripts');
+// CRITICAL FIX: Use proper wp_enqueue_scripts hook instead of wp_loaded
+add_action('wp_enqueue_scripts', 'guestify_media_kit_builder_enqueue_scripts');

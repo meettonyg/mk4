@@ -259,13 +259,7 @@ async function validatePrerequisites() {
     }
     
     if (!window.guestifyData?.pluginUrl) {
-        // Try backup data
-        if (window.guestifyDataBackup?.pluginUrl) {
-            console.warn('⚠️ Using backup guestifyData');
-            window.guestifyData = window.guestifyDataBackup;
-        } else {
-            throw new Error('guestifyData not available - PHP localization failed');
-        }
+        throw new Error('guestifyData not available - WordPress script loading failed. Check dequeuing function.');
     }
     
     // Set global plugin URL
