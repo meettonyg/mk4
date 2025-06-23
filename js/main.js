@@ -8,8 +8,8 @@
  * REFACTORED: Updated to use new system architecture that prevents circular dependencies
  */
 
-// Import the new system selection and initialization functions
-import { selectAndRegisterSystems } from './core/conditional-loader.js';
+// Import the enhanced system registration and initialization functions
+import { registerEnhancedSystems } from './core/enhanced-system-registrar.js';
 import { initializeCoreSystems } from './core/system-initializer.js';
 import { featureFlags } from './core/feature-flags.js';
 import { initializationManager } from './core/initialization-manager.js';
@@ -17,8 +17,7 @@ import { performanceMonitor } from './utils/performance-monitor.js';
 import { structuredLogger } from './utils/structured-logger.js';
 import { errorBoundary } from './utils/error-boundary.js';
 
-// GEMINI FIX: Import component managers directly for immediate global exposure
-import { componentManager } from './components/component-manager.js';
+// Import enhanced component manager directly for immediate global exposure
 import { enhancedComponentManager } from './core/enhanced-component-manager.js';
 
 // Expose global objects for debugging and monitoring
@@ -134,31 +133,29 @@ async function initializeBuilder() {
     const startTime = performance.now();
     
     try {
-        // GEMINI FIX: Expose component managers globally IMMEDIATELY
-        console.log('🔧 GEMINI FIX: Exposing component managers globally...');
-        window.componentManager = componentManager;
+        // Enhanced component manager exposure and direct system initialization
+        console.log('🔧 Exposing enhanced component manager globally...');
         window.enhancedComponentManager = enhancedComponentManager;
-        console.log('✅ Component managers exposed globally:', {
-            componentManager: !!window.componentManager,
+        console.log('✅ Enhanced component manager exposed globally:', {
             enhancedComponentManager: !!window.enhancedComponentManager
         });
         
         // Step 1: Validate prerequisites
         await validatePrerequisites();
         
-        // Step 2: Select and register systems (no circular dependencies)
-        console.log('🚀 Step 1: Selecting and registering systems...');
-        selectAndRegisterSystems(featureFlags);
+        // Step 2: Register enhanced systems with system registrar
+        console.log('🚀 Registering enhanced systems...');
+        registerEnhancedSystems();
         
-        // Step 3: Initialize systems and expose them globally  
-        console.log('🚀 Step 2: Initializing core systems...');
+        // Step 3: Initialize core systems (now that they're registered)
+        console.log('🚀 Initializing enhanced core systems...');
         await initializeCoreSystems();
         
         // Step 4: Validate that enhanced component manager is available
         await validateEnhancedComponentManager();
         
         // Step 5: Use initialization manager for remaining setup
-        console.log('🚀 Step 3: Running initialization manager sequence...');
+        console.log('🚀 Running initialization manager sequence...');
         const success = await runInitializationSequence();
         
         if (success) {
@@ -170,7 +167,7 @@ async function initializeBuilder() {
             
             console.log('\n✅ Media Kit Builder Ready!');
             console.log('📊 Logging commands available. Type mkLog.help() for a list.');
-            console.log('🔧 Debug tools: window.getSystemInfo(), window.systemRegistrar.list()');
+            console.log('🔧 Debug tools: window.getEnhancedSystemInfo(), window.systemRegistrar.list()');
             
             // Dispatch custom event for any external listeners
             window.dispatchEvent(new CustomEvent('mediaKitBuilderReady', {
@@ -255,25 +252,24 @@ async function validateEnhancedComponentManager() {
     console.log('🔍 Validating enhanced component manager availability...');
     
     const checks = {
-        windowComponentManager: !!window.componentManager,
         windowEnhancedComponentManager: !!window.enhancedComponentManager,
-        hasAddComponent: typeof window.componentManager?.addComponent === 'function',
-        hasInit: typeof window.componentManager?.init === 'function',
-        isEnhancedType: window.componentManager?.constructor?.name?.includes('Enhanced')
+        hasAddComponent: typeof window.enhancedComponentManager?.addComponent === 'function',
+        hasInit: typeof window.enhancedComponentManager?.init === 'function',
+        isEnhancedType: window.enhancedComponentManager?.constructor?.name?.includes('Enhanced')
     };
     
     console.log('📊 Enhanced Component Manager validation:', checks);
     
-    if (!checks.windowComponentManager) {
-        throw new Error('CRITICAL: No component manager available on window object');
+    if (!checks.windowEnhancedComponentManager) {
+        throw new Error('CRITICAL: No enhanced component manager available on window object');
     }
     
     if (!checks.hasAddComponent) {
-        throw new Error('CRITICAL: Component manager missing addComponent method');
+        throw new Error('CRITICAL: Enhanced component manager missing addComponent method');
     }
     
-    if (featureFlags.USE_ENHANCED_COMPONENT_MANAGER && !checks.isEnhancedType) {
-        console.warn('⚠️ Expected enhanced component manager but got different type');
+    if (!checks.isEnhancedType) {
+        console.warn('⚠️ Enhanced component manager type validation failed');
     }
     
     console.log('✅ Enhanced component manager validation passed');
@@ -339,7 +335,7 @@ function showInitializationError(error) {
                 </p>
                 <details style="margin-top: 20px; text-align: left;">
                     <summary style="cursor: pointer;">Debug Information</summary>
-                    <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 10px; overflow: auto;">${JSON.stringify(window.getSystemInfo?.() || {}, null, 2)}</pre>
+                    <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 10px; overflow: auto;">${JSON.stringify(window.getEnhancedSystemInfo?.() || {}, null, 2)}</pre>
                 </details>
             </div>
         `;
@@ -357,12 +353,12 @@ async function attemptFallbackInitialization(originalError) {
     
     try {
         // If systems are registered but initialization failed, try manual setup
-        if (window.componentManager && window.stateManager) {
-            console.log('🔄 Systems available, attempting manual initialization...');
+        if (window.enhancedComponentManager && window.stateManager) {
+            console.log('🔄 Enhanced systems available, attempting manual initialization...');
             
-            // Manual component manager initialization
-            if (typeof window.componentManager.init === 'function') {
-                window.componentManager.init();
+            // Manual enhanced component manager initialization
+            if (typeof window.enhancedComponentManager.init === 'function') {
+                window.enhancedComponentManager.init();
             }
             
             // Manual state restoration

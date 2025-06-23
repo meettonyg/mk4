@@ -56,11 +56,11 @@ function guestify_media_kit_builder_enqueue_scripts() {
         true
     );
 
-    // Register main builder script (as a module)
+    // Register main builder script (as a module) - jQuery dependency removed
     wp_register_script(
         'guestify-builder-script',
         $plugin_url . 'js/main.js',
-        ['jquery', 'sortable-js'], // Add jQuery dependency for ajaxurl
+        ['sortable-js'], // Removed jQuery dependency - enhanced system is jQuery-free
         $version,
         true
     );
@@ -155,7 +155,10 @@ function guestify_media_kit_builder_enqueue_scripts() {
             'pluginUrl' => !empty($plugin_url),
             'components' => is_array($components_array) && count($components_array) > 0,
             'schemas' => is_array($component_schemas) && count($component_schemas) > 0
-        )
+        ),
+        // Add jQuery-free flag to indicate enhanced system
+        'jqueryFree' => true,
+        'systemType' => 'enhanced'
     ];
     
     // Validate critical data before localizing

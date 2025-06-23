@@ -1,0 +1,50 @@
+/* Debug CSS for element controls */
+.element-controls {
+    position: absolute;
+    top: -30px;
+    right: 0;
+    background: #1a1a1a;
+    border-radius: 4px;
+    padding: 3px;
+    display: flex;
+    gap: 3px;
+    z-index: 100;
+    opacity: 0.95;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.editable-element:hover .element-controls,
+.editable-element--selected .element-controls {
+    display: flex !important;
+}
+
+.control-btn {
+    background: #333;
+    border: none;
+    color: #94a3b8;
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+    background: #0ea5e9;
+    color: white;
+}
+
+/* Add these styles to prevent any issues with pointer events */
+.editable-element {
+    pointer-events: auto !important;
+}
+
+/* Make sure the control buttons get clicks */
+.control-btn {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
