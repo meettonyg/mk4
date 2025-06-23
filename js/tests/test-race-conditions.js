@@ -2,6 +2,9 @@
  * Race Condition Test Suite for Media Kit Builder
  * Tests and validates fixes for all identified race conditions
  * 
+ * LEGACY TEST SUITE - For backward compatibility
+ * For enhanced testing, use: enhanced-race-condition-tests-2025.js
+ * 
  * Race Conditions Identified:
  * 1. PHP Localization vs JS Execution
  * 2. Module Loading vs System Initialization  
@@ -584,11 +587,67 @@ export const raceConditionTester = new RaceConditionTester();
 // Expose globally for easy testing
 window.raceTest = raceConditionTester;
 
-// Auto-run if specified
+// Enhanced test suite integration
+window.runBothRaceTests = async () => {
+    console.log('%c🔄 Running Both Legacy and Enhanced Race Tests', 'font-size: 16px; font-weight: bold; color: #9C27B0');
+    
+    console.log('\n1️⃣ Running Legacy Race Tests...');
+    const legacyResults = await raceConditionTester.runAllTests();
+    
+    console.log('\n2️⃣ Running Enhanced Race Tests...');
+    try {
+        const enhancedModule = await import(`${window.guestifyData?.pluginUrl || window.guestifyDataBackup?.pluginUrl}js/tests/enhanced-race-condition-tests-2025.js`);
+        const enhancedResults = await enhancedModule.enhancedRaceConditionTester.runEnhancedTestSuite();
+        
+        // Combined summary
+        const legacyTotal = legacyResults.passed + legacyResults.failed;
+        const enhancedTotal = enhancedResults.passed + enhancedResults.failed;
+        const totalTests = legacyTotal + enhancedTotal;
+        const totalPassed = legacyResults.passed + enhancedResults.passed;
+        const totalFailed = legacyResults.failed + enhancedResults.failed;
+        const overallRate = (totalPassed / totalTests * 100).toFixed(1);
+        
+        console.log('\n%c📊 COMBINED RACE TEST SUMMARY', 'font-weight: bold; font-size: 16px; color: #9C27B0');
+        console.log(`Total Tests: ${totalTests} | Passed: ${totalPassed} ✅ | Failed: ${totalFailed} ❌`);
+        console.log(`Overall Success Rate: ${overallRate}%`);
+        console.log(`Legacy: ${legacyResults.passed}/${legacyTotal} | Enhanced: ${enhancedResults.passed}/${enhancedTotal}`);
+        
+        if (totalFailed === 0) {
+            console.log('%c🎉 ALL RACE CONDITION TESTS PASSED!', 'color: #4CAF50; font-weight: bold; font-size: 14px');
+        } else {
+            console.log('%c⚠️ Some race condition tests failed', 'color: #FF9800; font-weight: bold; font-size: 14px');
+        }
+        
+        return {
+            legacy: legacyResults,
+            enhanced: enhancedResults,
+            combined: {
+                total: totalTests,
+                passed: totalPassed,
+                failed: totalFailed,
+                successRate: overallRate + '%'
+            }
+        };
+        
+    } catch (error) {
+        console.error('❌ Enhanced tests failed to load:', error);
+        return { legacy: legacyResults, enhanced: null, error: error.message };
+    }
+};
+
+// Auto-run logic with enhanced support
 if (window.location.search.includes('runRaceTests=true')) {
     window.addEventListener('load', () => {
         setTimeout(() => {
-            raceConditionTester.runAllTests();
+            if (window.location.search.includes('enhanced=true')) {
+                window.runBothRaceTests();
+            } else {
+                raceConditionTester.runAllTests();
+            }
         }, 2000);
     });
 }
+
+// Legacy compatibility commands
+console.log('%c🔗 Race Test Integration Ready', 'color: #9C27B0; font-weight: bold');
+console.log('Commands: runBothRaceTests(), window.raceTest.runAllTests()');
