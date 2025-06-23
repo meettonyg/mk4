@@ -14,23 +14,232 @@ if (!defined('ABSPATH')) {
 class GMKB_Enhanced_System {
     
     /**
-     * Constructor
+     * CRITICAL FIX: Enhanced constructor with early hooks integration
      */
     public function __construct() {
-        // Initialize hooks
-        add_action('init', array($this, 'init'));
+        // CRITICAL FIX: Ultra-early hooks for enhanced script manager integration
+        add_action('plugins_loaded', array($this, 'early_integration'), 2); // After script manager
+        add_action('init', array($this, 'init'), 10);
         add_action('admin_init', array($this, 'admin_init'));
         
         // Add custom capabilities
         add_action('admin_init', array($this, 'add_capabilities'));
+        
+        // CRITICAL FIX: Enhanced system coordination
+        add_action('wp_loaded', array($this, 'ensure_systems_ready'));
     }
     
     /**
-     * Initialize the system
+     * CRITICAL FIX: Enhanced early integration with better error handling
+     */
+    public function early_integration() {
+        // Use simple, safe detection at this early stage
+        $is_builder_page = $this->early_builder_page_detection();
+        
+        if ($is_builder_page) {
+            // Ensure coordination with enhanced script manager
+            $this->coordinate_with_script_manager();
+            
+            // Set enhanced system flags
+            if (!defined('GMKB_ENHANCED_SYSTEM_ACTIVE')) {
+                define('GMKB_ENHANCED_SYSTEM_ACTIVE', true);
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Enhanced System: Early integration active');
+            }
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Safe early builder page detection
+     */
+    private function early_builder_page_detection() {
+        // Use only safe detection methods at this early stage
+        $detection_methods = array(
+            // Method 1: Check if already detected by script manager
+            defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE,
+            
+            // Method 2: URL analysis (always safe)
+            isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false,
+            
+            // Method 3: Query parameters (always safe)
+            isset($_GET['page']) && in_array($_GET['page'], array('guestify-builder', 'guestify-media-kit')),
+            
+            // Method 4: Post ID detection (if available)
+            isset($_GET['p']) && function_exists('get_post_field') && get_post_field('post_name', $_GET['p']) === 'guestify-media-kit'
+        );
+        
+        return array_reduce($detection_methods, function($carry, $method) {
+            return $carry || $method;
+        }, false);
+    }
+    
+    /**
+     * CRITICAL FIX: Coordinate with enhanced script manager
+     */
+    private function coordinate_with_script_manager() {
+        // Ensure script manager is available
+        if (class_exists('GMKB_Enhanced_Script_Manager')) {
+            $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
+            
+            // Add coordination hooks
+            add_action('wp_enqueue_scripts', array($this, 'enhance_script_coordination'), 6);
+            add_action('wp_head', array($this, 'add_system_coordination_data'), 3);
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Enhanced script coordination
+     */
+    public function enhance_script_coordination() {
+        if (!$this->is_builder_page()) {
+            return;
+        }
+        
+        // Add enhanced system flags to scripts
+        $coordination_data = array(
+            'enhancedSystemActive' => true,
+            'coordinationVersion' => '1.0.0-phase1',
+            'systemIntegration' => array(
+                'scriptManager' => class_exists('GMKB_Enhanced_Script_Manager'),
+                'enhancedInit' => true,
+                'isolation' => defined('GMKB_BUILDER_PAGE'),
+                'earlyDetection' => defined('GMKB_BUILDER_PAGE')
+            )
+        );
+        
+        // Add inline script for coordination
+        $coordination_script = 'window.gmkbSystemCoordination = ' . wp_json_encode($coordination_data) . ';';
+        wp_add_inline_script('guestify-builder-script', $coordination_script, 'before');
+    }
+    
+    /**
+     * CRITICAL FIX: Add system coordination data to head
+     */
+    public function add_system_coordination_data() {
+        if (!$this->is_builder_page()) {
+            return;
+        }
+        
+        ?>
+        <script id="gmkb-system-coordination">
+            /* CRITICAL FIX: System coordination data */
+            window.gmkbSystemCoordination = window.gmkbSystemCoordination || {};
+            window.gmkbSystemCoordination.headInjected = true;
+            window.gmkbSystemCoordination.timestamp = <?php echo time(); ?>;
+            
+            console.log('🤝 GMKB Enhanced System: Coordination active');
+        </script>
+        <?php
+    }
+    
+    /**
+     * CRITICAL FIX: Enhanced system readiness check with error handling
+     */
+    public function ensure_systems_ready() {
+        try {
+            if (!$this->safe_is_builder_page()) {
+                return;
+            }
+            
+            // Validate system readiness
+            $system_checks = array(
+                'enhanced_script_manager' => class_exists('GMKB_Enhanced_Script_Manager'),
+                'builder_page_detected' => defined('GMKB_BUILDER_PAGE'),
+                'enhanced_system_active' => defined('GMKB_ENHANCED_SYSTEM_ACTIVE'),
+                'wp_loaded' => true
+            );
+            
+            $all_ready = array_reduce($system_checks, function($carry, $check) {
+                return $carry && $check;
+            }, true);
+            
+            if ($all_ready) {
+                if (!defined('GMKB_SYSTEMS_READY')) {
+                    define('GMKB_SYSTEMS_READY', true);
+                }
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Enhanced System: All systems ready for initialization');
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Enhanced System: System readiness check failed: ' . wp_json_encode($system_checks));
+                }
+            }
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Enhanced System: Error in ensure_systems_ready: ' . $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Enhanced initialization with error handling
      */
     public function init() {
-        // Register any additional hooks needed
-        $this->register_hooks();
+        try {
+            // Register any additional hooks needed
+            $this->register_hooks();
+            
+            // CRITICAL FIX: Enhanced initialization coordination (with safe detection)
+            if ($this->safe_is_builder_page()) {
+                $this->setup_enhanced_environment();
+            }
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Enhanced System Init Error: ' . $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Safe builder page detection for init hook
+     */
+    private function safe_is_builder_page() {
+        try {
+            return $this->is_builder_page();
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Enhanced System: Fallback to simple detection due to error: ' . $e->getMessage());
+            }
+            
+            // Fallback to simple detection
+            return $this->early_builder_page_detection();
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Setup enhanced environment
+     */
+    private function setup_enhanced_environment() {
+        // Add enhanced body classes
+        add_filter('body_class', function($classes) {
+            $classes[] = 'gmkb-enhanced-system';
+            $classes[] = 'gmkb-phase1-active';
+            return $classes;
+        });
+        
+        // Add enhanced admin notices for debug
+        if (defined('WP_DEBUG') && WP_DEBUG && is_admin()) {
+            add_action('admin_notices', array($this, 'show_enhanced_system_notice'));
+        }
+    }
+    
+    /**
+     * CRITICAL FIX: Show enhanced system notice
+     */
+    public function show_enhanced_system_notice() {
+        if (!$this->is_builder_page()) {
+            return;
+        }
+        
+        ?>
+        <div class="notice notice-success is-dismissible">
+            <p><strong>GMKB Enhanced System Active:</strong> Phase 1 fixes are running with improved race condition prevention.</p>
+        </div>
+        <?php
     }
     
     /**
@@ -131,26 +340,53 @@ class GMKB_Enhanced_System {
     }
     
     /**
-    * Check if current page is builder
+    * CRITICAL FIX: Enhanced builder page detection with proper WordPress hook timing
     */
 private function is_builder_page() {
-    // Check multiple possible page names
+    // First check if already detected early
+    if (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE) {
+        return true;
+    }
+    
+    // Check multiple possible page detection methods
+    $detection_methods = array();
+    
+    // Method 1: URL-based detection (always available)
+    if (isset($_SERVER['REQUEST_URI'])) {
+        $detection_methods[] = strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false;
+    }
+    
+    // Method 2: Query parameter detection (always available)
     if (isset($_GET['page'])) {
-        $page = $_GET['page'];
-        return in_array($page, array('guestify-builder', 'guestify-media-kit'));
+        $detection_methods[] = in_array($_GET['page'], array('guestify-builder', 'guestify-media-kit'));
     }
     
-    $screen = get_current_screen();
-    if ($screen) {
-        return in_array($screen->id, array(
-            'toplevel_page_guestify-builder',
-            'toplevel_page_guestify-media-kit',
-            'guestify-media-kit'
-        ));
+    // Method 3: WordPress page function (if available)
+    if (function_exists('is_page')) {
+        $detection_methods[] = is_page('guestify-media-kit') || is_page('media-kit');
     }
     
-    // Also check if we're on the media kit page
-    return is_page('guestify-media-kit');
+    // Method 4: Admin screen detection (only if function exists and we're in admin)
+    if (function_exists('get_current_screen') && is_admin()) {
+        $screen = get_current_screen();
+        if ($screen) {
+            $detection_methods[] = in_array($screen->id, array(
+                'toplevel_page_guestify-builder',
+                'toplevel_page_guestify-media-kit',
+                'guestify-media-kit'
+            ));
+        }
+    }
+    
+    // Method 5: Post slug detection (if available)
+    if (function_exists('get_query_var')) {
+        $detection_methods[] = get_query_var('pagename') === 'guestify-media-kit';
+    }
+    
+    // Return true if any detection method succeeds
+    return array_reduce($detection_methods, function($carry, $method) {
+        return $carry || $method;
+    }, false);
 }
     
     /**

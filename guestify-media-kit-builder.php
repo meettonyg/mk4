@@ -83,46 +83,178 @@ class Guestify_Media_Kit_Builder {
     }
 
     /**
-     * If the current page is the media kit builder, this function hijacks the
-     * template rendering to output a clean, isolated HTML document.
-     * FIXED: Proper WordPress script loading with selective dequeuing for isolation
+     * CRITICAL FIX: Enhanced isolated builder template takeover
+     * - Implements early detection and proper isolation
+     * - Uses enhanced script manager for race condition prevention
+     * - Adds comprehensive error handling and recovery
      */
     public function isolated_builder_template_takeover() {
-        // Change 'media-kit-builder' to the actual slug of your page
-        if ( ! is_page('guestify-media-kit') ) {
+        // Enhanced detection with multiple methods
+        $is_builder_page = is_page('guestify-media-kit') || 
+                          is_page('media-kit') ||
+                          (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE);
+        
+        if (!$is_builder_page) {
             return;
         }
-
-        // Set up the necessary script and style handles
-        guestify_media_kit_builder_enqueue_scripts();
-
+        
+        // Ensure enhanced script manager is active
+        $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
+        $manager_status = $script_manager->get_status();
+        
+        // Log template takeover for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Enhanced template takeover active for isolated builder');
+        }
+        
         ?>
         <!DOCTYPE html>
-        <html <?php language_attributes(); ?>>
+        <html <?php language_attributes(); ?> class="gmkb-isolated">
         <head>
             <meta charset="<?php bloginfo( 'charset' ); ?>" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title><?php wp_title(); ?></title>
-            <style>
-                body, html { margin: 0; padding: 0; overflow: hidden; height: 100vh; width: 100vw; background: #1a1a1a; }
+            <meta name="robots" content="noindex, nofollow" />
+            <title>Media Kit Builder - <?php bloginfo('name'); ?></title>
+            
+            <!-- CRITICAL FIX: Enhanced isolation styles -->
+            <style id="gmkb-isolation-styles">
+                /* Reset and isolation */
+                body, html { 
+                    margin: 0; 
+                    padding: 0; 
+                    overflow: hidden; 
+                    height: 100vh; 
+                    width: 100vw; 
+                    background: #1a1a1a;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                }
+                
+                /* Phase 1 ready indicator */
+                .gmkb-ready::before {
+                    content: 'Phase 1 Enhanced \2713';
+                    position: fixed;
+                    top: 5px;
+                    left: 5px;
+                    background: #10b981;
+                    color: white;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-size: 10px;
+                    z-index: 10002;
+                    font-weight: bold;
+                }
+                
+                /* Enhanced loading states */
+                .gmkb-initializing {
+                    position: relative;
+                }
+                
+                .gmkb-initializing::after {
+                    content: 'Initializing Enhanced Builder...';
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.9);
+                    color: #10b981;
+                    padding: 20px 30px;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    z-index: 10003;
+                    border: 2px solid #10b981;
+                }
+                
+                /* Hide WordPress admin bar */
+                #wpadminbar { display: none !important; }
+                html { margin-top: 0 !important; }
             </style>
+            
             <?php
-            // PROPER FIX: Use WordPress standard approach
-            // guestify_isolate_builder_assets() will have already dequeued unwanted assets
-            // This ensures proper script loading order (fixes race condition)
-            // while only loading our allowed assets (maintains isolation)
+            // CRITICAL FIX: Enhanced WordPress head with script manager integration
+            // The enhanced script manager handles:
+            // 1. Ultra-early data injection (priority 1)
+            // 2. Comprehensive data preparation (priority 2) 
+            // 3. Script isolation and dequeuing (priority 1000)
+            // 4. Error recovery systems (priority 999-1001)
             wp_head();
             ?>
+            
+            <!-- Enhanced template ready indicator -->
+            <script type="text/javascript">
+                window.gmkbTemplateEnhanced = true;
+                window.gmkbTemplateLoadTime = <?php echo time(); ?>;
+                console.log('🏠 Enhanced Builder Template Ready', {
+                    managerStatus: <?php echo wp_json_encode($manager_status); ?>,
+                    templateLoadTime: window.gmkbTemplateLoadTime,
+                    isolation: true,
+                    phase1: true
+                });
+            </script>
         </head>
-        <body class="media-kit-builder-isolated">
+        <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing">
+            
+            <!-- Enhanced error boundary for template -->
+            <div id="gmkb-template-error-boundary" style="display: none;">
+                <div style="
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: #fee;
+                    border: 2px solid #f88;
+                    padding: 30px;
+                    border-radius: 8px;
+                    text-align: center;
+                    color: #d44;
+                    max-width: 500px;
+                    z-index: 10004;
+                ">
+                    <h2>⚠️ Template Error</h2>
+                    <p>The builder template encountered an error.</p>
+                    <button onclick="location.reload()" style="
+                        background: #d44;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        margin-top: 10px;
+                    ">Reload Builder</button>
+                </div>
+            </div>
+            
             <?php
-            // Render the builder content via the shortcode
-            echo do_shortcode('[guestify_media_kit]');
-
-            // PROPER FIX: Use WordPress standard footer loading
-            // Only our allowed scripts will be output
+            try {
+                // Render the enhanced builder content
+                echo do_shortcode('[guestify_media_kit]');
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Template Error: ' . $e->getMessage());
+                }
+                
+                echo '<script>document.getElementById("gmkb-template-error-boundary").style.display = "block";</script>';
+            }
+            
+            // CRITICAL FIX: Enhanced WordPress footer with comprehensive systems
+            // Footer includes:
+            // - Backup data validation (priority 999)
+            // - Error recovery systems (priority 1000)
+            // - Diagnostic tools (priority 1001)
             wp_footer();
             ?>
+            
+            <!-- Template completion indicator -->
+            <script type="text/javascript">
+                window.gmkbTemplateComplete = true;
+                console.log('✅ Enhanced Template Render Complete');
+                
+                // Remove error boundary if no errors occurred
+                if (!window.gmkbPhase1?.errors?.length) {
+                    const errorBoundary = document.getElementById('gmkb-template-error-boundary');
+                    if (errorBoundary) errorBoundary.remove();
+                }
+            </script>
         </body>
         </html>
         <?php
