@@ -37,8 +37,8 @@ class GlobalSettings {
         structuredLogger.info('MODAL', 'Setting up Global Settings');
         
         try {
-            // Assign DOM elements
-            this.modal = document.getElementById('global-settings-overlay') || document.getElementById('global-settings-modal');
+            // Assign DOM elements - FIX: Search for correct modal ID first
+            this.modal = document.getElementById('global-settings-modal') || document.getElementById('global-settings-overlay');
             this.openButton = document.getElementById('global-theme-btn') || document.getElementById('global-settings-button');
             this.closeButton = document.getElementById('close-global-settings');
             
@@ -48,9 +48,18 @@ class GlobalSettings {
             // Validate required elements
             if (!this.modal) {
                 structuredLogger.error('MODAL', 'Global Settings modal not found', null, {
-                    searchedIds: ['global-settings-overlay', 'global-settings-modal']
+                    searchedIds: ['global-settings-modal', 'global-settings-overlay'],
+                    availableModals: Array.from(document.querySelectorAll('[id*="global"], [id*="settings"], [id*="modal"]')).map(el => el.id).filter(id => id)
                 });
                 throw new Error('Global Settings: Modal not found');
+            }
+            
+            if (!this.openButton) {
+                structuredLogger.error('MODAL', 'Global Settings open button not found', null, {
+                    searchedIds: ['global-theme-btn', 'global-settings-button'],
+                    availableButtons: Array.from(document.querySelectorAll('[id*="global"], [id*="theme"], [id*="settings"]')).map(el => el.id).filter(id => id)
+                });
+                throw new Error('Global Settings: Open button not found');
             }
             
             structuredLogger.debug('MODAL', 'Global Settings DOM elements found', {
@@ -163,26 +172,50 @@ class GlobalSettings {
     gatherSettings() {
         const settings = {};
         
-        // Get form values if form exists
-        if (this.form) {
-            const formData = new FormData(this.form);
-            Object.assign(settings, Object.fromEntries(formData.entries()));
+        try {
+            // Get form values if form exists
+            if (this.form) {
+                // Get all input, select, and textarea elements
+                const inputs = this.form.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    const key = input.name || input.id;
+                    if (key) {
+                        if (input.type === 'checkbox') {
+                            settings[key] = input.checked;
+                        } else if (input.type === 'radio') {
+                            if (input.checked) {
+                                settings[key] = input.value;
+                            }
+                        } else if (input.type === 'range') {
+                            settings[key] = parseInt(input.value);
+                        } else {
+                            settings[key] = input.value;
+                        }
+                    }
+                });
+            }
+            
+            // Get selected palette
+            const activePalette = this.modal.querySelector('.palette-option--active');
+            if (activePalette) {
+                settings.colorPalette = activePalette.dataset.palette;
+            }
+            
+            structuredLogger.debug('MODAL', 'Gathered global settings', settings);
+            
+        } catch (error) {
+            structuredLogger.error('MODAL', 'Error gathering global settings', error);
         }
         
-        // Get selected palette
-        const activePalette = this.modal.querySelector('.palette-option--active');
-        if (activePalette) {
-            settings.colorPalette = activePalette.dataset.palette;
-        }
-        
-        structuredLogger.debug('MODAL', 'Gathered global settings', settings);
         return settings;
     }
 
     show() {
         if (this.modal) {
             structuredLogger.debug('MODAL', 'Showing Global Settings modal');
-            showModal('global-settings-modal'); // Pass the ID string
+            // FIX: Use the actual modal element or its ID for consistency
+            const modalId = this.modal.id || 'global-settings-modal';
+            showModal(modalId);
         } else {
             structuredLogger.error('MODAL', 'Cannot show Global Settings - modal not initialized');
         }
@@ -191,20 +224,47 @@ class GlobalSettings {
     hide() {
         if (this.modal) {
             structuredLogger.debug('MODAL', 'Hiding Global Settings modal');
-            hideModal('global-settings-modal'); // Pass the ID string
+            // FIX: Use the actual modal element or its ID for consistency  
+            const modalId = this.modal.id || 'global-settings-modal';
+            hideModal(modalId);
         }
     }
 
     populateForm() {
-        // FIX: Use the enhancedStateManager to get the current global settings.
-        const settings = enhancedStateManager.getState().globalSettings;
-        if (settings) {
-            for (const key in settings) {
-                const input = this.form.querySelector(`[name="${key}"]`);
-                if (input) {
-                    input.value = settings[key];
+        try {
+            // FIX: Use the enhancedStateManager to get the current global settings.
+            const state = enhancedStateManager.getState();
+            const settings = state?.globalSettings || {};
+            
+            if (Object.keys(settings).length > 0 && this.form) {
+                structuredLogger.debug('MODAL', 'Populating Global Settings form', settings);
+                
+                for (const key in settings) {
+                    const input = this.form.querySelector(`[name="${key}"], #${key}`);
+                    if (input) {
+                        if (input.type === 'checkbox') {
+                            input.checked = settings[key];
+                        } else {
+                            input.value = settings[key];
+                        }
+                    }
                 }
+                
+                // Handle color palette selection
+                if (settings.colorPalette) {
+                    const paletteOptions = this.modal.querySelectorAll('.palette-option');
+                    paletteOptions.forEach(option => {
+                        option.classList.remove('palette-option--active');
+                        if (option.dataset.palette === settings.colorPalette) {
+                            option.classList.add('palette-option--active');
+                        }
+                    });
+                }
+            } else {
+                structuredLogger.debug('MODAL', 'No saved global settings found, using defaults');
             }
+        } catch (error) {
+            structuredLogger.error('MODAL', 'Error populating Global Settings form', error);
         }
     }
 

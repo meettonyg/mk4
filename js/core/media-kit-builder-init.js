@@ -16,6 +16,12 @@ import {
     setupComponentLibrary
 } from '../modals/component-library.js';
 import {
+    setupExportSystem
+} from '../modals/export.js';
+import {
+    setupShareSystem
+} from '../services/share-service.js';
+import {
     initializeLayout,
     updateEmptyState
 } from '../ui/layout.js';
@@ -100,10 +106,33 @@ class AppInitializer {
      */
     initializeFeatureSystems() {
         this.logger.debug?.('Initializing feature systems...') || console.log('Initializing feature systems...');
-        setupComponentLibrary();
-        templateLoader.init();
-        globalSettings.init();
-        this.logger.debug?.('Feature systems initialized.') || console.log('Feature systems initialized.');
+        
+        try {
+            // Initialize modal systems
+            this.logger.debug?.('Setting up component library...') || console.log('Setting up component library...');
+            setupComponentLibrary();
+            
+            this.logger.debug?.('Setting up export system...') || console.log('Setting up export system...');
+            setupExportSystem();
+            
+            this.logger.debug?.('Setting up share system...') || console.log('Setting up share system...');
+            setupShareSystem();
+            
+            // Initialize other feature systems
+            this.logger.debug?.('Initializing template loader...') || console.log('Initializing template loader...');
+            templateLoader.init();
+            
+            this.logger.debug?.('Initializing global settings...') || console.log('Initializing global settings...');
+            globalSettings.init();
+            
+            this.logger.debug?.('✅ All feature systems initialized successfully.') || console.log('✅ All feature systems initialized successfully.');
+            
+        } catch (error) {
+            this.logger.error?.('❌ Feature systems initialization failed:', error) || console.error('❌ Feature systems initialization failed:', error);
+            
+            // Continue with partial initialization - don't let modal failures break entire app
+            this.logger.warn?.('⚠️ Continuing with partial feature system initialization') || console.warn('⚠️ Continuing with partial feature system initialization');
+        }
     }
     
     /**
