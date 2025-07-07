@@ -281,7 +281,7 @@ class GMKB_Enhanced_Script_Manager {
             
             // Log successful enqueuing for debugging
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('Media Kit Builder: Scripts and styles enqueued successfully');
+                error_log('Media Kit Builder: Scripts and styles enqueued successfully (root-level error handling)');
             }
         }
     }

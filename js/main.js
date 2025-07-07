@@ -17,6 +17,10 @@ import { performanceMonitor } from './utils/performance-monitor.js';
 import { structuredLogger } from './utils/structured-logger.js';
 import { errorBoundary } from './utils/error-boundary.js';
 
+// CRITICAL FIX: Import enhanced error handler to expose global functions
+import './utils/enhanced-error-handler.js';
+console.log('✅ Enhanced Error Handler imported - global functions available');
+
 // Import enhanced component manager directly for immediate global exposure
 import { enhancedComponentManager } from './core/enhanced-component-manager.js';
 

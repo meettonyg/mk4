@@ -984,6 +984,74 @@ export const enhancedErrorHandler = new EnhancedErrorHandler();
 if (typeof window !== 'undefined') {
     window.enhancedErrorHandler = enhancedErrorHandler;
     
+    // CRITICAL FIX: Expose global functions that template expects
+    window.setupGlobalErrorListeners = function() {
+        console.log('🔧 Task 4: Setting up global error listeners via enhanced error handler...');
+        // The enhanced error handler already sets up global listeners in its constructor
+        // This function exists for template compatibility
+        return true;
+    };
+    
+    window.initializeEnhancedErrorHandling = function() {
+        console.log('🛡️ Task 4: Initializing Enhanced Error Handling System...');
+        
+        try {
+            // Enhanced error handler is already initialized as singleton
+            if (window.enhancedErrorHandler) {
+                console.log('✅ Task 4: Enhanced Error Handler already initialized and ready');
+                
+                // Emit initialization event for template
+                const event = new CustomEvent('enhancedErrorHandlingReady', {
+                    detail: { 
+                        timestamp: Date.now(), 
+                        version: '2.3.0-root-fix',
+                        handler: window.enhancedErrorHandler
+                    }
+                });
+                window.dispatchEvent(event);
+                
+                return true;
+            } else {
+                console.error('❌ Task 4: Enhanced Error Handler not available');
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ Task 4: Failed to initialize Enhanced Error Handling:', error);
+            return false;
+        }
+    };
+    
+    // Additional global functions for template compatibility
+    window.handleGlobalError = function(error, context) {
+        if (window.enhancedErrorHandler?.handleGlobalError) {
+            window.enhancedErrorHandler.handleGlobalError(error, context);
+        } else {
+            console.error('Global Error (fallback):', error, context);
+        }
+    };
+    
+    window.handleMKCGError = function(error, context) {
+        if (window.enhancedErrorHandler?.handleErrorWithUserGuidance) {
+            window.enhancedErrorHandler.handleErrorWithUserGuidance('MKCG', error, {
+                ...context,
+                errorType: 'data-connection'
+            });
+        } else {
+            console.error('MKCG Error (fallback):', error, context);
+        }
+    };
+    
+    window.handleComponentError = function(error, context) {
+        if (window.enhancedErrorHandler?.handleErrorWithUserGuidance) {
+            window.enhancedErrorHandler.handleErrorWithUserGuidance('COMPONENT', error, {
+                ...context,
+                errorType: 'component-generation'
+            });
+        } else {
+            console.error('Component Error (fallback):', error, context);
+        }
+    };
+    
     // Enhanced debugging commands
     window.errorDebug = {
         handler: enhancedErrorHandler,
