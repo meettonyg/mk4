@@ -767,7 +767,7 @@ function createComponentCard(component, isPremium = false) {
 function createComponentIcon(component) {
     if (component.icon) {
         if (component.icon.endsWith('.svg')) {
-            // Handle SVG files with proper path resolution
+            // Handle SVG files with proper path resolution and enhanced error handling
             const componentDir = component.directory || component.name || component.type;
             let iconPath;
             
@@ -779,21 +779,148 @@ function createComponentIcon(component) {
                 iconPath = `/wp-content/plugins/guestify-media-kit-builder/components/${componentDir}/${component.icon}`;
             }
             
-            // Add error handling to fallback to default icon if SVG fails to load
-            const defaultIcon = createDefaultIcon();
+            // ENHANCED: Check if SVG exists before trying to load it
+            // Create a more robust fallback that doesn't generate 404 errors
+            const fallbackIcon = createCategoryIcon(component.category || 'general', component.type || component.name);
             
             return `<img src="${iconPath}" alt="${component.name || component.type} icon" class="component-icon" 
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline'; console.log('SVG not found: ${component.icon}')" />
-                     <span style="display:none;">${defaultIcon}</span>`;
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex'; this.nextElementSibling.style.alignItems='center'; this.nextElementSibling.style.justifyContent='center'; console.warn('Icon not found for ${component.type || component.name}: ${component.icon}')" 
+                     onload="console.log('✅ Icon loaded: ${component.icon}')" />
+                     <div style="display:none; width: 32px; height: 32px; color: #6B7280;">${fallbackIcon}</div>`;
         } else if (component.icon.startsWith('fa-')) {
             // Handle FontAwesome classes (with or without fa- prefix)
-            return `<i class="fa ${component.icon}"></i>`;
+            return `<i class="fa ${component.icon}" style="font-size: 24px; color: #6B7280;"></i>`;
         } else {
             // Handle other icon formats or assume FontAwesome
-            return `<i class="fa fa-${component.icon}"></i>`;
+            return `<i class="fa fa-${component.icon}" style="font-size: 24px; color: #6B7280;"></i>`;
         }
     }
-    return createDefaultIcon();
+    return createCategoryIcon(component.category || 'general', component.type || component.name);
+}
+
+/**
+ * Creates a category-specific fallback icon for components
+ * ENHANCED: Provides intelligent icons based on component category and type
+ * @param {string} category - The component category
+ * @param {string} componentType - Optional specific component type for more targeted icons
+ * @returns {string} SVG icon HTML
+ */
+function createCategoryIcon(category, componentType = '') {
+    // Category-specific icon mappings
+    const categoryIcons = {
+        'essential': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        `,
+        'media': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21,15 16,10 5,21"></polyline>
+            </svg>
+        `,
+        'social': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M17 2v6l-2-1.5L13 8V2"></path>
+                <path d="M9 9H4s0 6 4 6 4-6 4-6"></path>
+                <path d="M20 9h-5s0 6 4 6 5-6 5-6"></path>
+            </svg>
+        `,
+        'premium': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="12,2 15.09,8.26 22,9 17,14.74 18.18,21.02 12,17.77 5.82,21.02 7,14.74 2,9 8.91,8.26 12,2"></polygon>
+            </svg>
+        `,
+        'biography': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        `,
+        'hero': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+                <path d="M12 14l3-3 3 3"></path>
+            </svg>
+        `,
+        'topics': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+        `,
+        'stats': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="12" y1="20" x2="12" y2="10"></line>
+                <line x1="18" y1="20" x2="18" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="16"></line>
+            </svg>
+        `,
+        'contact': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+        `,
+        'authority': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 2l3.09 6.26L22 9l-5 4.74L18.18 21.02 12 17.77l-6.18 3.25L7 14.74 2 9l6.91-1.74L12 2z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        `
+    };
+    
+    // Component-specific overrides for better precision
+    const componentSpecificIcons = {
+        'authority-hook': categoryIcons['authority'],
+        'social': categoryIcons['social'],
+        'stats': categoryIcons['stats'],
+        'photo-gallery': categoryIcons['media'],
+        'video-intro': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="5,3 19,12 5,21"></polygon>
+            </svg>
+        `,
+        'testimonials': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                <path d="M13 8H7"></path>
+                <path d="M17 12H7"></path>
+            </svg>
+        `,
+        'questions': `
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        `
+    };
+    
+    // Try component-specific first, then category, then default
+    if (componentSpecificIcons[componentType]) {
+        return componentSpecificIcons[componentType];
+    }
+    
+    if (categoryIcons[category]) {
+        return categoryIcons[category];
+    }
+    
+    // Ultimate fallback - generic component icon
+    return `
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
+            <circle cx="9" cy="9" r="2"></circle>
+            <path d="M21 15l-3.086-3.086a2 2 0 00-2.828 0L6 21"></path>
+        </svg>
+    `;
 }
 
 /**
@@ -801,13 +928,7 @@ function createComponentIcon(component) {
  * FIXED: Removed string escaping that was causing malformed SVG attributes
  */
 function createDefaultIcon() {
-    return `
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="component-icon-default">
-            <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
-            <circle cx="9" cy="9" r="2"></circle>
-            <path d="M21 15l-3.086-3.086a2 2 0 00-2.828 0L6 21"></path>
-        </svg>
-    `;
+    return createCategoryIcon('general');
 }
 
 /**

@@ -143,7 +143,7 @@ export class MKCGDataMapper {
 
         // Data Quality Scorer for intelligent prioritization
         this.dataQualityScorer = {
-            scoreDataQuality: (mappedProps, componentType) => {
+            scoreDataQuality: function(mappedProps, componentType) {
                 let totalScore = 0;
                 let maxPossibleScore = 0;
                 const fieldScores = {};
@@ -172,9 +172,9 @@ export class MKCGDataMapper {
                     completeness: Object.keys(mappedProps).length / Object.keys(schema.settings).length,
                     recommendation: this.getQualityRecommendation(overallScore)
                 };
-            },
+            }.bind(this),
             
-            scoreFieldQuality: (value, fieldConfig) => {
+            scoreFieldQuality: function(value, fieldConfig) {
                 if (!value) return 0;
                 
                 const stringValue = String(value).trim();
@@ -203,15 +203,15 @@ export class MKCGDataMapper {
                 }
                 
                 return Math.min(score, 100);
-            },
+            }.bind(this),
             
-            getQualityRecommendation: (score) => {
+            getQualityRecommendation: function(score) {
                 if (score >= 80) return 'excellent';
                 if (score >= 60) return 'good';
                 if (score >= 40) return 'fair';
                 if (score >= 20) return 'poor';
                 return 'very-poor';
-            }
+            }.bind(this)
         };
 
         // Priority Engine for intelligent component ordering
@@ -835,6 +835,52 @@ export class MKCGDataMapper {
     // Keep original getNestedValue for backward compatibility
     getNestedValue(obj, path) {
         return this.getNestedValueEnhanced(obj, path);
+    }
+
+    /**
+     * CRITICAL FIX: scoreFieldQuality method at class level
+     * Delegates to dataQualityScorer if available, provides fallback otherwise
+     */
+    scoreFieldQuality(value, fieldConfig) {
+        // If the advanced analyzer is available, use it
+        if (this.dataQualityScorer && typeof this.dataQualityScorer.scoreFieldQuality === 'function') {
+            return this.dataQualityScorer.scoreFieldQuality(value, fieldConfig);
+        }
+        
+        // Fallback implementation
+        if (!value) return 0;
+        
+        const stringValue = String(value).trim();
+        let score = 50; // Base score for having any value
+        
+        // Length appropriateness
+        if (fieldConfig.minLength && stringValue.length >= fieldConfig.minLength) score += 20;
+        if (fieldConfig.maxLength && stringValue.length <= fieldConfig.maxLength) score += 20;
+        
+        // Content quality
+        if (stringValue.length > 10) score += 10; // Substantial content
+        if (!/placeholder|example|sample/i.test(stringValue)) score += 10; // Not placeholder
+        if (stringValue.split(' ').length > 3) score += 10; // Multiple words
+        
+        return Math.min(score, 100);
+    }
+
+    /**
+     * CRITICAL FIX: getQualityRecommendation method at class level
+     * Delegates to dataQualityScorer if available, provides fallback otherwise
+     */
+    getQualityRecommendation(score) {
+        // If the advanced analyzer is available, use it
+        if (this.dataQualityScorer && typeof this.dataQualityScorer.getQualityRecommendation === 'function') {
+            return this.dataQualityScorer.getQualityRecommendation(score);
+        }
+        
+        // Fallback implementation
+        if (score >= 80) return 'excellent';
+        if (score >= 60) return 'good';
+        if (score >= 40) return 'fair';
+        if (score >= 20) return 'poor';
+        return 'very-poor';
     }
 
     // Keep original methods with enhanced versions

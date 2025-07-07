@@ -24,7 +24,8 @@
       "placeholder": "e.g., 1.2M",
       "previewSelector": ".stat-item:nth-child(1) .stat-item__number",
       "updateMethod": "textContent",
-      "section": "statistics"
+      "section": "statistics",
+      "mkcgMapping": "social_media.social_media.followers_count"
     },
     "stat1_label": {
       "type": "text",
@@ -33,7 +34,8 @@
       "placeholder": "e.g., Followers",
       "previewSelector": ".stat-item:nth-child(1) .stat-item__label",
       "updateMethod": "textContent",
-      "section": "statistics"
+      "section": "statistics",
+      "mkcgMapping": "social_media.social_media.stat_1_label"
     },
     "stat2_value": {
       "type": "text",
@@ -42,7 +44,8 @@
       "placeholder": "e.g., 150+",
       "previewSelector": ".stat-item:nth-child(2) .stat-item__number",
       "updateMethod": "textContent",
-      "section": "statistics"
+      "section": "statistics",
+      "mkcgMapping": "social_media.social_media.podcast_count"
     },
     "stat2_label": {
       "type": "text",
@@ -51,7 +54,8 @@
       "placeholder": "e.g., Podcast Shows",
       "previewSelector": ".stat-item:nth-child(2) .stat-item__label",
       "updateMethod": "textContent",
-      "section": "statistics"
+      "section": "statistics",
+      "mkcgMapping": "social_media.social_media.stat_2_label"
     },
     "stat3_value": {
       "type": "text",
@@ -60,7 +64,8 @@
       "placeholder": "e.g., 500K",
       "previewSelector": ".stat-item:nth-child(3) .stat-item__number",
       "updateMethod": "textContent",
-      "section": "statistics"
+      "section": "statistics",
+      "mkcgMapping": "social_media.social_media.download_count"
     },
     "stat3_label": {
       "type": "text",
@@ -69,7 +74,8 @@
       "placeholder": "e.g., Downloads",
       "previewSelector": ".stat-item:nth-child(3) .stat-item__label",
       "updateMethod": "textContent",
-      "section": "statistics"
+      "section": "statistics",
+      "mkcgMapping": "social_media.social_media.stat_3_label"
     },
     "stat4_value": {
       "type": "text",
@@ -78,7 +84,8 @@
       "placeholder": "e.g., 5",
       "previewSelector": ".stat-item:nth-child(4) .stat-item__number",
       "updateMethod": "textContent",
-      "section": "statistics"
+      "section": "statistics",
+      "mkcgMapping": "biography.biography.years_experience"
     },
     "stat4_label": {
       "type": "text",
@@ -87,7 +94,8 @@
       "placeholder": "e.g., Years Experience",
       "previewSelector": ".stat-item:nth-child(4) .stat-item__label",
       "updateMethod": "textContent",
-      "section": "statistics"
+      "section": "statistics",
+      "mkcgMapping": "social_media.social_media.stat_4_label"
     },
     "stats_columns": {
       "type": "select",
@@ -133,5 +141,15 @@
       "title": "Appearance",
       "order": 3
     }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["stat1_value"],
+    "dataSource": "social_media",
+    "validationRules": {
+      "numericValues": true,
+      "minStats": 1
+    },
+    "priority": "medium"
   }
 }

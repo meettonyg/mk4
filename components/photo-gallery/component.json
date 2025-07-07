@@ -29,7 +29,8 @@
       "placeholder": "Enter gallery title",
       "section": "content",
       "previewSelector": ".photo-gallery-title",
-      "updateMethod": "textContent"
+      "updateMethod": "textContent",
+      "mkcgMapping": "meta_info.section_title"
     },
     "gallery_description": {
       "type": "textarea",
@@ -38,7 +39,8 @@
       "placeholder": "Enter gallery description",
       "section": "content",
       "previewSelector": ".photo-gallery-description",
-      "updateMethod": "textContent"
+      "updateMethod": "textContent",
+      "mkcgMapping": "biography.biography.description"
     },
     "show_title": {
       "type": "checkbox",
@@ -169,5 +171,14 @@
       "previewSelector": ".photo-gallery-grid",
       "updateMethod": "data-caption-style"
     }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["gallery_title"],
+    "dataSource": "biography",
+    "validationRules": {
+      "titleRequired": true
+    },
+    "priority": "low"
   }
 }

@@ -31,56 +31,80 @@
       "label": "Twitter / X",
       "default": "",
       "placeholder": "https://twitter.com/yourusername",
-      "section": "platforms"
+      "section": "platforms",
+      "mkcgMapping": "social_media.social_media.twitter",
+      "previewSelector": ".social-twitter",
+      "updateMethod": "href"
     },
     "social_linkedin": {
       "type": "text",
       "label": "LinkedIn",
       "default": "",
       "placeholder": "https://linkedin.com/in/yourusername",
-      "section": "platforms"
+      "section": "platforms",
+      "mkcgMapping": "social_media.social_media.linkedin",
+      "previewSelector": ".social-linkedin",
+      "updateMethod": "href"
     },
     "social_instagram": {
       "type": "text",
       "label": "Instagram",
       "default": "",
       "placeholder": "https://instagram.com/yourusername",
-      "section": "platforms"
+      "section": "platforms",
+      "mkcgMapping": "social_media.social_media.instagram",
+      "previewSelector": ".social-instagram",
+      "updateMethod": "href"
     },
     "social_facebook": {
       "type": "text",
       "label": "Facebook",
       "default": "",
       "placeholder": "https://facebook.com/yourusername",
-      "section": "platforms"
+      "section": "platforms",
+      "mkcgMapping": "social_media.social_media.facebook",
+      "previewSelector": ".social-facebook",
+      "updateMethod": "href"
     },
     "social_youtube": {
       "type": "text",
       "label": "YouTube",
       "default": "",
       "placeholder": "https://youtube.com/@yourusername",
-      "section": "platforms"
+      "section": "platforms",
+      "mkcgMapping": "social_media.social_media.youtube",
+      "previewSelector": ".social-youtube",
+      "updateMethod": "href"
     },
     "social_tiktok": {
       "type": "text",
       "label": "TikTok",
       "default": "",
       "placeholder": "https://tiktok.com/@yourusername",
-      "section": "platforms"
+      "section": "platforms",
+      "mkcgMapping": "social_media.social_media.tiktok",
+      "previewSelector": ".social-tiktok",
+      "updateMethod": "href"
     },
     "social_pinterest": {
       "type": "text",
       "label": "Pinterest",
       "default": "",
       "placeholder": "https://pinterest.com/yourusername",
-      "section": "platforms"
+      "section": "platforms",
+      "mkcgMapping": "social_media.social_media.pinterest",
+      "previewSelector": ".social-pinterest",
+      "updateMethod": "href"
     },
     "social_medium": {
       "type": "text",
       "label": "Medium",
       "default": "",
       "placeholder": "https://medium.com/@yourusername",
-      "section": "platforms"
+      "section": "platforms",
+      "mkcgMapping": "social_media.social_media.medium",
+      "previewSelector": ".social-medium",
+      "updateMethod": "href"
     },
     "layout": {
       "type": "select",
@@ -199,5 +223,14 @@
       "default": false,
       "section": "advanced"
     }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": [],
+    "dataSource": "social_media",
+    "validationRules": {
+      "validUrls": true
+    },
+    "priority": "medium"
   }
 }

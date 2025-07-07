@@ -6,5 +6,88 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 3
+  "order": 3,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Get In Touch",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "contact_email": {
+      "type": "email",
+      "label": "Email Address",
+      "default": "your.email@example.com",
+      "placeholder": "Enter your email address",
+      "previewSelector": ".contact-email",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.contact_email"
+    },
+    "contact_phone": {
+      "type": "text",
+      "label": "Phone Number",
+      "default": "",
+      "placeholder": "Enter your phone number",
+      "previewSelector": ".contact-phone",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.phone"
+    },
+    "contact_website": {
+      "type": "url",
+      "label": "Website URL",
+      "default": "",
+      "placeholder": "Enter your website URL",
+      "previewSelector": ".contact-website",
+      "updateMethod": "href",
+      "section": "content",
+      "mkcgMapping": "biography.biography.website"
+    },
+    "contact_form_enabled": {
+      "type": "checkbox",
+      "label": "Show Contact Form",
+      "default": true,
+      "previewSelector": ".contact-form",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    },
+    "layout_style": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "cards",
+      "options": [
+        {"value": "cards", "label": "Card Layout"},
+        {"value": "inline", "label": "Inline Layout"},
+        {"value": "vertical", "label": "Vertical List"}
+      ],
+      "previewSelector": ".contact-container",
+      "updateMethod": "class",
+      "classPrefix": "layout-",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Contact Information",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Layout & Appearance",
+      "order": 2
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["contact_email"],
+    "dataSource": "biography",
+    "validationRules": {
+      "emailRequired": true
+    },
+    "priority": "medium"
+  }
 }
