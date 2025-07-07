@@ -576,63 +576,9 @@ class GMKB_MKCG_Data_Integration {
         }
     }
     
-    /**
-     * TASK 5: Detect which components have changed
-     * 
-     * @param int $post_id Post ID
-     * @param string $old_hash Old content hash
-     * @param string $new_hash New content hash
-     * @return array Changed component types
-     */
-    private function detect_changed_components($post_id, $old_hash, $new_hash) {
-        // For now, return all component types if hash changed
-        // In a more sophisticated implementation, we could track individual component hashes
-        $availability = $this->get_data_availability($post_id);
-        $changed_components = array();
-        
-        foreach ($availability as $component => $has_data) {
-            if ($has_data) {
-                $changed_components[] = $component;
-            }
-        }
-        
-        return $changed_components;
-    }
+
     
-    /**
-     * TASK 5: Get fresh data for specific component type
-     * 
-     * @param int $post_id Post ID
-     * @param string $component_type Component type
-     * @return array|null Component data
-     */
-    public function get_fresh_component_data($post_id, $component_type) {
-        if (!$this->validate_post_id($post_id)) {
-            return null;
-        }
-        
-        try {
-            switch ($component_type) {
-                case 'topics':
-                    return $this->get_topics_data($post_id);
-                case 'biography':
-                    return $this->get_biography_data($post_id);
-                case 'authority-hook':
-                    return $this->get_authority_hook_data($post_id);
-                case 'questions':
-                    return $this->get_questions_data($post_id);
-                case 'offers':
-                    return $this->get_offers_data($post_id);
-                case 'social':
-                    return $this->get_social_media_data($post_id);
-                default:
-                    return null;
-            }
-        } catch (Exception $e) {
-            $this->log_error("Error getting fresh component data for {$component_type} in post {$post_id}: " . $e->getMessage(), 'component-refresh');
-            return null;
-        }
-    }
+
     
     /**
      * Get available MKCG data for a post (quick check)
@@ -686,41 +632,7 @@ class GMKB_MKCG_Data_Integration {
         return false;
     }
     
-    /**
-     * Compare data freshness between client and server
-     * 
-     * @param int $post_id Post ID
-     * @param int $client_timestamp Client timestamp
-     * @return array Comparison result
-     */
-    public function compare_data_freshness($post_id, $client_timestamp) {
-        $server_timestamp = $this->get_fresh_data_timestamp($post_id);
-        
-        if (!$server_timestamp) {
-            return array(
-                'has_fresh_data' => false,
-                'server_timestamp' => 0,
-                'client_timestamp' => $client_timestamp,
-                'error' => 'Could not determine server timestamp'
-            );
-        }
-        
-        $has_fresh_data = $server_timestamp > $client_timestamp;
-        
-        // If fresh data is available, check which components changed
-        $changed_components = array();
-        if ($has_fresh_data) {
-            $changed_components = $this->detect_changed_components($post_id, $client_timestamp);
-        }
-        
-        return array(
-            'has_fresh_data' => $has_fresh_data,
-            'server_timestamp' => $server_timestamp,
-            'client_timestamp' => $client_timestamp,
-            'time_difference' => $server_timestamp - $client_timestamp,
-            'changed_components' => $changed_components
-        );
-    }
+
     
     /**
      * Detect which components have changed since client timestamp
