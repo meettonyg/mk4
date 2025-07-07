@@ -6,5 +6,80 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 6
+  "order": 6,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "CTA Title",
+      "default": "Ready to Get Started?",
+      "placeholder": "Enter call-to-action title",
+      "previewSelector": ".cta-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "description": {
+      "type": "textarea",
+      "label": "CTA Description",
+      "default": "Contact me today to discuss your next event or project.",
+      "placeholder": "Enter call-to-action description",
+      "previewSelector": ".cta-description",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.cta_text"
+    },
+    "button_text": {
+      "type": "text",
+      "label": "Button Text",
+      "default": "Contact Me",
+      "placeholder": "Enter button text",
+      "previewSelector": ".cta-button",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.cta_button"
+    },
+    "button_link": {
+      "type": "url",
+      "label": "Button Link",
+      "default": "#contact",
+      "placeholder": "Enter button URL",
+      "previewSelector": ".cta-button",
+      "updateMethod": "href",
+      "section": "content",
+      "mkcgMapping": "biography.biography.contact_url"
+    },
+    "style": {
+      "type": "select",
+      "label": "CTA Style",
+      "default": "primary",
+      "options": [
+        {"value": "primary", "label": "Primary Style"},
+        {"value": "secondary", "label": "Secondary Style"},
+        {"value": "outline", "label": "Outline Style"}
+      ],
+      "previewSelector": ".cta-container",
+      "updateMethod": "class",
+      "classPrefix": "style-",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "CTA Content",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Appearance",
+      "order": 2
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["title"],
+    "dataSource": "biography",
+    "validationRules": {
+      "titleRequired": true
+    },
+    "priority": "medium"
+  }
 }

@@ -6,5 +6,120 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 4
+  "order": 4,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Meet Your Guest",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "guest_name": {
+      "type": "text",
+      "label": "Guest Name",
+      "default": "Your Name",
+      "placeholder": "Enter guest name",
+      "previewSelector": ".guest-name",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.name"
+    },
+    "guest_title": {
+      "type": "text",
+      "label": "Professional Title",
+      "default": "Your Professional Title",
+      "placeholder": "Enter professional title",
+      "previewSelector": ".guest-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.title"
+    },
+    "guest_intro": {
+      "type": "textarea",
+      "label": "Guest Introduction",
+      "default": "Brief introduction about the guest...",
+      "rows": 4,
+      "placeholder": "Enter guest introduction",
+      "previewSelector": ".guest-intro",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.short"
+    },
+    "guest_bio": {
+      "type": "textarea",
+      "label": "Extended Bio",
+      "default": "Extended biography for detailed introductions...",
+      "rows": 6,
+      "placeholder": "Enter extended biography",
+      "previewSelector": ".guest-bio",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.medium"
+    },
+    "expertise": {
+      "type": "text",
+      "label": "Areas of Expertise",
+      "default": "",
+      "placeholder": "Enter areas of expertise",
+      "previewSelector": ".guest-expertise",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.expertise"
+    },
+    "guest_image": {
+      "type": "image",
+      "label": "Guest Photo",
+      "default": "",
+      "previewSelector": ".guest-photo img",
+      "updateMethod": "src",
+      "section": "content",
+      "helpText": "Professional headshot recommended"
+    },
+    "layout_style": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "side-by-side",
+      "options": [
+        {"value": "side-by-side", "label": "Side by Side"},
+        {"value": "centered", "label": "Centered"},
+        {"value": "card", "label": "Card Style"}
+      ],
+      "previewSelector": ".guest-intro-container",
+      "updateMethod": "class",
+      "classPrefix": "layout-",
+      "section": "appearance"
+    },
+    "show_expertise": {
+      "type": "checkbox",
+      "label": "Show Expertise Section",
+      "default": true,
+      "previewSelector": ".guest-expertise",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Guest Information",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Layout & Appearance",
+      "order": 2
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["guest_name", "guest_intro"],
+    "dataSource": "biography",
+    "validationRules": {
+      "nameRequired": true,
+      "introMinLength": 20
+    },
+    "priority": "high"
+  }
 }
