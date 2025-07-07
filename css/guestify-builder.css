@@ -31,6 +31,9 @@
 /* Empty State Centering Fix */
 @import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/empty-state-center.css');
 
+/* PHASE 2.3 TASK 4: Enhanced Error Handler User Guidance */
+@import url('modules/enhanced-error-handler.css');
+
 /* Loading state for drop zones */
 .drop-zone.loading {
     position: relative;

@@ -19,6 +19,9 @@ import { initializer } from './media-kit-builder-init.js';
 import { dynamicComponentLoader } from '../components/dynamic-component-loader.js';
 import { templateCache } from '../utils/template-cache.js';
 
+// PHASE 2.3 TASK 4: Import Enhanced Error Handler for comprehensive user guidance
+import { enhancedErrorHandler } from '../utils/enhanced-error-handler.js';
+
 /**
  * Registers all enhanced systems with the system registrar
  * CRITICAL FIX: Now fully synchronous for predictable initialization
@@ -96,10 +99,18 @@ export async function registerEnhancedSystems() {
         systemRegistrar.register('templateCache', templateCache);
         console.log('✅ Template Cache: Enhanced (FIXES template system failures)');
         
+        // PHASE 2.3 TASK 4: Register Enhanced Error Handler for user guidance
+        systemRegistrar.register('enhancedErrorHandler', enhancedErrorHandler);
+        console.log('✅ Enhanced Error Handler: Phase 2.3 Task 4 - User guidance system active');
+        
         // CRITICAL FIX: Expose template systems globally for compatibility
         window.dynamicComponentLoader = dynamicComponentLoader;
         window.mkTemplateCache = templateCache;
         console.log('✅ Template systems exposed globally: dynamicComponentLoader, mkTemplateCache');
+        
+        // PHASE 2.3 TASK 4: Expose enhanced error handler globally
+        window.enhancedErrorHandler = enhancedErrorHandler;
+        console.log('✅ Enhanced Error Handler exposed globally for error panel interactions');
         
         // Validate enhanced component manager
         console.log('🔍 Enhanced Component Manager validation:', {
@@ -137,10 +148,10 @@ export async function registerEnhancedSystems() {
         console.log('✅ Enhanced System Registrar: Core registration complete');
         console.log('📋 Registered systems:', registeredSystems);
         
-        // CRITICAL FIX: Validate all 6 core systems including template loading infrastructure
+        // CRITICAL FIX: Validate all 7 core systems including template loading infrastructure and error handling
         // These are required for proper functionality - template systems were missing causing failures
-        if (registeredSystems.length < 6) { // Require all 6 core systems (was 4, missing template systems)
-            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 6 (state, component, renderer, initializer, loader, cache)`);
+        if (registeredSystems.length < 7) { // Require all 7 core systems (was 6, added error handler)
+            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 7 (state, component, renderer, initializer, loader, cache, errorHandler)`);
         }
         
         // Validate critical template systems are working
@@ -150,6 +161,11 @@ export async function registerEnhancedSystems() {
         
         if (!window.mkTemplateCache) {
             throw new Error('CRITICAL: mkTemplateCache not exposed globally - template caching will fail');
+        }
+        
+        // PHASE 2.3 TASK 4: Validate enhanced error handler is working
+        if (!window.enhancedErrorHandler) {
+            throw new Error('CRITICAL: enhancedErrorHandler not exposed globally - error guidance will fail');
         }
         
         perfEnd();
@@ -258,14 +274,16 @@ export function getEnhancedSystemInfo() {
             renderer: !!window.renderer,
             initializer: !!window.initializer,
             dynamicComponentLoader: !!window.dynamicComponentLoader,
-            mkTemplateCache: !!window.mkTemplateCache
+            mkTemplateCache: !!window.mkTemplateCache,
+            enhancedErrorHandler: !!window.enhancedErrorHandler
         },
         types: {
             stateManager: registeredSystems.stateManager?.constructor?.name || 'Unknown',
             componentManager: registeredSystems.componentManager?.constructor?.name || 'Unknown',
             renderer: registeredSystems.renderer?.constructor?.name || 'Unknown',
             dynamicComponentLoader: registeredSystems.dynamicComponentLoader?.constructor?.name || 'Unknown',
-            templateCache: registeredSystems.templateCache?.constructor?.name || 'Unknown'
+            templateCache: registeredSystems.templateCache?.constructor?.name || 'Unknown',
+            enhancedErrorHandler: registeredSystems.enhancedErrorHandler?.constructor?.name || 'Unknown'
         },
         methods: {
             componentManagerAddComponent: typeof registeredSystems.componentManager?.addComponent === 'function',

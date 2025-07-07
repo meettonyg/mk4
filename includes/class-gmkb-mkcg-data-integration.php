@@ -54,13 +54,18 @@ class GMKB_MKCG_Data_Integration {
         add_action('save_post', array($this, 'clear_post_cache'));
         add_action('deleted_post_meta', array($this, 'clear_meta_cache'), 10, 2);
         add_action('updated_post_meta', array($this, 'clear_meta_cache'), 10, 2);
+        
+        // TASK 5: Add AJAX handlers for data refresh functionality
+        add_action('wp_ajax_gmkb_check_mkcg_freshness', array($this, 'ajax_check_mkcg_freshness'));
+        add_action('wp_ajax_gmkb_get_fresh_mkcg_data', array($this, 'ajax_get_fresh_mkcg_data'));
+        add_action('wp_ajax_gmkb_get_fresh_component_data', array($this, 'ajax_get_fresh_component_data'));
+        add_action('wp_ajax_gmkb_connectivity_test', array($this, 'ajax_connectivity_test'));
     }
     
     /**
-     * Get comprehensive MKCG data for a post
-     * 
-     * @param int $post_id The post ID to extract data from
-     * @return array|null Structured MKCG data or null if invalid
+     * PHASE 2.3 - TASK 5: Enhanced MKCG data extraction with freshness support
+     * @param int $post_id Post ID
+     * @return array|null Enhanced data with metadata
      */
     public function get_post_data($post_id) {
         // Validate post ID
@@ -97,6 +102,9 @@ class GMKB_MKCG_Data_Integration {
             
             // Validate extracted data
             $validated_data = $this->validate_and_sanitize_data($mkcg_data);
+            
+            // TASK 5: Add freshness metadata
+            $validated_data['freshness'] = $this->get_freshness_metadata($post_id);
             
             // Cache the result
             $this->data_cache[$cache_key] = $validated_data;
@@ -465,6 +473,168 @@ class GMKB_MKCG_Data_Integration {
     }
     
     /**
+     * TASK 5: Get freshness metadata for data refresh functionality
+     * 
+     * @param int $post_id Post ID
+     * @return array Freshness metadata
+     */
+    private function get_freshness_metadata($post_id) {
+        return array(
+            'extraction_timestamp' => time(),
+            'last_modified' => get_post_modified_time('U', false, $post_id),
+            'content_hash' => $this->calculate_content_hash($post_id),
+            'version' => '1.0.0-task5'
+        );
+    }
+    
+    /**
+     * TASK 5: Calculate content hash for change detection
+     * 
+     * @param int $post_id Post ID
+     * @return string Content hash
+     */
+    private function calculate_content_hash($post_id) {
+        $content_parts = array();
+        
+        // Include all MKCG meta fields in hash calculation
+        $meta_keys = array(
+            'mkcg_topic_1', 'mkcg_topic_2', 'mkcg_topic_3', 'mkcg_topic_4', 'mkcg_topic_5',
+            'mkcg_biography_name', 'mkcg_biography_title', 'mkcg_biography_short', 'mkcg_biography_medium', 'mkcg_biography_long',
+            'mkcg_authority_hook_who', 'mkcg_authority_hook_what', 'mkcg_authority_hook_when', 'mkcg_authority_hook_how',
+            'mkcg_question_1', 'mkcg_question_2', 'mkcg_question_3', 'mkcg_question_4', 'mkcg_question_5',
+            'mkcg_offer_1_title', 'mkcg_offer_1_description', 'mkcg_offer_2_title', 'mkcg_offer_2_description'
+        );
+        
+        foreach ($meta_keys as $key) {
+            $value = get_post_meta($post_id, $key, true);
+            if (!empty($value)) {
+                $content_parts[] = $key . ':' . $value;
+            }
+        }
+        
+        return md5(implode('|', $content_parts));
+    }
+    
+    /**
+     * TASK 5: Check data freshness compared to client timestamp
+     * 
+     * @param int $post_id Post ID
+     * @param int $client_timestamp Client's data timestamp
+     * @return array Freshness check result
+     */
+    public function check_data_freshness($post_id, $client_timestamp) {
+        if (!$this->validate_post_id($post_id)) {
+            return array(
+                'success' => false,
+                'message' => 'Invalid post ID'
+            );
+        }
+        
+        try {
+            // Get current server timestamp and content hash
+            $server_timestamp = time();
+            $current_hash = $this->calculate_content_hash($post_id);
+            
+            // Get stored hash from client data if available
+            $stored_hash = get_transient("mkcg_hash_{$post_id}");
+            
+            // Compare timestamps and content
+            $has_fresh_data = false;
+            $changed_components = array();
+            
+            // Check if content has changed
+            if ($stored_hash && $current_hash !== $stored_hash) {
+                $has_fresh_data = true;
+                $changed_components = $this->detect_changed_components($post_id, $stored_hash, $current_hash);
+            }
+            
+            // Check modification time
+            $last_modified = get_post_modified_time('U', false, $post_id);
+            if ($last_modified > $client_timestamp) {
+                $has_fresh_data = true;
+            }
+            
+            // Store current hash
+            set_transient("mkcg_hash_{$post_id}", $current_hash, 3600); // 1 hour
+            
+            return array(
+                'success' => true,
+                'server_timestamp' => $server_timestamp,
+                'client_timestamp' => $client_timestamp,
+                'has_fresh_data' => $has_fresh_data,
+                'last_modified' => $last_modified,
+                'content_hash' => $current_hash,
+                'changed_components' => $changed_components
+            );
+            
+        } catch (Exception $e) {
+            $this->log_error("Error checking data freshness for post {$post_id}: " . $e->getMessage(), 'freshness-check');
+            return array(
+                'success' => false,
+                'message' => 'Error checking data freshness'
+            );
+        }
+    }
+    
+    /**
+     * TASK 5: Detect which components have changed
+     * 
+     * @param int $post_id Post ID
+     * @param string $old_hash Old content hash
+     * @param string $new_hash New content hash
+     * @return array Changed component types
+     */
+    private function detect_changed_components($post_id, $old_hash, $new_hash) {
+        // For now, return all component types if hash changed
+        // In a more sophisticated implementation, we could track individual component hashes
+        $availability = $this->get_data_availability($post_id);
+        $changed_components = array();
+        
+        foreach ($availability as $component => $has_data) {
+            if ($has_data) {
+                $changed_components[] = $component;
+            }
+        }
+        
+        return $changed_components;
+    }
+    
+    /**
+     * TASK 5: Get fresh data for specific component type
+     * 
+     * @param int $post_id Post ID
+     * @param string $component_type Component type
+     * @return array|null Component data
+     */
+    public function get_fresh_component_data($post_id, $component_type) {
+        if (!$this->validate_post_id($post_id)) {
+            return null;
+        }
+        
+        try {
+            switch ($component_type) {
+                case 'topics':
+                    return $this->get_topics_data($post_id);
+                case 'biography':
+                    return $this->get_biography_data($post_id);
+                case 'authority-hook':
+                    return $this->get_authority_hook_data($post_id);
+                case 'questions':
+                    return $this->get_questions_data($post_id);
+                case 'offers':
+                    return $this->get_offers_data($post_id);
+                case 'social':
+                    return $this->get_social_media_data($post_id);
+                default:
+                    return null;
+            }
+        } catch (Exception $e) {
+            $this->log_error("Error getting fresh component data for {$component_type} in post {$post_id}: " . $e->getMessage(), 'component-refresh');
+            return null;
+        }
+    }
+    
+    /**
      * Get available MKCG data for a post (quick check)
      * 
      * @param int $post_id Post ID
@@ -484,5 +654,513 @@ class GMKB_MKCG_Data_Integration {
             'has_social_media' => !empty(get_post_meta($post_id, 'mkcg_social_twitter', true)) || 
                                 !empty(get_post_meta($post_id, 'mkcg_social_linkedin', true))
         );
+    }
+    
+    // =======================
+    // TASK 5: SERVER-SIDE REFRESH SUPPORT
+    // =======================
+    
+    /**
+     * Get fresh data timestamp for comparison
+     * 
+     * @param int $post_id Post ID
+     * @return int|false Timestamp or false if not found
+     */
+    public function get_fresh_data_timestamp($post_id) {
+        if (!$this->validate_post_id($post_id)) {
+            return false;
+        }
+        
+        // Check for recent MKCG updates
+        $last_update = get_post_meta($post_id, 'mkcg_last_update', true);
+        if ($last_update) {
+            return strtotime($last_update);
+        }
+        
+        // Fall back to post modification time
+        $post = get_post($post_id);
+        if ($post) {
+            return strtotime($post->post_modified);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Compare data freshness between client and server
+     * 
+     * @param int $post_id Post ID
+     * @param int $client_timestamp Client timestamp
+     * @return array Comparison result
+     */
+    public function compare_data_freshness($post_id, $client_timestamp) {
+        $server_timestamp = $this->get_fresh_data_timestamp($post_id);
+        
+        if (!$server_timestamp) {
+            return array(
+                'has_fresh_data' => false,
+                'server_timestamp' => 0,
+                'client_timestamp' => $client_timestamp,
+                'error' => 'Could not determine server timestamp'
+            );
+        }
+        
+        $has_fresh_data = $server_timestamp > $client_timestamp;
+        
+        // If fresh data is available, check which components changed
+        $changed_components = array();
+        if ($has_fresh_data) {
+            $changed_components = $this->detect_changed_components($post_id, $client_timestamp);
+        }
+        
+        return array(
+            'has_fresh_data' => $has_fresh_data,
+            'server_timestamp' => $server_timestamp,
+            'client_timestamp' => $client_timestamp,
+            'time_difference' => $server_timestamp - $client_timestamp,
+            'changed_components' => $changed_components
+        );
+    }
+    
+    /**
+     * Detect which components have changed since client timestamp
+     * 
+     * @param int $post_id Post ID
+     * @param int $client_timestamp Client timestamp
+     * @return array Array of changed component types
+     */
+    private function detect_changed_components($post_id, $client_timestamp) {
+        $changed = array();
+        
+        // Check each component type for recent updates
+        $component_checks = array(
+            'topics' => array('mkcg_topic_1', 'mkcg_topics_generated_date'),
+            'biography' => array('mkcg_biography_short', 'mkcg_biography_generated_date'),
+            'authority_hook' => array('mkcg_authority_hook_who', 'mkcg_authority_hook_generated_date'),
+            'questions' => array('mkcg_question_1', 'mkcg_questions_generated_date'),
+            'offers' => array('mkcg_offer_1_title', 'mkcg_offers_generated_date'),
+            'social_media' => array('mkcg_social_twitter', 'mkcg_social_generated_date')
+        );
+        
+        foreach ($component_checks as $component_type => $meta_keys) {
+            $data_key = $meta_keys[0];
+            $date_key = isset($meta_keys[1]) ? $meta_keys[1] : null;
+            
+            // Check if component has data
+            if (!empty(get_post_meta($post_id, $data_key, true))) {
+                // Check if component was updated after client timestamp
+                if ($date_key) {
+                    $component_date = get_post_meta($post_id, $date_key, true);
+                    if ($component_date && strtotime($component_date) > $client_timestamp) {
+                        $changed[] = $component_type;
+                    }
+                } else {
+                    // If no specific date, assume it might have changed
+                    $changed[] = $component_type;
+                }
+            }
+        }
+        
+        return $changed;
+    }
+    
+    /**
+     * Get fresh component data for specific component type
+     * 
+     * @param int $post_id Post ID
+     * @param string $component_type Component type
+     * @return array|null Component data or null
+     */
+    public function get_fresh_component_data($post_id, $component_type) {
+        if (!$this->validate_post_id($post_id)) {
+            return null;
+        }
+        
+        switch ($component_type) {
+            case 'topics':
+                return $this->get_topics_data($post_id);
+            case 'biography':
+                return $this->get_biography_data($post_id);
+            case 'authority_hook':
+            case 'authority-hook':
+                return $this->get_authority_hook_data($post_id);
+            case 'questions':
+                return $this->get_questions_data($post_id);
+            case 'offers':
+                return $this->get_offers_data($post_id);
+            case 'social_media':
+            case 'social-media':
+                return $this->get_social_media_data($post_id);
+            default:
+                return null;
+        }
+    }
+    
+    /**
+     * TASK 5: Get fresh MKCG data for AJAX handler
+     * 
+     * @param int $post_id Post ID
+     * @return array Response array with success flag
+     */
+    public function get_fresh_mkcg_data($post_id) {
+        try {
+            $fresh_data = $this->get_post_data($post_id);
+            
+            if ($fresh_data) {
+                return array(
+                    'success' => true,
+                    'data' => $fresh_data,
+                    'timestamp' => time(),
+                    'post_id' => $post_id,
+                    'message' => 'Fresh data retrieved successfully'
+                );
+            } else {
+                return array(
+                    'success' => false,
+                    'message' => 'No MKCG data found for this post',
+                    'post_id' => $post_id
+                );
+            }
+            
+        } catch (Exception $e) {
+            $this->log_error("Error getting fresh MKCG data for post {$post_id}: " . $e->getMessage(), 'fresh-data-retrieval');
+            return array(
+                'success' => false,
+                'message' => 'Error retrieving fresh data: ' . $e->getMessage(),
+                'post_id' => $post_id
+            );
+        }
+    }
+    
+    /**
+     * TASK 5: Get fresh component data for AJAX handler
+     * 
+     * @param int $post_id Post ID
+     * @param string $component_type Component type
+     * @return array Response array with success flag
+     */
+    public function get_fresh_component_data_for_ajax($post_id, $component_type) {
+        try {
+            $component_data = $this->get_fresh_component_data($post_id, $component_type);
+            
+            if ($component_data) {
+                return array(
+                    'success' => true,
+                    'data' => $component_data,
+                    'component_type' => $component_type,
+                    'timestamp' => time(),
+                    'post_id' => $post_id,
+                    'message' => 'Fresh component data retrieved successfully'
+                );
+            } else {
+                return array(
+                    'success' => false,
+                    'message' => 'No data found for this component type',
+                    'component_type' => $component_type,
+                    'post_id' => $post_id
+                );
+            }
+            
+        } catch (Exception $e) {
+            $this->log_error("Error getting fresh component data for {$component_type} in post {$post_id}: " . $e->getMessage(), 'fresh-component-retrieval');
+            return array(
+                'success' => false,
+                'message' => 'Error retrieving fresh component data: ' . $e->getMessage(),
+                'component_type' => $component_type,
+                'post_id' => $post_id
+            );
+        }
+    }
+    
+    /**
+     * TASK 5: Get refresh debug information for AJAX handler
+     * 
+     * @param int $post_id Post ID
+     * @return array Debug information
+     */
+    public function get_refresh_debug_info($post_id) {
+        try {
+            $post_data = $this->get_post_data($post_id);
+            $availability = $this->get_data_availability($post_id);
+            $freshness_info = $this->get_fresh_data_timestamp($post_id);
+            $errors = $this->get_errors();
+            
+            return array(
+                'post_id' => $post_id,
+                'has_mkcg_data' => !empty($post_data),
+                'data_availability' => $availability,
+                'freshness_info' => $freshness_info,
+                'last_extraction' => $post_data['meta_info']['extraction_timestamp'] ?? null,
+                'extraction_date' => $post_data['meta_info']['extraction_date'] ?? null,
+                'data_quality' => $this->calculate_data_quality($post_data),
+                'component_counts' => $this->get_component_counts($post_data),
+                'errors' => $errors,
+                'cache_status' => array(
+                    'data_cache_size' => count($this->data_cache),
+                    'timestamp_cache_size' => count($this->timestampCache ?? array())
+                ),
+                'performance' => array(
+                    'generation_time' => microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'],
+                    'memory_usage' => memory_get_usage(true),
+                    'memory_peak' => memory_get_peak_usage(true)
+                )
+            );
+            
+        } catch (Exception $e) {
+            $this->log_error("Error getting debug info for post {$post_id}: " . $e->getMessage(), 'debug-info');
+            return array(
+                'post_id' => $post_id,
+                'error' => 'Failed to generate debug info: ' . $e->getMessage()
+            );
+        }
+    }
+    
+    /**
+     * TASK 5: Enhanced compare_data_freshness with proper return format
+     * 
+     * @param int $post_id Post ID
+     * @param int $client_timestamp Client timestamp
+     * @return array Comparison result with success flag
+     */
+    public function compare_data_freshness($post_id, $client_timestamp) {
+        try {
+            $server_timestamp = $this->get_fresh_data_timestamp($post_id);
+            
+            if (!$server_timestamp) {
+                return array(
+                    'success' => false,
+                    'message' => 'Could not determine server timestamp for this post',
+                    'post_id' => $post_id,
+                    'client_timestamp' => $client_timestamp
+                );
+            }
+            
+            $has_fresh_data = $server_timestamp > $client_timestamp;
+            $time_difference = $server_timestamp - $client_timestamp;
+            
+            // Detect changed components if fresh data is available
+            $changed_components = array();
+            if ($has_fresh_data) {
+                $changed_components = $this->detect_changed_components($post_id, $client_timestamp);
+            }
+            
+            return array(
+                'success' => true,
+                'server_timestamp' => $server_timestamp,
+                'client_timestamp' => $client_timestamp,
+                'has_fresh_data' => $has_fresh_data,
+                'time_difference' => $time_difference,
+                'changed_components' => $changed_components,
+                'post_id' => $post_id,
+                'check_time' => current_time('mysql')
+            );
+            
+        } catch (Exception $e) {
+            $this->log_error("Error comparing data freshness for post {$post_id}: " . $e->getMessage(), 'freshness-comparison');
+            return array(
+                'success' => false,
+                'message' => 'Error during freshness comparison: ' . $e->getMessage(),
+                'post_id' => $post_id,
+                'client_timestamp' => $client_timestamp
+            );
+        }
+    }
+    
+    /**
+     * TASK 5: Calculate data quality score for debug info
+     * 
+     * @param array $post_data Post data
+     * @return array Quality information
+     */
+    private function calculate_data_quality($post_data) {
+        if (!$post_data || !isset($post_data['validation'])) {
+            return array(
+                'score' => 0,
+                'level' => 'none',
+                'components_available' => 0
+            );
+        }
+        
+        $validation = $post_data['validation'];
+        $quality_components = array(
+            $validation['has_topics'] ? 20 : 0,
+            $validation['has_biography'] ? 25 : 0,
+            $validation['has_authority_hook'] ? 20 : 0,
+            $validation['has_questions'] ? 15 : 0,
+            $validation['has_offers'] ? 10 : 0,
+            $validation['has_social_media'] ? 10 : 0
+        );
+        
+        $score = array_sum($quality_components);
+        $available_count = count(array_filter($validation));
+        
+        $level = 'poor';
+        if ($score >= 80) $level = 'excellent';
+        elseif ($score >= 60) $level = 'good';
+        elseif ($score >= 40) $level = 'fair';
+        
+        return array(
+            'score' => $score,
+            'level' => $level,
+            'components_available' => $available_count,
+            'total_possible' => 6
+        );
+    }
+    
+    /**
+     * TASK 5: Get component counts for debug info
+     * 
+     * @param array $post_data Post data
+     * @return array Component counts
+     */
+    private function get_component_counts($post_data) {
+        if (!$post_data) {
+            return array();
+        }
+        
+        $counts = array();
+        
+        // Topics
+        if (isset($post_data['topics']['topics'])) {
+            $counts['topics'] = count($post_data['topics']['topics']);
+        }
+        
+        // Biography
+        if (isset($post_data['biography']['biography'])) {
+            $counts['biography'] = count(array_filter($post_data['biography']['biography']));
+        }
+        
+        // Authority Hook
+        if (isset($post_data['authority_hook']['authority_hook'])) {
+            $counts['authority_hook'] = count($post_data['authority_hook']['authority_hook']);
+        }
+        
+        // Questions
+        if (isset($post_data['questions']['questions'])) {
+            $counts['questions'] = count($post_data['questions']['questions']);
+        }
+        
+        // Offers
+        if (isset($post_data['offers']['offers'])) {
+            $counts['offers'] = count($post_data['offers']['offers']);
+        }
+        
+        // Social Media
+        if (isset($post_data['social_media'])) {
+            $counts['social_media'] = count($post_data['social_media']);
+        }
+        
+        return $counts;
+    }
+    
+    // =======================
+    // TASK 5: AJAX HANDLERS
+    // =======================
+    
+    /**
+     * AJAX handler: Check MKCG data freshness
+     */
+    public function ajax_check_mkcg_freshness() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'wp_rest')) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id'] ?? 0);
+        $client_timestamp = intval($_POST['client_timestamp'] ?? 0);
+        
+        if (!$post_id || !$client_timestamp) {
+            wp_send_json_error('Missing required parameters');
+            return;
+        }
+        
+        try {
+            $comparison = $this->compare_data_freshness($post_id, $client_timestamp);
+            wp_send_json_success($comparison);
+        } catch (Exception $e) {
+            wp_send_json_error('Failed to check freshness: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * AJAX handler: Get fresh MKCG data
+     */
+    public function ajax_get_fresh_mkcg_data() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'wp_rest')) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id'] ?? 0);
+        
+        if (!$post_id) {
+            wp_send_json_error('Missing post ID');
+            return;
+        }
+        
+        try {
+            $fresh_data = $this->get_post_data($post_id);
+            
+            if ($fresh_data) {
+                wp_send_json_success(array(
+                    'data' => $fresh_data,
+                    'timestamp' => time(),
+                    'post_id' => $post_id
+                ));
+            } else {
+                wp_send_json_error('No MKCG data found for this post');
+            }
+        } catch (Exception $e) {
+            wp_send_json_error('Failed to get fresh data: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * AJAX handler: Get fresh component data
+     */
+    public function ajax_get_fresh_component_data() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'wp_rest')) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id'] ?? 0);
+        $component_type = sanitize_text_field($_POST['component_type'] ?? '');
+        
+        if (!$post_id || !$component_type) {
+            wp_send_json_error('Missing required parameters');
+            return;
+        }
+        
+        try {
+            $component_data = $this->get_fresh_component_data($post_id, $component_type);
+            
+            if ($component_data) {
+                wp_send_json_success(array(
+                    'data' => $component_data,
+                    'component_type' => $component_type,
+                    'timestamp' => time(),
+                    'post_id' => $post_id
+                ));
+            } else {
+                wp_send_json_error('No data found for this component type');
+            }
+        } catch (Exception $e) {
+            wp_send_json_error('Failed to get component data: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * AJAX handler: Connectivity test
+     */
+    public function ajax_connectivity_test() {
+        wp_send_json_success(array(
+            'message' => 'Connectivity test successful',
+            'timestamp' => time(),
+            'server_time' => current_time('mysql')
+        ));
     }
 }

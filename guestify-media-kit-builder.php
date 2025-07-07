@@ -53,6 +53,12 @@ class Guestify_Media_Kit_Builder {
         // Initialize enhanced schema-driven system
         require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-init.php';
         
+        // TASK 5: Initialize MKCG Data Integration (MUST come before AJAX handlers)
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-mkcg-data-integration.php';
+        
+        // TASK 5: Initialize MKCG Data Refresh AJAX Handlers (depends on data integration)
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-mkcg-refresh-ajax-handlers.php';
+        
         // Initialize REST API endpoints
         require_once GUESTIFY_PLUGIN_DIR . 'includes/api/rest-api-templates.php';
         
@@ -104,8 +110,7 @@ class Guestify_Media_Kit_Builder {
         $post_id = $this->detect_mkcg_post_id();
         
         if ($post_id > 0) {
-            // Initialize MKCG data integration
-            require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-mkcg-data-integration.php';
+            // Get MKCG data integration instance (already loaded in constructor)
             $mkcg_integration = GMKB_MKCG_Data_Integration::get_instance();
             $post_data = $mkcg_integration->get_post_data($post_id);
             

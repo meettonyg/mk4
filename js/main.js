@@ -20,6 +20,9 @@ import { errorBoundary } from './utils/error-boundary.js';
 // Import enhanced component manager directly for immediate global exposure
 import { enhancedComponentManager } from './core/enhanced-component-manager.js';
 
+// PHASE 2.3 - TASK 5: Import Data Refresh and Synchronization Controls
+import './core/task5-integration.js';
+
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;
@@ -50,8 +53,13 @@ window.mkLog = {
         console.log('  mkPerf.report()     - Show performance report');
         console.log('  mkPerf.reset()      - Reset metrics');
         console.log('  mkPerf.setDebugMode(true/false) - Toggle debug mode');
-        console.log('\n🧪 Testing Commands:');
-        console.log('  testArchitectureFix() - Test the architectural fixes');
+        console.log('\n🔄 Task 5 Commands:');
+        console.log('  task5.refreshAll()      - Refresh all MKCG data');
+        console.log('  task5.refreshComponent(id) - Refresh specific component');
+        console.log('  task5.checkFresh()      - Check for fresh data');
+        console.log('  task5.getComponentStatus(id) - Get component sync status');
+        console.log('  task5.debug()           - Show Task 5 debug info');
+        console.log('  task5.help()            - Show Task 5 help');
     }
 };
 
@@ -90,6 +98,13 @@ window.testArchitectureFix = function() {
     test('media-kit-preview element exists', !!document.getElementById('media-kit-preview'), true);
     test('Modal Elements Present', !!document.getElementById('component-library-overlay'), false);
     test('Component Grid Present', !!document.getElementById('component-grid'), false);
+    
+    // Task 5 Integration tests
+    test('Task 5 Integration Available', !!window.task5Integration, false);
+    test('Task 5 Integration Initialized', window.task5Integration?.initialized, false);
+    test('MKCG Refresh Manager Available', !!window.mkcgDataRefreshManager, false);
+    test('Data Conflict Resolver Available', !!window.DataConflictResolver, false);
+    test('Sync Integration Available', !!window.task5SyncIntegration, false);
     
     // If component manager not initialized, show why
     if (!window.enhancedComponentManager?.isInitialized) {
@@ -187,6 +202,17 @@ async function initializeBuilder() {
             
             console.log('🔍 Final system check:', systemCheck);
             
+            // Check Task 5 integration status
+            if (window.task5Integration) {
+                const task5Status = window.task5Integration.getStatus();
+                console.log('🔄 Task 5 Integration Status:', {
+                    initialized: task5Status.initialized,
+                    refreshManager: task5Status.components.refreshManager.available,
+                    conflictResolver: task5Status.components.conflictResolver.available,
+                    syncIntegration: task5Status.components.syncIntegration.available
+                });
+            }
+            
             const criticalMissing = Object.entries(systemCheck)
                 .filter(([key, value]) => !value)
                 .map(([key]) => key);
@@ -203,7 +229,8 @@ async function initializeBuilder() {
                     duration,
                     architecture: 'enhanced-registrar-based',
                     timestamp: Date.now(),
-                    systemCheck
+                    systemCheck,
+                    task5Available: !!window.task5Integration
                 }
             }));
         } else {
