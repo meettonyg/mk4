@@ -6,5 +6,186 @@
   "isPremium": true,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 4
+  "order": 4,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Latest Podcast Episodes",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "podcast_name": {
+      "type": "text",
+      "label": "Podcast Name",
+      "default": "My Podcast",
+      "placeholder": "Enter your podcast name",
+      "previewSelector": ".podcast-name",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "media.podcast_name"
+    },
+    "podcast_description": {
+      "type": "textarea",
+      "label": "Podcast Description",
+      "default": "Discover insights and stories from industry leaders.",
+      "rows": 3,
+      "placeholder": "Describe your podcast",
+      "previewSelector": ".podcast-description",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "media.podcast_description"
+    },
+    "episode_1_title": {
+      "type": "text",
+      "label": "Episode 1 Title",
+      "default": "Latest Episode",
+      "placeholder": "Enter episode title",
+      "previewSelector": ".episode:nth-child(1) .episode-title",
+      "updateMethod": "textContent",
+      "section": "episodes"
+    },
+    "episode_1_audio": {
+      "type": "url",
+      "label": "Episode 1 Audio URL",
+      "default": "",
+      "placeholder": "Enter audio file URL or embed code",
+      "previewSelector": ".episode:nth-child(1) .audio-player",
+      "updateMethod": "src",
+      "section": "episodes",
+      "helpText": "MP3 URL or podcast platform embed URL"
+    },
+    "episode_1_description": {
+      "type": "textarea",
+      "label": "Episode 1 Description",
+      "default": "In this episode...",
+      "rows": 2,
+      "placeholder": "Brief episode description",
+      "previewSelector": ".episode:nth-child(1) .episode-description",
+      "updateMethod": "textContent",
+      "section": "episodes"
+    },
+    "episode_2_title": {
+      "type": "text",
+      "label": "Episode 2 Title",
+      "default": "",
+      "placeholder": "Enter episode title (optional)",
+      "previewSelector": ".episode:nth-child(2) .episode-title",
+      "updateMethod": "textContent",
+      "section": "episodes"
+    },
+    "episode_2_audio": {
+      "type": "url",
+      "label": "Episode 2 Audio URL",
+      "default": "",
+      "placeholder": "Enter audio file URL or embed code",
+      "previewSelector": ".episode:nth-child(2) .audio-player",
+      "updateMethod": "src",
+      "section": "episodes"
+    },
+    "episode_2_description": {
+      "type": "textarea",
+      "label": "Episode 2 Description",
+      "default": "",
+      "rows": 2,
+      "placeholder": "Brief episode description",
+      "previewSelector": ".episode:nth-child(2) .episode-description",
+      "updateMethod": "textContent",
+      "section": "episodes"
+    },
+    "player_style": {
+      "type": "select",
+      "label": "Player Style",
+      "default": "embedded",
+      "options": [
+        {"value": "embedded", "label": "Embedded Player"},
+        {"value": "minimal", "label": "Minimal Player"},
+        {"value": "custom", "label": "Custom Player"}
+      ],
+      "previewSelector": ".podcast-player",
+      "updateMethod": "class",
+      "classPrefix": "style-",
+      "section": "appearance"
+    },
+    "show_artwork": {
+      "type": "checkbox",
+      "label": "Show Episode Artwork",
+      "default": true,
+      "previewSelector": ".episode-artwork",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    },
+    "podcast_artwork": {
+      "type": "image",
+      "label": "Podcast Artwork",
+      "default": "",
+      "previewSelector": ".podcast-artwork",
+      "updateMethod": "src",
+      "section": "content",
+      "helpText": "Square image recommended (1400x1400px)"
+    },
+    "show_subscribe": {
+      "type": "checkbox",
+      "label": "Show Subscribe Links",
+      "default": true,
+      "previewSelector": ".subscribe-links",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    },
+    "apple_podcasts_url": {
+      "type": "url",
+      "label": "Apple Podcasts URL",
+      "default": "",
+      "placeholder": "Enter Apple Podcasts link",
+      "previewSelector": ".subscribe-apple",
+      "updateMethod": "href",
+      "section": "content"
+    },
+    "spotify_url": {
+      "type": "url",
+      "label": "Spotify URL",
+      "default": "",
+      "placeholder": "Enter Spotify link",
+      "previewSelector": ".subscribe-spotify",
+      "updateMethod": "href",
+      "section": "content"
+    },
+    "google_podcasts_url": {
+      "type": "url",
+      "label": "Google Podcasts URL",
+      "default": "",
+      "placeholder": "Enter Google Podcasts link",
+      "previewSelector": ".subscribe-google",
+      "updateMethod": "href",
+      "section": "content"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Podcast Information",
+      "order": 1
+    },
+    "episodes": {
+      "title": "Episode Content",
+      "order": 2
+    },
+    "appearance": {
+      "title": "Player Appearance",
+      "order": 3
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": false,
+    "requiredFields": ["podcast_name", "episode_1_title"],
+    "dataSource": "media",
+    "validationRules": {
+      "podcastNameRequired": true,
+      "minEpisodes": 1,
+      "audioUrlRequired": true
+    },
+    "priority": "medium"
+  }
 }

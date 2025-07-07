@@ -6,5 +6,213 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 1
+  "order": 1,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Featured In",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "subtitle": {
+      "type": "text",
+      "label": "Subtitle",
+      "default": "Trusted by leading organizations",
+      "placeholder": "Enter subtitle (optional)",
+      "previewSelector": ".section-subtitle",
+      "updateMethod": "textContent",
+      "section": "content"
+    },
+    "logo_1_image": {
+      "type": "image",
+      "label": "Logo 1",
+      "default": "",
+      "previewSelector": ".logo-item:nth-child(1) img",
+      "updateMethod": "src",
+      "section": "logos",
+      "helpText": "Upload first logo image"
+    },
+    "logo_1_name": {
+      "type": "text",
+      "label": "Logo 1 Alt Text",
+      "default": "Company 1",
+      "placeholder": "Enter company name",
+      "previewSelector": ".logo-item:nth-child(1) img",
+      "updateMethod": "alt",
+      "section": "logos"
+    },
+    "logo_1_url": {
+      "type": "url",
+      "label": "Logo 1 Link",
+      "default": "",
+      "placeholder": "Enter company website (optional)",
+      "previewSelector": ".logo-item:nth-child(1) a",
+      "updateMethod": "href",
+      "section": "logos"
+    },
+    "logo_2_image": {
+      "type": "image",
+      "label": "Logo 2",
+      "default": "",
+      "previewSelector": ".logo-item:nth-child(2) img",
+      "updateMethod": "src",
+      "section": "logos",
+      "helpText": "Upload second logo image"
+    },
+    "logo_2_name": {
+      "type": "text",
+      "label": "Logo 2 Alt Text",
+      "default": "Company 2",
+      "placeholder": "Enter company name",
+      "previewSelector": ".logo-item:nth-child(2) img",
+      "updateMethod": "alt",
+      "section": "logos"
+    },
+    "logo_2_url": {
+      "type": "url",
+      "label": "Logo 2 Link",
+      "default": "",
+      "placeholder": "Enter company website (optional)",
+      "previewSelector": ".logo-item:nth-child(2) a",
+      "updateMethod": "href",
+      "section": "logos"
+    },
+    "logo_3_image": {
+      "type": "image",
+      "label": "Logo 3",
+      "default": "",
+      "previewSelector": ".logo-item:nth-child(3) img",
+      "updateMethod": "src",
+      "section": "logos",
+      "helpText": "Upload third logo image"
+    },
+    "logo_3_name": {
+      "type": "text",
+      "label": "Logo 3 Alt Text",
+      "default": "Company 3",
+      "placeholder": "Enter company name",
+      "previewSelector": ".logo-item:nth-child(3) img",
+      "updateMethod": "alt",
+      "section": "logos"
+    },
+    "logo_3_url": {
+      "type": "url",
+      "label": "Logo 3 Link",
+      "default": "",
+      "placeholder": "Enter company website (optional)",
+      "previewSelector": ".logo-item:nth-child(3) a",
+      "updateMethod": "href",
+      "section": "logos"
+    },
+    "logo_4_image": {
+      "type": "image",
+      "label": "Logo 4",
+      "default": "",
+      "previewSelector": ".logo-item:nth-child(4) img",
+      "updateMethod": "src",
+      "section": "logos",
+      "helpText": "Upload fourth logo image"
+    },
+    "logo_4_name": {
+      "type": "text",
+      "label": "Logo 4 Alt Text",
+      "default": "Company 4",
+      "placeholder": "Enter company name",
+      "previewSelector": ".logo-item:nth-child(4) img",
+      "updateMethod": "alt",
+      "section": "logos"
+    },
+    "logo_4_url": {
+      "type": "url",
+      "label": "Logo 4 Link",
+      "default": "",
+      "placeholder": "Enter company website (optional)",
+      "previewSelector": ".logo-item:nth-child(4) a",
+      "updateMethod": "href",
+      "section": "logos"
+    },
+    "grid_columns": {
+      "type": "select",
+      "label": "Grid Columns",
+      "default": "4",
+      "options": [
+        {"value": "2", "label": "2 Columns"},
+        {"value": "3", "label": "3 Columns"},
+        {"value": "4", "label": "4 Columns"},
+        {"value": "5", "label": "5 Columns"},
+        {"value": "6", "label": "6 Columns"}
+      ],
+      "previewSelector": ".logo-grid",
+      "updateMethod": "class",
+      "classPrefix": "columns-",
+      "section": "appearance"
+    },
+    "logo_style": {
+      "type": "select",
+      "label": "Logo Style",
+      "default": "grayscale",
+      "options": [
+        {"value": "color", "label": "Full Color"},
+        {"value": "grayscale", "label": "Grayscale"},
+        {"value": "monochrome", "label": "Monochrome"}
+      ],
+      "previewSelector": ".logo-grid",
+      "updateMethod": "class",
+      "classPrefix": "style-",
+      "section": "appearance"
+    },
+    "hover_effect": {
+      "type": "select",
+      "label": "Hover Effect",
+      "default": "scale",
+      "options": [
+        {"value": "none", "label": "No Effect"},
+        {"value": "scale", "label": "Scale Up"},
+        {"value": "color", "label": "Color Transition"},
+        {"value": "opacity", "label": "Opacity Change"}
+      ],
+      "previewSelector": ".logo-grid",
+      "updateMethod": "class",
+      "classPrefix": "hover-",
+      "section": "appearance"
+    },
+    "show_borders": {
+      "type": "checkbox",
+      "label": "Show Logo Borders",
+      "default": false,
+      "previewSelector": ".logo-grid",
+      "updateMethod": "class",
+      "className": "show-borders",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Section Content",
+      "order": 1
+    },
+    "logos": {
+      "title": "Logo Images",
+      "order": 2
+    },
+    "appearance": {
+      "title": "Grid Appearance",
+      "order": 3
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": false,
+    "requiredFields": ["logo_1_image"],
+    "dataSource": "media",
+    "validationRules": {
+      "minLogos": 1,
+      "maxLogos": 6,
+      "imageRequired": true
+    },
+    "priority": "low"
+  }
 }

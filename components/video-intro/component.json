@@ -6,5 +6,193 @@
   "isPremium": true,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 1
+  "order": 1,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Meet [Your Name]",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "video_title": {
+      "type": "text",
+      "label": "Video Title",
+      "default": "Introduction Video",
+      "placeholder": "Enter video title",
+      "previewSelector": ".video-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "media.video_title"
+    },
+    "video_description": {
+      "type": "textarea",
+      "label": "Video Description",
+      "default": "Watch this brief introduction to learn more about my background and expertise.",
+      "rows": 3,
+      "placeholder": "Describe your video",
+      "previewSelector": ".video-description",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "media.video_description"
+    },
+    "video_url": {
+      "type": "url",
+      "label": "Video URL",
+      "default": "",
+      "placeholder": "Enter YouTube, Vimeo, or direct video URL",
+      "previewSelector": ".video-embed",
+      "updateMethod": "src",
+      "section": "content",
+      "helpText": "Supports YouTube, Vimeo, MP4, and other video formats",
+      "mkcgMapping": "media.video_url"
+    },
+    "video_thumbnail": {
+      "type": "image",
+      "label": "Custom Thumbnail",
+      "default": "",
+      "previewSelector": ".video-thumbnail",
+      "updateMethod": "src",
+      "section": "content",
+      "helpText": "Optional: Upload custom thumbnail (16:9 aspect ratio recommended)"
+    },
+    "video_duration": {
+      "type": "text",
+      "label": "Video Duration",
+      "default": "",
+      "placeholder": "e.g., 2:30",
+      "previewSelector": ".video-duration",
+      "updateMethod": "textContent",
+      "section": "content",
+      "helpText": "Display video length (optional)"
+    },
+    "video_provider": {
+      "type": "select",
+      "label": "Video Provider",
+      "default": "youtube",
+      "options": [
+        {"value": "youtube", "label": "YouTube"},
+        {"value": "vimeo", "label": "Vimeo"},
+        {"value": "direct", "label": "Direct Upload"},
+        {"value": "embed", "label": "Custom Embed Code"}
+      ],
+      "previewSelector": ".video-container",
+      "updateMethod": "class",
+      "classPrefix": "provider-",
+      "section": "content"
+    },
+    "autoplay": {
+      "type": "checkbox",
+      "label": "Autoplay Video",
+      "default": false,
+      "previewSelector": ".video-embed",
+      "updateMethod": "attribute",
+      "attributeName": "autoplay",
+      "section": "playback",
+      "helpText": "Note: Most browsers block autoplay with sound"
+    },
+    "show_controls": {
+      "type": "checkbox",
+      "label": "Show Player Controls",
+      "default": true,
+      "previewSelector": ".video-embed",
+      "updateMethod": "attribute",
+      "attributeName": "controls",
+      "section": "playback"
+    },
+    "loop_video": {
+      "type": "checkbox",
+      "label": "Loop Video",
+      "default": false,
+      "previewSelector": ".video-embed",
+      "updateMethod": "attribute",
+      "attributeName": "loop",
+      "section": "playback"
+    },
+    "muted_start": {
+      "type": "checkbox",
+      "label": "Start Muted",
+      "default": false,
+      "previewSelector": ".video-embed",
+      "updateMethod": "attribute",
+      "attributeName": "muted",
+      "section": "playback"
+    },
+    "video_style": {
+      "type": "select",
+      "label": "Video Style",
+      "default": "responsive",
+      "options": [
+        {"value": "responsive", "label": "Responsive (16:9)"},
+        {"value": "square", "label": "Square (1:1)"},
+        {"value": "wide", "label": "Wide (21:9)"},
+        {"value": "custom", "label": "Custom Size"}
+      ],
+      "previewSelector": ".video-wrapper",
+      "updateMethod": "class",
+      "classPrefix": "aspect-",
+      "section": "appearance"
+    },
+    "show_play_button": {
+      "type": "checkbox",
+      "label": "Show Custom Play Button",
+      "default": true,
+      "previewSelector": ".video-play-overlay",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    },
+    "border_radius": {
+      "type": "select",
+      "label": "Border Radius",
+      "default": "medium",
+      "options": [
+        {"value": "none", "label": "No Radius"},
+        {"value": "small", "label": "Small"},
+        {"value": "medium", "label": "Medium"},
+        {"value": "large", "label": "Large"},
+        {"value": "full", "label": "Rounded"}
+      ],
+      "previewSelector": ".video-wrapper",
+      "updateMethod": "class",
+      "classPrefix": "radius-",
+      "section": "appearance"
+    },
+    "add_shadow": {
+      "type": "checkbox",
+      "label": "Add Drop Shadow",
+      "default": true,
+      "previewSelector": ".video-wrapper",
+      "updateMethod": "class",
+      "className": "has-shadow",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Video Content",
+      "order": 1
+    },
+    "playback": {
+      "title": "Playback Settings",
+      "order": 2
+    },
+    "appearance": {
+      "title": "Video Appearance",
+      "order": 3
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["video_url"],
+    "dataSource": "media",
+    "validationRules": {
+      "videoUrlRequired": true,
+      "supportedFormats": ["youtube", "vimeo", "mp4", "webm"],
+      "titleMinLength": 3
+    },
+    "priority": "high"
+  }
 }
