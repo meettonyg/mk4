@@ -87,6 +87,7 @@ class Guestify_Media_Kit_Builder {
      * - Implements early detection and proper isolation
      * - Uses enhanced script manager for race condition prevention
      * - Adds comprehensive error handling and recovery
+     * - PHASE 1: Added MKCG post_id detection and data integration
      */
     public function isolated_builder_template_takeover() {
         // Enhanced detection with multiple methods
@@ -96,6 +97,22 @@ class Guestify_Media_Kit_Builder {
         
         if (!$is_builder_page) {
             return;
+        }
+        
+        // PHASE 1: Enhanced post_id detection for MKCG integration
+        $post_data = null;
+        $post_id = $this->detect_mkcg_post_id();
+        
+        if ($post_id > 0) {
+            // Initialize MKCG data integration
+            require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-mkcg-data-integration.php';
+            $mkcg_integration = GMKB_MKCG_Data_Integration::get_instance();
+            $post_data = $mkcg_integration->get_post_data($post_id);
+            
+            // Log successful data extraction
+            if ($post_data && defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: MKCG data extracted for post ID: ' . $post_id);
+            }
         }
         
         // Ensure enhanced script manager is active
@@ -412,6 +429,90 @@ class Guestify_Media_Kit_Builder {
      */
     public function get_component_loader() {
         return $this->component_loader;
+    }
+    
+    /**
+     * PHASE 1: Detect MKCG post ID from multiple URL parameter strategies
+     * 
+     * @return int Post ID or 0 if not found/invalid
+     */
+    private function detect_mkcg_post_id() {
+        $post_id = 0;
+        
+        // Strategy 1: Direct post_id parameter (?post_id=123)
+        if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+            $post_id = intval($_GET['post_id']);
+        }
+        // Strategy 2: WordPress p parameter (?p=123)
+        elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
+            $post_id = intval($_GET['p']);
+        }
+        // Strategy 3: Page ID parameter (?page_id=123)
+        elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
+            $post_id = intval($_GET['page_id']);
+        }
+        // Strategy 4: Post name/slug parameter (?post_name=sample-post)
+        elseif (isset($_GET['post_name']) && !empty($_GET['post_name'])) {
+            $post_slug = sanitize_title($_GET['post_name']);
+            $post_obj = get_page_by_path($post_slug, OBJECT, 'post');
+            if ($post_obj) {
+                $post_id = $post_obj->ID;
+            }
+        }
+        // Strategy 5: MKCG specific parameter (?mkcg_post=123)
+        elseif (isset($_GET['mkcg_post']) && is_numeric($_GET['mkcg_post'])) {
+            $post_id = intval($_GET['mkcg_post']);
+        }
+        
+        // Validate the detected post ID
+        if ($post_id > 0) {
+            // Verify post exists and is accessible
+            $post = get_post($post_id);
+            if (!$post || $post->post_status === 'trash') {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB: Invalid or inaccessible post ID detected: {$post_id}");
+                }
+                return 0;
+            }
+            
+            // Optional: Check if post has MKCG data (quick validation)
+            $has_mkcg_data = $this->quick_mkcg_data_check($post_id);
+            if (!$has_mkcg_data && defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB: Post ID {$post_id} detected but no MKCG data found");
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB: Post ID {$post_id} detected successfully" . ($has_mkcg_data ? ' with MKCG data' : ''));
+            }
+        }
+        
+        return $post_id;
+    }
+    
+    /**
+     * PHASE 1: Quick check if post has any MKCG data
+     * 
+     * @param int $post_id Post ID to check
+     * @return bool True if MKCG data found
+     */
+    private function quick_mkcg_data_check($post_id) {
+        // Check for common MKCG meta keys
+        $mkcg_keys = array(
+            'mkcg_topic_1',
+            'mkcg_biography_short',
+            'mkcg_authority_hook_who',
+            'mkcg_question_1',
+            'mkcg_offer_1_title'
+        );
+        
+        foreach ($mkcg_keys as $key) {
+            $value = get_post_meta($post_id, $key, true);
+            if (!empty($value)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }
 

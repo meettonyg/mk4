@@ -6,5 +6,137 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 2
+  "order": 2,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "About Me",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "bio_text": {
+      "type": "textarea",
+      "label": "Biography Text",
+      "default": "Add your full biography and professional background here. This is where you can share your story, expertise, and what makes you unique as a speaker or expert in your field.",
+      "rows": 6,
+      "placeholder": "Enter your biography",
+      "previewSelector": ".biography-content p",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.medium"
+    },
+    "long_bio": {
+      "type": "textarea",
+      "label": "Extended Biography",
+      "default": "",
+      "rows": 8,
+      "placeholder": "Enter extended biography (optional)",
+      "previewSelector": ".biography-extended",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.long",
+      "helpText": "Longer form biography for detailed media kits"
+    },
+    "short_bio": {
+      "type": "textarea",
+      "label": "Short Bio",
+      "default": "",
+      "rows": 3,
+      "placeholder": "Enter short bio (optional)",
+      "previewSelector": ".biography-short",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.short",
+      "helpText": "Brief bio for social media and quick introductions"
+    },
+    "achievements": {
+      "type": "textarea",
+      "label": "Key Achievements",
+      "default": "",
+      "rows": 4,
+      "placeholder": "List key achievements (optional)",
+      "previewSelector": ".biography-achievements",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.achievements"
+    },
+    "expertise": {
+      "type": "text",
+      "label": "Areas of Expertise",
+      "default": "",
+      "placeholder": "Enter areas of expertise",
+      "previewSelector": ".biography-expertise",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "biography.biography.expertise"
+    },
+    "bio_layout": {
+      "type": "select",
+      "label": "Biography Layout",
+      "default": "standard",
+      "options": [
+        {"value": "standard", "label": "Standard Layout"},
+        {"value": "two-column", "label": "Two Column Layout"},
+        {"value": "highlight", "label": "Highlight Box"},
+        {"value": "timeline", "label": "Timeline Style"}
+      ],
+      "previewSelector": ".biography-component",
+      "updateMethod": "class",
+      "classPrefix": "layout-",
+      "section": "appearance"
+    },
+    "show_achievements": {
+      "type": "checkbox",
+      "label": "Show Achievements Section",
+      "default": false,
+      "previewSelector": ".biography-achievements",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    },
+    "show_expertise": {
+      "type": "checkbox",
+      "label": "Show Expertise Section",
+      "default": false,
+      "previewSelector": ".biography-expertise",
+      "updateMethod": "visibility",
+      "section": "appearance"
+    },
+    "text_alignment": {
+      "type": "select",
+      "label": "Text Alignment",
+      "default": "left",
+      "options": [
+        {"value": "left", "label": "Left Aligned"},
+        {"value": "center", "label": "Center Aligned"},
+        {"value": "justify", "label": "Justified"}
+      ],
+      "previewSelector": ".biography-content",
+      "updateMethod": "class",
+      "classPrefix": "text-",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Biography Content",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Layout & Appearance",
+      "order": 2
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["bio_text"],
+    "dataSource": "biography",
+    "validationRules": {
+      "minLength": 50,
+      "maxLength": 2000
+    }
+  }
 }

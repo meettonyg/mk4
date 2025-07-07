@@ -15,7 +15,8 @@
       "placeholder": "Enter your full name",
       "previewSelector": ".hero-name",
       "updateMethod": "textContent",
-      "section": "profile"
+      "section": "profile",
+      "mkcgMapping": "biography.biography.name"
     },
     "hero_title": {
       "type": "text",
@@ -24,7 +25,8 @@
       "placeholder": "Your Professional Title",
       "previewSelector": ".hero-title",
       "updateMethod": "textContent",
-      "section": "profile"
+      "section": "profile",
+      "mkcgMapping": "biography.biography.title"
     },
     "hero_bio": {
       "type": "textarea",
@@ -33,7 +35,8 @@
       "rows": 3,
       "previewSelector": ".hero-bio",
       "updateMethod": "textContent",
-      "section": "profile"
+      "section": "profile",
+      "mkcgMapping": "biography.biography.short"
     },
     "profile_image": {
       "type": "image",
@@ -106,6 +109,15 @@
     "appearance": {
       "title": "Appearance",
       "order": 2
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["hero_name"],
+    "dataSource": "biography",
+    "validationRules": {
+      "nameMinLength": 2,
+      "bioMinLength": 10
     }
   }
 }

@@ -6,5 +6,125 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 4
+  "order": 4,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Frequently Asked Questions",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "question_1": {
+      "type": "text",
+      "label": "Question 1",
+      "default": "What topics do you speak about?",
+      "placeholder": "Enter first question",
+      "previewSelector": ".question-item:nth-child(1) .question-text",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "questions.questions.question_1"
+    },
+    "question_2": {
+      "type": "text",
+      "label": "Question 2",
+      "default": "What is your speaking experience?",
+      "placeholder": "Enter second question",
+      "previewSelector": ".question-item:nth-child(2) .question-text",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "questions.questions.question_2"
+    },
+    "question_3": {
+      "type": "text",
+      "label": "Question 3",
+      "default": "How can I book you for an event?",
+      "placeholder": "Enter third question",
+      "previewSelector": ".question-item:nth-child(3) .question-text",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "questions.questions.question_3"
+    },
+    "question_4": {
+      "type": "text",
+      "label": "Question 4",
+      "default": "What are your speaking fees?",
+      "placeholder": "Enter fourth question",
+      "previewSelector": ".question-item:nth-child(4) .question-text",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "questions.questions.question_4"
+    },
+    "question_5": {
+      "type": "text",
+      "label": "Question 5",
+      "default": "Do you offer virtual presentations?",
+      "placeholder": "Enter fifth question",
+      "previewSelector": ".question-item:nth-child(5) .question-text",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "questions.questions.question_5"
+    },
+    "display_style": {
+      "type": "select",
+      "label": "Display Style",
+      "default": "accordion",
+      "options": [
+        {"value": "accordion", "label": "Accordion Style"},
+        {"value": "list", "label": "Simple List"},
+        {"value": "cards", "label": "Card Layout"},
+        {"value": "faq", "label": "FAQ Style"}
+      ],
+      "previewSelector": ".questions-container",
+      "updateMethod": "class",
+      "classPrefix": "style-",
+      "section": "appearance"
+    },
+    "show_numbering": {
+      "type": "checkbox",
+      "label": "Show Question Numbers",
+      "default": true,
+      "previewSelector": ".questions-container",
+      "updateMethod": "class",
+      "className": "show-numbers",
+      "section": "appearance"
+    },
+    "max_questions": {
+      "type": "select",
+      "label": "Maximum Questions to Display",
+      "default": "5",
+      "options": [
+        {"value": "3", "label": "3 Questions"},
+        {"value": "5", "label": "5 Questions"},
+        {"value": "7", "label": "7 Questions"},
+        {"value": "10", "label": "10 Questions"}
+      ],
+      "previewSelector": ".questions-container",
+      "updateMethod": "data-attribute",
+      "attributeName": "data-max-questions",
+      "section": "content"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Questions Content",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Display & Appearance",
+      "order": 2
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["question_1"],
+    "dataSource": "questions",
+    "validationRules": {
+      "minQuestions": 1,
+      "maxQuestions": 10
+    }
+  }
 }

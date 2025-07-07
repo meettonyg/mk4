@@ -288,6 +288,7 @@ class GMKB_Enhanced_Script_Manager {
     
     /**
      * CRITICAL FIX: Prepare comprehensive data for JavaScript
+     * PHASE 1: Enhanced with MKCG data integration
      */
     private function prepare_and_localize_data() {
         $start_time = microtime(true);
@@ -295,6 +296,21 @@ class GMKB_Enhanced_Script_Manager {
         // Get component data with error handling
         $components_data = $this->get_components_data_safe();
         $component_schemas = $this->get_component_schemas_safe();
+        
+        // PHASE 1: Initialize MKCG data integration
+        $mkcg_data = null;
+        $post_id = $this->get_current_post_id();
+        
+        if ($post_id > 0) {
+            // Load MKCG integration service
+            require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-mkcg-data-integration.php';
+            $mkcg_integration = GMKB_MKCG_Data_Integration::get_instance();
+            $mkcg_data = $mkcg_integration->get_post_data($post_id);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Enhanced Script Manager: MKCG data prepared for post ID ' . $post_id);
+            }
+        }
     
         // CRITICAL FIX: Add backup URLs and validation
         $site_url = home_url();
@@ -325,6 +341,19 @@ class GMKB_Enhanced_Script_Manager {
             'components' => $components_data['components'],
             'categories' => $components_data['categories'],
             'componentSchemas' => $component_schemas,
+            
+            // PHASE 1: MKCG Data Integration
+            'mkcgData' => $mkcg_data,
+            'postId' => $post_id,
+            'dataSource' => $mkcg_data ? 'mkcg_integration' : 'default',
+            'mkcgIntegration' => array(
+                'enabled' => true,
+                'hasData' => !is_null($mkcg_data),
+                'postId' => $post_id,
+                'availability' => $mkcg_data ? $mkcg_data['validation'] : array(),
+                'extractionTime' => $mkcg_data ? $mkcg_data['meta_info']['extraction_timestamp'] : null,
+                'version' => '1.0.0-phase1'
+            ),
             
             // CRITICAL FIX: Enhanced template system integration
             'templates' => $this->get_template_presets_safe(),
@@ -1021,6 +1050,44 @@ class GMKB_Enhanced_Script_Manager {
     }
     
     /**
+     * PHASE 1: Get current post ID for MKCG integration
+     * 
+     * @return int Post ID or 0 if not found
+     */
+    private function get_current_post_id() {
+        // Try multiple detection strategies
+        $post_id = 0;
+        
+        // Strategy 1: Direct post_id parameter
+        if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+            $post_id = intval($_GET['post_id']);
+        }
+        // Strategy 2: WordPress p parameter
+        elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
+            $post_id = intval($_GET['p']);
+        }
+        // Strategy 3: Page ID parameter
+        elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
+            $post_id = intval($_GET['page_id']);
+        }
+        // Strategy 4: MKCG specific parameter
+        elseif (isset($_GET['mkcg_post']) && is_numeric($_GET['mkcg_post'])) {
+            $post_id = intval($_GET['mkcg_post']);
+        }
+        // Strategy 5: Try to get from global $post if available
+        elseif (isset($GLOBALS['post']) && $GLOBALS['post']) {
+            $post_id = $GLOBALS['post']->ID;
+        }
+        
+        // Validate post exists
+        if ($post_id > 0 && get_post_status($post_id) === false) {
+            return 0;
+        }
+        
+        return $post_id;
+    }
+    
+    /**
      * Get initialization status for debugging
      */
     public function get_status() {
@@ -1028,7 +1095,8 @@ class GMKB_Enhanced_Script_Manager {
             'script_loaded' => $this->script_loaded,
             'data_ready' => $this->data_ready,
             'is_builder_page' => $this->is_builder_page,
-            'version' => '2.3.0-phase1'
+            'version' => '2.3.0-phase1',
+            'mkcg_integration' => 'enabled'
         );
     }
 }

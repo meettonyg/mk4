@@ -6,5 +6,124 @@
   "isPremium": false,
   "dependencies": [],
   "version": "1.0.0",
-  "order": 3
+  "order": 3,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Speaking Topics",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "topic_1": {
+      "type": "text",
+      "label": "Topic 1",
+      "default": "Topic 1",
+      "placeholder": "Enter first topic",
+      "previewSelector": ".topic-item:nth-child(1)",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "topics.topics.topic_1"
+    },
+    "topic_2": {
+      "type": "text",
+      "label": "Topic 2",
+      "default": "Topic 2",
+      "placeholder": "Enter second topic",
+      "previewSelector": ".topic-item:nth-child(2)",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "topics.topics.topic_2"
+    },
+    "topic_3": {
+      "type": "text",
+      "label": "Topic 3",
+      "default": "Topic 3",
+      "placeholder": "Enter third topic",
+      "previewSelector": ".topic-item:nth-child(3)",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "topics.topics.topic_3"
+    },
+    "topic_4": {
+      "type": "text",
+      "label": "Topic 4",
+      "default": "Topic 4",
+      "placeholder": "Enter fourth topic",
+      "previewSelector": ".topic-item:nth-child(4)",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "topics.topics.topic_4"
+    },
+    "topic_5": {
+      "type": "text",
+      "label": "Topic 5",
+      "default": "Topic 5",
+      "placeholder": "Enter fifth topic",
+      "previewSelector": ".topic-item:nth-child(5)",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "topics.topics.topic_5"
+    },
+    "layout_style": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": [
+        {"value": "grid", "label": "Grid Layout"},
+        {"value": "list", "label": "List Layout"},
+        {"value": "pills", "label": "Pill Badges"},
+        {"value": "cards", "label": "Card Layout"}
+      ],
+      "previewSelector": ".topics-grid",
+      "updateMethod": "class",
+      "classPrefix": "layout-",
+      "section": "appearance"
+    },
+    "show_numbering": {
+      "type": "checkbox",
+      "label": "Show Topic Numbers",
+      "default": false,
+      "previewSelector": ".topics-grid",
+      "updateMethod": "class",
+      "className": "show-numbers",
+      "section": "appearance"
+    },
+    "columns": {
+      "type": "select",
+      "label": "Number of Columns",
+      "default": "2",
+      "options": [
+        {"value": "1", "label": "1 Column"},
+        {"value": "2", "label": "2 Columns"},
+        {"value": "3", "label": "3 Columns"}
+      ],
+      "previewSelector": ".topics-grid",
+      "updateMethod": "class",
+      "classPrefix": "columns-",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Topics Content",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Layout & Appearance",
+      "order": 2
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["topic_1"],
+    "dataSource": "topics",
+    "validationRules": {
+      "minTopics": 1,
+      "maxTopics": 5
+    }
+  }
 }

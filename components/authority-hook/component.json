@@ -1,0 +1,163 @@
+{
+  "name": "Authority Hook",
+  "category": "essential",
+  "icon": "authority-hook.svg",
+  "description": "Authority positioning with WHO, WHAT, WHEN, WHERE, WHY, HOW framework",
+  "isPremium": false,
+  "dependencies": [],
+  "version": "1.0.0",
+  "order": 5,
+  "settings": {
+    "title": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Authority Positioning",
+      "placeholder": "Enter section title",
+      "previewSelector": ".section-title",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "meta_info.section_title"
+    },
+    "who": {
+      "type": "textarea",
+      "label": "WHO - Target Audience",
+      "default": "Who is your ideal audience or client?",
+      "rows": 3,
+      "placeholder": "Describe your target audience",
+      "previewSelector": ".authority-who .content",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "authority_hook.authority_hook.who",
+      "helpText": "Define who you serve or speak to"
+    },
+    "what": {
+      "type": "textarea",
+      "label": "WHAT - Your Expertise",
+      "default": "What specific expertise or value do you provide?",
+      "rows": 3,
+      "placeholder": "Describe what you do or provide",
+      "previewSelector": ".authority-what .content",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "authority_hook.authority_hook.what",
+      "helpText": "Explain your unique value proposition"
+    },
+    "when": {
+      "type": "textarea",
+      "label": "WHEN - Timing/Context",
+      "default": "When do people need your expertise most?",
+      "rows": 3,
+      "placeholder": "Describe the timing or context",
+      "previewSelector": ".authority-when .content",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "authority_hook.authority_hook.when",
+      "helpText": "Identify the optimal timing for your services"
+    },
+    "where": {
+      "type": "textarea",
+      "label": "WHERE - Location/Platform",
+      "default": "Where do you deliver your expertise?",
+      "rows": 3,
+      "placeholder": "Describe where you operate",
+      "previewSelector": ".authority-where .content",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "authority_hook.authority_hook.where",
+      "helpText": "Specify your operational context or platforms"
+    },
+    "why": {
+      "type": "textarea",
+      "label": "WHY - Your Mission",
+      "default": "Why is your work important?",
+      "rows": 3,
+      "placeholder": "Explain your mission or purpose",
+      "previewSelector": ".authority-why .content",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "authority_hook.authority_hook.why",
+      "helpText": "Share your deeper purpose or mission"
+    },
+    "how": {
+      "type": "textarea",
+      "label": "HOW - Your Approach",
+      "default": "How do you deliver unique results?",
+      "rows": 3,
+      "placeholder": "Describe your methodology or approach",
+      "previewSelector": ".authority-how .content",
+      "updateMethod": "textContent",
+      "section": "content",
+      "mkcgMapping": "authority_hook.authority_hook.how",
+      "helpText": "Explain your unique methodology or process"
+    },
+    "layout_style": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": [
+        {"value": "grid", "label": "Grid Layout (2x3)"},
+        {"value": "list", "label": "Vertical List"},
+        {"value": "cards", "label": "Card Layout"},
+        {"value": "timeline", "label": "Timeline Style"}
+      ],
+      "previewSelector": ".authority-hook-container",
+      "updateMethod": "class",
+      "classPrefix": "layout-",
+      "section": "appearance"
+    },
+    "show_icons": {
+      "type": "checkbox",
+      "label": "Show Component Icons",
+      "default": true,
+      "previewSelector": ".authority-hook-container",
+      "updateMethod": "class",
+      "className": "show-icons",
+      "section": "appearance"
+    },
+    "compact_mode": {
+      "type": "checkbox",
+      "label": "Compact Display",
+      "default": false,
+      "previewSelector": ".authority-hook-container",
+      "updateMethod": "class",
+      "className": "compact-mode",
+      "section": "appearance",
+      "helpText": "Reduce spacing for more condensed layout"
+    },
+    "highlight_order": {
+      "type": "select",
+      "label": "Emphasis Order",
+      "default": "what-who",
+      "options": [
+        {"value": "what-who", "label": "Emphasize WHAT & WHO"},
+        {"value": "why-how", "label": "Emphasize WHY & HOW"},
+        {"value": "equal", "label": "Equal Emphasis"},
+        {"value": "custom", "label": "Custom Order"}
+      ],
+      "previewSelector": ".authority-hook-container",
+      "updateMethod": "class",
+      "classPrefix": "emphasis-",
+      "section": "appearance"
+    }
+  },
+  "sections": {
+    "content": {
+      "title": "Authority Framework",
+      "order": 1
+    },
+    "appearance": {
+      "title": "Layout & Appearance",
+      "order": 2
+    }
+  },
+  "mkcgIntegration": {
+    "autoPopulate": true,
+    "requiredFields": ["who", "what"],
+    "dataSource": "authority_hook",
+    "validationRules": {
+      "minComponentsRequired": 4,
+      "maxLength": 500
+    },
+    "priority": "high"
+  }
+}
