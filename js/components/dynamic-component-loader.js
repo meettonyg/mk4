@@ -39,6 +39,21 @@ class DynamicComponentLoader {
             failures: 0
         };
         
+        // CRITICAL FIX: Component type aliases mapping (matches PHP)
+        this.componentAliases = {
+            'bio': 'biography',
+            'social-links': 'social',
+            'social-media': 'social',
+            'authority': 'authority-hook',
+            'cta': 'call-to-action',
+            'booking': 'booking-calendar',
+            'gallery': 'photo-gallery',
+            'player': 'podcast-player',
+            'intro': 'guest-intro',
+            'video': 'video-intro',
+            'logos': 'logo-grid'
+        };
+        
         // CRITICAL FIX: Circuit breaker to prevent cascade failures
         this.circuitBreaker = {
             failureCount: 0,
@@ -96,43 +111,71 @@ class DynamicComponentLoader {
      * @returns {Promise<string>} A promise that resolves to the component's HTML template.
      */
     async getTemplate(type) {
-        // First check shared template cache
-        const cached = templateCache.get(type);
+        // CRITICAL FIX: Resolve component type aliases
+        const originalType = type;
+        const resolvedType = this.resolveComponentType(type);
+        
+        // First check shared template cache (check both original and resolved)
+        let cached = templateCache.get(originalType) || templateCache.get(resolvedType);
         if (cached && cached.html) {
             this.requestStats.fromCache++;
             structuredLogger.debug('LOADER', 'Template loaded from cache', {
-                type,
+                originalType,
+                resolvedType,
                 cacheHitRate: templateCache.getHitRate()
             });
             return cached.html;
         }
 
-        // Check if already fetching this template
-        if (this.pending.has(type)) {
-            structuredLogger.debug('LOADER', 'Waiting for pending template fetch', { type });
-            return this.pending.get(type);
+        // Check if already fetching this template (check both types)
+        if (this.pending.has(originalType) || this.pending.has(resolvedType)) {
+            const pendingType = this.pending.has(originalType) ? originalType : resolvedType;
+            structuredLogger.debug('LOADER', 'Waiting for pending template fetch', { 
+                originalType, 
+                resolvedType, 
+                pendingType 
+            });
+            return this.pending.get(pendingType);
         }
 
         // Need to fetch from server (fallback for templates not in batch)
-        structuredLogger.info('LOADER', 'Template not in cache, fetching individually', { type });
+        structuredLogger.info('LOADER', 'Template not in cache, fetching individually', { 
+            originalType, 
+            resolvedType 
+        });
         
-        const perfEnd = performanceMonitor.start('fetch-template-individual', { type });
-        const promise = this.fetchTemplate(type);
-        this.pending.set(type, promise);
+        const perfEnd = performanceMonitor.start('fetch-template-individual', { 
+            originalType, 
+            resolvedType 
+        });
+        const promise = this.fetchTemplate(originalType, resolvedType);
+        this.pending.set(originalType, promise);
+        this.pending.set(resolvedType, promise);
 
         try {
             const template = await promise;
             this.requestStats.fromServer++;
             
-            // Store in shared cache
-            templateCache.set(type, template, {
-                name: type,
+            // Store in shared cache (store under both original and resolved types)
+            templateCache.set(originalType, template, {
+                name: originalType,
+                actualType: resolvedType,
                 category: 'dynamic',
                 fetchedAt: new Date().toISOString()
             });
             
+            if (originalType !== resolvedType) {
+                templateCache.set(resolvedType, template, {
+                    name: resolvedType,
+                    aliasFor: originalType,
+                    category: 'dynamic',
+                    fetchedAt: new Date().toISOString()
+                });
+            }
+            
             structuredLogger.info('LOADER', 'Template fetched and cached', {
-                type,
+                originalType,
+                resolvedType,
                 duration: performanceMonitor.getMetric('fetch-template-individual')?.duration || 0
             });
             
@@ -141,11 +184,39 @@ class DynamicComponentLoader {
             this.requestStats.failures++;
             throw error;
         } finally {
-            this.pending.delete(type);
+            this.pending.delete(originalType);
+            this.pending.delete(resolvedType);
             perfEnd();
         }
     }
 
+    /**
+     * CRITICAL FIX: Resolve component type from alias to actual directory name
+     * @param {string} requestedType - The requested component type (may be an alias)
+     * @returns {string} The actual component directory name
+     */
+    resolveComponentType(requestedType) {
+        // Check if it's an alias
+        if (this.componentAliases[requestedType]) {
+            structuredLogger.debug('LOADER', 'Resolving component alias', {
+                requestedType,
+                resolvedType: this.componentAliases[requestedType]
+            });
+            return this.componentAliases[requestedType];
+        }
+        
+        // Return the original type if no alias found
+        return requestedType;
+    }
+    
+    /**
+     * Get all component type aliases
+     * @returns {Object} Component aliases mapping
+     */
+    getComponentAliases() {
+        return { ...this.componentAliases };
+    }
+    
     /**
      * CRITICAL FIX: Initialize fallback templates to prevent cascade failures
      */
@@ -216,20 +287,30 @@ class DynamicComponentLoader {
 
     /**
      * CRITICAL FIX: Enhanced template fetching with circuit breaker and immediate fallbacks
-     * @param {string} type - The component type.
+     * @param {string} originalType - The originally requested component type.
+     * @param {string} resolvedType - The resolved component type (after alias resolution).
      * @returns {Promise<string>} A promise that resolves to the template string.
      */
-    async fetchTemplate(type) {
+    async fetchTemplate(originalType, resolvedType = null) {
+        // Use resolved type if provided, otherwise resolve the original type
+        const actualType = resolvedType || this.resolveComponentType(originalType);
+        const typeToFetch = actualType;
         // CRITICAL FIX: Check circuit breaker first
         if (!this.checkCircuitBreaker()) {
-            structuredLogger.warn('LOADER', 'Circuit breaker OPEN, using fallback', { type });
-            return this.getFallbackTemplate(type);
+            structuredLogger.warn('LOADER', 'Circuit breaker OPEN, using fallback', { 
+                originalType, 
+                actualType 
+            });
+            return this.getFallbackTemplate(originalType);
         }
         
         // CRITICAL FIX: For stress test components, use fallback immediately
-        if (type.startsWith('stress-test-') || type.startsWith('test-')) {
-            structuredLogger.info('LOADER', 'Test component detected, using fallback immediately', { type });
-            return this.getFallbackTemplate(type);
+        if (originalType.startsWith('stress-test-') || originalType.startsWith('test-')) {
+            structuredLogger.info('LOADER', 'Test component detected, using fallback immediately', { 
+                originalType, 
+                actualType 
+            });
+            return this.getFallbackTemplate(originalType);
         }
         
         // CRITICAL FIX: Reduced retries and much faster timeouts
@@ -241,9 +322,9 @@ class DynamicComponentLoader {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 1000); // Reduced to 1 second
                 
-                // Try REST API endpoint first
+                // Try REST API endpoint first (use original type - API handles alias resolution)
                 const siteUrl = window.guestifyData?.siteUrl || window.location.origin;
-                const restUrl = `${siteUrl}/wp-json/guestify/v1/templates/${type}`;
+                const restUrl = `${siteUrl}/wp-json/guestify/v1/templates/${originalType}`;
                 let response = await fetch(restUrl, {
                     signal: controller.signal,
                     headers: {
@@ -254,14 +335,14 @@ class DynamicComponentLoader {
                 
                 clearTimeout(timeoutId);
                 
-                // If REST API fails, try direct PHP file (backward compatibility)
+                // If REST API fails, try direct PHP file using actual type (backward compatibility)
                 if (!response.ok && response.status === 404) {
-                    const directUrl = `${this.pluginUrl}components/${type}/template.php`;
+                    const directUrl = `${this.pluginUrl}components/${actualType}/template.php`;
                     response = await fetch(directUrl);
                 }
                 
                 if (!response.ok) {
-                    throw new Error(`Failed to fetch template for ${type}: ${response.statusText}`);
+                    throw new Error(`Failed to fetch template for ${originalType} (resolved to ${actualType}): ${response.statusText}`);
                 }
                 
                 // Success - reset circuit breaker failure count
@@ -288,7 +369,8 @@ class DynamicComponentLoader {
                     // CRITICAL FIX: Much faster retry delays (milliseconds, not seconds)
                     const delay = 100 + (attempt * 50); // 100ms, 150ms instead of 1s, 2s, 4s
                     structuredLogger.warn('LOADER', `Fetch attempt ${attempt + 1} failed, retrying...`, {
-                        type,
+                        originalType,
+                        actualType,
                         error: error.message,
                         delay
                     });
@@ -300,12 +382,13 @@ class DynamicComponentLoader {
         // CRITICAL FIX: Record failure and return fallback instead of throwing
         this.recordFailure();
         structuredLogger.warn('LOADER', `All fetch attempts failed, using fallback template`, { 
-            type, 
+            originalType, 
+            actualType,
             error: lastError?.message,
             circuitBreakerState: this.circuitBreaker.state
         });
         
-        return this.getFallbackTemplate(type);
+        return this.getFallbackTemplate(originalType);
     }
 
     /**

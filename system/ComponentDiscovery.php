@@ -10,6 +10,25 @@ class ComponentDiscovery {
     private $componentsDir;
     private $categories = [];
     private $components = [];
+    private $aliases = [];
+    
+    /**
+     * Component type aliases mapping
+     * Maps requested component types to actual directory names
+     */
+    private $component_aliases = array(
+        'bio' => 'biography',
+        'social-links' => 'social',
+        'social-media' => 'social',
+        'authority' => 'authority-hook',
+        'cta' => 'call-to-action',
+        'booking' => 'booking-calendar',
+        'gallery' => 'photo-gallery',
+        'player' => 'podcast-player',
+        'intro' => 'guest-intro',
+        'video' => 'video-intro',
+        'logos' => 'logo-grid'
+    );
 
     /**
      * Constructor
@@ -75,6 +94,14 @@ class ComponentDiscovery {
             $this->categories[$category][] = $componentData;
         }
 
+        // Build aliases mapping (reverse lookup)
+        $this->aliases = array();
+        foreach ($this->component_aliases as $alias => $actual) {
+            if (isset($this->components[$actual])) {
+                $this->aliases[$alias] = $this->components[$actual];
+            }
+        }
+
         // Sort categories by component order
         foreach ($this->categories as $category => $components) {
             usort($this->categories[$category], function($a, $b) {
@@ -128,5 +155,60 @@ class ComponentDiscovery {
      */
     public function getComponent($componentName) {
         return $this->components[$componentName] ?? null;
+    }
+    
+    /**
+     * Get a component by type (handles aliases)
+     * 
+     * @param string $componentType Component type (may be an alias)
+     * @return array|null Component data or null if not found
+     */
+    public function getComponentByType($componentType) {
+        // Check direct match first
+        if (isset($this->components[$componentType])) {
+            return $this->components[$componentType];
+        }
+        
+        // Check aliases
+        if (isset($this->aliases[$componentType])) {
+            return $this->aliases[$componentType];
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Resolve component type from alias to actual directory name
+     * 
+     * @param string $requestedType The requested component type (may be an alias)
+     * @return string The actual component directory name
+     */
+    public function resolveComponentType($requestedType) {
+        // Check if it's an alias
+        if (isset($this->component_aliases[$requestedType])) {
+            return $this->component_aliases[$requestedType];
+        }
+        
+        // Return the original type if no alias found
+        return $requestedType;
+    }
+    
+    /**
+     * Get all component aliases
+     * 
+     * @return array Component aliases mapping
+     */
+    public function getAliases() {
+        return $this->component_aliases;
+    }
+    
+    /**
+     * Check if a component type exists (including aliases)
+     * 
+     * @param string $componentType Component type to check
+     * @return bool True if component exists
+     */
+    public function componentExists($componentType) {
+        return isset($this->components[$componentType]) || isset($this->aliases[$componentType]);
     }
 }

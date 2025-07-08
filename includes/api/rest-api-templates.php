@@ -32,6 +32,24 @@ class GMKB_REST_Templates_Controller {
     const CACHE_DURATION = 3600;
     
     /**
+     * Component type aliases mapping
+     * Maps requested component types to actual directory names
+     */
+    private $component_aliases = array(
+        'bio' => 'biography',
+        'social-links' => 'social',
+        'social-media' => 'social',
+        'authority' => 'authority-hook',
+        'cta' => 'call-to-action',
+        'booking' => 'booking-calendar',
+        'gallery' => 'photo-gallery',
+        'player' => 'podcast-player',
+        'intro' => 'guest-intro',
+        'video' => 'video-intro',
+        'logos' => 'logo-grid'
+    );
+    
+    /**
      * Constructor
      */
     public function __construct() {
@@ -167,13 +185,14 @@ class GMKB_REST_Templates_Controller {
      * @return WP_REST_Response|WP_Error
      */
     public function get_single_template($request) {
-        $type = $request->get_param('type');
-        $template_path = GMKB_PLUGIN_DIR . 'components/' . $type . '/template.php';
+        $requested_type = $request->get_param('type');
+        $actual_type = $this->resolve_component_type($requested_type);
+        $template_path = GMKB_PLUGIN_DIR . 'components/' . $actual_type . '/template.php';
         
         if (!file_exists($template_path)) {
             return new WP_Error(
                 'template_not_found',
-                sprintf('Template for component type "%s" not found', $type),
+                sprintf('Template for component type "%s" (resolved to "%s") not found', $requested_type, $actual_type),
                 array('status' => 404)
             );
         }
@@ -185,11 +204,38 @@ class GMKB_REST_Templates_Controller {
         
         $response_data = array(
             'success' => true,
-            'type'    => $type,
-            'html'    => $template_content
+            'type'    => $requested_type,
+            'actual_type' => $actual_type,
+            'html'    => $template_content,
+            'resolved_from_alias' => $requested_type !== $actual_type
         );
         
         return new WP_REST_Response($response_data, 200);
+    }
+    
+    /**
+     * Resolve component type from alias to actual directory name
+     * 
+     * @param string $requested_type The requested component type (may be an alias)
+     * @return string The actual component directory name
+     */
+    private function resolve_component_type($requested_type) {
+        // Check if it's an alias
+        if (isset($this->component_aliases[$requested_type])) {
+            return $this->component_aliases[$requested_type];
+        }
+        
+        // Return the original type if no alias found
+        return $requested_type;
+    }
+    
+    /**
+     * Get all component type aliases
+     * 
+     * @return array Component aliases mapping
+     */
+    public function get_component_aliases() {
+        return $this->component_aliases;
     }
     
     /**

@@ -752,10 +752,33 @@ export class MKCGDataMapper {
         }
 
         const autoPopulatable = [];
+        
+        // ROOT FIX: Diagnostic logging for component schemas
+        console.log('🔍 DIAGNOSTIC: Component schemas available:', Object.keys(this.componentSchemas));
+        
+        // ROOT FIX: Check for any "bio" entries in schemas
+        const bioEntries = Object.keys(this.componentSchemas).filter(key => 
+            key.includes('bio') || key === 'bio'
+        );
+        if (bioEntries.length > 0) {
+            console.error('🚨 DIAGNOSTIC: Found bio-related entries in component schemas:', bioEntries);
+        }
 
         for (const [componentType, schema] of Object.entries(this.componentSchemas)) {
+            // ROOT FIX: Log each component being checked
+            if (this.debugMode || componentType.includes('bio')) {
+                console.log(`🔍 DIAGNOSTIC: Checking component "${componentType}" for auto-population`);
+            }
+            
             if (this.canAutoPopulate(componentType, dataSource)) {
                 const mappingResult = this.mapDataToComponent(componentType, dataSource);
+                
+                // ROOT FIX: Extra validation for biography/bio mapping
+                if (componentType === 'bio' || componentType.includes('bio')) {
+                    console.error('🚨 DIAGNOSTIC: Processing bio-related component:', componentType);
+                    console.error('Schema:', schema);
+                    console.error('Mapping result:', mappingResult);
+                }
                 
                 autoPopulatable.push({
                     type: componentType,
@@ -772,7 +795,18 @@ export class MKCGDataMapper {
         }
 
         // Sort by priority score
-        return this.priorityEngine.sortComponentsByPriority(autoPopulatable);
+        const sortedResults = this.priorityEngine.sortComponentsByPriority(autoPopulatable);
+        
+        // ROOT FIX: Final validation check
+        const bioResults = sortedResults.filter(comp => comp.type === 'bio' || comp.type.includes('bio'));
+        if (bioResults.length > 0) {
+            console.error('🚨 DIAGNOSTIC: Bio components found in final auto-populatable results:');
+            console.error(bioResults);
+        }
+        
+        console.log('✅ DIAGNOSTIC: Auto-populatable components:', sortedResults.map(c => c.type));
+        
+        return sortedResults;
     }
 
     /**
@@ -1098,6 +1132,108 @@ if (typeof window !== 'undefined') {
         batchMap: (components) => mkcgDataMapper.batchMapComponents(components),
         optimizeCache: () => mkcgDataMapper.optimizeCache(),
         
+        // ROOT FIX: Bio component diagnostic tools
+        diagnoseBioIssue: () => {
+            console.group('🔍 BIO COMPONENT DIAGNOSTIC');
+            
+            // Check component schemas
+            const schemas = window.guestifyData?.componentSchemas || {};
+            console.log('1. Component schemas available:', Object.keys(schemas));
+            
+            const bioSchemas = Object.keys(schemas).filter(key => 
+                key.includes('bio') || key === 'bio'
+            );
+            if (bioSchemas.length > 0) {
+                console.error('🚨 Found bio-related schemas:', bioSchemas);
+                bioSchemas.forEach(key => {
+                    console.log(`Schema for "${key}":`, schemas[key]);
+                });
+            } else {
+                console.log('✅ No problematic bio schemas found');
+            }
+            
+            // Check auto-populatable components
+            try {
+                const autoPopulatable = mkcgDataMapper.getAutoPopulatableComponentsEnhanced();
+                console.log('2. Auto-populatable components:', autoPopulatable.map(c => c.type));
+                
+                const bioComponents = autoPopulatable.filter(c => c.type === 'bio');
+                if (bioComponents.length > 0) {
+                    console.error('🚨 Found bio components in auto-populatable list:', bioComponents);
+                } else {
+                    console.log('✅ No bio components in auto-populatable list');
+                }
+            } catch (error) {
+                console.error('Error getting auto-populatable components:', error);
+            }
+            
+            // Check if enhanced component manager has bio references
+            if (window.enhancedComponentManager) {
+                console.log('3. Enhanced component manager status:', window.enhancedComponentManager.getStatus());
+            }
+            
+            // Check browser storage for cached bio references
+            try {
+                const localStorageKeys = Object.keys(localStorage).filter(key => 
+                    key.includes('bio') || localStorage[key].includes('bio')
+                );
+                if (localStorageKeys.length > 0) {
+                    console.warn('⚠️ Found bio references in localStorage:', localStorageKeys);
+                } else {
+                    console.log('✅ No bio references in localStorage');
+                }
+            } catch (error) {
+                console.log('Could not check localStorage:', error.message);
+            }
+            
+            // Check current state
+            if (window.enhancedStateManager) {
+                const state = window.enhancedStateManager.getState();
+                const bioComponents = Object.values(state.components || {}).filter(comp => comp.type === 'bio');
+                if (bioComponents.length > 0) {
+                    console.error('🚨 Found bio components in current state:', bioComponents);
+                } else {
+                    console.log('✅ No bio components in current state');
+                }
+            }
+            
+            console.groupEnd();
+            
+            return {
+                schemas: Object.keys(schemas),
+                bioSchemas,
+                hasEnhancedComponentManager: !!window.enhancedComponentManager,
+                hasStateManager: !!window.enhancedStateManager,
+                hasMkcgDataMapper: !!mkcgDataMapper
+            };
+        },
+        
+        // ROOT FIX: Clear any cached bio references
+        clearBioReferences: () => {
+            console.log('🧹 Clearing potential bio references...');
+            
+            // Clear mapper cache
+            if (mkcgDataMapper && typeof mkcgDataMapper.clearCache === 'function') {
+                mkcgDataMapper.clearCache();
+                console.log('✅ Cleared MKCG mapper cache');
+            }
+            
+            // Clear localStorage keys that might contain bio references
+            try {
+                const keysToRemove = Object.keys(localStorage).filter(key => 
+                    key.includes('bio') || key.includes('component') || key.includes('guestify')
+                );
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                    console.log(`✅ Removed localStorage key: ${key}`);
+                });
+            } catch (error) {
+                console.warn('Could not clear localStorage:', error.message);
+            }
+            
+            console.log('🎉 Bio reference cleanup completed. Try refreshing the page.');
+        },
+        
         // PHASE 2.1: Enhanced debugging commands
         testComponentQuality: (componentType) => {
             const result = mkcgDataMapper.mapDataToComponent(componentType);
@@ -1151,5 +1287,7 @@ if (typeof window !== 'undefined') {
     console.log('🔗 Enhanced MKCG Debug Tools Available:');
     console.log('Commands: mkcgDebug.testMapping(), mkcgDebug.validateAll(), mkcgDebug.testComponentQuality()');
     console.log('Performance: mkcgDebug.runPerformanceTest(), mkcgDebug.getPerformanceStats()');
-    console.log('Batch: mkcgDebug.batchMap([...]), mkcgDebug.compareComponents([...])');
+    console.log('Batch: mkcgDebug.batchMap([...]), mkcgDebug.compareComponents([...])');  
+    console.log('🔍 DIAGNOSTIC: mkcgDebug.diagnoseBioIssue(), mkcgDebug.clearBioReferences()');
+    console.log('🔗 ROOT FIX: Run mkcgDebug.diagnoseBioIssue() to identify "bio" component issues');
 }

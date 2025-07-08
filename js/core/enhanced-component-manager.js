@@ -140,11 +140,30 @@ class EnhancedComponentManager {
 
     /**
      * PHASE 2.1: Enhanced component addition with advanced MKCG data integration
+     * ROOT FIX: Added component type validation and debugging
      * @param {string} componentType - The type of the component to add.
      * @param {object} props - The initial properties for the new component.
      * @param {boolean} autoPopulate - Whether to auto-populate with MKCG data (default: true)
      */
     addComponent(componentType, props = {}, autoPopulate = true) {
+        // ROOT FIX: Diagnostic logging and component type validation
+        if (componentType === 'bio') {
+            console.error('🚨 DIAGNOSTIC: Attempting to add "bio" component - should be "biography"');
+            console.trace('Stack trace for bio component creation:');
+            
+            // Auto-correct the component type
+            componentType = 'biography';
+            console.log('✅ DIAGNOSTIC: Auto-corrected "bio" to "biography"');
+        }
+        
+        this.logger.info('COMPONENT', `Adding component: ${componentType}`, {
+            originalType: arguments[0], // Log original parameter
+            correctedType: componentType,
+            props: Object.keys(props),
+            autoPopulate,
+            stackTrace: new Error().stack
+        });
+        
         // Ensure component manager is initialized (but don't require DOM for state operations)
         this.ensureInitialized();
         
@@ -479,6 +498,22 @@ class EnhancedComponentManager {
             comp.priority >= priorityThreshold
         ).slice(0, maxComponents);
         
+        // ROOT FIX: Diagnostic check for "bio" component type
+        const bioComponents = qualifiedComponents.filter(comp => comp.type === 'bio');
+        if (bioComponents.length > 0) {
+            console.error('🚨 DIAGNOSTIC: Found "bio" components in auto-generation list:');
+            console.error(bioComponents);
+            console.error('Raw autoPopulatable list:', autoPopulatable);
+            
+            // Auto-correct bio to biography
+            qualifiedComponents.forEach(comp => {
+                if (comp.type === 'bio') {
+                    console.log('✅ DIAGNOSTIC: Auto-correcting bio to biography in auto-generation');
+                    comp.type = 'biography';
+                }
+            });
+        }
+        
         this.logger.info('MKCG', `Enhanced auto-generating ${qualifiedComponents.length} prioritized components`, {
             totalCandidates: autoPopulatable.length,
             qualified: qualifiedComponents.length,
@@ -588,6 +623,23 @@ class EnhancedComponentManager {
     autoGenerateFromMKCG(showNotifications = true) {
         const result = this.autoGenerateFromMKCGEnhanced(showNotifications);
         return result.addedComponents;
+    }
+    
+    /**
+     * ROOT PERFORMANCE FIX: Method alias for optimized template compatibility
+     * This ensures the optimized template's autoGenerateFromMKCGData call works
+     */
+    autoGenerateFromMKCGData(mkcgData, showNotifications = true) {
+        // Update global MKCG data if provided
+        if (mkcgData && window.guestifyData) {
+            window.guestifyData.mkcgData = mkcgData;
+        }
+        
+        // Use the enhanced auto-generation method
+        return this.autoGenerateFromMKCGEnhanced(showNotifications, {
+            maxComponents: 5,
+            minQualityScore: 30
+        });
     }
     
     /**
