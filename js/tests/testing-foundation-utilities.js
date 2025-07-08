@@ -841,13 +841,107 @@ class TestingFoundationUtilities {
 const testingFoundationInstance = new TestingFoundationUtilities();
 window.testingFoundation = testingFoundationInstance;
 
-// Direct method exposure to avoid recursion
-window.testingFoundation.createEmptyStateTests = function() {
-    return testingFoundationInstance.createEmptyStateTests();
-};
-
-window.testingFoundation.createComponentStateTests = function() {
-    return testingFoundationInstance.createComponentStateTests();
+// Add emergency diagnostic function
+window.emergencyDiagnostic = function() {
+    console.log('🚨 EMERGENCY DIAGNOSTIC RUNNING...');
+    console.log('====================================');
+    
+    const diagnostic = {
+        timestamp: new Date().toISOString(),
+        frameworks: {},
+        components: {},
+        data: {},
+        errors: []
+    };
+    
+    // Check frameworks
+    diagnostic.frameworks = {
+        testingFoundation: !!window.testingFoundation,
+        implementationValidator: !!window.implementationValidator,
+        comprehensiveTestRunner: !!window.comprehensivePhase23TestRunner,
+        enhancedStateManager: !!window.enhancedStateManager,
+        enhancedComponentManager: !!window.enhancedComponentManager,
+        mkcgDataMapper: !!window.mkcgDataMapper
+    };
+    
+    // Check components
+    diagnostic.components = {
+        stateManager: !!window.stateManager,
+        componentManager: !!window.componentManager,
+        guestifyData: !!window.guestifyData,
+        guestifyBuilderUtils: !!window.guestifyBuilderUtils
+    };
+    
+    // Check data availability
+    if (window.guestifyData) {
+        diagnostic.data = {
+            hasMKCGData: !!window.guestifyData.mkcgData,
+            postId: window.guestifyData.postId || null,
+            dataSource: window.guestifyData.dataSource || 'default',
+            hasComponents: !!window.guestifyData.components
+        };
+    }
+    
+    // Check for errors
+    try {
+        // Test if methods can be called without recursion
+        if (window.testingFoundation) {
+            const testExists = typeof window.testingFoundation.createEmptyStateTests === 'function';
+            diagnostic.testingMethods = {
+                createEmptyStateTests: testExists,
+                createComponentStateTests: typeof window.testingFoundation.createComponentStateTests === 'function',
+                quickTestAll: typeof window.testingFoundation.quickTestAll === 'function'
+            };
+        }
+    } catch (error) {
+        diagnostic.errors.push(error.message);
+    }
+    
+    // Display results
+    console.group('🏢 Frameworks Status');
+    Object.entries(diagnostic.frameworks).forEach(([name, status]) => {
+        console.log(`${status ? '✅' : '❌'} ${name}: ${status ? 'Loaded' : 'Missing'}`);
+    });
+    console.groupEnd();
+    
+    console.group('🧩 Components Status');
+    Object.entries(diagnostic.components).forEach(([name, status]) => {
+        console.log(`${status ? '✅' : '❌'} ${name}: ${status ? 'Available' : 'Not Found'}`);
+    });
+    console.groupEnd();
+    
+    console.group('📊 Data Status');
+    Object.entries(diagnostic.data).forEach(([key, value]) => {
+        console.log(`${key}: ${value}`);
+    });
+    console.groupEnd();
+    
+    if (diagnostic.errors.length > 0) {
+        console.group('❌ Errors Detected');
+        diagnostic.errors.forEach(error => console.error(error));
+        console.groupEnd();
+    }
+    
+    // Calculate health score
+    const frameworkScore = Object.values(diagnostic.frameworks).filter(v => v).length / Object.keys(diagnostic.frameworks).length * 100;
+    const componentScore = Object.values(diagnostic.components).filter(v => v).length / Object.keys(diagnostic.components).length * 100;
+    const overallHealth = (frameworkScore + componentScore) / 2;
+    
+    console.log(`\n🏥 System Health: ${overallHealth.toFixed(1)}%`);
+    
+    if (overallHealth < 50) {
+        console.log('⚠️ Critical: System is not properly initialized');
+        console.log('🔧 Recommended: Reload the page or check console for initialization errors');
+    } else if (overallHealth < 80) {
+        console.log('⚠️ Warning: Some components are missing');
+        console.log('🔧 Recommended: Check if all scripts are loaded correctly');
+    } else {
+        console.log('✅ System appears healthy');
+        console.log('🔧 Next step: Run testingFoundation.quickTestAll() for detailed testing');
+    }
+    
+    window.lastDiagnostic = diagnostic;
+    return diagnostic;
 };
 
 // Console commands for easy access

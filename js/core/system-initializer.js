@@ -28,6 +28,12 @@ export async function initializeCoreSystems() {
                 window.enhancedComponentManager = instance;
                 console.log('✅ Also exposed as: window.enhancedComponentManager');
             }
+            
+            // Special handling for enhanced state manager
+            if (name === 'stateManager' && instance.constructor?.name?.includes('Enhanced')) {
+                window.enhancedStateManager = instance;
+                console.log('✅ Also exposed as: window.enhancedStateManager');
+            }
         }
     }
 

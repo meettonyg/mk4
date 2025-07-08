@@ -22,6 +22,9 @@ import { templateCache } from '../utils/template-cache.js';
 // PHASE 2.3 TASK 4: Import Enhanced Error Handler for comprehensive user guidance
 import { enhancedErrorHandler } from '../utils/enhanced-error-handler.js';
 
+// PHASE 2.1: Import MKCG Data Mapper for data integration
+import { mkcgDataMapper } from '../utils/mkcg-data-mapper.js';
+
 /**
  * Registers all enhanced systems with the system registrar
  * CRITICAL FIX: Now fully synchronous for predictable initialization
@@ -103,6 +106,10 @@ export async function registerEnhancedSystems() {
         systemRegistrar.register('enhancedErrorHandler', enhancedErrorHandler);
         console.log('✅ Enhanced Error Handler: Phase 2.3 Task 4 - User guidance system active');
         
+        // PHASE 2.1: Register MKCG Data Mapper for data integration
+        systemRegistrar.register('mkcgDataMapper', mkcgDataMapper);
+        console.log('✅ MKCG Data Mapper: Enhanced data integration system active');
+        
         // CRITICAL FIX: Expose template systems globally for compatibility
         window.dynamicComponentLoader = dynamicComponentLoader;
         window.mkTemplateCache = templateCache;
@@ -111,6 +118,10 @@ export async function registerEnhancedSystems() {
         // PHASE 2.3 TASK 4: Expose enhanced error handler globally
         window.enhancedErrorHandler = enhancedErrorHandler;
         console.log('✅ Enhanced Error Handler exposed globally for error panel interactions');
+        
+        // PHASE 2.1: Expose MKCG Data Mapper globally
+        window.mkcgDataMapper = mkcgDataMapper;
+        console.log('✅ MKCG Data Mapper exposed globally for component data mapping');
         
         // Validate enhanced component manager
         console.log('🔍 Enhanced Component Manager validation:', {
@@ -148,10 +159,10 @@ export async function registerEnhancedSystems() {
         console.log('✅ Enhanced System Registrar: Core registration complete');
         console.log('📋 Registered systems:', registeredSystems);
         
-        // CRITICAL FIX: Validate all 7 core systems including template loading infrastructure and error handling
+        // CRITICAL FIX: Validate all 8 core systems including template loading infrastructure, error handling, and data mapper
         // These are required for proper functionality - template systems were missing causing failures
-        if (registeredSystems.length < 7) { // Require all 7 core systems (was 6, added error handler)
-            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 7 (state, component, renderer, initializer, loader, cache, errorHandler)`);
+        if (registeredSystems.length < 8) { // Require all 8 core systems (was 7, added mkcgDataMapper)
+            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 8 (state, component, renderer, initializer, loader, cache, errorHandler, mkcgDataMapper)`);
         }
         
         // Validate critical template systems are working
@@ -166,6 +177,11 @@ export async function registerEnhancedSystems() {
         // PHASE 2.3 TASK 4: Validate enhanced error handler is working
         if (!window.enhancedErrorHandler) {
             throw new Error('CRITICAL: enhancedErrorHandler not exposed globally - error guidance will fail');
+        }
+        
+        // PHASE 2.1: Validate MKCG data mapper is working
+        if (!window.mkcgDataMapper) {
+            throw new Error('CRITICAL: mkcgDataMapper not exposed globally - component data mapping will fail');
         }
         
         perfEnd();

@@ -208,20 +208,55 @@ async function comprehensivePhase23TestRunner() {
             // Test empty states
             console.log('🎭 Testing empty state scenarios...');
             const emptyStateTests = window.testingFoundation.createEmptyStateTests();
-            const emptyStateResults = {
-                noData: await emptyStateTests.testNoDataScenario(),
-                lowQuality: await emptyStateTests.testLowQualityScenario(),
-                highQuality: await emptyStateTests.testHighQualityScenario()
-            };
+            const emptyStateResults = {};
+            
+            // Wrap each test in try-catch to prevent cascading failures
+            try {
+                emptyStateResults.noData = await emptyStateTests.testNoDataScenario();
+            } catch (error) {
+                console.warn('⚠️ No data scenario test failed:', error.message);
+                emptyStateResults.noData = { performance: 'ERROR', error: error.message };
+            }
+            
+            try {
+                emptyStateResults.lowQuality = await emptyStateTests.testLowQualityScenario();
+            } catch (error) {
+                console.warn('⚠️ Low quality scenario test failed:', error.message);
+                emptyStateResults.lowQuality = { performance: 'ERROR', error: error.message };
+            }
+            
+            try {
+                emptyStateResults.highQuality = await emptyStateTests.testHighQualityScenario();
+            } catch (error) {
+                console.warn('⚠️ High quality scenario test failed:', error.message);
+                emptyStateResults.highQuality = { performance: 'ERROR', error: error.message };
+            }
             
             // Test component indicators
             console.log('🏷️ Testing component state indicators...');
             const componentTests = window.testingFoundation.createComponentStateTests();
-            const componentResults = {
-                mkcgPopulated: await componentTests.testMKCGPopulatedComponent(),
-                manual: await componentTests.testManualComponent(),
-                stale: await componentTests.testStaleComponent()
-            };
+            const componentResults = {};
+            
+            try {
+                componentResults.mkcgPopulated = await componentTests.testMKCGPopulatedComponent();
+            } catch (error) {
+                console.warn('⚠️ MKCG populated test failed:', error.message);
+                componentResults.mkcgPopulated = { performance: 'ERROR', error: error.message };
+            }
+            
+            try {
+                componentResults.manual = await componentTests.testManualComponent();
+            } catch (error) {
+                console.warn('⚠️ Manual component test failed:', error.message);
+                componentResults.manual = { performance: 'ERROR', error: error.message };
+            }
+            
+            try {
+                componentResults.stale = await componentTests.testStaleComponent();
+            } catch (error) {
+                console.warn('⚠️ Stale component test failed:', error.message);
+                componentResults.stale = { performance: 'ERROR', error: error.message };
+            }
             
             // Calculate success rates
             const emptyStateSuccessRate = calculateSuccessRate(emptyStateResults);
@@ -474,8 +509,21 @@ async function comprehensivePhase23TestRunner() {
 // Expose the function globally
 window.comprehensivePhase23TestRunner = comprehensivePhase23TestRunner;
 
-// Auto-run once when loaded
-comprehensivePhase23TestRunner();
+// Import initialization wait utility
+import '../fixes/wait-for-initialization.js';
+
+// Auto-run once when loaded (with initialization wait)
+(async function() {
+    try {
+        console.log('🕰️ Waiting for Media Kit Builder initialization...');
+        await window.waitForInitialization();
+        console.log('✅ Initialization complete, running comprehensive test runner...');
+        await comprehensivePhase23TestRunner();
+    } catch (error) {
+        console.error('❌ Failed to run comprehensive test runner:', error);
+        console.log('🔧 Try running manually: comprehensivePhase23TestRunner()');
+    }
+})();
 
 console.log(`
 🚀 Comprehensive Phase 2.3 Test Runner Ready!

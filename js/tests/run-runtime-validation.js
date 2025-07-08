@@ -13,6 +13,18 @@
     console.log('========================================================');
     console.log('');
     
+    // Wait for initialization if available
+    if (window.waitForInitialization) {
+        try {
+            console.log('🕰️ Waiting for system initialization...');
+            await window.waitForInitialization();
+            console.log('✅ System initialized, proceeding with validation...');
+        } catch (error) {
+            console.warn('⚠️ Could not wait for initialization:', error.message);
+            console.log('🔄 Proceeding anyway...');
+        }
+    }
+    
     // Validation results storage
     const validationResults = {
         timestamp: new Date().toISOString(),
@@ -78,23 +90,63 @@
         if (window.testingFoundation) {
             console.log('🔄 Running runtime functionality tests...');
             
-            // Test empty state scenarios
-            const emptyStateTests = window.testingFoundation.createEmptyStateTests();
-            validationResults.runtime_issues.emptyStates = {
-                noData: await emptyStateTests.testNoDataScenario(),
-                lowQuality: await emptyStateTests.testLowQualityScenario(),
-                highQuality: await emptyStateTests.testHighQualityScenario()
-            };
-            
-            // Test component indicators
-            const componentTests = window.testingFoundation.createComponentStateTests();
-            validationResults.runtime_issues.componentIndicators = {
-                mkcgPopulated: await componentTests.testMKCGPopulatedComponent(),
-                manual: await componentTests.testManualComponent(),
-                stale: await componentTests.testStaleComponent()
-            };
-            
-            console.log('✅ Runtime functionality testing completed');
+            try {
+                // Test empty state scenarios
+                const emptyStateTests = window.testingFoundation.createEmptyStateTests();
+                validationResults.runtime_issues.emptyStates = {};
+                
+                // Wrap each test in try-catch to prevent cascading failures
+                try {
+                    validationResults.runtime_issues.emptyStates.noData = await emptyStateTests.testNoDataScenario();
+                } catch (error) {
+                    console.warn('⚠️ No data scenario test failed:', error.message);
+                    validationResults.runtime_issues.emptyStates.noData = { performance: 'ERROR', error: error.message };
+                }
+                
+                try {
+                    validationResults.runtime_issues.emptyStates.lowQuality = await emptyStateTests.testLowQualityScenario();
+                } catch (error) {
+                    console.warn('⚠️ Low quality scenario test failed:', error.message);
+                    validationResults.runtime_issues.emptyStates.lowQuality = { performance: 'ERROR', error: error.message };
+                }
+                
+                try {
+                    validationResults.runtime_issues.emptyStates.highQuality = await emptyStateTests.testHighQualityScenario();
+                } catch (error) {
+                    console.warn('⚠️ High quality scenario test failed:', error.message);
+                    validationResults.runtime_issues.emptyStates.highQuality = { performance: 'ERROR', error: error.message };
+                }
+                
+                // Test component indicators
+                const componentTests = window.testingFoundation.createComponentStateTests();
+                validationResults.runtime_issues.componentIndicators = {};
+                
+                try {
+                    validationResults.runtime_issues.componentIndicators.mkcgPopulated = await componentTests.testMKCGPopulatedComponent();
+                } catch (error) {
+                    console.warn('⚠️ MKCG populated test failed:', error.message);
+                    validationResults.runtime_issues.componentIndicators.mkcgPopulated = { performance: 'ERROR', error: error.message };
+                }
+                
+                try {
+                    validationResults.runtime_issues.componentIndicators.manual = await componentTests.testManualComponent();
+                } catch (error) {
+                    console.warn('⚠️ Manual component test failed:', error.message);
+                    validationResults.runtime_issues.componentIndicators.manual = { performance: 'ERROR', error: error.message };
+                }
+                
+                try {
+                    validationResults.runtime_issues.componentIndicators.stale = await componentTests.testStaleComponent();
+                } catch (error) {
+                    console.warn('⚠️ Stale component test failed:', error.message);
+                    validationResults.runtime_issues.componentIndicators.stale = { performance: 'ERROR', error: error.message };
+                }
+                
+                console.log('✅ Runtime functionality testing completed');
+            } catch (error) {
+                console.error('❌ Runtime testing encountered critical error:', error.message);
+                validationResults.runtime_issues.error = error.message;
+            }
         } else {
             console.error('❌ Testing foundation not available');
             validationResults.runtime_issues.error = 'Testing foundation not loaded';
