@@ -509,18 +509,27 @@ async function comprehensivePhase23TestRunner() {
 // Expose the function globally
 window.comprehensivePhase23TestRunner = comprehensivePhase23TestRunner;
 
-// Import initialization wait utility
-import '../fixes/wait-for-initialization.js';
-
 // Auto-run once when loaded (with initialization wait)
 (async function() {
-    try {
-        console.log('🕰️ Waiting for Media Kit Builder initialization...');
-        await window.waitForInitialization();
-        console.log('✅ Initialization complete, running comprehensive test runner...');
-        await comprehensivePhase23TestRunner();
-    } catch (error) {
-        console.error('❌ Failed to run comprehensive test runner:', error);
+    // Wait for waitForInitialization to be available
+    let attempts = 0;
+    while (!window.waitForInitialization && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    if (window.waitForInitialization) {
+        try {
+            console.log('🕰️ Waiting for Media Kit Builder initialization...');
+            await window.waitForInitialization();
+            console.log('✅ Initialization complete, running comprehensive test runner...');
+            await comprehensivePhase23TestRunner();
+        } catch (error) {
+            console.error('❌ Failed to run comprehensive test runner:', error);
+            console.log('🔧 Try running manually: comprehensivePhase23TestRunner()');
+        }
+    } else {
+        console.log('⚠️ waitForInitialization not available, skipping auto-run');
         console.log('🔧 Try running manually: comprehensivePhase23TestRunner()');
     }
 })();

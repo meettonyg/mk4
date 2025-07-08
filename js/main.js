@@ -40,10 +40,6 @@ import './tests/test-race-condition-fix.js';
 import './diagnostics/startup-diagnostic.js';
 
 // PHASE 2.3 TESTING FRAMEWORK INTEGRATION
-// Import initialization wait utility first
-import './tests/fixes/wait-for-initialization.js';
-import './tests/fixes/test-fixes.js';
-// Then import test frameworks
 import './tests/testing-foundation-utilities.js';
 import './tests/phase23-implementation-validator.js';
 import './tests/phase23-test-runner.js';
