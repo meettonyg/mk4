@@ -841,9 +841,14 @@ class TestingFoundationUtilities {
 const testingFoundationInstance = new TestingFoundationUtilities();
 window.testingFoundation = testingFoundationInstance;
 
-// Expose methods expected by runtime validation
-window.testingFoundation.createEmptyStateTests = () => testingFoundationInstance.createEmptyStateTests();
-window.testingFoundation.createComponentStateTests = () => testingFoundationInstance.createComponentStateTests();
+// Direct method exposure to avoid recursion
+window.testingFoundation.createEmptyStateTests = function() {
+    return testingFoundationInstance.createEmptyStateTests();
+};
+
+window.testingFoundation.createComponentStateTests = function() {
+    return testingFoundationInstance.createComponentStateTests();
+};
 
 // Console commands for easy access
 console.log(`

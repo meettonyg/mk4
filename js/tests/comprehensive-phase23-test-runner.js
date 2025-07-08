@@ -6,7 +6,7 @@
  * It combines all testing frameworks into a single, easy-to-run validation suite.
  */
 
-(async function comprehensivePhase23TestRunner() {
+async function comprehensivePhase23TestRunner() {
     console.log('🚀 COMPREHENSIVE PHASE 2.3 TEST RUNNER');
     console.log('======================================');
     console.log('🎯 Goal: Validate Phase 2.3 Enhanced User Experience Implementation');
@@ -469,10 +469,13 @@
         console.log('   phase23TestRunner.run()           // Run phase 2.3 test runner');
         console.log('   implementationValidator.validateImplementation()  // Validate implementation');
     }
-})();
+}
 
-// Create global reference for easy re-execution
-window.comprehensivePhase23TestRunner = arguments.callee;
+// Expose the function globally
+window.comprehensivePhase23TestRunner = comprehensivePhase23TestRunner;
+
+// Auto-run once when loaded
+comprehensivePhase23TestRunner();
 
 console.log(`
 🚀 Comprehensive Phase 2.3 Test Runner Ready!

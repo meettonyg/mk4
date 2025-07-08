@@ -45,6 +45,8 @@ import './tests/phase23-implementation-validator.js';
 import './tests/phase23-test-runner.js';
 import './tests/run-runtime-validation.js';
 import './tests/comprehensive-phase23-test-runner.js';
+import './tests/emergency-system-diagnostic.js';
+import './tests/simple-fix-validation.js';
 
 // Expose global objects for debugging and monitoring
 window.mk = {};
