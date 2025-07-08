@@ -27,6 +27,9 @@ import { enhancedComponentManager } from './core/enhanced-component-manager.js';
 // PHASE 2.3 - TASK 5: Import Data Refresh and Synchronization Controls
 import './core/task5-integration.js';
 
+// ROOT FIX: Import test suite for race condition validation
+import './tests/test-race-condition-fix.js';
+
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;

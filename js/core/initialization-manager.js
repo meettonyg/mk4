@@ -12,6 +12,7 @@ import { performanceMonitor } from '../utils/performance-monitor.js';
 import { structuredLogger } from '../utils/structured-logger.js';
 import { initializationTracker } from '../utils/initialization-tracker.js';
 import { errorBoundary } from '../utils/error-boundary.js';
+import { startupCoordinationManager } from './startup-coordination-manager.js';
 
 class InitializationManager {
     constructor() {
@@ -305,11 +306,11 @@ class InitializationManager {
             timeout: 1000
         });
         
-        this.tracker.registerStep('state', {
-            description: 'Restore application state',
+        this.tracker.registerStep('coordinated-state', {
+            description: 'Coordinated state restoration with race condition prevention',
             dependencies: ['modal-validation'],
             critical: true,
-            timeout: 2000
+            timeout: 15000 // Longer timeout for coordination
         });
     }
 
@@ -367,10 +368,11 @@ class InitializationManager {
 
     /**
      * Main initialization method that runs through all required steps
+     * ROOT FIX: Now uses startup coordination manager to prevent race conditions
      * @returns {Promise<boolean>} Success status
      */
     async initialize() {
-        this.logger.info('INIT', `InitializationManager v${this.version}: Starting Media Kit Builder initialization`);
+        this.logger.info('INIT', `InitializationManager v${this.version}: Starting coordinated Media Kit Builder initialization`);
         this.state = 'initializing';
         const perfEnd = performanceMonitor.start('initialization-sequence');
         const initStart = this.logger.logInitStart('initialization-sequence', []);
@@ -384,7 +386,9 @@ class InitializationManager {
             await this.executeStep('modal-html', () => this.waitForModalHTML());
             await this.executeStep('modals', () => this.setupModals());
             await this.executeStep('modal-validation', () => this.validateModalSetup());
-            await this.executeStep('state', () => this.restoreState());
+            
+            // ROOT FIX: Use coordinated state restoration to prevent race conditions
+            await this.executeStep('coordinated-state', () => this.coordinatedStateRestoration());
 
             this.state = 'complete';
             const duration = Date.now() - this.startTime;
@@ -1204,6 +1208,41 @@ class InitializationManager {
         }
         
         this.logger.info('STATE', 'State restoration complete');
+    }
+    
+    /**
+     * ROOT FIX: Coordinated state restoration using startup coordination manager
+     * This prevents race conditions between MKCG data hydration and component rendering
+     */
+    async coordinatedStateRestoration() {
+        this.logger.info('INIT', 'Starting coordinated state restoration to prevent race conditions');
+        
+        try {
+            // Use startup coordination manager to handle the sequence
+            const coordinationSuccess = await startupCoordinationManager.coordinateStartup({
+                enableMKCGHydration: true,
+                preloadTemplates: true,
+                maxWaitTime: 10000,
+                emergencyFallback: true
+            });
+            
+            if (!coordinationSuccess) {
+                this.logger.warn('INIT', 'Startup coordination failed, falling back to direct state restoration');
+                await this.restoreState();
+            } else {
+                this.logger.info('INIT', 'Coordinated state restoration completed successfully');
+                
+                // After coordination, still call restoreState for final steps
+                await this.restoreState();
+            }
+            
+        } catch (error) {
+            this.logger.error('INIT', 'Coordinated state restoration failed', error);
+            
+            // Fallback to traditional state restoration
+            this.logger.info('INIT', 'Falling back to traditional state restoration');
+            await this.restoreState();
+        }
     }
 
     /**

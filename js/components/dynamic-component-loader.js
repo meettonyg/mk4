@@ -288,6 +288,7 @@ class DynamicComponentLoader {
 
     /**
      * CRITICAL FIX: Enhanced template fetching with circuit breaker and immediate fallbacks
+     * ROOT FIX: Now emits coordination events to prevent race conditions
      * @param {string} originalType - The originally requested component type.
      * @param {string} resolvedType - The resolved component type (after alias resolution).
      * @returns {Promise<string>} A promise that resolves to the template string.
@@ -296,12 +297,34 @@ class DynamicComponentLoader {
         // Use resolved type if provided, otherwise resolve the original type
         const actualType = resolvedType || this.resolveComponentType(originalType);
         const typeToFetch = actualType;
+        
+        // ROOT FIX: Emit coordination event for startup coordination manager
+        const operationId = `template_${originalType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        if (window.eventBus && typeof window.eventBus.emit === 'function') {
+            window.eventBus.emit('template:fetch-start', {
+                componentType: originalType,
+                resolvedType: actualType,
+                operationId
+            });
+        }
         // CRITICAL FIX: Check circuit breaker first
         if (!this.checkCircuitBreaker()) {
             structuredLogger.warn('LOADER', 'Circuit breaker OPEN, using fallback', { 
                 originalType, 
                 actualType 
             });
+            
+            // ROOT FIX: Emit error event for coordination
+            if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                window.eventBus.emit('template:fetch-error', {
+                    componentType: originalType,
+                    resolvedType: actualType,
+                    operationId,
+                    success: false,
+                    error: 'Circuit breaker open'
+                });
+            }
+            
             return this.getFallbackTemplate(originalType);
         }
         
@@ -311,6 +334,18 @@ class DynamicComponentLoader {
                 originalType, 
                 actualType 
             });
+            
+            // ROOT FIX: Emit completion event for coordination
+            if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                window.eventBus.emit('template:fetch-complete', {
+                    componentType: originalType,
+                    resolvedType: actualType,
+                    operationId,
+                    success: true,
+                    fallback: true
+                });
+            }
+            
             return this.getFallbackTemplate(originalType);
         }
         
@@ -357,11 +392,35 @@ class DynamicComponentLoader {
                 const contentType = response.headers.get('content-type');
                 if (contentType && contentType.includes('application/json')) {
                     const data = await response.json();
-                    return data.html || data.template;
+                    const template = data.html || data.template;
+                    
+                    // ROOT FIX: Emit success event for coordination
+                    if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                        window.eventBus.emit('template:fetch-complete', {
+                            componentType: originalType,
+                            resolvedType: actualType,
+                            operationId,
+                            success: true
+                        });
+                    }
+                    
+                    return template;
                 }
                 
                 // Handle direct HTML response
-                return await response.text();
+                const template = await response.text();
+                
+                // ROOT FIX: Emit success event for coordination
+                if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                    window.eventBus.emit('template:fetch-complete', {
+                        componentType: originalType,
+                        resolvedType: actualType,
+                        operationId,
+                        success: true
+                    });
+                }
+                
+                return template;
                 
             } catch (error) {
                 lastError = error;
@@ -388,6 +447,17 @@ class DynamicComponentLoader {
             error: lastError?.message,
             circuitBreakerState: this.circuitBreaker.state
         });
+        
+        // ROOT FIX: Emit error event for coordination
+        if (window.eventBus && typeof window.eventBus.emit === 'function') {
+            window.eventBus.emit('template:fetch-error', {
+                componentType: originalType,
+                resolvedType: actualType,
+                operationId,
+                success: false,
+                error: lastError?.message || 'Unknown fetch error'
+            });
+        }
         
         return this.getFallbackTemplate(originalType);
     }

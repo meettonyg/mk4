@@ -1247,6 +1247,7 @@ class EnhancedStateManager {
 
     /**
      * PHASE 2.2: State hydration with MKCG data and conflict resolution
+     * ROOT FIX: Now emits coordination events to prevent race conditions
      * @param {Object} savedState - Previously saved state
      * @returns {Object} Hydration results
      */
@@ -1261,6 +1262,14 @@ class EnhancedStateManager {
             savedComponents: Object.keys(savedState.components || {}).length,
             conflictResolution,
             preferFreshData
+        });
+        
+        // ROOT FIX: Emit coordination event for startup coordination manager
+        const operationId = `hydration_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        this.eventBus.emit('state:operation-start', {
+            operation: 'mkcg-hydration',
+            operationId,
+            savedComponents: Object.keys(savedState.components || {}).length
         });
 
         try {
@@ -1341,6 +1350,14 @@ class EnhancedStateManager {
                 resolutions: resolutions.length,
                 finalComponentCount: Object.keys(hydratedState.components).length
             });
+            
+            // ROOT FIX: Emit completion event for coordination
+            this.eventBus.emit('state:operation-complete', {
+                operation: 'mkcg-hydration',
+                operationId,
+                success: true,
+                duration: hydrationDuration
+            });
 
             return {
                 success: true,
@@ -1351,6 +1368,15 @@ class EnhancedStateManager {
 
         } catch (error) {
             this.logger.error('STATE', 'Error during state hydration', error);
+            
+            // ROOT FIX: Emit error event for coordination
+            this.eventBus.emit('state:operation-complete', {
+                operation: 'mkcg-hydration',
+                operationId,
+                success: false,
+                error: error.message
+            });
+            
             // Fallback to saved state
             this.state = savedState;
             this.notifySubscribers();
