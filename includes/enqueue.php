@@ -249,7 +249,7 @@ class GMKB_Enhanced_Script_Manager {
         // PHASE 2.3: Register optimized styles for 40% performance improvement
         wp_register_style(
             'guestify-media-kit-builder-styles',
-            $plugin_url . 'css/guestify-builder-optimized.css',
+            $plugin_url . 'css/guestify-builder.css',
             [],
             $version . '-phase23-optimized'
         );

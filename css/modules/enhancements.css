@@ -1,4 +1,533 @@
 /**
+ * Enhanced Media Kit Builder - CSS Theming System & Component State Indicators
+ * Comprehensive styling system for the isolated builder environment
+ */
+
+/* ========================================
+   PHASE 1: ENHANCED CSS THEMING SYSTEM
+   ======================================== */
+
+:root {
+    /* Sidebar theme variables */
+    --gmkb-sidebar-bg: #2a2a2a;
+    --gmkb-sidebar-border-color: #404040;
+    --gmkb-sidebar-text: #e2e8f0;
+    --gmkb-sidebar-accent: #0ea5e9;
+    --gmkb-sidebar-tab-bg: #333;
+    --gmkb-sidebar-tab-active: #2a2a2a;
+    
+    /* Toolbar theme variables */
+    --gmkb-toolbar-bg: #1a1a1a;
+    --gmkb-toolbar-border: #404040;
+    --gmkb-toolbar-text: #e2e8f0;
+    --gmkb-toolbar-btn-bg: rgba(255, 255, 255, 0.1);
+    --gmkb-toolbar-btn-border: rgba(255, 255, 255, 0.2);
+    
+    /* Component theming */
+    --gmkb-primary-color: #0ea5e9;
+    --gmkb-accent-color: #10b981;
+    --gmkb-warning-color: #f59e0b;
+    --gmkb-error-color: #ef4444;
+    
+    /* Quality-based colors */
+    --quality-excellent: #10b981;
+    --quality-good: #3b82f6;
+    --quality-fair: #f59e0b;
+    --quality-poor: #ef4444;
+    
+    /* Data state colors */
+    --data-connected: #10b981;
+    --data-stale: #f59e0b;
+    --data-error: #ef4444;
+    --data-loading: #6b7280;
+    
+    /* Interactive colors */
+    --interactive-primary: #3b82f6;
+    --interactive-secondary: #6b7280;
+    --interactive-success: #10b981;
+    --interactive-warning: #f59e0b;
+}
+
+/* Enhanced isolated builder theming */
+.gmkb-isolated-builder {
+    --gmkb-sidebar-bg: #2a2a2a;
+    --gmkb-sidebar-border-color: #404040;
+    --gmkb-toolbar-bg: #1a1a1a;
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+/* CRITICAL FIX: Specific sidebar styling for isolated builder */
+.gmkb-isolated-builder .sidebar {
+    background-color: var(--gmkb-sidebar-bg, #2a2a2a);
+    border-right-color: var(--gmkb-sidebar-border-color, #404040);
+    color: var(--gmkb-sidebar-text, #e2e8f0);
+}
+
+/* Enhanced sidebar tabs styling */
+.gmkb-isolated-builder .sidebar__tabs {
+    background: var(--gmkb-sidebar-tab-bg, #333);
+    border-bottom-color: var(--gmkb-sidebar-border-color, #404040);
+}
+
+.gmkb-isolated-builder .sidebar__tab {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.3s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.gmkb-isolated-builder .sidebar__tab--active {
+    color: var(--gmkb-primary-color, #0ea5e9);
+    background: var(--gmkb-sidebar-tab-active, #2a2a2a);
+    border-bottom-color: var(--gmkb-primary-color, #0ea5e9);
+}
+
+.gmkb-isolated-builder .sidebar__tab:hover:not(.sidebar__tab--active) {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced toolbar styling */
+.gmkb-isolated-builder .toolbar {
+    background-color: var(--gmkb-toolbar-bg, #1a1a1a);
+    border-bottom-color: var(--gmkb-toolbar-border, #404040);
+    color: var(--gmkb-toolbar-text, #e2e8f0);
+}
+
+/* Enhanced toolbar button styling */
+.gmkb-isolated-builder .toolbar__btn {
+    background: var(--gmkb-toolbar-btn-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--gmkb-toolbar-btn-border, rgba(255, 255, 255, 0.2));
+    color: var(--gmkb-toolbar-text, #e2e8f0);
+    transition: all 0.3s ease;
+    border-radius: 6px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.gmkb-isolated-builder .toolbar__btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--gmkb-primary-color, #0ea5e9);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.gmkb-isolated-builder .toolbar__btn svg {
+    stroke: currentColor;
+    transition: stroke 0.3s ease;
+    width: 14px;
+    height: 14px;
+}
+
+.gmkb-isolated-builder .toolbar__btn:hover svg {
+    stroke: currentColor;
+}
+
+/* Primary button styling */
+.gmkb-isolated-builder .toolbar__btn--primary {
+    background: linear-gradient(135deg, var(--gmkb-primary-color, #0ea5e9), #0284c7);
+    border-color: var(--gmkb-primary-color, #0ea5e9);
+    color: white;
+}
+
+.gmkb-isolated-builder .toolbar__btn--primary:hover {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+/* Export button styling */
+.gmkb-isolated-builder .toolbar__btn--export {
+    background: linear-gradient(135deg, var(--gmkb-accent-color, #10b981), #059669);
+    border-color: var(--gmkb-accent-color, #10b981);
+    color: white;
+}
+
+.gmkb-isolated-builder .toolbar__btn--export:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Toolbar logo and text styling */
+.gmkb-isolated-builder .toolbar__logo {
+    color: var(--gmkb-primary-color, #0ea5e9);
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.gmkb-isolated-builder .toolbar__guest-name {
+    color: var(--gmkb-toolbar-text, #e2e8f0);
+    opacity: 0.9;
+}
+
+/* Preview toggle buttons */
+.gmkb-isolated-builder .toolbar__preview-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-size: 12px;
+}
+
+.gmkb-isolated-builder .toolbar__preview-btn--active {
+    background: var(--gmkb-primary-color, #0ea5e9);
+    border-color: var(--gmkb-primary-color, #0ea5e9);
+    color: white;
+}
+
+.gmkb-isolated-builder .toolbar__preview-btn:hover:not(.toolbar__preview-btn--active) {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Status indicator styling */
+.gmkb-isolated-builder .toolbar__status {
+    color: var(--gmkb-accent-color, #10b981);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.gmkb-isolated-builder .toolbar__status-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--gmkb-accent-color, #10b981);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* ========================================
+   TASK 3: ENHANCED COMPONENT STATE INDICATORS
+   ======================================== */
+
+/* MKCG-populated component styling */
+.gmkb-isolated-builder [data-component-id] {
+    position: relative;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-top: 20px;
+}
+
+.gmkb-isolated-builder [data-component-id][data-mkcg-populated="true"] {
+    border-left: 4px solid var(--gmkb-accent-color, #10b981);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
+}
+
+.gmkb-isolated-builder [data-component-id][data-mkcg-populated="true"]:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, transparent 100%);
+    border-left-color: #059669;
+    transform: translateX(2px);
+}
+
+/* Enhanced Quality Score Badge System */
+.gmkb-isolated-builder .quality-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--quality-color);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.gmkb-isolated-builder .quality-badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Quality-specific badge styling */
+.quality-badge.excellent {
+    --quality-color: var(--quality-excellent);
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.quality-badge.good {
+    --quality-color: var(--quality-good);
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.quality-badge.fair {
+    --quality-color: var(--quality-fair);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.quality-badge.poor {
+    --quality-color: var(--quality-poor);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Enhanced Data Freshness Indicator */
+.gmkb-isolated-builder .data-freshness {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    font-size: 10px;
+    color: #6b7280;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 3px 8px;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    z-index: 5;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.gmkb-isolated-builder .data-freshness:hover {
+    background: white;
+    color: #374151;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gmkb-isolated-builder .data-freshness::before {
+    content: '🕒';
+    margin-right: 4px;
+    font-size: 9px;
+}
+
+.gmkb-isolated-builder .data-freshness.stale {
+    color: #d97706;
+    background: rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.2);
+}
+
+.gmkb-isolated-builder .data-freshness.stale::before {
+    content: '⚠️';
+}
+
+/* Enhanced Sync Status Indicators */
+.gmkb-isolated-builder .sync-indicator {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--data-connected);
+    z-index: 10;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.gmkb-isolated-builder .sync-indicator::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 50%;
+    background: inherit;
+    opacity: 0.3;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.gmkb-isolated-builder .sync-indicator:hover {
+    transform: scale(1.3);
+}
+
+/* Sync status variants */
+.sync-indicator.syncing {
+    background: var(--data-loading);
+    animation: spin 1s linear infinite;
+}
+
+.sync-indicator.syncing::after {
+    animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
+}
+
+.sync-indicator.error {
+    background: var(--data-error);
+    animation: shake 0.5s ease-in-out;
+}
+
+.sync-indicator.offline {
+    background: var(--data-loading);
+    opacity: 0.6;
+}
+
+.sync-indicator.offline::after {
+    animation: none;
+}
+
+/* ========================================
+   MKCG DASHBOARD INTEGRATION STYLING
+   ======================================== */
+
+/* Enhanced MKCG Dashboard */
+.gmkb-isolated-builder .mkcg-enhanced-dashboard {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    margin: 0 12px;
+    backdrop-filter: blur(4px);
+}
+
+.gmkb-isolated-builder .mkcg-dashboard-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.gmkb-isolated-builder .mkcg-dashboard-trigger:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.gmkb-isolated-builder .mkcg-connection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gmkb-isolated-builder .mkcg-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gmkb-accent-color, #10b981);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.gmkb-isolated-builder .mkcg-status-indicator.status-excellent {
+    background: var(--quality-excellent);
+}
+
+.gmkb-isolated-builder .mkcg-status-indicator.status-good {
+    background: var(--quality-good);
+}
+
+.gmkb-isolated-builder .mkcg-status-indicator.status-fair {
+    background: var(--quality-fair);
+}
+
+.gmkb-isolated-builder .mkcg-status-indicator.status-poor {
+    background: var(--quality-poor);
+}
+
+.gmkb-isolated-builder .mkcg-connection-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.gmkb-isolated-builder .mkcg-connection-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gmkb-toolbar-text, #e2e8f0);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.gmkb-isolated-builder .mkcg-connection-subtitle {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.gmkb-isolated-builder .mkcg-dashboard-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.gmkb-isolated-builder .mkcg-quality-score {
+    color: var(--gmkb-accent-color, #10b981);
+}
+
+.gmkb-isolated-builder .mkcg-quality-score.quality-excellent {
+    color: var(--quality-excellent);
+}
+
+.gmkb-isolated-builder .mkcg-quality-score.quality-good {
+    color: var(--quality-good);
+}
+
+.gmkb-isolated-builder .mkcg-quality-score.quality-fair {
+    color: var(--quality-fair);
+}
+
+.gmkb-isolated-builder .mkcg-quality-score.quality-poor {
+    color: var(--quality-poor);
+}
+
+.gmkb-isolated-builder .mkcg-component-count {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ========================================
+   ANIMATIONS AND INTERACTIONS
+   ======================================== */
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+    .gmkb-isolated-builder .mkcg-enhanced-dashboard {
+        display: none; /* Hide on mobile to save space */
+    }
+    
+    .gmkb-isolated-builder .toolbar__btn {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    
+    .gmkb-isolated-builder .quality-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+    
+    .gmkb-isolated-builder .data-freshness {
+        font-size: 9px;
+        padding: 2px 6px;
+    }
+    
+    .gmkb-isolated-builder .sync-indicator {
+        width: 8px;
+        height: 8px;
+    }
+}
+
+/* ========================================
+   LEGACY STYLES (PRESERVED)
+   ======================================== */
+
+/**
  * Toast Notifications CSS
  */
 

@@ -5,13 +5,14 @@
     left: 0;
     right: 0;
     height: 48px;
-    background: #2a2a2a;
-    border-bottom: 1px solid #404040;
+    background: var(--gmkb-toolbar-bg, #2a2a2a);
+    border-bottom: 1px solid var(--gmkb-toolbar-border, #404040);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
     z-index: 1000;
+    color: var(--gmkb-toolbar-text, #e2e8f0);
 }
 
 .toolbar__section {
@@ -34,12 +35,13 @@
 .toolbar__logo {
     font-size: 16px;
     font-weight: 600;
-    color: #0ea5e9;
+    color: var(--gmkb-primary-color, #0ea5e9);
 }
 
 .toolbar__guest-name {
-    color: #94a3b8;
+    color: var(--gmkb-toolbar-text, #94a3b8);
     font-size: 13px;
+    opacity: 0.9;
 }
 
 .toolbar__status {
@@ -47,14 +49,15 @@
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--gmkb-accent-color, #10b981);
 }
 
 .toolbar__status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #10b981;
+    background: var(--gmkb-accent-color, #10b981);
+    animation: pulse 2s ease-in-out infinite;
 }
 
 .toolbar__status-dot--saving {
@@ -63,9 +66,9 @@
 }
 
 .toolbar__btn {
-    background: #404040;
-    border: none;
-    color: #fff;
+    background: var(--gmkb-toolbar-btn-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--gmkb-toolbar-btn-border, rgba(255, 255, 255, 0.2));
+    color: var(--gmkb-toolbar-text, #fff);
     padding: 6px 10px;
     border-radius: 6px;
     font-size: 12px;
@@ -73,28 +76,37 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     white-space: nowrap;
 }
 
 .toolbar__btn:hover {
-    background: #505050;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--gmkb-primary-color, #0ea5e9);
+    color: white;
+    transform: translateY(-1px);
 }
 
 .toolbar__btn--primary {
-    background: #0ea5e9;
+    background: linear-gradient(135deg, var(--gmkb-primary-color, #0ea5e9), #0284c7);
+    border-color: var(--gmkb-primary-color, #0ea5e9);
+    color: white;
 }
 
 .toolbar__btn--primary:hover {
-    background: #0284c7;
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
 
 .toolbar__btn--export {
-    background: #059669;
+    background: linear-gradient(135deg, var(--gmkb-accent-color, #10b981), #059669);
+    border-color: var(--gmkb-accent-color, #10b981);
+    color: white;
 }
 
 .toolbar__btn--export:hover {
-    background: #047857;
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .toolbar__btn:disabled {
@@ -103,28 +115,33 @@
 }
 
 .toolbar__preview-toggle {
-    background: #333;
-    border: 1px solid #555;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     overflow: hidden;
     display: flex;
 }
 
 .toolbar__preview-btn {
-    background: none;
+    background: transparent;
     border: none;
-    color: #94a3b8;
+    color: rgba(255, 255, 255, 0.7);
     padding: 4px 8px;
     cursor: pointer;
     font-size: 11px;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
 .toolbar__preview-btn--active {
-    background: #0ea5e9;
+    background: var(--gmkb-primary-color, #0ea5e9);
+    color: white;
+}
+
+.toolbar__preview-btn:hover:not(.toolbar__preview-btn--active) {
+    background: rgba(255, 255, 255, 0.1);
     color: white;
 }
 
