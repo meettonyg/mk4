@@ -1111,6 +1111,45 @@ export class MKCGDataMapper {
     validateAllMappings() {
         return this.validateAllMappingsEnhanced();
     }
+
+    /**
+     * CRITICAL FIX: getDataAvailability method expected by system registrar
+     * This method provides a simplified interface to the data availability system
+     * 
+     * @param {string} componentType - Optional component type to check specific availability
+     * @returns {boolean|Object} Boolean for specific component, Object summary for all
+     */
+    getDataAvailability(componentType = null) {
+        try {
+            // If no component type specified, return full summary
+            if (!componentType) {
+                const summary = this.getDataAvailabilitySummary();
+                return {
+                    hasData: summary.hasData,
+                    availableComponents: summary.components.length,
+                    autoPopulatableCount: summary.components.filter(c => c.canAutoPopulate).length,
+                    extractionTime: summary.extractionTime,
+                    postId: summary.postId
+                };
+            }
+            
+            // For specific component type, return boolean availability
+            if (!this.mkcgData || !this.componentSchemas) {
+                return false;
+            }
+            
+            const schema = this.getComponentSchema(componentType);
+            if (!schema || !schema.mkcgIntegration) {
+                return false;
+            }
+            
+            return this.canAutoPopulate(componentType);
+            
+        } catch (error) {
+            console.error('🔗 Error in getDataAvailability:', error);
+            return false;
+        }
+    }
 }
 
 // Create singleton instance

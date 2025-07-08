@@ -987,6 +987,96 @@ ${error.stack ? error.stack.substring(0, 500) + (error.stack.length > 500 ? '...
             module: data.context.module
         }));
     }
+
+    /**
+     * CRITICAL FIX: handleError method expected by system registrar
+     * This method provides a simplified interface to the enhanced error handling system
+     * 
+     * @param {Error|string} error - The error object or message
+     * @param {Object} context - Additional context information
+     * @returns {Promise<void>}
+     */
+    async handleError(error, context = {}) {
+        try {
+            // Convert string errors to Error objects
+            const errorObj = error instanceof Error ? error : new Error(String(error));
+            
+            // Use the enhanced error handling with user guidance
+            await this.handleErrorWithUserGuidance(
+                context.module || 'SYSTEM',
+                errorObj,
+                {
+                    ...context,
+                    severity: context.severity || 'medium',
+                    errorType: context.errorType || this.classifyErrorForGuidance(errorObj, context)
+                }
+            );
+            
+            this.logger.info('ERROR_HANDLER', 'Error handled via handleError interface', {
+                errorMessage: errorObj.message,
+                module: context.module || 'SYSTEM',
+                errorType: context.errorType
+            });
+            
+        } catch (handlingError) {
+            // Fallback error handling
+            this.logger.error('ERROR_HANDLER', 'Error in handleError method', handlingError);
+            console.error('Enhanced Error Handler - handleError failed:', handlingError);
+            
+            // Basic error display as last resort
+            if (typeof this.displayError === 'function') {
+                this.displayError(errorObj.message || String(error));
+            }
+        }
+    }
+
+    /**
+     * CRITICAL FIX: displayError method expected by system registrar
+     * This method provides a simplified interface for displaying error messages
+     * 
+     * @param {string} message - The error message to display
+     * @param {Object} options - Display options
+     */
+    displayError(message, options = {}) {
+        try {
+            const errorId = this.generateErrorId();
+            const errorType = options.errorType || 'validation-error';
+            const errorConfig = this.errorTypes[errorType] || this.errorTypes['validation-error'];
+            
+            // Create a simple error object for the display system
+            const errorObj = new Error(message);
+            
+            const enhancedContext = {
+                errorId,
+                module: options.module || 'DISPLAY',
+                timestamp: Date.now(),
+                severity: options.severity || 'medium',
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            };
+            
+            // Use the enhanced panel system for consistent display
+            this.showErrorGuidancePanel(errorId, errorObj, errorConfig, enhancedContext);
+            
+            this.logger.info('ERROR_HANDLER', 'Error displayed via displayError interface', {
+                message,
+                errorId,
+                errorType
+            });
+            
+        } catch (displayError) {
+            // Ultimate fallback - basic alert
+            this.logger.error('ERROR_HANDLER', 'Error in displayError method', displayError);
+            console.error('Enhanced Error Handler - displayError failed:', displayError);
+            
+            // Browser native alert as last resort
+            if (typeof alert === 'function') {
+                alert(`Error: ${message}`);
+            } else {
+                console.error(`Error (fallback): ${message}`);
+            }
+        }
+    }
 }
 
 // Create singleton instance
