@@ -13,6 +13,14 @@
 
 export class MKCGDataMapper {
     constructor() {
+        // CRITICAL FIX: Ensure required methods are immediately available for system registrar validation
+        this.getDataAvailability = this.getDataAvailability.bind(this);
+        
+        // Validate method is available for system registrar
+        if (typeof this.getDataAvailability === 'function') {
+            console.log('✅ MKCG Data Mapper: Required getDataAvailability method immediately available for validation');
+        }
+        
         this.componentSchemas = null;
         this.mkcgData = null;
         this.mappingCache = new Map();

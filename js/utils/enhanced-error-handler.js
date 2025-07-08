@@ -12,7 +12,16 @@ import { structuredLogger } from './structured-logger.js';
 
 export class EnhancedErrorHandler {
     constructor() {
+        // CRITICAL FIX: Ensure required methods are immediately available for system registrar validation
+        this.handleError = this.handleError.bind(this);
+        this.displayError = this.displayError.bind(this);
+        
         this.logger = structuredLogger;
+        
+        // Validate methods are available for system registrar
+        if (typeof this.handleError === 'function' && typeof this.displayError === 'function') {
+            console.log('✅ Enhanced Error Handler: Required methods immediately available for validation');
+        }
         this.activeErrorPanels = new Map();
         this.errorHistory = [];
         this.recoveryStrategies = new Map();
