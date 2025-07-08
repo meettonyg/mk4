@@ -39,6 +39,13 @@ import './tests/test-race-condition-fix.js';
 // ROOT FIX: Import startup diagnostic tool
 import './diagnostics/startup-diagnostic.js';
 
+// PHASE 2.3 TESTING FRAMEWORK INTEGRATION
+import './tests/testing-foundation-utilities.js';
+import './tests/phase23-implementation-validator.js';
+import './tests/phase23-test-runner.js';
+import './tests/run-runtime-validation.js';
+import './tests/comprehensive-phase23-test-runner.js';
+
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;

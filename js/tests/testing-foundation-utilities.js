@@ -488,18 +488,19 @@ class TestingFoundationUtilities {
      * EMPTY STATE TESTING UTILITIES
      */
     createEmptyStateTests() {
+        const self = this;
         return {
             // Test no data scenario
             testNoDataScenario: async () => {
                 console.group('🎭 Testing No Data Empty State');
                 
                 // Set no MKCG data
-                this.setMockMKCGData(null);
+                self.setMockMKCGData(null);
                 
                 // Measure performance
-                const metrics = await this.performance.measure(async () => {
+                const metrics = await self.performance.measure(async () => {
                     // Trigger empty state evaluation
-                    this.triggerEmptyStateEvaluation();
+                    self.triggerEmptyStateEvaluation();
                     
                     // Check for expected elements
                     const connectBtn = document.querySelector('.connect-data-btn');
@@ -525,10 +526,10 @@ class TestingFoundationUtilities {
                 console.group('🎭 Testing Low Quality Data Empty State');
                 
                 // Set low quality MKCG data
-                this.setMockMKCGData(this.mockData.poorMKCGData);
+                self.setMockMKCGData(self.mockData.poorMKCGData);
                 
-                const metrics = await this.performance.measure(async () => {
-                    this.triggerEmptyStateEvaluation();
+                const metrics = await self.performance.measure(async () => {
+                    self.triggerEmptyStateEvaluation();
                     
                     const improveBtn = document.querySelector('.improve-data-btn');
                     const generateAnyway = document.querySelector('.generate-anyway-btn');
@@ -553,10 +554,10 @@ class TestingFoundationUtilities {
                 console.group('🎭 Testing High Quality Data Empty State');
                 
                 // Set high quality MKCG data
-                this.setMockMKCGData(this.mockData.excellentMKCGData);
+                self.setMockMKCGData(self.mockData.excellentMKCGData);
                 
-                const metrics = await this.performance.measure(async () => {
-                    this.triggerEmptyStateEvaluation();
+                const metrics = await self.performance.measure(async () => {
+                    self.triggerEmptyStateEvaluation();
                     
                     const autoGenBtn = document.querySelector('.auto-generate-all-btn');
                     const selectiveBtn = document.querySelector('.selective-generate-btn');
@@ -584,16 +585,17 @@ class TestingFoundationUtilities {
      * COMPONENT STATE TESTING UTILITIES
      */
     createComponentStateTests() {
+        const self = this;
         return {
             // Test MKCG populated component
             testMKCGPopulatedComponent: async () => {
                 console.group('🏷️ Testing MKCG Populated Component');
                 
-                const mockData = this.componentStates.excellentQuality;
+                const mockData = self.componentStates.excellentQuality;
                 
-                const metrics = await this.performance.measure(async () => {
+                const metrics = await self.performance.measure(async () => {
                     // Create mock component
-                    const component = this.createMockComponent(mockData);
+                    const component = self.createMockComponent(mockData);
                     
                     // Check for indicators
                     const qualityBadge = component.querySelector('.quality-badge');
@@ -624,10 +626,10 @@ class TestingFoundationUtilities {
             testManualComponent: async () => {
                 console.group('🏷️ Testing Manual Component');
                 
-                const mockData = this.componentStates.manualComponent;
+                const mockData = self.componentStates.manualComponent;
                 
-                const metrics = await this.performance.measure(async () => {
-                    const component = this.createMockComponent(mockData);
+                const metrics = await self.performance.measure(async () => {
+                    const component = self.createMockComponent(mockData);
                     
                     const qualityBadge = component.querySelector('.quality-badge');
                     const freshnessIndicator = component.querySelector('.data-freshness');
@@ -655,10 +657,10 @@ class TestingFoundationUtilities {
             testStaleComponent: async () => {
                 console.group('🏷️ Testing Stale Component');
                 
-                const mockData = this.componentStates.fairQuality;
+                const mockData = self.componentStates.fairQuality;
                 
-                const metrics = await this.performance.measure(async () => {
-                    const component = this.createMockComponent(mockData);
+                const metrics = await self.performance.measure(async () => {
+                    const component = self.createMockComponent(mockData);
                     
                     const staleFreshness = component.querySelector('.data-freshness.stale');
                     const refreshIndicator = component.querySelector('.refresh-indicator');
@@ -836,7 +838,12 @@ class TestingFoundationUtilities {
 }
 
 // Create and expose global instance
-window.testingFoundation = new TestingFoundationUtilities();
+const testingFoundationInstance = new TestingFoundationUtilities();
+window.testingFoundation = testingFoundationInstance;
+
+// Expose methods expected by runtime validation
+window.testingFoundation.createEmptyStateTests = () => testingFoundationInstance.createEmptyStateTests();
+window.testingFoundation.createComponentStateTests = () => testingFoundationInstance.createComponentStateTests();
 
 // Console commands for easy access
 console.log(`
