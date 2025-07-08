@@ -24,6 +24,12 @@ console.log('✅ Enhanced Error Handler imported - global functions available');
 // Import enhanced component manager directly for immediate global exposure
 import { enhancedComponentManager } from './core/enhanced-component-manager.js';
 
+// ROOT FIX: Import quick diagnostic for immediate troubleshooting
+import './utils/quick-diagnostic.js';
+
+// ROOT FIX: Import manual test for console-based testing
+import './utils/manual-race-condition-test.js';
+
 // PHASE 2.3 - TASK 5: Import Data Refresh and Synchronization Controls
 import './core/task5-integration.js';
 
