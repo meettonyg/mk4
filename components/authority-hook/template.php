@@ -3,14 +3,14 @@
  * Authority Hook Component Template
  */
 
-// Default values
+// Default values for component props
 $title = $title ?? 'Authority Hook';
 $who = $who ?? 'Who is your ideal audience or client?';
 $what = $what ?? 'What specific expertise or value do you provide?';
 $when = $when ?? 'When do people need your expertise most?';
 $how = $how ?? 'How do you deliver unique results?';
 ?>
-<div class="content-section authority-hook-component editable-element" data-element="authority-hook" data-component="authority-hook" data-component-id="<?php echo esc_attr($componentId ?? ''); ?>" data-component-type="authority-hook">
+<div class="content-section authority-hook-component editable-element" data-element="authority-hook" data-component="authority-hook" data-component-type="authority-hook">
     <div class="element-controls">
         <button class="control-btn" title="Move Up">↑</button>
         <button class="control-btn" title="Move Down">↓</button>

@@ -226,6 +226,7 @@ class DynamicComponentLoader {
             'hero': '<div class="hero-component fallback-template" data-component="hero"><h1>Hero Component</h1><p>Fallback template loaded</p></div>',
             'topics': '<div class="topics-component fallback-template" data-component="topics"><h2>Topics</h2><ul><li>Fallback topic</li></ul></div>',
             'biography': '<div class="bio-component fallback-template" data-component="biography"><h2>Biography</h2><p>Fallback biography content</p></div>',
+            'authority-hook': '<div class="content-section authority-hook-component editable-element fallback-template" data-element="authority-hook" data-component="authority-hook"><h2>Authority Hook</h2><div class="authority-hook-container"><div class="authority-item"><h3>WHO</h3><p>Who is your audience?</p></div><div class="authority-item"><h3>WHAT</h3><p>What do you offer?</p></div></div></div>',
             'contact': '<div class="contact-component fallback-template" data-component="contact"><h2>Contact</h2><p>Fallback contact information</p></div>',
             'social-links': '<div class="social-component fallback-template" data-component="social-links"><h2>Social Links</h2><p>Fallback social links</p></div>',
             'default': '<div class="fallback-component" data-component="unknown"><h2>Component</h2><p>Fallback template for unknown component type</p></div>'
