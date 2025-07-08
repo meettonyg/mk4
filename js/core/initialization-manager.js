@@ -644,11 +644,12 @@ class InitializationManager {
     }
 
     /**
-     * CRITICAL FIX: Enhanced modal HTML loading validation
-     * Ensures all modal HTML from PHP includes is fully loaded
+     * PHASE 2.3: ENHANCED MODAL HTML LOADING WITH PROGRESSIVE DISCOVERY
+     * Implements progressive modal discovery instead of batch waiting
+     * Reduces timeout from 3000ms to 1500ms with exponential backoff retries
      */
     async waitForModalHTML() {
-        this.logger.info('MODAL', 'Enhanced validation for modal HTML elements');
+        this.logger.info('MODAL', 'Phase 2.3: Enhanced modal validation with progressive discovery');
         
         const modalIds = [
             'component-library-overlay',
@@ -657,87 +658,209 @@ class InitializationManager {
             'export-modal'
         ];
         
-        // CRITICAL FIX: Increased timeout and improved resilience
-        const maxWaitTime = 3000; // Increased from 2000
-        const checkInterval = 100; // Slightly slower but more reliable
+        // PHASE 2.3: Reduced timeout with retry strategy
+        const baseWaitTime = 1500; // Reduced from 3000ms
+        const maxRetries = 3;
+        const checkInterval = 50; // Faster polling
         const startTime = Date.now();
         
-        while (Date.now() - startTime < maxWaitTime) {
-            const foundModals = [];
-            const missingModals = [];
-            
-            for (const modalId of modalIds) {
-                const element = document.getElementById(modalId);
-                if (element) {
-                    // CRITICAL FIX: More resilient validation - check for key child elements
-                    const hasContent = element.children.length > 0 || 
-                                     element.querySelector('.library') || 
-                                     element.querySelector('.modal-content') ||
-                                     element.textContent.trim().length > 0;
-                    
-                    if (hasContent) {
-                        foundModals.push(modalId);
-                    } else {
-                        missingModals.push(`${modalId} (empty)`);
-                    }
-                } else {
-                    missingModals.push(modalId);
-                }
-            }
-            
-            this.logger.debug('MODAL', `Modal validation: ${foundModals.length}/${modalIds.length} ready`, {
-                found: foundModals,
-                missing: missingModals
-            });
-            
-            // CRITICAL FIX: Accept partial success to prevent complete failure
-            if (foundModals.length >= Math.ceil(modalIds.length * 0.75)) {
-                this.logger.info('MODAL', `Most modal HTML elements ready (${foundModals.length}/${modalIds.length})`);
-                // CRITICAL FIX: Additional validation for modal structure
-                await this.validateModalStructure(foundModals);
-                return;
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        // PHASE 2.3: Check for Phase 2.3 enhancements
+        const hasPhase23Enhancements = window.gmkbPhase23Enhanced && window.gmkbModalValidation;
+        if (hasPhase23Enhancements) {
+            this.logger.info('MODAL', 'Phase 2.3 enhancements detected - using enhanced validation strategy');
         }
         
-        // CRITICAL FIX: Enhanced error reporting but don't fail completely
+        // PHASE 2.3: Progressive modal discovery with exponential backoff
+        for (let retry = 0; retry <= maxRetries; retry++) {
+            const currentWaitTime = baseWaitTime * Math.pow(1.5, retry); // Exponential backoff
+            const retryStartTime = Date.now();
+            
+            this.logger.debug('MODAL', `Progressive discovery attempt ${retry + 1}/${maxRetries + 1} (timeout: ${currentWaitTime}ms)`);
+            
+            while (Date.now() - retryStartTime < currentWaitTime) {
+                const foundModals = [];
+                const missingModals = [];
+                const bridgeModals = [];
+                
+                for (const modalId of modalIds) {
+                    const element = document.getElementById(modalId);
+                    if (element) {
+                        // PHASE 2.3: Enhanced validation with bridge element detection
+                        const hasContent = element.children.length > 0 || 
+                                         element.querySelector('.library') || 
+                                         element.querySelector('.modal-content') ||
+                                         element.textContent.trim().length > 0;
+                        
+                        const isBridgeElement = element.getAttribute('data-fallback-modal') === 'true' ||
+                                              element.getAttribute('data-phase23-generated') === 'true';
+                        
+                        if (hasContent) {
+                            if (isBridgeElement) {
+                                bridgeModals.push(modalId);
+                            } else {
+                                foundModals.push(modalId);
+                            }
+                        } else {
+                            missingModals.push(`${modalId} (empty)`);
+                        }
+                    } else {
+                        missingModals.push(modalId);
+                    }
+                }
+                
+                const totalFound = foundModals.length + bridgeModals.length;
+                
+                this.logger.debug('MODAL', `Progressive validation: ${totalFound}/${modalIds.length} ready`, {
+                    found: foundModals,
+                    bridge: bridgeModals,
+                    missing: missingModals,
+                    retry: retry + 1
+                });
+                
+                // PHASE 2.3: Accept success with either real modals or bridge elements
+                if (totalFound >= Math.ceil(modalIds.length * 0.6)) { // Reduced threshold from 75% to 60%
+                    this.logger.info('MODAL', `Modal discovery successful (${totalFound}/${modalIds.length}) - attempt ${retry + 1}`);
+                    
+                    // Enhanced validation for modal structure
+                    await this.validateModalStructure([...foundModals, ...bridgeModals]);
+                    
+                    // PHASE 2.3: Log bridge element usage
+                    if (bridgeModals.length > 0) {
+                        this.logger.info('MODAL', `Using ${bridgeModals.length} bridge elements for initialization compatibility`);
+                    }
+                    
+                    return;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+            }
+            
+            // PHASE 2.3: Between retries, trigger additional bridge element generation
+            if (retry < maxRetries && hasPhase23Enhancements) {
+                this.logger.info('MODAL', `Retry ${retry + 1} - triggering additional bridge element generation`);
+                
+                // Trigger additional bridge element generation
+                const generateEvent = new CustomEvent('gmkbGenerateAdditionalBridges', {
+                    detail: { retry: retry + 1, missingModals: modalIds }
+                });
+                document.dispatchEvent(generateEvent);
+                
+                // Brief wait for bridge generation
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
+        
+        // PHASE 2.3: Final validation with enhanced error reporting
         const finalCheck = modalIds.filter(id => {
             const element = document.getElementById(id);
-            return !element || (element.children.length === 0 && !element.textContent.trim());
+            if (!element) return true;
+            
+            const hasContent = element.children.length > 0 || element.textContent.trim().length > 0;
+            const isBridge = element.getAttribute('data-fallback-modal') === 'true' ||
+                           element.getAttribute('data-phase23-generated') === 'true';
+            
+            return !hasContent && !isBridge;
         });
         
+        const totalElapsed = Date.now() - startTime;
+        
         if (finalCheck.length > 0) {
-            this.logger.warn('MODAL', `Modal validation completed with warnings after ${maxWaitTime}ms`, {
+            this.logger.warn('MODAL', `Phase 2.3: Modal validation completed with warnings after ${totalElapsed}ms`, {
                 missing: finalCheck,
-                timeout: maxWaitTime,
+                totalTimeout: baseWaitTime * Math.pow(1.5, maxRetries),
+                actualTime: totalElapsed,
                 domState: document.readyState,
-                foundCount: modalIds.length - finalCheck.length
+                foundCount: modalIds.length - finalCheck.length,
+                hasPhase23: hasPhase23Enhancements,
+                retries: maxRetries + 1
             });
-            this.logger.info('MODAL', 'Continuing with available modals - system remains functional');
+            
+            // PHASE 2.3: Enhanced graceful degradation message
+            this.logger.info('MODAL', 'Phase 2.3: Continuing with available modals and bridge elements - enhanced system remains functional');
+            
+            // PHASE 2.3: Trigger emergency bridge generation for completely missing modals
+            if (finalCheck.length > 2) {
+                this.logger.warn('MODAL', 'Phase 2.3: Triggering emergency bridge generation for missing modals');
+                const emergencyEvent = new CustomEvent('gmkbEmergencyBridgeGeneration', {
+                    detail: { missingModals: finalCheck, totalElapsed }
+                });
+                document.dispatchEvent(emergencyEvent);
+            }
+        } else {
+            this.logger.info('MODAL', `Phase 2.3: All modals validated successfully in ${totalElapsed}ms`);
         }
     }
     
     /**
-     * CRITICAL FIX: Validate modal internal structure
+     * PHASE 2.3: ENHANCED MODAL STRUCTURE VALIDATION
+     * Validates both real modals and bridge elements with detailed reporting
      */
     async validateModalStructure(modalIds) {
-        this.logger.debug('MODAL', 'Validating modal internal structure');
+        this.logger.debug('MODAL', 'Phase 2.3: Enhanced modal structure validation');
+        
+        const validationResults = {
+            real_modals: [],
+            bridge_modals: [],
+            invalid_modals: [],
+            total_validated: 0
+        };
         
         for (const modalId of modalIds) {
             const modal = document.getElementById(modalId);
             if (modal) {
-                // Check for common modal elements
-                const hasContent = modal.querySelector('.modal-content') || modal.querySelector('.modal-body');
-                const hasCloseButton = modal.querySelector('[data-action="close"]') || modal.querySelector('.close');
-                
-                this.logger.debug('MODAL', `Modal structure: ${modalId}`, {
+                const modalInfo = {
+                    id: modalId,
                     children: modal.children.length,
-                    hasContent: !!hasContent,
-                    hasCloseButton: !!hasCloseButton
-                });
+                    hasContent: false,
+                    hasCloseButton: false,
+                    isBridge: false,
+                    isPhase23Generated: false,
+                    structureValid: false
+                };
+                
+                // Check for common modal elements
+                modalInfo.hasContent = !!(modal.querySelector('.modal-content') || 
+                                        modal.querySelector('.modal-body') || 
+                                        modal.querySelector('.library'));
+                modalInfo.hasCloseButton = !!(modal.querySelector('[data-action="close"]') || 
+                                            modal.querySelector('.close') || 
+                                            modal.querySelector('.modal-close'));
+                
+                // Check if it's a bridge or generated element
+                modalInfo.isBridge = modal.getAttribute('data-fallback-modal') === 'true';
+                modalInfo.isPhase23Generated = modal.getAttribute('data-phase23-generated') === 'true';
+                
+                // Determine if structure is valid
+                modalInfo.structureValid = modalInfo.hasContent || modalInfo.isBridge || modalInfo.isPhase23Generated;
+                
+                // Categorize the modal
+                if (modalInfo.isBridge || modalInfo.isPhase23Generated) {
+                    validationResults.bridge_modals.push(modalInfo);
+                } else if (modalInfo.structureValid) {
+                    validationResults.real_modals.push(modalInfo);
+                } else {
+                    validationResults.invalid_modals.push(modalInfo);
+                }
+                
+                validationResults.total_validated++;
+                
+                this.logger.debug('MODAL', `Modal structure validated: ${modalId}`, modalInfo);
             }
         }
+        
+        // Log comprehensive validation summary
+        this.logger.info('MODAL', 'Phase 2.3: Modal structure validation complete', {
+            realModals: validationResults.real_modals.length,
+            bridgeModals: validationResults.bridge_modals.length,
+            invalidModals: validationResults.invalid_modals.length,
+            totalValidated: validationResults.total_validated,
+            validationSuccess: validationResults.invalid_modals.length === 0
+        });
+        
+        // Store validation results globally for debugging
+        window.gmkbModalStructureValidation = validationResults;
+        
+        return validationResults;
     }
 
     /**

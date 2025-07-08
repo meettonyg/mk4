@@ -62,7 +62,8 @@ class InitializationTracker {
     }
     
     /**
-     * Start a step
+     * PHASE 2.3: ENHANCED STEP INITIALIZATION WITH TIMEOUT PROMISE MANAGEMENT
+     * Fixes unhandled promise rejections and implements proper cleanup
      */
     async startStep(name) {
         const step = this.steps.get(name);
@@ -103,29 +104,66 @@ class InitializationTracker {
         
         step.attempts++;
         
-        // Create timeout promise with cancellation
+        // PHASE 2.3: Enhanced timeout promise with proper rejection handling
         let timeoutId;
-        const timeoutPromise = new Promise((_, reject) => {
+        let timeoutResolve, timeoutReject;
+        
+        const timeoutPromise = new Promise((resolve, reject) => {
+            timeoutResolve = resolve;
+            timeoutReject = reject;
+            
             timeoutId = setTimeout(() => {
-                // Only reject if the step hasn't completed yet
+                // PHASE 2.3: Only reject if the step hasn't completed yet and cleanup properly
                 if (!this.completedSteps.has(name) && !this.failedSteps.has(name)) {
-                    reject(new Error(`Timeout: ${name} took longer than ${step.timeout}ms`));
+                    this.logger.warn('INIT', `Phase 2.3: Step timeout triggered for ${name} after ${step.timeout}ms`);
+                    
+                    // Create timeout error with enhanced context
+                    const timeoutError = new Error(`Timeout: ${name} took longer than ${step.timeout}ms`);
+                    timeoutError.stepName = name;
+                    timeoutError.timeout = step.timeout;
+                    timeoutError.attempts = step.attempts;
+                    timeoutError.isTimeout = true;
+                    
+                    reject(timeoutError);
+                } else {
+                    // Step completed/failed before timeout - resolve to prevent hanging
+                    resolve({ timeoutCancelled: true, stepName: name });
                 }
             }, step.timeout);
         });
         
-        // Store timeout ID for cancellation
-        this.timeoutHandlers.set(name, timeoutId);
+        // PHASE 2.3: Store enhanced timeout information for cancellation
+        this.timeoutHandlers.set(name, {
+            timeoutId,
+            timeoutResolve,
+            timeoutReject,
+            stepName: name,
+            startTime,
+            timeout: step.timeout
+        });
+        
+        // PHASE 2.3: Add promise rejection handler to prevent unhandled rejections
+        timeoutPromise.catch(error => {
+            if (error.isTimeout) {
+                this.logger.warn('INIT', `Phase 2.3: Timeout promise rejection handled for ${name}`, {
+                    error: error.message,
+                    attempts: error.attempts,
+                    timeout: error.timeout
+                });
+            }
+        });
         
         return {
             startTime,
             timeoutPromise,
-            step
+            step,
+            phase23Enhanced: true
         };
     }
     
     /**
-     * Complete a step
+     * PHASE 2.3: ENHANCED STEP COMPLETION WITH TIMEOUT CLEANUP
+     * Properly handles timeout promise cleanup and prevents memory leaks
      */
     completeStep(name, result = {}) {
         const timing = this.stepTimings.get(name);
@@ -143,11 +181,28 @@ class InitializationTracker {
         // Mark as completed
         this.completedSteps.add(name);
         
-        // Cancel timeout if it exists
-        const timeoutId = this.timeoutHandlers.get(name);
-        if (timeoutId) {
-            clearTimeout(timeoutId);
+        // PHASE 2.3: Enhanced timeout cleanup with promise resolution
+        const timeoutHandler = this.timeoutHandlers.get(name);
+        if (timeoutHandler) {
+            // Clear the timeout
+            clearTimeout(timeoutHandler.timeoutId);
+            
+            // PHASE 2.3: Resolve the timeout promise to prevent hanging promises
+            if (timeoutHandler.timeoutResolve) {
+                timeoutHandler.timeoutResolve({ 
+                    stepCompleted: true, 
+                    stepName: name, 
+                    duration,
+                    completedBeforeTimeout: true 
+                });
+            }
+            
             this.timeoutHandlers.delete(name);
+            
+            this.logger.debug('INIT', `Phase 2.3: Timeout cleaned up for completed step: ${name}`, {
+                duration,
+                timeoutWas: timeoutHandler.timeout
+            });
         }
         
         // Log completion
@@ -163,7 +218,8 @@ class InitializationTracker {
     }
     
     /**
-     * Fail a step
+     * PHASE 2.3: ENHANCED STEP FAILURE HANDLING WITH TIMEOUT CLEANUP
+     * Properly handles timeout promise cleanup and enhanced error reporting
      */
     failStep(name, error) {
         const step = this.steps.get(name);
@@ -178,18 +234,41 @@ class InitializationTracker {
         
         this.failedSteps.add(name);
         
-        // Cancel timeout if it exists
-        const timeoutId = this.timeoutHandlers.get(name);
-        if (timeoutId) {
-            clearTimeout(timeoutId);
+        // PHASE 2.3: Enhanced timeout cleanup with promise resolution
+        const timeoutHandler = this.timeoutHandlers.get(name);
+        if (timeoutHandler) {
+            // Clear the timeout
+            clearTimeout(timeoutHandler.timeoutId);
+            
+            // PHASE 2.3: Resolve the timeout promise to prevent hanging promises
+            if (timeoutHandler.timeoutResolve) {
+                timeoutHandler.timeoutResolve({ 
+                    stepFailed: true, 
+                    stepName: name, 
+                    error: error.message,
+                    failedBeforeTimeout: true 
+                });
+            }
+            
             this.timeoutHandlers.delete(name);
+            
+            this.logger.debug('INIT', `Phase 2.3: Timeout cleaned up for failed step: ${name}`, {
+                error: error.message,
+                timeoutWas: timeoutHandler.timeout
+            });
         }
         
-        // Log failure
-        this.logger.logInitError(name, error, {
+        // PHASE 2.3: Enhanced error logging with timeout context
+        const errorContext = {
             attempts: step?.attempts || 0,
-            critical: step?.critical
-        });
+            critical: step?.critical,
+            isTimeout: error.isTimeout || false,
+            stepTimeout: step?.timeout,
+            phase23Enhanced: true
+        };
+        
+        // Log failure
+        this.logger.logInitError(name, error, errorContext);
         
         // If critical, mark overall as failed
         if (step?.critical) {
@@ -197,10 +276,17 @@ class InitializationTracker {
             this.endTime = performance.now();
         }
         
-        // Check if retry is possible
+        // PHASE 2.3: Enhanced retry logic with timeout consideration
         if (step && step.attempts < step.retryCount + 1) {
-            this.logger.info('INIT', `Retrying ${name} (attempt ${step.attempts + 1}/${step.retryCount + 1})`);
-            return { retry: true };
+            // Don't retry immediately on timeout errors - add delay
+            const retryDelay = error.isTimeout ? 500 : 0;
+            
+            this.logger.info('INIT', `Phase 2.3: Retrying ${name} (attempt ${step.attempts + 1}/${step.retryCount + 1})`, {
+                isTimeoutRetry: error.isTimeout,
+                retryDelay
+            });
+            
+            return { retry: true, retryDelay, isTimeoutRetry: error.isTimeout };
         }
         
         return { retry: false };
@@ -366,7 +452,8 @@ class InitializationTracker {
     }
     
     /**
-     * Get initialization summary
+     * PHASE 2.3: ENHANCED INITIALIZATION SUMMARY WITH TIMEOUT ANALYSIS
+     * Includes timeout handler status and promise resolution tracking
      */
     getSummary() {
         const allSteps = Array.from(this.steps.keys());
@@ -380,6 +467,33 @@ class InitializationTracker {
         const totalDuration = this.endTime && this.startTime ? 
             this.endTime - this.startTime : 
             performance.now() - (this.startTime || performance.now());
+        
+        // PHASE 2.3: Enhanced timeout handler analysis
+        const timeoutAnalysis = {
+            activeTimeouts: this.timeoutHandlers.size,
+            timeoutDetails: Array.from(this.timeoutHandlers.entries()).map(([stepName, handler]) => ({
+                stepName,
+                timeout: handler.timeout,
+                elapsed: performance.now() - handler.startTime,
+                hasResolver: !!handler.timeoutResolve
+            }))
+        };
+        
+        // PHASE 2.3: Error analysis
+        const errorAnalysis = {
+            timeoutErrors: 0,
+            criticalErrors: 0,
+            retryableErrors: 0
+        };
+        
+        timings.forEach(timing => {
+            if (timing.error) {
+                if (timing.error.isTimeout) errorAnalysis.timeoutErrors++;
+                const step = this.steps.get(timing.name);
+                if (step?.critical) errorAnalysis.criticalErrors++;
+                if (step && step.attempts < step.retryCount + 1) errorAnalysis.retryableErrors++;
+            }
+        });
         
         return {
             status: this.status,
@@ -396,13 +510,20 @@ class InitializationTracker {
             timings: timings.map(t => ({
                 name: t.name,
                 duration: t.duration,
-                status: t.status
-            }))
+                status: t.status,
+                isTimeout: t.error?.isTimeout || false
+            })),
+            // PHASE 2.3: Enhanced analysis
+            timeoutAnalysis,
+            errorAnalysis,
+            phase23Enhanced: true,
+            lastUpdate: performance.now()
         };
     }
     
     /**
-     * Reset tracker
+     * PHASE 2.3: ENHANCED TRACKER RESET WITH PROPER PROMISE CLEANUP
+     * Ensures all timeout promises are properly resolved to prevent memory leaks
      */
     reset() {
         this.completedSteps.clear();
@@ -412,9 +533,19 @@ class InitializationTracker {
         this.startTime = null;
         this.endTime = null;
         
-        // Cancel all pending timeouts
-        this.timeoutHandlers.forEach((timeoutId) => {
-            clearTimeout(timeoutId);
+        // PHASE 2.3: Enhanced timeout cleanup with promise resolution
+        this.timeoutHandlers.forEach((timeoutHandler, stepName) => {
+            // Clear the timeout
+            clearTimeout(timeoutHandler.timeoutId);
+            
+            // PHASE 2.3: Resolve any pending timeout promises to prevent memory leaks
+            if (timeoutHandler.timeoutResolve) {
+                timeoutHandler.timeoutResolve({ 
+                    trackerReset: true, 
+                    stepName, 
+                    resetTime: performance.now() 
+                });
+            }
         });
         this.timeoutHandlers.clear();
         
@@ -423,7 +554,7 @@ class InitializationTracker {
             step.attempts = 0;
         });
         
-        this.logger.info('INIT', 'Initialization tracker reset');
+        this.logger.info('INIT', 'Phase 2.3: Initialization tracker reset with enhanced cleanup');
     }
 }
 

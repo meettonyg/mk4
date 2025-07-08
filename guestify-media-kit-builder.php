@@ -89,11 +89,12 @@ class Guestify_Media_Kit_Builder {
     }
 
     /**
-     * CRITICAL FIX: Enhanced isolated builder template takeover
-     * - Implements early detection and proper isolation
-     * - Uses enhanced script manager for race condition prevention
-     * - Adds comprehensive error handling and recovery
+     * PHASE 2.3: ENHANCED ISOLATED BUILDER TEMPLATE TAKEOVER
+     * - Implements modal loading validation and race condition prevention
+     * - Enhanced DOM readiness detection with modal verification
+     * - Comprehensive error handling and recovery systems
      * - PHASE 1: Added MKCG post_id detection and data integration
+     * - PHASE 2.3: Root-level modal timeout fixes and UX enhancements
      */
     public function isolated_builder_template_takeover() {
         // Enhanced detection with multiple methods
@@ -120,13 +121,25 @@ class Guestify_Media_Kit_Builder {
             }
         }
         
+        // PHASE 2.3: PRE-VALIDATE MODAL HTML AVAILABILITY
+        $modal_validation = $this->validate_modal_html_availability();
+        
         // Ensure enhanced script manager is active
         $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
         $manager_status = $script_manager->get_status();
         
+        // PHASE 2.3: Enhanced status including modal validation
+        $enhanced_status = array_merge($manager_status, array(
+            'modal_validation' => $modal_validation,
+            'post_id' => $post_id,
+            'has_mkcg_data' => !empty($post_data),
+            'template_version' => '2.3-enhanced'
+        ));
+        
         // Log template takeover for debugging
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: Enhanced template takeover active for isolated builder');
+            error_log('GMKB: Phase 2.3 Enhanced template takeover active - Modal validation: ' . 
+                     ($modal_validation['all_available'] ? 'PASS' : 'PARTIAL'));
         }
         
         ?>
@@ -193,28 +206,55 @@ class Guestify_Media_Kit_Builder {
             </style>
             
             <?php
-            // CRITICAL FIX: Enhanced WordPress head with script manager integration
+            // PHASE 2.3: ENHANCED WORDPRESS HEAD WITH MODAL VALIDATION
             // The enhanced script manager handles:
             // 1. Ultra-early data injection (priority 1)
             // 2. Comprehensive data preparation (priority 2) 
             // 3. Script isolation and dequeuing (priority 1000)
             // 4. Error recovery systems (priority 999-1001)
+            // 5. PHASE 2.3: Modal validation and timeout prevention
             wp_head();
             ?>
             
-            <!-- Enhanced template ready indicator -->
+            <!-- PHASE 2.3: Enhanced template ready indicator with modal validation -->
             <script type="text/javascript">
                 window.gmkbTemplateEnhanced = true;
                 window.gmkbTemplateLoadTime = <?php echo time(); ?>;
-                console.log('🏠 Enhanced Builder Template Ready', {
-                    managerStatus: <?php echo wp_json_encode($manager_status); ?>,
+                window.gmkbPhase23Enhanced = true;
+                window.gmkbModalValidation = <?php echo wp_json_encode($modal_validation); ?>;
+                
+                console.log('🚀 Phase 2.3 Enhanced Builder Template Ready', {
+                    enhancedStatus: <?php echo wp_json_encode($enhanced_status); ?>,
+                    modalValidation: window.gmkbModalValidation,
                     templateLoadTime: window.gmkbTemplateLoadTime,
                     isolation: true,
-                    phase1: true
+                    phase23: true
                 });
+                
+                // PHASE 2.3: Early modal detection helper for JavaScript
+                window.gmkbModalPreValidation = function() {
+                    const requiredModals = ['component-library-overlay', 'template-library-modal', 'global-settings-modal', 'export-modal'];
+                    const results = {
+                        available: [],
+                        missing: [],
+                        ready: true
+                    };
+                    
+                    requiredModals.forEach(modalId => {
+                        const element = document.getElementById(modalId);
+                        if (element && (element.children.length > 0 || element.textContent.trim())) {
+                            results.available.push(modalId);
+                        } else {
+                            results.missing.push(modalId);
+                            results.ready = false;
+                        }
+                    });
+                    
+                    return results;
+                };
             </script>
         </head>
-        <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing">
+        <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing gmkb-phase23-enhanced" data-modal-validation="<?php echo esc_attr($modal_validation['all_available'] ? 'pass' : 'partial'); ?>" data-template-version="2.3">
             
             <!-- Enhanced error boundary for template -->
             <div id="gmkb-template-error-boundary" style="display: none;">
@@ -258,24 +298,52 @@ class Guestify_Media_Kit_Builder {
                 echo '<script>document.getElementById("gmkb-template-error-boundary").style.display = "block";</script>';
             }
             
-            // CRITICAL FIX: Enhanced WordPress footer with comprehensive systems
+            // PHASE 2.3: ENHANCED WORDPRESS FOOTER WITH MODAL TIMEOUT PREVENTION
             // Footer includes:
             // - Backup data validation (priority 999)
             // - Error recovery systems (priority 1000)
             // - Diagnostic tools (priority 1001)
+            // - PHASE 2.3: Modal availability final validation (priority 1002)
             wp_footer();
             ?>
             
-            <!-- Template completion indicator -->
+            <!-- PHASE 2.3: Template completion with enhanced modal validation -->
             <script type="text/javascript">
                 window.gmkbTemplateComplete = true;
-                console.log('✅ Enhanced Template Render Complete');
+                window.gmkbPhase23TemplateComplete = true;
                 
-                // Remove error boundary if no errors occurred
-                if (!window.gmkbPhase1?.errors?.length) {
+                // PHASE 2.3: Final modal validation before initialization
+                window.gmkbFinalModalValidation = window.gmkbModalPreValidation();
+                
+                console.log('✅ Phase 2.3 Enhanced Template Render Complete', {
+                    templateComplete: true,
+                    finalModalValidation: window.gmkbFinalModalValidation,
+                    modalReadiness: window.gmkbFinalModalValidation.ready,
+                    availableModals: window.gmkbFinalModalValidation.available,
+                    missingModals: window.gmkbFinalModalValidation.missing
+                });
+                
+                // PHASE 2.3: Enhanced error boundary removal with modal validation
+                if (!window.gmkbPhase1?.errors?.length && window.gmkbFinalModalValidation.ready) {
                     const errorBoundary = document.getElementById('gmkb-template-error-boundary');
                     if (errorBoundary) errorBoundary.remove();
+                } else if (!window.gmkbFinalModalValidation.ready) {
+                    console.warn('⚠️ Phase 2.3: Some modals not ready at template completion:', 
+                                window.gmkbFinalModalValidation.missing);
                 }
+                
+                // PHASE 2.3: Signal template ready for enhanced initialization
+                document.body.classList.remove('gmkb-initializing');
+                document.body.classList.add('gmkb-template-ready');
+                
+                // PHASE 2.3: Dispatch custom event for enhanced initialization
+                document.dispatchEvent(new CustomEvent('gmkbPhase23TemplateReady', {
+                    detail: {
+                        modalValidation: window.gmkbFinalModalValidation,
+                        templateVersion: '2.3-enhanced',
+                        readyForInit: window.gmkbFinalModalValidation.ready
+                    }
+                }));
             </script>
         </body>
         </html>
@@ -478,7 +546,17 @@ class Guestify_Media_Kit_Builder {
                     error_log("GMKB: Invalid or inaccessible post ID detected: {$post_id}");
                 }
                 return 0;
-            }
+                }
+    
+    /**
+     * PHASE 2.3: Get modal validation instance for external access
+     * Allows other components to check modal availability status
+     * 
+     * @return array Current modal validation results
+     */
+    public function get_modal_validation_status() {
+        return $this->validate_modal_html_availability();
+    }
             
             // Optional: Check if post has MKCG data (quick validation)
             $has_mkcg_data = $this->quick_mkcg_data_check($post_id);
@@ -518,6 +596,88 @@ class Guestify_Media_Kit_Builder {
         }
         
         return false;
+    }
+    
+    /**
+     * PHASE 2.3: Validate modal HTML availability before template render
+     * Prevents modal timeout issues by ensuring all required modal files are accessible
+     * 
+     * @return array Validation results with detailed modal availability status
+     */
+    private function validate_modal_html_availability() {
+        $validation_results = array(
+            'all_available' => true,
+            'modals' => array(),
+            'missing_files' => array(),
+            'validation_time' => time(),
+            'total_modals' => 0,
+            'available_count' => 0
+        );
+        
+        // Define required modal files
+        $required_modals = array(
+            'component-library-modal' => GUESTIFY_PLUGIN_DIR . 'partials/component-library-modal.php',
+            'template-library-modal' => GUESTIFY_PLUGIN_DIR . 'partials/template-library-modal.php',
+            'global-settings-modal' => GUESTIFY_PLUGIN_DIR . 'partials/global-settings-modal.php',
+            'export-modal' => GUESTIFY_PLUGIN_DIR . 'partials/export-modal.php'
+        );
+        
+        $validation_results['total_modals'] = count($required_modals);
+        
+        // Validate each modal file
+        foreach ($required_modals as $modal_name => $file_path) {
+            $modal_status = array(
+                'name' => $modal_name,
+                'file_path' => $file_path,
+                'exists' => false,
+                'readable' => false,
+                'size' => 0,
+                'has_content' => false,
+                'validation_passed' => false
+            );
+            
+            // Check if file exists
+            if (file_exists($file_path)) {
+                $modal_status['exists'] = true;
+                
+                // Check if file is readable
+                if (is_readable($file_path)) {
+                    $modal_status['readable'] = true;
+                    $modal_status['size'] = filesize($file_path);
+                    
+                    // Basic content validation (must have minimum content)
+                    if ($modal_status['size'] > 100) {
+                        $modal_status['has_content'] = true;
+                        $modal_status['validation_passed'] = true;
+                        $validation_results['available_count']++;
+                    }
+                }
+            }
+            
+            if (!$modal_status['validation_passed']) {
+                $validation_results['all_available'] = false;
+                $validation_results['missing_files'][] = $modal_name;
+            }
+            
+            $validation_results['modals'][$modal_name] = $modal_status;
+        }
+        
+        // Add summary statistics
+        $validation_results['success_rate'] = $validation_results['total_modals'] > 0 ? 
+                                            ($validation_results['available_count'] / $validation_results['total_modals']) * 100 : 0;
+        
+        // Log validation results for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Phase 2.3 Modal Validation: ' . 
+                     $validation_results['available_count'] . '/' . $validation_results['total_modals'] . 
+                     ' modals available (' . round($validation_results['success_rate'], 1) . '%)');
+            
+            if (!empty($validation_results['missing_files'])) {
+                error_log('GMKB Phase 2.3 Missing modal files: ' . implode(', ', $validation_results['missing_files']));
+            }
+        }
+        
+        return $validation_results;
     }
 }
 
