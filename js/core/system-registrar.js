@@ -23,6 +23,9 @@ const systems = {
     dynamicComponentLoader: null,
     templateCache: null,
     
+    // PHASE 2.3 TASK 4: Enhanced error handling system
+    enhancedErrorHandler: null,
+    
     // Enhancement systems (optional, improve functionality)
     stateValidator: null,
     uiRegistry: null,
@@ -73,7 +76,7 @@ export const systemRegistrar = {
                     console.log(`📝 System registered: ${name} (${registrationInfo.instanceType})`);
                     
                     // CRITICAL FIX: Validate system has expected methods for core systems
-                    if (['stateManager', 'componentManager', 'renderer', 'dynamicComponentLoader', 'templateCache'].includes(name)) {
+                    if (['stateManager', 'componentManager', 'renderer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler'].includes(name)) {
                         systemRegistrar.validateCoreSystem(name, instance);
                     }
                 }
