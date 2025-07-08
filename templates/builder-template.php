@@ -531,6 +531,13 @@
                         <span>Drop component here</span>
                     </div>
                 </div>
+                
+                <!-- CRITICAL FIX: Add missing add-first-component button for JavaScript compatibility -->
+                <!-- This is a bridge element that allows JavaScript initialization to complete -->
+                <!-- The actual UX uses enhanced buttons above, but this prevents modal timeout errors -->
+                <button id="add-first-component" style="display: none; opacity: 0; position: absolute; pointer-events: none;" aria-hidden="true">
+                    Add First Component (Bridge Element)
+                </button>
             </div>
         </div>
     </div>
@@ -539,6 +546,14 @@
     <?php include plugin_dir_path(__FILE__) . '../partials/export-modal.php'; ?>
     <?php include plugin_dir_path(__FILE__) . '../partials/component-library-modal.php'; ?>
     <?php include plugin_dir_path(__FILE__) . '../partials/template-library-modal.php'; ?>
+    
+    <!-- CRITICAL FIX: JavaScript Bridge Elements for Modal System Compatibility -->
+    <!-- These elements prevent initialization timeouts by providing expected element IDs -->
+    <div id="js-bridge-elements" style="display: none; opacity: 0; position: absolute; pointer-events: none;" aria-hidden="true">
+        <!-- Bridge for any other missing elements that JavaScript might expect -->
+        <div id="component-library-fallback">Component Library Bridge</div>
+        <div id="template-library-fallback">Template Library Bridge</div>
+    </div>
 
     <!-- PHASE 2.3: TASK 2 - ENHANCED INTELLIGENT EMPTY STATE CSS FRAMEWORK -->
     <style id="mkcg-integration-styles">

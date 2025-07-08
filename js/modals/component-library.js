@@ -228,6 +228,40 @@ function setupEventListeners() {
     } else {
         structuredLogger.debug('UI', 'Empty state Add Component button not found (likely hidden)', { elementId: 'add-first-component' });
     }
+    
+    // CRITICAL FIX: Enhanced UX button integration
+    // Connect enhanced empty state buttons to component library modal
+    const enhancedButtons = [
+        'auto-generate-all-empty',
+        'selective-generate', 
+        'auto-generate-available',
+        'manual-build',
+        'manual-build-fallback',
+        'connect-data',
+        'improve-data',
+        'generate-anyway'
+    ];
+    
+    enhancedButtons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.addEventListener('click', () => {
+                structuredLogger.debug('UI', `Enhanced empty state button clicked: ${buttonId}`);
+                // For manual/connect buttons, show component library
+                if (buttonId.includes('manual') || buttonId.includes('connect')) {
+                    showComponentLibraryModal();
+                } else {
+                    // For auto-generate buttons, show component library for now
+                    // TODO: Implement actual auto-generation logic
+                    structuredLogger.info('UI', `Auto-generation requested: ${buttonId}`);
+                    showComponentLibraryModal();
+                }
+            });
+            button.setAttribute('data-listener-attached', 'true');
+            listenersAttached++;
+            structuredLogger.debug('UI', `Enhanced button ${buttonId} connected to component library`);
+        }
+    });
 
     // Cancel button
     if (cancelComponentButton) {
@@ -341,7 +375,9 @@ function setupEventListeners() {
             emptyStateButton: !!addFirstComponentButton,
             cancelButton: !!cancelComponentButton,
             closeButton: !!closeComponentLibraryButton
-        }
+        },
+        enhancedUXIntegration: true,
+        enhancedButtonsConnected: enhancedButtons.length
     });
 }
 
