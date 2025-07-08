@@ -300,12 +300,17 @@ class DynamicComponentLoader {
         
         // ROOT FIX: Emit coordination event for startup coordination manager
         const operationId = `template_${originalType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        if (window.eventBus && typeof window.eventBus.emit === 'function') {
-            window.eventBus.emit('template:fetch-start', {
-                componentType: originalType,
-                resolvedType: actualType,
-                operationId
-            });
+        try {
+            if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                window.eventBus.emit('template:fetch-start', {
+                    componentType: originalType,
+                    resolvedType: actualType,
+                    operationId
+                });
+            }
+        } catch (e) {
+            // Event bus not ready yet, continue without coordination
+            structuredLogger.debug('LOADER', 'Event bus not available for template fetch start', { originalType });
         }
         // CRITICAL FIX: Check circuit breaker first
         if (!this.checkCircuitBreaker()) {
@@ -315,14 +320,18 @@ class DynamicComponentLoader {
             });
             
             // ROOT FIX: Emit error event for coordination
-            if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                window.eventBus.emit('template:fetch-error', {
-                    componentType: originalType,
-                    resolvedType: actualType,
-                    operationId,
-                    success: false,
-                    error: 'Circuit breaker open'
-                });
+            try {
+                if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                    window.eventBus.emit('template:fetch-error', {
+                        componentType: originalType,
+                        resolvedType: actualType,
+                        operationId,
+                        success: false,
+                        error: 'Circuit breaker open'
+                    });
+                }
+            } catch (e) {
+                // Event bus not ready yet
             }
             
             return this.getFallbackTemplate(originalType);
@@ -336,14 +345,18 @@ class DynamicComponentLoader {
             });
             
             // ROOT FIX: Emit completion event for coordination
-            if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                window.eventBus.emit('template:fetch-complete', {
-                    componentType: originalType,
-                    resolvedType: actualType,
-                    operationId,
-                    success: true,
-                    fallback: true
-                });
+            try {
+                if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                    window.eventBus.emit('template:fetch-complete', {
+                        componentType: originalType,
+                        resolvedType: actualType,
+                        operationId,
+                        success: true,
+                        fallback: true
+                    });
+                }
+            } catch (e) {
+                // Event bus not ready yet
             }
             
             return this.getFallbackTemplate(originalType);
@@ -395,13 +408,17 @@ class DynamicComponentLoader {
                     const template = data.html || data.template;
                     
                     // ROOT FIX: Emit success event for coordination
-                    if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                        window.eventBus.emit('template:fetch-complete', {
-                            componentType: originalType,
-                            resolvedType: actualType,
-                            operationId,
-                            success: true
-                        });
+                    try {
+                        if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                            window.eventBus.emit('template:fetch-complete', {
+                                componentType: originalType,
+                                resolvedType: actualType,
+                                operationId,
+                                success: true
+                            });
+                        }
+                    } catch (e) {
+                        // Event bus not ready yet
                     }
                     
                     return template;
@@ -411,13 +428,17 @@ class DynamicComponentLoader {
                 const template = await response.text();
                 
                 // ROOT FIX: Emit success event for coordination
-                if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                    window.eventBus.emit('template:fetch-complete', {
-                        componentType: originalType,
-                        resolvedType: actualType,
-                        operationId,
-                        success: true
-                    });
+                try {
+                    if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                        window.eventBus.emit('template:fetch-complete', {
+                            componentType: originalType,
+                            resolvedType: actualType,
+                            operationId,
+                            success: true
+                        });
+                    }
+                } catch (e) {
+                    // Event bus not ready yet
                 }
                 
                 return template;
@@ -449,14 +470,18 @@ class DynamicComponentLoader {
         });
         
         // ROOT FIX: Emit error event for coordination
-        if (window.eventBus && typeof window.eventBus.emit === 'function') {
-            window.eventBus.emit('template:fetch-error', {
-                componentType: originalType,
-                resolvedType: actualType,
-                operationId,
-                success: false,
-                error: lastError?.message || 'Unknown fetch error'
-            });
+        try {
+            if (window.eventBus && typeof window.eventBus.emit === 'function') {
+                window.eventBus.emit('template:fetch-error', {
+                    componentType: originalType,
+                    resolvedType: actualType,
+                    operationId,
+                    success: false,
+                    error: lastError?.message || 'Unknown fetch error'
+                });
+            }
+        } catch (e) {
+            // Event bus not ready yet
         }
         
         return this.getFallbackTemplate(originalType);

@@ -150,6 +150,9 @@ class StartupCoordinationManager {
             this.unblockRendering('Data loading complete');
             this.state = 'RENDERING';
             
+            // CRITICAL FIX: Set dataLoadingComplete BEFORE validation
+            this.dataLoadingComplete = true;
+            
             // Phase 7: Process deferred operations
             await this.executePhase('DEFERRED_OPERATIONS', () => this.processDeferredOperations());
             
@@ -157,7 +160,6 @@ class StartupCoordinationManager {
             await this.executePhase('VALIDATION', () => this.validateStartupComplete());
             
             this.state = 'COMPLETE';
-            this.dataLoadingComplete = true;
             
             const duration = performance.now() - this.startTime;
             this.logger.info('COORD', 'Startup coordination completed successfully', {
@@ -242,7 +244,7 @@ class StartupCoordinationManager {
         const startTime = performance.now();
         
         while (performance.now() - startTime < maxWait) {
-            const missingsystems = requiredSystems.filter(name => !window[name]);
+            const missingSystems = requiredSystems.filter(name => !window[name]);
             
             if (missingSystems.length === 0) {
                 this.systemsReady = true;

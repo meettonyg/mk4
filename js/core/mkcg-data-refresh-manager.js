@@ -64,15 +64,23 @@ class MKCGDataRefreshManager {
      * Initialize automatic data freshness checks
      */
     initializeAutoChecks() {
-        // Check if MKCG integration is available
-        if (window.guestifyData?.mkcgData && window.guestifyData.postId) {
+        // Check if MKCG integration is available and properly configured
+        const hasAjaxEndpoint = window.guestifyData?.ajaxurl && window.guestifyData?.nonce;
+        const hasMKCGData = window.guestifyData?.mkcgData && window.guestifyData?.postId;
+        const hasTimestamp = window.guestifyData?.mkcgData?.meta_info?.extraction_timestamp;
+        
+        if (hasAjaxEndpoint && hasMKCGData && hasTimestamp) {
             this.setupAutoRefreshChecks();
             this.logger.info('REFRESH', 'Auto-refresh checks enabled', {
                 postId: window.guestifyData.postId,
                 interval: this.config.autoCheckInterval
             });
         } else {
-            this.logger.info('REFRESH', 'Auto-refresh checks disabled - no MKCG data available');
+            this.logger.debug('REFRESH', 'Auto-refresh checks disabled', {
+                hasAjaxEndpoint,
+                hasMKCGData,
+                hasTimestamp
+            });
         }
     }
 
@@ -141,6 +149,12 @@ class MKCGDataRefreshManager {
      */
     async checkForFreshDataSilent() {
         try {
+            // Check if AJAX endpoints are available first
+            if (!window.guestifyData?.ajaxurl || !window.guestifyData?.nonce) {
+                this.logger.debug('REFRESH', 'AJAX endpoints not available, skipping freshness check');
+                return { success: false, error: 'AJAX not available' };
+            }
+            
             const result = await this.performFreshnessCheck();
             
             // Only notify if fresh data is available
@@ -159,7 +173,7 @@ class MKCGDataRefreshManager {
             return result;
             
         } catch (error) {
-            this.logger.warn('REFRESH', 'Silent freshness check failed', error);
+            this.logger.debug('REFRESH', 'Silent freshness check failed', error);
             return { success: false, error: error.message };
         }
     }
@@ -177,6 +191,8 @@ class MKCGDataRefreshManager {
         // Get current MKCG data timestamp
         const clientTimestamp = window.guestifyData?.mkcgData?.meta_info?.extraction_timestamp;
         if (!clientTimestamp) {
+            // No MKCG data available, which is normal for non-MKCG posts
+            this.logger.debug('REFRESH', 'No MKCG timestamp available, skipping check');
             throw new Error('No client timestamp available');
         }
 
@@ -896,25 +912,38 @@ class MKCGDataRefreshManager {
             ...data
         };
 
-        const response = await fetch(window.guestifyData.ajaxurl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams(requestData)
-        });
+        try {
+            const response = await fetch(window.guestifyData.ajaxurl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(requestData)
+            });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) {
+                // Check if it's a 404 - endpoint doesn't exist
+                if (response.status === 404) {
+                    throw new Error('AJAX endpoint not found - refresh functionality not available');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.data || 'Request failed');
+            }
+
+            return result.data;
+            
+        } catch (error) {
+            // Network errors or JSON parsing errors
+            if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                throw new Error('Network error - unable to connect to server');
+            }
+            throw error;
         }
-
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.data || 'Request failed');
-        }
-
-        return result.data;
     }
 
     // Progress and UI Methods

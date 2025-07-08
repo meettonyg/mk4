@@ -36,6 +36,9 @@ import './core/task5-integration.js';
 // ROOT FIX: Import test suite for race condition validation
 import './tests/test-race-condition-fix.js';
 
+// ROOT FIX: Import startup diagnostic tool
+import './diagnostics/startup-diagnostic.js';
+
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;
