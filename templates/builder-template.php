@@ -532,28 +532,8 @@
                     </div>
                 </div>
                 
-                <!-- PHASE 2.3: ENHANCED BRIDGE ELEMENTS FOR MODAL COMPATIBILITY -->
-                <!-- Comprehensive bridge elements to prevent initialization timeout errors -->
-                <!-- These elements ensure JavaScript initialization completes even if modal timing varies -->
-                <div id="gmkb-bridge-elements-enhanced" style="display: none; opacity: 0; position: absolute; pointer-events: none; z-index: -1;" aria-hidden="true">
-                    <!-- Core bridge elements for initialization compatibility -->
-                    <button id="add-first-component">Add First Component (Enhanced Bridge)</button>
-                    <button id="add-component-btn">Add Component (Bridge)</button>
-                    <button id="cancel-component-button">Cancel Component (Bridge)</button>
-                    <button id="close-library">Close Library (Bridge)</button>
-                    <button id="load-template">Load Template (Bridge)</button>
-                    <button id="global-theme-btn">Global Theme (Bridge)</button>
-                    
-                    <!-- Modal container bridges -->
-                    <div id="component-grid">Component Grid Bridge</div>
-                    <div id="template-grid">Template Grid Bridge</div>
-                    
-                    <!-- Additional bridge elements for comprehensive coverage -->
-                    <div id="component-library-fallback">Component Library Bridge</div>
-                    <div id="template-library-fallback">Template Library Bridge</div>
-                    <div id="global-settings-fallback">Global Settings Bridge</div>
-                    <div id="export-modal-fallback">Export Modal Bridge</div>
-                </div>
+                <!-- FOUNDATIONAL FIX: Bridge elements no longer needed -->
+                <!-- JavaScript now starts after all PHP includes complete -->
             </div>
         </div>
     </div>
@@ -605,7 +585,7 @@
         }
     }
     
-    // Add modal inclusion status to global JavaScript
+    // FOUNDATIONAL FIX: Enhanced modal inclusion status with validation
     echo '<script type="text/javascript">';
     echo 'window.gmkbModalInclusionStatus = ' . wp_json_encode(array(
         'included' => $included_modals,
@@ -615,134 +595,61 @@
         'success_rate' => count($modal_files) > 0 ? (count($included_modals) / count($modal_files)) * 100 : 0
     )) . ';';
     echo 'console.log("📋 Phase 2.3 Modal Inclusion Status:", window.gmkbModalInclusionStatus);';
-    echo '</script>';
-    ?>
     
-    <!-- PHASE 2.3: ENHANCED MODAL VALIDATION AND FALLBACK SYSTEM -->
-    <!-- Comprehensive modal availability checking and fallback generation -->
-    <div id="gmkb-modal-validation-system" style="display: none;" aria-hidden="true">
-        <script type="text/javascript">
-            // PHASE 2.3: Enhanced modal validation and fallback generation
-            (function() {
-                'use strict';
-                
-                // Modal validation results from PHP
-                const modalValidation = window.gmkbModalValidation || {};
-                const finalValidation = window.gmkbFinalModalValidation || {};
-                
-                // Enhanced bridge element generation
-                function createEnhancedBridgeElements() {
-                    const bridgeContainer = document.createElement('div');
-                    bridgeContainer.id = 'gmkb-enhanced-bridge-system';
-                    bridgeContainer.style.cssText = 'display: none; opacity: 0; position: absolute; pointer-events: none; z-index: -999;';
-                    bridgeContainer.setAttribute('aria-hidden', 'true');
-                    
-                    // Core elements that JavaScript initialization expects
-                    const essentialElements = [
-                        { type: 'button', id: 'add-first-component', text: 'Add First Component (Enhanced Bridge)' },
-                        { type: 'button', id: 'add-component-btn', text: 'Add Component (Enhanced Bridge)' },
-                        { type: 'button', id: 'cancel-component-button', text: 'Cancel (Enhanced Bridge)' },
-                        { type: 'button', id: 'close-library', text: 'Close (Enhanced Bridge)' },
-                        { type: 'button', id: 'add-component-button', text: 'Add Selected (Enhanced Bridge)' },
-                        { type: 'button', id: 'load-template', text: 'Load Template (Enhanced Bridge)' },
-                        { type: 'button', id: 'global-theme-btn', text: 'Global Theme (Enhanced Bridge)' },
-                        { type: 'div', id: 'component-grid', text: 'Component Grid (Enhanced Bridge)' },
-                        { type: 'div', id: 'template-grid', text: 'Template Grid (Enhanced Bridge)' }
-                    ];
-                    
-                    // Create essential elements if they don't exist
-                    essentialElements.forEach(elementDef => {
-                        if (!document.getElementById(elementDef.id)) {
-                            const element = document.createElement(elementDef.type);
-                            element.id = elementDef.id;
-                            element.textContent = elementDef.text;
-                            element.setAttribute('data-bridge-element', 'true');
-                            element.setAttribute('data-phase23-generated', 'true');
-                            bridgeContainer.appendChild(element);
-                        }
-                    });
-                    
-                    document.body.appendChild(bridgeContainer);
-                    
-                    console.log('🌉 Phase 2.3: Enhanced bridge elements created', {
-                        bridgeElementsCreated: essentialElements.length,
-                        modalValidation: modalValidation,
-                        timestamp: Date.now()
-                    });
-                }
-                
-                // Modal fallback generation for missing modals
-                function generateModalFallbacks() {
-                    const requiredModals = [
-                        'component-library-overlay',
-                        'template-library-modal', 
-                        'global-settings-modal',
-                        'export-modal'
-                    ];
-                    
-                    const missingModals = [];
-                    
-                    requiredModals.forEach(modalId => {
-                        const modal = document.getElementById(modalId);
-                        if (!modal || (!modal.children.length && !modal.textContent.trim())) {
-                            missingModals.push(modalId);
-                            
-                            // Create minimal fallback modal
-                            const fallbackModal = document.createElement('div');
-                            fallbackModal.id = modalId;
-                            fallbackModal.className = 'modal-fallback phase23-generated';
-                            fallbackModal.style.cssText = 'display: none; position: fixed; z-index: 1000;';
-                            fallbackModal.innerHTML = `
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h3>Modal Loading...</h3>
-                                        <button class="modal-close" data-action="close">&times;</button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <p>This modal is loading. Please wait...</p>
-                                    </div>
-                                </div>
-                            `;
-                            fallbackModal.setAttribute('data-fallback-modal', 'true');
-                            fallbackModal.setAttribute('data-phase23-generated', 'true');
-                            
-                            document.body.appendChild(fallbackModal);
-                        }
-                    });
-                    
-                    if (missingModals.length > 0) {
-                        console.warn('⚠️ Phase 2.3: Generated fallback modals for:', missingModals);
-                    }
-                    
-                    return missingModals;
-                }
-                
-                // Execute validation and fallback generation when DOM is ready
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', function() {
-                        createEnhancedBridgeElements();
-                        generateModalFallbacks();
-                    });
-                } else {
-                    createEnhancedBridgeElements();
-                    generateModalFallbacks();
-                }
-                
-                // Also execute on template ready event
-                document.addEventListener('gmkbPhase23TemplateReady', function(event) {
-                    // Additional validation after template is fully ready
-                    setTimeout(() => {
-                        const finalValidation = window.gmkbModalPreValidation();
-                        if (!finalValidation.ready) {
-                            console.warn('🔧 Phase 2.3: Running additional fallback generation after template ready');
-                            generateModalFallbacks();
-                        }
-                    }, 100);
+    // FOUNDATIONAL FIX: Wait for DOM elements to actually exist before signaling complete
+    echo '
+    // Enhanced modal readiness validation
+    window.waitForModalsReady = function() {
+        return new Promise((resolve) => {
+            const checkModals = () => {
+                const modalIds = ["component-library-overlay", "template-library-modal", "global-settings-modal", "export-modal"];
+                const readyModals = modalIds.filter(id => {
+                    const element = document.getElementById(id);
+                    return element && (element.children.length > 0 || element.textContent.trim());
                 });
                 
-            })();
-        </script>
-    </div>
+                console.log("🔍 Modal readiness check:", {
+                    ready: readyModals,
+                    total: modalIds.length,
+                    complete: readyModals.length === modalIds.length
+                });
+                
+                if (readyModals.length === modalIds.length) {
+                    console.log("✅ All modals ready, signaling template complete");
+                    resolve(true);
+                } else {
+                    // Try again in 100ms
+                    setTimeout(checkModals, 100);
+                }
+            };
+            
+            // Start checking after a brief delay to let DOM settle
+            setTimeout(checkModals, 50);
+        });
+    };
+    
+    // FOUNDATIONAL FIX: Signal template ready AFTER modals are verified
+    window.waitForModalsReady().then(() => {
+        // Dispatch the correct event that JavaScript expects
+        document.dispatchEvent(new CustomEvent("gmkbTemplateComplete", {
+            detail: {
+                templateComplete: true,
+                modalValidation: window.gmkbModalInclusionStatus,
+                templateVersion: "2.3-enhanced",
+                readyForInit: true,
+                allModalsReady: true
+            }
+        }));
+        
+        console.log("🎉 Template completion event dispatched after modal validation");
+    });';
+    
+    echo '</script>';
+    ?>
+
+    
+    <!-- FOUNDATIONAL FIX: Complex modal validation no longer needed -->
+    <!-- JavaScript now waits for complete template loading -->
 
     <!-- PHASE 2.3: TASK 2 - ENHANCED INTELLIGENT EMPTY STATE CSS FRAMEWORK -->
     <style id="mkcg-integration-styles">

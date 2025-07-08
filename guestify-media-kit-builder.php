@@ -340,12 +340,18 @@ class Guestify_Media_Kit_Builder {
                 document.body.classList.remove('gmkb-initializing');
                 document.body.classList.add('gmkb-template-ready');
                 
-                // PHASE 2.3: Dispatch custom event for enhanced initialization
+                // FOUNDATIONAL FIX: Event dispatch moved to template after modal validation
+                // The template now handles the gmkbTemplateComplete event dispatch after
+                // ensuring all modals are properly loaded and ready
+                console.log('✅ Phase 2.3 Template render complete - waiting for modal validation');
+                
+                // Legacy event for backward compatibility (non-blocking)
                 document.dispatchEvent(new CustomEvent('gmkbPhase23TemplateReady', {
                     detail: {
                         modalValidation: window.gmkbFinalModalValidation,
                         templateVersion: '2.3-enhanced',
-                        readyForInit: window.gmkbFinalModalValidation.ready
+                        readyForInit: window.gmkbFinalModalValidation.ready,
+                        note: 'Template rendered - main initialization event will come from template after modal validation'
                     }
                 }));
             </script>

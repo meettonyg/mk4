@@ -281,21 +281,21 @@ class InitializationManager {
             description: 'Setup tabs, layout, and empty state',
             dependencies: ['templates'],
             critical: true,
-            timeout: 2000
+            timeout: 1000
         });
         
         this.tracker.registerStep('modal-html', {
             description: 'Wait for modal HTML elements to load',
             dependencies: ['core-ui'],
             critical: false,
-            timeout: 3000
+            timeout: 1000
         });
         
         this.tracker.registerStep('modals', {
             description: 'Setup modal event listeners and handlers',
             dependencies: ['modal-html'],
             critical: false,
-            timeout: 3000,
+            timeout: 1000,
             retryCount: 1
         });
         
