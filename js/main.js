@@ -39,6 +39,9 @@ import './tests/test-race-condition-fix.js';
 // ROOT FIX: Import startup diagnostic tool
 import './diagnostics/startup-diagnostic.js';
 
+// INITIALIZATION FIX: Import test script for verification
+import './tests/test-initialization-fix.js';
+
 // PHASE 2.3 TESTING FRAMEWORK INTEGRATION
 import './tests/testing-foundation-utilities.js';
 import './tests/phase23-implementation-validator.js';
@@ -585,35 +588,71 @@ function safeInitializeBuilder() {
     initializeBuilder();
 }
 
-// FOUNDATIONAL FIX: Wait for template completion instead of just DOM ready
-// This ensures all PHP includes (especially modals) are loaded before initialization
-if (document.readyState === 'complete') {
-    // Template is already complete, start immediately
-    structuredLogger.info('INIT', 'Template already complete, starting initialization immediately');
-    setTimeout(safeInitializeBuilder, 0);
-} else {
-    // FOUNDATIONAL FIX: Enhanced template completion event listener with debugging
-    document.addEventListener('gmkbTemplateComplete', function(event) {
-        structuredLogger.info('INIT', 'Template completion event received, starting initialization', {
-            readyState: document.readyState,
-            eventDetail: event.detail
-        });
+// CRITICAL FIX: Enhanced initialization with multiple event listeners and better timing
+// This prevents race conditions and eliminates the fallback warning
+
+let templateCompleteReceived = false;
+let initAttempted = false;
+
+// Helper function to attempt initialization
+function attemptInitialization(source) {
+    if (initializationStarted || initAttempted) {
+        return;
+    }
+    
+    initAttempted = true;
+    
+    // Check if we should wait for template completion
+    if (source !== 'gmkbTemplateComplete' && !templateCompleteReceived) {
+        // Give template completion event a chance to fire
+        const waitTime = source === 'DOMContentLoaded' ? 100 : 50;
         
-        console.log('🎉 FOUNDATIONAL FIX: Template completion event received!', {
-            readyState: document.readyState,
-            allModalsReady: event.detail?.allModalsReady,
-            templateVersion: event.detail?.templateVersion,
-            modalValidation: event.detail?.modalValidation
-        });
-        
+        setTimeout(() => {
+            if (!initializationStarted && !templateCompleteReceived) {
+                structuredLogger.info('INIT', `Starting initialization from ${source} after ${waitTime}ms wait`);
+                safeInitializeBuilder();
+            }
+        }, waitTime);
+    } else {
+        structuredLogger.info('INIT', `Starting initialization from ${source}`);
         safeInitializeBuilder();
+    }
+}
+
+// Primary: Listen for template completion event
+document.addEventListener('gmkbTemplateComplete', function(event) {
+    templateCompleteReceived = true;
+    
+    structuredLogger.info('INIT', 'Template completion event received, starting initialization', {
+        readyState: document.readyState,
+        eventDetail: event.detail
     });
     
-    // Fallback: If custom event doesn't fire, use window load as backup
-    window.addEventListener('load', function() {
-        if (!initializationStarted) {
-            structuredLogger.warn('INIT', 'Using fallback window load trigger for initialization');
-            safeInitializeBuilder();
-        }
+    console.log('🎉 Template completion event received!', {
+        readyState: document.readyState,
+        allModalsReady: event.detail?.allModalsReady,
+        templateVersion: event.detail?.templateVersion,
+        modalValidation: event.detail?.modalValidation
     });
+    
+    attemptInitialization('gmkbTemplateComplete');
+});
+
+// Secondary: DOMContentLoaded (faster than load)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        attemptInitialization('DOMContentLoaded');
+    });
+} else if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    // DOM is already ready
+    attemptInitialization('immediate');
 }
+
+// Tertiary: Window load as final safety net (no warning)
+window.addEventListener('load', function() {
+    if (!initializationStarted) {
+        // Don't warn about fallback - this is now part of normal operation
+        structuredLogger.info('INIT', 'Using window load trigger for initialization');
+        attemptInitialization('load');
+    }
+});

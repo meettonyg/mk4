@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Add module type to the main builder script tag to enable ES module loading.
+ * CRITICAL FIX: Also add defer attribute to prevent race conditions
  */
 add_filter('script_loader_tag', 'guestify_add_module_type_attribute', 10, 3);
 function guestify_add_module_type_attribute($tag, $handle, $src) {
@@ -34,7 +35,8 @@ function guestify_add_module_type_attribute($tag, $handle, $src) {
     );
     
     if (in_array($handle, $module_scripts)) {
-        $tag = '<script type="module" src="' . esc_url($src) . '" id="' . esc_attr($handle) . '-js"></script>';
+        // CRITICAL FIX: Add defer attribute to ensure DOM is ready before execution
+        $tag = '<script type="module" defer src="' . esc_url($src) . '" id="' . esc_attr($handle) . '-js"></script>';
     }
     return $tag;
 }

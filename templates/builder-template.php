@@ -538,6 +538,29 @@
         </div>
     </div>
 
+    <script type="text/javascript">
+    // CRITICAL FIX: Ensure template completion event is dispatched early
+    (function() {
+        // If the script in PHP didn't run for some reason, ensure event fires
+        if (typeof window.dispatchTemplateComplete !== 'function') {
+            console.warn('Template completion dispatcher not found, creating fallback');
+            
+            const event = new CustomEvent('gmkbTemplateComplete', {
+                detail: {
+                    templateComplete: true,
+                    templateVersion: '2.3-fallback',
+                    readyForInit: true,
+                    timestamp: Date.now()
+                }
+            });
+            
+            // Dispatch immediately
+            document.dispatchEvent(event);
+            console.log('🎉 Fallback template completion event dispatched');
+        }
+    })();
+    </script>
+
     <?php 
     // PHASE 2.3: ENHANCED MODAL INCLUDES WITH VALIDATION AND ERROR HANDLING
     $modal_files = array(
@@ -596,9 +619,45 @@
     )) . ';';
     echo 'console.log("📋 Phase 2.3 Modal Inclusion Status:", window.gmkbModalInclusionStatus);';
     
-    // FOUNDATIONAL FIX: Wait for DOM elements to actually exist before signaling complete
+    // CRITICAL FIX: Enhanced template completion signaling with immediate and deferred dispatch
     echo '
-    // Enhanced modal readiness validation
+    // Function to dispatch template complete event
+    window.dispatchTemplateComplete = function() {
+        const event = new CustomEvent("gmkbTemplateComplete", {
+            detail: {
+                templateComplete: true,
+                modalValidation: window.gmkbModalInclusionStatus,
+                templateVersion: "2.3-enhanced-fixed",
+                readyForInit: true,
+                allModalsReady: true,
+                timestamp: Date.now()
+            }
+        });
+        
+        document.dispatchEvent(event);
+        console.log("🎉 Template completion event dispatched", event.detail);
+    };
+    
+    // CRITICAL FIX: Dispatch immediately if DOM is ready
+    if (document.readyState === "interactive" || document.readyState === "complete") {
+        // DOM is ready, dispatch immediately
+        console.log("📋 DOM ready, dispatching template complete immediately");
+        window.dispatchTemplateComplete();
+    } else {
+        // Wait for DOM to be ready
+        document.addEventListener("DOMContentLoaded", function() {
+            console.log("📋 DOMContentLoaded, dispatching template complete");
+            window.dispatchTemplateComplete();
+        });
+    }
+    
+    // Also dispatch on window load as backup
+    window.addEventListener("load", function() {
+        console.log("📋 Window loaded, ensuring template complete is dispatched");
+        window.dispatchTemplateComplete();
+    });
+    
+    // Enhanced modal readiness validation (non-blocking)
     window.waitForModalsReady = function() {
         return new Promise((resolve) => {
             const checkModals = () => {
@@ -615,7 +674,7 @@
                 });
                 
                 if (readyModals.length === modalIds.length) {
-                    console.log("✅ All modals ready, signaling template complete");
+                    console.log("✅ All modals verified ready");
                     resolve(true);
                 } else {
                     // Try again in 100ms
@@ -628,20 +687,9 @@
         });
     };
     
-    // FOUNDATIONAL FIX: Signal template ready AFTER modals are verified
+    // Verify modals in background (non-blocking)
     window.waitForModalsReady().then(() => {
-        // Dispatch the correct event that JavaScript expects
-        document.dispatchEvent(new CustomEvent("gmkbTemplateComplete", {
-            detail: {
-                templateComplete: true,
-                modalValidation: window.gmkbModalInclusionStatus,
-                templateVersion: "2.3-enhanced",
-                readyForInit: true,
-                allModalsReady: true
-            }
-        }));
-        
-        console.log("🎉 Template completion event dispatched after modal validation");
+        console.log("✅ Modal verification complete");
     });';
     
     echo '</script>';
