@@ -764,12 +764,12 @@ export class MKCGDataMapper {
         // ROOT FIX: Diagnostic logging for component schemas
         console.log('🔍 DIAGNOSTIC: Component schemas available:', Object.keys(this.componentSchemas));
         
-        // ROOT FIX: Check for any "bio" entries in schemas
+        // ROOT FIX: Check for problematic "bio" entries (not "biography")
         const bioEntries = Object.keys(this.componentSchemas).filter(key => 
-            key.includes('bio') || key === 'bio'
+            key === 'bio' || key.endsWith('-bio') || key.startsWith('bio-')
         );
         if (bioEntries.length > 0) {
-            console.error('🚨 DIAGNOSTIC: Found bio-related entries in component schemas:', bioEntries);
+            console.error('🚨 DIAGNOSTIC: Found problematic bio-named entries in component schemas:', bioEntries);
         }
 
         for (const [componentType, schema] of Object.entries(this.componentSchemas)) {
@@ -781,9 +781,9 @@ export class MKCGDataMapper {
             if (this.canAutoPopulate(componentType, dataSource)) {
                 const mappingResult = this.mapDataToComponent(componentType, dataSource);
                 
-                // ROOT FIX: Extra validation for biography/bio mapping
-                if (componentType === 'bio' || componentType.includes('bio')) {
-                    console.error('🚨 DIAGNOSTIC: Processing bio-related component:', componentType);
+                // ROOT FIX: Extra validation for problematic bio mapping (not biography)
+                if (componentType === 'bio' || (componentType.includes('bio') && componentType !== 'biography')) {
+                    console.error('🚨 DIAGNOSTIC: Processing problematic bio component:', componentType);
                     console.error('Schema:', schema);
                     console.error('Mapping result:', mappingResult);
                 }
@@ -805,10 +805,10 @@ export class MKCGDataMapper {
         // Sort by priority score
         const sortedResults = this.priorityEngine.sortComponentsByPriority(autoPopulatable);
         
-        // ROOT FIX: Final validation check
-        const bioResults = sortedResults.filter(comp => comp.type === 'bio' || comp.type.includes('bio'));
+        // ROOT FIX: Final validation check for problematic bio components (not biography)
+        const bioResults = sortedResults.filter(comp => comp.type === 'bio' || (comp.type.includes('bio') && comp.type !== 'biography'));
         if (bioResults.length > 0) {
-            console.error('🚨 DIAGNOSTIC: Bio components found in final auto-populatable results:');
+            console.error('🚨 DIAGNOSTIC: Problematic bio components found in final auto-populatable results:');
             console.error(bioResults);
         }
         
@@ -1188,7 +1188,7 @@ if (typeof window !== 'undefined') {
             console.log('1. Component schemas available:', Object.keys(schemas));
             
             const bioSchemas = Object.keys(schemas).filter(key => 
-                key.includes('bio') || key === 'bio'
+                key === 'bio' || key.endsWith('-bio') || key.startsWith('bio-')
             );
             if (bioSchemas.length > 0) {
                 console.error('🚨 Found bio-related schemas:', bioSchemas);
@@ -1219,10 +1219,11 @@ if (typeof window !== 'undefined') {
                 console.log('3. Enhanced component manager status:', window.enhancedComponentManager.getStatus());
             }
             
-            // Check browser storage for cached bio references
+            // Check browser storage for cached problematic bio references
             try {
                 const localStorageKeys = Object.keys(localStorage).filter(key => 
-                    key.includes('bio') || localStorage[key].includes('bio')
+                    key === 'bio' || key.includes('-bio-') || 
+                    (localStorage[key] && localStorage[key].includes('"bio"') && !localStorage[key].includes('biography'))
                 );
                 if (localStorageKeys.length > 0) {
                     console.warn('⚠️ Found bio references in localStorage:', localStorageKeys);
@@ -1233,14 +1234,14 @@ if (typeof window !== 'undefined') {
                 console.log('Could not check localStorage:', error.message);
             }
             
-            // Check current state
+            // Check current state for problematic bio components
             if (window.enhancedStateManager) {
                 const state = window.enhancedStateManager.getState();
                 const bioComponents = Object.values(state.components || {}).filter(comp => comp.type === 'bio');
                 if (bioComponents.length > 0) {
-                    console.error('🚨 Found bio components in current state:', bioComponents);
+                    console.error('🚨 Found problematic bio components in current state:', bioComponents);
                 } else {
-                    console.log('✅ No bio components in current state');
+                    console.log('✅ No problematic bio components in current state');
                 }
             }
             
@@ -1265,20 +1266,24 @@ if (typeof window !== 'undefined') {
                 console.log('✅ Cleared MKCG mapper cache');
             }
             
-            // Clear localStorage keys that might contain bio references
+            // Clear localStorage keys that might contain problematic bio references
             try {
                 const keysToRemove = Object.keys(localStorage).filter(key => 
-                    key.includes('bio') || key.includes('component') || key.includes('guestify')
+                    key === 'bio' || key.includes('-bio-') ||
+                    key.includes('component') || key.includes('guestify')
                 );
                 keysToRemove.forEach(key => {
-                    localStorage.removeItem(key);
-                    console.log(`✅ Removed localStorage key: ${key}`);
+                    // Double-check before removing - don't remove biography-related entries
+                    if (!key.includes('biography') && !localStorage[key]?.includes('biography')) {
+                        localStorage.removeItem(key);
+                        console.log(`✅ Removed localStorage key: ${key}`);
+                    }
                 });
             } catch (error) {
                 console.warn('Could not clear localStorage:', error.message);
             }
             
-            console.log('🎉 Bio reference cleanup completed. Try refreshing the page.');
+            console.log('🎉 Problematic bio reference cleanup completed. Try refreshing the page.');
         },
         
         // PHASE 2.1: Enhanced debugging commands

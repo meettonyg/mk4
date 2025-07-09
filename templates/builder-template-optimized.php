@@ -29,11 +29,66 @@ if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
     $post_id = intval($_GET['page_id']);
 }
 
-// ROOT FIX: Lightweight MKCG data check (no heavy processing)
+// ROOT FIX: Enhanced MKCG data processing with dashboard preparation
+$mkcg_data = null;
+$dashboard_data = null;
+
 if ($post_id > 0) {
+    // Enhanced MKCG data availability check
     $has_mkcg_data = get_post_meta($post_id, 'mkcg_topic_1', true) || 
                      get_post_meta($post_id, 'mkcg_biography_short', true) ||
                      get_post_meta($post_id, 'mkcg_authority_hook_who', true);
+    
+    // ROOT FIX: Prepare dashboard data when MKCG data is available
+    if ($has_mkcg_data) {
+        // Build dashboard data for automatic display
+        $dashboard_data = array(
+            'post_id' => $post_id,
+            'post_title' => get_the_title($post_id) ?: "Post #{$post_id}",
+            'has_topics' => !empty(get_post_meta($post_id, 'mkcg_topic_1', true)),
+            'has_biography' => !empty(get_post_meta($post_id, 'mkcg_biography_short', true)),
+            'has_authority_hook' => !empty(get_post_meta($post_id, 'mkcg_authority_hook_who', true)),
+            'has_questions' => !empty(get_post_meta($post_id, 'mkcg_questions_1', true)),
+            'has_offers' => !empty(get_post_meta($post_id, 'mkcg_offers_1', true)),
+            'data_quality' => 'good', // Simplified for performance
+            'last_update' => 'Recently'
+        );
+        
+        // Calculate available components
+        $available_count = 0;
+        $available_components = array();
+        
+        if ($dashboard_data['has_topics']) {
+            $available_count++;
+            $available_components[] = array('type' => 'topics', 'name' => 'Topics', 'icon' => '📚');
+        }
+        if ($dashboard_data['has_biography']) {
+            $available_count++;
+            $available_components[] = array('type' => 'biography', 'name' => 'Biography', 'icon' => '👤');
+        }
+        if ($dashboard_data['has_authority_hook']) {
+            $available_count++;
+            $available_components[] = array('type' => 'authority-hook', 'name' => 'Authority Hook', 'icon' => '🎯');
+        }
+        if ($dashboard_data['has_questions']) {
+            $available_count++;
+            $available_components[] = array('type' => 'questions', 'name' => 'Questions', 'icon' => '❓');
+        }
+        if ($dashboard_data['has_offers']) {
+            $available_count++;
+            $available_components[] = array('type' => 'offers', 'name' => 'Offers', 'icon' => '💼');
+        }
+        
+        $dashboard_data['available_count'] = $available_count;
+        $dashboard_data['components'] = $available_components;
+        $dashboard_data['quality_score'] = min(100, $available_count * 20);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Optimized: Dashboard data prepared for post ' . $post_id . ' with ' . $available_count . ' components');
+        }
+    }
+} else {
+    $has_mkcg_data = false;
 }
 ?>
 
@@ -43,12 +98,84 @@ if ($post_id > 0) {
             <div class="toolbar__logo">Guestify</div>
             <div class="toolbar__guest-name">Editing: Media Kit</div>
             
-            <?php if ($has_mkcg_data): ?>
-                <!-- ROOT FIX: Lightweight MKCG indicator (no heavy processing) -->
+            <?php if ($dashboard_data): ?>
+                <!-- ROOT FIX: Enhanced MKCG Dashboard (Auto-Loading) -->
+                <div class="mkcg-dashboard-optimized" id="mkcg-dashboard" data-post-id="<?php echo $post_id; ?>">
+                    <div class="mkcg-dashboard-trigger" id="dashboard-trigger">
+                        <div class="mkcg-connection-status">
+                            <div class="mkcg-status-indicator status-connected"></div>
+                            <div class="mkcg-connection-info">
+                                <span class="mkcg-connection-title">MKCG Data Connected</span>
+                                <span class="mkcg-connection-subtitle"><?php echo esc_html($dashboard_data['post_title']); ?></span>
+                            </div>
+                        </div>
+                        <div class="mkcg-dashboard-summary">
+                            <span class="mkcg-quality-score"><?php echo $dashboard_data['quality_score']; ?>%</span>
+                            <span class="mkcg-component-count"><?php echo $dashboard_data['available_count']; ?> Types</span>
+                        </div>
+                        <button class="mkcg-dashboard-toggle" title="Toggle Dashboard">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="mkcg-dashboard-panel" id="dashboard-panel" style="display: none;">
+                        <div class="mkcg-dashboard-content">
+                            <div class="mkcg-dashboard-metrics">
+                                <div class="mkcg-metric">
+                                    <div class="mkcg-metric-value"><?php echo $dashboard_data['quality_score']; ?>%</div>
+                                    <div class="mkcg-metric-label">Quality</div>
+                                </div>
+                                <div class="mkcg-metric">
+                                    <div class="mkcg-metric-value"><?php echo $dashboard_data['available_count']; ?></div>
+                                    <div class="mkcg-metric-label">Available</div>
+                                </div>
+                                <div class="mkcg-metric">
+                                    <div class="mkcg-metric-value">0</div>
+                                    <div class="mkcg-metric-label">Generated</div>
+                                </div>
+                                <div class="mkcg-metric">
+                                    <div class="mkcg-metric-value"><?php echo esc_html($dashboard_data['last_update']); ?></div>
+                                    <div class="mkcg-metric-label">Updated</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mkcg-dashboard-components">
+                                <div class="mkcg-components-title">Available Components:</div>
+                                <div class="mkcg-components-grid">
+                                    <?php foreach ($dashboard_data['components'] as $component): ?>
+                                        <div class="mkcg-component-badge">
+                                            <span class="mkcg-component-icon"><?php echo $component['icon']; ?></span>
+                                            <span class="mkcg-component-name"><?php echo esc_html($component['name']); ?></span>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            
+                            <div class="mkcg-dashboard-actions">
+                                <button class="mkcg-action-btn mkcg-auto-generate-btn" id="mkcg-auto-generate-dashboard">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                    Auto-Generate
+                                </button>
+                                <button class="mkcg-action-btn mkcg-refresh-btn" id="mkcg-refresh-dashboard">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                                    </svg>
+                                    Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php elseif ($has_mkcg_data): ?>
+                <!-- Fallback: Simple indicator if dashboard data preparation failed -->
                 <div class="mkcg-indicator-optimized" data-post-id="<?php echo $post_id; ?>">
                     <span class="mkcg-icon">🔗</span>
                     <span class="mkcg-text">MKCG Data Available</span>
-                    <button class="mkcg-load-btn" id="load-mkcg-data">Load</button>
+                    <span class="mkcg-status">Loading...</span>
                 </div>
             <?php endif; ?>
             
@@ -125,26 +252,79 @@ if ($post_id > 0) {
         <div class="preview__container" id="preview-container">
             <div class="media-kit" id="media-kit-preview">
                 
-                <!-- ROOT FIX: Simplified Empty State (no heavy PHP processing) -->
+                <!-- ROOT FIX: Enhanced Empty State with Auto-Loading Support -->
                 <div class="empty-state-optimized" id="empty-state">
-                    <div class="empty-state-icon">📄</div>
-                    <h3 class="empty-state-title">Start Building Your Media Kit</h3>
-                    <p class="empty-state-description">
-                        <?php if ($has_mkcg_data): ?>
-                            MKCG data detected for this post. Click "Load Data" to auto-populate components.
-                        <?php else: ?>
-                            Add components to create your professional media kit.
-                        <?php endif; ?>
-                    </p>
-                    
-                    <div class="empty-state-actions">
-                        <?php if ($has_mkcg_data): ?>
+                    <?php if ($dashboard_data): ?>
+                        <!-- MKCG Data Auto-Loading State -->
+                        <div class="empty-state-icon auto-loading">⚙️</div>
+                        <h3 class="empty-state-title">MKCG Data Connected!</h3>
+                        <p class="empty-state-description">
+                            Excellent! Your MKCG data has been detected and loaded automatically.<br>
+                            <strong><?php echo $dashboard_data['available_count']; ?> component types</strong> are ready for auto-generation.
+                        </p>
+                        
+                        <div class="mkcg-preview-components">
+                            <?php foreach (array_slice($dashboard_data['components'], 0, 3) as $component): ?>
+                                <div class="preview-component">
+                                    <span class="component-icon"><?php echo $component['icon']; ?></span>
+                                    <span class="component-name"><?php echo $component['name']; ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php if (count($dashboard_data['components']) > 3): ?>
+                                <div class="preview-component more-indicator">
+                                    <span class="component-icon">+</span>
+                                    <span class="component-name"><?php echo (count($dashboard_data['components']) - 3); ?> more</span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="empty-state-actions">
                             <button class="btn btn--primary" id="auto-generate-btn" data-post-id="<?php echo $post_id; ?>">
-                                Auto-Generate from MKCG Data
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                                Auto-Generate All Components
                             </button>
-                        <?php endif; ?>
-                        <button class="btn btn--secondary" id="add-first-component">Add Component</button>
-                    </div>
+                            <button class="btn btn--secondary" id="add-first-component">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Add Component Manually
+                            </button>
+                        </div>
+                        
+                    <?php elseif ($has_mkcg_data): ?>
+                        <!-- MKCG Data Loading State -->
+                        <div class="empty-state-icon loading">🔄</div>
+                        <h3 class="empty-state-title">Loading MKCG Data...</h3>
+                        <p class="empty-state-description">
+                            MKCG data detected for this post. Automatically loading your content...
+                        </p>
+                        
+                        <div class="loading-indicator">
+                            <div class="loading-spinner"></div>
+                            <span class="loading-text">Preparing your components...</span>
+                        </div>
+                        
+                    <?php else: ?>
+                        <!-- No MKCG Data State -->
+                        <div class="empty-state-icon">📄</div>
+                        <h3 class="empty-state-title">Start Building Your Media Kit</h3>
+                        <p class="empty-state-description">
+                            Create your professional media kit by adding components manually, or connect MKCG data for automatic generation.
+                        </p>
+                        
+                        <div class="empty-state-actions">
+                            <button class="btn btn--primary" id="add-first-component">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Add Component
+                            </button>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- ROOT FIX: Minimal drop zone (no complex bridge elements) -->
@@ -346,7 +526,289 @@ if ($post_id > 0) {
         background: #10b981;
     }
     
-    /* ROOT FIX: Optimized MKCG Indicator */
+    /* ROOT FIX: Enhanced MKCG Dashboard */
+    .mkcg-dashboard-optimized {
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        overflow: hidden;
+        max-width: 350px;
+    }
+    
+    .mkcg-dashboard-trigger {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .mkcg-dashboard-trigger:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .mkcg-connection-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    }
+    
+    .mkcg-status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .mkcg-status-indicator.status-connected {
+        background: #ffffff;
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    }
+    
+    .mkcg-connection-info {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mkcg-connection-title {
+        font-size: 11px;
+        font-weight: 600;
+        opacity: 0.9;
+    }
+    
+    .mkcg-connection-subtitle {
+        font-size: 10px;
+        opacity: 0.7;
+        margin-top: 1px;
+    }
+    
+    .mkcg-dashboard-summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    
+    .mkcg-quality-score {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .mkcg-component-count {
+        opacity: 0.8;
+    }
+    
+    .mkcg-dashboard-toggle {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        opacity: 0.7;
+        transition: all 0.2s;
+    }
+    
+    .mkcg-dashboard-toggle:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .mkcg-dashboard-panel {
+        background: rgba(255, 255, 255, 0.95);
+        color: #374151;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .mkcg-dashboard-content {
+        padding: 16px;
+    }
+    
+    .mkcg-dashboard-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .mkcg-metric {
+        text-align: center;
+        padding: 8px;
+        background: #f8fafc;
+        border-radius: 6px;
+    }
+    
+    .mkcg-metric-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 2px;
+    }
+    
+    .mkcg-metric-label {
+        font-size: 10px;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .mkcg-dashboard-components {
+        margin-bottom: 16px;
+    }
+    
+    .mkcg-components-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+    
+    .mkcg-components-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .mkcg-component-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #eff6ff;
+        color: #1e40af;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    
+    .mkcg-component-icon {
+        font-size: 12px;
+    }
+    
+    .mkcg-dashboard-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .mkcg-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .mkcg-auto-generate-btn {
+        background: #3b82f6;
+        color: white;
+        flex: 1;
+    }
+    
+    .mkcg-auto-generate-btn:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+    }
+    
+    .mkcg-refresh-btn {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+    
+    .mkcg-refresh-btn:hover {
+        background: #e2e8f0;
+        color: #374151;
+    }
+    
+    /* Enhanced Empty State Styles */
+    .empty-state-icon.auto-loading {
+        animation: spin 2s linear infinite;
+    }
+    
+    .empty-state-icon.loading {
+        animation: spin 1s linear infinite;
+    }
+    
+    .mkcg-preview-components {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+        margin: 24px 0;
+    }
+    
+    .preview-component {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        background: white;
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        min-width: 80px;
+        transition: all 0.2s;
+    }
+    
+    .preview-component:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .preview-component.more-indicator {
+        background: #f1f5f9;
+        color: #64748b;
+        border: 2px dashed #cbd5e1;
+    }
+    
+    .component-icon {
+        font-size: 20px;
+    }
+    
+    .component-name {
+        font-size: 11px;
+        font-weight: 500;
+        color: #374151;
+        text-align: center;
+    }
+    
+    .loading-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        margin: 24px 0;
+    }
+    
+    .loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e2e8f0;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    .loading-text {
+        font-size: 14px;
+        color: #64748b;
+        font-weight: 500;
+    }
+    
+    /* Fallback indicator */
     .mkcg-indicator-optimized {
         display: flex;
         align-items: center;
@@ -359,19 +821,10 @@ if ($post_id > 0) {
         color: #1e40af;
     }
     
-    .mkcg-load-btn {
-        background: #3b82f6;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 4px 8px;
+    .mkcg-status {
         font-size: 11px;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-    
-    .mkcg-load-btn:hover {
-        background: #2563eb;
+        opacity: 0.8;
+        animation: pulse 2s ease-in-out infinite;
     }
     
     /* Layout continued */
@@ -534,6 +987,45 @@ if ($post_id > 0) {
             flex-direction: column;
             align-items: center;
         }
+        
+        /* Enhanced MKCG Dashboard Mobile */
+        .mkcg-dashboard-optimized {
+            max-width: 100%;
+            margin: 8px 0;
+        }
+        
+        .mkcg-dashboard-trigger {
+            padding: 8px 12px;
+        }
+        
+        .mkcg-connection-title {
+            font-size: 10px;
+        }
+        
+        .mkcg-connection-subtitle {
+            font-size: 9px;
+        }
+        
+        .mkcg-dashboard-metrics {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .mkcg-preview-components {
+            gap: 8px;
+        }
+        
+        .preview-component {
+            min-width: 60px;
+            padding: 8px;
+        }
+        
+        .component-icon {
+            font-size: 16px;
+        }
+        
+        .component-name {
+            font-size: 10px;
+        }
     }
     
     /* ROOT FIX: Loading states without complex animations */
@@ -662,9 +1154,113 @@ if ($post_id > 0) {
         }
     };
     
+    // ROOT FIX: Auto-load MKCG data when page loads with post_id
+    const autoLoadMKCGData = async () => {
+        const dashboard = document.getElementById('mkcg-dashboard');
+        if (!dashboard) return;
+        
+        const postId = dashboard.dataset.postId;
+        if (!postId) return;
+        
+        console.log('🔄 Auto-loading MKCG data for post:', postId);
+        
+        try {
+            const mkcgData = await loadMKCGData(postId);
+            if (mkcgData) {
+                // Update global data
+                if (!window.guestifyData) {
+                    window.guestifyData = {};
+                }
+                window.guestifyData.mkcgData = mkcgData;
+                window.guestifyData.postId = postId;
+                
+                console.log('✅ MKCG data auto-loaded successfully:', mkcgData);
+                
+                // Dispatch event for other components
+                const event = new CustomEvent('mkcgDataLoaded', {
+                    detail: { mkcgData, postId }
+                });
+                document.dispatchEvent(event);
+                
+                return mkcgData;
+            }
+        } catch (error) {
+            console.error('❌ Auto-load MKCG data failed:', error);
+        }
+        
+        return null;
+    };
+    
+    // ROOT FIX: Enhanced dashboard interactions
+    const initializeDashboard = () => {
+        // Dashboard toggle functionality
+        const dashboardTrigger = document.getElementById('dashboard-trigger');
+        const dashboardPanel = document.getElementById('dashboard-panel');
+        
+        if (dashboardTrigger && dashboardPanel) {
+            dashboardTrigger.addEventListener('click', function() {
+                const isVisible = dashboardPanel.style.display !== 'none';
+                dashboardPanel.style.display = isVisible ? 'none' : 'block';
+                
+                const toggleIcon = this.querySelector('.mkcg-dashboard-toggle svg');
+                if (toggleIcon) {
+                    toggleIcon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+                }
+            });
+        }
+        
+        // Auto-generate from dashboard
+        const dashboardAutoGenBtn = document.getElementById('mkcg-auto-generate-dashboard');
+        if (dashboardAutoGenBtn) {
+            dashboardAutoGenBtn.addEventListener('click', function() {
+                const dashboard = this.closest('.mkcg-dashboard-optimized');
+                const postId = dashboard.dataset.postId;
+                if (postId) {
+                    autoGenerateComponents(postId);
+                }
+            });
+        }
+        
+        // Refresh data from dashboard
+        const dashboardRefreshBtn = document.getElementById('mkcg-refresh-dashboard');
+        if (dashboardRefreshBtn) {
+            dashboardRefreshBtn.addEventListener('click', async function() {
+                const dashboard = this.closest('.mkcg-dashboard-optimized');
+                const postId = dashboard.dataset.postId;
+                
+                this.textContent = 'Refreshing...';
+                this.disabled = true;
+                
+                try {
+                    await autoLoadMKCGData();
+                    this.innerHTML = `
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                        </svg>
+                        Refresh
+                    `;
+                    console.log('✅ MKCG data refreshed');
+                } catch (error) {
+                    this.textContent = 'Error';
+                    console.error('❌ Refresh failed:', error);
+                } finally {
+                    this.disabled = false;
+                }
+            });
+        }
+    };
+    
     // ROOT FIX: Event listeners for optimized functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        // Auto-generate button
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🚀 Optimized Media Kit Builder initializing...');
+        
+        // Initialize dashboard interactions
+        initializeDashboard();
+        
+        // Auto-load MKCG data if dashboard exists
+        await autoLoadMKCGData();
+        
+        // Auto-generate button from empty state
         const autoGenerateBtn = document.getElementById('auto-generate-btn');
         if (autoGenerateBtn) {
             autoGenerateBtn.addEventListener('click', function() {
@@ -675,46 +1271,7 @@ if ($post_id > 0) {
             });
         }
         
-        // Load MKCG data button
-        const loadBtn = document.getElementById('load-mkcg-data');
-        if (loadBtn) {
-            loadBtn.addEventListener('click', async function() {
-                const indicator = this.closest('.mkcg-indicator-optimized');
-                const postId = indicator.dataset.postId;
-                
-                this.textContent = 'Loading...';
-                this.disabled = true;
-                
-                try {
-                    const mkcgData = await loadMKCGData(postId);
-                    if (mkcgData) {
-                        // Update global data
-                        window.guestifyData.mkcgData = mkcgData;
-                        
-                        // Update indicator
-                        indicator.innerHTML = `
-                            <span class="mkcg-icon">✅</span>
-                            <span class="mkcg-text">MKCG Data Loaded</span>
-                        `;
-                        
-                        // Show auto-generate button if hidden
-                        const autoGenBtn = document.getElementById('auto-generate-btn');
-                        if (autoGenBtn) {
-                            autoGenBtn.style.display = 'inline-flex';
-                        }
-                        
-                        console.log('✅ MKCG data loaded successfully');
-                    } else {
-                        throw new Error('Failed to load data');
-                    }
-                } catch (error) {
-                    this.textContent = 'Error';
-                    console.error('MKCG data load failed:', error);
-                }
-            });
-        }
-        
-        console.log('🚀 Optimized Media Kit Builder initialized');
+        console.log('✅ Optimized Media Kit Builder initialized successfully');
     });
     
     // ROOT FIX: Device preview toggle functionality

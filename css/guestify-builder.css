@@ -40,7 +40,7 @@
    CRITICAL CSS - IMMEDIATE THEMING
    ======================================== */
 
-/* Enhanced CSS Variables - Critical for theming and isolation support */
+/* Enhanced CSS Variables - Original Design Specifications */
 :root {
     --gmkb-sidebar-bg: #2a2a2a;
     --gmkb-sidebar-border-color: #404040;
@@ -52,17 +52,17 @@
     --gmkb-primary-color: #0ea5e9;
     --gmkb-accent-color: #10b981;
     
-    /* PHASE 2.3: Enhanced preview toggle variables for consistent styling across isolation modes */
-    --gmkb-preview-toggle-bg: #f1f5f9;
-    --gmkb-preview-toggle-border: #e2e8f0;
-    --gmkb-preview-btn-bg: #e2e8f0;
-    --gmkb-preview-btn-border: #94a3b8;
-    --gmkb-preview-btn-color: #475569;
-    --gmkb-preview-btn-active-bg: white;
-    --gmkb-preview-btn-active-color: #1e293b;
-    --gmkb-preview-btn-active-border: #3b82f6;
-    --gmkb-preview-btn-hover-bg: rgba(255, 255, 255, 0.8);
-    --gmkb-preview-btn-hover-color: #374151;
+    /* Original preview toggle design variables */
+    --gmkb-preview-toggle-bg: #2a2a2a;
+    --gmkb-preview-toggle-border: #404040;
+    --gmkb-preview-btn-bg: transparent;
+    --gmkb-preview-btn-border: rgba(255, 255, 255, 0.1);
+    --gmkb-preview-btn-color: rgba(255, 255, 255, 0.7);
+    --gmkb-preview-btn-active-bg: #0ea5e9;
+    --gmkb-preview-btn-active-color: white;
+    --gmkb-preview-btn-active-border: #0ea5e9;
+    --gmkb-preview-btn-hover-bg: rgba(255, 255, 255, 0.1);
+    --gmkb-preview-btn-hover-color: rgba(255, 255, 255, 0.9);
 }
 
 /* Critical isolated builder fixes */
@@ -165,21 +165,22 @@
     cursor: not-allowed !important;
 }
 
-/* ARCHITECTURE FIX: Preview toggle styling moved to modular CSS system
+/* ORIGINAL DESIGN RESTORED: Preview toggle styling reverted to original specifications
  * 
- * PROBLEM SOLVED: High-specificity .gmkb-isolated-builder rules were overriding
- * proper module-based styling in css/modules/toolbar.css, causing grey/inactive
- * button appearance instead of proper active states.
+ * USER REQUEST: Reverted from professional enhancements back to original design
  * 
- * SOLUTION: Removed conflicting CSS from main file and enhanced toolbar.css
- * module with proper isolation support using CSS custom properties.
+ * ORIGINAL DESIGN FEATURES:
+ * - Dark theme with #2a2a2a background
+ * - Transparent inactive buttons with subtle white borders
+ * - Blue (#0ea5e9) active state matching primary brand color
+ * - Subtle hover states with white overlay
+ * - Compact padding and spacing
  * 
- * BENEFITS:
- * - Maintains isolation functionality
- * - Proper button state styling (active/hover/disabled)
- * - Better maintainability through modular architecture
- * - Consistent theming through CSS custom properties
- * - No more CSS specificity conflicts
+ * ARCHITECTURE MAINTAINED:
+ * - Proper modular CSS structure preserved
+ * - CSS custom properties for consistent theming
+ * - Isolation support maintained
+ * - No CSS specificity conflicts
  */
 
 /* Loading state for drop zones */

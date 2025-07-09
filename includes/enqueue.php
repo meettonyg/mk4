@@ -246,12 +246,12 @@ class GMKB_Enhanced_Script_Manager {
         $plugin_url = GUESTIFY_PLUGIN_URL;
         $version = GUESTIFY_VERSION . '-phase1';
 
-        // PHASE 2.3: Register optimized styles for 40% performance improvement
+        // ORIGINAL DESIGN: Reverted to original design specifications per user request
         wp_register_style(
             'guestify-media-kit-builder-styles',
             $plugin_url . 'css/guestify-builder.css',
             [],
-            $version . '-phase23-v6-css-architecture-fixed' // Cache busting version
+            $version . '-original-design-restored-v7' // Cache busting version
         );
         
         // Add critical CSS inline for immediate rendering
@@ -1115,14 +1115,14 @@ class GMKB_Enhanced_Script_Manager {
      */
     private function get_critical_css() {
         return '
-        /* PHASE 2.3: Critical CSS for immediate rendering */
+        /* ORIGINAL DESIGN: Critical CSS for immediate rendering */
         .gmkb-isolated-builder {
             margin: 0;
             padding: 0;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
-            background: #f8fafc;
+            background: #1a1a1a;
         }
         
         .gmkb-initializing {
@@ -1137,20 +1137,20 @@ class GMKB_Enhanced_Script_Manager {
             flex-direction: column;
             height: 100vh;
             width: 100vw;
-            background: #f8fafc;
+            background: #1a1a1a;
         }
         
         .toolbar {
             flex-shrink: 0;
             height: 60px;
-            background: white;
-            border-bottom: 1px solid #e2e8f0;
+            background: #2a2a2a;
+            border-bottom: 1px solid #404040;
             display: flex;
             align-items: center;
             z-index: 100;
         }
         
-        /* CRITICAL: Immediate toolbar SVG icon visibility */
+        /* CRITICAL: Original design toolbar SVG icon visibility */
         .toolbar__btn svg {
             stroke: currentColor !important;
             fill: none !important;
