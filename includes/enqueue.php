@@ -251,7 +251,7 @@ class GMKB_Enhanced_Script_Manager {
             'guestify-media-kit-builder-styles',
             $plugin_url . 'css/guestify-builder.css',
             [],
-            $version . '-phase23-optimized-v5-preview-buttons-fixed' // Cache busting version
+            $version . '-phase23-v6-css-architecture-fixed' // Cache busting version
         );
         
         // Add critical CSS inline for immediate rendering

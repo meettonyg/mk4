@@ -40,7 +40,7 @@
    CRITICAL CSS - IMMEDIATE THEMING
    ======================================== */
 
-/* CSS Variables - Critical for theming */
+/* Enhanced CSS Variables - Critical for theming and isolation support */
 :root {
     --gmkb-sidebar-bg: #2a2a2a;
     --gmkb-sidebar-border-color: #404040;
@@ -51,6 +51,18 @@
     --gmkb-toolbar-text: #e2e8f0;
     --gmkb-primary-color: #0ea5e9;
     --gmkb-accent-color: #10b981;
+    
+    /* PHASE 2.3: Enhanced preview toggle variables for consistent styling across isolation modes */
+    --gmkb-preview-toggle-bg: #f1f5f9;
+    --gmkb-preview-toggle-border: #e2e8f0;
+    --gmkb-preview-btn-bg: #e2e8f0;
+    --gmkb-preview-btn-border: #94a3b8;
+    --gmkb-preview-btn-color: #475569;
+    --gmkb-preview-btn-active-bg: white;
+    --gmkb-preview-btn-active-color: #1e293b;
+    --gmkb-preview-btn-active-border: #3b82f6;
+    --gmkb-preview-btn-hover-bg: rgba(255, 255, 255, 0.8);
+    --gmkb-preview-btn-hover-color: #374151;
 }
 
 /* Critical isolated builder fixes */
@@ -153,21 +165,22 @@
     cursor: not-allowed !important;
 }
 
-/* Preview toggle styling */
-.gmkb-isolated-builder .toolbar__preview-btn {
-    background: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: rgba(255, 255, 255, 0.7) !important;
-    padding: 6px 12px !important;
-    border-radius: 4px !important;
-    font-size: 12px !important;
-}
-
-.gmkb-isolated-builder .toolbar__preview-btn--active {
-    background: var(--gmkb-primary-color, #0ea5e9) !important;
-    border-color: var(--gmkb-primary-color, #0ea5e9) !important;
-    color: white !important;
-}
+/* ARCHITECTURE FIX: Preview toggle styling moved to modular CSS system
+ * 
+ * PROBLEM SOLVED: High-specificity .gmkb-isolated-builder rules were overriding
+ * proper module-based styling in css/modules/toolbar.css, causing grey/inactive
+ * button appearance instead of proper active states.
+ * 
+ * SOLUTION: Removed conflicting CSS from main file and enhanced toolbar.css
+ * module with proper isolation support using CSS custom properties.
+ * 
+ * BENEFITS:
+ * - Maintains isolation functionality
+ * - Proper button state styling (active/hover/disabled)
+ * - Better maintainability through modular architecture
+ * - Consistent theming through CSS custom properties
+ * - No more CSS specificity conflicts
+ */
 
 /* Loading state for drop zones */
 .drop-zone.loading {
