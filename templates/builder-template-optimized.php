@@ -272,11 +272,11 @@ if ($post_id > 0) {
         min-width: 240px;
     }
     
-    /* DEBUG: Temporary enhanced visibility for preview buttons */
+    /* FIXED: Enhanced visibility for inactive preview buttons */
     .toolbar__preview-btn {
         padding: 10px 18px;
-        border: 1px solid #cbd5e1 !important;
-        background: #f8fafc !important;
+        border: 1px solid #94a3b8 !important;
+        background: #e2e8f0 !important;
         border-radius: 6px;
         cursor: pointer;
         font-size: 13px;
