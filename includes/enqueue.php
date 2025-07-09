@@ -251,7 +251,7 @@ class GMKB_Enhanced_Script_Manager {
             'guestify-media-kit-builder-styles',
             $plugin_url . 'css/guestify-builder.css',
             [],
-            $version . '-phase23-optimized-v3' // Cache busting version
+            $version . '-phase23-optimized-v4-icons-fixed' // Cache busting version
         );
         
         // Add critical CSS inline for immediate rendering
@@ -1148,6 +1148,32 @@ class GMKB_Enhanced_Script_Manager {
             display: flex;
             align-items: center;
             z-index: 100;
+        }
+        
+        /* CRITICAL: Immediate toolbar SVG icon visibility */
+        .toolbar__btn svg {
+            stroke: currentColor !important;
+            fill: none !important;
+            width: 14px !important;
+            height: 14px !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+            margin-right: 6px !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            flex-shrink: 0 !important;
+        }
+        
+        .toolbar__btn {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: #e2e8f0 !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            white-space: nowrap !important;
         }
         
         .preview {

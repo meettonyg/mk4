@@ -85,14 +85,33 @@
     border-bottom-color: var(--gmkb-primary-color, #0ea5e9) !important;
 }
 
-/* CRITICAL: Ensure SVG icons are visible */
-.gmkb-isolated-builder .toolbar__btn svg {
+/* CRITICAL: Enhanced SVG icon visibility with maximum specificity */
+.gmkb-isolated-builder .toolbar__btn svg,
+.builder .toolbar__btn svg,
+.toolbar__btn svg {
     stroke: currentColor !important;
     fill: none !important;
     width: 14px !important;
     height: 14px !important;
     display: inline-block !important;
     vertical-align: middle !important;
+    margin-right: 6px !important;
+    flex-shrink: 0 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: none !important;
+    vector-effect: non-scaling-stroke !important;
+}
+
+/* Force SVG path elements to be visible */
+.gmkb-isolated-builder .toolbar__btn svg *,
+.builder .toolbar__btn svg *,
+.toolbar__btn svg * {
+    stroke: currentColor !important;
+    fill: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    vector-effect: non-scaling-stroke !important;
 }
 
 /* Enhanced toolbar button visibility */
