@@ -1,0 +1,419 @@
+{
+  "component": "topics",
+  "version": "1.0.0-phase1",
+  "description": "MKCG integration configuration for Topics component - establishes scalable pattern for other components",
+  
+  "mkcgFieldMappings": {
+    "topic_1": {
+      "mkcgPath": "topics.topics.topic_1",
+      "validation": {
+        "required": false,
+        "minLength": 3,
+        "maxLength": 100,
+        "pattern": "^[a-zA-Z0-9\\s\\-.,!?'\"()&]+$"
+      },
+      "quality": {
+        "optimalLength": [20, 60],
+        "optimalWords": [2, 8]
+      }
+    },
+    "topic_2": {
+      "mkcgPath": "topics.topics.topic_2",
+      "validation": {
+        "required": false,
+        "minLength": 3,
+        "maxLength": 100,
+        "pattern": "^[a-zA-Z0-9\\s\\-.,!?'\"()&]+$"
+      },
+      "quality": {
+        "optimalLength": [20, 60],
+        "optimalWords": [2, 8]
+      }
+    },
+    "topic_3": {
+      "mkcgPath": "topics.topics.topic_3",
+      "validation": {
+        "required": false,
+        "minLength": 3,
+        "maxLength": 100,
+        "pattern": "^[a-zA-Z0-9\\s\\-.,!?'\"()&]+$"
+      },
+      "quality": {
+        "optimalLength": [20, 60],
+        "optimalWords": [2, 8]
+      }
+    },
+    "topic_4": {
+      "mkcgPath": "topics.topics.topic_4",
+      "validation": {
+        "required": false,
+        "minLength": 3,
+        "maxLength": 100,
+        "pattern": "^[a-zA-Z0-9\\s\\-.,!?'\"()&]+$"
+      },
+      "quality": {
+        "optimalLength": [20, 60],
+        "optimalWords": [2, 8]
+      }
+    },
+    "topic_5": {
+      "mkcgPath": "topics.topics.topic_5",
+      "validation": {
+        "required": false,
+        "minLength": 3,
+        "maxLength": 100,
+        "pattern": "^[a-zA-Z0-9\\s\\-.,!?'\"()&]+$"
+      },
+      "quality": {
+        "optimalLength": [20, 60],
+        "optimalWords": [2, 8]
+      }
+    }
+  },
+  
+  "panelIntegration": {
+    "mkcgSectionTitle": "MKCG Data Integration",
+    "mkcgSectionPosition": "above-content",
+    "mkcgSectionId": "topics-mkcg-section",
+    "showDataQualityScore": true,
+    "showRefreshControls": true,
+    "showConnectionStatus": true,
+    "statusIndicators": {
+      "connected": {
+        "class": "status-dot connected",
+        "color": "#10b981",
+        "text": "Connected"
+      },
+      "disconnected": {
+        "class": "status-dot disconnected", 
+        "color": "#ef4444",
+        "text": "Disconnected"
+      },
+      "loading": {
+        "class": "status-dot loading",
+        "color": "#f59e0b", 
+        "text": "Loading..."
+      }
+    },
+    "qualityLevels": {
+      "excellent": {
+        "threshold": 80,
+        "class": "quality-excellent",
+        "color": "#10b981",
+        "label": "Excellent"
+      },
+      "good": {
+        "threshold": 60,
+        "class": "quality-good", 
+        "color": "#3b82f6",
+        "label": "Good"
+      },
+      "fair": {
+        "threshold": 40,
+        "class": "quality-fair",
+        "color": "#f59e0b",
+        "label": "Fair"
+      },
+      "poor": {
+        "threshold": 0,
+        "class": "quality-poor",
+        "color": "#ef4444", 
+        "label": "Poor"
+      }
+    }
+  },
+  
+  "saveBackConfiguration": {
+    "batchSave": true,
+    "autoSaveTimer": 30000,
+    "saveEndpoint": "wp_ajax_save_mkcg_topics",
+    "nonceKey": "guestify_mkcg_nonce",
+    "security": {
+      "sanitization": "sanitize_text_field",
+      "validation": "server_side_required",
+      "nonce_verification": "wp_verify_nonce",
+      "capability_check": "edit_posts"
+    },
+    "postMetaFields": {
+      "topic_1": "mkcg_topic_1",
+      "topic_2": "mkcg_topic_2", 
+      "topic_3": "mkcg_topic_3",
+      "topic_4": "mkcg_topic_4",
+      "topic_5": "mkcg_topic_5"
+    },
+    "additionalMetaFields": {
+      "last_edited": "mkcg_topics_last_edited",
+      "edit_source": "mkcg_topics_edit_source",
+      "version": "mkcg_topics_version"
+    },
+    "validationRules": {
+      "maxTopicLength": 100,
+      "minTopicLength": 3,
+      "allowedCharacters": "alphanumeric-spaces-punctuation",
+      "stripHtml": true,
+      "trimWhitespace": true,
+      "preventXss": true
+    },
+    "batchConfiguration": {
+      "maxBatchSize": 5,
+      "retryAttempts": 3,
+      "retryDelay": 1000,
+      "timeoutMs": 10000
+    }
+  },
+  
+  "scalabilityPattern": {
+    "baseClass": "ComponentMKCGIntegration",
+    "description": "Foundation pattern for all component MKCG integrations",
+    "requiredMethods": [
+      "detectPostId",
+      "detectMKCGData", 
+      "validateDataAvailability",
+      "mapMKCGDataToComponent",
+      "enhancePanelWithMKCGControls",
+      "injectMKCGDataIntoPanel",
+      "prepareSaveBackSystem"
+    ],
+    "optionalMethods": [
+      "calculateDataQuality",
+      "handleRefreshMKCGData",
+      "handleSyncAllData",
+      "sanitizeComponentData"
+    ],
+    "reusableComponents": [
+      {
+        "name": "mkcgSection",
+        "description": "Standard MKCG integration section for panels",
+        "template": "mkcg-section-template.html"
+      },
+      {
+        "name": "dataQualityIndicator", 
+        "description": "Visual data quality score display",
+        "template": "quality-indicator-template.html"
+      },
+      {
+        "name": "refreshControls",
+        "description": "Standard refresh and sync controls",
+        "template": "refresh-controls-template.html"
+      },
+      {
+        "name": "connectionStatus",
+        "description": "MKCG connection status indicator", 
+        "template": "connection-status-template.html"
+      }
+    ],
+    "eventHandlers": [
+      "handleRefreshMKCGData",
+      "handleSyncAllData",
+      "handleDataValidation",
+      "handleSaveBack"
+    ],
+    "commonUtilities": [
+      "detectPostId",
+      "sanitizeData", 
+      "validateData",
+      "calculateQuality",
+      "showNotification",
+      "handleError"
+    ]
+  },
+  
+  "performanceTargets": {
+    "initialization": {
+      "maxTime": 100,
+      "unit": "milliseconds",
+      "description": "Maximum time for MKCG integration initialization"
+    },
+    "dataDetection": {
+      "maxTime": 50,
+      "unit": "milliseconds", 
+      "description": "Maximum time for MKCG data detection"
+    },
+    "panelEnhancement": {
+      "maxTime": 100,
+      "unit": "milliseconds",
+      "description": "Maximum time for panel enhancement"
+    },
+    "dataInjection": {
+      "maxTime": 200,
+      "unit": "milliseconds",
+      "description": "Maximum time for data injection into panel"
+    },
+    "memoryFootprint": {
+      "maxSize": 500,
+      "unit": "KB",
+      "description": "Maximum additional memory usage"
+    }
+  },
+  
+  "errorHandling": {
+    "logLevel": "debug",
+    "contexts": [
+      "post-detection",
+      "data-detection", 
+      "data-validation",
+      "data-mapping",
+      "panel-enhancement",
+      "data-injection",
+      "save-back-prep",
+      "event-listeners"
+    ],
+    "userNotifications": {
+      "showErrors": true,
+      "showWarnings": false,
+      "showSuccess": true
+    },
+    "fallbackBehavior": {
+      "missingPostId": "disable_mkcg_features",
+      "missingMKCGData": "show_manual_mode_only",
+      "validationFailure": "show_error_and_fallback",
+      "networkFailure": "retry_with_exponential_backoff"
+    }
+  },
+  
+  "testing": {
+    "description": "Testing configuration as recommended by Gemini feedback",
+    "unitTests": {
+      "required": true,
+      "framework": "Jest",
+      "coverage": {
+        "minimum": 80,
+        "target": 95
+      },
+      "testFiles": [
+        "mkcg-integration.test.js",
+        "data-mapping.test.js", 
+        "validation.test.js",
+        "quality-calculation.test.js"
+      ],
+      "mockData": {
+        "validMKCGData": "test-data/valid-mkcg-data.json",
+        "invalidMKCGData": "test-data/invalid-mkcg-data.json",
+        "emptyMKCGData": "test-data/empty-mkcg-data.json"
+      }
+    },
+    "integrationTests": {
+      "required": true,
+      "description": "Test integration with existing panel system",
+      "scenarios": [
+        "panel_enhancement_with_existing_topics",
+        "data_injection_with_manual_topics", 
+        "event_listener_integration",
+        "existing_panel_script_compatibility"
+      ]
+    },
+    "e2eTests": {
+      "required": true,
+      "framework": "Cypress",
+      "scenarios": [
+        "complete_user_workflow_with_mkcg_data",
+        "error_handling_missing_data",
+        "error_handling_invalid_post_id", 
+        "performance_under_load",
+        "panel_responsiveness"
+      ]
+    }
+  },
+  
+  "futureComponents": {
+    "description": "Components that will use this pattern",
+    "biography": {
+      "status": "planned",
+      "phase": "phase2",
+      "mkcgDataPath": "biography.biography",
+      "complexity": "high",
+      "notes": "Rich text editor integration required"
+    },
+    "authorityHook": {
+      "status": "planned", 
+      "phase": "phase3",
+      "mkcgDataPath": "authority_hook.authority_hook",
+      "complexity": "medium",
+      "notes": "Multiple field mapping (who, what, when, how)"
+    },
+    "questions": {
+      "status": "planned",
+      "phase": "phase4",
+      "mkcgDataPath": "questions.questions", 
+      "complexity": "medium",
+      "notes": "Variable number of questions (1-10)"
+    },
+    "offers": {
+      "status": "planned",
+      "phase": "phase5",
+      "mkcgDataPath": "offers.offers",
+      "complexity": "high", 
+      "notes": "Complex data structure with pricing"
+    },
+    "socialMedia": {
+      "status": "planned",
+      "phase": "phase6",
+      "mkcgDataPath": "social_media",
+      "complexity": "low",
+      "notes": "Simple URL field mapping"
+    }
+  },
+  
+  "documentation": {
+    "description": "Documentation requirements as per Gemini feedback",
+    "codeDocumentation": {
+      "standard": "JSDoc",
+      "required": true,
+      "sections": [
+        "class_description",
+        "method_documentation",
+        "parameter_types",
+        "return_values",
+        "usage_examples",
+        "error_scenarios"
+      ]
+    },
+    "userDocumentation": {
+      "required": true,
+      "format": "markdown",
+      "files": [
+        "MKCG-Integration-User-Guide.md",
+        "Topics-Component-Integration.md",
+        "Troubleshooting-Guide.md"
+      ]
+    },
+    "developerDocumentation": {
+      "required": true,
+      "format": "markdown", 
+      "files": [
+        "Architecture-Overview.md",
+        "Component-Integration-Pattern.md",
+        "Testing-Strategy.md",
+        "API-Reference.md"
+      ]
+    }
+  },
+  
+  "security": {
+    "description": "Security requirements as per Gemini feedback",
+    "dataValidation": {
+      "clientSide": {
+        "sanitization": "required",
+        "validation": "required",
+        "xssProtection": "required"
+      },
+      "serverSide": {
+        "sanitization": "sanitize_text_field",
+        "validation": "custom_validation_rules",
+        "nonceVerification": "wp_verify_nonce",
+        "capabilityCheck": "edit_posts",
+        "sqlInjectionProtection": "prepared_statements"
+      }
+    },
+    "dataTransmission": {
+      "encryption": "https_required",
+      "nonce": "wp_nonce_required",
+      "rateLimiting": "recommended"
+    },
+    "dataStorage": {
+      "sanitization": "before_storage",
+      "validation": "before_storage",
+      "escaping": "on_output"
+    }
+  }
+}

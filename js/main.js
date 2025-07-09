@@ -32,6 +32,8 @@ import './utils/manual-race-condition-test.js';
 
 // PHASE 2.3 - TASK 5: Import Data Refresh and Synchronization Controls
 import './core/task5-integration.js';
+import './ui/mkcg-refresh-controls.js';
+import './core/mkcg-data-refresh-manager.js';
 
 // ROOT FIX: Import test suite for race condition validation
 import './tests/test-race-condition-fix.js';
@@ -50,6 +52,9 @@ import './tests/run-runtime-validation.js';
 import './tests/comprehensive-phase23-test-runner.js';
 import './tests/emergency-system-diagnostic.js';
 import './tests/simple-fix-validation.js';
+
+// PHASE 2.3 FINAL COMPLETION INTEGRATION
+import './utils/phase23-completion-integration.js';
 
 // Expose global objects for debugging and monitoring
 window.mk = {};
@@ -88,6 +93,13 @@ window.mkLog = {
         console.log('  task5.getComponentStatus(id) - Get component sync status');
         console.log('  task5.debug()           - Show Task 5 debug info');
         console.log('  task5.help()            - Show Task 5 help');
+        console.log('\n🎯 Phase 2.3 Commands:');
+        console.log('  phase23.help()          - Show Phase 2.3 enhanced UX commands');
+        console.log('  phase23.status()        - Show integration status');
+        console.log('  phase23.validate()      - Run validation tests');
+        console.log('  phase23.test()          - Run comprehensive test suite');
+        console.log('  phase23.refreshAll()    - Refresh all MKCG data');
+        console.log('  phase23.autoGenerate()  - Auto-generate components');
     }
 };
 

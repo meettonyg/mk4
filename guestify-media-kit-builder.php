@@ -59,6 +59,9 @@ class Guestify_Media_Kit_Builder {
         // TASK 5: Initialize MKCG Data Refresh AJAX Handlers (depends on data integration)
         require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-mkcg-refresh-ajax-handlers.php';
         
+        // PHASE 3: Initialize Topics AJAX Handler for save-back functionality
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-topics-ajax-handler.php';
+        
         // Initialize REST API endpoints
         require_once GUESTIFY_PLUGIN_DIR . 'includes/api/rest-api-templates.php';
         

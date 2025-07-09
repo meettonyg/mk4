@@ -5,7 +5,7 @@
   "description": "Display topics or areas of expertise",
   "isPremium": false,
   "dependencies": [],
-  "version": "1.0.0",
+  "version": "1.0.0-phase1",
   "order": 3,
   "settings": {
     "title": {
@@ -124,6 +124,11 @@
     "validationRules": {
       "minTopics": 1,
       "maxTopics": 5
-    }
+    },
+    "scripts": [
+      "mkcg-integration.js"
+    ],
+    "phase": "phase1",
+    "version": "1.0.0"
   }
 }
