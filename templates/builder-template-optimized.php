@@ -67,12 +67,53 @@ if ($post_id > 0) {
         </div>
         
         <div class="toolbar__section toolbar__section--right">
-            <button class="toolbar__btn" id="global-theme-btn">Theme</button>
-            <button class="toolbar__btn toolbar__btn--export" id="export-btn">Export</button>
-            <button class="toolbar__btn" id="share-btn">Share</button>
-            <button class="toolbar__btn" id="undo-btn" disabled>Undo</button>
-            <button class="toolbar__btn" id="redo-btn" disabled>Redo</button>
-            <button class="toolbar__btn toolbar__btn--primary" id="save-btn">Save</button>
+            <button class="toolbar__btn" id="global-theme-btn" title="Theme Settings">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-hidden="true" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Theme</span>
+            </button>
+            <button class="toolbar__btn toolbar__btn--export" id="export-btn" title="Export Media Kit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-hidden="true" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7,10 12,15 17,10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Export</span>
+            </button>
+            <button class="toolbar__btn" id="share-btn" title="Share Media Kit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-hidden="true" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                <span>Share</span>
+            </button>
+            <button class="toolbar__btn" id="undo-btn" disabled title="Undo Last Action">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-hidden="true" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                    <path d="M3 7v6h6"></path>
+                    <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+                </svg>
+                <span>Undo</span>
+            </button>
+            <button class="toolbar__btn" id="redo-btn" disabled title="Redo Last Action">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-hidden="true" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                    <path d="M21 7v6h-6"></path>
+                    <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path>
+                </svg>
+                <span>Redo</span>
+            </button>
+            <button class="toolbar__btn toolbar__btn--primary" id="save-btn" title="Save Media Kit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-hidden="true" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                    <polyline points="7,3 7,8 15,8"></polyline>
+                </svg>
+                <span>Save</span>
+            </button>
         </div>
     </div>
 
@@ -182,6 +223,26 @@ if ($post_id > 0) {
         font-size: 14px;
         color: #475569;
         transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    
+    /* CRITICAL: SVG icon visibility and styling */
+    .toolbar__btn svg {
+        stroke: currentColor !important;
+        fill: none !important;
+        width: 14px !important;
+        height: 14px !important;
+        display: inline-block !important;
+        vertical-align: middle !important;
+        margin-right: 6px !important;
+        flex-shrink: 0 !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: none !important;
+        vector-effect: non-scaling-stroke !important;
     }
     
     .toolbar__btn:hover {
