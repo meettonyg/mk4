@@ -261,28 +261,74 @@ if ($post_id > 0) {
         border-color: #2563eb;
     }
     
+    /* ROOT FIX: Enhanced preview button visibility */
     .toolbar__preview-toggle {
         display: flex;
         background: #f1f5f9;
-        border-radius: 6px;
-        padding: 2px;
+        border-radius: 8px;
+        padding: 4px;
+        border: 2px solid #e2e8f0;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+        min-width: 240px;
     }
     
+    /* DEBUG: Temporary enhanced visibility for preview buttons */
     .toolbar__preview-btn {
-        padding: 6px 12px;
-        border: none;
-        background: transparent;
-        border-radius: 4px;
+        padding: 10px 18px;
+        border: 1px solid #cbd5e1 !important;
+        background: #f8fafc !important;
+        border-radius: 6px;
         cursor: pointer;
-        font-size: 12px;
-        color: #64748b;
-        transition: all 0.2s;
+        font-size: 13px;
+        font-weight: 500;
+        color: #475569 !important;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        min-width: 76px;
+        text-align: center;
+        position: relative;
+        flex: 1;
+        margin: 0 2px;
+    }
+    
+    .toolbar__preview-btn:hover {
+        background: rgba(255, 255, 255, 0.8);
+        color: #374151;
+        transform: translateY(-1px);
     }
     
     .toolbar__preview-btn--active {
-        background: white;
-        color: #1e293b;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        background: white !important;
+        color: #1e293b !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+        font-weight: 600;
+        border: 2px solid #3b82f6 !important;
+        transform: translateY(-1px);
+    }
+    
+    .toolbar__preview-btn--active:hover {
+        background: white !important;
+        color: #1e293b !important;
+        transform: translateY(-1px);
+    }
+    
+    /* Visual feedback for preview modes */
+    .preview--tablet .preview__container {
+        max-width: 768px;
+        margin: 0 auto;
+        transition: max-width 0.3s ease;
+    }
+    
+    .preview--mobile .preview__container {
+        max-width: 375px;
+        margin: 0 auto;
+        transition: max-width 0.3s ease;
+    }
+    
+    .preview--desktop .preview__container {
+        max-width: 100%;
+        margin: 0 auto;
+        transition: max-width 0.3s ease;
     }
     
     .toolbar__status {
@@ -669,6 +715,59 @@ if ($post_id > 0) {
         }
         
         console.log('🚀 Optimized Media Kit Builder initialized');
+    });
+    
+    // ROOT FIX: Device preview toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const previewButtons = document.querySelectorAll('.toolbar__preview-btn');
+        const previewContainer = document.getElementById('preview-container');
+        
+        if (previewButtons.length > 0) {
+            previewButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const previewMode = this.dataset.preview;
+                    
+                    // Remove active class from all buttons
+                    previewButtons.forEach(btn => {
+                        btn.classList.remove('toolbar__preview-btn--active');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.add('toolbar__preview-btn--active');
+                    
+                    // Apply preview mode to container
+                    if (previewContainer) {
+                        // Remove existing preview classes
+                        previewContainer.classList.remove('preview--desktop', 'preview--tablet', 'preview--mobile');
+                        
+                        // Add new preview class
+                        previewContainer.classList.add(`preview--${previewMode}`);
+                        
+                        // Apply width constraints
+                        switch(previewMode) {
+                            case 'desktop':
+                                previewContainer.style.maxWidth = '100%';
+                                previewContainer.style.margin = '0 auto';
+                                break;
+                            case 'tablet':
+                                previewContainer.style.maxWidth = '768px';
+                                previewContainer.style.margin = '0 auto';
+                                break;
+                            case 'mobile':
+                                previewContainer.style.maxWidth = '375px';
+                                previewContainer.style.margin = '0 auto';
+                                break;
+                        }
+                        
+                        console.log(`📱 Preview mode changed to: ${previewMode}`);
+                    }
+                });
+            });
+            
+            console.log('📱 Device preview toggle initialized with', previewButtons.length, 'buttons');
+        } else {
+            console.warn('⚠️ No preview buttons found');
+        }
     });
     
 })();
