@@ -983,6 +983,20 @@ class MKCGDataRefreshManager {
     }
 
     /**
+     * Hide refresh progress
+     * This method is called in finally block of refreshAllData
+     */
+    hideRefreshProgress() {
+        // Use enhanced state manager to hide progress if available
+        if (window.enhancedStateManager && window.enhancedStateManager.completeProgressTracking) {
+            window.enhancedStateManager.completeProgressTracking();
+        }
+        
+        // Also hide the checking status on the button
+        this.hideCheckingStatus();
+    }
+
+    /**
      * Show refresh progress
      * @param {number} percent - Progress percentage
      * @param {string} message - Progress message

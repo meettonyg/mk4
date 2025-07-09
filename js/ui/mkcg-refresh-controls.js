@@ -373,7 +373,7 @@ class MKCGRefreshControls {
         try {
             this.logger.info('REFRESH_CONTROLS', 'Refreshing individual component', { componentId, componentType });
 
-            const result = await this.refreshManager.refreshComponent(componentId, {
+            const result = await this.refreshManager.refreshComponent.call(this.refreshManager, componentId, {
                 showProgress: true,
                 conflictResolution: 'prompt'
             });

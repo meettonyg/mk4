@@ -564,6 +564,17 @@ if (class_exists('GMKB_MKCG_Data_Integration')) {
     add_action('init', function() {
         if (class_exists('GMKB_MKCG_Data_Integration')) {
             GMKB_MKCG_Refresh_AJAX_Handlers::get_instance();
+            error_log('GMKB AJAX Handlers: Initialized on init hook');
         }
     }, 10);
 }
+
+// CRITICAL FIX: Also hook to plugins_loaded to ensure early initialization
+add_action('plugins_loaded', function() {
+    if (class_exists('GMKB_MKCG_Data_Integration')) {
+        GMKB_MKCG_Refresh_AJAX_Handlers::get_instance();
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB AJAX Handlers: Ensuring initialization on plugins_loaded hook');
+        }
+    }
+}, 20);
