@@ -91,22 +91,63 @@
     fill: none !important;
     width: 14px !important;
     height: 14px !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
 }
 
-/* DIAGNOSTIC: CSS Loading Indicator */
-.gmkb-isolated-builder::before {
-    content: 'Enhanced CSS v2 Loaded ✓';
-    position: fixed;
-    top: 5px;
-    right: 5px;
-    background: #10b981;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: bold;
-    z-index: 10000;
-    font-family: monospace;
+/* Enhanced toolbar button visibility */
+.gmkb-isolated-builder .toolbar__btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: var(--gmkb-toolbar-text, #e2e8f0) !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 13px !important;
+    transition: all 0.3s ease !important;
+}
+
+.gmkb-isolated-builder .toolbar__btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: var(--gmkb-primary-color, #0ea5e9) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Primary and Export button specific styling */
+.gmkb-isolated-builder .toolbar__btn--primary {
+    background: linear-gradient(135deg, var(--gmkb-primary-color, #0ea5e9), #0284c7) !important;
+    border-color: var(--gmkb-primary-color, #0ea5e9) !important;
+    color: white !important;
+}
+
+.gmkb-isolated-builder .toolbar__btn--export {
+    background: linear-gradient(135deg, var(--gmkb-accent-color, #10b981), #059669) !important;
+    border-color: var(--gmkb-accent-color, #10b981) !important;
+    color: white !important;
+}
+
+/* Undo/Redo button styling */
+.gmkb-isolated-builder .toolbar__btn:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+/* Preview toggle styling */
+.gmkb-isolated-builder .toolbar__preview-btn {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+}
+
+.gmkb-isolated-builder .toolbar__preview-btn--active {
+    background: var(--gmkb-primary-color, #0ea5e9) !important;
+    border-color: var(--gmkb-primary-color, #0ea5e9) !important;
+    color: white !important;
 }
 
 /* Loading state for drop zones */
