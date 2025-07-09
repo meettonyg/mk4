@@ -1340,6 +1340,6 @@ if (typeof window !== 'undefined') {
     console.log('Commands: mkcgDebug.testMapping(), mkcgDebug.validateAll(), mkcgDebug.testComponentQuality()');
     console.log('Performance: mkcgDebug.runPerformanceTest(), mkcgDebug.getPerformanceStats()');
     console.log('Batch: mkcgDebug.batchMap([...]), mkcgDebug.compareComponents([...])');  
-    console.log('🔍 DIAGNOSTIC: mkcgDebug.diagnoseBioIssue(), mkcgDebug.clearBioReferences()');
-    console.log('🔗 ROOT FIX: Run mkcgDebug.diagnoseBioIssue() to identify "bio" component issues');
+    console.log('🔍 DIAGNOSTIC: mkcgDebug.diagnoseBioIssue(), mkcgDebug.clearBioReferences() - for problematic "bio" components (not "biography")');
+    console.log('🔗 ROOT FIX: Run mkcgDebug.diagnoseBioIssue() to identify problematic "bio" component issues (false positives on "biography" fixed)');
 }
