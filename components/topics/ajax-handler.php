@@ -2,11 +2,19 @@
 /**
  * GMKB Topics AJAX Handler
  * 
+ * Located in: components/topics/ajax-handler.php
+ * 
  * Handles saving Topics component data back to WordPress post meta
  * Implements batch saving, validation, and conflict resolution for MKCG Topics integration
  * 
- * @package Guestify
+ * ARCHITECTURAL PATTERN:
+ * - This file is located within the Topics component folder to maintain component isolation
+ * - Each component should contain its own AJAX handlers for scalability
+ * - This pattern should be replicated for Biography and other component integrations
+ * 
+ * @package Guestify/Components/Topics
  * @version 1.0.0-phase3
+ * @location components/topics/ajax-handler.php
  */
 
 // Exit if accessed directly.
