@@ -4,35 +4,110 @@
  */
 
 /* Base styles */
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/base.css');
+@import url('modules/base.css');
 @import url('modules/loading.css');
 
 /* Layout Modules */
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/toolbar.css');
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/sidebar.css');
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/preview.css');
+@import url('modules/toolbar.css');
+@import url('modules/sidebar.css');
+@import url('modules/preview.css');
 
 /* UI Modules */
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/ui-elements.css');
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/form-controls.css');
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/design-panel.css');
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/layout.css');
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/media-kit.css');
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/modals.css');
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/layouts.css');
+@import url('modules/ui-elements.css');
+@import url('modules/form-controls.css');
+@import url('modules/design-panel.css');
+@import url('modules/layout.css');
+@import url('modules/media-kit.css');
+@import url('modules/modals.css');
+@import url('modules/layouts.css');
+
+/* Enhanced Theming System - CRITICAL FOR STYLING */
+@import url('modules/enhancements.css');
 
 /* Toast Notifications */
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/toast.css');
 @import url('modules/toast.css');
 
-/* Debug Module - add specific debug styling */
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/debug-controls.css');
+/* Debug Module */
+@import url('modules/debug-controls.css');
 
-/* Empty State Centering Fix */
-@import url('https://guestify.ai/wp-content/plugins/guestify-media-kit-builder/css/modules/empty-state-center.css');
+/* Empty State Centering */
+@import url('modules/empty-state-center.css');
 
-/* PHASE 2.3 TASK 4: Enhanced Error Handler User Guidance */
+/* Enhanced Error Handler */
 @import url('modules/enhanced-error-handler.css');
+
+/* ========================================
+   CRITICAL CSS - IMMEDIATE THEMING
+   ======================================== */
+
+/* CSS Variables - Critical for theming */
+:root {
+    --gmkb-sidebar-bg: #2a2a2a;
+    --gmkb-sidebar-border-color: #404040;
+    --gmkb-sidebar-text: #e2e8f0;
+    --gmkb-sidebar-accent: #0ea5e9;
+    --gmkb-toolbar-bg: #1a1a1a;
+    --gmkb-toolbar-border: #404040;
+    --gmkb-toolbar-text: #e2e8f0;
+    --gmkb-primary-color: #0ea5e9;
+    --gmkb-accent-color: #10b981;
+}
+
+/* Critical isolated builder fixes */
+.gmkb-isolated-builder .sidebar {
+    background-color: var(--gmkb-sidebar-bg, #2a2a2a) !important;
+    border-right-color: var(--gmkb-sidebar-border-color, #404040) !important;
+    color: var(--gmkb-sidebar-text, #e2e8f0) !important;
+}
+
+.gmkb-isolated-builder .toolbar {
+    background-color: var(--gmkb-toolbar-bg, #1a1a1a) !important;
+    border-bottom-color: var(--gmkb-toolbar-border, #404040) !important;
+    color: var(--gmkb-toolbar-text, #e2e8f0) !important;
+}
+
+.gmkb-isolated-builder .toolbar__btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: var(--gmkb-toolbar-text, #e2e8f0) !important;
+}
+
+.gmkb-isolated-builder .toolbar__logo {
+    color: var(--gmkb-primary-color, #0ea5e9) !important;
+}
+
+.gmkb-isolated-builder .sidebar__tab {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.gmkb-isolated-builder .sidebar__tab--active {
+    color: var(--gmkb-primary-color, #0ea5e9) !important;
+    border-bottom-color: var(--gmkb-primary-color, #0ea5e9) !important;
+}
+
+/* CRITICAL: Ensure SVG icons are visible */
+.gmkb-isolated-builder .toolbar__btn svg {
+    stroke: currentColor !important;
+    fill: none !important;
+    width: 14px !important;
+    height: 14px !important;
+}
+
+/* DIAGNOSTIC: CSS Loading Indicator */
+.gmkb-isolated-builder::before {
+    content: 'Enhanced CSS v2 Loaded ✓';
+    position: fixed;
+    top: 5px;
+    right: 5px;
+    background: #10b981;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    z-index: 10000;
+    font-family: monospace;
+}
 
 /* Loading state for drop zones */
 .drop-zone.loading {
