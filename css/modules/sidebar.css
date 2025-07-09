@@ -3,8 +3,8 @@
     width: 300px;
     background: var(--gmkb-sidebar-bg, #2a2a2a);
     border-right: 1px solid var(--gmkb-sidebar-border-color, #404040);
-    margin-top: 48px;
-    height: calc(100vh - 48px);
+    margin-top: 0;
+    height: 100vh;
     overflow-y: auto;
     flex-shrink: 0;
     color: var(--gmkb-sidebar-text, #e2e8f0);
