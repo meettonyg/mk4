@@ -96,69 +96,114 @@ class EnhancedStateManager {
     /**
      * PHASE 2.2: Enhanced initialization after all systems are ready
      * Now includes comprehensive MKCG data awareness and intelligent auto-generation
-     * ROOT FIX: Ensures saved state loading happens properly
+     * ROOT FIX: Enhanced with PHP coordination system integration
      */
     async initializeAfterSystems() {
-        this.logger.info('STATE', 'Enhanced State Manager Phase 2.2: Starting comprehensive post-system initialization');
+        this.logger.info('STATE', 'Enhanced State Manager Phase 2.2: Starting comprehensive post-system initialization with PHP coordination');
         
         try {
+            // ROOT FIX: Check PHP coordination flags FIRST
+            const phpCoordination = window.gmkbStateLoadingCoordination;
+            const prioritizeSavedState = window.gmkbPrioritizeSavedState;
+            const suppressMKCG = window.gmkbSuppressMKCGAutoGeneration;
+            
+            this.logger.info('STATE', 'ROOT FIX: PHP coordination detected', {
+                coordination: phpCoordination,
+                prioritizeSavedState,
+                suppressMKCG
+            });
+            
             // Step 1: Initialize MKCG integration
             await this.initializeMKCGIntegration();
             
-            // Step 2: Check for saved state and prepare for hydration
+            // Step 2: ROOT FIX - Enhanced saved state priority check with PHP coordination
             const savedState = this.loadStateFromStorage();
             const hasExistingData = savedState && Object.keys(savedState.components || {}).length > 0;
             
-            this.logger.info('STATE', 'State loading check during initialization', {
+            // ROOT FIX: Respect PHP coordination priority
+            const shouldPrioritizeSavedState = prioritizeSavedState || hasExistingData;
+            const shouldSuppressMKCG = suppressMKCG || hasExistingData;
+            
+            this.logger.info('STATE', 'ROOT FIX: Enhanced state loading priority check', {
                 hasSavedState: !!savedState,
                 hasExistingData,
+                shouldPrioritizeSavedState,
+                shouldSuppressMKCG,
                 componentCount: savedState ? Object.keys(savedState.components || {}).length : 0,
-                mkcgAvailable: this.mkcgIntegration.dataAvailable
+                mkcgAvailable: this.mkcgIntegration.dataAvailable,
+                phpCoordinationMode: phpCoordination?.coordination_mode
             });
             
-            // Step 3: Intelligent auto-initialization based on data availability
-            if (this.mkcgIntegration.dataAvailable && this.mkcgIntegration.autoGenerationEnabled) {
-                if (hasExistingData) {
-                    // Hydrate with conflict resolution
-                    await this.hydrateStateWithMKCGData(savedState);
-                } else {
-                    // Auto-generate from MKCG data
-                    await this.autoGenerateComponentsFromMKCG();
-                }
-            } else if (hasExistingData) {
-                // ROOT FIX: Standard state restoration with proper notification
+            // ROOT FIX: Handle state loading based on coordination
+            if (shouldPrioritizeSavedState && hasExistingData) {
+                this.logger.info('STATE', 'ROOT FIX: Prioritizing saved state as instructed by PHP coordination');
+                
+                // Set the saved state immediately
                 this.state = savedState;
                 
-                // Emit state loading event for coordination
-                this.eventBus.emit('state:loading-saved-state', {
-                    componentCount: Object.keys(savedState.components || {}).length,
-                    source: 'initializeAfterSystems'
-                });
+                // ROOT FIX: Hide loading state and show components
+                this.hideLoadingStateAndShowComponents();
                 
                 // Critical: Notify all subscribers including renderer
                 this.notifySubscribers();
                 
+                // Emit state loading event for coordination
+                this.eventBus.emit('state:loading-saved-state', {
+                    componentCount: Object.keys(savedState.components || {}).length,
+                    source: 'initializeAfterSystems-coordinated',
+                    phpCoordination: true
+                });
+                
                 // Emit state ready event
                 this.eventBus.emit('state:loaded-and-ready', {
                     state: savedState,
-                    source: 'initializeAfterSystems',
-                    componentCount: Object.keys(savedState.components || {}).length
+                    source: 'initializeAfterSystems-coordinated',
+                    componentCount: Object.keys(savedState.components || {}).length,
+                    phpCoordination: true
                 });
                 
-                this.logger.info('STATE', 'State restored from storage during initialization', {
+                this.logger.info('STATE', 'ROOT FIX: Saved state restored and prioritized over auto-generation', {
                     components: Object.keys(savedState.components || {}).length,
-                    layout: (savedState.layout || []).length
+                    layout: (savedState.layout || []).length,
+                    coordinationMode: phpCoordination?.coordination_mode
                 });
-            } else {
-                this.logger.info('STATE', 'Starting with empty state - no saved data or MKCG data available');
                 
-                // Emit empty state event
-                this.eventBus.emit('state:empty-state-initialized', {
-                    source: 'initializeAfterSystems'
+                // ROOT FIX: Record successful state loading
+                this.recordSuccessfulStateLoading(Object.keys(savedState.components || {}).length);
+                
+            } else if (!shouldSuppressMKCG) {
+                // Only do auto-generation if not suppressed and no saved data exists
+                this.logger.info('STATE', 'ROOT FIX: No saved data or suppression - proceeding with MKCG initialization');
+                
+                // Step 3: Intelligent auto-initialization based on data availability
+                if (this.mkcgIntegration.dataAvailable && this.mkcgIntegration.autoGenerationEnabled) {
+                    // Auto-generate from MKCG data since no saved data exists
+                    await this.autoGenerateComponentsFromMKCG();
+                } else {
+                    this.logger.info('STATE', 'Starting with empty state - no saved data or MKCG data available');
+                    
+                    // ROOT FIX: Hide loading state and show empty state
+                    this.hideLoadingStateAndShowEmptyState();
+                    
+                    // Emit empty state event
+                    this.eventBus.emit('state:empty-state-initialized', {
+                        source: 'initializeAfterSystems-coordinated'
+                    });
+                }
+            } else {
+                this.logger.info('STATE', 'ROOT FIX: MKCG auto-generation suppressed by coordination - showing empty state');
+                
+                // ROOT FIX: Hide loading state and show empty state
+                this.hideLoadingStateAndShowEmptyState();
+                
+                // Emit suppressed event
+                this.eventBus.emit('state:mkcg-suppressed', {
+                    source: 'initializeAfterSystems-coordinated',
+                    reason: 'php-coordination'
                 });
             }
             
-            // Step 4: Initialize cross-component synchronization
+            // Step 4: Initialize cross-component synchronization (after state is set)
             if (this.mkcgIntegration.synchronizationEnabled) {
                 this.initializeComponentSynchronization();
             }
@@ -166,12 +211,12 @@ class EnhancedStateManager {
             // Step 5: Set up data monitoring for fresh MKCG data
             this.setupMKCGDataMonitoring();
             
-            this.logger.info('STATE', 'Enhanced State Manager Phase 2.2: Comprehensive initialization completed');
+            this.logger.info('STATE', 'Enhanced State Manager Phase 2.2: Comprehensive initialization completed with PHP coordination');
             
         } catch (error) {
             this.logger.error('STATE', 'Error during Phase 2.2 enhanced initialization', error);
             // ROOT FIX: Enhanced fallback with proper state loading
-            this.logger.info('STATE', 'Falling back to basic auto-load saved state');
+            this.logger.info('STATE', 'ROOT FIX: Falling back to basic auto-load saved state');
             this.autoLoadSavedState();
         }
     }
@@ -1108,6 +1153,108 @@ class EnhancedStateManager {
     }
     
     /**
+     * ROOT FIX: Hide loading state and show components
+     * Called when saved state is successfully loaded
+     */
+    hideLoadingStateAndShowComponents() {
+        try {
+            // Hide loading state
+            const loadingState = document.getElementById('state-loading-enhanced');
+            if (loadingState) {
+                loadingState.style.display = 'none';
+                this.logger.info('STATE', 'ROOT FIX: Loading state hidden');
+            }
+            
+            // Hide empty state
+            const emptyState = document.getElementById('enhanced-empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+                this.logger.info('STATE', 'ROOT FIX: Empty state hidden');
+            }
+            
+            // Show the preview container for components
+            const previewContainer = document.getElementById('media-kit-preview');
+            if (previewContainer) {
+                previewContainer.classList.add('has-components');
+                previewContainer.classList.remove('loading-state', 'empty-state');
+                this.logger.info('STATE', 'ROOT FIX: Preview container ready for components');
+            }
+            
+        } catch (error) {
+            this.logger.error('STATE', 'Error hiding loading state', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Hide loading state and show empty state
+     * Called when no saved state exists
+     */
+    hideLoadingStateAndShowEmptyState() {
+        try {
+            // Hide loading state
+            const loadingState = document.getElementById('state-loading-enhanced');
+            if (loadingState) {
+                loadingState.style.display = 'none';
+                this.logger.info('STATE', 'ROOT FIX: Loading state hidden');
+            }
+            
+            // Show empty state
+            const emptyState = document.getElementById('enhanced-empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'block';
+                this.logger.info('STATE', 'ROOT FIX: Empty state shown');
+            }
+            
+            // Update preview container
+            const previewContainer = document.getElementById('media-kit-preview');
+            if (previewContainer) {
+                previewContainer.classList.add('empty-state');
+                previewContainer.classList.remove('loading-state', 'has-components');
+                this.logger.info('STATE', 'ROOT FIX: Preview container set to empty state');
+            }
+            
+        } catch (error) {
+            this.logger.error('STATE', 'Error showing empty state', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Record successful state loading for PHP coordination
+     * This updates the backend about successful state loading
+     */
+    recordSuccessfulStateLoading(componentCount) {
+        try {
+            // Send AJAX request to record successful state loading
+            const formData = new FormData();
+            formData.append('action', 'gmkb_record_saved_state');
+            formData.append('component_count', componentCount);
+            formData.append('nonce', window.guestifyData?.nonce || '');
+            
+            fetch(window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.logger.info('STATE', 'ROOT FIX: Successfully recorded state loading with backend', {
+                        componentCount,
+                        response: data.data
+                    });
+                } else {
+                    this.logger.warn('STATE', 'ROOT FIX: Failed to record state loading with backend', data);
+                }
+            })
+            .catch(error => {
+                this.logger.warn('STATE', 'ROOT FIX: Error recording state loading with backend', error);
+            });
+            
+        } catch (error) {
+            this.logger.error('STATE', 'Error in recordSuccessfulStateLoading', error);
+        }
+    }
+    
+    /**
      * Clear all timeouts on destruction
      */
     destroy() {
@@ -1501,11 +1648,17 @@ class EnhancedStateManager {
      * @returns {Object} Enhanced generation results
      */
     async autoGenerateComponentsFromMKCG(options = {}) {
-        if (!this.mkcgIntegration.dataAvailable || !window.enhancedComponentManager) {
-            this.logger.warn('STATE', 'Cannot auto-generate: MKCG data or component manager not available');
-            return { success: false, reason: 'dependencies-missing' };
+        // ROOT FIX: Skip auto-generation if systems aren't ready yet
+        if (!this.mkcgIntegration.dataAvailable) {
+            this.logger.info('STATE', 'Skipping auto-generation: MKCG data not available');
+            return { success: true, addedComponents: [], reason: 'no-mkcg-data' };
         }
-
+        
+        if (!window.enhancedComponentManager) {
+            this.logger.info('STATE', 'Skipping auto-generation: Enhanced component manager not ready yet');
+            return { success: true, addedComponents: [], reason: 'component-manager-not-ready' };
+        }
+        
         const config = {
             ...this.mkcgIntegration.autoGenerationConfig,
             ...options

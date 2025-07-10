@@ -159,10 +159,110 @@ export async function registerEnhancedSystems() {
         console.log('✅ Enhanced System Registrar: Core registration complete');
         console.log('📋 Registered systems:', registeredSystems);
         
+        // ROOT FIX: IMMEDIATE global exposure after registration to prevent race conditions
+        console.log('🔧 ROOT FIX: Immediately exposing all core systems globally...');
+        
+        // Get all registered systems
+        const allSystems = systemRegistrar.getAll();
+        
+        // Expose each system globally with validation
+        Object.entries(allSystems).forEach(([name, instance]) => {
+            if (instance !== null) {
+                window[name] = instance;
+                console.log(`✅ ROOT FIX: Exposed window.${name}`);
+                
+                // Special enhanced component manager validation
+                if (name === 'componentManager' && instance.constructor?.name?.includes('Enhanced')) {
+                    window.enhancedComponentManager = instance;
+                    console.log('✅ ROOT FIX: Also exposed as window.enhancedComponentManager');
+                    
+                    // Validate critical methods
+                    if (typeof instance.addComponent !== 'function') {
+                        console.error('❌ ROOT FIX: Enhanced component manager missing addComponent method!');
+                    } else {
+                        console.log('✅ ROOT FIX: Enhanced component manager addComponent method confirmed');
+                    }
+                }
+                
+                // Special enhanced state manager validation
+                if (name === 'stateManager' && instance.constructor?.name?.includes('Enhanced')) {
+                    window.enhancedStateManager = instance;
+                    console.log('✅ ROOT FIX: Also exposed as window.enhancedStateManager');
+                }
+            } else {
+                console.warn(`⚠️ ROOT FIX: System ${name} is null, not exposing`);
+            }
+        });
+        
+        // ROOT FIX: Critical validation after exposure
+        const criticalSystems = ['stateManager', 'componentManager', 'renderer', 'enhancedComponentManager'];
+        const missingCritical = criticalSystems.filter(name => !window[name]);
+        
+        if (missingCritical.length > 0) {
+            console.error('❌ ROOT FIX: Critical systems missing after exposure:', missingCritical);
+            
+            // EMERGENCY FIX: Try direct exposure
+            if (!window.enhancedComponentManager && enhancedComponentManager) {
+                window.enhancedComponentManager = enhancedComponentManager;
+                console.log('🚑 ROOT FIX: Emergency exposed enhancedComponentManager directly');
+            }
+            
+            if (!window.enhancedStateManager && enhancedStateManager) {
+                window.enhancedStateManager = enhancedStateManager;
+                console.log('🚑 ROOT FIX: Emergency exposed enhancedStateManager directly');
+            }
+            
+            if (!window.componentManager && enhancedComponentManager) {
+                window.componentManager = enhancedComponentManager;
+                console.log('🚑 ROOT FIX: Emergency exposed componentManager as enhancedComponentManager');
+            }
+            
+            if (!window.stateManager && enhancedStateManager) {
+                window.stateManager = enhancedStateManager;
+                console.log('🚑 ROOT FIX: Emergency exposed stateManager as enhancedStateManager');
+            }
+            
+            if (!window.renderer && enhancedComponentRenderer) {
+                window.renderer = enhancedComponentRenderer;
+                console.log('🚑 ROOT FIX: Emergency exposed renderer as enhancedComponentRenderer');
+            }
+        } else {
+            console.log('✅ ROOT FIX: All critical systems successfully exposed globally');
+        }
+        
+        // ROOT FIX: Final validation that all systems are properly exposed
+        const finalValidation = {
+            enhancedComponentManager: !!window.enhancedComponentManager,
+            componentManager: !!window.componentManager,
+            enhancedStateManager: !!window.enhancedStateManager,
+            stateManager: !!window.stateManager,
+            renderer: !!window.renderer,
+            dynamicComponentLoader: !!window.dynamicComponentLoader,
+            mkTemplateCache: !!window.mkTemplateCache
+        };
+        
+        console.log('🔍 ROOT FIX: Final system exposure validation:', finalValidation);
+        
+        const exposedCount = Object.values(finalValidation).filter(Boolean).length;
+        const totalRequired = Object.keys(finalValidation).length;
+        
+        if (exposedCount === totalRequired) {
+            console.log('🎉 ROOT FIX: All systems properly exposed globally!');
+        } else {
+            console.warn(`⚠️ ROOT FIX: Only ${exposedCount}/${totalRequired} systems exposed`);
+        }
+        
         // CRITICAL FIX: Validate all 8 core systems including template loading infrastructure, error handling, and data mapper
         // These are required for proper functionality - template systems were missing causing failures
         if (registeredSystems.length < 8) { // Require all 8 core systems (was 7, added mkcgDataMapper)
-            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 8 (state, component, renderer, initializer, loader, cache, errorHandler, mkcgDataMapper)`);
+            console.error(`❌ ROOT FIX: Only ${registeredSystems.length} core systems registered, expected at least 8 (state, component, renderer, initializer, loader, cache, errorHandler, mkcgDataMapper)`);
+            
+            // ROOT FIX: Show what's missing
+            const expectedSystems = ['stateManager', 'componentManager', 'renderer', 'initializer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper'];
+            const missing = expectedSystems.filter(sys => !systemRegistrar.getAll()[sys]);
+            console.error('❌ ROOT FIX: Missing systems:', missing);
+            
+            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 8. Missing: ${missing.join(', ')}`);
         }
         
         // Validate critical template systems are working

@@ -50,6 +50,9 @@ class Guestify_Media_Kit_Builder {
     private function __construct() {
         require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
         
+        // ROOT FIX: Initialize Enhanced State Loading Coordinator FIRST
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-state-loading-coordinator.php';
+        
         // Initialize enhanced schema-driven system
         require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-init.php';
         

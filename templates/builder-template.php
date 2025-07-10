@@ -4,7 +4,13 @@
             <div class="toolbar__logo">Guestify</div>
             <div class="toolbar__guest-name">Editing: Daniel Jackson's Media Kit</div>
             <?php
-            // PHASE 2.3: Enhanced MKCG Data Dashboard
+            // ROOT FIX: Enhanced State Loading Coordination
+            require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-state-loading-coordinator.php';
+            $state_coordinator = GMKB_Enhanced_State_Loading_Coordinator::get_instance();
+            $coordination_data = $state_coordinator->check_saved_state_priority();
+            $template_instructions = $state_coordinator->generate_template_instructions($coordination_data);
+            
+            // PHASE 2.3: Enhanced MKCG Data Dashboard (now coordinated with saved state priority)
             $post_id = 0;
             $mkcg_data = null;
             $mkcg_integration = null;
@@ -185,7 +191,8 @@
                 }
             }
             
-            if ($dashboard_data): ?>
+            // ROOT FIX: Only show MKCG dashboard if coordination allows it
+            if ($dashboard_data && $template_instructions['show_mkcg_dashboard']): ?>
                 <!-- PHASE 2.3: ENHANCED DATA DASHBOARD -->
                 <div class="mkcg-enhanced-dashboard" id="mkcg-enhanced-dashboard">
                     <div class="mkcg-dashboard-trigger" id="dashboard-trigger">
@@ -368,8 +375,27 @@
     <div class="preview">
         <div class="preview__container" id="preview-container">
             <div class="media-kit" id="media-kit-preview">
-                <!-- PHASE 2.3: TASK 2 - ENHANCED INTELLIGENT EMPTY STATE SYSTEM -->
-                <div class="empty-state-enhanced" id="enhanced-empty-state">
+                <!-- ROOT FIX: Coordinated State Loading System -->
+                <?php if ($template_instructions['show_loading_state']): ?>
+                    <!-- ROOT FIX: Loading State for Saved Components -->
+                    <div class="state-loading-enhanced" id="state-loading-enhanced">
+                        <div class="loading-state-icon animate-pulse-gentle">⏳</div>
+                        <h3 class="loading-state-title">Loading Your Media Kit</h3>
+                        <p class="loading-state-description">
+                            <?php echo esc_html($template_instructions['loading_message']); ?>
+                        </p>
+                        <div class="loading-progress">
+                            <div class="loading-progress-bar"></div>
+                        </div>
+                        <p class="loading-fallback-notice">
+                            Taking longer than expected? <a href="#" onclick="location.reload()" class="loading-refresh-link">Refresh page</a>
+                        </p>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if ($template_instructions['show_empty_state']): ?>
+                    <!-- PHASE 2.3: TASK 2 - ENHANCED INTELLIGENT EMPTY STATE SYSTEM -->
+                    <div class="empty-state-enhanced" id="enhanced-empty-state">
                     <?php if ($dashboard_data && $dashboard_data['quality_score'] >= 70): ?>
                         <!-- TASK 2: High Quality Data Ready - Enhanced -->
                         <div class="empty-state-icon animate-bounce-gentle">🎉</div>
@@ -563,7 +589,8 @@
                             </button>
                         </div>
                     <?php endif; ?>
-                </div>
+                    </div>
+                <?php endif; // end show_empty_state ?>
                 
                 <!-- Drop zone for first component -->
                 <div class="drop-zone drop-zone--empty drop-zone--primary" data-zone="0" style="display: none;">
@@ -737,6 +764,10 @@
     });';
     
     echo '</script>';
+    
+    // ROOT FIX: Generate and inject state loading coordination JavaScript
+    echo $state_coordinator->generate_coordination_javascript($coordination_data);
+    
     ?>
 
     
@@ -965,6 +996,100 @@
             }
         }
         
+        /* ========================================
+           ROOT FIX: STATE LOADING COORDINATION STYLES
+           ======================================== */
+           
+        /* Loading State for Saved Components */
+        .state-loading-enhanced {
+            text-align: center;
+            padding: 80px 40px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-radius: 20px;
+            border: 2px solid #3b82f6;
+            margin: 24px;
+            position: relative;
+            overflow: hidden;
+            animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .loading-state-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+            display: block;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+        }
+        
+        .loading-state-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e40af;
+            margin: 0 0 16px 0;
+            line-height: 1.2;
+        }
+        
+        .loading-state-description {
+            font-size: 16px;
+            color: #1e40af;
+            margin: 0 0 32px 0;
+            opacity: 0.8;
+        }
+        
+        .loading-progress {
+            width: 100%;
+            max-width: 300px;
+            height: 6px;
+            background: rgba(59, 130, 246, 0.2);
+            border-radius: 3px;
+            margin: 0 auto 24px;
+            overflow: hidden;
+        }
+        
+        .loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            border-radius: 3px;
+            animation: loadingProgress 2s ease-in-out infinite;
+        }
+        
+        .loading-fallback-notice {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0;
+        }
+        
+        .loading-refresh-link {
+            color: #3b82f6;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        
+        .loading-refresh-link:hover {
+            color: #1d4ed8;
+        }
+        
+        @keyframes loadingProgress {
+            0% {
+                transform: translateX(-100%);
+            }
+            50% {
+                transform: translateX(0%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        /* Template coordination classes */
+        .gmkb-loading-saved-state .empty-state-enhanced,
+        .gmkb-loading-saved-state .mkcg-enhanced-dashboard {
+            display: none;
+        }
+        
+        .gmkb-mkcg-mode .state-loading-enhanced {
+            display: none;
+        }
+
         /* ========================================
            TASK 2: ENHANCED EMPTY STATE FRAMEWORK
            ======================================== */

@@ -74,18 +74,30 @@ export async function initializeCoreSystems() {
             const initResult = window.componentManager.init();
             console.log('🔧 Component manager initialized:', !!initResult);
             
-            // GEMINI FIX: Validate initialization was successful
+            // ROOT FIX: Validate initialization was successful
             if (window.componentManager.isInitialized) {
-                console.log('✅ Component manager initialization confirmed');
+                console.log('✅ ROOT FIX: Component manager initialization confirmed');
             } else {
-                console.warn('⚠️ Component manager may not be fully initialized');
+                console.warn('⚠️ ROOT FIX: Component manager may not be fully initialized');
             }
         } catch (error) {
-            console.error('❌ Component manager initialization failed:', error);
+            console.error('❌ ROOT FIX: Component manager initialization failed:', error);
             // Don't throw here - let the system continue with fallback behavior
         }
     } else {
-        console.warn('⚠️ Component manager init method not available');
+        console.warn('⚠️ ROOT FIX: Component manager init method not available');
+    }
+    
+    // ROOT FIX: Also try to initialize enhanced component manager if available separately
+    if (window.enhancedComponentManager && window.enhancedComponentManager !== window.componentManager) {
+        if (typeof window.enhancedComponentManager.init === 'function') {
+            try {
+                const enhancedInitResult = window.enhancedComponentManager.init();
+                console.log('🔧 ROOT FIX: Enhanced component manager initialized separately:', !!enhancedInitResult);
+            } catch (error) {
+                console.error('❌ ROOT FIX: Enhanced component manager initialization failed:', error);
+            }
+        }
     }
 
     // Initialize keyboard shortcuts

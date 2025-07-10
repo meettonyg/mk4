@@ -16,6 +16,12 @@
  * - JavaScript initialization: <500ms
  */
 
+// ROOT FIX: Enhanced State Loading Coordination
+require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-state-loading-coordinator.php';
+$state_coordinator = GMKB_Enhanced_State_Loading_Coordinator::get_instance();
+$coordination_data = $state_coordinator->check_saved_state_priority();
+$template_instructions = $state_coordinator->generate_template_instructions($coordination_data);
+
 // ROOT FIX: Lightweight post detection without heavy processing
 $post_id = 0;
 $has_mkcg_data = false;
@@ -98,7 +104,7 @@ if ($post_id > 0) {
             <div class="toolbar__logo">Guestify</div>
             <div class="toolbar__guest-name">Editing: Media Kit</div>
             
-            <?php if ($dashboard_data): ?>
+            <?php if ($dashboard_data && $template_instructions['show_mkcg_dashboard']): ?>
                 <!-- ROOT FIX: Enhanced MKCG Dashboard (Auto-Loading) -->
                 <div class="mkcg-dashboard-optimized" id="mkcg-dashboard" data-post-id="<?php echo $post_id; ?>">
                     <div class="mkcg-dashboard-trigger" id="dashboard-trigger">
@@ -251,9 +257,27 @@ if ($post_id > 0) {
     <div class="preview">
         <div class="preview__container" id="preview-container">
             <div class="media-kit" id="media-kit-preview">
+                <!-- ROOT FIX: Coordinated State Loading System -->
+                <?php if ($template_instructions['show_loading_state']): ?>
+                    <!-- ROOT FIX: Loading State for Saved Components -->
+                    <div class="state-loading-enhanced" id="state-loading-enhanced">
+                        <div class="loading-state-icon animate-pulse-gentle">⏳</div>
+                        <h3 class="loading-state-title">Loading Your Media Kit</h3>
+                        <p class="loading-state-description">
+                            <?php echo esc_html($template_instructions['loading_message']); ?>
+                        </p>
+                        <div class="loading-progress">
+                            <div class="loading-progress-bar"></div>
+                        </div>
+                        <p class="loading-fallback-notice">
+                            Taking longer than expected? <a href="#" onclick="location.reload()" class="loading-refresh-link">Refresh page</a>
+                        </p>
+                    </div>
+                <?php endif; ?>
                 
-                <!-- ROOT FIX: Enhanced Empty State with Auto-Loading Support -->
-                <div class="empty-state-optimized" id="empty-state">
+                <?php if ($template_instructions['show_empty_state']): ?>
+                    <!-- ROOT FIX: Enhanced Empty State with Auto-Loading Support -->
+                    <div class="empty-state-optimized" id="empty-state">
                     <?php if ($dashboard_data): ?>
                         <!-- MKCG Data Auto-Loading State -->
                         <div class="empty-state-icon auto-loading">⚙️</div>
@@ -326,6 +350,7 @@ if ($post_id > 0) {
                         </div>
                     <?php endif; ?>
                 </div>
+                <?php endif; // end show_empty_state ?>
                 
                 <!-- ROOT FIX: Minimal drop zone (no complex bridge elements) -->
                 <div class="drop-zone drop-zone--empty" data-zone="0" style="display: none;">
@@ -1196,6 +1221,146 @@ if ($post_id > 0) {
             max-width: none;
         }
     }
+    
+    /* ========================================
+       ROOT FIX: STATE LOADING COORDINATION STYLES
+       ======================================== */
+       
+    /* Loading State for Saved Components */
+    .state-loading-enhanced {
+        text-align: center;
+        padding: 80px 40px;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border-radius: 20px;
+        border: 2px solid #3b82f6;
+        margin: 24px;
+        position: relative;
+        overflow: hidden;
+        animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .loading-state-icon {
+        font-size: 64px;
+        margin-bottom: 24px;
+        display: block;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+    }
+    
+    .loading-state-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1e40af;
+        margin: 0 0 16px 0;
+        line-height: 1.2;
+    }
+    
+    .loading-state-description {
+        font-size: 16px;
+        color: #1e40af;
+        margin: 0 0 32px 0;
+        opacity: 0.8;
+    }
+    
+    .loading-progress {
+        width: 100%;
+        max-width: 300px;
+        height: 6px;
+        background: rgba(59, 130, 246, 0.2);
+        border-radius: 3px;
+        margin: 0 auto 24px;
+        overflow: hidden;
+    }
+    
+    .loading-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        border-radius: 3px;
+        animation: loadingProgress 2s ease-in-out infinite;
+    }
+    
+    .loading-fallback-notice {
+        font-size: 14px;
+        color: #64748b;
+        margin: 0;
+    }
+    
+    .loading-refresh-link {
+        color: #3b82f6;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    
+    .loading-refresh-link:hover {
+        color: #1d4ed8;
+    }
+    
+    @keyframes loadingProgress {
+        0% {
+            transform: translateX(-100%);
+        }
+        50% {
+            transform: translateX(0%);
+        }
+        100% {
+            transform: translateX(100%);
+        }
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-pulse-gentle {
+        animation: pulseGentle 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulseGentle {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+    }
+    
+    /* Template coordination classes */
+    .gmkb-loading-saved-state .empty-state-optimized,
+    .gmkb-loading-saved-state .mkcg-dashboard-optimized {
+        display: none;
+    }
+    
+    .gmkb-mkcg-mode .state-loading-enhanced {
+        display: none;
+    }
+    
+    /* Responsive design for loading state */
+    @media (max-width: 768px) {
+        .state-loading-enhanced {
+            padding: 60px 24px;
+            margin: 16px;
+        }
+        
+        .loading-state-icon {
+            font-size: 48px;
+        }
+        
+        .loading-state-title {
+            font-size: 24px;
+        }
+        
+        .loading-state-description {
+            font-size: 14px;
+        }
+    }
 </style>
 
 <!-- ROOT FIX: Optimized JavaScript for MKCG data loading -->
@@ -1469,3 +1634,8 @@ if ($post_id > 0) {
     
 })();
 </script>
+
+<?php 
+// ROOT FIX: Generate and inject state loading coordination JavaScript
+echo $state_coordinator->generate_coordination_javascript($coordination_data);
+?>

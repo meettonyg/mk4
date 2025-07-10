@@ -77,6 +77,9 @@ import { stateHistory } from './core/state-history.js';
 // ROOT FIX: Import state loading validation test
 import './tests/test-state-loading-fix.js';
 
+// ROOT FIX: Import comprehensive state loading root fix test
+import './tests/test-state-loading-root-fix.js';
+
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;
@@ -449,6 +452,65 @@ window.validateStateLoadingFix = () => {
     }
 };
 
+// ROOT FIX: System exposure diagnostics
+window.validateSystemExposure = () => {
+    console.log('🔍 ROOT FIX: Validating system exposure...');
+    
+    const systemChecks = {
+        enhancedComponentManager: {
+            exists: !!window.enhancedComponentManager,
+            hasAddComponent: typeof window.enhancedComponentManager?.addComponent === 'function',
+            hasInit: typeof window.enhancedComponentManager?.init === 'function',
+            isInitialized: window.enhancedComponentManager?.isInitialized,
+            constructor: window.enhancedComponentManager?.constructor?.name
+        },
+        componentManager: {
+            exists: !!window.componentManager,
+            hasAddComponent: typeof window.componentManager?.addComponent === 'function',
+            hasInit: typeof window.componentManager?.init === 'function',
+            isInitialized: window.componentManager?.isInitialized,
+            constructor: window.componentManager?.constructor?.name
+        },
+        enhancedStateManager: {
+            exists: !!window.enhancedStateManager,
+            hasInitializeAfterSystems: typeof window.enhancedStateManager?.initializeAfterSystems === 'function',
+            hasAutoLoadSavedState: typeof window.enhancedStateManager?.autoLoadSavedState === 'function',
+            constructor: window.enhancedStateManager?.constructor?.name
+        },
+        stateManager: {
+            exists: !!window.stateManager,
+            constructor: window.stateManager?.constructor?.name
+        },
+        renderer: {
+            exists: !!window.renderer,
+            initialized: window.renderer?.initialized,
+            constructor: window.renderer?.constructor?.name
+        },
+        systemRegistrar: {
+            exists: !!window.systemRegistrar,
+            registeredCount: window.systemRegistrar?.list()?.length || 0
+        }
+    };
+    
+    console.table(systemChecks);
+    
+    // Summary
+    const criticalSystems = ['enhancedComponentManager', 'componentManager', 'enhancedStateManager', 'stateManager', 'renderer'];
+    const readySystems = criticalSystems.filter(sys => systemChecks[sys]?.exists);
+    
+    console.log(`\n📊 ROOT FIX System Summary:`);
+    console.log(`  Ready: ${readySystems.length}/${criticalSystems.length}`);
+    console.log(`  Missing: ${criticalSystems.filter(sys => !systemChecks[sys]?.exists).join(', ') || 'None'}`);
+    
+    if (readySystems.length === criticalSystems.length) {
+        console.log('✅ ROOT FIX: All critical systems are exposed and ready!');
+        return true;
+    } else {
+        console.error('❌ ROOT FIX: Some critical systems are missing');
+        return false;
+    }
+};
+
 window.runStateLoadingDiagnostics = () => {
     console.log('🚀 Running State Loading Diagnostics...');
     
@@ -691,15 +753,17 @@ window.mkLog = {
         console.log('  stateHistory.redo()     - Direct redo call');
             console.log('\n🔄 ROOT FIX: State Loading Commands:');
             console.log('  validateStateLoadingFix() - COMPREHENSIVE validation of state loading fix (PRIMARY)');
+            console.log('  validateSystemExposure() - Validate that all critical systems are exposed globally');
             console.log('  runStateLoadingDiagnostics() - Comprehensive state loading diagnostics');
             console.log('  testStateLoading()      - Test manual state loading functionality');
             console.log('  forceReloadSavedState() - Force reload saved state from localStorage');
             console.log('  enhancedStateManager.debug() - Debug enhanced state manager');
             console.log('  enhancedStateManager.autoLoadSavedState() - Manual auto-load call');
-        console.log('\n🎯 ROOT FIX: Quick Validation:');
-        console.log('  1. Run: validateStateLoadingFix()');
-        console.log('  2. Look for: "ROOT FIX VALIDATION: ALL TESTS PASSED!"');
-        console.log('  3. Check component count in success message');
+            console.log('\n🎯 ROOT FIX: Quick Validation:');
+            console.log('  1. Run: validateSystemExposure() - Check if systems are exposed');
+            console.log('  2. Run: validateStateLoadingFix() - Full validation');
+        console.log('  3. Look for: "ROOT FIX VALIDATION: ALL TESTS PASSED!"');
+        console.log('  4. Check component count in success message');
     }
 };
 
