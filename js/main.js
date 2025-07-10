@@ -62,9 +62,23 @@ import './ui/toolbar-interactions.js';
 // ROOT FIX: Import save diagnostics for debugging save issues
 import './utils/save-diagnostics.js';
 
+// ROOT FIX: Import and expose save service early
+import { saveService } from './services/save-service.js';
+
+// ROOT FIX: Import and expose enhanced state manager early
+import { enhancedStateManager } from './core/enhanced-state-manager.js';
+
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;
+
+// ROOT FIX: Ensure save service is exposed globally early
+window.saveService = saveService;
+console.log('✅ Save service exposed globally:', !!window.saveService);
+
+// ROOT FIX: Ensure enhanced state manager is exposed globally early
+window.enhancedStateManager = enhancedStateManager;
+console.log('✅ Enhanced state manager exposed globally:', !!window.enhancedStateManager);
 
 // ROOT FIX: Expose save system commands
 window.triggerSave = () => {
@@ -90,6 +104,23 @@ window.attemptSaveFixes = async () => {
         await window.saveDiagnostics.attemptQuickFixes();
     } else {
         console.warn('⚠️ Save diagnostics not available');
+    }
+};
+
+// ROOT FIX: Quick verification command
+window.verifySaveFix = () => {
+    console.log('🔍 Verifying Save System Fix...');
+    console.log('Save Service Available:', !!window.saveService);
+    console.log('Enhanced State Manager Available:', !!window.enhancedStateManager);
+    console.log('Toolbar Interactions Available:', !!window.toolbarInteractions);
+    
+    if (window.saveService && window.enhancedStateManager) {
+        console.log('✅ All core systems are now available!');
+        console.log('💡 Try clicking the save button or run triggerSave() to test.');
+        return true;
+    } else {
+        console.log('❌ Some systems are still missing. Try refreshing the page.');
+        return false;
     }
 };
 
@@ -136,6 +167,7 @@ window.mkLog = {
         console.log('\n💾 Save System Commands:');
         console.log('  testSaveButton()        - Test save button functionality');
         console.log('  triggerSave()           - Manually trigger save');
+        console.log('  verifySaveFix()         - Quick verification of save system fix');
         console.log('  runSaveDiagnostics()    - Comprehensive save system diagnostics');
         console.log('  attemptSaveFixes()      - Try automatic fixes for save issues');
         console.log('  toolbarInteractions.debug() - Debug toolbar state');
@@ -173,6 +205,19 @@ window.testSaveButton = function() {
     test('Save Service Available', !!window.saveService, true);
     test('Enhanced State Manager Available', !!window.enhancedStateManager, true);
     test('Toast Notification System Available', typeof window.showToast === 'function', false);
+    
+    // ROOT FIX: Additional save service validation
+    if (window.saveService) {
+        test('Save Service Has saveState Method', typeof window.saveService.saveState === 'function', true);
+        test('Save Service Has getStats Method', typeof window.saveService.getStats === 'function', false);
+    }
+    
+    // ROOT FIX: Additional enhanced state manager validation
+    if (window.enhancedStateManager) {
+        test('Enhanced State Manager Has getState Method', typeof window.enhancedStateManager.getState === 'function', true);
+        const state = window.enhancedStateManager.getState();
+        test('Enhanced State Manager Returns Valid State', !!state && typeof state === 'object', true);
+    }
     
     // Event handler tests
     const saveBtn = document.getElementById('save-btn');
