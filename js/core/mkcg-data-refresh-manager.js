@@ -923,18 +923,42 @@ class MKCGDataRefreshManager {
      * @returns {Promise<Object>} Response data
      */
     async makeAjaxRequest(action, data = {}) {
-        if (!window.guestifyData || !window.guestifyData.ajaxurl) {
+        // ROOT FIX: Better AJAX URL detection with fallbacks
+        let ajaxUrl = null;
+        let nonce = null;
+        
+        // Try multiple sources for AJAX URL
+        if (window.guestifyData?.ajaxurl) {
+            ajaxUrl = window.guestifyData.ajaxurl;
+            nonce = window.guestifyData.nonce;
+        } else if (window.ajaxurl) {
+            ajaxUrl = window.ajaxurl;
+        } else if (window.wpApiSettings?.root) {
+            ajaxUrl = window.wpApiSettings.root + 'wp/v2/';
+        } else {
+            // WordPress standard AJAX URL fallback
+            ajaxUrl = '/wp-admin/admin-ajax.php';
+        }
+        
+        if (!ajaxUrl) {
             throw new Error('WordPress AJAX URL not available');
         }
+        
+        this.logger.info('REFRESH', 'Making AJAX request', {
+            action,
+            ajaxUrl,
+            hasNonce: !!nonce,
+            dataKeys: Object.keys(data)
+        });
 
         const requestData = {
             action: `gmkb_${action}`,
-            nonce: window.guestifyData.nonce || '',
+            nonce: nonce || '',
             ...data
         };
 
         try {
-            const response = await fetch(window.guestifyData.ajaxurl, {
+            const response = await fetch(ajaxUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -942,15 +966,41 @@ class MKCGDataRefreshManager {
                 body: new URLSearchParams(requestData)
             });
 
+            this.logger.info('REFRESH', 'AJAX response received', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                url: response.url
+            });
+
             if (!response.ok) {
+                // Get response text for better error details
+                let responseText = '';
+                try {
+                    responseText = await response.text();
+                } catch (e) {
+                    responseText = 'Could not read response text';
+                }
+                
+                this.logger.error('REFRESH', 'HTTP error response', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    responseText: responseText.substring(0, 500) // First 500 chars
+                });
+                
                 // Check if it's a 404 - endpoint doesn't exist
                 if (response.status === 404) {
-                    throw new Error('AJAX endpoint not found - refresh functionality not available');
+                    throw new Error(`AJAX endpoint not found (404): ${ajaxUrl} - refresh functionality not available`);
                 }
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP ${response.status} ${response.statusText}: ${responseText.substring(0, 200)}`);
             }
 
             const result = await response.json();
+            
+            this.logger.info('REFRESH', 'AJAX response parsed', {
+                success: result.success,
+                hasData: !!result.data
+            });
             
             if (!result.success) {
                 throw new Error(result.data || 'Request failed');
@@ -1355,12 +1405,78 @@ if (typeof window !== 'undefined') {
                 console.error('Error stack:', error.stack);
                 return { success: false, error: error.message, fullError: error };
             }
+        },
+        
+        // Debug WordPress AJAX availability
+        checkWordPressData: () => {
+            console.group('🔍 WordPress Data Availability');
+            console.log('window.guestifyData:', window.guestifyData);
+            console.log('window.ajaxurl:', window.ajaxurl);
+            console.log('window.wpApiSettings:', window.wpApiSettings);
+            
+            console.log('\n=== AJAX URL Sources ===');
+            console.log('guestifyData.ajaxurl:', window.guestifyData?.ajaxurl);
+            console.log('global ajaxurl:', window.ajaxurl);
+            console.log('REST API root:', window.wpApiSettings?.root);
+            console.log('Standard fallback:', '/wp-admin/admin-ajax.php');
+            
+            console.log('\n=== Security ===');
+            console.log('guestifyData.nonce:', window.guestifyData?.nonce);
+            console.log('REST API nonce:', window.wpApiSettings?.nonce);
+            
+            console.groupEnd();
+            
+            return {
+                hasGuestifyData: !!window.guestifyData,
+                hasAjaxUrl: !!(window.guestifyData?.ajaxurl || window.ajaxurl),
+                hasNonce: !!(window.guestifyData?.nonce || window.wpApiSettings?.nonce),
+                sources: {
+                    guestifyAjax: window.guestifyData?.ajaxurl,
+                    globalAjax: window.ajaxurl,
+                    restApi: window.wpApiSettings?.root
+                }
+            };
+        },
+        
+        // ROOT FIX: Test AJAX connection without nonce
+        testConnection: async () => {
+            console.log('🔌 Testing AJAX connection...');
+            try {
+                const response = await fetch('/wp-admin/admin-ajax.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'gmkb_test_connection'
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response OK:', response.ok);
+                
+                if (!response.ok) {
+                    const responseText = await response.text();
+                    console.error('HTTP Error:', response.status, responseText.substring(0, 200));
+                    return { success: false, error: `HTTP ${response.status}`, responseText };
+                }
+                
+                const result = await response.json();
+                console.log('✅ Connection test result:', result);
+                return result;
+                
+            } catch (error) {
+                console.error('❌ Connection test failed:', error);
+                return { success: false, error: error.message };
+            }
         }
     };
     
     console.log('🔧 MKCG Refresh Debug Tools Available:');
     console.log('  • mkcgDebugRefresh.checkDataStructure() - Show raw data structure');
     console.log('  • mkcgDebugRefresh.testRefresh() - Test refresh functionality');
+    console.log('  • mkcgDebugRefresh.testConnection() - Test AJAX connection (no nonce)');
+    console.log('  • mkcgDebugRefresh.checkWordPressData() - Check WordPress data availability');
 }
 
 export { mkcgDataRefreshManager as default, MKCGDataRefreshManager };
