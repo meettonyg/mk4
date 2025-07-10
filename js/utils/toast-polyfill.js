@@ -20,13 +20,14 @@ function createToastContainer() {
     }
     toastContainer = document.createElement('div');
     toastContainer.id = 'toast-container';
+    toastContainer.className = 'gmkb-toast-container';
     document.body.appendChild(toastContainer);
 }
 
 /**
  * Displays a toast notification with a message.
  * @param {string} message - The message to display in the toast.
- * @param {string} [type='info'] - The type of toast ('info', 'success', 'error').
+ * @param {string} [type='info'] - The type of toast ('info', 'success', 'error', 'warning').
  * @param {number} [duration=3000] - The duration in milliseconds for the toast to be visible.
  */
 export function showToast(message, type = 'info', duration = 3000) {
@@ -35,19 +36,21 @@ export function showToast(message, type = 'info', duration = 3000) {
     }
 
     const toast = document.createElement('div');
-    toast.className = `toast toast--${type}`;
+    toast.className = `gmkb-toast gmkb-toast--${type}`;
+    toast.setAttribute('aria-live', 'polite');
+    toast.setAttribute('role', 'status');
     toast.textContent = message;
 
     toastContainer.appendChild(toast);
 
     // Animate in
     setTimeout(() => {
-        toast.classList.add('toast--visible');
+        toast.classList.add('show');
     }, 10);
 
     // Animate out and remove
     setTimeout(() => {
-        toast.classList.remove('toast--visible');
+        toast.classList.add('closing');
         toast.addEventListener('transitionend', () => {
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
@@ -57,4 +60,11 @@ export function showToast(message, type = 'info', duration = 3000) {
 }
 
 // Initialize the container on script load
-createToastContainer();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', createToastContainer);
+} else {
+    createToastContainer();
+}
+
+// Expose globally for debugging
+window.showToast = showToast;

@@ -1056,6 +1056,146 @@ if ($post_id > 0) {
     .hidden {
         display: none !important;
     }
+    
+    /* ROOT FIX: Save button states */
+    .toolbar__btn.saving {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+    
+    .toolbar__btn.saving svg {
+        animation: spin 1s linear infinite;
+    }
+    
+    .toolbar__btn--primary.saving {
+        background: #f59e0b;
+        border-color: #f59e0b;
+    }
+    
+    /* Status indicator animations */
+    .toolbar__status-dot {
+        transition: background 0.3s ease;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    /* ROOT FIX: Toast notification styles */
+    .gmkb-toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 350px;
+        width: 100%;
+    }
+    
+    .gmkb-toast {
+        background-color: #ffffff;
+        color: #1e293b;
+        border-left: 4px solid #3b82f6;
+        border-radius: 4px;
+        padding: 12px 16px;
+        font-size: 14px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transform: translateX(100%);
+        opacity: 0;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        max-width: 100%;
+        aria-live: polite;
+    }
+    
+    .gmkb-toast.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    
+    .gmkb-toast.closing {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    
+    .gmkb-toast--success {
+        border-left-color: #10b981;
+    }
+    
+    .gmkb-toast--success:before {
+        content: '✓';
+        width: 16px;
+        height: 16px;
+        margin-right: 10px;
+        color: #10b981;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .gmkb-toast--error {
+        border-left-color: #ef4444;
+    }
+    
+    .gmkb-toast--error:before {
+        content: '✕';
+        width: 16px;
+        height: 16px;
+        margin-right: 10px;
+        color: #ef4444;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .gmkb-toast--info {
+        border-left-color: #3b82f6;
+    }
+    
+    .gmkb-toast--info:before {
+        content: 'ℹ';
+        width: 16px;
+        height: 16px;
+        margin-right: 10px;
+        color: #3b82f6;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .gmkb-toast--warning {
+        border-left-color: #f59e0b;
+    }
+    
+    .gmkb-toast--warning:before {
+        content: '⚠';
+        width: 16px;
+        height: 16px;
+        margin-right: 10px;
+        color: #f59e0b;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Responsive adjustments for toasts */
+    @media (max-width: 640px) {
+        .gmkb-toast-container {
+            bottom: 10px;
+            right: 10px;
+            left: 10px;
+            max-width: none;
+        }
+    }
 </style>
 
 <!-- ROOT FIX: Optimized JavaScript for MKCG data loading -->

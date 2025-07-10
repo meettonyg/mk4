@@ -56,9 +56,42 @@ import './tests/simple-fix-validation.js';
 // PHASE 2.3 FINAL COMPLETION INTEGRATION
 import './utils/phase23-completion-integration.js';
 
+// ROOT FIX: Import toolbar interactions for save button functionality
+import './ui/toolbar-interactions.js';
+
+// ROOT FIX: Import save diagnostics for debugging save issues
+import './utils/save-diagnostics.js';
+
 // Expose global objects for debugging and monitoring
 window.mk = {};
 window.mkPerf = performanceMonitor;
+
+// ROOT FIX: Expose save system commands
+window.triggerSave = () => {
+    if (window.toolbarInteractions) {
+        console.log('🔄 Manually triggering save...');
+        window.toolbarInteractions.handleSaveClick();
+    } else {
+        console.warn('⚠️ Toolbar interactions not available');
+    }
+};
+
+// ROOT FIX: Expose save diagnostic commands
+window.runSaveDiagnostics = async () => {
+    if (window.saveDiagnostics) {
+        await window.saveDiagnostics.runDiagnostics();
+    } else {
+        console.warn('⚠️ Save diagnostics not available');
+    }
+};
+
+window.attemptSaveFixes = async () => {
+    if (window.saveDiagnostics) {
+        await window.saveDiagnostics.attemptQuickFixes();
+    } else {
+        console.warn('⚠️ Save diagnostics not available');
+    }
+};
 
 // Expose logging console commands
 window.mkLog = {
@@ -100,6 +133,78 @@ window.mkLog = {
         console.log('  phase23.test()          - Run comprehensive test suite');
         console.log('  phase23.refreshAll()    - Refresh all MKCG data');
         console.log('  phase23.autoGenerate()  - Auto-generate components');
+        console.log('\n💾 Save System Commands:');
+        console.log('  testSaveButton()        - Test save button functionality');
+        console.log('  triggerSave()           - Manually trigger save');
+        console.log('  runSaveDiagnostics()    - Comprehensive save system diagnostics');
+        console.log('  attemptSaveFixes()      - Try automatic fixes for save issues');
+        console.log('  toolbarInteractions.debug() - Debug toolbar state');
+    }
+};
+
+// ROOT FIX: Test save button functionality
+window.testSaveButton = function() {
+    console.log('🧪 Testing Save Button Functionality...\n');
+    
+    const results = {
+        passed: 0,
+        failed: 0,
+        tests: []
+    };
+    
+    function test(name, condition, critical = false) {
+        const status = condition ? 'PASS' : 'FAIL';
+        const icon = condition ? '✅' : '❌';
+        
+        console.log(`${icon} ${name}: ${status}`);
+        
+        results.tests.push({ name, status, critical });
+        
+        if (condition) {
+            results.passed++;
+        } else {
+            results.failed++;
+        }
+    }
+    
+    // Core save system tests
+    test('Save Button Element Exists', !!document.getElementById('save-btn'), true);
+    test('Toolbar Interactions Initialized', !!window.toolbarInteractions?.isInitialized, true);
+    test('Save Service Available', !!window.saveService, true);
+    test('Enhanced State Manager Available', !!window.enhancedStateManager, true);
+    test('Toast Notification System Available', typeof window.showToast === 'function', false);
+    
+    // Event handler tests
+    const saveBtn = document.getElementById('save-btn');
+    if (saveBtn) {
+        const hasClickHandler = saveBtn.onclick || saveBtn.addEventListener;
+        test('Save Button Has Click Handler', !!hasClickHandler, true);
+    }
+    
+    // State tests
+    if (window.enhancedStateManager) {
+        const state = window.enhancedStateManager.getState();
+        test('State Manager Has Valid State', !!state, false);
+        test('State Has Components Object', !!state?.components, false);
+    }
+    
+    // Summary
+    console.log('\n📋 Save System Test Summary:');
+    console.log(`  ✅ Passed: ${results.passed}`);
+    console.log(`  ❌ Failed: ${results.failed}`);
+    
+    if (results.failed === 0) {
+        console.log('\n🎉 All save system tests passed! Save button should work correctly.');
+        console.log('💡 Try clicking the save button or run triggerSave() to test.');
+        return true;
+    } else {
+        console.log('\n⚠️ Some save system tests failed. Check the individual results above.');
+        const criticalFailures = results.tests.filter(t => t.status === 'FAIL' && t.critical);
+        if (criticalFailures.length > 0) {
+            console.log('❌ Critical failures detected:');
+            criticalFailures.forEach(t => console.log(`   - ${t.name}`));
+        }
+        return false;
     }
 };
 
