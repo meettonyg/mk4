@@ -571,7 +571,7 @@ class GMKB_MKCG_Data_Integration {
             $this->log_error("Error checking data freshness for post {$post_id}: " . $e->getMessage(), 'freshness-check');
             return array(
                 'success' => false,
-                'message' => 'Error checking data freshness'
+                'message' => 'Error checking data freshness: ' . $e->getMessage()
             );
         }
     }

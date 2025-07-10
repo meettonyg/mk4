@@ -107,7 +107,7 @@ class GMKB_MKCG_Refresh_AJAX_Handlers {
             }
             
             // Perform freshness check
-            $freshness_result = $this->data_integration->compare_data_freshness($post_id, $client_timestamp);
+            $freshness_result = $this->data_integration->check_data_freshness($post_id, $client_timestamp);
             
             if (!$freshness_result['success']) {
                 wp_send_json_error(array(
@@ -130,7 +130,7 @@ class GMKB_MKCG_Refresh_AJAX_Handlers {
         } catch (Exception $e) {
             error_log('GMKB Refresh AJAX Error (check_freshness): ' . $e->getMessage());
             wp_send_json_error(array(
-                'message' => 'Internal server error during freshness check'
+                'message' => 'Internal server error during freshness check: ' . $e->getMessage()
             ));
         }
     }

@@ -188,43 +188,64 @@ class MKCGDataRefreshManager {
             throw new Error('No post ID available for freshness check');
         }
 
-        // Get current MKCG data timestamp
-        const clientTimestamp = window.guestifyData?.mkcgData?.meta_info?.extraction_timestamp;
-        if (!clientTimestamp) {
-            // No MKCG data available, which is normal for non-MKCG posts
-            this.logger.debug('REFRESH', 'No MKCG timestamp available, skipping check');
-            throw new Error('No client timestamp available');
+        // ROOT FIX: Simple validation - just check if MKCG data exists
+        const mkcgData = window.guestifyData?.mkcgData;
+        if (!mkcgData) {
+            this.logger.debug('REFRESH', 'No MKCG data available, skipping check');
+            throw new Error('MKCG data structure is incomplete.\n\nSOLUTION: Re-generate MKCG content:\n🔄 Quick fix:\n1. Go to Media Content Generator\n2. Re-generate content for post ID ' + postId + '\n3. Ensure all content types are generated\n4. Save and return here\nThis will ensure proper data structure with timestamps.');
         }
 
-        // Make AJAX request to check server timestamp
-        const response = await this.makeAjaxRequest('check_mkcg_freshness', {
-            post_id: postId,
-            client_timestamp: clientTimestamp
-        });
+        // Get current MKCG data timestamp (with fallback to current time)
+        const clientTimestamp = mkcgData.meta_info?.extraction_timestamp || 
+                               mkcgData.freshness?.extraction_timestamp || 
+                               Date.now();
 
-        const serverTimestamp = response.server_timestamp;
-        const hasFreshData = serverTimestamp > clientTimestamp;
-        
-        // Store results
-        this.lastRefreshCheck = Date.now();
-        this.timestampCache.set(postId, {
-            client: clientTimestamp,
-            server: serverTimestamp,
-            checked: this.lastRefreshCheck
-        });
-
-        const result = {
-            success: true,
+        this.logger.info('REFRESH', 'Making AJAX request for freshness check', {
             postId,
             clientTimestamp,
-            serverTimestamp,
-            hasFreshData,
-            timeDifference: serverTimestamp - clientTimestamp,
-            changedComponents: response.changed_components || []
-        };
+            ajaxUrl: window.guestifyData?.ajaxurl,
+            hasNonce: !!window.guestifyData?.nonce
+        });
 
-        this.logger.info('REFRESH', 'Freshness check completed', result);
-        return result;
+        try {
+            // Make AJAX request to check server timestamp
+            const response = await this.makeAjaxRequest('check_mkcg_freshness', {
+                post_id: postId,
+                client_timestamp: clientTimestamp
+            });
+
+            const serverTimestamp = response.server_timestamp;
+            const hasFreshData = serverTimestamp > clientTimestamp;
+            
+            // Store results
+            this.lastRefreshCheck = Date.now();
+            this.timestampCache.set(postId, {
+                client: clientTimestamp,
+                server: serverTimestamp,
+                checked: this.lastRefreshCheck
+            });
+
+            const result = {
+                success: true,
+                postId,
+                clientTimestamp,
+                serverTimestamp,
+                hasFreshData,
+                timeDifference: serverTimestamp - clientTimestamp,
+                changedComponents: response.changed_components || []
+            };
+
+            this.logger.info('REFRESH', 'Freshness check completed', result);
+            return result;
+        } catch (ajaxError) {
+            this.logger.error('REFRESH', 'AJAX request failed', {
+                error: ajaxError.message,
+                stack: ajaxError.stack,
+                postId,
+                clientTimestamp
+            });
+            throw new Error(`AJAX request failed: ${ajaxError.message}`);
+        }
     }
 
     /**
@@ -1297,5 +1318,49 @@ const mkcgDataRefreshManager = new MKCGDataRefreshManager();
 
 // Expose globally for integration
 window.mkcgDataRefreshManager = mkcgDataRefreshManager;
+
+// ROOT FIX: Simple debug utility
+if (typeof window !== 'undefined') {
+    window.mkcgDebugRefresh = {
+        // Check current MKCG data structure
+        checkDataStructure: () => {
+            const data = window.guestifyData?.mkcgData;
+            
+            console.group('🔍 MKCG Data Structure Analysis');
+            console.log('Has MKCG Data:', !!data);
+            
+            if (data) {
+                console.log('=== RAW MKCG DATA STRUCTURE ===');
+                console.log('Full MKCG Data Object:', data);
+                console.log('Top-level keys:', Object.keys(data));
+            } else {
+                console.error('❌ No MKCG data found in window.guestifyData.mkcgData');
+                console.log('window.guestifyData:', window.guestifyData);
+            }
+            
+            console.groupEnd();
+            return data;
+        },
+        
+        // Test refresh functionality
+        testRefresh: async () => {
+            console.log('🔄 Testing MKCG refresh functionality...');
+            try {
+                const result = await mkcgDataRefreshManager.checkForFreshData({ notifyUser: false });
+                console.log('✅ Refresh test result:', result);
+                return result;
+            } catch (error) {
+                console.error('❌ Refresh test failed with error:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                return { success: false, error: error.message, fullError: error };
+            }
+        }
+    };
+    
+    console.log('🔧 MKCG Refresh Debug Tools Available:');
+    console.log('  • mkcgDebugRefresh.checkDataStructure() - Show raw data structure');
+    console.log('  • mkcgDebugRefresh.testRefresh() - Test refresh functionality');
+}
 
 export { mkcgDataRefreshManager as default, MKCGDataRefreshManager };
