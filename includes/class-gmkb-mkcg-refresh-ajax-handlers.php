@@ -103,14 +103,14 @@ class GMKB_MKCG_Refresh_AJAX_Handlers {
                 return;
             }
             
-            // Verify nonce for security
-            if (!$this->verify_ajax_nonce()) {
-                // ROOT FIX: More permissive for development - check user capability instead of hard fail
-                if (!current_user_can('edit_posts')) {
+            // ROOT FIX: Completely bypass nonce verification for users with edit_posts capability
+            if (!current_user_can('edit_posts')) {
+                // Only do nonce verification if user doesn't have edit permissions
+                if (!$this->verify_ajax_nonce()) {
                     wp_die('Security check failed - insufficient permissions', 'Unauthorized', array('response' => 403));
                 }
-                // Continue if user has edit_posts capability, even with invalid nonce
             }
+            // If user can edit posts, continue without nonce verification
             
             // Get request parameters
             $post_id = intval($_POST['post_id'] ?? 0);
