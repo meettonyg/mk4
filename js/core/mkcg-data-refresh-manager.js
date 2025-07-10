@@ -59,6 +59,51 @@ class MKCGDataRefreshManager {
         // Initialize automatic checks if MKCG data is available
         this.initializeAutoChecks();
     }
+    
+    /**
+     * ROOT FIX: Direct test of the failing endpoint
+     */
+    async testFreshnessEndpoint() {
+            console.log('🔍 Testing freshness endpoint directly...');
+            
+            const postId = window.guestifyData?.postId || 32372;
+            const nonce = window.guestifyData?.nonce || '';
+            const timestamp = Date.now();
+            
+            console.log('Test parameters:', { postId, nonce, timestamp });
+            
+            try {
+                const response = await fetch('/wp-admin/admin-ajax.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'gmkb_check_mkcg_freshness',
+                        post_id: postId,
+                        client_timestamp: timestamp,
+                        nonce: nonce
+                    })
+                });
+                
+                console.log('Direct response status:', response.status);
+                console.log('Direct response OK:', response.ok);
+                
+                if (!response.ok) {
+                    const responseText = await response.text();
+                    console.error('Direct HTTP Error:', response.status, responseText.substring(0, 500));
+                    return { success: false, error: `HTTP ${response.status}`, responseText: responseText.substring(0, 500) };
+                }
+                
+                const result = await response.json();
+                console.log('✅ Direct freshness test result:', result);
+                return result;
+                
+            } catch (error) {
+                console.error('❌ Direct freshness test failed:', error);
+                return { success: false, error: error.message, type: 'direct-test' };
+            }
+        }
 
     /**
      * Initialize automatic data freshness checks
@@ -1395,6 +1440,13 @@ if (typeof window !== 'undefined') {
         // Test refresh functionality
         testRefresh: async () => {
             console.log('🔄 Testing MKCG refresh functionality...');
+            console.log('Available data:', {
+                postId: window.guestifyData?.postId,
+                hasMkcgData: !!window.guestifyData?.mkcgData,
+                ajaxUrl: window.guestifyData?.ajaxurl || window.ajaxurl || '/wp-admin/admin-ajax.php',
+                hasNonce: !!window.guestifyData?.nonce
+            });
+            
             try {
                 const result = await mkcgDataRefreshManager.checkForFreshData({ notifyUser: false });
                 console.log('✅ Refresh test result:', result);
@@ -1403,7 +1455,17 @@ if (typeof window !== 'undefined') {
                 console.error('❌ Refresh test failed with error:', error);
                 console.error('Error message:', error.message);
                 console.error('Error stack:', error.stack);
-                return { success: false, error: error.message, fullError: error };
+                
+                // Try to extract more error details
+                const errorDetails = {
+                    success: false, 
+                    error: error.message,
+                    errorName: error.name,
+                    stack: error.stack
+                };
+                
+                console.log('📛 Complete error details:', errorDetails);
+                return errorDetails;
             }
         },
         

@@ -55,11 +55,8 @@ class GMKB_MKCG_Data_Integration {
         add_action('deleted_post_meta', array($this, 'clear_meta_cache'), 10, 2);
         add_action('updated_post_meta', array($this, 'clear_meta_cache'), 10, 2);
         
-        // TASK 5: Add AJAX handlers for data refresh functionality
-        add_action('wp_ajax_gmkb_check_mkcg_freshness', array($this, 'ajax_check_mkcg_freshness'));
-        add_action('wp_ajax_gmkb_get_fresh_mkcg_data', array($this, 'ajax_get_fresh_mkcg_data'));
-        add_action('wp_ajax_gmkb_get_fresh_component_data', array($this, 'ajax_get_fresh_component_data'));
-        add_action('wp_ajax_gmkb_connectivity_test', array($this, 'ajax_connectivity_test'));
+        // TASK 5: AJAX handlers now managed by GMKB_MKCG_Refresh_AJAX_Handlers class
+        // Removed duplicate handlers to prevent conflicts
     }
     
     /**
@@ -638,36 +635,27 @@ class GMKB_MKCG_Data_Integration {
      * Detect which components have changed since client timestamp
      * 
      * @param int $post_id Post ID
-     * @param int $client_timestamp Client timestamp
+     * @param string $stored_hash Previous content hash
+     * @param string $current_hash Current content hash
      * @return array Array of changed component types
      */
-    private function detect_changed_components($post_id, $client_timestamp) {
+    private function detect_changed_components($post_id, $stored_hash, $current_hash) {
         $changed = array();
         
-        // Check each component type for recent updates
-        $component_checks = array(
-            'topics' => array('mkcg_topic_1', 'mkcg_topics_generated_date'),
-            'biography' => array('mkcg_biography_short', 'mkcg_biography_generated_date'),
-            'authority_hook' => array('mkcg_authority_hook_who', 'mkcg_authority_hook_generated_date'),
-            'questions' => array('mkcg_question_1', 'mkcg_questions_generated_date'),
-            'offers' => array('mkcg_offer_1_title', 'mkcg_offers_generated_date'),
-            'social_media' => array('mkcg_social_twitter', 'mkcg_social_generated_date')
-        );
-        
-        foreach ($component_checks as $component_type => $meta_keys) {
-            $data_key = $meta_keys[0];
-            $date_key = isset($meta_keys[1]) ? $meta_keys[1] : null;
+        // If hashes are different, assume all components with data might have changed
+        if ($stored_hash !== $current_hash) {
+            $component_checks = array(
+                'topics' => 'mkcg_topic_1',
+                'biography' => 'mkcg_biography_short',
+                'authority_hook' => 'mkcg_authority_hook_who',
+                'questions' => 'mkcg_question_1',
+                'offers' => 'mkcg_offer_1_title',
+                'social_media' => 'mkcg_social_twitter'
+            );
             
-            // Check if component has data
-            if (!empty(get_post_meta($post_id, $data_key, true))) {
-                // Check if component was updated after client timestamp
-                if ($date_key) {
-                    $component_date = get_post_meta($post_id, $date_key, true);
-                    if ($component_date && strtotime($component_date) > $client_timestamp) {
-                        $changed[] = $component_type;
-                    }
-                } else {
-                    // If no specific date, assume it might have changed
+            foreach ($component_checks as $component_type => $meta_key) {
+                // If component has data, mark it as potentially changed
+                if (!empty(get_post_meta($post_id, $meta_key, true))) {
                     $changed[] = $component_type;
                 }
             }
@@ -966,113 +954,8 @@ class GMKB_MKCG_Data_Integration {
     }
     
     // =======================
-    // TASK 5: AJAX HANDLERS
+    // TASK 5: AJAX HANDLERS - MOVED TO DEDICATED CLASS
     // =======================
-    
-    /**
-     * AJAX handler: Check MKCG data freshness
-     */
-    public function ajax_check_mkcg_freshness() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'wp_rest')) {
-            wp_send_json_error('Invalid nonce');
-            return;
-        }
-        
-        $post_id = intval($_POST['post_id'] ?? 0);
-        $client_timestamp = intval($_POST['client_timestamp'] ?? 0);
-        
-        if (!$post_id || !$client_timestamp) {
-            wp_send_json_error('Missing required parameters');
-            return;
-        }
-        
-        try {
-            $comparison = $this->compare_data_freshness($post_id, $client_timestamp);
-            wp_send_json_success($comparison);
-        } catch (Exception $e) {
-            wp_send_json_error('Failed to check freshness: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * AJAX handler: Get fresh MKCG data
-     */
-    public function ajax_get_fresh_mkcg_data() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'wp_rest')) {
-            wp_send_json_error('Invalid nonce');
-            return;
-        }
-        
-        $post_id = intval($_POST['post_id'] ?? 0);
-        
-        if (!$post_id) {
-            wp_send_json_error('Missing post ID');
-            return;
-        }
-        
-        try {
-            $fresh_data = $this->get_post_data($post_id);
-            
-            if ($fresh_data) {
-                wp_send_json_success(array(
-                    'data' => $fresh_data,
-                    'timestamp' => time(),
-                    'post_id' => $post_id
-                ));
-            } else {
-                wp_send_json_error('No MKCG data found for this post');
-            }
-        } catch (Exception $e) {
-            wp_send_json_error('Failed to get fresh data: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * AJAX handler: Get fresh component data
-     */
-    public function ajax_get_fresh_component_data() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'wp_rest')) {
-            wp_send_json_error('Invalid nonce');
-            return;
-        }
-        
-        $post_id = intval($_POST['post_id'] ?? 0);
-        $component_type = sanitize_text_field($_POST['component_type'] ?? '');
-        
-        if (!$post_id || !$component_type) {
-            wp_send_json_error('Missing required parameters');
-            return;
-        }
-        
-        try {
-            $component_data = $this->get_fresh_component_data($post_id, $component_type);
-            
-            if ($component_data) {
-                wp_send_json_success(array(
-                    'data' => $component_data,
-                    'component_type' => $component_type,
-                    'timestamp' => time(),
-                    'post_id' => $post_id
-                ));
-            } else {
-                wp_send_json_error('No data found for this component type');
-            }
-        } catch (Exception $e) {
-            wp_send_json_error('Failed to get component data: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * AJAX handler: Connectivity test
-     */
-    public function ajax_connectivity_test() {
-        wp_send_json_success(array(
-            'message' => 'Connectivity test successful',
-            'timestamp' => time(),
-            'server_time' => current_time('mysql')
-        ));
-    }
+    // AJAX handlers have been moved to GMKB_MKCG_Refresh_AJAX_Handlers class
+    // to prevent conflicts and provide better separation of concerns
 }
