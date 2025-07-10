@@ -90,13 +90,13 @@ class EnhancedStateManager {
         
         this.logger.info('STATE', 'Enhanced State Manager Phase 2.2 initialized with MKCG integration');
         
-        // GEMINI FIX: Don't auto-load in constructor - wait for proper initialization
-        // this.autoLoadSavedState(); // MOVED TO PROPER INIT SEQUENCE
+        // State loading will be handled by initializeAfterSystems() for proper coordination
     }
 
     /**
      * PHASE 2.2: Enhanced initialization after all systems are ready
      * Now includes comprehensive MKCG data awareness and intelligent auto-generation
+     * ROOT FIX: Ensures saved state loading happens properly
      */
     async initializeAfterSystems() {
         this.logger.info('STATE', 'Enhanced State Manager Phase 2.2: Starting comprehensive post-system initialization');
@@ -109,6 +109,13 @@ class EnhancedStateManager {
             const savedState = this.loadStateFromStorage();
             const hasExistingData = savedState && Object.keys(savedState.components || {}).length > 0;
             
+            this.logger.info('STATE', 'State loading check during initialization', {
+                hasSavedState: !!savedState,
+                hasExistingData,
+                componentCount: savedState ? Object.keys(savedState.components || {}).length : 0,
+                mkcgAvailable: this.mkcgIntegration.dataAvailable
+            });
+            
             // Step 3: Intelligent auto-initialization based on data availability
             if (this.mkcgIntegration.dataAvailable && this.mkcgIntegration.autoGenerationEnabled) {
                 if (hasExistingData) {
@@ -119,12 +126,36 @@ class EnhancedStateManager {
                     await this.autoGenerateComponentsFromMKCG();
                 }
             } else if (hasExistingData) {
-                // Standard state restoration
+                // ROOT FIX: Standard state restoration with proper notification
                 this.state = savedState;
+                
+                // Emit state loading event for coordination
+                this.eventBus.emit('state:loading-saved-state', {
+                    componentCount: Object.keys(savedState.components || {}).length,
+                    source: 'initializeAfterSystems'
+                });
+                
+                // Critical: Notify all subscribers including renderer
                 this.notifySubscribers();
-                this.logger.info('STATE', 'State restored from storage without MKCG integration');
+                
+                // Emit state ready event
+                this.eventBus.emit('state:loaded-and-ready', {
+                    state: savedState,
+                    source: 'initializeAfterSystems',
+                    componentCount: Object.keys(savedState.components || {}).length
+                });
+                
+                this.logger.info('STATE', 'State restored from storage during initialization', {
+                    components: Object.keys(savedState.components || {}).length,
+                    layout: (savedState.layout || []).length
+                });
             } else {
                 this.logger.info('STATE', 'Starting with empty state - no saved data or MKCG data available');
+                
+                // Emit empty state event
+                this.eventBus.emit('state:empty-state-initialized', {
+                    source: 'initializeAfterSystems'
+                });
             }
             
             // Step 4: Initialize cross-component synchronization
@@ -139,7 +170,8 @@ class EnhancedStateManager {
             
         } catch (error) {
             this.logger.error('STATE', 'Error during Phase 2.2 enhanced initialization', error);
-            // Fallback to basic initialization
+            // ROOT FIX: Enhanced fallback with proper state loading
+            this.logger.info('STATE', 'Falling back to basic auto-load saved state');
             this.autoLoadSavedState();
         }
     }

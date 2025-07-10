@@ -1213,11 +1213,15 @@ class InitializationManager {
     /**
      * ROOT FIX: Coordinated state restoration using startup coordination manager
      * This prevents race conditions between MKCG data hydration and component rendering
+     * ENHANCED: Now includes enhanced state manager initialization
      */
     async coordinatedStateRestoration() {
         this.logger.info('INIT', 'Starting coordinated state restoration to prevent race conditions');
         
         try {
+            // ROOT FIX: First ensure enhanced state manager is initialized
+            await this.initializeEnhancedStateManager();
+            
             // Use startup coordination manager to handle the sequence
             const coordinationSuccess = await startupCoordinationManager.coordinateStartup({
                 enableMKCGHydration: true,
@@ -1242,6 +1246,56 @@ class InitializationManager {
             // Fallback to traditional state restoration
             this.logger.info('INIT', 'Falling back to traditional state restoration');
             await this.restoreState();
+        }
+    }
+    
+    /**
+     * ROOT FIX: Initialize enhanced state manager with saved state loading
+     */
+    async initializeEnhancedStateManager() {
+        this.logger.info('STATE', 'Initializing enhanced state manager with saved state loading');
+        
+        try {
+            // Check if enhanced state manager is available
+            if (!window.enhancedStateManager) {
+                this.logger.warn('STATE', 'Enhanced state manager not available - using fallback');
+                return false;
+            }
+            
+            // Check if initializeAfterSystems method exists
+            if (typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
+                this.logger.info('STATE', 'Calling enhanced state manager initializeAfterSystems');
+                await window.enhancedStateManager.initializeAfterSystems();
+                this.logger.info('STATE', 'Enhanced state manager initialization completed successfully');
+                return true;
+            } else {
+                // Fallback to basic auto-load
+                this.logger.warn('STATE', 'initializeAfterSystems not available, using autoLoadSavedState fallback');
+                if (typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
+                    window.enhancedStateManager.autoLoadSavedState();
+                    this.logger.info('STATE', 'Fallback auto-load saved state completed');
+                    return true;
+                }
+            }
+            
+            this.logger.warn('STATE', 'No enhanced state manager initialization methods available');
+            return false;
+            
+        } catch (error) {
+            this.logger.error('STATE', 'Enhanced state manager initialization failed', error);
+            
+            // Try basic fallback
+            try {
+                if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
+                    window.enhancedStateManager.autoLoadSavedState();
+                    this.logger.info('STATE', 'Emergency fallback auto-load completed');
+                    return true;
+                }
+            } catch (fallbackError) {
+                this.logger.error('STATE', 'Emergency fallback also failed', fallbackError);
+            }
+            
+            return false;
         }
     }
 

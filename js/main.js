@@ -62,11 +62,20 @@ import './ui/toolbar-interactions.js';
 // ROOT FIX: Import save diagnostics for debugging save issues
 import './utils/save-diagnostics.js';
 
+// ROOT FIX: Import undo/redo diagnostics for debugging undo/redo issues
+import './utils/undo-redo-diagnostics.js';
+
 // ROOT FIX: Import and expose save service early
 import { saveService } from './services/save-service.js';
 
 // ROOT FIX: Import and expose enhanced state manager early
 import { enhancedStateManager } from './core/enhanced-state-manager.js';
+
+// ROOT FIX: Import and expose state history early for undo/redo
+import { stateHistory } from './core/state-history.js';
+
+// ROOT FIX: Import state loading validation test
+import './tests/test-state-loading-fix.js';
 
 // Expose global objects for debugging and monitoring
 window.mk = {};
@@ -79,6 +88,10 @@ console.log('✅ Save service exposed globally:', !!window.saveService);
 // ROOT FIX: Ensure enhanced state manager is exposed globally early
 window.enhancedStateManager = enhancedStateManager;
 console.log('✅ Enhanced state manager exposed globally:', !!window.enhancedStateManager);
+
+// ROOT FIX: Ensure state history is exposed globally early for undo/redo
+window.stateHistory = stateHistory;
+console.log('✅ State history exposed globally:', !!window.stateHistory);
 
 // ROOT FIX: Expose save system commands
 window.triggerSave = () => {
@@ -107,22 +120,330 @@ window.attemptSaveFixes = async () => {
     }
 };
 
-// ROOT FIX: Quick verification command
-window.verifySaveFix = () => {
-    console.log('🔍 Verifying Save System Fix...');
+// ROOT FIX: Expose undo/redo commands
+window.triggerUndo = () => {
+    if (window.stateHistory && window.stateHistory.undo) {
+        const success = window.stateHistory.undo();
+        console.log(success ? '✅ Undo successful' : '⚠️ Nothing to undo');
+        return success;
+    } else {
+        console.warn('⚠️ State history not available');
+        return false;
+    }
+};
+
+window.triggerRedo = () => {
+    if (window.stateHistory && window.stateHistory.redo) {
+        const success = window.stateHistory.redo();
+        console.log(success ? '✅ Redo successful' : '⚠️ Nothing to redo');
+        return success;
+    } else {
+        console.warn('⚠️ State history not available');
+        return false;
+    }
+};
+
+// ROOT FIX: Expose undo/redo diagnostic commands
+window.runUndoRedoDiagnostics = async () => {
+    if (window.undoRedoDiagnostics) {
+        await window.undoRedoDiagnostics.runDiagnostics();
+    } else {
+        console.warn('⚠️ Undo/redo diagnostics not available');
+    }
+};
+
+window.attemptUndoRedoFixes = async () => {
+    if (window.undoRedoDiagnostics) {
+        await window.undoRedoDiagnostics.attemptQuickFixes();
+    } else {
+        console.warn('⚠️ Undo/redo diagnostics not available');
+    }
+};
+
+// ROOT FIX: Test undo/redo functionality
+window.testUndoRedo = () => {
+    console.log('↩️ Testing Undo/Redo Functionality...\n');
+    
+    const results = {
+        passed: 0,
+        failed: 0,
+        tests: []
+    };
+    
+    function test(name, condition, critical = false) {
+        const status = condition ? 'PASS' : 'FAIL';
+        const icon = condition ? '✅' : '❌';
+        
+        console.log(`${icon} ${name}: ${status}`);
+        
+        results.tests.push({ name, status, critical });
+        
+        if (condition) {
+            results.passed++;
+        } else {
+            results.failed++;
+        }
+    }
+    
+    // Core undo/redo system tests
+    test('State History Available', !!window.stateHistory, true);
+    test('Undo Button Element Exists', !!document.getElementById('undo-btn'), true);
+    test('Redo Button Element Exists', !!document.getElementById('redo-btn'), true);
+    
+    // Functionality tests
+    if (window.stateHistory) {
+        test('State History Has undo Method', typeof window.stateHistory.undo === 'function', true);
+        test('State History Has redo Method', typeof window.stateHistory.redo === 'function', true);
+        test('State History Has canUndo Method', typeof window.stateHistory.canUndo === 'function', true);
+        test('State History Has canRedo Method', typeof window.stateHistory.canRedo === 'function', true);
+        
+        // State tests
+        const canUndo = window.stateHistory.canUndo();
+        const canRedo = window.stateHistory.canRedo();
+        
+        console.log(`\n📊 Current Undo/Redo State:`);
+        console.log(`  Can Undo: ${canUndo}`);
+        console.log(`  Can Redo: ${canRedo}`);
+        
+        // Button state tests
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+        
+        if (undoBtn) {
+            test('Undo Button State Matches History', undoBtn.disabled === !canUndo, false);
+        }
+        
+        if (redoBtn) {
+            test('Redo Button State Matches History', redoBtn.disabled === !canRedo, false);
+        }
+    }
+    
+    // Summary
+    console.log('\n📋 Undo/Redo Test Summary:');
+    console.log(`  ✅ Passed: ${results.passed}`);
+    console.log(`  ❌ Failed: ${results.failed}`);
+    
+    if (results.failed === 0) {
+        console.log('\n🎉 All undo/redo tests passed!');
+        console.log('💡 Try adding a component and then clicking undo/redo buttons.');
+        return true;
+    } else {
+        console.log('\n⚠️ Some undo/redo tests failed. Check the individual results above.');
+        return false;
+    }
+};
+
+// ROOT FIX: Quick verification command for all toolbar systems
+window.verifyToolbarSystems = () => {
+    console.log('🔍 Verifying All Toolbar Systems...');
     console.log('Save Service Available:', !!window.saveService);
     console.log('Enhanced State Manager Available:', !!window.enhancedStateManager);
+    console.log('State History Available:', !!window.stateHistory);
     console.log('Toolbar Interactions Available:', !!window.toolbarInteractions);
     
-    if (window.saveService && window.enhancedStateManager) {
+    // Additional checks
+    if (window.stateHistory) {
+        console.log('State History Enabled:', window.stateHistory.isEnabled);
+        console.log('Can Undo:', window.stateHistory.canUndo());
+        console.log('Can Redo:', window.stateHistory.canRedo());
+    }
+    
+    const allSystemsReady = window.saveService && window.enhancedStateManager && window.stateHistory;
+    
+    if (allSystemsReady) {
         console.log('✅ All core systems are now available!');
         console.log('💡 Try clicking the save button or run triggerSave() to test.');
+        console.log('↩️ Try adding a component and then using undo/redo buttons.');
         return true;
     } else {
         console.log('❌ Some systems are still missing. Try refreshing the page.');
         return false;
     }
 };
+
+// ROOT FIX: State loading diagnostics
+window.runStateLoadingDiagnostics = () => {
+    console.log('🚀 Running State Loading Diagnostics...');
+    
+    const results = {
+        passed: 0,
+        failed: 0,
+        tests: []
+    };
+    
+    function test(name, condition, critical = false) {
+        const status = condition ? 'PASS' : 'FAIL';
+        const icon = condition ? '✅' : '❌';
+        
+        console.log(`${icon} ${name}: ${status}`);
+        
+        results.tests.push({ name, status, critical });
+        
+        if (condition) {
+            results.passed++;
+        } else {
+            results.failed++;
+        }
+    }
+    
+    // Core state loading tests
+    test('Enhanced State Manager Available', !!window.enhancedStateManager, true);
+    test('State Manager Has getState Method', !!window.enhancedStateManager?.getState, true);
+    test('State Manager Has loadStateFromStorage Method', typeof window.enhancedStateManager?.loadStateFromStorage === 'function', true);
+    test('State Manager Has autoLoadSavedState Method', typeof window.enhancedStateManager?.autoLoadSavedState === 'function', true);
+    test('State Manager Has initializeAfterSystems Method', typeof window.enhancedStateManager?.initializeAfterSystems === 'function', true);
+    
+    // Check localStorage
+    const hasLocalStorageData = !!localStorage.getItem('guestifyMediaKitState');
+    test('Has Saved Data in localStorage', hasLocalStorageData, false);
+    
+    if (hasLocalStorageData) {
+        try {
+            const savedData = JSON.parse(localStorage.getItem('guestifyMediaKitState'));
+            test('Saved Data is Valid JSON', !!savedData, false);
+            test('Saved Data Has Components', !!(savedData.components || savedData.c), false);
+            
+            const componentCount = Object.keys(savedData.components || savedData.c || {}).length;
+            test('Saved Data Has Components with Count > 0', componentCount > 0, false);
+            
+            console.log(`\n📊 Saved Data Summary:`);
+            console.log(`  Components: ${componentCount}`);
+            console.log(`  Layout: ${(savedData.layout || savedData.l || []).length}`);
+            console.log(`  Version: ${savedData.meta?.version || savedData.v || 'unknown'}`);
+        } catch (error) {
+            test('Saved Data Parse Error', false, true);
+            console.error('  Parse Error:', error.message);
+        }
+    }
+    
+    // Current state tests
+    if (window.enhancedStateManager) {
+        const currentState = window.enhancedStateManager.getState();
+        test('Current State Available', !!currentState, true);
+        
+        if (currentState) {
+            const currentComponentCount = Object.keys(currentState.components || {}).length;
+            test('Current State Has Components Object', !!(currentState.components), false);
+            test('Current State Components Loaded', currentComponentCount > 0, false);
+            
+            console.log(`\n📊 Current State Summary:`);
+            console.log(`  Components: ${currentComponentCount}`);
+            console.log(`  Layout: ${(currentState.layout || []).length}`);
+            console.log(`  Version: ${currentState.version || 'unknown'}`);
+        }
+    }
+    
+    // Renderer tests
+    test('Renderer Available', !!window.renderer, false);
+    test('Renderer Initialized', !!window.renderer?.initialized, false);
+    
+    // DOM tests
+    const previewElement = document.getElementById('media-kit-preview');
+    test('Preview Element Exists', !!previewElement, true);
+    
+    if (previewElement) {
+        const hasComponents = previewElement.children.length > 1; // More than just empty state
+        test('Preview Element Has Rendered Components', hasComponents, false);
+        
+        console.log(`\n📊 DOM State:`);
+        console.log(`  Preview Element Children: ${previewElement.children.length}`);
+        console.log(`  Has Components Rendered: ${hasComponents}`);
+    }
+    
+    // Summary
+    console.log('\n📋 State Loading Diagnostic Summary:');
+    console.log(`  ✅ Passed: ${results.passed}`);
+    console.log(`  ❌ Failed: ${results.failed}`);
+    
+    if (results.failed === 0) {
+        console.log('\n🎉 All state loading diagnostics passed!');
+        return true;
+    } else {
+        console.log('\n⚠️ Some state loading diagnostics failed. Check the individual results above.');
+        const criticalFailures = results.tests.filter(t => t.status === 'FAIL' && t.critical);
+        if (criticalFailures.length > 0) {
+            console.log('❌ Critical failures detected:');
+            criticalFailures.forEach(t => console.log(`   - ${t.name}`));
+        }
+        return false;
+    }
+};
+
+// ROOT FIX: Manual state loading test
+window.testStateLoading = async () => {
+    console.log('🧪 Testing Manual State Loading...');
+    
+    if (!window.enhancedStateManager) {
+        console.error('❌ Enhanced state manager not available');
+        return false;
+    }
+    
+    try {
+        // Test loading from storage
+        console.log('🔄 Testing loadStateFromStorage...');
+        const loadedState = window.enhancedStateManager.loadStateFromStorage();
+        
+        if (loadedState) {
+            console.log('✅ loadStateFromStorage returned data:', {
+                components: Object.keys(loadedState.components || {}).length,
+                layout: (loadedState.layout || []).length
+            });
+            
+            // Test applying the loaded state
+            console.log('🔄 Testing state application...');
+            const currentState = window.enhancedStateManager.getState();
+            const beforeCount = Object.keys(currentState.components || {}).length;
+            
+            // Call the auto-load method
+            window.enhancedStateManager.autoLoadSavedState();
+            
+            const afterState = window.enhancedStateManager.getState();
+            const afterCount = Object.keys(afterState.components || {}).length;
+            
+            console.log('✅ State application test:', {
+                beforeComponents: beforeCount,
+                afterComponents: afterCount,
+                stateChanged: beforeCount !== afterCount
+            });
+            
+            if (afterCount > 0) {
+                console.log('🎉 State loading test successful!');
+                return true;
+            } else {
+                console.log('⚠️ State loaded but no components found');
+                return false;
+            }
+        } else {
+            console.log('⚠️ No saved state found in localStorage');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ State loading test failed:', error);
+        return false;
+    }
+};
+
+// ROOT FIX: Force reload saved state
+window.forceReloadSavedState = () => {
+    console.log('🔄 Force reloading saved state...');
+    
+    if (!window.enhancedStateManager) {
+        console.error('❌ Enhanced state manager not available');
+        return false;
+    }
+    
+    try {
+        window.enhancedStateManager.autoLoadSavedState();
+        console.log('✅ Force reload completed - check if components appeared');
+        return true;
+    } catch (error) {
+        console.error('❌ Force reload failed:', error);
+        return false;
+    }
+};
+
+// ROOT FIX: Legacy alias for backwards compatibility
+window.verifySaveFix = window.verifyToolbarSystems;
 
 // Expose logging console commands
 window.mkLog = {
@@ -167,10 +488,27 @@ window.mkLog = {
         console.log('\n💾 Save System Commands:');
         console.log('  testSaveButton()        - Test save button functionality');
         console.log('  triggerSave()           - Manually trigger save');
-        console.log('  verifySaveFix()         - Quick verification of save system fix');
+        console.log('  verifyToolbarSystems()  - Quick verification of all toolbar systems');
+        console.log('  verifySaveFix()         - Legacy alias for verifyToolbarSystems()');
         console.log('  runSaveDiagnostics()    - Comprehensive save system diagnostics');
         console.log('  attemptSaveFixes()      - Try automatic fixes for save issues');
         console.log('  toolbarInteractions.debug() - Debug toolbar state');
+        console.log('\n↩️ Undo/Redo Commands:');
+        console.log('  testUndoRedo()          - Test undo/redo functionality');
+        console.log('  triggerUndo()           - Manually trigger undo');
+        console.log('  triggerRedo()           - Manually trigger redo');
+        console.log('  runUndoRedoDiagnostics() - Comprehensive undo/redo diagnostics');
+        console.log('  attemptUndoRedoFixes()  - Try automatic fixes for undo/redo issues');
+        console.log('  stateHistory.debug()    - Debug state history');
+        console.log('  stateHistory.undo()     - Direct undo call');
+        console.log('  stateHistory.redo()     - Direct redo call');
+            console.log('\n🔄 ROOT FIX: State Loading Commands:');
+            console.log('  validateStateLoadingFix() - COMPREHENSIVE validation of state loading fix');
+            console.log('  runStateLoadingDiagnostics() - Comprehensive state loading diagnostics');
+            console.log('  testStateLoading()      - Test manual state loading functionality');
+            console.log('  forceReloadSavedState() - Force reload saved state from localStorage');
+            console.log('  enhancedStateManager.debug() - Debug enhanced state manager');
+            console.log('  enhancedStateManager.autoLoadSavedState() - Manual auto-load call');
     }
 };
 
@@ -358,6 +696,20 @@ async function initializeBuilder() {
         
         // Step 4: Validate that enhanced component manager is available
         await validateEnhancedComponentManager();
+        
+        // ROOT FIX: Step 4.5: Initialize enhanced state manager after systems are ready
+        console.log('🚀 Initializing enhanced state manager after systems...');
+        if (window.enhancedStateManager && typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
+            await window.enhancedStateManager.initializeAfterSystems();
+            console.log('✅ Enhanced state manager post-system initialization completed');
+        } else {
+            console.warn('⚠️ Enhanced state manager initializeAfterSystems not available');
+            // Fallback to basic auto-load
+            if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
+                window.enhancedStateManager.autoLoadSavedState();
+                console.log('✅ Fallback: Enhanced state manager auto-load called');
+            }
+        }
         
         // Step 5: Use initialization manager for complete setup
         console.log('🚀 Running complete initialization sequence...');
