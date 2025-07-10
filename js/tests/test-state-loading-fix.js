@@ -23,7 +23,7 @@ export class StateLoadingFixValidator {
      */
     async validateStateLoadingFix() {
         console.group('🔄 ROOT FIX: State Loading Validation');
-        console.log('Testing saved component loading functionality...\n');
+        console.log('Testing saved component loading functionality...');
         
         // Test 1: Enhanced State Manager Availability
         this.test('Enhanced State Manager Available', !!window.enhancedStateManager, true);
@@ -259,7 +259,7 @@ export class StateLoadingFixValidator {
     validateEventSystemIntegration() {
         console.log('📡 Validating event system integration...');
         
-        this.test('Event Bus Available', !!window.eventBus || !!window.eventBus, false);
+        this.test('Event Bus Available', !!window.eventBus, false);
         
         // Check if state manager emits events
         let eventReceived = false;
@@ -332,12 +332,14 @@ export class StateLoadingFixValidator {
         const status = condition ? 'PASS' : 'FAIL';
         const icon = condition ? '✅' : '❌';
         
-        console.log(`  ${icon} ${name}: ${status}`);\n        
+        console.log(`  ${icon} ${name}: ${status}`);
+        
         this.results.tests.push({ name, status, critical });
         
         if (condition) {
             this.results.passed++;
-        } else {\n            this.results.failed++;
+        } else {
+            this.results.failed++;
         }
     }
     
@@ -345,17 +347,17 @@ export class StateLoadingFixValidator {
      * Show validation results
      */
     showResults() {
-        console.log('\\n📋 State Loading Fix Validation Summary:');
+        console.log('\n📋 State Loading Fix Validation Summary:');
         console.log(`  ✅ Passed: ${this.results.passed}`);
         console.log(`  ❌ Failed: ${this.results.failed}`);
         
         if (this.results.failed === 0) {
-            console.log('\\n🎉 All state loading validation tests passed!');
+            console.log('\n🎉 All state loading validation tests passed!');
             console.log('💡 The state loading fix appears to be working correctly.');
             console.log('🔄 Try refreshing the page to test the full save/load cycle.');
             return true;
         } else {
-            console.log('\\n⚠️ Some state loading validation tests failed.');
+            console.log('\n⚠️ Some state loading validation tests failed.');
             const criticalFailures = this.results.tests.filter(t => t.status === 'FAIL' && t.critical);
             if (criticalFailures.length > 0) {
                 console.log('❌ Critical failures detected:');

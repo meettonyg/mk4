@@ -176,7 +176,7 @@ class GMKB_Enhanced_System {
     }
     
     /**
-     * CRITICAL FIX: Enhanced initialization with error handling
+     * CRITICAL FIX: Enhanced initialization with error handling and state loading coordination
      */
     public function init() {
         try {
@@ -186,6 +186,9 @@ class GMKB_Enhanced_System {
             // CRITICAL FIX: Enhanced initialization coordination (with safe detection)
             if ($this->safe_is_builder_page()) {
                 $this->setup_enhanced_environment();
+                
+                // ROOT FIX: Add critical footer hook for state loading coordination
+                add_action('wp_footer', array($this, 'inject_state_loading_coordination'), 998);
             }
         } catch (Exception $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -239,6 +242,92 @@ class GMKB_Enhanced_System {
         <div class="notice notice-success is-dismissible">
             <p><strong>GMKB Enhanced System Active:</strong> Phase 1 fixes are running with improved race condition prevention.</p>
         </div>
+        <?php
+    }
+    
+    /**
+     * ROOT FIX: Inject state loading coordination script
+     * This ensures the enhanced state manager's initializeAfterSystems is called
+     */
+    public function inject_state_loading_coordination() {
+        if (!$this->is_builder_page()) {
+            return;
+        }
+        
+        ?>
+        <script id="gmkb-state-loading-coordination">
+            /* ROOT FIX: Enhanced State Loading Coordination */
+            (function() {
+                console.log('🔄 ROOT FIX: State loading coordination injected');
+                
+                // Wait for enhanced state manager to be available
+                function waitForEnhancedStateManager() {
+                    return new Promise((resolve, reject) => {
+                        let attempts = 0;
+                        const maxAttempts = 50; // 5 seconds max
+                        
+                        function check() {
+                            attempts++;
+                            
+                            if (window.enhancedStateManager && 
+                                typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
+                                console.log('✅ ROOT FIX: Enhanced state manager found, calling initializeAfterSystems');
+                                resolve(window.enhancedStateManager);
+                            } else if (attempts >= maxAttempts) {
+                                console.error('❌ ROOT FIX: Enhanced state manager not found after timeout');
+                                reject(new Error('Enhanced state manager not available'));
+                            } else {
+                                setTimeout(check, 100);
+                            }
+                        }
+                        
+                        check();
+                    });
+                }
+                
+                // Coordinate state loading after all systems are ready
+                async function coordinateStateLoading() {
+                    try {
+                        const stateManager = await waitForEnhancedStateManager();
+                        
+                        // Call the critical initializeAfterSystems method
+                        await stateManager.initializeAfterSystems();
+                        
+                        console.log('🎉 ROOT FIX: State loading coordination completed successfully');
+                        
+                        // Emit coordination complete event
+                        window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationComplete', {
+                            detail: {
+                                timestamp: Date.now(),
+                                source: 'php-coordination'
+                            }
+                        }));
+                        
+                    } catch (error) {
+                        console.error('❌ ROOT FIX: State loading coordination failed:', error);
+                        
+                        // Emit failure event
+                        window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationFailed', {
+                            detail: {
+                                error: error.message,
+                                timestamp: Date.now()
+                            }
+                        }));
+                    }
+                }
+                
+                // Start coordination when DOM is ready or systems are initialized
+                if (document.readyState === 'complete') {
+                    coordinateStateLoading();
+                } else {
+                    window.addEventListener('load', coordinateStateLoading);
+                }
+                
+                // Also listen for system initialization events
+                window.addEventListener('mediaKitBuilderReady', coordinateStateLoading);
+                
+            })();
+        </script>
         <?php
     }
     
@@ -429,4 +518,37 @@ private function is_builder_page() {
 new GMKB_Enhanced_System();
 
 // Include enhanced AJAX handlers
-require_once GMKB_PLUGIN_DIR . 'includes/enhanced-ajax.php';
+require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
+
+// ROOT FIX: Add action to ensure template completion events are properly dispatched
+add_action('wp_footer', function() {
+    if (is_page('guestify-media-kit') || is_page('media-kit') || 
+        (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE)) {
+        ?>
+        <script id="gmkb-template-completion-fix">
+        /* ROOT FIX: Ensure template completion event is dispatched */
+        (function() {
+            if (!window.gmkbTemplateCompleteDispatched) {
+                console.log('🔄 ROOT FIX: Ensuring template completion event dispatch');
+                
+                setTimeout(() => {
+                    if (!window.gmkbTemplateCompleteDispatched) {
+                        console.log('✅ ROOT FIX: Dispatching missing template completion event');
+                        
+                        window.gmkbTemplateCompleteDispatched = true;
+                        document.dispatchEvent(new CustomEvent('gmkbTemplateComplete', {
+                            detail: {
+                                source: 'enhanced-init-fallback',
+                                timestamp: Date.now(),
+                                allModalsReady: true,
+                                templateVersion: 'enhanced-init-fixed'
+                            }
+                        }));
+                    }
+                }, 500); // Give normal dispatch a chance first
+            }
+        })();
+        </script>
+        <?php
+    }
+}, 999);

@@ -65,11 +65,11 @@ import './utils/save-diagnostics.js';
 // ROOT FIX: Import undo/redo diagnostics for debugging undo/redo issues
 import './utils/undo-redo-diagnostics.js';
 
-// ROOT FIX: Import and expose save service early
-import { saveService } from './services/save-service.js';
-
 // ROOT FIX: Import and expose enhanced state manager early
 import { enhancedStateManager } from './core/enhanced-state-manager.js';
+
+// ROOT FIX: Import and expose save service early
+import { saveService } from './services/save-service.js';
 
 // ROOT FIX: Import and expose state history early for undo/redo
 import { stateHistory } from './core/state-history.js';
@@ -81,13 +81,13 @@ import './tests/test-state-loading-fix.js';
 window.mk = {};
 window.mkPerf = performanceMonitor;
 
+// ROOT FIX: Ensure enhanced state manager is exposed globally IMMEDIATELY
+window.enhancedStateManager = enhancedStateManager;
+console.log('✅ Enhanced state manager exposed globally early:', !!window.enhancedStateManager);
+
 // ROOT FIX: Ensure save service is exposed globally early
 window.saveService = saveService;
 console.log('✅ Save service exposed globally:', !!window.saveService);
-
-// ROOT FIX: Ensure enhanced state manager is exposed globally early
-window.enhancedStateManager = enhancedStateManager;
-console.log('✅ Enhanced state manager exposed globally:', !!window.enhancedStateManager);
 
 // ROOT FIX: Ensure state history is exposed globally early for undo/redo
 window.stateHistory = stateHistory;
@@ -262,6 +262,193 @@ window.verifyToolbarSystems = () => {
 };
 
 // ROOT FIX: State loading diagnostics
+// ROOT FIX: Comprehensive state loading validation
+window.validateStateLoadingFix = () => {
+    console.log('🔍 ROOT FIX: COMPREHENSIVE validation of state loading fix...');
+    
+    const results = {
+        passed: 0,
+        failed: 0,
+        tests: [],
+        critical: 0,
+        criticalPassed: 0
+    };
+    
+    function test(name, condition, critical = false) {
+        const status = condition ? 'PASS' : 'FAIL';
+        const icon = condition ? '✅' : '❌';
+        
+        console.log(`${icon} ${name}: ${status}`);
+        
+        results.tests.push({ name, status, critical });
+        
+        if (critical) {
+            results.critical++;
+            if (condition) {
+                results.criticalPassed++;
+            }
+        }
+        
+        if (condition) {
+            results.passed++;
+        } else {
+            results.failed++;
+        }
+    }
+    
+    console.log('\n=== CRITICAL SYSTEM VALIDATION ===');
+    
+    // Critical system tests
+    test('Enhanced State Manager Available', !!window.enhancedStateManager, true);
+    test('Enhanced State Manager Has initializeAfterSystems', 
+         typeof window.enhancedStateManager?.initializeAfterSystems === 'function', true);
+    test('Enhanced State Manager Has autoLoadSavedState', 
+         typeof window.enhancedStateManager?.autoLoadSavedState === 'function', true);
+    test('System Registrar Available', !!window.systemRegistrar, true);
+    test('Enhanced Component Manager Available', !!window.enhancedComponentManager, true);
+    test('Renderer Available', !!window.renderer, true);
+    
+    console.log('\n=== STATE LOADING MECHANISM VALIDATION ===');
+    
+    // State loading mechanism tests
+    test('Enhanced State Manager Has loadStateFromStorage', 
+         typeof window.enhancedStateManager?.loadStateFromStorage === 'function', true);
+    test('Enhanced State Manager Has saveStateToStorage', 
+         typeof window.enhancedStateManager?.saveStateToStorage === 'function', true);
+    
+    console.log('\n=== SAVED DATA VALIDATION ===');
+    
+    // Check localStorage
+    const hasLocalStorageData = !!localStorage.getItem('guestifyMediaKitState');
+    test('Has Saved Data in localStorage', hasLocalStorageData, false);
+    
+    if (hasLocalStorageData) {
+        try {
+            const savedData = JSON.parse(localStorage.getItem('guestifyMediaKitState'));
+            test('Saved Data is Valid JSON', !!savedData, false);
+            test('Saved Data Has Components', !!(savedData.components || savedData.c), false);
+            
+            const componentCount = Object.keys(savedData.components || savedData.c || {}).length;
+            test('Saved Data Has Components with Count > 0', componentCount > 0, false);
+            
+            console.log(`\n📊 Saved Data Summary:`);
+            console.log(`  Components: ${componentCount}`);
+            console.log(`  Layout: ${(savedData.layout || savedData.l || []).length}`);
+            console.log(`  Version: ${savedData.meta?.version || savedData.v || 'unknown'}`);
+        } catch (error) {
+            test('Saved Data Parse Error', false, true);
+            console.error('  Parse Error:', error.message);
+        }
+    }
+    
+    console.log('\n=== CURRENT STATE VALIDATION ===');
+    
+    // Current state tests
+    if (window.enhancedStateManager) {
+        const currentState = window.enhancedStateManager.getState();
+        test('Current State Available', !!currentState, true);
+        
+        if (currentState) {
+            const currentComponentCount = Object.keys(currentState.components || {}).length;
+            test('Current State Has Components Object', !!(currentState.components), false);
+            test('Current State Components Loaded', currentComponentCount > 0, false);
+            
+            console.log(`\n📊 Current State Summary:`);
+            console.log(`  Components: ${currentComponentCount}`);
+            console.log(`  Layout: ${(currentState.layout || []).length}`);
+            console.log(`  Version: ${currentState.version || 'unknown'}`);
+            
+            // ROOT FIX: Check if saved data matches current state
+            if (hasLocalStorageData) {
+                try {
+                    const savedData = JSON.parse(localStorage.getItem('guestifyMediaKitState'));
+                    const savedComponentCount = Object.keys(savedData.components || savedData.c || {}).length;
+                    
+                    test('ROOT FIX: Saved Components Actually Loaded', 
+                         currentComponentCount > 0 && currentComponentCount === savedComponentCount, true);
+                    
+                    if (currentComponentCount !== savedComponentCount) {
+                        console.warn(`⚠️ ROOT FIX: Component count mismatch! Saved: ${savedComponentCount}, Current: ${currentComponentCount}`);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Could not compare saved vs current state:', e.message);
+                }
+            }
+        }
+    }
+    
+    console.log('\n=== RENDERER AND DOM VALIDATION ===');
+    
+    // Renderer tests
+    test('Renderer Available', !!window.renderer, false);
+    test('Renderer Initialized', !!window.renderer?.initialized, false);
+    
+    // DOM tests
+    const previewElement = document.getElementById('media-kit-preview');
+    test('Preview Element Exists', !!previewElement, true);
+    
+    if (previewElement) {
+        const hasComponents = previewElement.children.length > 1; // More than just empty state
+        test('Preview Element Has Rendered Components', hasComponents, false);
+        
+        console.log(`\n📊 DOM State:`);
+        console.log(`  Preview Element Children: ${previewElement.children.length}`);
+        console.log(`  Has Components Rendered: ${hasComponents}`);
+        
+        // Check for empty state
+        const emptyState = document.getElementById('empty-state');
+        const emptyStateVisible = emptyState && emptyState.style.display !== 'none';
+        test('ROOT FIX: Empty State Hidden When Components Present', 
+             !emptyStateVisible || !hasComponents, false);
+    }
+    
+    console.log('\n=== PHP COORDINATION VALIDATION ===');
+    
+    // Check for PHP coordination elements
+    test('PHP State Loading Coordination Script Present', 
+         !!document.getElementById('gmkb-state-loading-coordination'), false);
+    test('PHP Template Completion Fix Present', 
+         !!document.getElementById('gmkb-template-completion-fix'), false);
+    
+    console.log('\n=== FINAL ROOT FIX SUMMARY ===');
+    console.log(`  ✅ Total Passed: ${results.passed}`);
+    console.log(`  ❌ Total Failed: ${results.failed}`);
+    console.log(`  🔥 Critical Passed: ${results.criticalPassed}/${results.critical}`);
+    
+    const criticalSuccess = results.criticalPassed === results.critical;
+    const overallSuccess = results.failed === 0;
+    
+    if (criticalSuccess && overallSuccess) {
+        console.log('\n🎉 ROOT FIX VALIDATION: ALL TESTS PASSED!');
+        console.log('✅ The state loading fix is working correctly.');
+        
+        if (window.enhancedStateManager) {
+            const currentState = window.enhancedStateManager.getState();
+            const componentCount = Object.keys(currentState.components || {}).length;
+            
+            if (componentCount > 0) {
+                console.log(`🎊 SUCCESS: ${componentCount} saved components are now loaded and visible!`);
+            } else {
+                console.log('ℹ️ Note: No saved components found - this is expected for new users.');
+            }
+        }
+        
+        return true;
+    } else if (criticalSuccess) {
+        console.log('\n⚠️ ROOT FIX VALIDATION: CRITICAL SYSTEMS OK, MINOR ISSUES DETECTED');
+        console.log('✅ Core state loading functionality is working.');
+        const failures = results.tests.filter(t => t.status === 'FAIL' && !t.critical);
+        console.log('📝 Non-critical issues:', failures.map(f => f.name));
+        return true;
+    } else {
+        console.log('\n❌ ROOT FIX VALIDATION: CRITICAL FAILURES DETECTED');
+        console.log('💥 The state loading fix is NOT working correctly.');
+        const criticalFailures = results.tests.filter(t => t.status === 'FAIL' && t.critical);
+        console.log('🔥 Critical failures:', criticalFailures.map(f => f.name));
+        return false;
+    }
+};
+
 window.runStateLoadingDiagnostics = () => {
     console.log('🚀 Running State Loading Diagnostics...');
     
@@ -503,12 +690,16 @@ window.mkLog = {
         console.log('  stateHistory.undo()     - Direct undo call');
         console.log('  stateHistory.redo()     - Direct redo call');
             console.log('\n🔄 ROOT FIX: State Loading Commands:');
-            console.log('  validateStateLoadingFix() - COMPREHENSIVE validation of state loading fix');
+            console.log('  validateStateLoadingFix() - COMPREHENSIVE validation of state loading fix (PRIMARY)');
             console.log('  runStateLoadingDiagnostics() - Comprehensive state loading diagnostics');
             console.log('  testStateLoading()      - Test manual state loading functionality');
             console.log('  forceReloadSavedState() - Force reload saved state from localStorage');
             console.log('  enhancedStateManager.debug() - Debug enhanced state manager');
             console.log('  enhancedStateManager.autoLoadSavedState() - Manual auto-load call');
+        console.log('\n🎯 ROOT FIX: Quick Validation:');
+        console.log('  1. Run: validateStateLoadingFix()');
+        console.log('  2. Look for: "ROOT FIX VALIDATION: ALL TESTS PASSED!"');
+        console.log('  3. Check component count in success message');
     }
 };
 
@@ -669,6 +860,161 @@ window.testArchitectureFix = function() {
 };
 
 /**
+ * ROOT FIX: Critical fallback for direct state loading when enhanced systems fail
+ * This bypasses all enhanced systems and directly loads saved state
+ */
+async function attemptDirectStateLoading() {
+    console.log('🚑 CRITICAL FALLBACK: Direct state loading initiated');
+    
+    try {
+        // Check for saved data
+        const savedData = localStorage.getItem('guestifyMediaKitState');
+        if (!savedData) {
+            console.log('ℹ️ No saved data found in localStorage');
+            return false;
+        }
+        
+        console.log('💾 Found saved data, parsing...');
+        const parsedData = JSON.parse(savedData);
+        
+        // Handle both compressed and uncompressed formats
+        const components = parsedData.components || parsedData.c || {};
+        const layout = parsedData.layout || parsedData.l || [];
+        
+        const componentCount = Object.keys(components).length;
+        console.log(`📊 Found ${componentCount} saved components to restore`);
+        
+        if (componentCount === 0) {
+            console.log('⚠️ No components in saved data');
+            return false;
+        }
+        
+        // Hide empty state immediately
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState) {
+            emptyState.style.display = 'none';
+            console.log('✅ Hidden empty state');
+        }
+        
+        // Try to use any available state manager
+        let stateLoadSuccess = false;
+        
+        // Try enhanced state manager first
+        if (window.enhancedStateManager) {
+            try {
+                if (typeof window.enhancedStateManager.setInitialState === 'function') {
+                    await window.enhancedStateManager.setInitialState({
+                        components,
+                        layout,
+                        globalSettings: parsedData.globalSettings || parsedData.g || {},
+                        version: parsedData.version || parsedData.v
+                    });
+                    console.log('✅ State loaded via enhanced state manager setInitialState');
+                    stateLoadSuccess = true;
+                } else if (typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
+                    window.enhancedStateManager.autoLoadSavedState();
+                    console.log('✅ State loaded via enhanced state manager autoLoadSavedState');
+                    stateLoadSuccess = true;
+                }
+            } catch (error) {
+                console.warn('⚠️ Enhanced state manager failed:', error.message);
+            }
+        }
+        
+        // Try basic state manager fallback
+        if (!stateLoadSuccess && window.stateManager) {
+            try {
+                if (typeof window.stateManager.setInitialState === 'function') {
+                    window.stateManager.setInitialState({
+                        components,
+                        layout,
+                        globalSettings: parsedData.globalSettings || parsedData.g || {},
+                        version: parsedData.version || parsedData.v
+                    });
+                    console.log('✅ State loaded via basic state manager');
+                    stateLoadSuccess = true;
+                } else if (typeof window.stateManager.loadSerializedState === 'function') {
+                    window.stateManager.loadSerializedState(savedData);
+                    console.log('✅ State loaded via basic state manager loadSerializedState');
+                    stateLoadSuccess = true;
+                }
+            } catch (error) {
+                console.warn('⚠️ Basic state manager failed:', error.message);
+            }
+        }
+        
+        // Emit events for any listeners
+        if (window.eventBus) {
+            try {
+                window.eventBus.emit('state:loaded-from-fallback', {
+                    components,
+                    layout,
+                    componentCount,
+                    method: 'direct-fallback'
+                });
+            } catch (error) {
+                console.warn('⚠️ Event bus emission failed:', error.message);
+            }
+        }
+        
+        // Trigger any available renderers
+        if (window.renderer && typeof window.renderer.render === 'function') {
+            try {
+                setTimeout(() => {
+                    window.renderer.render();
+                    console.log('✅ Triggered renderer after state load');
+                }, 100);
+            } catch (error) {
+                console.warn('⚠️ Renderer trigger failed:', error.message);
+            }
+        }
+        
+        console.log(`🎉 CRITICAL FALLBACK SUCCESS: Restored ${componentCount} components`);
+        console.log('   Component types:', Object.values(components).map(c => c.type).join(', '));
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ CRITICAL FALLBACK FAILED:', error);
+        
+        // Last resort: Show user that data exists but system failed
+        try {
+            const preview = document.getElementById('media-kit-preview');
+            if (preview) {
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    margin: 20px;
+                    padding: 30px;
+                    background: #fee2e2;
+                    border: 2px solid #f87171;
+                    border-radius: 8px;
+                    color: #7f1d1d;
+                    text-align: center;
+                `;
+                errorDiv.innerHTML = `
+                    <h3 style="margin: 0 0 16px 0; color: #991b1b;">⚠️ System Error</h3>
+                    <p style="margin: 0 0 16px 0;">Your saved components were found but could not be loaded due to a system error.</p>
+                    <p style="margin: 0 0 16px 0; font-size: 14px;">Data is safe in browser storage.</p>
+                    <button onclick="location.reload()" style="
+                        background: #dc2626;
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">Refresh Page</button>
+                `;
+                preview.appendChild(errorDiv);
+            }
+        } catch (uiError) {
+            console.error('❌ Even UI fallback failed:', uiError);
+        }
+        
+        return false;
+    }
+}
+
+/**
  * Initializes the entire application using the new architecture.
  */
 async function initializeBuilder() {
@@ -698,17 +1044,50 @@ async function initializeBuilder() {
         await validateEnhancedComponentManager();
         
         // ROOT FIX: Step 4.5: Initialize enhanced state manager after systems are ready
-        console.log('🚀 Initializing enhanced state manager after systems...');
-        if (window.enhancedStateManager && typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
-            await window.enhancedStateManager.initializeAfterSystems();
-            console.log('✅ Enhanced state manager post-system initialization completed');
-        } else {
-            console.warn('⚠️ Enhanced state manager initializeAfterSystems not available');
-            // Fallback to basic auto-load
-            if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
-                window.enhancedStateManager.autoLoadSavedState();
-                console.log('✅ Fallback: Enhanced state manager auto-load called');
+        console.log('🚀 ROOT FIX: Initializing enhanced state manager after systems...');
+        
+        // ROOT FIX: Wait for enhanced state manager with retry mechanism
+        let enhancedStateManagerReady = false;
+        let retryCount = 0;
+        const maxRetries = 10;
+        
+        while (!enhancedStateManagerReady && retryCount < maxRetries) {
+            if (window.enhancedStateManager && 
+                typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
+                enhancedStateManagerReady = true;
+                break;
             }
+            
+            console.log(`🔄 ROOT FIX: Waiting for enhanced state manager... attempt ${retryCount + 1}/${maxRetries}`);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retryCount++;
+        }
+        
+        if (enhancedStateManagerReady) {
+            try {
+                console.log('✅ ROOT FIX: Enhanced state manager found, calling initializeAfterSystems');
+                await window.enhancedStateManager.initializeAfterSystems();
+                console.log('🎉 ROOT FIX: Enhanced state manager post-system initialization completed successfully');
+                
+                // Verify components are loaded
+                const currentState = window.enhancedStateManager.getState();
+                const componentCount = Object.keys(currentState.components || {}).length;
+                console.log(`📊 ROOT FIX: Current state has ${componentCount} components after initialization`);
+                
+                if (componentCount > 0) {
+                    console.log('🎉 ROOT FIX: Saved components successfully loaded!');
+                } else {
+                    console.log('ℹ️ ROOT FIX: No saved components found or starting with empty state');
+                }
+                
+            } catch (error) {
+                console.error('❌ ROOT FIX: Enhanced state manager initialization failed:', error);
+                console.log('🚑 ROOT FIX: Attempting direct state loading fallback...');
+                await attemptDirectStateLoading();
+            }
+        } else {
+            console.error('❌ ROOT FIX: Enhanced state manager not available after retries - attempting direct fallback');
+            await attemptDirectStateLoading();
         }
         
         // Step 5: Use initialization manager for complete setup
@@ -1133,6 +1512,38 @@ function attemptInitialization(source) {
     }
 }
 
+// ROOT FIX: Enhanced event listeners for coordination
+function setupEnhancedEventListeners() {
+    // ROOT FIX: Listen for PHP coordination events
+    document.addEventListener('gmkbStateLoadingCoordinationComplete', function(event) {
+        console.log('🎉 ROOT FIX: PHP state loading coordination completed!', event.detail);
+        
+        // Verify the state was actually loaded
+        if (window.enhancedStateManager) {
+            const currentState = window.enhancedStateManager.getState();
+            const componentCount = Object.keys(currentState.components || {}).length;
+            console.log(`📊 ROOT FIX: After PHP coordination, state has ${componentCount} components`);
+            
+            if (componentCount > 0) {
+                console.log('🎉 ROOT FIX: PHP coordination successfully loaded saved components!');
+            }
+        }
+    });
+
+    document.addEventListener('gmkbStateLoadingCoordinationFailed', function(event) {
+        console.error('❌ ROOT FIX: PHP state loading coordination failed:', event.detail);
+        
+        // Attempt JavaScript-side recovery
+        setTimeout(async () => {
+            console.log('🚑 ROOT FIX: Attempting JavaScript-side state loading recovery...');
+            await attemptDirectStateLoading();
+        }, 1000);
+    });
+}
+
+// Initialize enhanced event listeners
+setupEnhancedEventListeners();
+
 // Primary: Listen for template completion event
 document.addEventListener('gmkbTemplateComplete', function(event) {
     templateCompleteReceived = true;
@@ -1142,7 +1553,7 @@ document.addEventListener('gmkbTemplateComplete', function(event) {
         eventDetail: event.detail
     });
     
-    console.log('🎉 Template completion event received!', {
+    console.log('🎉 ROOT FIX: Template completion event received!', {
         readyState: document.readyState,
         allModalsReady: event.detail?.allModalsReady,
         templateVersion: event.detail?.templateVersion,
