@@ -295,7 +295,7 @@ class StartupCoordinationManager {
     }
     
     /**
-     * Coordinate MKCG data hydration to prevent race conditions
+     * ROOT FIX: Coordinate MKCG data hydration with authoritative UI rendering decisions
      */
     async coordinateMKCGHydration() {
         if (!window.enhancedStateManager) {
@@ -303,13 +303,7 @@ class StartupCoordinationManager {
             return;
         }
         
-        // Check if MKCG data is available
-        if (!window.guestifyData?.mkcgData) {
-            this.logger.info('COORD', 'No MKCG data available, skipping hydration');
-            return;
-        }
-        
-        this.logger.info('COORD', 'Starting coordinated MKCG hydration');
+        this.logger.info('COORD', 'ROOT FIX: Starting coordinated state loading with UI control');
         
         try {
             // Emit hydration start event
@@ -317,37 +311,54 @@ class StartupCoordinationManager {
                 coordinator: 'startup-coordination-manager'
             });
             
-            // Check if enhanced state manager has initialization method
+            // ROOT FIX: Load and evaluate state WITHOUT UI rendering
+            const savedState = window.enhancedStateManager.loadStateFromStorage();
+            const hasExistingComponents = savedState && Object.keys(savedState.components || {}).length > 0;
+            
+            this.logger.info('COORD', 'ROOT FIX: State evaluation completed', {
+                hasSavedState: !!savedState,
+                componentCount: hasExistingComponents ? Object.keys(savedState.components).length : 0,
+                decision: hasExistingComponents ? 'load-saved-components' : 'show-empty-state'
+            });
+            
+            // ROOT FIX: Initialize enhanced state manager with data loading only
             if (typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
                 await window.enhancedStateManager.initializeAfterSystems();
-            } else if (typeof window.enhancedStateManager.hydrateStateWithMKCGData === 'function') {
-                // Load saved state first
-                const savedState = window.enhancedStateManager.loadStateFromStorage();
-                if (savedState) {
-                    await window.enhancedStateManager.hydrateStateWithMKCGData(savedState);
-                } else {
-                    // Auto-generate from MKCG data
-                    await window.enhancedStateManager.autoGenerateComponentsFromMKCG();
-                }
+            }
+            
+            // ROOT FIX: NOW make the authoritative UI rendering decision
+            if (hasExistingComponents) {
+                this.logger.info('COORD', 'ROOT FIX: Saved components found - rendering saved state');
+                this.renderSavedComponents(savedState);
+            } else {
+                this.logger.info('COORD', 'ROOT FIX: No saved components - rendering empty state');
+                this.renderEmptyState();
             }
             
             // Emit hydration complete event
             eventBus.emit('state:mkcg-hydration-complete', {
-                coordinator: 'startup-coordination-manager'
+                coordinator: 'startup-coordination-manager',
+                hasComponents: hasExistingComponents,
+                componentCount: hasExistingComponents ? Object.keys(savedState.components).length : 0
             });
             
-            this.logger.info('COORD', 'MKCG hydration completed successfully');
+            this.logger.info('COORD', 'ROOT FIX: Coordinated state loading completed successfully');
             
         } catch (error) {
             this.logger.error('COORD', 'MKCG hydration failed', error);
             
+            // ROOT FIX: On error, show empty state as fallback
+            this.renderEmptyState();
+            
             // Emit hydration complete even on failure to unblock rendering
             eventBus.emit('state:mkcg-hydration-complete', {
                 coordinator: 'startup-coordination-manager',
-                error: error.message
+                error: error.message,
+                fallback: 'empty-state'
             });
             
-            throw error;
+            // Don't throw - continue with empty state
+            this.logger.warn('COORD', 'Continuing with empty state after hydration failure');
         }
     }
     
@@ -611,6 +622,76 @@ class StartupCoordinationManager {
             phases: this.phases,
             duration: this.startTime ? performance.now() - this.startTime : 0
         };
+    }
+    
+    /**
+     * ROOT FIX: Authoritative rendering of saved components
+     */
+    renderSavedComponents(savedState) {
+        try {
+            // Hide loading state
+            const loadingState = document.getElementById('state-loading-enhanced');
+            if (loadingState) {
+                loadingState.style.display = 'none';
+                this.logger.info('COORD', 'ROOT FIX: Loading state hidden');
+            }
+            
+            // Hide empty state
+            const emptyState = document.getElementById('enhanced-empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+                this.logger.info('COORD', 'ROOT FIX: Empty state hidden');
+            }
+            
+            // Show the preview container for components
+            const previewContainer = document.getElementById('media-kit-preview');
+            if (previewContainer) {
+                previewContainer.classList.add('has-components');
+                previewContainer.classList.remove('loading-state', 'empty-state');
+                this.logger.info('COORD', 'ROOT FIX: Preview container configured for saved components');
+            }
+            
+            this.logger.info('COORD', 'ROOT FIX: UI configured for saved components', {
+                componentCount: Object.keys(savedState.components || {}).length
+            });
+            
+        } catch (error) {
+            this.logger.error('COORD', 'Error rendering saved components UI', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Authoritative rendering of empty state
+     */
+    renderEmptyState() {
+        try {
+            // Hide loading state
+            const loadingState = document.getElementById('state-loading-enhanced');
+            if (loadingState) {
+                loadingState.style.display = 'none';
+                this.logger.info('COORD', 'ROOT FIX: Loading state hidden');
+            }
+            
+            // Show empty state
+            const emptyState = document.getElementById('enhanced-empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'block';
+                this.logger.info('COORD', 'ROOT FIX: Empty state shown');
+            }
+            
+            // Update preview container
+            const previewContainer = document.getElementById('media-kit-preview');
+            if (previewContainer) {
+                previewContainer.classList.add('empty-state');
+                previewContainer.classList.remove('loading-state', 'has-components');
+                this.logger.info('COORD', 'ROOT FIX: Preview container configured for empty state');
+            }
+            
+            this.logger.info('COORD', 'ROOT FIX: UI configured for empty state');
+            
+        } catch (error) {
+            this.logger.error('COORD', 'Error rendering empty state UI', error);
+        }
     }
     
     /**

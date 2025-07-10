@@ -927,8 +927,11 @@ window.testArchitectureFix = function() {
  * ROOT FIX: Critical fallback for direct state loading when enhanced systems fail
  * This bypasses all enhanced systems and directly loads saved state
  */
+// ROOT FIX: Direct state loading is now handled by coordination manager
+// This fallback function is kept for extreme emergency cases only
 async function attemptDirectStateLoading() {
-    console.log('🚑 CRITICAL FALLBACK: Direct state loading initiated');
+    console.log('🚑 EMERGENCY FALLBACK: Coordination manager failed - attempting direct state loading');
+    console.log('⚠️ This should only happen if the coordination system completely fails');
     
     try {
         // Check for saved data
@@ -938,142 +941,33 @@ async function attemptDirectStateLoading() {
             return false;
         }
         
-        console.log('💾 Found saved data, parsing...');
         const parsedData = JSON.parse(savedData);
-        
-        // Handle both compressed and uncompressed formats
-        const components = parsedData.components || parsedData.c || {};
-        const layout = parsedData.layout || parsedData.l || [];
-        
-        const componentCount = Object.keys(components).length;
-        console.log(`📊 Found ${componentCount} saved components to restore`);
+        const componentCount = Object.keys(parsedData.components || {}).length;
         
         if (componentCount === 0) {
             console.log('⚠️ No components in saved data');
             return false;
         }
         
-        // Hide empty state immediately
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) {
-            emptyState.style.display = 'none';
-            console.log('✅ Hidden empty state');
+        console.log(`📊 EMERGENCY: Found ${componentCount} saved components - attempting direct restoration`);
+        
+        // Try enhanced state manager emergency load
+        if (window.enhancedStateManager && typeof window.enhancedStateManager.setInitialState === 'function') {
+            await window.enhancedStateManager.setInitialState({
+                components: parsedData.components || {},
+                layout: parsedData.layout || [],
+                globalSettings: parsedData.globalSettings || {},
+                version: parsedData.version
+            });
+            console.log('✅ EMERGENCY: State loaded via enhanced state manager');
+            return true;
         }
         
-        // Try to use any available state manager
-        let stateLoadSuccess = false;
-        
-        // Try enhanced state manager first
-        if (window.enhancedStateManager) {
-            try {
-                if (typeof window.enhancedStateManager.setInitialState === 'function') {
-                    await window.enhancedStateManager.setInitialState({
-                        components,
-                        layout,
-                        globalSettings: parsedData.globalSettings || parsedData.g || {},
-                        version: parsedData.version || parsedData.v
-                    });
-                    console.log('✅ State loaded via enhanced state manager setInitialState');
-                    stateLoadSuccess = true;
-                } else if (typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
-                    window.enhancedStateManager.autoLoadSavedState();
-                    console.log('✅ State loaded via enhanced state manager autoLoadSavedState');
-                    stateLoadSuccess = true;
-                }
-            } catch (error) {
-                console.warn('⚠️ Enhanced state manager failed:', error.message);
-            }
-        }
-        
-        // Try basic state manager fallback
-        if (!stateLoadSuccess && window.stateManager) {
-            try {
-                if (typeof window.stateManager.setInitialState === 'function') {
-                    window.stateManager.setInitialState({
-                        components,
-                        layout,
-                        globalSettings: parsedData.globalSettings || parsedData.g || {},
-                        version: parsedData.version || parsedData.v
-                    });
-                    console.log('✅ State loaded via basic state manager');
-                    stateLoadSuccess = true;
-                } else if (typeof window.stateManager.loadSerializedState === 'function') {
-                    window.stateManager.loadSerializedState(savedData);
-                    console.log('✅ State loaded via basic state manager loadSerializedState');
-                    stateLoadSuccess = true;
-                }
-            } catch (error) {
-                console.warn('⚠️ Basic state manager failed:', error.message);
-            }
-        }
-        
-        // Emit events for any listeners
-        if (window.eventBus) {
-            try {
-                window.eventBus.emit('state:loaded-from-fallback', {
-                    components,
-                    layout,
-                    componentCount,
-                    method: 'direct-fallback'
-                });
-            } catch (error) {
-                console.warn('⚠️ Event bus emission failed:', error.message);
-            }
-        }
-        
-        // Trigger any available renderers
-        if (window.renderer && typeof window.renderer.render === 'function') {
-            try {
-                setTimeout(() => {
-                    window.renderer.render();
-                    console.log('✅ Triggered renderer after state load');
-                }, 100);
-            } catch (error) {
-                console.warn('⚠️ Renderer trigger failed:', error.message);
-            }
-        }
-        
-        console.log(`🎉 CRITICAL FALLBACK SUCCESS: Restored ${componentCount} components`);
-        console.log('   Component types:', Object.values(components).map(c => c.type).join(', '));
-        
-        return true;
+        console.log('❌ EMERGENCY: No usable state manager available');
+        return false;
         
     } catch (error) {
-        console.error('❌ CRITICAL FALLBACK FAILED:', error);
-        
-        // Last resort: Show user that data exists but system failed
-        try {
-            const preview = document.getElementById('media-kit-preview');
-            if (preview) {
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = `
-                    margin: 20px;
-                    padding: 30px;
-                    background: #fee2e2;
-                    border: 2px solid #f87171;
-                    border-radius: 8px;
-                    color: #7f1d1d;
-                    text-align: center;
-                `;
-                errorDiv.innerHTML = `
-                    <h3 style="margin: 0 0 16px 0; color: #991b1b;">⚠️ System Error</h3>
-                    <p style="margin: 0 0 16px 0;">Your saved components were found but could not be loaded due to a system error.</p>
-                    <p style="margin: 0 0 16px 0; font-size: 14px;">Data is safe in browser storage.</p>
-                    <button onclick="location.reload()" style="
-                        background: #dc2626;
-                        color: white;
-                        border: none;
-                        padding: 8px 16px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                    ">Refresh Page</button>
-                `;
-                preview.appendChild(errorDiv);
-            }
-        } catch (uiError) {
-            console.error('❌ Even UI fallback failed:', uiError);
-        }
-        
+        console.error('❌ EMERGENCY FALLBACK FAILED:', error);
         return false;
     }
 }
@@ -1107,52 +1001,9 @@ async function initializeBuilder() {
         // Step 4: Validate that enhanced component manager is available
         await validateEnhancedComponentManager();
         
-        // ROOT FIX: Step 4.5: Initialize enhanced state manager after systems are ready
-        console.log('🚀 ROOT FIX: Initializing enhanced state manager after systems...');
-        
-        // ROOT FIX: Wait for enhanced state manager with retry mechanism
-        let enhancedStateManagerReady = false;
-        let retryCount = 0;
-        const maxRetries = 10;
-        
-        while (!enhancedStateManagerReady && retryCount < maxRetries) {
-            if (window.enhancedStateManager && 
-                typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
-                enhancedStateManagerReady = true;
-                break;
-            }
-            
-            console.log(`🔄 ROOT FIX: Waiting for enhanced state manager... attempt ${retryCount + 1}/${maxRetries}`);
-            await new Promise(resolve => setTimeout(resolve, 100));
-            retryCount++;
-        }
-        
-        if (enhancedStateManagerReady) {
-            try {
-                console.log('✅ ROOT FIX: Enhanced state manager found, calling initializeAfterSystems');
-                await window.enhancedStateManager.initializeAfterSystems();
-                console.log('🎉 ROOT FIX: Enhanced state manager post-system initialization completed successfully');
-                
-                // Verify components are loaded
-                const currentState = window.enhancedStateManager.getState();
-                const componentCount = Object.keys(currentState.components || {}).length;
-                console.log(`📊 ROOT FIX: Current state has ${componentCount} components after initialization`);
-                
-                if (componentCount > 0) {
-                    console.log('🎉 ROOT FIX: Saved components successfully loaded!');
-                } else {
-                    console.log('ℹ️ ROOT FIX: No saved components found or starting with empty state');
-                }
-                
-            } catch (error) {
-                console.error('❌ ROOT FIX: Enhanced state manager initialization failed:', error);
-                console.log('🚑 ROOT FIX: Attempting direct state loading fallback...');
-                await attemptDirectStateLoading();
-            }
-        } else {
-            console.error('❌ ROOT FIX: Enhanced state manager not available after retries - attempting direct fallback');
-            await attemptDirectStateLoading();
-        }
+        // ROOT FIX: State initialization now handled by coordination manager
+        console.log('🚀 ROOT FIX: State initialization deferred to coordination manager');
+        console.log('ℹ️ ROOT FIX: Enhanced state manager will be initialized through coordinated startup sequence');
         
         // Step 5: Use initialization manager for complete setup
         console.log('🚀 Running complete initialization sequence...');

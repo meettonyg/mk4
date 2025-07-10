@@ -1250,10 +1250,10 @@ class InitializationManager {
     }
     
     /**
-     * ROOT FIX: Initialize enhanced state manager with saved state loading
+     * ROOT FIX: Initialize enhanced state manager via coordination (no direct UI decisions)
      */
     async initializeEnhancedStateManager() {
-        this.logger.info('STATE', 'Initializing enhanced state manager with saved state loading');
+        this.logger.info('STATE', 'ROOT FIX: Enhanced state manager initialization deferred to coordination manager');
         
         try {
             // Check if enhanced state manager is available
@@ -1262,39 +1262,15 @@ class InitializationManager {
                 return false;
             }
             
-            // Check if initializeAfterSystems method exists
-            if (typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
-                this.logger.info('STATE', 'Calling enhanced state manager initializeAfterSystems');
-                await window.enhancedStateManager.initializeAfterSystems();
-                this.logger.info('STATE', 'Enhanced state manager initialization completed successfully');
-                return true;
-            } else {
-                // Fallback to basic auto-load
-                this.logger.warn('STATE', 'initializeAfterSystems not available, using autoLoadSavedState fallback');
-                if (typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
-                    window.enhancedStateManager.autoLoadSavedState();
-                    this.logger.info('STATE', 'Fallback auto-load saved state completed');
-                    return true;
-                }
-            }
+            // ROOT FIX: Do NOT call initializeAfterSystems here
+            // That will be called by the coordination manager at the right time
+            // We just validate that the system is ready
             
-            this.logger.warn('STATE', 'No enhanced state manager initialization methods available');
-            return false;
+            this.logger.info('STATE', 'ROOT FIX: Enhanced state manager ready - initialization deferred to coordination');
+            return true;
             
         } catch (error) {
-            this.logger.error('STATE', 'Enhanced state manager initialization failed', error);
-            
-            // Try basic fallback
-            try {
-                if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
-                    window.enhancedStateManager.autoLoadSavedState();
-                    this.logger.info('STATE', 'Emergency fallback auto-load completed');
-                    return true;
-                }
-            } catch (fallbackError) {
-                this.logger.error('STATE', 'Emergency fallback also failed', fallbackError);
-            }
-            
+            this.logger.error('STATE', 'Enhanced state manager validation failed', error);
             return false;
         }
     }

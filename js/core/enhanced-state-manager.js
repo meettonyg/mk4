@@ -141,8 +141,8 @@ class EnhancedStateManager {
                 // Set the saved state immediately
                 this.state = savedState;
                 
-                // ROOT FIX: Hide loading state and show components
-                this.hideLoadingStateAndShowComponents();
+                // ROOT FIX: DO NOT RENDER HERE - Let coordination manager handle UI decisions
+                // The coordination manager will decide when and what to render
                 
                 // Critical: Notify all subscribers including renderer
                 this.notifySubscribers();
@@ -162,7 +162,7 @@ class EnhancedStateManager {
                     phpCoordination: true
                 });
                 
-                this.logger.info('STATE', 'ROOT FIX: Saved state restored and prioritized over auto-generation', {
+                this.logger.info('STATE', 'ROOT FIX: Saved state loaded - UI rendering deferred to coordination manager', {
                     components: Object.keys(savedState.components || {}).length,
                     layout: (savedState.layout || []).length,
                     coordinationMode: phpCoordination?.coordination_mode
@@ -182,24 +182,23 @@ class EnhancedStateManager {
                 } else {
                     this.logger.info('STATE', 'Starting with empty state - no saved data or MKCG data available');
                     
-                    // ROOT FIX: Hide loading state and show empty state
-                    this.hideLoadingStateAndShowEmptyState();
+                    // ROOT FIX: DO NOT RENDER HERE - Let coordination manager handle UI
                     
-                    // Emit empty state event
-                    this.eventBus.emit('state:empty-state-initialized', {
-                        source: 'initializeAfterSystems-coordinated'
+                    // Emit empty state event for coordination manager
+                    this.eventBus.emit('state:should-show-empty-state', {
+                        source: 'initializeAfterSystems-coordinated',
+                        reason: 'no-data-available'
                     });
                 }
             } else {
-                this.logger.info('STATE', 'ROOT FIX: MKCG auto-generation suppressed by coordination - showing empty state');
+                this.logger.info('STATE', 'ROOT FIX: MKCG auto-generation suppressed by coordination');
                 
-                // ROOT FIX: Hide loading state and show empty state
-                this.hideLoadingStateAndShowEmptyState();
+                // ROOT FIX: DO NOT RENDER HERE - Let coordination manager handle UI
                 
-                // Emit suppressed event
-                this.eventBus.emit('state:mkcg-suppressed', {
+                // Emit suppressed event for coordination manager
+                this.eventBus.emit('state:should-show-empty-state', {
                     source: 'initializeAfterSystems-coordinated',
-                    reason: 'php-coordination'
+                    reason: 'mkcg-suppressed'
                 });
             }
             
@@ -1754,14 +1753,14 @@ class EnhancedStateManager {
     }
 
     /**
-     * GEMINI FIX: Auto-load saved state during initialization
-     * Now orchestrates the entire loading process with single state update and notification
+     * ROOT FIX: Auto-load saved state during initialization (NO UI DECISIONS)
+     * Now only loads data - UI rendering decisions deferred to coordination manager
      */
     autoLoadSavedState() {
         try {
             const loadedState = this.loadStateFromStorage();
             if (loadedState) {
-                this.logger.info('STATE', 'Auto-loading saved state on initialization', {
+                this.logger.info('STATE', 'ROOT FIX: Auto-loading saved state data only', {
                     components: Object.keys(loadedState.components).length,
                     layout: loadedState.layout.length
                 });
@@ -1784,12 +1783,12 @@ class EnhancedStateManager {
                     componentCount: Object.keys(loadedState.components).length
                 });
                 
-                this.logger.info('STATE', 'Auto-loaded state set and subscribers notified', {
+                this.logger.info('STATE', 'ROOT FIX: Auto-loaded state data - UI rendering deferred to coordination', {
                     components: Object.keys(loadedState.components).length
                 });
                 
             } else {
-                this.logger.info('STATE', 'No saved state found, starting with empty state');
+                this.logger.info('STATE', 'ROOT FIX: No saved state found - coordination manager will handle UI');
             }
         } catch (error) {
             this.logger.error('STATE', 'Error auto-loading saved state', error);
