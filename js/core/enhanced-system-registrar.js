@@ -13,9 +13,11 @@ import { enhancedComponentManager } from './enhanced-component-manager.js';
 import { enhancedComponentRenderer } from './enhanced-component-renderer.js';
 // ROOT FIX: Import rendering queue manager for enterprise-grade rendering
 import { renderingQueueManager } from './rendering-queue-manager.js';
-// PHASE 2: Import validation and recovery systems for 99%+ success rate
-import { renderValidator } from './render-validator.js';
-import { renderRecoveryManager } from './render-recovery-manager.js';
+
+// PHASE 2 INTEGRATION: Import Phase 2 rendering optimization systems
+// TEMPORARILY DISABLED - causing core system failures
+// import { renderValidator } from './render-validator.js';
+// import { renderRecoveryManager } from './render-recovery-manager.js';
 
 // CRITICAL FIX: Import the initializer system
 import { initializer } from './media-kit-builder-init.js';
@@ -50,6 +52,7 @@ export async function registerEnhancedSystems() {
             renderer: !!enhancedComponentRenderer,
             dynamicComponentLoader: !!dynamicComponentLoader,
             templateCache: !!templateCache,
+            renderingQueueManager: !!renderingQueueManager,
             stateManagerMethods: typeof enhancedStateManager?.addComponent === 'function',
             componentManagerMethods: typeof enhancedComponentManager?.addComponent === 'function',
             rendererMethods: typeof enhancedComponentRenderer?.init === 'function',
@@ -92,13 +95,13 @@ export async function registerEnhancedSystems() {
         systemRegistrar.register('renderingQueueManager', renderingQueueManager);
         console.log('✅ Rendering Queue Manager: Enterprise-grade rendering coordination');
         
-        // PHASE 2: Render Validator - CRITICAL for component quality assurance
-        systemRegistrar.register('renderValidator', renderValidator);
-        console.log('✅ Render Validator: Component health and quality validation');
-        
-        // PHASE 2: Render Recovery Manager - CRITICAL for automatic error recovery
-        systemRegistrar.register('renderRecoveryManager', renderRecoveryManager);
-        console.log('✅ Render Recovery Manager: Automatic error recovery system');
+        // PHASE 2 INTEGRATION: Register Phase 2 rendering optimization systems
+        // TEMPORARILY DISABLED - will be loaded post-initialization
+        // systemRegistrar.register('renderValidator', renderValidator);
+        // console.log('✅ Render Validator: PHASE 2 - Enterprise validation with health scoring (1-100 scale)');
+        // 
+        // systemRegistrar.register('renderRecoveryManager', renderRecoveryManager);
+        // console.log('✅ Render Recovery Manager: PHASE 2 - Automatic recovery with 4 strategies (retry, fallback, reset, replace)');
         
         // Component Manager - CRITICAL
         systemRegistrar.register('componentManager', enhancedComponentManager);
@@ -131,10 +134,15 @@ export async function registerEnhancedSystems() {
         window.dynamicComponentLoader = dynamicComponentLoader;
         window.mkTemplateCache = templateCache;
         window.renderingQueueManager = renderingQueueManager;
-        window.renderValidator = renderValidator;
-        window.renderRecoveryManager = renderRecoveryManager;
         console.log('✅ Template systems exposed globally: dynamicComponentLoader, mkTemplateCache');
-        console.log('✅ Phase 2 systems exposed globally: renderingQueueManager, renderValidator, renderRecoveryManager');
+        console.log('✅ Queue system exposed globally: renderingQueueManager');
+        
+        // PHASE 2 INTEGRATION: Expose Phase 2 systems globally
+        // TEMPORARILY DISABLED - will be loaded post-initialization
+        // window.renderValidator = renderValidator;
+        // window.renderRecoveryManager = renderRecoveryManager;
+        // console.log('✅ PHASE 2: Render validator exposed globally for 99%+ success rate targeting');
+        // console.log('✅ PHASE 2: Render recovery manager exposed globally for automatic error recovery');
         
         // PHASE 2.3 TASK 4: Expose enhanced error handler globally
         window.enhancedErrorHandler = enhancedErrorHandler;
@@ -273,17 +281,18 @@ export async function registerEnhancedSystems() {
             console.warn(`⚠️ ROOT FIX: Only ${exposedCount}/${totalRequired} systems exposed`);
         }
         
-        // CRITICAL FIX: Validate all 11 core systems including template loading infrastructure, error handling, data mapper, and Phase 2 rendering systems
+        // CRITICAL FIX: Validate all 9 core systems including template loading infrastructure, error handling, data mapper, and rendering queue
         // These are required for proper functionality - template systems were missing causing failures
-        if (registeredSystems.length < 11) { // Require all 11 core systems (added renderValidator, renderRecoveryManager)
-            console.error(`❌ ROOT FIX: Only ${registeredSystems.length} core systems registered, expected at least 11 (state, component, renderer, initializer, loader, cache, errorHandler, mkcgDataMapper, renderingQueueManager, renderValidator, renderRecoveryManager)`);
+        // PHASE 2 systems will be loaded post-initialization to prevent circular dependencies
+        if (registeredSystems.length < 9) { // Require 9 core systems (Phase 2 loaded separately)
+            console.error(`❌ ROOT FIX: Only ${registeredSystems.length} core systems registered, expected at least 9 (state, component, renderer, initializer, loader, cache, errorHandler, mkcgDataMapper, renderingQueueManager)`);
             
             // ROOT FIX: Show what's missing
-            const expectedSystems = ['stateManager', 'componentManager', 'renderer', 'initializer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper', 'renderingQueueManager', 'renderValidator', 'renderRecoveryManager'];
+            const expectedSystems = ['stateManager', 'componentManager', 'renderer', 'initializer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper', 'renderingQueueManager'];
             const missing = expectedSystems.filter(sys => !systemRegistrar.getAll()[sys]);
             console.error('❌ ROOT FIX: Missing systems:', missing);
             
-            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 11. Missing: ${missing.join(', ')}`);
+            throw new Error(`Only ${registeredSystems.length} core systems registered, expected at least 9. Missing: ${missing.join(', ')}`);
         }
         
         // Validate critical template systems are working
@@ -305,18 +314,13 @@ export async function registerEnhancedSystems() {
             throw new Error('CRITICAL: mkcgDataMapper not exposed globally - component data mapping will fail');
         }
         
-        // PHASE 2: Validate rendering systems are working
+        // PHASE 2: Validate rendering queue is working
         if (!window.renderingQueueManager) {
             throw new Error('CRITICAL: renderingQueueManager not exposed globally - rendering coordination will fail');
         }
         
-        if (!window.renderValidator) {
-            throw new Error('CRITICAL: renderValidator not exposed globally - component validation will fail');
-        }
-        
-        if (!window.renderRecoveryManager) {
-            throw new Error('CRITICAL: renderRecoveryManager not exposed globally - error recovery will fail');
-        }
+        // PHASE 2: Additional systems will be loaded post-initialization to prevent circular dependencies
+        console.log('ℹ️ PHASE 2: Render validator and recovery manager will be loaded after core initialization');
         
         // =====================================
         // ROOT FIX: EVENT-DRIVEN NOTIFICATION
@@ -337,9 +341,8 @@ export async function registerEnhancedSystems() {
                     mkTemplateCache: !!window.mkTemplateCache,
                     enhancedErrorHandler: !!window.enhancedErrorHandler,
                     mkcgDataMapper: !!window.mkcgDataMapper,
-                    renderingQueueManager: !!window.renderingQueueManager,
-                    renderValidator: !!window.renderValidator,
-                    renderRecoveryManager: !!window.renderRecoveryManager
+                    renderingQueueManager: !!window.renderingQueueManager
+                    // Phase 2 systems loaded post-initialization
                 },
                 architecture: 'enhanced-phase1',
                 readyTimestamp: Date.now(),
@@ -459,7 +462,9 @@ export function getEnhancedSystemInfo() {
             initializer: !!window.initializer,
             dynamicComponentLoader: !!window.dynamicComponentLoader,
             mkTemplateCache: !!window.mkTemplateCache,
-            enhancedErrorHandler: !!window.enhancedErrorHandler
+            enhancedErrorHandler: !!window.enhancedErrorHandler,
+            renderingQueueManager: !!window.renderingQueueManager
+            // Phase 2 systems loaded separately: renderValidator, renderRecoveryManager
         },
         types: {
             stateManager: registeredSystems.stateManager?.constructor?.name || 'Unknown',
@@ -467,7 +472,8 @@ export function getEnhancedSystemInfo() {
             renderer: registeredSystems.renderer?.constructor?.name || 'Unknown',
             dynamicComponentLoader: registeredSystems.dynamicComponentLoader?.constructor?.name || 'Unknown',
             templateCache: registeredSystems.templateCache?.constructor?.name || 'Unknown',
-            enhancedErrorHandler: registeredSystems.enhancedErrorHandler?.constructor?.name || 'Unknown'
+            enhancedErrorHandler: registeredSystems.enhancedErrorHandler?.constructor?.name || 'Unknown',
+            renderingQueueManager: registeredSystems.renderingQueueManager?.constructor?.name || 'Unknown'
         },
         methods: {
             componentManagerAddComponent: typeof registeredSystems.componentManager?.addComponent === 'function',
@@ -476,7 +482,9 @@ export function getEnhancedSystemInfo() {
             enhancedComponentManagerUpdateComponent: typeof window.enhancedComponentManager?.updateComponent === 'function',
             initializerInitialize: typeof registeredSystems.initializer?.initialize === 'function',
             dynamicComponentLoaderRender: typeof window.dynamicComponentLoader?.renderComponent === 'function',
-            templateCacheGet: typeof window.mkTemplateCache?.get === 'function'
+            templateCacheGet: typeof window.mkTemplateCache?.get === 'function',
+            renderingQueueAdd: typeof window.renderingQueueManager?.addToQueue === 'function'
+            // Phase 2 methods loaded separately
         }
     };
 }

@@ -15,15 +15,18 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// Define plugin constants
-define( 'GUESTIFY_VERSION', '2.2.0' );
+// ROOT FIX: Plugin constants with WordPress-compatible versioning
+define( 'GUESTIFY_VERSION', '2.2.0-root-fix-wp-compatible' );
 define( 'GUESTIFY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GUESTIFY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // Define GMKB constants for enhanced system compatibility
-define( 'GMKB_VERSION', '2.2.0' );
+define( 'GMKB_VERSION', '2.2.0-root-fix-wp-compatible' );
 define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+// ROOT FIX: WordPress compatibility flag
+define( 'GMKB_WORDPRESS_COMPATIBLE', true );
 
 /**
  * Main plugin class
@@ -48,33 +51,48 @@ class Guestify_Media_Kit_Builder {
     }
 
     private function __construct() {
+        // ROOT FIX: WordPress-compatible initialization order
+        
+        // 1. Core WordPress-compatible script loading (FIRST)
         require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
         
-        // ROOT FIX: Initialize Enhanced State Loading Coordinator FIRST
-        require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-state-loading-coordinator.php';
+        // 2. Enhanced state loading coordinator
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/enhanced-state-loading-coordinator.php')) {
+            require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-state-loading-coordinator.php';
+        }
         
-        // Initialize enhanced schema-driven system
-        require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-init.php';
+        // 3. Enhanced schema-driven system (if available)
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/enhanced-init.php')) {
+            require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-init.php';
+        }
         
-        // TASK 5: Initialize MKCG Data Integration (MUST come before AJAX handlers)
+        // 4. MKCG Data Integration (MUST come before AJAX handlers)
         require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-mkcg-data-integration.php';
         
-        // TASK 5: Initialize MKCG Data Refresh AJAX Handlers (depends on data integration)
+        // 5. MKCG Data Refresh AJAX Handlers (depends on data integration)
         require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-mkcg-refresh-ajax-handlers.php';
         
-        // PHASE 3: Initialize Topics AJAX Handler for save-back functionality
-        require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
+        // 6. Topics AJAX Handler for save-back functionality
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php')) {
+            require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
+        }
         
-        // Initialize REST API endpoints
+        // 7. REST API endpoints
         require_once GUESTIFY_PLUGIN_DIR . 'includes/api/rest-api-templates.php';
         
-        // Initialize component system
+        // 8. Initialize component system
         $this->component_discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components');
         $this->component_discovery->scan();
         $this->component_loader = new ComponentLoader(GUESTIFY_PLUGIN_DIR . 'components', $this->component_discovery);
         $this->design_panel = new DesignPanel(GUESTIFY_PLUGIN_DIR . 'components');
         
+        // 9. Initialize hooks
         $this->init_hooks();
+        
+        // ROOT FIX: Log clean WordPress-compatible initialization
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Clean WordPress-compatible plugin initialization complete');
+        }
     }
 
     private function init_hooks() {
@@ -99,12 +117,12 @@ class Guestify_Media_Kit_Builder {
     }
 
     /**
-     * PHASE 2.3: ENHANCED ISOLATED BUILDER TEMPLATE TAKEOVER
+     * ROOT FIX: ENHANCED ISOLATED BUILDER TEMPLATE TAKEOVER
      * - Implements modal loading validation and race condition prevention
      * - Enhanced DOM readiness detection with modal verification
      * - Comprehensive error handling and recovery systems
-     * - PHASE 1: Added MKCG post_id detection and data integration
-     * - PHASE 2.3: Root-level modal timeout fixes and UX enhancements
+     * - MKCG post_id detection and data integration
+     * - Clean WordPress-compatible script loading
      */
     public function isolated_builder_template_takeover() {
         // Enhanced detection with multiple methods
@@ -138,18 +156,19 @@ class Guestify_Media_Kit_Builder {
         $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
         $manager_status = $script_manager->get_status();
         
-        // PHASE 2.3: Enhanced status including modal validation
+        // Enhanced status including modal validation
         $enhanced_status = array_merge($manager_status, array(
             'modal_validation' => $modal_validation,
             'post_id' => $post_id,
             'has_mkcg_data' => !empty($post_data),
-            'template_version' => '2.3-enhanced'
+            'template_version' => 'root-fix-clean'
         ));
         
-        // Log template takeover for debugging
+        // ROOT FIX: Log template takeover for debugging
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: Phase 2.3 Enhanced template takeover active - Modal validation: ' . 
-                     ($modal_validation['all_available'] ? 'PASS' : 'PARTIAL'));
+            error_log('GMKB ROOT FIX: Clean WordPress-compatible template takeover active');
+            error_log('GMKB: Modal validation: ' . ($modal_validation['all_available'] ? 'PASS' : 'PARTIAL'));
+            error_log('GMKB: Clean script dependencies: WordPress-compatible mode');
         }
         
         ?>
@@ -163,7 +182,7 @@ class Guestify_Media_Kit_Builder {
             
             <!-- CRITICAL FIX: Enhanced isolation styles -->
             <style id="gmkb-isolation-styles">
-                /* Reset and isolation */
+                /* ROOT FIX: Enhanced isolation styles */
                 body, html { 
                     margin: 0; 
                     padding: 0; 
@@ -174,9 +193,9 @@ class Guestify_Media_Kit_Builder {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 }
                 
-                /* Phase 1 ready indicator */
+                /* Clean ready indicator */
                 .gmkb-ready::before {
-                    content: 'Phase 1 Enhanced \2713';
+                    content: 'ROOT FIX \2713';
                     position: fixed;
                     top: 5px;
                     left: 5px;
@@ -195,7 +214,7 @@ class Guestify_Media_Kit_Builder {
                 }
                 
                 .gmkb-initializing::after {
-                    content: 'Initializing Enhanced Builder...';
+                    content: 'Initializing Clean Enhanced Builder...';
                     position: fixed;
                     top: 50%;
                     left: 50%;
@@ -216,32 +235,33 @@ class Guestify_Media_Kit_Builder {
             </style>
             
             <?php
-            // PHASE 2.3: ENHANCED WORDPRESS HEAD WITH MODAL VALIDATION
-            // The enhanced script manager handles:
-            // 1. Ultra-early data injection (priority 1)
-            // 2. Comprehensive data preparation (priority 2) 
-            // 3. Script isolation and dequeuing (priority 1000)
-            // 4. Error recovery systems (priority 999-1001)
-            // 5. PHASE 2.3: Modal validation and timeout prevention
+            // ROOT FIX: WordPress head includes:
+            // - Ultra-early data injection (priority 1)
+            // - Comprehensive data preparation (priority 2) 
+            // - Script isolation and dequeuing (priority 1000)
+            // - Error recovery systems (priority 999-1001)
+            // - Modal validation and timeout prevention
             wp_head();
             ?>
             
-            <!-- PHASE 2.3: Enhanced template ready indicator with modal validation -->
+            <!-- ROOT FIX: Enhanced template ready indicator with modal validation -->
             <script type="text/javascript">
                 window.gmkbTemplateEnhanced = true;
                 window.gmkbTemplateLoadTime = <?php echo time(); ?>;
-                window.gmkbPhase23Enhanced = true;
+                window.gmkbWordPressCompatible = true;
                 window.gmkbModalValidation = <?php echo wp_json_encode($modal_validation); ?>;
+                window.gmkbRootFixActive = true;
                 
-                console.log('🚀 Phase 2.3 Enhanced Builder Template Ready', {
+                console.log('🚀 ROOT FIX: Clean WordPress-Compatible Builder Template Ready', {
                     enhancedStatus: <?php echo wp_json_encode($enhanced_status); ?>,
                     modalValidation: window.gmkbModalValidation,
                     templateLoadTime: window.gmkbTemplateLoadTime,
-                    isolation: true,
-                    phase23: true
+                    wordPressCompatible: true,
+                    scriptConflicts: 'eliminated',
+                    architecture: 'clean-wordpress-compatible'
                 });
                 
-                // PHASE 2.3: Early modal detection helper for JavaScript
+                // ROOT FIX: Early modal detection helper for JavaScript
                 window.gmkbModalPreValidation = function() {
                     const requiredModals = ['component-library-overlay', 'template-library-modal', 'global-settings-modal', 'export-modal'];
                     const results = {
@@ -264,7 +284,7 @@ class Guestify_Media_Kit_Builder {
                 };
             </script>
         </head>
-        <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing gmkb-phase23-enhanced" data-modal-validation="<?php echo esc_attr($modal_validation['all_available'] ? 'pass' : 'partial'); ?>" data-template-version="2.3">
+        <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing gmkb-clean gmkb-root-fix" data-modal-validation="<?php echo esc_attr($modal_validation['all_available'] ? 'pass' : 'partial'); ?>" data-template-version="root-fix-clean">
             
             <!-- Enhanced error boundary for template -->
             <div id="gmkb-template-error-boundary" style="display: none;">
@@ -308,56 +328,60 @@ class Guestify_Media_Kit_Builder {
                 echo '<script>document.getElementById("gmkb-template-error-boundary").style.display = "block";</script>';
             }
             
-            // PHASE 2.3: ENHANCED WORDPRESS FOOTER WITH MODAL TIMEOUT PREVENTION
-            // Footer includes:
+            // ROOT FIX: WordPress footer includes:
             // - Backup data validation (priority 999)
             // - Error recovery systems (priority 1000)
             // - Diagnostic tools (priority 1001)
-            // - PHASE 2.3: Modal availability final validation (priority 1002)
+            // - Modal availability final validation (priority 1002)
             wp_footer();
             ?>
             
-            <!-- PHASE 2.3: Template completion with enhanced modal validation -->
+            <!-- ROOT FIX: Template completion with enhanced modal validation -->
             <script type="text/javascript">
                 window.gmkbTemplateComplete = true;
-                window.gmkbPhase23TemplateComplete = true;
+                window.gmkbWordPressTemplateComplete = true;
                 
-                // PHASE 2.3: Final modal validation before initialization
+                // ROOT FIX: Final modal validation before initialization
                 window.gmkbFinalModalValidation = window.gmkbModalPreValidation();
                 
-                console.log('✅ Phase 2.3 Enhanced Template Render Complete', {
+                console.log('✅ ROOT FIX: Clean WordPress-Compatible Template Render Complete', {
                     templateComplete: true,
                     finalModalValidation: window.gmkbFinalModalValidation,
                     modalReadiness: window.gmkbFinalModalValidation.ready,
                     availableModals: window.gmkbFinalModalValidation.available,
-                    missingModals: window.gmkbFinalModalValidation.missing
+                    missingModals: window.gmkbFinalModalValidation.missing,
+                    wordPressCompatible: true,
+                    rootFixActive: true,
+                    clean: true
                 });
                 
-                // PHASE 2.3: Enhanced error boundary removal with modal validation
-                if (!window.gmkbPhase1?.errors?.length && window.gmkbFinalModalValidation.ready) {
+                // ROOT FIX: Enhanced error boundary removal with modal validation
+                if (!window.gmkbErrors?.length && window.gmkbFinalModalValidation.ready) {
                     const errorBoundary = document.getElementById('gmkb-template-error-boundary');
                     if (errorBoundary) errorBoundary.remove();
                 } else if (!window.gmkbFinalModalValidation.ready) {
-                    console.warn('⚠️ Phase 2.3: Some modals not ready at template completion:', 
+                    console.warn('⚠️ ROOT FIX: Some modals not ready at template completion:', 
                                 window.gmkbFinalModalValidation.missing);
                 }
                 
-                // PHASE 2.3: Signal template ready for enhanced initialization
+                // ROOT FIX: Signal template ready for enhanced initialization
                 document.body.classList.remove('gmkb-initializing');
-                document.body.classList.add('gmkb-template-ready');
+                document.body.classList.add('gmkb-template-ready', 'gmkb-clean');
                 
                 // FOUNDATIONAL FIX: Event dispatch moved to template after modal validation
-                // The template now handles the gmkbTemplateComplete event dispatch after
+                // The template handles the gmkbWordPressTemplateReady event dispatch after
                 // ensuring all modals are properly loaded and ready
-                console.log('✅ Phase 2.3 Template render complete - waiting for modal validation');
+                console.log('✅ ROOT FIX: Clean template render complete - waiting for modal validation');
                 
-                // Legacy event for backward compatibility (non-blocking)
-                document.dispatchEvent(new CustomEvent('gmkbPhase23TemplateReady', {
+                // ROOT FIX: Event for WordPress-compatible template ready
+                document.dispatchEvent(new CustomEvent('gmkbWordPressTemplateReady', {
                     detail: {
                         modalValidation: window.gmkbFinalModalValidation,
-                        templateVersion: '2.3-enhanced',
+                        templateVersion: 'root-fix-wordpress-compatible',
                         readyForInit: window.gmkbFinalModalValidation.ready,
-                        note: 'Template rendered - main initialization event will come from template after modal validation'
+                        wordPressCompatible: true,
+                        scriptConflicts: 'eliminated',
+                        note: 'WordPress-compatible template ready - enhanced systems load via WordPress dependency chain'
                     }
                 }));
             </script>
@@ -375,16 +399,16 @@ class Guestify_Media_Kit_Builder {
         $optimized_template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template-optimized.php';
         $original_template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template.php';
         
-        // Use optimized template if available, fallback to original
+        // ROOT FIX: Use optimized template with clean WordPress-compatible loading
         if (file_exists($optimized_template)) {
             include $optimized_template;
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: Using optimized template for 90% performance improvement');
+                error_log('GMKB ROOT FIX: Using optimized template with clean WordPress-compatible scripts');
             }
         } else {
             include $original_template;
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: Using original template (optimized version not found)');
+                error_log('GMKB ROOT FIX: Using original template with clean WordPress-compatible loading');
             }
         }
         

@@ -1,0 +1,10 @@
+/**
+ * BACKUP: Critical testing foundation utilities file
+ * This file is loaded in production via enqueue.php as 'guestify-testing-systems'
+ * 
+ * BACKUP DATE: 2025-01-11
+ * REASON: JavaScript cleanup - keeping only production files
+ */
+
+// Original content backed up - see main file for current version
+// This file is actively used in production and should NOT be deleted.
