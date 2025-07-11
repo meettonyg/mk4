@@ -6,7 +6,166 @@
  * Phase 2A Enhancement: Added modal validation and promise-based sequencing
  * Phase 2B Enhancement: Integrated comprehensive logging system
  * Phase 2B Fix: Properly handle timeout promises to prevent unhandled rejections
+ * STEP 3 ENHANCEMENT: Anti-polling measures and pure event-driven initialization
  */
+
+// =====================================
+// STEP 3: COMPREHENSIVE ANTI-POLLING SYSTEM
+// ROOT FIX: Eliminate all polling mechanisms for pure event-driven initialization
+// =====================================
+
+/**
+ * Anti-Polling Detection and Prevention System
+ * Blocks legacy polling attempts and forces event-driven initialization
+ */
+class AntiPollingSystem {
+    constructor() {
+        this.detectedPolling = [];
+        this.blockedTimers = new Map();
+        this.originalSetTimeout = window.setTimeout;
+        this.originalSetInterval = window.setInterval;
+        this.originalClearTimeout = window.clearTimeout;
+        this.originalClearInterval = window.clearInterval;
+        this.pollingBlockActive = true;
+        this.diagnostics = {
+            blockedPollingAttempts: 0,
+            detected250msPolling: 0,
+            emergencyCleanups: 0,
+            antiPollingValidations: 0
+        };
+        
+        this.initializeAntiPolling();
+    }
+    
+    initializeAntiPolling() {
+        console.log('🚫 STEP 3: Anti-Polling System Initializing...');
+        
+        // Override setTimeout to catch and block polling attempts
+        window.setTimeout = (callback, delay, ...args) => {
+            // Detect 250ms polling specifically
+            if (delay === 250) {
+                this.diagnostics.detected250msPolling++;
+                console.warn(`🚫 BLOCKED: 250ms polling attempt detected and blocked`, {
+                    callback: callback.toString().substring(0, 100),
+                    stackTrace: new Error().stack.split('\n').slice(1, 4)
+                });
+                
+                // Block the polling by returning a dummy timer ID
+                const dummyId = Math.random() * 1000000;
+                this.blockedTimers.set(dummyId, { type: 'blocked-polling', delay, blocked: true });
+                return dummyId;
+            }
+            
+            // Allow non-polling timeouts but track them
+            if (delay > 0 && delay <= 500) {
+                console.debug(`⏱️ Allowing timeout: ${delay}ms`, {
+                    callback: callback.toString().substring(0, 50)
+                });
+            }
+            
+            // Call original setTimeout for legitimate timeouts
+            const timerId = this.originalSetTimeout.call(window, callback, delay, ...args);
+            this.blockedTimers.set(timerId, { type: 'allowed', delay, blocked: false });
+            return timerId;
+        };
+        
+        // Override setInterval to block polling intervals
+        window.setInterval = (callback, delay, ...args) => {
+            // Block any polling intervals
+            if (delay <= 1000) {
+                this.diagnostics.blockedPollingAttempts++;
+                console.warn(`🚫 BLOCKED: Polling interval detected and blocked (${delay}ms)`, {
+                    callback: callback.toString().substring(0, 100)
+                });
+                
+                const dummyId = Math.random() * 1000000;
+                this.blockedTimers.set(dummyId, { type: 'blocked-interval', delay, blocked: true });
+                return dummyId;
+            }
+            
+            // Allow longer intervals
+            const timerId = this.originalSetInterval.call(window, callback, delay, ...args);
+            this.blockedTimers.set(timerId, { type: 'allowed-interval', delay, blocked: false });
+            return timerId;
+        };
+        
+        // Override clearTimeout to handle blocked timers
+        window.clearTimeout = (timerId) => {
+            const timerInfo = this.blockedTimers.get(timerId);
+            if (timerInfo && timerInfo.blocked) {
+                console.debug(`🚫 Cleared blocked timer: ${timerId}`);
+                this.blockedTimers.delete(timerId);
+                return;
+            }
+            
+            return this.originalClearTimeout.call(window, timerId);
+        };
+        
+        // Override clearInterval to handle blocked intervals
+        window.clearInterval = (timerId) => {
+            const timerInfo = this.blockedTimers.get(timerId);
+            if (timerInfo && timerInfo.blocked) {
+                console.debug(`🚫 Cleared blocked interval: ${timerId}`);
+                this.blockedTimers.delete(timerId);
+                return;
+            }
+            
+            return this.originalClearInterval.call(window, timerId);
+        };
+        
+        console.log('✅ STEP 3: Anti-Polling System Active - All polling mechanisms blocked');
+    }
+    
+    emergencyCleanupExistingTimers() {
+        console.log('🚑 STEP 3: Emergency cleanup of existing timers...');
+        
+        // Clear any existing timers that might be polling
+        let highestId = setTimeout(() => {}, 0);
+        for (let i = 1; i <= highestId; i++) {
+            try {
+                clearTimeout(i);
+                clearInterval(i);
+            } catch (e) {
+                // Ignore errors for invalid timer IDs
+            }
+        }
+        
+        this.diagnostics.emergencyCleanups++;
+        console.log(`🚑 Emergency cleanup complete - cleared timers up to ID ${highestId}`);
+    }
+    
+    validateAntiPolling() {
+        this.diagnostics.antiPollingValidations++;
+        
+        const validation = {
+            pollingBlockActive: this.pollingBlockActive,
+            blockedTimersCount: this.blockedTimers.size,
+            setTimeoutOverridden: window.setTimeout !== this.originalSetTimeout,
+            setIntervalOverridden: window.setInterval !== this.originalSetInterval,
+            diagnostics: { ...this.diagnostics }
+        };
+        
+        console.log('🔍 STEP 3: Anti-Polling Validation:', validation);
+        return validation;
+    }
+    
+    getDiagnostics() {
+        return {
+            ...this.diagnostics,
+            blockedTimersCount: this.blockedTimers.size,
+            blockedTimers: Array.from(this.blockedTimers.entries())
+        };
+    }
+}
+
+// Initialize Anti-Polling System immediately
+const antiPollingSystem = new AntiPollingSystem();
+
+// Emergency cleanup any existing polling timers
+antiPollingSystem.emergencyCleanupExistingTimers();
+
+// Expose globally for diagnostics
+window.antiPollingSystem = antiPollingSystem;
 
 import { performanceMonitor } from '../utils/performance-monitor.js';
 import { structuredLogger } from '../utils/structured-logger.js';

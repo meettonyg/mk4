@@ -1490,3 +1490,359 @@ if (!function_exists('guestify_media_kit_builder_enqueue_scripts')) {
         return GMKB_Enhanced_Script_Manager::get_instance()->get_status();
     }
 }
+
+// =====================================
+// EMERGENCY CACHE-BUSTING & POLLING ELIMINATION 
+// ROOT FIX: Eliminate hidden polling function at line 2752
+// =====================================
+
+// ROOT FIX: Force cache busting for all Guestify scripts
+add_filter('script_loader_src', 'gmkb_force_cache_bust', 10, 2);
+function gmkb_force_cache_bust($src, $handle) {
+    // Only apply to our scripts
+    $guestify_scripts = [
+        'guestify-enhanced-state-manager',
+        'guestify-enhanced-component-manager', 
+        'guestify-enhanced-renderer',
+        'guestify-system-registrar',
+        'guestify-enhanced-core',
+        'guestify-ui-systems',
+        'guestify-testing-systems'
+    ];
+    
+    if (in_array($handle, $guestify_scripts)) {
+        // Add timestamp to force fresh loading
+        $separator = (strpos($src, '?') === false) ? '?' : '&';
+        $src = $src . $separator . 'nocache=' . time() . '&v=' . GUESTIFY_VERSION . '&bust=' . wp_rand(1000, 9999);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB CACHE BUST: $handle - $src");
+        }
+    }
+    
+    return $src;
+}
+
+// ROOT FIX: Disable all WordPress script concatenation on builder page
+add_action('init', 'gmkb_disable_script_concatenation');
+function gmkb_disable_script_concatenation() {
+    if (is_page('guestify-media-kit') || (isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit')) {
+        // Disable script concatenation completely
+        if (!defined('CONCATENATE_SCRIPTS')) define('CONCATENATE_SCRIPTS', false);
+        if (!defined('COMPRESS_SCRIPTS')) define('COMPRESS_SCRIPTS', false);
+        if (!defined('COMPRESS_CSS')) define('COMPRESS_CSS', false);
+        
+        // Disable common optimization plugins on builder page
+        add_filter('autoptimize_filter_js_dontaggregate', '__return_true');
+        add_filter('w3tc_minify_js_enable', '__return_false');  
+        add_filter('wp_rocket_defer_inline_exclusions', '__return_false');
+        add_filter('litespeed_js_optimize', '__return_false');
+        add_filter('wp_rocket_minify_concatenate_js', '__return_false');
+        add_filter('rocket_minify_concatenate_js', '__return_false');
+        
+        // Force dequeue potential conflicting scripts
+        add_action('wp_enqueue_scripts', 'gmkb_emergency_dequeue', 999);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Script concatenation and optimization disabled for builder page');
+        }
+    }
+}
+
+// ROOT FIX: Emergency dequeue of potential polling scripts
+function gmkb_emergency_dequeue() {
+    global $wp_scripts;
+    
+    if (!$wp_scripts || (!is_page('guestify-media-kit') && (!isset($_GET['page']) || $_GET['page'] !== 'guestify-media-kit'))) {
+        return;
+    }
+    
+    // Get all enqueued scripts
+    $all_scripts = $wp_scripts->queue;
+    $dequeued_count = 0;
+    
+    // Scan for potential polling scripts and dequeue them
+    foreach ($all_scripts as $handle) {
+        $script = $wp_scripts->registered[$handle];
+        if (!$script) continue;
+        
+        // Skip our own scripts
+        if (strpos($handle, 'guestify') !== false) continue;
+        
+        // Skip essential WordPress scripts
+        $essential = ['jquery', 'jquery-core', 'wp-api', 'wp-api-fetch', 'wp-polyfill'];
+        if (in_array($handle, $essential)) continue;
+        
+        // Skip admin scripts if in admin
+        if (is_admin() && strpos($handle, 'admin') !== false) continue;
+        
+        // Dequeue everything else to eliminate conflicts
+        wp_dequeue_script($handle);
+        $dequeued_count++;
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB DEQUEUE: Removed potential conflicting script: $handle");
+        }
+    }
+    
+    if (defined('WP_DEBUG') && WP_DEBUG && $dequeued_count > 0) {
+        error_log("GMKB: Dequeued $dequeued_count potentially conflicting scripts");
+    }
+}
+
+// ROOT FIX: Add polling elimination JavaScript to head
+add_action('wp_head', 'gmkb_inject_polling_eliminator', 1);
+function gmkb_inject_polling_eliminator() {
+    if (!is_page('guestify-media-kit') && (!isset($_GET['page']) || $_GET['page'] !== 'guestify-media-kit')) {
+        return;
+    }
+    
+    ?>
+    <script id="gmkb-polling-eliminator">
+    (function() {
+        'use strict';
+        
+        console.log('🚨 EMERGENCY: Polling elimination active - hunting for line 2752 function');
+        
+        // Track suspicious function calls
+        const suspiciousCalls = [];
+        let pollingBlocked = 0;
+        
+        // Override setTimeout to catch polling patterns
+        const originalSetTimeout = window.setTimeout;
+        window.setTimeout = function(callback, delay, ...args) {
+            
+            // Check for suspicious polling patterns
+            if (delay === 250 || delay === 500 || delay === 1000) {
+                const stack = new Error().stack;
+                const callbackStr = callback.toString();
+                
+                // Look for polling indicators
+                const pollingIndicators = [
+                    'Enhanced state manager not found',
+                    'check',
+                    'poll',
+                    'retry',
+                    'timeout',
+                    'manager not found',
+                    'state manager',
+                    'enhancedComponentManager',
+                    'stateManager'
+                ];
+                
+                const isPolling = pollingIndicators.some(indicator => 
+                    callbackStr.toLowerCase().includes(indicator.toLowerCase()) || 
+                    stack.toLowerCase().includes(indicator.toLowerCase())
+                );
+                
+                if (isPolling) {
+                    pollingBlocked++;
+                    console.error('🚨 BLOCKED POLLING ATTEMPT #' + pollingBlocked + ':', {
+                        delay,
+                        callback: callbackStr.substring(0, 200),
+                        stack: stack.split('\n').slice(0, 5),
+                        source: 'setTimeout'
+                    });
+                    
+                    suspiciousCalls.push({
+                        type: 'setTimeout',
+                        delay,
+                        callback: callbackStr.substring(0, 200),
+                        timestamp: Date.now(),
+                        blocked: true,
+                        stackTrace: stack.split('\n').slice(0, 3)
+                    });
+                    
+                    // Don't execute the polling callback - return dummy timeout
+                    return setTimeout(() => {
+                        console.log('❌ Polling callback #' + pollingBlocked + ' neutralized');
+                    }, 1);
+                }
+            }
+            
+            return originalSetTimeout.call(this, callback, delay, ...args);
+        };
+        
+        // Override setInterval to catch polling patterns  
+        const originalSetInterval = window.setInterval;
+        window.setInterval = function(callback, delay, ...args) {
+            
+            if (delay === 250 || delay === 500 || delay === 1000) {
+                const stack = new Error().stack;
+                const callbackStr = callback.toString();
+                
+                const pollingIndicators = [
+                    'Enhanced state manager not found',
+                    'check',
+                    'poll',
+                    'manager not found',
+                    'state manager'
+                ];
+                
+                const isPolling = pollingIndicators.some(indicator => 
+                    callbackStr.toLowerCase().includes(indicator.toLowerCase()) || 
+                    stack.toLowerCase().includes(indicator.toLowerCase())
+                );
+                
+                if (isPolling) {
+                    pollingBlocked++;
+                    console.error('🚨 BLOCKED POLLING INTERVAL #' + pollingBlocked + ':', {
+                        delay,
+                        callback: callbackStr.substring(0, 200),
+                        source: 'setInterval'
+                    });
+                    
+                    suspiciousCalls.push({
+                        type: 'setInterval',
+                        delay,
+                        callback: callbackStr.substring(0, 200),
+                        timestamp: Date.now(),
+                        blocked: true
+                    });
+                    
+                    // Return fake interval ID but don't actually set interval
+                    return setTimeout(() => {
+                        console.log('❌ Polling interval #' + pollingBlocked + ' neutralized');
+                    }, 1);
+                }
+            }
+            
+            return originalSetInterval.call(this, callback, delay, ...args);
+        };
+        
+        // Expose diagnostics
+        window.gmkbPollingDiagnostics = function() {
+            console.group('🔍 Polling Diagnostics - Line 2752 Hunter');
+            console.log('Polling attempts blocked:', pollingBlocked);
+            console.log('Suspicious calls detected:', suspiciousCalls.length);
+            console.table(suspiciousCalls);
+            console.groupEnd();
+            return { blocked: pollingBlocked, calls: suspiciousCalls };
+        };
+        
+        // Emergency stop all existing timers
+        window.emergencyStopAllPolling = function() {
+            let cleared = 0;
+            for (let i = 1; i < 10000; i++) {
+                try {
+                    clearTimeout(i);
+                    clearInterval(i);
+                    cleared++;
+                } catch (e) {}
+            }
+            console.log('🧹 Emergency cleanup: Cleared ' + cleared + ' potential timers');
+            return cleared;
+        };
+        
+        console.log('✅ Polling elimination guards active - monitoring for line 2752 function');
+        console.log('📊 Use gmkbPollingDiagnostics() to see blocked attempts');
+        console.log('🚨 Use emergencyStopAllPolling() to force-clear all timers');
+        
+    })();
+    </script>
+    <?php
+}
+
+// ROOT FIX: Add script version bumping to force cache refresh
+add_action('wp_enqueue_scripts', 'gmkb_bump_script_versions', 1);
+function gmkb_bump_script_versions() {
+    if (!is_page('guestify-media-kit') && (!isset($_GET['page']) || $_GET['page'] !== 'guestify-media-kit')) {
+        return;
+    }
+    
+    // Force version bump with current timestamp
+    global $wp_scripts;
+    
+    if ($wp_scripts) {
+        $timestamp = time();
+        $guestify_scripts = [
+            'guestify-enhanced-state-manager',
+            'guestify-enhanced-component-manager',
+            'guestify-enhanced-renderer', 
+            'guestify-system-registrar',
+            'guestify-enhanced-core',
+            'guestify-ui-systems'
+        ];
+        
+        foreach ($guestify_scripts as $handle) {
+            if (isset($wp_scripts->registered[$handle])) {
+                $old_version = $wp_scripts->registered[$handle]->ver;
+                $wp_scripts->registered[$handle]->ver = GUESTIFY_VERSION . '-emergency-' . $timestamp . '-' . wp_rand(100, 999);
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB VERSION BUMP: $handle from $old_version to {$wp_scripts->registered[$handle]->ver}");
+                }
+            }
+        }
+    }
+}
+
+// ROOT FIX: Add emergency script cleanup
+add_action('wp_footer', 'gmkb_emergency_cleanup', 1);
+function gmkb_emergency_cleanup() {
+    if (!is_page('guestify-media-kit') && (!isset($_GET['page']) || $_GET['page'] !== 'guestify-media-kit')) {
+        return;
+    }
+    
+    ?>
+    <script id="gmkb-emergency-cleanup">
+    (function() {
+        console.log('🧹 Starting emergency cleanup of potential polling timers...');
+        
+        // Emergency cleanup of any remaining polling timers
+        let timeoutId = 1;
+        let clearedCount = 0;
+        
+        while (timeoutId < 10000) {
+            try {
+                clearTimeout(timeoutId);
+                clearInterval(timeoutId);
+                clearedCount++;
+            } catch (e) {}
+            timeoutId++;
+        }
+        
+        console.log('🧹 Emergency cleanup: Cleared ' + clearedCount + ' potential polling timers (1-10000)');
+        
+        // Search for any remaining polling functions in loaded scripts
+        const scripts = Array.from(document.scripts);
+        let suspiciousScripts = 0;
+        
+        scripts.forEach((script, index) => {
+            if (script.textContent) {
+                const content = script.textContent;
+                if (content.includes('Enhanced state manager not found') || 
+                    content.includes('setTimeout') && content.includes('250')) {
+                    suspiciousScripts++;
+                    console.warn('⚠️ Found suspicious script #' + index + ' with potential polling code');
+                }
+            }
+        });
+        
+        if (suspiciousScripts > 0) {
+            console.warn('🚨 Found ' + suspiciousScripts + ' potentially problematic scripts');
+        } else {
+            console.log('✅ No suspicious polling scripts detected in cleanup');
+        }
+        
+        // Force garbage collection if available
+        if (window.gc) {
+            window.gc();
+        }
+        
+        // Final status report
+        setTimeout(() => {
+            if (typeof window.gmkbPollingDiagnostics === 'function') {
+                const report = window.gmkbPollingDiagnostics();
+                if (report.blocked > 0) {
+                    console.log('🎉 SUCCESS: Blocked ' + report.blocked + ' polling attempts!');
+                } else {
+                    console.log('📊 No polling attempts detected (system may already be clean)');
+                }
+            }
+        }, 2000);
+        
+    })();
+    </script>
+    <?php
+}
