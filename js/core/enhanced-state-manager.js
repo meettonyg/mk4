@@ -23,6 +23,10 @@ import {
 import {
     performanceMonitor
 } from '../utils/performance-monitor.js';
+// ROOT FIX: Import rendering queue manager for coordinated state-render synchronization
+import {
+    renderingQueueManager
+} from './rendering-queue-manager.js';
 
 // FIX: Removed the import for enhancedComponentRenderer to break the circular dependency.
 // The state manager should not be aware of the renderer. The renderer subscribes to the state manager instead.
@@ -44,6 +48,15 @@ class EnhancedStateManager {
         this.isNotifyingSubscribers = false; // CRITICAL FIX: Coordination flag
         this.logger = structuredLogger;
         this.eventBus = eventBus;
+        
+        // ROOT FIX: Rendering coordination properties
+        this.renderCoordination = {
+            enabled: true,
+            waitForRenderCompletion: true,
+            batchRenderTimeout: 10000, // 10 second timeout for batch renders
+            pendingRenders: new Map(), // Track pending render operations
+            renderCompletionCallbacks: new Map() // Track render completion callbacks
+        };
         
         // Performance tracking
         this.operationCount = 0;
@@ -240,66 +253,100 @@ class EnhancedStateManager {
     }
 
     /**
-     * CRITICAL FIX: Enhanced subscriber notification with render coordination
-     * Prevents Race Condition 5 (concurrent state updates vs rendering)
+     * ROOT FIX: TASK 1.3 - Enhanced subscriber notification with full rendering queue coordination
+     * Eliminates all race conditions between state updates and rendering through coordinated updates
      */
     notifySubscribers() {
         if (this.subscriberNotificationTimeout) {
             clearTimeout(this.subscriberNotificationTimeout);
         }
         
-        // CRITICAL FIX: Check if renderer is currently rendering to prevent conflicts
-        if (window.renderer && window.renderer.isRendering) {
-            this.logger.debug('STATE', 'Deferring notification - renderer is busy');
-            // Defer notification until render is complete
-            setTimeout(() => this.notifySubscribers(), 50);
+        // ROOT FIX: TASK 1.3 - Enhanced rendering queue coordination check
+        if (this.renderCoordination.enabled && this.shouldWaitForRenderQueue()) {
+            this.logger.debug('STATE', 'TASK 1.3: Deferring notification - rendering queue coordination active');
+            // Use exponential backoff for queue coordination
+            const backoffDelay = Math.min(25 * Math.pow(1.5, this.renderCoordination.deferralCount || 0), 200);
+            this.renderCoordination.deferralCount = (this.renderCoordination.deferralCount || 0) + 1;
+            setTimeout(() => {
+                this.renderCoordination.deferralCount = 0; // Reset on retry
+                this.notifySubscribers();
+            }, backoffDelay);
             return;
         }
         
-        // CRITICAL FIX: Coordinated notification with render locking
-        this.subscriberNotificationTimeout = setTimeout(() => {
+        // ROOT FIX: TASK 1.3 - Queue-coordinated notification with render acknowledgment
+        this.subscriberNotificationTimeout = setTimeout(async () => {
+            const notificationId = `notify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const startTime = performance.now();
             
-            // CRITICAL FIX: Signal that state notification is in progress
+            // ROOT FIX: TASK 1.3 - Signal coordinated notification in progress
             this.isNotifyingSubscribers = true;
+            this.renderCoordination.activeNotification = notificationId;
             
-            this.logger.debug('STATE', `Coordinated notification to ${this.subscribers.length} subscribers`);
+            this.logger.debug('STATE', `TASK 1.3: Queue-coordinated notification to ${this.subscribers.length} subscribers`, {
+                notificationId,
+                renderCoordination: this.renderCoordination.enabled,
+                queueState: this.getRenderQueueState(),
+                pendingRenders: this.renderCoordination.pendingRenders.size
+            });
             
-            let errorCount = 0;
-            this.subscribers.forEach((callback, index) => {
-                try {
-                    callback(this.state);
-                } catch (e) {
-                    errorCount++;
-                    this.logger.error('STATE', `Subscriber ${index} callback error`, e);
+            try {
+                // ROOT FIX: TASK 1.3 - Pre-notification queue synchronization
+                if (this.renderCoordination.enabled) {
+                    await this.performQueueSynchronization('pre-notification');
                 }
-            });
-            
-            const duration = performance.now() - startTime;
-            
-            // Track performance
-            if (window.mkPerf) {
-                window.mkPerf.track('state-notify-subscribers', startTime, {
+                
+                // ROOT FIX: TASK 1.3 - Execute coordinated subscriber notifications
+                const notificationResults = await this.executeCoordinatedSubscriberNotifications(notificationId);
+                
+                // ROOT FIX: TASK 1.3 - Post-notification render acknowledgment tracking
+                if (this.renderCoordination.enabled && this.renderCoordination.waitForRenderCompletion) {
+                    await this.trackRenderCompletionAcknowledgments(notificationId);
+                }
+                
+                // Update performance metrics with coordination data
+                const duration = performance.now() - startTime;
+                this.updateCoordinatedNotificationMetrics(duration, notificationResults, notificationId);
+                
+                // ROOT FIX: TASK 1.3 - Enhanced event emission with full coordination metadata
+                this.eventBus.emit('state:subscribers-notified-coordinated', {
+                    notificationId,
                     subscriberCount: this.subscribers.length,
-                    errorCount
+                    errorCount: notificationResults.errorCount,
+                    duration,
+                    renderCoordination: this.renderCoordination.enabled,
+                    queueCoordinated: true,
+                    acknowledgmentsPending: this.renderCoordination.pendingRenders.size,
+                    queueState: this.getRenderQueueState()
                 });
+                
+                if (duration > 15) {
+                    this.logger.warn('STATE', `TASK 1.3: Coordinated notification took ${duration.toFixed(2)}ms (performance warning)`, {
+                        notificationId,
+                        queueCoordination: this.renderCoordination.enabled,
+                        acknowledgmentsPending: this.renderCoordination.pendingRenders.size
+                    });
+                }
+                
+            } catch (error) {
+                this.logger.error('STATE', 'TASK 1.3: Coordinated subscriber notification failed', error, {
+                    notificationId
+                });
+                // Emit error event for monitoring
+                this.eventBus.emit('state:notification-error-coordinated', {
+                    notificationId,
+                    error: error.message,
+                    renderCoordination: this.renderCoordination.enabled,
+                    coordinationType: 'queue-integrated'
+                });
+            } finally {
+                // ROOT FIX: TASK 1.3 - Clean up coordination state
+                this.isNotifyingSubscribers = false;
+                this.renderCoordination.activeNotification = null;
+                this.subscriberNotificationTimeout = null;
+                this.renderCoordination.deferralCount = 0;
             }
-            
-            // Emit event for subscriber notifications
-            this.eventBus.emit('state:subscribers-notified', {
-                subscriberCount: this.subscribers.length,
-                errorCount,
-                duration
-            });
-            
-            if (duration > 10) {
-                this.logger.warn('STATE', `Subscriber notification took ${duration.toFixed(2)}ms (slow)`);
-            }
-            
-            // CRITICAL FIX: Clear notification flag
-            this.isNotifyingSubscribers = false;
-            this.subscriberNotificationTimeout = null;
-        }, 8); // CRITICAL FIX: Faster debounce for better responsiveness
+        }, this.calculateRenderAwareDebounceDelay()); // ROOT FIX: TASK 1.3 - Render-aware debounce
     }
 
     /**
@@ -336,22 +383,91 @@ class EnhancedStateManager {
     }
 
     /**
+     * ROOT FIX: TASK 1.3 - Enhanced batch update with full render coordination
      * Starts a batch update. All state changes will be queued until endBatchUpdate is called.
      */
     startBatchUpdate() {
         this.isBatching = true;
         this.transactionQueue = [];
         const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 10)}`;
-        this.logger.info('STATE', `Starting batch update: ${batchId}`);
+        
+        // ROOT FIX: TASK 1.3 - Initialize comprehensive batch render coordination
+        if (this.renderCoordination.enabled) {
+            this.renderCoordination.activeBatch = {
+                batchId,
+                startTime: Date.now(),
+                renderPromises: new Map(),
+                coordinationActive: true,
+                acknowledgedRenders: new Set(),
+                expectedRenders: new Set()
+            };
+            
+            // Configure rendering queue for batch mode
+            if (window.renderingQueueManager) {
+                renderingQueueManager.enterInitialStateMode();
+                this.logger.debug('STATE', 'TASK 1.3: Rendering queue entered batch mode', {
+                    batchId
+                });
+            }
+        }
+        
+        this.logger.info('STATE', `TASK 1.3: Enhanced batch update started: ${batchId}`, {
+            renderCoordination: this.renderCoordination.enabled,
+            queueState: this.getRenderQueueState()
+        });
+        
         return batchId;
     }
 
     /**
+     * ROOT FIX: TASK 1.3 - Enhanced batch update completion with full render coordination
      * Ends a batch update and processes the queue of state changes.
      */
-    endBatchUpdate() {
-        this.isBatching = false;
-        this.processTransactionQueue();
+    async endBatchUpdate() {
+        const batchInfo = this.renderCoordination.activeBatch;
+        const batchId = batchInfo?.batchId || 'unknown';
+        
+        try {
+            this.isBatching = false;
+            
+            // Process transaction queue
+            this.processTransactionQueue();
+            
+            // ROOT FIX: TASK 1.3 - Coordinate comprehensive batch render completion
+            if (this.renderCoordination.enabled && batchInfo?.coordinationActive) {
+                await this.coordinateBatchRenderCompletion(batchInfo);
+            }
+            
+        } catch (error) {
+            this.logger.error('STATE', 'TASK 1.3: Error during enhanced batch update completion', error, {
+                batchId
+            });
+        } finally {
+            // ROOT FIX: TASK 1.3 - Clean up comprehensive batch coordination state
+            if (this.renderCoordination.activeBatch) {
+                const duration = Date.now() - this.renderCoordination.activeBatch.startTime;
+                const expectedRenders = this.renderCoordination.activeBatch.expectedRenders?.size || 0;
+                const acknowledgedRenders = this.renderCoordination.activeBatch.acknowledgedRenders?.size || 0;
+                
+                this.logger.info('STATE', `TASK 1.3: Enhanced batch update completed: ${batchId}`, {
+                    duration,
+                    renderCoordination: this.renderCoordination.enabled,
+                    expectedRenders,
+                    acknowledgedRenders,
+                    completionRate: expectedRenders > 0 ? (acknowledgedRenders / expectedRenders * 100).toFixed(1) + '%' : 'N/A'
+                });
+                
+                this.renderCoordination.activeBatch = null;
+            }
+            
+            // Exit batch mode in rendering queue
+            if (this.renderCoordination.enabled && window.renderingQueueManager) {
+                renderingQueueManager.exitInitialStateMode();
+                this.logger.debug('STATE', 'TASK 1.3: Rendering queue exited batch mode', {
+                    batchId
+                });
+            }
+        }
     }
 
     /**
@@ -808,10 +924,22 @@ class EnhancedStateManager {
     }
     
     /**
-     * CRITICAL FIX: Check if state manager is busy (for render coordination)
+     * ROOT FIX: TASK 1.3 - Enhanced busy check including full render coordination status
      */
     isBusy() {
-        return this.isBatching || this.isNotifyingSubscribers || this.transactionQueue.length > 0;
+        const baseBusy = this.isBatching || this.isNotifyingSubscribers || this.transactionQueue.length > 0;
+        
+        // ROOT FIX: TASK 1.3 - Comprehensive render coordination status check
+        if (this.renderCoordination.enabled) {
+            const renderBusy = this.renderCoordination.pendingRenders.size > 0 || 
+                              this.shouldWaitForRenderQueue() ||
+                              this.renderCoordination.activeNotification !== null ||
+                              (this.renderCoordination.activeBatch?.coordinationActive === true) ||
+                              this.renderCoordination.renderCompletionCallbacks.size > 0;
+            return baseBusy || renderBusy;
+        }
+        
+        return baseBusy;
     }
     
     /**
@@ -1254,6 +1382,1128 @@ class EnhancedStateManager {
     }
     
     /**
+     * ROOT FIX: Check if state manager should wait for rendering queue
+     */
+    shouldWaitForRenderQueue() {
+        if (!this.renderCoordination.enabled || !window.renderingQueueManager) {
+            return false;
+        }
+        
+        const queueStats = renderingQueueManager.getStatistics();
+        
+        // Wait if queue is processing or has pending renders
+        return queueStats.processing || queueStats.queueSize > 0;
+    }
+    
+    /**
+     * ROOT FIX: Wait for render completion with timeout
+     */
+    async waitForRenderCompletion() {
+        if (!this.renderCoordination.enabled || !window.renderingQueueManager) {
+            return;
+        }
+        
+        const startTime = Date.now();
+        const timeout = this.renderCoordination.batchRenderTimeout;
+        
+        return new Promise((resolve) => {
+            const checkCompletion = () => {
+                const elapsed = Date.now() - startTime;
+                
+                // Check if renders are complete or timeout reached
+                if (!this.shouldWaitForRenderQueue() || elapsed >= timeout) {
+                    if (elapsed >= timeout) {
+                        this.logger.warn('STATE', 'Render completion wait timeout', {
+                            elapsed,
+                            timeout
+                        });
+                    } else {
+                        this.logger.debug('STATE', 'Render completion confirmed', {
+                            elapsed
+                        });
+                    }
+                    resolve();
+                } else {
+                    // Check again after short delay
+                    setTimeout(checkCompletion, 10);
+                }
+            };
+            
+            checkCompletion();
+        });
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Calculate render-aware debounce delay based on queue state and coordination needs
+     */
+    calculateRenderAwareDebounceDelay() {
+        if (!this.renderCoordination.enabled) {
+            return 8; // Default debounce
+        }
+        
+        const queueState = this.getRenderQueueState();
+        const pendingRenders = this.renderCoordination.pendingRenders.size;
+        
+        // Dynamic debounce based on comprehensive queue state
+        if (queueState.critical > 0) {
+            return 3; // Fastest for critical renders
+        } else if (pendingRenders > 5) {
+            return 20; // Slower for many pending acknowledgments
+        } else if (queueState.queueSize > 15) {
+            return 18; // Slower for heavy queue
+        } else if (queueState.processing) {
+            return 12; // Moderate for active processing
+        } else if (queueState.circuitBreakerState === 'OPEN') {
+            return 25; // Much slower if circuit breaker is open
+        }
+        
+        return 8; // Standard debounce
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Legacy method alias for backward compatibility
+     */
+    calculateOptimalDebounceDelay() {
+        return this.calculateRenderAwareDebounceDelay();
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Execute coordinated subscriber notifications with enhanced error handling
+     */
+    async executeCoordinatedSubscriberNotifications(notificationId) {
+        const results = {
+            successCount: 0,
+            errorCount: 0,
+            errors: [],
+            duration: 0
+        };
+        
+        const notificationStart = performance.now();
+        
+        try {
+            // Execute subscribers with controlled concurrency to prevent overwhelming
+            const subscriberPromises = this.subscribers.map(async (callback, index) => {
+                try {
+                    // Add timeout wrapper for subscriber callbacks
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Subscriber callback timeout')), 5000);
+                    });
+                    
+                    const callbackPromise = Promise.resolve(callback(this.state));
+                    
+                    // Race between callback and timeout
+                    await Promise.race([callbackPromise, timeoutPromise]);
+                    
+                    results.successCount++;
+                    
+                } catch (error) {
+                    results.errorCount++;
+                    results.errors.push({
+                        subscriberIndex: index,
+                        error: error.message,
+                        timestamp: Date.now()
+                    });
+                    
+                    this.logger.error('STATE', `TASK 1.3: Coordinated subscriber ${index} callback error`, error, {
+                        notificationId
+                    });
+                }
+            });
+            
+            // Wait for all subscriber notifications to complete
+            await Promise.allSettled(subscriberPromises);
+            
+            results.duration = performance.now() - notificationStart;
+            
+            // Track performance metrics
+            if (window.mkPerf) {
+                window.mkPerf.track('state-notify-subscribers-coordinated', results.duration, {
+                    subscriberCount: this.subscribers.length,
+                    successCount: results.successCount,
+                    errorCount: results.errorCount,
+                    notificationId
+                });
+            }
+            
+            this.logger.debug('STATE', 'TASK 1.3: Coordinated subscriber notifications completed', {
+                notificationId,
+                duration: results.duration,
+                successCount: results.successCount,
+                errorCount: results.errorCount
+            });
+            
+            return results;
+            
+        } catch (error) {
+            results.duration = performance.now() - notificationStart;
+            results.errorCount = this.subscribers.length;
+            
+            this.logger.error('STATE', 'TASK 1.3: Coordinated subscriber notifications failed completely', error, {
+                notificationId
+            });
+            
+            return results;
+        }
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Track render completion acknowledgments for coordinated updates
+     */
+    async trackRenderCompletionAcknowledgments(notificationId) {
+        if (!this.renderCoordination.enabled || !this.renderCoordination.waitForRenderCompletion) {
+            return;
+        }
+        
+        const trackingStart = performance.now();
+        
+        try {
+            // Create render completion promise for this notification
+            const completionPromise = this.createRenderCompletionPromise(notificationId);
+            
+            // Wait for render completion with timeout
+            const timeoutPromise = new Promise((resolve) => {
+                setTimeout(() => {
+                    this.logger.debug('STATE', 'TASK 1.3: Render acknowledgment tracking timeout', {
+                        notificationId,
+                        timeout: this.renderCoordination.batchRenderTimeout
+                    });
+                    resolve('timeout');
+                }, this.renderCoordination.batchRenderTimeout);
+            });
+            
+            const result = await Promise.race([completionPromise, timeoutPromise]);
+            
+            const trackingDuration = performance.now() - trackingStart;
+            
+            if (result === 'timeout') {
+                this.logger.warn('STATE', 'TASK 1.3: Render completion acknowledgment timeout', {
+                    notificationId,
+                    duration: trackingDuration
+                });
+            } else {
+                this.logger.debug('STATE', 'TASK 1.3: Render completion acknowledgment received', {
+                    notificationId,
+                    duration: trackingDuration,
+                    result
+                });
+            }
+            
+        } catch (error) {
+            this.logger.warn('STATE', 'TASK 1.3: Error tracking render completion acknowledgments', error, {
+                notificationId
+            });
+        } finally {
+            // Clean up tracking for this notification
+            this.renderCoordination.pendingRenders.delete(notificationId);
+            this.renderCoordination.renderCompletionCallbacks.delete(notificationId);
+        }
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Create render completion promise for acknowledgment tracking
+     */
+    createRenderCompletionPromise(notificationId) {
+        return new Promise((resolve) => {
+            // Set up completion callback
+            const completionCallback = (result) => {
+                resolve(result || 'completed');
+            };
+            
+            // Store callback for later resolution
+            this.renderCoordination.renderCompletionCallbacks.set(notificationId, completionCallback);
+            
+            // Track as pending render
+            this.renderCoordination.pendingRenders.set(notificationId, {
+                startTime: Date.now(),
+                type: 'notification-acknowledgment'
+            });
+            
+            // Listen for render completion events from rendering queue
+            const onRenderComplete = (event) => {
+                if (this.renderCoordination.renderCompletionCallbacks.has(notificationId)) {
+                    this.logger.debug('STATE', 'TASK 1.3: Render event detected for notification', {
+                        notificationId,
+                        event: event.type
+                    });
+                    completionCallback('render-event-detected');
+                    this.eventBus.off('render:completed', onRenderComplete);
+                    this.eventBus.off('render:batch-completed', onRenderComplete);
+                }
+            };
+            
+            // Listen for both individual and batch completion events
+            this.eventBus.on('render:completed', onRenderComplete);
+            this.eventBus.on('render:batch-completed', onRenderComplete);
+            
+            // Also check if rendering queue is idle after a short delay
+            setTimeout(() => {
+                if (this.renderCoordination.renderCompletionCallbacks.has(notificationId)) {
+                    const queueState = this.getRenderQueueState();
+                    if (!queueState.processing && queueState.queueSize === 0) {
+                        this.logger.debug('STATE', 'TASK 1.3: Rendering queue idle, completing acknowledgment', {
+                            notificationId
+                        });
+                        completionCallback('queue-idle');
+                        this.eventBus.off('render:completed', onRenderComplete);
+                        this.eventBus.off('render:batch-completed', onRenderComplete);
+                    }
+                }
+            }, 100); // Check after 100ms
+        });
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Perform queue synchronization before or after notifications
+     */
+    async performQueueSynchronization(phase) {
+        if (!this.renderCoordination.enabled || !window.renderingQueueManager) {
+            return;
+        }
+        
+        const syncStart = performance.now();
+        
+        try {
+            this.logger.debug('STATE', `TASK 1.3: Performing ${phase} queue synchronization`);
+            
+            if (phase === 'pre-notification') {
+                // Pre-notification synchronization
+                await this.performPreNotificationQueueSync();
+            } else if (phase === 'post-notification') {
+                // Post-notification synchronization
+                await this.performPostNotificationQueueSync();
+            }
+            
+            const syncDuration = performance.now() - syncStart;
+            
+            this.logger.debug('STATE', `TASK 1.3: ${phase} queue synchronization completed`, {
+                duration: syncDuration
+            });
+            
+        } catch (error) {
+            this.logger.warn('STATE', `TASK 1.3: ${phase} queue synchronization failed`, error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Pre-notification queue synchronization
+     */
+    async performPreNotificationQueueSync() {
+        const queueState = this.getRenderQueueState();
+        
+        // Wait for critical renders to complete before notifying
+        if (queueState.critical > 0) {
+            this.logger.debug('STATE', 'TASK 1.3: Waiting for critical renders before notification', {
+                criticalCount: queueState.critical
+            });
+            
+            await this.waitForCriticalRenders();
+        }
+        
+        // If queue is heavily loaded, wait briefly to avoid overwhelming
+        if (queueState.queueSize > 20) {
+            this.logger.debug('STATE', 'TASK 1.3: Heavy queue detected, brief pause before notification', {
+                queueSize: queueState.queueSize
+            });
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Post-notification queue synchronization
+     */
+    async performPostNotificationQueueSync() {
+        // Allow rendering queue to process any renders triggered by notifications
+        if (this.renderCoordination.waitForRenderCompletion) {
+            const maxWait = 1000; // Maximum 1 second wait
+            const startTime = Date.now();
+            
+            // Wait for queue to become idle or timeout
+            while (Date.now() - startTime < maxWait) {
+                const queueState = this.getRenderQueueState();
+                
+                if (!queueState.processing && queueState.queueSize === 0) {
+                    this.logger.debug('STATE', 'TASK 1.3: Queue idle after notification', {
+                        elapsed: Date.now() - startTime
+                    });
+                    break;
+                }
+                
+                // Short pause before checking again
+                await new Promise(resolve => setTimeout(resolve, 25));
+            }
+        }
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Update coordinated notification performance metrics
+     */
+    updateCoordinatedNotificationMetrics(duration, results, notificationId) {
+        // Initialize metrics if not exists
+        if (!this.renderCoordination.metrics) {
+            this.renderCoordination.metrics = {
+                notifications: [],
+                avgNotificationTime: 0,
+                avgErrorRate: 0,
+                totalNotifications: 0,
+                totalErrors: 0
+            };
+        }
+        
+        const metrics = this.renderCoordination.metrics;
+        
+        // Record notification metrics
+        const notificationMetric = {
+            notificationId,
+            duration,
+            subscriberCount: this.subscribers.length,
+            successCount: results.successCount,
+            errorCount: results.errorCount,
+            errorRate: results.errorCount / this.subscribers.length,
+            timestamp: Date.now()
+        };
+        
+        metrics.notifications.push(notificationMetric);
+        
+        // Keep only last 100 notifications
+        if (metrics.notifications.length > 100) {
+            metrics.notifications.shift();
+        }
+        
+        // Update running totals
+        metrics.totalNotifications++;
+        metrics.totalErrors += results.errorCount;
+        
+        // Calculate rolling averages
+        const recentNotifications = metrics.notifications.slice(-50); // Last 50
+        
+        metrics.avgNotificationTime = recentNotifications.reduce((sum, n) => sum + n.duration, 0) / recentNotifications.length;
+        metrics.avgErrorRate = recentNotifications.reduce((sum, n) => sum + n.errorRate, 0) / recentNotifications.length;
+        
+        // Log performance warnings
+        if (duration > 50) {
+            this.logger.warn('STATE', 'TASK 1.3: Slow coordinated notification detected', {
+                notificationId,
+                duration,
+                avgTime: metrics.avgNotificationTime
+            });
+        }
+        
+        if (results.errorCount > 0) {
+            this.logger.warn('STATE', 'TASK 1.3: Notification errors detected', {
+                notificationId,
+                errorCount: results.errorCount,
+                avgErrorRate: metrics.avgErrorRate
+            });
+        }
+    }
+    
+    /**
+     * ROOT FIX: Pre-notification render queue synchronization
+     */
+    async performPreNotificationSync() {
+        if (!window.renderingQueueManager) {
+            return;
+        }
+        
+        const syncStart = performance.now();
+        
+        try {
+            // Wait for critical renders to complete before notifying
+            const queueState = this.getRenderQueueState();
+            if (queueState.critical > 0) {
+                this.logger.debug('STATE', 'Waiting for critical renders before notification', {
+                    criticalCount: queueState.critical
+                });
+                
+                await this.waitForCriticalRenders();
+            }
+            
+            // Set render coordination flags
+            this.renderCoordination.preNotificationSyncComplete = true;
+            
+            const syncDuration = performance.now() - syncStart;
+            this.logger.debug('STATE', 'Pre-notification sync completed', {
+                duration: syncDuration
+            });
+            
+        } catch (error) {
+            this.logger.warn('STATE', 'Pre-notification sync failed', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Execute subscriber notifications with enhanced error handling
+     */
+    async executeSubscriberNotifications() {
+        const results = {
+            successCount: 0,
+            errorCount: 0,
+            errors: []
+        };
+        
+        // Execute subscribers with controlled concurrency
+        const subscriberPromises = this.subscribers.map(async (callback, index) => {
+            try {
+                // For async subscribers, await completion
+                const result = callback(this.state);
+                if (result instanceof Promise) {
+                    await result;
+                }
+                results.successCount++;
+            } catch (error) {
+                results.errorCount++;
+                results.errors.push({
+                    index,
+                    error: error.message,
+                    timestamp: Date.now()
+                });
+                this.logger.error('STATE', `Enhanced subscriber ${index} callback error`, error);
+            }
+        });
+        
+        // Wait for all subscriber notifications to complete
+        await Promise.allSettled(subscriberPromises);
+        
+        // Track performance metrics
+        if (window.mkPerf) {
+            window.mkPerf.track('state-notify-subscribers-enhanced', performance.now(), {
+                subscriberCount: this.subscribers.length,
+                successCount: results.successCount,
+                errorCount: results.errorCount
+            });
+        }
+        
+        return results;
+    }
+    
+    /**
+     * ROOT FIX: Post-notification render coordination with acknowledgment tracking
+     */
+    async performPostNotificationSync(notificationId) {
+        if (!window.renderingQueueManager) {
+            return;
+        }
+        
+        const syncStart = performance.now();
+        
+        try {
+            // Register for render completion acknowledgment
+            const renderPromise = this.registerRenderCompletionPromise(notificationId);
+            
+            // Wait for renders triggered by this notification to complete
+            await Promise.race([
+                renderPromise,
+                new Promise(resolve => setTimeout(resolve, this.renderCoordination.batchRenderTimeout))
+            ]);
+            
+            const syncDuration = performance.now() - syncStart;
+            this.logger.debug('STATE', 'Post-notification sync completed', {
+                notificationId,
+                duration: syncDuration
+            });
+            
+        } catch (error) {
+            this.logger.warn('STATE', 'Post-notification sync failed', error, {
+                notificationId
+            });
+        } finally {
+            // Clean up render promise tracking
+            this.renderCoordination.pendingRenders.delete(notificationId);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Register render completion promise for tracking
+     */
+    registerRenderCompletionPromise(notificationId) {
+        return new Promise((resolve) => {
+            const timeoutId = setTimeout(() => {
+                this.logger.debug('STATE', 'Render completion promise timeout', {
+                    notificationId
+                });
+                resolve();
+            }, this.renderCoordination.batchRenderTimeout);
+            
+            // Store completion callback
+            this.renderCoordination.renderCompletionCallbacks.set(notificationId, () => {
+                clearTimeout(timeoutId);
+                resolve();
+            });
+            
+            // Track pending render
+            this.renderCoordination.pendingRenders.set(notificationId, {
+                startTime: Date.now(),
+                timeoutId
+            });
+        });
+    }
+    
+    /**
+     * ROOT FIX: Wait for critical priority renders to complete
+     */
+    async waitForCriticalRenders() {
+        if (!window.renderingQueueManager) {
+            return;
+        }
+        
+        const maxWait = 500; // Maximum wait for critical renders
+        const startTime = Date.now();
+        
+        return new Promise((resolve) => {
+            const checkCritical = () => {
+                const elapsed = Date.now() - startTime;
+                const queueState = this.getRenderQueueState();
+                
+                if (queueState.critical === 0 || elapsed >= maxWait) {
+                    resolve();
+                } else {
+                    setTimeout(checkCritical, 5);
+                }
+            };
+            
+            checkCritical();
+        });
+    }
+    
+    /**
+     * ROOT FIX: Update notification performance metrics
+     */
+    updateNotificationMetrics(duration, results) {
+        // Initialize metrics if not exists
+        if (!this.renderCoordination.metrics) {
+            this.renderCoordination.metrics = {
+                notificationTimes: [],
+                errorRates: [],
+                avgNotificationTime: 0,
+                avgErrorRate: 0
+            };
+        }
+        
+        const metrics = this.renderCoordination.metrics;
+        
+        // Track notification duration
+        metrics.notificationTimes.push(duration);
+        if (metrics.notificationTimes.length > 50) {
+            metrics.notificationTimes.shift(); // Keep last 50
+        }
+        
+        // Track error rates
+        const errorRate = results.errorCount / this.subscribers.length;
+        metrics.errorRates.push(errorRate);
+        if (metrics.errorRates.length > 50) {
+            metrics.errorRates.shift(); // Keep last 50
+        }
+        
+        // Calculate rolling averages
+        metrics.avgNotificationTime = metrics.notificationTimes.reduce((a, b) => a + b, 0) / metrics.notificationTimes.length;
+        metrics.avgErrorRate = metrics.errorRates.reduce((a, b) => a + b, 0) / metrics.errorRates.length;
+    }
+    
+    /**
+     * ROOT FIX: Get current render queue state for coordination
+     */
+    getRenderQueueState() {
+        if (!window.renderingQueueManager) {
+            return {
+                queueSize: 0,
+                processing: false,
+                critical: 0,
+                high: 0,
+                normal: 0,
+                low: 0
+            };
+        }
+        
+        const stats = renderingQueueManager.getStatistics();
+        
+        return {
+            queueSize: stats.queueSize || 0,
+            processing: stats.processing || false,
+            critical: renderingQueueManager.priorityQueues?.critical?.size || 0,
+            high: renderingQueueManager.priorityQueues?.high?.size || 0,
+            normal: renderingQueueManager.priorityQueues?.normal?.size || 0,
+            low: renderingQueueManager.priorityQueues?.low?.size || 0,
+            circuitBreakerState: stats.circuitBreakerState || 'CLOSED'
+        };
+    }
+    
+    /**
+     * ROOT FIX: Coordinate batch render completion
+     */
+    async coordinateBatchRenderCompletion(batchInfo) {
+        const { batchId, renderPromises } = batchInfo;
+        const completionStart = performance.now();
+        
+        try {
+            this.logger.debug('STATE', 'Coordinating batch render completion', {
+                batchId,
+                pendingRenders: renderPromises.size
+            });
+            
+            // Wait for all batch render promises to complete
+            if (renderPromises.size > 0) {
+                const renderCompletionPromises = Array.from(renderPromises.values());
+                await Promise.allSettled(renderCompletionPromises);
+            }
+            
+            // Additional wait for rendering queue to complete processing
+            if (this.renderCoordination.waitForRenderCompletion) {
+                await this.waitForRenderCompletion();
+            }
+            
+            const completionDuration = performance.now() - completionStart;
+            this.logger.debug('STATE', 'Batch render completion coordinated', {
+                batchId,
+                duration: completionDuration
+            });
+            
+        } catch (error) {
+            this.logger.warn('STATE', 'Batch render completion coordination failed', error, {
+                batchId
+            });
+        }
+    }
+    
+    /**
+     * ROOT FIX: Batch state update method with render coordination
+     */
+    async batchStateUpdate(operations, options = {}) {
+        const {
+            waitForRenderCompletion = true,
+            priority = 'normal',
+            timeout = this.renderCoordination.batchRenderTimeout,
+            validateOperations = true
+        } = options;
+        
+        const batchId = this.startBatchUpdate();
+        const batchStart = performance.now();
+        
+        try {
+            this.logger.info('STATE', 'Starting coordinated batch state update', {
+                batchId,
+                operationCount: operations.length,
+                waitForRenderCompletion,
+                priority
+            });
+            
+            // Track render promises for this batch
+            const batchRenderPromises = new Map();
+            
+            // Execute operations
+            const results = [];
+            for (const operation of operations) {
+                try {
+                    let result;
+                    
+                    // Validate operation if required
+                    if (validateOperations && !this.validateBatchOperation(operation)) {
+                        throw new Error(`Invalid batch operation: ${operation.type}`);
+                    }
+                    
+                    // Execute operation based on type
+                    switch (operation.type) {
+                        case 'add-component':
+                            this.addComponent(operation.component);
+                            result = { success: true, componentId: operation.component.id };
+                            break;
+                        case 'remove-component':
+                            this.removeComponent(operation.componentId);
+                            result = { success: true, componentId: operation.componentId };
+                            break;
+                        case 'update-component':
+                            this.updateComponent(operation.componentId, operation.props);
+                            result = { success: true, componentId: operation.componentId };
+                            break;
+                        case 'update-global-settings':
+                            this.updateGlobalSettings(operation.settings);
+                            result = { success: true, type: 'global-settings' };
+                            break;
+                        case 'set-layout':
+                            this.setLayout(operation.layout);
+                            result = { success: true, type: 'layout' };
+                            break;
+                        default:
+                            throw new Error(`Unknown batch operation type: ${operation.type}`);
+                    }
+                    
+                    // Track render promise if component operation
+                    if (operation.componentId && this.renderCoordination.enabled) {
+                        const renderPromise = this.trackComponentRenderCompletion(operation.componentId, priority);
+                        if (renderPromise) {
+                            batchRenderPromises.set(operation.componentId, renderPromise);
+                        }
+                    }
+                    
+                    results.push({
+                        operation,
+                        result,
+                        success: true
+                    });
+                    
+                } catch (error) {
+                    this.logger.error('STATE', 'Batch operation failed', error, {
+                        operation
+                    });
+                    
+                    results.push({
+                        operation,
+                        error: error.message,
+                        success: false
+                    });
+                }
+            }
+            
+            // Update batch info with render promises
+            if (this.renderCoordination.activeBatch) {
+                this.renderCoordination.activeBatch.renderPromises = batchRenderPromises;
+            }
+            
+            // Complete batch update (this will trigger coordination)
+            await this.endBatchUpdate();
+            
+            const batchDuration = performance.now() - batchStart;
+            const successCount = results.filter(r => r.success).length;
+            
+            this.logger.info('STATE', 'Coordinated batch state update completed', {
+                batchId,
+                duration: batchDuration,
+                total: operations.length,
+                successful: successCount,
+                failed: operations.length - successCount
+            });
+            
+            return {
+                batchId,
+                results,
+                duration: batchDuration,
+                successful: successCount,
+                failed: operations.length - successCount
+            };
+            
+        } catch (error) {
+            this.logger.error('STATE', 'Coordinated batch state update failed', error, {
+                batchId
+            });
+            
+            // Ensure batch is ended on error
+            if (this.isBatching) {
+                await this.endBatchUpdate();
+            }
+            
+            throw error;
+        }
+    }
+    
+    /**
+     * ROOT FIX: Validate batch operation
+     */
+    validateBatchOperation(operation) {
+        if (!operation || typeof operation !== 'object') {
+            return false;
+        }
+        
+        if (!operation.type) {
+            return false;
+        }
+        
+        // Type-specific validation
+        switch (operation.type) {
+            case 'add-component':
+                return operation.component && operation.component.id;
+            case 'remove-component':
+            case 'update-component':
+                return operation.componentId;
+            case 'update-global-settings':
+                return operation.settings && typeof operation.settings === 'object';
+            case 'set-layout':
+                return Array.isArray(operation.layout);
+            default:
+                return false;
+        }
+    }
+    
+    /**
+     * ROOT FIX: Track component render completion for coordination
+     */
+    trackComponentRenderCompletion(componentId, priority = 'normal') {
+        if (!this.renderCoordination.enabled || !window.renderingQueueManager) {
+            return null;
+        }
+        
+        return new Promise((resolve) => {
+            const timeoutId = setTimeout(() => {
+                this.logger.debug('STATE', 'Component render completion timeout', {
+                    componentId
+                });
+                resolve();
+            }, this.renderCoordination.batchRenderTimeout);
+            
+            // Listen for render completion event
+            const cleanup = () => {
+                clearTimeout(timeoutId);
+                this.eventBus.off('render:completed', onRenderComplete);
+                resolve();
+            };
+            
+            const onRenderComplete = (event) => {
+                if (event.componentId === componentId) {
+                    this.logger.debug('STATE', 'Component render completion detected', {
+                        componentId,
+                        duration: event.duration
+                    });
+                    cleanup();
+                }
+            };
+            
+            this.eventBus.on('render:completed', onRenderComplete);
+        });
+    }
+    
+    /**
+     * ROOT FIX: Start coordinated batch rendering
+     */
+    startBatchRender(batchId = null) {
+        const id = batchId || `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Enter batch update mode
+        this.startBatchUpdate();
+        
+        // Configure rendering queue for batch mode
+        if (this.renderCoordination.enabled && window.renderingQueueManager) {
+            renderingQueueManager.enterInitialStateMode();
+        }
+        
+        this.logger.info('STATE', 'Coordinated batch render started', {
+            batchId: id,
+            renderCoordination: this.renderCoordination.enabled
+        });
+        
+        return id;
+    }
+    
+    /**
+     * ROOT FIX: End coordinated batch rendering
+     */
+    async endBatchRender(batchId = null) {
+        try {
+            // Process transaction queue
+            this.endBatchUpdate();
+            
+            // Exit batch mode in rendering queue
+            if (this.renderCoordination.enabled && window.renderingQueueManager) {
+                renderingQueueManager.exitInitialStateMode();
+            }
+            
+            // Wait for all renders to complete
+            if (this.renderCoordination.waitForRenderCompletion) {
+                await this.waitForRenderCompletion();
+            }
+            
+            this.logger.info('STATE', 'Coordinated batch render completed', {
+                batchId,
+                renderCoordination: this.renderCoordination.enabled
+            });
+            
+        } catch (error) {
+            this.logger.error('STATE', 'Error during batch render completion', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * ROOT FIX: Enhanced batch operations with render coordination
+     */
+    async performCoordinatedBatchOperations(operations, options = {}) {
+        const {
+            waitForRenderCompletion = true,
+            batchTimeout = this.renderCoordination.batchRenderTimeout,
+            showProgress = false
+        } = options;
+        
+        const batchId = this.startBatchRender();
+        const startTime = performance.now();
+        
+        try {
+            this.logger.info('STATE', 'Starting coordinated batch operations', {
+                batchId,
+                operationCount: operations.length,
+                waitForRenderCompletion,
+                batchTimeout
+            });
+            
+            // Execute operations
+            const results = [];
+            for (const operation of operations) {
+                try {
+                    let result;
+                    
+                    switch (operation.type) {
+                        case 'add':
+                            this.addComponent(operation.component);
+                            result = { success: true, componentId: operation.component.id };
+                            break;
+                        case 'remove':
+                            this.removeComponent(operation.componentId);
+                            result = { success: true, componentId: operation.componentId };
+                            break;
+                        case 'update':
+                            this.updateComponent(operation.componentId, operation.props);
+                            result = { success: true, componentId: operation.componentId };
+                            break;
+                        case 'move':
+                            this.moveComponent(operation.componentId, operation.direction);
+                            result = { success: true, componentId: operation.componentId };
+                            break;
+                        default:
+                            throw new Error(`Unknown operation type: ${operation.type}`);
+                    }
+                    
+                    results.push(result);
+                    
+                } catch (error) {
+                    this.logger.error('STATE', 'Operation failed in coordinated batch', error);
+                    results.push({
+                        success: false,
+                        error: error.message,
+                        operation
+                    });
+                }
+            }
+            
+            // Complete batch rendering
+            await this.endBatchRender(batchId);
+            
+            const duration = performance.now() - startTime;
+            const successCount = results.filter(r => r.success).length;
+            
+            this.logger.info('STATE', 'Coordinated batch operations completed', {
+                batchId,
+                duration,
+                total: operations.length,
+                successful: successCount,
+                failed: operations.length - successCount
+            });
+            
+            return {
+                batchId,
+                duration,
+                results,
+                successful: successCount,
+                failed: operations.length - successCount
+            };
+            
+        } catch (error) {
+            this.logger.error('STATE', 'Coordinated batch operations failed', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * ROOT FIX: Get render coordination status
+     */
+    getRenderCoordinationStatus() {
+        const queueStats = window.renderingQueueManager ? 
+            renderingQueueManager.getStatistics() : null;
+        
+        return {
+            enabled: this.renderCoordination.enabled,
+            waitForRenderCompletion: this.renderCoordination.waitForRenderCompletion,
+            pendingRenders: this.renderCoordination.pendingRenders.size,
+            isNotifyingSubscribers: this.isNotifyingSubscribers,
+            queueManagerAvailable: !!window.renderingQueueManager,
+            queueStats
+        };
+    }
+    
+    /**
+     * ROOT FIX: Configure render coordination
+     */
+    configureRenderCoordination(options = {}) {
+        const {
+            enabled = true,
+            waitForRenderCompletion = true,
+            batchRenderTimeout = 10000
+        } = options;
+        
+        this.renderCoordination.enabled = enabled;
+        this.renderCoordination.waitForRenderCompletion = waitForRenderCompletion;
+        this.renderCoordination.batchRenderTimeout = batchRenderTimeout;
+        
+        this.logger.info('STATE', 'Render coordination configured', {
+            enabled,
+            waitForRenderCompletion,
+            batchRenderTimeout
+        });
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Get comprehensive render coordination debug information
+     */
+    getRenderCoordinationDebugInfo() {
+        if (!this.renderCoordination.enabled) {
+            return { enabled: false };
+        }
+        
+        const queueState = this.getRenderQueueState();
+        
+        return {
+            enabled: this.renderCoordination.enabled,
+            waitForRenderCompletion: this.renderCoordination.waitForRenderCompletion,
+            batchRenderTimeout: this.renderCoordination.batchRenderTimeout,
+            pendingRenders: {
+                count: this.renderCoordination.pendingRenders.size,
+                items: Array.from(this.renderCoordination.pendingRenders.entries())
+            },
+            renderCompletionCallbacks: {
+                count: this.renderCoordination.renderCompletionCallbacks.size,
+                items: Array.from(this.renderCoordination.renderCompletionCallbacks.keys())
+            },
+            activeBatch: this.renderCoordination.activeBatch ? {
+                batchId: this.renderCoordination.activeBatch.batchId,
+                startTime: this.renderCoordination.activeBatch.startTime,
+                coordinationActive: this.renderCoordination.activeBatch.coordinationActive,
+                expectedRenders: this.renderCoordination.activeBatch.expectedRenders?.size || 0,
+                acknowledgedRenders: this.renderCoordination.activeBatch.acknowledgedRenders?.size || 0
+            } : null,
+            activeNotification: this.renderCoordination.activeNotification,
+            queueState,
+            metrics: this.renderCoordination.metrics || null
+        };
+    }
+    
+    /**
+     * ROOT FIX: TASK 1.3 - Enhanced render coordination status display
+     */
+    debugRenderCoordination() {
+        const debugInfo = this.getRenderCoordinationDebugInfo();
+        
+        console.group('%c🔄 TASK 1.3: Render Coordination Debug', 'font-size: 14px; font-weight: bold; color: #10B981');
+        console.log('Coordination Status:', debugInfo);
+        
+        if (debugInfo.enabled) {
+            console.log('Queue State:', debugInfo.queueState);
+            console.log('Pending Operations:', {
+                pendingRenders: debugInfo.pendingRenders.count,
+                callbacks: debugInfo.renderCompletionCallbacks.count,
+                activeBatch: !!debugInfo.activeBatch,
+                activeNotification: !!debugInfo.activeNotification
+            });
+            
+            if (debugInfo.metrics) {
+                console.log('Performance Metrics:', {
+                    avgNotificationTime: debugInfo.metrics.avgNotificationTime?.toFixed(2) + 'ms',
+                    avgErrorRate: (debugInfo.metrics.avgErrorRate * 100)?.toFixed(2) + '%',
+                    totalNotifications: debugInfo.metrics.totalNotifications,
+                    totalErrors: debugInfo.metrics.totalErrors
+                });
+            }
+        }
+        
+        console.groupEnd();
+    }
+    
+    /**
      * Clear all timeouts on destruction
      */
     destroy() {
@@ -1264,11 +2514,20 @@ class EnhancedStateManager {
             clearTimeout(this.saveTimeout);
         }
         
+        // ROOT FIX: TASK 1.3 - Clear comprehensive render coordination
+        this.renderCoordination.pendingRenders.clear();
+        this.renderCoordination.renderCompletionCallbacks.clear();
+        
+        // Clean up any active batch coordination
+        if (this.renderCoordination.activeBatch) {
+            this.renderCoordination.activeBatch = null;
+        }
+        
         this.subscribers = [];
         this.transactionQueue = [];
         this.transactionHistory = [];
         
-        this.logger.info('STATE', 'Enhanced State Manager destroyed');
+        this.logger.info('STATE', 'TASK 1.3: Enhanced State Manager destroyed with full coordination cleanup');
     }
     
     /**

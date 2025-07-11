@@ -29,13 +29,16 @@ import {
 import {
     showToast
 } from '../utils/toast-polyfill.js';
+// ROOT FIX: Import rendering queue manager for race-condition-free rendering
+import {
+    renderingQueueManager
+} from './rendering-queue-manager.js';
 
 class EnhancedComponentRenderer {
     constructor() {
         this.initialized = false;
         this.previewContainer = null;
-        this.renderQueue = new Set();
-        this.isRendering = false;
+        // ROOT FIX: Remove legacy render queue - now using centralized renderingQueueManager
         this.componentCache = new Map();
         this.disableRendering = false;
         this.stateUnsubscribe = null;
@@ -49,11 +52,19 @@ class EnhancedComponentRenderer {
         this.registeredComponents = new Set();
         this.updateHandlers = new Map();
         
+        // ROOT FIX: Rendering coordination flags
+        this.renderingMode = 'queue'; // 'queue' or 'direct'
+        this.queuedRenders = new Map(); // Track queued render requests
+        this.renderAcknowledgments = new Map(); // Track render completions
+        
         // Setup UI registry event listeners
         this.setupUIRegistryListeners();
         
         // Setup keyboard shortcuts
         this.setupKeyboardShortcuts();
+        
+        // ROOT FIX: Setup rendering queue event listeners
+        this.setupRenderingQueueListeners();
     }
     
     /**
@@ -236,36 +247,17 @@ class EnhancedComponentRenderer {
             clearTimeout(this.renderDebounceTimer);
         }
 
+        // ROOT FIX: Coordinated rendering with queue system
         this.renderDebounceTimer = setTimeout(async () => {
-            if (this.isRendering) {
-                this.renderQueue.add(newState);
-                return;
-            }
-
             const changes = this.diffState(this.lastState, newState);
 
             if (!changes.added.size && !changes.removed.size && !changes.updated.size && !changes.moved.size) {
                 return;
             }
 
-            this.isRendering = true;
-            this.renderStartTime = Date.now();
-
-            try {
-                await this.processChanges(changes, newState);
-                this.lastState = this.cloneState(newState);
-            } catch (error) {
-                console.error('Error during rendering process:', error);
-            } finally {
-                this.isRendering = false;
-                this.renderStartTime = null;
-
-                if (this.renderQueue.size > 0) {
-                    const nextState = this.renderQueue.values().next().value;
-                    this.renderQueue.clear();
-                    this.onStateChange(nextState);
-                }
-            }
+            // ROOT FIX: Process changes through rendering queue for race-condition-free rendering
+            await this.processChangesWithQueue(changes, newState);
+            this.lastState = this.cloneState(newState);
         }, 50);
     }
 
@@ -316,6 +308,48 @@ class EnhancedComponentRenderer {
         return changes;
     }
 
+    /**
+     * ROOT FIX: Process changes through rendering queue for coordinated, race-condition-free rendering
+     */
+    async processChangesWithQueue(changes, newState) {
+        try {
+            // Handle removals immediately (no queue needed)
+            if (changes.removed.size > 0) {
+                this.removeComponents(changes.removed);
+            }
+            
+            // Queue additions with appropriate priority
+            if (changes.added.size > 0) {
+                await this.queueComponentAdditions(changes.added, newState);
+            }
+            
+            // Queue updates with high priority
+            if (changes.updated.size > 0) {
+                await this.queueComponentUpdates(changes.updated, newState);
+            }
+            
+            // Handle moves immediately (layout changes)
+            if (changes.moved.size > 0) {
+                const state = enhancedStateManager.getState();
+                this.reorderComponents(state.layout);
+            }
+            
+            // Cleanup and update empty state
+            this.cleanupOrphanedElements(newState);
+            this.updateEmptyState(newState);
+            
+        } catch (error) {
+            this.logger.error('RENDER', 'Error during queued change processing', error);
+            
+            // Fallback to direct processing if queue fails
+            this.logger.warn('RENDER', 'Falling back to direct rendering');
+            await this.processChanges(changes, newState);
+        }
+    }
+    
+    /**
+     * LEGACY: Direct change processing (fallback)
+     */
     async processChanges(changes, newState) {
         if (changes.removed.size > 0) {
             this.removeComponents(changes.removed);
@@ -603,10 +637,11 @@ class EnhancedComponentRenderer {
         
         this.initialized = false;
         this.componentCache.clear();
-        this.renderQueue.clear();
+        // ROOT FIX: Clear queued renders and acknowledgments
+        this.queuedRenders.clear();
+        this.renderAcknowledgments.clear();
         this.registeredComponents.clear();
         this.updateHandlers.clear();
-        this.isRendering = false;
         
         this.logger.info('RENDER', 'Enhanced component renderer destroyed');
     }
@@ -619,15 +654,18 @@ class EnhancedComponentRenderer {
             initialized: this.initialized,
             cachedComponents: this.componentCache.size,
             registeredWithUIRegistry: this.registeredComponents.size,
-            queueSize: this.renderQueue.size,
-            isRendering: this.isRendering,
-            renderStartTime: this.renderStartTime
+            // ROOT FIX: Updated stats to reflect queue integration
+            queuedRenders: this.queuedRenders.size,
+            pendingAcknowledgments: this.renderAcknowledgments.size,
+            renderingMode: this.renderingMode,
+            queueManagerStats: renderingQueueManager.getStatistics()
         };
     }
     
     /**
-     * CRITICAL FIX: Add missing renderComponent method for system registrar interface
+     * CRITICAL FIX: Enhanced renderComponent method for queue integration
      * This method provides the standardized interface expected by the system registrar
+     * ROOT FIX: Now integrates with rendering queue when called by queue manager
      */
     async renderComponent(componentConfig) {
         try {
@@ -644,8 +682,29 @@ class EnhancedComponentRenderer {
             
             this.logger.debug('RENDER', `renderComponent called for ${config.type}`, config);
             
-            // Use existing renderComponentWithLoader method
+            // ROOT FIX: Use renderComponentWithLoader method which handles both direct and queued rendering
             const result = await this.renderComponentWithLoader(config.id, config.type, config.props);
+            
+            // ROOT FIX: Update component cache and handle DOM insertion
+            if (result && result.element) {
+                this.componentCache.set(config.id, result.element);
+                
+                // Insert into DOM if not already present
+                const existingElement = document.getElementById(config.id);
+                if (!existingElement && this.previewContainer) {
+                    this.previewContainer.appendChild(result.element);
+                }
+                
+                // Register with UI registry if available
+                if (config.props || config.data) {
+                    const componentState = {
+                        type: config.type,
+                        props: config.props,
+                        data: config.data
+                    };
+                    this.registerComponentWithUIRegistry(config.id, result.element, componentState);
+                }
+            }
             
             this.logger.debug('RENDER', `renderComponent completed for ${config.type}`);
             return result;
@@ -658,7 +717,7 @@ class EnhancedComponentRenderer {
     
     /**
      * Manual render method - forces a complete re-render of all components
-     * GEMINI FIX: Added missing render method for manual triggering
+     * ROOT FIX: Updated to use rendering queue for coordinated manual renders
      */
     async render() {
         if (!this.initialized) {
@@ -677,16 +736,37 @@ class EnhancedComponentRenderer {
                 return true;
             }
             
-            // Clear existing components
-            this.previewContainer.innerHTML = '';
-            this.componentCache.clear();
-            
-            // Re-render all components
-            const componentIds = Object.keys(state.components);
-            await this.renderNewComponents(new Set(componentIds), state);
-            
-            // Update empty state
-            this.updateEmptyState(state);
+            // ROOT FIX: Use queue for manual render to prevent race conditions
+            if (this.renderingMode === 'queue') {
+                // Enter initial state mode for batch rendering
+                renderingQueueManager.enterInitialStateMode();
+                
+                try {
+                    // Clear existing components
+                    this.previewContainer.innerHTML = '';
+                    this.componentCache.clear();
+                    
+                    // Queue all components for rendering
+                    const componentIds = new Set(Object.keys(state.components));
+                    await this.queueComponentAdditions(componentIds, state);
+                    
+                    // Update empty state
+                    this.updateEmptyState(state);
+                    
+                } finally {
+                    // Exit initial state mode
+                    renderingQueueManager.exitInitialStateMode();
+                }
+            } else {
+                // Fallback to direct rendering
+                this.previewContainer.innerHTML = '';
+                this.componentCache.clear();
+                
+                const componentIds = Object.keys(state.components);
+                await this.renderNewComponents(new Set(componentIds), state);
+                
+                this.updateEmptyState(state);
+            }
             
             this.logger.info('RENDER', `Manual render complete: ${componentCount} components rendered`);
             return true;
@@ -695,6 +775,277 @@ class EnhancedComponentRenderer {
             this.logger.error('RENDER', 'Manual render failed', error);
             return false;
         }
+    }
+    
+    /**
+     * ROOT FIX: Queue component additions through rendering queue manager
+     */
+    async queueComponentAdditions(componentIds, newState) {
+        const queuePromises = [];
+        
+        for (const componentId of componentIds) {
+            const componentState = newState.components[componentId];
+            if (!componentState) {
+                this.logger.error('RENDER', `State for new component ${componentId} not found!`);
+                continue;
+            }
+            
+            // Determine priority based on component type and position
+            const priority = this.determineRenderPriority(componentState, componentId, newState);
+            
+            // Queue the render
+            const renderId = renderingQueueManager.addToQueue(
+                componentId,
+                {
+                    type: componentState.type,
+                    props: componentState.props || componentState.data || {},
+                    action: 'add'
+                },
+                priority,
+                {
+                    validateRender: true,
+                    requireAcknowledgment: true,
+                    fallbackOnError: true,
+                    isInitialRender: false
+                }
+            );
+            
+            // Track the queued render
+            this.queuedRenders.set(componentId, {
+                renderId,
+                action: 'add',
+                queuedAt: Date.now(),
+                priority
+            });
+            
+            // Create acknowledgment promise
+            const acknowledgmentPromise = this.createRenderAcknowledgmentPromise(renderId, componentId);
+            queuePromises.push(acknowledgmentPromise);
+            
+            this.logger.debug('RENDER', 'Component addition queued', {
+                componentId,
+                renderId,
+                priority,
+                type: componentState.type
+            });
+        }
+        
+        // Wait for all renders to complete or timeout
+        try {
+            await Promise.allSettled(queuePromises);
+            this.logger.info('RENDER', 'Component additions batch completed', {
+                count: componentIds.size,
+                queuedRenders: this.queuedRenders.size
+            });
+        } catch (error) {
+            this.logger.warn('RENDER', 'Some component additions failed', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Queue component updates through rendering queue manager
+     */
+    async queueComponentUpdates(componentIds, newState) {
+        const queuePromises = [];
+        
+        for (const componentId of componentIds) {
+            const componentState = newState.components[componentId];
+            if (!componentState) {
+                this.logger.error('RENDER', `State for updated component ${componentId} not found!`);
+                continue;
+            }
+            
+            // Higher priority for updates since user is actively editing
+            const priority = 'high';
+            
+            // Queue the update
+            const renderId = renderingQueueManager.addToQueue(
+                componentId,
+                {
+                    type: componentState.type,
+                    props: componentState.props || componentState.data || {},
+                    action: 'update'
+                },
+                priority,
+                {
+                    validateRender: true,
+                    requireAcknowledgment: true,
+                    fallbackOnError: false, // Don't fallback for updates
+                    isInitialRender: false
+                }
+            );
+            
+            // Track the queued render
+            this.queuedRenders.set(componentId, {
+                renderId,
+                action: 'update',
+                queuedAt: Date.now(),
+                priority
+            });
+            
+            // Create acknowledgment promise
+            const acknowledgmentPromise = this.createRenderAcknowledgmentPromise(renderId, componentId);
+            queuePromises.push(acknowledgmentPromise);
+            
+            this.logger.debug('RENDER', 'Component update queued', {
+                componentId,
+                renderId,
+                priority,
+                type: componentState.type
+            });
+        }
+        
+        // Wait for all updates to complete or timeout
+        try {
+            await Promise.allSettled(queuePromises);
+            this.logger.info('RENDER', 'Component updates batch completed', {
+                count: componentIds.size
+            });
+        } catch (error) {
+            this.logger.warn('RENDER', 'Some component updates failed', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Determine render priority based on component characteristics
+     */
+    determineRenderPriority(componentState, componentId, newState) {
+        // Critical priority for hero components (above fold)
+        if (componentState.type === 'hero' || componentState.type === 'header') {
+            return 'critical';
+        }
+        
+        // High priority for components in viewport or recently added
+        const layout = newState.layout || [];
+        const position = layout.indexOf(componentId);
+        
+        if (position >= 0 && position < 3) {
+            return 'high'; // First 3 components
+        }
+        
+        // Normal priority for most components
+        return 'normal';
+    }
+    
+    /**
+     * ROOT FIX: Create acknowledgment promise for render completion tracking
+     */
+    createRenderAcknowledgmentPromise(renderId, componentId) {
+        return new Promise((resolve, reject) => {
+            const timeout = 5000; // 5 second timeout
+            
+            const acknowledgment = {
+                resolve,
+                reject,
+                componentId,
+                timeout: setTimeout(() => {
+                    this.renderAcknowledgments.delete(renderId);
+                    reject(new Error(`Render acknowledgment timeout for ${componentId}`));
+                }, timeout)
+            };
+            
+            this.renderAcknowledgments.set(renderId, acknowledgment);
+        });
+    }
+    
+    /**
+     * ROOT FIX: Setup rendering queue event listeners
+     */
+    setupRenderingQueueListeners() {
+        // Listen for render completions
+        eventBus.on('render:completed', (event) => {
+            const { renderId, componentId, success, duration } = event;
+            this.handleRenderCompletion(renderId, componentId, success, duration);
+        });
+        
+        // Listen for render failures
+        eventBus.on('render:failed', (event) => {
+            const { renderId, componentId, error } = event;
+            this.handleRenderFailure(renderId, componentId, error);
+        });
+        
+        // Listen for batch completions
+        eventBus.on('render:batch-completed', (event) => {
+            const { results, statistics } = event;
+            this.handleBatchCompletion(results, statistics);
+        });
+        
+        this.logger.debug('RENDER', 'Rendering queue event listeners setup complete');
+    }
+    
+    /**
+     * ROOT FIX: Handle render completion events
+     */
+    handleRenderCompletion(renderId, componentId, success, duration) {
+        // Update component cache if successful
+        if (success) {
+            const element = document.getElementById(componentId);
+            if (element) {
+                this.componentCache.set(componentId, element);
+            }
+        }
+        
+        // Resolve acknowledgment promise
+        const acknowledgment = this.renderAcknowledgments.get(renderId);
+        if (acknowledgment) {
+            clearTimeout(acknowledgment.timeout);
+            acknowledgment.resolve({ success, duration, componentId });
+            this.renderAcknowledgments.delete(renderId);
+        }
+        
+        // Clean up queued render tracking
+        this.queuedRenders.delete(componentId);
+        
+        this.logger.debug('RENDER', 'Render completion handled', {
+            renderId,
+            componentId,
+            success,
+            duration
+        });
+    }
+    
+    /**
+     * ROOT FIX: Handle render failure events
+     */
+    handleRenderFailure(renderId, componentId, error) {
+        // Reject acknowledgment promise
+        const acknowledgment = this.renderAcknowledgments.get(renderId);
+        if (acknowledgment) {
+            clearTimeout(acknowledgment.timeout);
+            acknowledgment.reject(new Error(`Render failed: ${error}`));
+            this.renderAcknowledgments.delete(renderId);
+        }
+        
+        // Clean up queued render tracking
+        this.queuedRenders.delete(componentId);
+        
+        this.logger.warn('RENDER', 'Render failure handled', {
+            renderId,
+            componentId,
+            error
+        });
+    }
+    
+    /**
+     * ROOT FIX: Handle batch completion events
+     */
+    handleBatchCompletion(results, statistics) {
+        const successful = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+        
+        this.logger.info('RENDER', 'Batch completion handled', {
+            total: results.length,
+            successful,
+            failed,
+            queueStatistics: statistics
+        });
+        
+        // Emit renderer-specific batch completion event
+        eventBus.emit('renderer:batch-completed', {
+            rendererStats: this.getStats(),
+            queueStats: statistics,
+            batchResults: results
+        });
     }
     
     /**
@@ -713,9 +1064,17 @@ class EnhancedComponentRenderer {
             registeredWithUIRegistry: this.registeredComponents.has(id)
         })));
         
-        if (this.renderQueue.size > 0) {
-            console.log('Render Queue:', Array.from(this.renderQueue));
+        // ROOT FIX: Show queued renders instead of legacy render queue
+        if (this.queuedRenders.size > 0) {
+            console.log('Queued Renders:', Array.from(this.queuedRenders.entries()));
         }
+        
+        if (this.renderAcknowledgments.size > 0) {
+            console.log('Pending Acknowledgments:', this.renderAcknowledgments.size);
+        }
+        
+        // Show rendering queue manager stats
+        console.log('Queue Manager Stats:', renderingQueueManager.getStatistics());
         
         console.groupEnd();
     }

@@ -11,6 +11,8 @@ import { performanceMonitor } from '../utils/performance-monitor.js';
 import { enhancedStateManager } from './enhanced-state-manager.js';
 import { enhancedComponentManager } from './enhanced-component-manager.js';
 import { enhancedComponentRenderer } from './enhanced-component-renderer.js';
+// ROOT FIX: Import rendering queue manager for enterprise-grade rendering
+import { renderingQueueManager } from './rendering-queue-manager.js';
 
 // CRITICAL FIX: Import the initializer system
 import { initializer } from './media-kit-builder-init.js';
@@ -82,6 +84,10 @@ export async function registerEnhancedSystems() {
         // State Manager
         systemRegistrar.register('stateManager', enhancedStateManager);
         console.log('✅ State Manager: Enhanced');
+        
+        // ROOT FIX: Rendering Queue Manager - CRITICAL for race-condition-free rendering
+        systemRegistrar.register('renderingQueueManager', renderingQueueManager);
+        console.log('✅ Rendering Queue Manager: Enterprise-grade rendering coordination');
         
         // Component Manager - CRITICAL
         systemRegistrar.register('componentManager', enhancedComponentManager);
