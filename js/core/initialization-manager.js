@@ -662,9 +662,9 @@ class InitializationManager {
             'export-modal'
         ];
         
-        // PHASE 2.3: Reduced timeout with retry strategy
-        const baseWaitTime = 1500; // Reduced from 3000ms
-        const maxRetries = 3;
+        // ROOT FIX: Further reduced timeout with faster polling
+        const baseWaitTime = 800; // Further reduced from 1500ms
+        const maxRetries = 2; // Fewer retries for faster response
         const checkInterval = 50; // Faster polling
         const startTime = Date.now();
         

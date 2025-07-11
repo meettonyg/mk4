@@ -338,36 +338,54 @@ async function registerEnhancedSystems() {
         console.log('ℹ️ PHASE 2: Render validator and recovery manager will be loaded after core initialization');
         
         // =====================================
-        // ROOT FIX: EVENT-DRIVEN NOTIFICATION
+        // ROOT FIX: IMMEDIATE EVENT-DRIVEN NOTIFICATION
         // =====================================
-        // After all systems are registered and exposed globally:
-        console.log('🎉 All core systems registered and exposed globally');
+        console.log('🎉 ROOT FIX: All core systems registered and exposed globally');
+        console.log('🚀 ROOT FIX: Dispatching coreSystemsReady event IMMEDIATELY - NO POLLING NEEDED!');
         
-        // Dispatch ready event
-        document.dispatchEvent(new CustomEvent('coreSystemsReady', {
-            detail: {
-                systems: systemRegistrar.list(),
-                timestamp: Date.now(),
-                globalSystems: {
-                    enhancedComponentManager: !!window.enhancedComponentManager,
-                    stateManager: !!window.stateManager,
-                    renderer: !!window.renderer,
-                    dynamicComponentLoader: !!window.dynamicComponentLoader,
-                    mkTemplateCache: !!window.mkTemplateCache,
-                    enhancedErrorHandler: !!window.enhancedErrorHandler,
-                    mkcgDataMapper: !!window.mkcgDataMapper,
-                    renderingQueueManager: !!window.renderingQueueManager
-                },
-                architecture: 'enhanced-phase1',
-                readyTimestamp: Date.now(),
-                performanceData: {
-                    initializationTime: Date.now() - window.gmkbPhase1?.startTime || 0,
-                    systemCount: registeredSystems.length
-                }
+        // Dispatch ready event IMMEDIATELY
+        const eventDetail = {
+            systems: systemRegistrar.list(),
+            timestamp: Date.now(),
+            globalSystems: {
+                enhancedComponentManager: !!window.enhancedComponentManager,
+                stateManager: !!window.stateManager,
+                renderer: !!window.renderer,
+                dynamicComponentLoader: !!window.dynamicComponentLoader,
+                mkTemplateCache: !!window.mkTemplateCache,
+                enhancedErrorHandler: !!window.enhancedErrorHandler,
+                mkcgDataMapper: !!window.mkcgDataMapper,
+                renderingQueueManager: !!window.renderingQueueManager
+            },
+            architecture: 'enhanced-phase1-immediate',
+            readyTimestamp: Date.now(),
+            performanceData: {
+                initializationTime: Date.now() - (window.gmkbPhase1?.startTime || Date.now()),
+                systemCount: registeredSystems.length
+            },
+            source: 'enhanced-system-registrar',
+            immediate: true
+        };
+        
+        // Dispatch the event synchronously
+        const readyEvent = new CustomEvent('coreSystemsReady', {
+            detail: eventDetail
+        });
+        
+        document.dispatchEvent(readyEvent);
+        
+        console.log('✅ ROOT FIX: coreSystemsReady event dispatched IMMEDIATELY!');
+        console.log('📊 Event detail:', eventDetail);
+        
+        // ROOT FIX: Also trigger a delayed event as backup (just in case)
+        setTimeout(() => {
+            if (!window.gmkbEventCoordination?.coreSystemsReadyFired) {
+                console.log('🔄 ROOT FIX: Backup event dispatch (listener may have missed first event)');
+                document.dispatchEvent(new CustomEvent('coreSystemsReady', {
+                    detail: { ...eventDetail, source: 'backup-dispatch', backup: true }
+                }));
             }
-        }));
-        
-        console.log('✅ coreSystemsReady event dispatched');
+        }, 100); // Very short backup delay
         
         perfEnd();
         return true;

@@ -207,12 +207,21 @@ class GMKB_Enhanced_State_Loading_Coordinator {
                         
                         document.addEventListener('coreSystemsReady', onSystemsReady);
                         
-                        // Fallback timeout (much longer since we're using events)
+                        // ROOT FIX: Event-driven approach with MUCH shorter fallback
+                        // Only use timeout for catastrophic event system failures
                         const timeoutId = setTimeout(() => {
                             document.removeEventListener('coreSystemsReady', onSystemsReady);
-                            console.error('❌ ROOT FIX: State loading coordination failed: coreSystemsReady event timeout');
-                            emitCoordinationFailure(new Error('coreSystemsReady event timeout'));
-                        }, 15000); // 15 second timeout for event-driven approach
+                            console.warn('⚠️ ROOT FIX: Event-driven approach timeout - checking if systems loaded manually');
+                            
+                            // Check if systems are actually available despite event not firing
+                            if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
+                                console.log('✅ ROOT FIX: Systems available despite event timeout - proceeding with recovery');
+                                triggerSavedStateLoading();
+                            } else {
+                                console.error('❌ ROOT FIX: Systems truly unavailable - coordination failed');
+                                emitCoordinationFailure(new Error('Systems unavailable after event timeout'));
+                            }
+                        }, 3000); // Reduced to 3 seconds for faster feedback
                     };
                     
                     const triggerSavedStateLoading = () => {
