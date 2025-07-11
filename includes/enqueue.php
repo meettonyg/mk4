@@ -267,27 +267,71 @@ class GMKB_Enhanced_Script_Manager {
             false // Load in head for early availability
         );
 
-        // CRITICAL FIX: Main builder script with proper dependencies
+        // ROOT FIX: Register core system script
         wp_register_script(
-            'guestify-builder-script',
+            'guestify-core-systems',
             $plugin_url . 'js/main.js',
             array('sortable-js'), // Only essential dependencies
             $version,
-            true // Load in footer after DOM is ready
+            true // Load in footer
+        );
+        
+        // ROOT FIX: Register testing framework with dependency on core systems
+        wp_register_script(
+            'guestify-testing-framework',
+            $plugin_url . 'js/tests/testing-foundation-utilities.js',
+            array('guestify-core-systems'), // Depends on core systems
+            $version,
+            true
+        );
+        
+        // ROOT FIX: Register other testing scripts with dependencies
+        wp_register_script(
+            'guestify-test-runner',
+            $plugin_url . 'js/tests/comprehensive-phase23-test-runner.js',
+            array('guestify-testing-framework'), // Depends on testing framework
+            $version,
+            true
+        );
+        
+        // BACKWARD COMPATIBILITY: Keep original script name for legacy code
+        wp_register_script(
+            'guestify-builder-script',
+            $plugin_url . 'js/main.js',
+            array('sortable-js'),
+            $version,
+            true
         );
 
         // CRITICAL FIX: Prepare and localize data IMMEDIATELY after registration
         $this->prepare_and_localize_data();
         
-        // CRITICAL FIX: Actually ENQUEUE the scripts and styles on media kit page
+        // ROOT FIX: Actually ENQUEUE the scripts with proper dependency order
         if (is_page('guestify-media-kit')) {
             wp_enqueue_style('guestify-media-kit-builder-styles');
             wp_enqueue_script('sortable-js');
+            
+            // ROOT FIX: Register race condition fix validation script
+            wp_register_script(
+                'guestify-race-condition-validation',
+                $plugin_url . 'js/tests/test-race-condition-fix-validation.js',
+                array('guestify-testing-framework'), // Depends on testing framework
+                $version,
+                true
+            );
+            
+            // ROOT FIX: Enqueue with dependency chain
+            wp_enqueue_script('guestify-core-systems'); // Core systems first
+            wp_enqueue_script('guestify-testing-framework'); // Testing framework depends on core
+            wp_enqueue_script('guestify-test-runner'); // Test runner depends on testing framework
+            wp_enqueue_script('guestify-race-condition-validation'); // Validation script
+            
+            // BACKWARD COMPATIBILITY: Keep original for legacy
             wp_enqueue_script('guestify-builder-script');
             
             // Log successful enqueuing for debugging
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('Media Kit Builder: Scripts and styles enqueued successfully (root-level error handling)');
+                error_log('Media Kit Builder: Scripts enqueued with dependency chain (root-level race condition fix)');
             }
         }
     }

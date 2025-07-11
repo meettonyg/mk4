@@ -972,53 +972,69 @@ Visual:
 Example: testingFoundation.quickTestAll().then(r => console.log('Results:', r));
 `);
 
-// Create a promise that resolves when all systems are ready
-window.waitForInitialization = function(timeout = 5000) {
+// =====================================
+// ROOT FIX: EVENT-DRIVEN INITIALIZATION
+// =====================================
+// Replace polling with event-driven approach
+window.waitForInitialization = function(timeout = 10000) {
     return new Promise((resolve, reject) => {
-        const startTime = Date.now();
+        // Check if systems are already ready
+        const systemsReady = window.enhancedComponentManager && 
+                           window.enhancedStateManager && 
+                           window.stateManager && 
+                           window.componentManager;
         
-        const checkSystems = () => {
-            const elapsed = Date.now() - startTime;
+        if (systemsReady) {
+            console.log('✅ Systems already ready');
+            return resolve(getSystemStatus());
+        }
+        
+        // Listen for the ready event
+        const handleReady = (event) => {
+            console.log('✅ Systems ready via event:', event.detail);
+            document.removeEventListener('coreSystemsReady', handleReady);
             
-            // Check for all critical systems
-            const systemsReady = {
-                enhancedComponentManager: !!window.enhancedComponentManager,
-                enhancedStateManager: !!window.enhancedStateManager,
-                mkcgDataMapper: !!window.mkcgDataMapper,
-                guestifyData: !!window.guestifyData,
-                stateManager: !!window.stateManager,
-                componentManager: !!window.componentManager,
-                testingFoundation: !!window.testingFoundation,
-                implementationValidator: !!window.implementationValidator
+            // Enhanced validation of received event data
+            const eventData = {
+                ...event.detail,
+                localValidation: {
+                    enhancedComponentManager: !!window.enhancedComponentManager,
+                    enhancedStateManager: !!window.enhancedStateManager,
+                    stateManager: !!window.stateManager,
+                    componentManager: !!window.componentManager,
+                    renderer: !!window.renderer,
+                    testingFoundation: !!window.testingFoundation
+                },
+                readyConfirmation: true
             };
             
-            // Count ready systems
-            const readySystems = Object.values(systemsReady).filter(ready => ready).length;
-            const totalSystems = Object.keys(systemsReady).length;
-            
-            console.log(`⏳ Waiting for initialization: ${readySystems}/${totalSystems} systems ready...`);
-            
-            // Check if critical systems are ready
-            const criticalReady = systemsReady.enhancedComponentManager && 
-                                systemsReady.enhancedStateManager && 
-                                systemsReady.guestifyData;
-            
-            if (criticalReady) {
-                console.log('✅ Critical systems ready!');
-                resolve(systemsReady);
-            } else if (elapsed > timeout) {
-                console.warn('⚠️ Timeout waiting for initialization');
-                reject(new Error(`Initialization timeout after ${timeout}ms. Ready systems: ${JSON.stringify(systemsReady)}`));
-            } else {
-                // Check again in 100ms
-                setTimeout(checkSystems, 100);
-            }
+            resolve(eventData);
         };
         
-        // Start checking
-        checkSystems();
+        document.addEventListener('coreSystemsReady', handleReady);
+        
+        // Fallback timeout only for catastrophic failures
+        setTimeout(() => {
+            document.removeEventListener('coreSystemsReady', handleReady);
+            reject(new Error('Catastrophic failure: coreSystemsReady event never fired'));
+        }, timeout);
     });
 };
+
+function getSystemStatus() {
+    return {
+        enhancedComponentManager: !!window.enhancedComponentManager,
+        enhancedStateManager: !!window.enhancedStateManager,
+        stateManager: !!window.stateManager,
+        componentManager: !!window.componentManager,
+        renderer: !!window.renderer,
+        testingFoundation: !!window.testingFoundation,
+        mkcgDataMapper: !!window.mkcgDataMapper,
+        timestamp: Date.now(),
+        architecture: 'event-driven',
+        source: 'immediate-check'
+    };
+}
 
 // Create a wrapper for safe test execution
 window.runTestsWhenReady = async function(testFunction, testName = 'Test') {

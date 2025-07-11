@@ -284,6 +284,37 @@ export async function registerEnhancedSystems() {
             throw new Error('CRITICAL: mkcgDataMapper not exposed globally - component data mapping will fail');
         }
         
+        // =====================================
+        // ROOT FIX: EVENT-DRIVEN NOTIFICATION
+        // =====================================
+        // After all systems are registered and exposed globally:
+        console.log('🎉 All core systems registered and exposed globally');
+        
+        // Dispatch ready event
+        document.dispatchEvent(new CustomEvent('coreSystemsReady', {
+            detail: {
+                systems: systemRegistrar.list(),
+                timestamp: Date.now(),
+                globalSystems: {
+                    enhancedComponentManager: !!window.enhancedComponentManager,
+                    stateManager: !!window.stateManager,
+                    renderer: !!window.renderer,
+                    dynamicComponentLoader: !!window.dynamicComponentLoader,
+                    mkTemplateCache: !!window.mkTemplateCache,
+                    enhancedErrorHandler: !!window.enhancedErrorHandler,
+                    mkcgDataMapper: !!window.mkcgDataMapper
+                },
+                architecture: 'enhanced-phase1',
+                readyTimestamp: Date.now(),
+                performanceData: {
+                    initializationTime: Date.now() - window.gmkbPhase1?.startTime || 0,
+                    systemCount: registeredSystems.length
+                }
+            }
+        }));
+        
+        console.log('✅ coreSystemsReady event dispatched');
+        
         perfEnd();
         return true;
         
