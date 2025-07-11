@@ -176,51 +176,80 @@ class GMKB_Enhanced_State_Loading_Coordinator {
                 document.addEventListener('DOMContentLoaded', function() {
                     console.log('🎯 ROOT FIX: DOM ready - coordinating saved state priority');
                     
-                    // Wait for enhanced state manager then prioritize saved loading
-                    const waitForStateManager = setInterval(function() {
+                    // ROOT FIX: Use event-driven coordination instead of polling
+                    const coordinateStateLoading = () => {
+                        console.log('🔄 ROOT FIX: Event-driven state loading coordination starting');
+                        
+                        // Check if enhanced state manager is already available
                         if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
-                            clearInterval(waitForStateManager);
+                            console.log('✅ ROOT FIX: Enhanced state manager already available - triggering priority saved state loading');
+                            triggerSavedStateLoading();
+                            return;
+                        }
+                        
+                        // Wait for coreSystemsReady event
+                        console.log('⏳ ROOT FIX: Waiting for coreSystemsReady event for state coordination...');
+                        
+                        const onSystemsReady = (event) => {
+                            console.log('🎉 ROOT FIX: coreSystemsReady event received for state coordination!', event.detail);
+                            document.removeEventListener('coreSystemsReady', onSystemsReady);
+                            clearTimeout(timeoutId);
                             
-                            console.log('🔄 ROOT FIX: Enhanced state manager found - triggering priority saved state loading');
-                            
-                            // Trigger immediate saved state loading
-                            try {
-                                window.enhancedStateManager.autoLoadSavedState();
-                                
-                                // Emit coordination success event
-                                document.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationComplete', {
-                                    detail: {
-                                        coordination_id: window.gmkbStateLoadingCoordination.coordination_id,
-                                        mode: 'saved-state-priority',
-                                        success: true,
-                                        timestamp: Date.now()
-                                    }
-                                }));
-                                
-                                console.log('✅ ROOT FIX: Saved state loading coordination completed successfully');
-                                
-                            } catch (error) {
-                                console.error('❌ ROOT FIX: Saved state loading coordination failed:', error);
-                                
-                                // Emit coordination failure event
-                                document.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationFailed', {
-                                    detail: {
-                                        coordination_id: window.gmkbStateLoadingCoordination.coordination_id,
-                                        error: error.message,
-                                        timestamp: Date.now()
-                                    }
-                                }));
+                            // Now trigger saved state loading
+                            if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
+                                triggerSavedStateLoading();
+                            } else {
+                                console.error('❌ ROOT FIX: Enhanced state manager not available even after coreSystemsReady event');
+                                emitCoordinationFailure(new Error('Enhanced state manager not available after coreSystemsReady'));
                             }
-                        }
-                    }, 50);
+                        };
+                        
+                        document.addEventListener('coreSystemsReady', onSystemsReady);
+                        
+                        // Fallback timeout (much longer since we're using events)
+                        const timeoutId = setTimeout(() => {
+                            document.removeEventListener('coreSystemsReady', onSystemsReady);
+                            console.error('❌ ROOT FIX: State loading coordination failed: coreSystemsReady event timeout');
+                            emitCoordinationFailure(new Error('coreSystemsReady event timeout'));
+                        }, 15000); // 15 second timeout for event-driven approach
+                    };
                     
-                    // Timeout after 5 seconds
-                    setTimeout(function() {
-                        clearInterval(waitForStateManager);
-                        if (!window.enhancedStateManager) {
-                            console.warn('⚠️ ROOT FIX: Enhanced state manager not found after 5 seconds - coordination may fail');
+                    const triggerSavedStateLoading = () => {
+                        try {
+                            window.enhancedStateManager.autoLoadSavedState();
+                            
+                            // Emit coordination success event
+                            document.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationComplete', {
+                                detail: {
+                                    coordination_id: window.gmkbStateLoadingCoordination.coordination_id,
+                                    mode: 'saved-state-priority',
+                                    success: true,
+                                    approach: 'event-driven',
+                                    timestamp: Date.now()
+                                }
+                            }));
+                            
+                            console.log('✅ ROOT FIX: Event-driven saved state loading coordination completed successfully');
+                            
+                        } catch (error) {
+                            console.error('❌ ROOT FIX: Saved state loading failed:', error);
+                            emitCoordinationFailure(error);
                         }
-                    }, 5000);
+                    };
+                    
+                    const emitCoordinationFailure = (error) => {
+                        document.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationFailed', {
+                            detail: {
+                                coordination_id: window.gmkbStateLoadingCoordination.coordination_id,
+                                error: error.message,
+                                approach: 'event-driven',
+                                timestamp: Date.now()
+                            }
+                        }));
+                    };
+                    
+                    // Start event-driven coordination
+                    coordinateStateLoading();
                 });
                 
             } else {

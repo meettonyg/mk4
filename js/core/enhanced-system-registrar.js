@@ -357,7 +357,6 @@ async function registerEnhancedSystems() {
                     enhancedErrorHandler: !!window.enhancedErrorHandler,
                     mkcgDataMapper: !!window.mkcgDataMapper,
                     renderingQueueManager: !!window.renderingQueueManager
-                    // Phase 2 systems loaded post-initialization
                 },
                 architecture: 'enhanced-phase1',
                 readyTimestamp: Date.now(),

@@ -708,7 +708,7 @@ class GMKB_Enhanced_Script_Manager {
             'pluginVersion' => GUESTIFY_VERSION,
             'timestamp' => time(),
             'builderPage' => true,
-            'phase1Fixes' => true,
+            'eventDrivenFix' => true, // NEW: Event coordination flag
             'isolatedEnvironment' => true
         );
         
@@ -720,6 +720,32 @@ class GMKB_Enhanced_Script_Manager {
         window.guestifyDataReady = true;
         window.guestifyCriticalDataLoaded = true;
         window.gmkbIsolated = true;
+        window.gmkbEventDrivenFix = true; // NEW: Event coordination flag
+        
+        /* Event-driven coordination setup */
+        window.gmkbEventCoordination = {
+            coreSystemsReadyFired: false,
+            mediaKitBuilderReadyFired: false,
+            initializationStarted: false,
+            eventListeners: [],
+            startTime: Date.now()
+        };
+        
+        /* Enhanced event coordination helper */
+        window.gmkbListenForEvent = function(eventName, callback, timeout = 10000) {
+            const timeoutId = setTimeout(() => {
+                console.warn(`Event timeout: ${eventName} not received within ${timeout}ms`);
+            }, timeout);
+            
+            const listener = (event) => {
+                clearTimeout(timeoutId);
+                document.removeEventListener(eventName, listener);
+                callback(event);
+            };
+            
+            document.addEventListener(eventName, listener);
+            window.gmkbEventCoordination.eventListeners.push({ eventName, listener, timeoutId });
+        };
         
         /* CRITICAL FIX: Create early backup data to prevent race conditions */
         window.guestifyDataBackup = <?php echo wp_json_encode($critical_data); ?>;
@@ -738,11 +764,10 @@ class GMKB_Enhanced_Script_Manager {
                 console.log('✅ GMKB Phase 1: Early backup data created successfully');
             }
             
-            console.log('🚀 GMKB Phase 1: Critical data injected at priority 1', {
-                pluginUrl: window.guestifyData.pluginUrl,
+            console.log('🚀 EVENT-DRIVEN FIX: Critical data and event coordination ready', {
+                eventDrivenFix: true,
                 timestamp: window.guestifyData.timestamp,
-                isolated: window.gmkbIsolated,
-                backupReady: window.guestifyBackupReady
+                isolated: window.gmkbIsolated
             });
         </script>
         <?php

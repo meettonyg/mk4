@@ -694,9 +694,9 @@ function exposeSystemsGloballyWordPressCompatible() {
     return true;
 }
 
-// ROOT FIX: WordPress-compatible main initialization sequence
+// ROOT FIX: Enhanced event-driven initialization
 async function startWordPressCompatibleInitialization() {
-    console.log('🚀 ROOT FIX: Starting WordPress-compatible initialization...');
+    console.log('🚀 ROOT FIX: Starting event-driven WordPress-compatible initialization...');
     
     window.gmkbWordPressCoordination.initializationStarted = true;
     
@@ -707,6 +707,9 @@ async function startWordPressCompatibleInitialization() {
                 document.addEventListener('DOMContentLoaded', resolve);
             });
         }
+        
+        // ROOT FIX: Wait for enhanced systems via event (not polling!)
+        await waitForEnhancedSystems();
         
         // Initialize WordPress-compatible systems
         const success = await window.initializeWordPressCompatibleSystems();
@@ -727,31 +730,228 @@ async function startWordPressCompatibleInitialization() {
                 detail: {
                     wordPressCompatible: true,
                     systemsReady: window.gmkbWordPressCoordination.systemsReady,
-                    architecture: 'wordpress-compatible',
+                    architecture: 'event-driven-wordpress-compatible',
                     version: window.guestifyData?.pluginVersion || 'unknown'
                 }
             }));
             
-            console.log('🎉 ROOT FIX: Clean WordPress-compatible initialization complete!');
-            console.log('📝 Available commands: triggerSave(), triggerUndo(), triggerRedo(), validateWordPressCompatibility(), testWordPressCompatibleSystems()');
+            // Track that mediaKitBuilderReady event was fired
+            if (window.gmkbEventCoordination) {
+                window.gmkbEventCoordination.mediaKitBuilderReadyFired = true;
+            }
             
+            console.log('🎉 ROOT FIX: Event-driven WordPress-compatible initialization complete!');
             return true;
         } else {
             throw new Error('System initialization failed');
         }
     } catch (error) {
-        console.error('❌ ROOT FIX: WordPress-compatible initialization failed:', error);
+        console.error('❌ ROOT FIX: Event-driven initialization failed:', error);
         
         // Dispatch error event
         document.dispatchEvent(new CustomEvent('mediaKitBuilderError', {
             detail: {
                 error: error.message,
-                context: 'wordpress-compatible-initialization'
+                context: 'event-driven-wordpress-compatible-initialization'
             }
         }));
         
         return false;
     }
+}
+
+// ROOT FIX: Event-driven system waiting function
+function waitForEnhancedSystems() {
+    return new Promise((resolve, reject) => {
+        // First, check if systems are already ready (in case event already fired)
+        if (window.enhancedComponentManager && 
+            window.stateManager && 
+            window.renderer && 
+            window.systemRegistrar) {
+            console.log('✅ Enhanced systems already ready');
+            return resolve({
+                source: 'already-ready',
+                systems: {
+                    enhancedComponentManager: !!window.enhancedComponentManager,
+                    stateManager: !!window.stateManager,
+                    renderer: !!window.renderer,
+                    systemRegistrar: !!window.systemRegistrar
+                }
+            });
+        }
+        
+        console.log('⏳ Waiting for coreSystemsReady event...');
+        
+        // Listen for the ready event
+        const onSystemsReady = (event) => {
+            console.log('🎉 coreSystemsReady event received!', event.detail);
+            document.removeEventListener('coreSystemsReady', onSystemsReady);
+            clearTimeout(timeoutId);
+            
+            // Track that the event was received
+            if (window.gmkbEventCoordination) {
+                window.gmkbEventCoordination.coreSystemsReadyFired = true;
+                window.gmkbEventCoordination.waitingForCoreSystemsReady = false;
+            }
+            
+            resolve(event.detail);
+        };
+        
+        document.addEventListener('coreSystemsReady', onSystemsReady);
+        
+        // Track that we're listening for the event
+        if (window.gmkbEventCoordination) {
+            window.gmkbEventCoordination.waitingForCoreSystemsReady = true;
+        }
+        
+        // Fallback timeout for catastrophic failures (longer than before)
+        const timeoutId = setTimeout(() => {
+            document.removeEventListener('coreSystemsReady', onSystemsReady);
+            
+            // Detailed diagnostic information
+            const diagnostics = {
+                enhancedComponentManager: !!window.enhancedComponentManager,
+                stateManager: !!window.stateManager,
+                renderer: !!window.renderer,
+                systemRegistrar: !!window.systemRegistrar,
+                guestifyData: !!window.guestifyData,
+                gmkbWordPressCoordination: !!window.gmkbWordPressCoordination,
+                documentReady: document.readyState,
+                timestamp: Date.now()
+            };
+            
+            console.error('❌ Enhanced systems timeout - coreSystemsReady event never fired', diagnostics);
+            
+            reject(new Error(`Enhanced systems timeout: coreSystemsReady event was never fired. Diagnostics: ${JSON.stringify(diagnostics)}`));
+        }, 10000); // 10 second fallback timeout
+    });
+}
+
+// ROOT FIX: Enhanced event-driven error recovery
+window.addEventListener('mediaKitBuilderError', function(event) {
+    const errorDetails = event.detail;
+    
+    console.error('📆 Media Kit Builder Error Details:', {
+        error: errorDetails.error,
+        context: errorDetails.context,
+        timestamp: Date.now(),
+        eventDriven: true,
+        systemState: {
+            enhancedComponentManager: !!window.enhancedComponentManager,
+            stateManager: !!window.stateManager,
+            renderer: !!window.renderer,
+            systemRegistrar: !!window.systemRegistrar
+        }
+    });
+    
+    // Try event-driven recovery
+    attemptEventDrivenRecovery(errorDetails);
+});
+
+async function attemptEventDrivenRecovery(errorDetails) {
+    console.log('🚑 Attempting event-driven recovery...');
+    
+    try {
+        // Check if this is a timeout error that can be recovered
+        if (errorDetails.error.includes('coreSystemsReady event was never fired')) {
+            console.log('🔄 Attempting manual system verification...');
+            
+            // Check if systems are actually available despite event not firing
+            const manualCheck = {
+                enhancedComponentManager: !!window.enhancedComponentManager,
+                stateManager: !!window.stateManager,
+                renderer: !!window.renderer,
+                systemRegistrar: !!window.systemRegistrar,
+                dynamicComponentLoader: !!window.dynamicComponentLoader
+            };
+            
+            const availableSystems = Object.values(manualCheck).filter(Boolean).length;
+            const totalSystems = Object.keys(manualCheck).length;
+            
+            console.log(`🔍 Manual system check: ${availableSystems}/${totalSystems} systems available`);
+            
+            if (availableSystems >= 4) { // Most systems are available
+                console.log('✅ Manual recovery possible - systems are loaded but event failed');
+                
+                // Manually dispatch the event that should have fired
+                document.dispatchEvent(new CustomEvent('coreSystemsReady', {
+                    detail: {
+                        source: 'manual-recovery',
+                        systems: Object.keys(manualCheck).filter(key => manualCheck[key]),
+                        timestamp: Date.now(),
+                        recovery: true
+                    }
+                }));
+                
+                console.log('🎉 Manual coreSystemsReady event dispatched');
+                return true;
+            }
+        }
+        
+        // If manual recovery fails, show user-friendly error
+        showEventDrivenErrorPanel(errorDetails);
+        return false;
+        
+    } catch (recoveryError) {
+        console.error('❌ Event-driven recovery failed:', recoveryError);
+        showEventDrivenErrorPanel(errorDetails);
+        return false;
+    }
+}
+
+function showEventDrivenErrorPanel(errorDetails) {
+    const errorPanel = document.createElement('div');
+    errorPanel.id = 'gmkb-event-driven-error-panel';
+    errorPanel.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fee;
+            border: 2px solid #f88;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            color: #d44;
+            max-width: 500px;
+            z-index: 10004;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        ">
+            <h2>⚠️ Media Kit Builder Loading Error</h2>
+            <p><strong>The enhanced systems failed to coordinate properly.</strong></p>
+            <p>Error: ${errorDetails.error}</p>
+            <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; text-align: left;">
+                <strong>🔧 Event-Driven Diagnostics:</strong><br>
+                Enhanced Component Manager: ${!!window.enhancedComponentManager ? '✅' : '❌'}<br>
+                State Manager: ${!!window.stateManager ? '✅' : '❌'}<br>
+                Renderer: ${!!window.renderer ? '✅' : '❌'}<br>
+                System Registrar: ${!!window.systemRegistrar ? '✅' : '❌'}<br>
+                Event Coordination: ${window.gmkbEventDrivenFix ? '✅' : '❌'}
+            </div>
+            <button onclick="location.reload()" style="
+                background: #d44;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                margin-right: 10px;
+            ">Reload Builder</button>
+            <button onclick="this.parentElement.parentElement.remove()" style="
+                background: #666;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+            ">Dismiss</button>
+        </div>
+    `;
+    
+    document.body.appendChild(errorPanel);
 }
 
 // ROOT FIX: Start WordPress-compatible initialization when ready
@@ -806,8 +1006,83 @@ window.validateWordPressScriptLoading = function() {
            criticalSystems === totalSystems;
 };
 
+// ROOT FIX: Event-driven diagnostic tools
+window.validateEventDrivenFix = function() {
+    console.group('🔍 Event-Driven Fix Validation');
+    
+    const validation = {
+        eventCoordination: {
+            gmkbEventDrivenFix: !!window.gmkbEventDrivenFix,
+            gmkbEventCoordination: !!window.gmkbEventCoordination,
+            coreSystemsReadyFired: window.gmkbEventCoordination?.coreSystemsReadyFired,
+            mediaKitBuilderReadyFired: window.gmkbEventCoordination?.mediaKitBuilderReadyFired
+        },
+        coreSystems: {
+            enhancedComponentManager: !!window.enhancedComponentManager,
+            stateManager: !!window.stateManager,
+            renderer: !!window.renderer,
+            systemRegistrar: !!window.systemRegistrar,
+            dynamicComponentLoader: !!window.dynamicComponentLoader
+        },
+        wordPressDependencies: {
+            guestifyData: !!window.guestifyData,
+            scriptsLoaded: typeof window.validateWordPressScriptLoading === 'function',
+            dependencyChain: 'enhanced-wordpress-compatible'
+        },
+        initialization: {
+            initializationStarted: window.gmkbWordPressCoordination?.initializationStarted,
+            initializationComplete: window.gmkbWordPressCoordination?.initializationComplete,
+            systemsReady: window.gmkbWordPressCoordination?.systemsReady
+        }
+    };
+    
+    console.table(validation.eventCoordination);
+    console.table(validation.coreSystems);
+    console.table(validation.wordPressDependencies);
+    console.table(validation.initialization);
+    
+    const issues = [];
+    
+    // Check for issues
+    if (!validation.eventCoordination.gmkbEventDrivenFix) {
+        issues.push('Event-driven fix flag not set');
+    }
+    
+    if (!validation.eventCoordination.coreSystemsReadyFired) {
+        issues.push('coreSystemsReady event never fired');
+    }
+    
+    const missingCoreSystems = Object.entries(validation.coreSystems)
+        .filter(([key, value]) => !value)
+        .map(([key]) => key);
+    
+    if (missingCoreSystems.length > 0) {
+        issues.push(`Missing core systems: ${missingCoreSystems.join(', ')}`);
+    }
+    
+    if (!validation.initialization.initializationComplete) {
+        issues.push('Initialization not complete');
+    }
+    
+    if (issues.length === 0) {
+        console.log('🎉 EVENT-DRIVEN FIX VALIDATION: ALL TESTS PASSED!');
+        console.log('✅ Event coordination working properly');
+        console.log('✅ All core systems available');
+        console.log('✅ WordPress dependencies functioning');
+        console.log('✅ Initialization completed successfully');
+    } else {
+        console.warn('⚠️ EVENT-DRIVEN FIX VALIDATION: Issues detected:');
+        issues.forEach(issue => console.warn(`  - ${issue}`));
+    }
+    
+    console.groupEnd();
+    return validation;
+};
+
 console.log('✅ ROOT FIX: Clean WordPress-compatible main.js loaded successfully');
 console.log('📝 Available diagnostic: validateWordPressScriptLoading()');
+console.log('📆 Event-driven diagnostic tools available:');
+console.log('  validateEventDrivenFix() - Comprehensive validation');
 
 // Expose logging console commands
 window.mkLog = {
