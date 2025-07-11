@@ -178,9 +178,10 @@ class GMKB_Enhanced_State_Loading_Coordinator {
                     
                     // ROOT FIX: Use event-driven coordination instead of polling
                     const coordinateStateLoading = () => {
-                        console.log('🔄 ROOT FIX: Event-driven state loading coordination starting');
+                        console.log('🔄 ROOT FIX: Event-driven state loading coordination starting - NO MORE POLLING!');
+                        console.log('🎯 This should eliminate the setTimeout polling errors!');
                         
-                        // Check if enhanced state manager is already available
+                    // Check if enhanced state manager is already available
                         if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
                             console.log('✅ ROOT FIX: Enhanced state manager already available - triggering priority saved state loading');
                             triggerSavedStateLoading();

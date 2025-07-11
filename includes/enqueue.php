@@ -767,7 +767,8 @@ class GMKB_Enhanced_Script_Manager {
             console.log('🚀 EVENT-DRIVEN FIX: Critical data and event coordination ready', {
                 eventDrivenFix: true,
                 timestamp: window.guestifyData.timestamp,
-                isolated: window.gmkbIsolated
+                isolated: window.gmkbIsolated,
+                version: 'event-driven-fix-active-' + Date.now()
             });
         </script>
         <?php
@@ -953,60 +954,90 @@ class GMKB_Enhanced_Script_Manager {
         <script id="gmkb-error-recovery">
             /* CRITICAL FIX: Enhanced global error recovery system */
             (function() {
-                let initializationStarted = false;
                 let initializationComplete = false;
-                const maxWaitTime = 10000; // Reduced to 10 seconds for faster detection
                 
                 // Enhanced initialization monitoring
                 const checkInitialization = () => {
-                    const startTime = Date.now();
+                    console.log('🔍 EVENT-DRIVEN FIX: Setting up event-driven initialization monitoring...');
                     
-                    const checkProgress = () => {
-                        const elapsed = Date.now() - startTime;
+                    // Check if already initialized
+                    if (window.mediaKitBuilderReady || window.initializationStarted || 
+                        window.enhancedComponentManager?.isInitialized) {
+                        console.log('✅ GMKB Phase 1: Initialization already detected - system ready');
                         
-                        // Enhanced initialization detection
-                        if (window.mediaKitBuilderReady || window.initializationStarted || 
-                            window.enhancedComponentManager?.isInitialized) {
-                            initializationStarted = true;
-                            console.log('✅ GMKB Phase 1: Initialization detected successfully');
+                        if (document.body) {
+                            document.body.classList.remove('gmkb-initializing');
+                            document.body.classList.add('gmkb-ready');
+                        }
+                        return;
+                    }
+                    
+                    // ROOT FIX: Use event-driven approach instead of polling
+                    let timeoutId;
+                    
+                    const onMediaKitBuilderReady = (event) => {
+                        console.log('🎉 EVENT-DRIVEN FIX: mediaKitBuilderReady event received!', event.detail);
+                        clearTimeout(timeoutId);
+                        document.removeEventListener('mediaKitBuilderReady', onMediaKitBuilderReady);
+                        
+                        if (document.body) {
+                            document.body.classList.remove('gmkb-initializing');
+                            document.body.classList.add('gmkb-ready');
+                        }
+                        
+                        console.log('✅ EVENT-DRIVEN FIX: Initialization completed successfully via event');
+                    };
+                    
+                    // Listen for the ready event
+                    document.addEventListener('mediaKitBuilderReady', onMediaKitBuilderReady);
+                    
+                    // Also listen for core systems ready as backup
+                    const onCoreSystemsReady = (event) => {
+                        console.log('🎉 EVENT-DRIVEN FIX: coreSystemsReady event received as backup!', event.detail);
+                        // Don't remove the main listener, but check systems
+                        if (window.enhancedComponentManager?.isInitialized) {
+                            clearTimeout(timeoutId);
+                            document.removeEventListener('mediaKitBuilderReady', onMediaKitBuilderReady);
+                            document.removeEventListener('coreSystemsReady', onCoreSystemsReady);
                             
-                            // Remove loading class once initialized
                             if (document.body) {
                                 document.body.classList.remove('gmkb-initializing');
                                 document.body.classList.add('gmkb-ready');
                             }
-                            return;
-                        }
-                        
-                        // Enhanced timeout detection
-                        if (elapsed > maxWaitTime) {
-                            const errorDetails = {
-                                elapsed: elapsed,
-                                guestifyData: !!window.guestifyData,
-                                guestifyDataCritical: !!window.guestifyCriticalDataLoaded,
-                                systemRegistrar: !!window.systemRegistrar,
-                                enhancedComponentManager: !!window.enhancedComponentManager,
-                                phase1Fixes: window.guestifyData?.phase1Fixes
-                            };
                             
-                            window.gmkbPhase1.logError(
-                                new Error('Enhanced timeout after ' + elapsed + 'ms'),
-                                'enhanced-initialization-timeout',
-                                errorDetails
-                            );
-                            
-                            window.gmkbPhase1.showRecovery(
-                                'Enhanced initialization timed out. Critical systems status: ' + 
-                                JSON.stringify(errorDetails, null, 2)
-                            );
-                            return;
+                            console.log('✅ EVENT-DRIVEN FIX: Initialization completed via coreSystemsReady backup');
                         }
-                        
-                        // Continue checking with shorter intervals
-                        setTimeout(checkProgress, 250);
                     };
                     
-                    checkProgress();
+                    document.addEventListener('coreSystemsReady', onCoreSystemsReady);
+                    
+                    // Timeout only as absolute last resort (much longer)
+                    timeoutId = setTimeout(() => {
+                        document.removeEventListener('mediaKitBuilderReady', onMediaKitBuilderReady);
+                        document.removeEventListener('coreSystemsReady', onCoreSystemsReady);
+                        
+                        const errorDetails = {
+                            approach: 'event-driven',
+                            eventsWaitedFor: ['mediaKitBuilderReady', 'coreSystemsReady'],
+                            guestifyData: !!window.guestifyData,
+                            guestifyDataCritical: !!window.guestifyCriticalDataLoaded,
+                            systemRegistrar: !!window.systemRegistrar,
+                            enhancedComponentManager: !!window.enhancedComponentManager,
+                            eventDrivenFix: window.guestifyData?.eventDrivenFix,
+                            eventCoordination: !!window.gmkbEventCoordination
+                        };
+                        
+                        window.gmkbPhase1.logError(
+                            new Error('EVENT-DRIVEN FIX: Events timeout after 15 seconds'),
+                            'event-driven-initialization-timeout',
+                            errorDetails
+                        );
+                        
+                        window.gmkbPhase1.showRecovery(
+                            'Event-driven initialization timed out. No events received. System status: ' + 
+                            JSON.stringify(errorDetails, null, 2)
+                        );
+                    }, 15000); // 15 second timeout for event-driven approach
                 };
                 
                 // Enhanced event listeners

@@ -1079,10 +1079,11 @@ window.validateEventDrivenFix = function() {
     return validation;
 };
 
-console.log('✅ ROOT FIX: Clean WordPress-compatible main.js loaded successfully');
+console.log('✅ ROOT FIX: Clean WordPress-compatible main.js loaded successfully - EVENT-DRIVEN VERSION');
 console.log('📝 Available diagnostic: validateWordPressScriptLoading()');
 console.log('📆 Event-driven diagnostic tools available:');
 console.log('  validateEventDrivenFix() - Comprehensive validation');
+console.log('🚀 Event-driven fix active at: ' + new Date().toISOString());
 
 // Expose logging console commands
 window.mkLog = {
