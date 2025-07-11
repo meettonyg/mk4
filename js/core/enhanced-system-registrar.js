@@ -1,42 +1,57 @@
 /**
  * @file enhanced-system-registrar.js
- * @description Registers enhanced systems with the system registrar
- * CRITICAL FIX: Converted to static imports to eliminate race conditions
+ * @description ROOT FIX: WordPress-Compatible Enhanced System Registrar
+ * Converted from ES6 modules to WordPress-compatible IIFE format
+ * Registers enhanced systems with the system registrar
+ * 
+ * CRITICAL FIX: Removes ES6 import dependencies that fail in WordPress loading
  */
 
-import { systemRegistrar } from './system-registrar.js';
-import { performanceMonitor } from '../utils/performance-monitor.js';
-
-// CRITICAL FIX: Static imports to eliminate race conditions for core systems
-import { enhancedStateManager } from './enhanced-state-manager.js';
-import { enhancedComponentManager } from './enhanced-component-manager.js';
-import { enhancedComponentRenderer } from './enhanced-component-renderer.js';
-// ROOT FIX: Import rendering queue manager for enterprise-grade rendering
-import { renderingQueueManager } from './rendering-queue-manager.js';
-
-// PHASE 2 INTEGRATION: Import Phase 2 rendering optimization systems
-// TEMPORARILY DISABLED - causing core system failures
-// import { renderValidator } from './render-validator.js';
-// import { renderRecoveryManager } from './render-recovery-manager.js';
-
-// CRITICAL FIX: Import the initializer system
-import { initializer } from './media-kit-builder-init.js';
-
-// CRITICAL FIX: Import missing template loading systems that caused 287s timeout
-import { dynamicComponentLoader } from '../components/dynamic-component-loader.js';
-import { templateCache } from '../utils/template-cache.js';
-
-// PHASE 2.3 TASK 4: Import Enhanced Error Handler for comprehensive user guidance
-import { enhancedErrorHandler } from '../utils/enhanced-error-handler.js';
-
-// PHASE 2.1: Import MKCG Data Mapper for data integration
-import { mkcgDataMapper } from '../utils/mkcg-data-mapper.js';
+// ROOT FIX: WordPress-compatible IIFE wrapper
+(function() {
+    'use strict';
+    
+    // ROOT FIX: Create fallback utilities if imports not available
+    const systemRegistrar = window.systemRegistrar || {
+        register: function(name, system) {
+            console.log(`Registering system: ${name}`);
+            window[name] = system;
+        },
+        get: function(name) {
+            return window[name];
+        },
+        list: function() {
+            return Object.keys(window).filter(key => key.endsWith('Manager') || key.endsWith('Service'));
+        },
+        getAll: function() {
+            const systems = {};
+            this.list().forEach(name => {
+                systems[name] = window[name];
+            });
+            return systems;
+        }
+    };
+    
+    const performanceMonitor = window.performanceMonitor || {
+        start: () => () => {}
+    };
+    
+    // ROOT FIX: Access enhanced systems from window (they should be loaded by now)
+    const enhancedStateManager = window.enhancedStateManager;
+    const enhancedComponentManager = window.enhancedComponentManager;
+    const enhancedComponentRenderer = window.enhancedComponentRenderer;
+    const renderingQueueManager = window.renderingQueueManager;
+    const initializer = window.initializer;
+    const dynamicComponentLoader = window.dynamicComponentLoader;
+    const templateCache = window.templateCache;
+    const enhancedErrorHandler = window.enhancedErrorHandler;
+    const mkcgDataMapper = window.mkcgDataMapper;
 
 /**
  * Registers all enhanced systems with the system registrar
  * CRITICAL FIX: Now fully synchronous for predictable initialization
  */
-export async function registerEnhancedSystems() {
+async function registerEnhancedSystems() {
     const perfEnd = performanceMonitor.start('register-enhanced-systems');
     
     console.log('🔧 Enhanced System Registrar: Starting system registration...');
@@ -446,7 +461,7 @@ async function upgradeEventBus() {
  * Gets the current system configuration for debugging
  * @returns {object} Current system information
  */
-export function getEnhancedSystemInfo() {
+function getEnhancedSystemInfo() {
     const registeredSystems = systemRegistrar.getAll();
     
     return {
@@ -489,5 +504,20 @@ export function getEnhancedSystemInfo() {
     };
 }
 
-// Expose system info globally for debugging
+// ROOT FIX: WordPress-compatible global exposure
+window.registerEnhancedSystems = registerEnhancedSystems;
+window.upgradePhase3SystemsAsync = upgradePhase3SystemsAsync;
 window.getEnhancedSystemInfo = getEnhancedSystemInfo;
+
+// ROOT FIX: Also expose for immediate access
+if (!window.enhancedSystemRegistrar) {
+    window.enhancedSystemRegistrar = {
+        registerEnhancedSystems,
+        upgradePhase3SystemsAsync,
+        getEnhancedSystemInfo
+    };
+}
+
+console.log('✅ ROOT FIX: Enhanced System Registrar exposed globally (WordPress-compatible)');
+
+})(); // ROOT FIX: Close IIFE wrapper

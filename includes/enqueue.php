@@ -177,7 +177,7 @@ class GMKB_Enhanced_Script_Manager {
             return;
         }
         
-        $this->legacy_enqueue_scripts();
+        $this->register_and_enqueue_scripts();
         $this->script_loaded = true;
     }
     
@@ -246,7 +246,7 @@ class GMKB_Enhanced_Script_Manager {
     }
     
     /**
-     * ROOT FIX: Simplified WordPress Script Dependencies
+     * ROOT FIX: Modern WordPress Script Dependencies
      * 
      * IMPLEMENTATION: Professional WordPress dependency management
      * with bulletproof script loading order and enhanced system coordination.
@@ -256,9 +256,9 @@ class GMKB_Enhanced_Script_Manager {
      * 2. Core Enhanced Systems (bundled)
      * 3. Main Application (unified)
      * 4. UI & Testing Systems
-     * 5. Legacy Compatibility
+     * 5. WordPress Compatibility
      */
-    private function legacy_enqueue_scripts() {
+    private function register_and_enqueue_scripts() {
         $plugin_url = GUESTIFY_PLUGIN_URL;
         $version = GUESTIFY_VERSION . '-root-fix-wp-deps';
 
@@ -274,7 +274,7 @@ class GMKB_Enhanced_Script_Manager {
         wp_add_inline_style('guestify-media-kit-builder-styles', $critical_css);
 
         // ========================================
-        // SIMPLIFIED WORDPRESS SCRIPT DEPENDENCIES
+        // MODERN WORDPRESS SCRIPT DEPENDENCIES
         // ========================================
         
         // LAYER 1: External Dependencies
@@ -286,11 +286,44 @@ class GMKB_Enhanced_Script_Manager {
             false // Load in head for early availability
         );
         
-        // LAYER 2: Core Enhanced Systems (unified bundle approach)
+        // LAYER 2: Core Enhanced Systems (actual files, not stubs)
+        wp_register_script(
+            'guestify-enhanced-state-manager',
+            $plugin_url . 'js/core/enhanced-state-manager.js',
+            array('sortable-js'), // Only depends on SortableJS
+            $version,
+            true // Load in footer
+        );
+        
+        wp_register_script(
+            'guestify-enhanced-component-manager',
+            $plugin_url . 'js/core/enhanced-component-manager.js',
+            array('guestify-enhanced-state-manager'), // Depends on state manager
+            $version,
+            true
+        );
+        
+        wp_register_script(
+            'guestify-enhanced-renderer',
+            $plugin_url . 'js/core/enhanced-component-renderer.js',
+            array('guestify-enhanced-component-manager'), // Depends on component manager
+            $version,
+            true
+        );
+        
+        wp_register_script(
+            'guestify-system-registrar',
+            $plugin_url . 'js/core/enhanced-system-registrar.js',
+            array('guestify-enhanced-renderer'), // Depends on renderer
+            $version,
+            true
+        );
+        
+        // LAYER 3: Main coordination (unified bundle approach)
         wp_register_script(
             'guestify-enhanced-core',
             $plugin_url . 'js/main.js',
-            array('sortable-js'), // Only depends on SortableJS
+            array('guestify-system-registrar'), // Depends on all core systems
             $version,
             true // Load in footer
         );
@@ -326,9 +359,19 @@ class GMKB_Enhanced_Script_Manager {
             
             // WordPress dependency chain ensures proper loading order:
             // 1. SortableJS (external)
-            // 2. Enhanced Core Systems (main.js with all systems)
-            // 3. UI Systems (element-controls.js)
-            // 4. Testing Systems (optional)
+            // 2. Enhanced State Manager (core/enhanced-state-manager.js)
+            // 3. Enhanced Component Manager (core/enhanced-component-manager.js) 
+            // 4. Enhanced Renderer (core/enhanced-component-renderer.js)
+            // 5. System Registrar (core/enhanced-system-registrar.js)
+            // 6. Main Coordination (main.js)
+            // 7. UI Systems (element-controls.js)
+            // 8. Testing Systems (optional)
+            
+            // Enqueue core enhanced systems in order
+            wp_enqueue_script('guestify-enhanced-state-manager');
+            wp_enqueue_script('guestify-enhanced-component-manager');
+            wp_enqueue_script('guestify-enhanced-renderer');
+            wp_enqueue_script('guestify-system-registrar');
             
             // Enqueue main core system (WordPress handles dependency chain)
             wp_enqueue_script('guestify-enhanced-core');
@@ -342,9 +385,10 @@ class GMKB_Enhanced_Script_Manager {
             // Log successful WordPress dependency management
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('GMKB ROOT FIX: Clean WordPress dependencies implemented');
-                error_log('GMKB: Bulletproof script loading with 4 core scripts (no legacy bloat)');
+                error_log('GMKB: Bulletproof script loading with 8 core scripts (modern architecture)');
                 error_log('GMKB: WordPress-compatible loading eliminates ES6 module conflicts');
             }
+        }
     }
     
     /**
@@ -1297,7 +1341,7 @@ class GMKB_Enhanced_Script_Manager {
  * ✅ WordPress-compatible loading with proper dependency chain
  * ✅ Enhanced systems maintained through WordPress patterns
  * ✅ Race conditions eliminated at WordPress level
- * ✅ No legacy bloat - production-ready architecture
+ * ✅ No legacy bloat - production-ready modern architecture
  * ✅ 99%+ initialization success rate achieved
  */
 
@@ -1331,7 +1375,11 @@ function gmkb_validate_script_dependencies() {
     
     $required_scripts = array(
         'sortable-js' => array(),
-        'guestify-enhanced-core' => array('sortable-js'),
+        'guestify-enhanced-state-manager' => array('sortable-js'),
+        'guestify-enhanced-component-manager' => array('guestify-enhanced-state-manager'),
+        'guestify-enhanced-renderer' => array('guestify-enhanced-component-manager'),
+        'guestify-system-registrar' => array('guestify-enhanced-renderer'),
+        'guestify-enhanced-core' => array('guestify-system-registrar'),
         'guestify-ui-systems' => array('guestify-enhanced-core'),
         'guestify-testing-systems' => array('guestify-enhanced-core')
     );
@@ -1380,7 +1428,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     }, 999);
 }
 
-// CRITICAL FIX: Legacy compatibility - ensure function exists
+// CRITICAL FIX: Modern compatibility - ensure function exists
 if (!function_exists('guestify_media_kit_builder_enqueue_scripts')) {
     function guestify_media_kit_builder_enqueue_scripts() {
         return GMKB_Enhanced_Script_Manager::get_instance()->get_status();
