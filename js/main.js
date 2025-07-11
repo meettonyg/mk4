@@ -74,6 +74,10 @@ import { saveService } from './services/save-service.js';
 // ROOT FIX: Import and expose state history early for undo/redo
 import { stateHistory } from './core/state-history.js';
 
+// ROOT FIX: PHASE 1 - Import empty state handlers for interactive empty state system
+import { emptyStateHandlers } from './ui/empty-state-handlers.js';
+import { autoGenerationService } from './services/auto-generation-service.js';
+
 // ROOT FIX: Import state loading validation test
 import './tests/test-state-loading-fix.js';
 
@@ -95,6 +99,12 @@ console.log('✅ Save service exposed globally:', !!window.saveService);
 // ROOT FIX: Ensure state history is exposed globally early for undo/redo
 window.stateHistory = stateHistory;
 console.log('✅ State history exposed globally:', !!window.stateHistory);
+
+// ROOT FIX: PHASE 1 - Expose empty state handlers and auto-generation service globally
+window.emptyStateHandlers = emptyStateHandlers;
+window.autoGenerationService = autoGenerationService;
+console.log('✅ PHASE 1: Empty state handlers exposed globally:', !!window.emptyStateHandlers);
+console.log('✅ PHASE 1: Auto-generation service exposed globally:', !!window.autoGenerationService);
 
 // ROOT FIX: Expose save system commands
 window.triggerSave = () => {
@@ -727,6 +737,13 @@ window.mkLog = {
         console.log('  task5.getComponentStatus(id) - Get component sync status');
         console.log('  task5.debug()           - Show Task 5 debug info');
         console.log('  task5.help()            - Show Task 5 help');
+        console.log('\n🎯 PHASE 1: Empty State Commands:');
+        console.log('  emptyStateHandlers.init() - Initialize empty state button handlers');
+        console.log('  emptyStateHandlers.getStatus() - Get empty state handler status');
+        console.log('  emptyStateHandlers.getAnalytics() - Get interaction analytics');
+        console.log('  autoGenerationService.autoGenerateFromMKCG() - Auto-generate components');
+        console.log('  autoGenerationService.getStatus() - Get auto-generation status');
+        console.log('  testEmptyStateButtons() - Test all empty state button functionality');
         console.log('\n🎯 Phase 2.3 Commands:');
         console.log('  phase23.help()          - Show Phase 2.3 enhanced UX commands');
         console.log('  phase23.status()        - Show integration status');
@@ -764,6 +781,88 @@ window.mkLog = {
             console.log('  2. Run: validateStateLoadingFix() - Full validation');
         console.log('  3. Look for: "ROOT FIX VALIDATION: ALL TESTS PASSED!"');
         console.log('  4. Check component count in success message');
+    }
+};
+
+// ROOT FIX: PHASE 1 - Test empty state button functionality
+window.testEmptyStateButtons = function() {
+    console.log('🧪 Testing Empty State Button Functionality...\n');
+    
+    const results = {
+        passed: 0,
+        failed: 0,
+        tests: []
+    };
+    
+    function test(name, condition, critical = false) {
+        const status = condition ? 'PASS' : 'FAIL';
+        const icon = condition ? '✅' : '❌';
+        
+        console.log(`${icon} ${name}: ${status}`);
+        
+        results.tests.push({ name, status, critical });
+        
+        if (condition) {
+            results.passed++;
+        } else {
+            results.failed++;
+        }
+    }
+    
+    // Core empty state system tests
+    test('Empty State Handlers Available', !!window.emptyStateHandlers, true);
+    test('Auto-Generation Service Available', !!window.autoGenerationService, true);
+    test('Empty State Handlers Initialized', window.emptyStateHandlers?.isInitialized, true);
+    
+    // Button element tests
+    test('Auto-Generate Button Exists', !!document.getElementById('auto-generate-btn'), false);
+    test('Add First Component Button Exists', !!document.getElementById('add-first-component'), false);
+    test('MKCG Dashboard Auto-Generate Button Exists', !!document.getElementById('mkcg-auto-generate-dashboard'), false);
+    test('MKCG Dashboard Refresh Button Exists', !!document.getElementById('mkcg-refresh-dashboard'), false);
+    
+    // Empty state element tests
+    test('Empty State Element Exists', !!document.getElementById('empty-state'), true);
+    test('MKCG Dashboard Element Exists', !!document.getElementById('mkcg-dashboard'), false);
+    
+    // Handler status tests
+    if (window.emptyStateHandlers) {
+        const status = window.emptyStateHandlers.getStatus();
+        test('Empty State Handlers Have Active Buttons', status.activeButtons?.length > 0, false);
+        
+        console.log('\n📊 Empty State Handler Status:');
+        console.log(`  Initialized: ${status.isInitialized}`);
+        console.log(`  Active Buttons: ${status.activeButtons?.length || 0}`);
+        console.log(`  Button IDs: ${status.activeButtons?.join(', ') || 'None'}`);
+        console.log(`  Interactions: ${status.interactionCount}`);
+    }
+    
+    // Auto-generation service tests
+    if (window.autoGenerationService) {
+        const status = window.autoGenerationService.getStatus();
+        test('Auto-Generation Service Not Currently Running', !status.isGenerating, false);
+        
+        console.log('\n⚙️ Auto-Generation Service Status:');
+        console.log(`  Is Generating: ${status.isGenerating}`);
+        console.log(`  Last Results: ${status.lastResults?.length || 0}`);
+    }
+    
+    // Summary
+    console.log('\n📋 Empty State Button Test Summary:');
+    console.log(`  ✅ Passed: ${results.passed}`);
+    console.log(`  ❌ Failed: ${results.failed}`);
+    
+    if (results.failed === 0) {
+        console.log('\n🎉 All empty state button tests passed!');
+        console.log('💡 Try clicking empty state buttons or run emptyStateHandlers.init() if not initialized.');
+        return true;
+    } else {
+        console.log('\n⚠️ Some empty state button tests failed. Check the individual results above.');
+        const criticalFailures = results.tests.filter(t => t.status === 'FAIL' && t.critical);
+        if (criticalFailures.length > 0) {
+            console.log('❌ Critical failures detected:');
+            criticalFailures.forEach(t => console.log(`   - ${t.name}`));
+        }
+        return false;
     }
 };
 
@@ -1057,6 +1156,15 @@ async function initializeBuilder() {
                 console.warn('⚠️ Some critical systems missing:', criticalMissing);
             } else {
                 console.log('✅ All critical systems verified and ready!');
+            }
+            
+            // ROOT FIX: PHASE 1 - Initialize empty state handlers after core systems are ready
+            console.log('🎯 PHASE 1: Initializing empty state interactive system...');
+            try {
+                emptyStateHandlers.init();
+                console.log('✅ PHASE 1: Empty state handlers initialized successfully');
+            } catch (error) {
+                console.error('❌ PHASE 1: Empty state handlers initialization failed:', error);
             }
             
             // FOUNDATIONAL FIX: Expose testing functions after successful initialization

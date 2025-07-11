@@ -303,18 +303,24 @@ if ($post_id > 0) {
                         </div>
                         
                         <div class="empty-state-actions">
-                            <button class="btn btn--primary" id="auto-generate-btn" data-post-id="<?php echo $post_id; ?>">
+                            <button class="btn btn--primary" id="auto-generate-btn" data-post-id="<?php echo $post_id; ?>" data-action="auto-generate-all">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                 </svg>
                                 Auto-Generate All Components
                             </button>
-                            <button class="btn btn--secondary" id="add-first-component">
+                            <button class="btn btn--secondary" id="add-first-component" data-action="open-component-library">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <line x1="12" y1="5" x2="12" y2="19"></line>
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
                                 Add Component Manually
+                            </button>
+                            <button class="btn btn--outline" id="selective-generate-btn" data-post-id="<?php echo $post_id; ?>" data-action="selective-generate" style="display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4l2 3 2-3h4a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-4l-2-3z"></path>
+                                </svg>
+                                Choose Components
                             </button>
                         </div>
                         
@@ -340,12 +346,20 @@ if ($post_id > 0) {
                         </p>
                         
                         <div class="empty-state-actions">
-                            <button class="btn btn--primary" id="add-first-component">
+                            <button class="btn btn--primary" id="add-first-component" data-action="open-component-library">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <line x1="12" y1="5" x2="12" y2="19"></line>
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
                                 Add Component
+                            </button>
+                            <button class="btn btn--outline" id="connect-data-btn" data-action="connect-data">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                                    <rect x="2" y="9" width="4" height="12"></rect>
+                                    <circle cx="4" cy="4" r="2"></circle>
+                                </svg>
+                                Connect MKCG Data
                             </button>
                         </div>
                     <?php endif; ?>
@@ -953,6 +967,38 @@ if ($post_id > 0) {
         border-color: #cbd5e1;
     }
     
+    .btn--outline {
+        background: transparent;
+        color: #475569;
+        border: 2px solid #e2e8f0;
+    }
+    
+    .btn--outline:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+        color: #334155;
+    }
+    
+    .btn.loading {
+        opacity: 0.7;
+        pointer-events: none;
+        position: relative;
+    }
+    
+    .btn.loading::after {
+        content: '';
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 12px;
+        height: 12px;
+        border: 2px solid currentColor;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
     /* Drop zones */
     .drop-zone {
         min-height: 60px;
@@ -1359,6 +1405,197 @@ if ($post_id > 0) {
         
         .loading-state-description {
             font-size: 14px;
+        }
+    }
+    
+    /* ========================================
+       ROOT FIX: PHASE 1 - GENERATION FEEDBACK STYLES
+       ======================================== */
+       
+    .generation-success {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border: 2px solid #10b981;
+        border-radius: 16px;
+        padding: 24px;
+        margin: 24px 0;
+        text-align: center;
+        animation: slideInUp 0.6s ease;
+    }
+    
+    .success-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        display: block;
+        animation: bounce 1s ease;
+    }
+    
+    .generation-success h3 {
+        color: #065f46;
+        font-size: 20px;
+        margin: 0 0 12px 0;
+        font-weight: 600;
+    }
+    
+    .generation-success p {
+        color: #047857;
+        margin: 0 0 16px 0;
+        font-size: 14px;
+    }
+    
+    .success-details {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        font-size: 12px;
+        color: #065f46;
+        font-weight: 500;
+    }
+    
+    .success-details span {
+        background: rgba(16, 185, 129, 0.1);
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    
+    .generation-error {
+        background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+        border: 2px solid #ef4444;
+        border-radius: 16px;
+        padding: 24px;
+        margin: 24px 0;
+        text-align: center;
+        animation: shake 0.6s ease;
+    }
+    
+    .generation-error .error-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        display: block;
+        color: #dc2626;
+    }
+    
+    .generation-error h3 {
+        color: #7f1d1d;
+        font-size: 20px;
+        margin: 0 0 12px 0;
+        font-weight: 600;
+    }
+    
+    .generation-error p {
+        color: #991b1b;
+        margin: 0;
+        font-size: 14px;
+    }
+    
+    /* Component badge selection */
+    .mkcg-component-badge {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+    }
+    
+    .mkcg-component-badge:hover {
+        background: #dbeafe;
+        transform: translateY(-1px);
+    }
+    
+    .mkcg-component-badge.selected {
+        background: #3b82f6;
+        color: white;
+        border-color: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .mkcg-component-badge.selected .mkcg-component-icon {
+        filter: grayscale(0) brightness(1.2);
+    }
+    
+    /* Interactive empty state improvements */
+    .empty-state-actions {
+        gap: 16px;
+        margin-top: 32px;
+    }
+    
+    .empty-state-actions .btn {
+        min-width: 160px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .empty-state-actions .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Dashboard interaction improvements */
+    .mkcg-dashboard-optimized .mkcg-action-btn {
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .mkcg-dashboard-optimized .mkcg-action-btn:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+    
+    .mkcg-dashboard-optimized .mkcg-action-btn:hover:before {
+        left: 100%;
+    }
+    
+    @keyframes bounce {
+        0%, 20%, 60%, 100% {
+            transform: translateY(0);
+        }
+        40% {
+            transform: translateY(-10px);
+        }
+        80% {
+            transform: translateY(-5px);
+        }
+    }
+    
+    @keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-5px);
+        }
+        20%, 40%, 60%, 80% {
+            transform: translateX(5px);
+        }
+    }
+    
+    /* Mobile responsiveness for new elements */
+    @media (max-width: 768px) {
+        .generation-success,
+        .generation-error {
+            padding: 20px 16px;
+            margin: 16px;
+        }
+        
+        .success-details {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .empty-state-actions {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .empty-state-actions .btn {
+            width: 100%;
+            max-width: 280px;
         }
     }
 </style>
