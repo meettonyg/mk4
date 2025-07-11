@@ -4,11 +4,13 @@
             <div class="toolbar__logo">Guestify</div>
             <div class="toolbar__guest-name">Editing: Daniel Jackson's Media Kit</div>
             <?php
-            // ROOT FIX: Enhanced State Loading Coordination
-            require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-state-loading-coordinator.php';
-            $state_coordinator = GMKB_Enhanced_State_Loading_Coordinator::get_instance();
-            $coordination_data = $state_coordinator->check_saved_state_priority();
-            $template_instructions = $state_coordinator->generate_template_instructions($coordination_data);
+            // ROOT FIX: Removed state coordinator - bundles handle everything
+            $template_instructions = array(
+                'show_empty_state' => true,
+                'show_mkcg_dashboard' => true,
+                'show_loading_state' => false,
+                'loading_message' => ''
+            );
             
             // PHASE 2.3: Enhanced MKCG Data Dashboard (now coordinated with saved state priority)
             $post_id = 0;
@@ -609,28 +611,7 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-    // CRITICAL FIX: Ensure template completion event is dispatched early
-    (function() {
-        // If the script in PHP didn't run for some reason, ensure event fires
-        if (typeof window.dispatchTemplateComplete !== 'function') {
-            console.warn('Template completion dispatcher not found, creating fallback');
-            
-            const event = new CustomEvent('gmkbTemplateComplete', {
-                detail: {
-                    templateComplete: true,
-                    templateVersion: '2.3-fallback',
-                    readyForInit: true,
-                    timestamp: Date.now()
-                }
-            });
-            
-            // Dispatch immediately
-            document.dispatchEvent(event);
-            console.log('🎉 Fallback template completion event dispatched');
-        }
-    })();
-    </script>
+    <!-- ROOT FIX: Removed all inline scripts - bundles handle everything -->
 
     <?php 
     // PHASE 2.3: ENHANCED MODAL INCLUDES WITH VALIDATION AND ERROR HANDLING
@@ -679,102 +660,17 @@
         }
     }
     
-    // FOUNDATIONAL FIX: Enhanced modal inclusion status with validation
+    // ROOT FIX: Minimal script - just log modal status
     echo '<script type="text/javascript">';
-    echo 'window.gmkbModalInclusionStatus = ' . wp_json_encode(array(
-        'included' => $included_modals,
-        'failed' => $failed_modals,
-        'success_count' => count($included_modals),
-        'total_count' => count($modal_files),
-        'success_rate' => count($modal_files) > 0 ? (count($included_modals) / count($modal_files)) * 100 : 0
-    )) . ';';
-    echo 'console.log("📋 Phase 2.3 Modal Inclusion Status:", window.gmkbModalInclusionStatus);';
-    
-    // CRITICAL FIX: Enhanced template completion signaling with immediate and deferred dispatch
-    echo '
-    // Function to dispatch template complete event
-    window.dispatchTemplateComplete = function() {
-        const event = new CustomEvent("gmkbTemplateComplete", {
-            detail: {
-                templateComplete: true,
-                modalValidation: window.gmkbModalInclusionStatus,
-                templateVersion: "2.3-enhanced-fixed",
-                readyForInit: true,
-                allModalsReady: true,
-                timestamp: Date.now()
-            }
-        });
-        
-        document.dispatchEvent(event);
-        console.log("🎉 Template completion event dispatched", event.detail);
-    };
-    
-    // CRITICAL FIX: Dispatch immediately if DOM is ready
-    if (document.readyState === "interactive" || document.readyState === "complete") {
-        // DOM is ready, dispatch immediately
-        console.log("📋 DOM ready, dispatching template complete immediately");
-        window.dispatchTemplateComplete();
-    } else {
-        // Wait for DOM to be ready
-        document.addEventListener("DOMContentLoaded", function() {
-            console.log("📋 DOMContentLoaded, dispatching template complete");
-            window.dispatchTemplateComplete();
-        });
-    }
-    
-    // Also dispatch on window load as backup
-    window.addEventListener("load", function() {
-        console.log("📋 Window loaded, ensuring template complete is dispatched");
-        window.dispatchTemplateComplete();
-    });
-    
-    // Enhanced modal readiness validation (non-blocking)
-    window.waitForModalsReady = function() {
-        return new Promise((resolve) => {
-            const checkModals = () => {
-                const modalIds = ["component-library-overlay", "template-library-modal", "global-settings-modal", "export-modal"];
-                const readyModals = modalIds.filter(id => {
-                    const element = document.getElementById(id);
-                    return element && (element.children.length > 0 || element.textContent.trim());
-                });
-                
-                console.log("🔍 Modal readiness check:", {
-                    ready: readyModals,
-                    total: modalIds.length,
-                    complete: readyModals.length === modalIds.length
-                });
-                
-                if (readyModals.length === modalIds.length) {
-                    console.log("✅ All modals verified ready");
-                    resolve(true);
-                } else {
-                    // Try again in 100ms
-                    setTimeout(checkModals, 100);
-                }
-            };
-            
-            // Start checking after a brief delay to let DOM settle
-            setTimeout(checkModals, 50);
-        });
-    };
-    
-    // Verify modals in background (non-blocking)
-    window.waitForModalsReady().then(() => {
-        console.log("✅ Modal verification complete");
-    });';
-    
+    echo 'console.log("✅ ROOT FIX: Template loaded - bundles will handle initialization");';
     echo '</script>';
     
-    // ROOT FIX: Generate and inject state loading coordination JavaScript
-    echo $state_coordinator->generate_coordination_javascript($coordination_data);
+    // ROOT FIX: Removed inline coordination JavaScript - handled by bundles
     
     ?>
 
     
-    <!-- FOUNDATIONAL FIX: Complex modal validation no longer needed -->
-    <!-- JavaScript now waits for complete template loading -->
-
-    <!-- PHASE 2.3: TASK 2 - ENHANCED INTELLIGENT EMPTY STATE CSS FRAMEWORK -->
+    <!-- ROOT FIX: All inline scripts removed - bundles handle everything -->
     <style id="mkcg-integration-styles">
         /* MKCG Data Source Indicator */
         .toolbar__mkcg-indicator {

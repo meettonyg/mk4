@@ -16,11 +16,13 @@
  * - JavaScript initialization: <500ms
  */
 
-// ROOT FIX: Enhanced State Loading Coordination
-require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-state-loading-coordinator.php';
-$state_coordinator = GMKB_Enhanced_State_Loading_Coordinator::get_instance();
-$coordination_data = $state_coordinator->check_saved_state_priority();
-$template_instructions = $state_coordinator->generate_template_instructions($coordination_data);
+// ROOT FIX: Removed state coordinator - bundles handle everything
+$template_instructions = array(
+    'show_empty_state' => true,
+    'show_mkcg_dashboard' => true,
+    'show_loading_state' => false,
+    'loading_message' => ''
+);
 
 // ROOT FIX: Lightweight post detection without heavy processing
 $post_id = 0;
@@ -1600,7 +1602,9 @@ if ($post_id > 0) {
     }
 </style>
 
-<!-- ROOT FIX: Optimized JavaScript for MKCG data loading -->
+<!-- ROOT FIX: Removed inline MKCG JavaScript - handled by bundles -->
+<!-- All JavaScript functionality moved to consolidated bundles to prevent race conditions -->
+<!--
 <script id="optimized-mkcg-integration">
 (function() {
     'use strict';
@@ -1871,8 +1875,8 @@ if ($post_id > 0) {
     
 })();
 </script>
+-->
 
 <?php 
-// ROOT FIX: Generate and inject state loading coordination JavaScript
-echo $state_coordinator->generate_coordination_javascript($coordination_data);
+// ROOT FIX: Removed inline coordination JavaScript - handled by bundles
 ?>
