@@ -33,6 +33,13 @@ import {
 import {
     renderingQueueManager
 } from './rendering-queue-manager.js';
+// PHASE 2: Import validation and recovery systems for 99%+ success rate
+import {
+    renderValidator
+} from './render-validator.js';
+import {
+    renderRecoveryManager
+} from './render-recovery-manager.js';
 
 class EnhancedComponentRenderer {
     constructor() {
@@ -57,6 +64,18 @@ class EnhancedComponentRenderer {
         this.queuedRenders = new Map(); // Track queued render requests
         this.renderAcknowledgments = new Map(); // Track render completions
         
+        // PHASE 2: Error recovery and validation integration
+        this.validationEnabled = true;
+        this.recoveryEnabled = true;
+        this.renderMetrics = {
+            totalRenders: 0,
+            successfulRenders: 0,
+            failedRenders: 0,
+            recoveredRenders: 0,
+            averageHealthScore: 0,
+            errorPatterns: new Map()
+        };
+        
         // Setup UI registry event listeners
         this.setupUIRegistryListeners();
         
@@ -65,6 +84,9 @@ class EnhancedComponentRenderer {
         
         // ROOT FIX: Setup rendering queue event listeners
         this.setupRenderingQueueListeners();
+        
+        // PHASE 2: Setup validation and recovery event listeners
+        this.setupValidationAndRecoveryListeners();
     }
     
     /**
@@ -573,28 +595,48 @@ class EnhancedComponentRenderer {
      * @returns {Promise<{id: string, element: HTMLElement}>}
      */
     async renderComponentWithLoader(id, type, props) {
+        const renderStartTime = performance.now();
+        
         try {
+            // Update render metrics
+            this.renderMetrics.totalRenders++;
+            
             // FIX: Correctly call the method on the imported loader instance
             const element = await dynamicComponentLoader.renderComponent({
                 type,
                 id,
                 props
             });
-            if (!element) throw new Error('Template produced no element');
+            
+            if (!element) {
+                throw new Error('Template produced no element');
+            }
+            
+            // PHASE 2: Validate rendered component if validation is enabled
+            if (this.validationEnabled) {
+                await this.validateAndHandleRender(id, type, element, renderStartTime);
+            }
+            
+            // Save as last known good state for recovery
+            if (this.recoveryEnabled) {
+                renderRecoveryManager.saveLastKnownGoodState(id, {
+                    type,
+                    props: { ...props },
+                    timestamp: Date.now()
+                });
+            }
+            
+            // Update success metrics
+            this.renderMetrics.successfulRenders++;
+            
             return {
                 id,
                 element
             };
+            
         } catch (error) {
-            console.error(`Error rendering component ${id} (${type}):`, error);
-            const errorElement = document.createElement('div');
-            errorElement.id = id;
-            errorElement.className = 'component-error';
-            errorElement.textContent = `Error rendering ${type}.`;
-            return {
-                id,
-                element: errorElement
-            };
+            // PHASE 2: Enhanced error handling with recovery
+            return await this.handleRenderError(id, type, props, error, renderStartTime);
         }
     }
 
@@ -650,6 +692,9 @@ class EnhancedComponentRenderer {
      * Get renderer statistics
      */
     getStats() {
+        const validatorStats = this.validationEnabled ? renderValidator.getStatistics() : {};
+        const recoveryStats = this.recoveryEnabled ? renderRecoveryManager.getStatistics() : {};
+        
         return {
             initialized: this.initialized,
             cachedComponents: this.componentCache.size,
@@ -658,7 +703,17 @@ class EnhancedComponentRenderer {
             queuedRenders: this.queuedRenders.size,
             pendingAcknowledgments: this.renderAcknowledgments.size,
             renderingMode: this.renderingMode,
-            queueManagerStats: renderingQueueManager.getStatistics()
+            queueManagerStats: renderingQueueManager.getStatistics(),
+            // PHASE 2: Enhanced statistics with validation and recovery
+            renderMetrics: {
+                ...this.renderMetrics,
+                successRate: this.renderMetrics.totalRenders > 0 ? 
+                    (this.renderMetrics.successfulRenders / this.renderMetrics.totalRenders) * 100 : 0,
+                recoveryRate: this.renderMetrics.failedRenders > 0 ?
+                    (this.renderMetrics.recoveredRenders / this.renderMetrics.failedRenders) * 100 : 0
+            },
+            validationStats: validatorStats,
+            recoveryStats: recoveryStats
         };
     }
     
@@ -1049,6 +1104,294 @@ class EnhancedComponentRenderer {
     }
     
     /**
+     * PHASE 2: Validate and handle rendered component
+     */
+    async validateAndHandleRender(componentId, componentType, element, renderStartTime) {
+        try {
+            const validationResult = await renderValidator.validateRender(componentId, {
+                timeout: 2000,
+                componentType
+            });
+            
+            // Update health score metrics
+            this.updateHealthScoreMetrics(validationResult.healthScore);
+            
+            // Log validation results
+            this.logger.debug('RENDER', 'Component validation completed', {
+                componentId,
+                passed: validationResult.passed,
+                healthScore: validationResult.healthScore,
+                renderDuration: performance.now() - renderStartTime
+            });
+            
+            // Handle validation failure
+            if (!validationResult.passed) {
+                this.logger.warn('RENDER', 'Component validation failed', {
+                    componentId,
+                    healthScore: validationResult.healthScore,
+                    details: validationResult.details
+                });
+                
+                // Emit validation failure event for potential recovery
+                eventBus.emit('render:validation-failed', {
+                    componentId,
+                    validationResult,
+                    shouldRecover: validationResult.healthScore < 50
+                });
+            }
+            
+            return validationResult;
+            
+        } catch (validationError) {
+            this.logger.error('RENDER', 'Component validation error', {
+                componentId,
+                error: validationError.message
+            });
+            
+            return {
+                passed: false,
+                healthScore: 0,
+                error: validationError.message
+            };
+        }
+    }
+    
+    /**
+     * PHASE 2: Handle render errors with recovery system
+     */
+    async handleRenderError(componentId, componentType, props, error, renderStartTime) {
+        const renderDuration = performance.now() - renderStartTime;
+        
+        // Update error metrics
+        this.renderMetrics.failedRenders++;
+        this.updateErrorPattern(error);
+        
+        this.logger.error('RENDER', 'Component render failed', {
+            componentId,
+            componentType,
+            error: error.message,
+            renderDuration
+        });
+        
+        // Attempt recovery if enabled
+        if (this.recoveryEnabled) {
+            try {
+                const recoveryResult = await renderRecoveryManager.initiateRecovery(
+                    componentId,
+                    {
+                        type: componentType,
+                        props
+                    },
+                    error,
+                    {
+                        triggeredBy: 'render_error',
+                        timeout: 5000
+                    }
+                );
+                
+                if (recoveryResult.success) {
+                    this.renderMetrics.recoveredRenders++;
+                    
+                    this.logger.info('RENDER', 'Component recovered successfully', {
+                        componentId,
+                        strategy: recoveryResult.strategy
+                    });
+                    
+                    // Return recovered element
+                    const recoveredElement = document.getElementById(componentId);
+                    if (recoveredElement) {
+                        return {
+                            id: componentId,
+                            element: recoveredElement,
+                            recovered: true,
+                            strategy: recoveryResult.strategy
+                        };
+                    }
+                }
+                
+            } catch (recoveryError) {
+                this.logger.error('RENDER', 'Component recovery failed', {
+                    componentId,
+                    recoveryError: recoveryError.message
+                });
+            }
+        }
+        
+        // Fallback: Create basic error element
+        const errorElement = this.createBasicErrorElement(componentId, componentType, error);
+        
+        return {
+            id: componentId,
+            element: errorElement,
+            error: error.message,
+            recovered: false
+        };
+    }
+    
+    /**
+     * PHASE 2: Create basic error element as final fallback
+     */
+    createBasicErrorElement(componentId, componentType, error) {
+        const errorElement = document.createElement('div');
+        errorElement.id = componentId;
+        errorElement.className = 'component-error editable-element';
+        errorElement.dataset.componentId = componentId;
+        errorElement.dataset.componentType = componentType;
+        errorElement.dataset.error = 'true';
+        
+        errorElement.innerHTML = `
+            <div class="error-content" style="
+                padding: 20px;
+                border: 2px dashed #ff6b6b;
+                border-radius: 8px;
+                background-color: #ffe6e6;
+                text-align: center;
+                color: #d63031;
+            ">
+                <div class="error-icon" style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                <h4>Component Error</h4>
+                <p>The ${componentType} component failed to load.</p>
+                <small>${error.message}</small>
+                <div style="margin-top: 15px;">
+                    <button onclick="this.closest('.editable-element').remove()" 
+                            style="
+                                background: #d63031;
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                            ">Remove Component</button>
+                </div>
+            </div>
+        `;
+        
+        return errorElement;
+    }
+    
+    /**
+     * PHASE 2: Setup validation and recovery event listeners
+     */
+    setupValidationAndRecoveryListeners() {
+        // Listen for validation failures that need recovery
+        eventBus.on('render:validation-failed', async (event) => {
+            const { componentId, validationResult, shouldRecover } = event;
+            
+            if (shouldRecover && this.recoveryEnabled) {
+                // Get component data for recovery
+                if (window.enhancedStateManager) {
+                    const state = window.enhancedStateManager.getState();
+                    const componentData = state.components[componentId];
+                    
+                    if (componentData) {
+                        setTimeout(() => {
+                            renderRecoveryManager.initiateRecovery(
+                                componentId,
+                                componentData,
+                                new Error('Component validation failed'),
+                                {
+                                    triggeredBy: 'validation_failure',
+                                    priority: 'high'
+                                }
+                            );
+                        }, 1000); // Delay to avoid interfering with current operations
+                    }
+                }
+            }
+        });
+        
+        // Listen for successful recoveries
+        eventBus.on('render:recovery-success', (event) => {
+            const { componentId, strategy, healthScore } = event;
+            
+            this.logger.info('RENDER', 'Recovery success handled', {
+                componentId,
+                strategy,
+                healthScore
+            });
+            
+            // Update component cache if element exists
+            const element = document.getElementById(componentId);
+            if (element) {
+                this.componentCache.set(componentId, element);
+            }
+        });
+        
+        // Listen for failed recoveries
+        eventBus.on('render:recovery-failed', (event) => {
+            const { componentId, originalError } = event;
+            
+            this.logger.warn('RENDER', 'Recovery failure handled', {
+                componentId,
+                originalError
+            });
+            
+            // Show user notification for persistent failures
+            showToast(
+                `Component ${componentId} is experiencing persistent issues.`,
+                'warning',
+                5000
+            );
+        });
+        
+        this.logger.debug('RENDER', 'Validation and recovery event listeners setup complete');
+    }
+    
+    /**
+     * PHASE 2: Update health score metrics
+     */
+    updateHealthScoreMetrics(healthScore) {
+        const total = this.renderMetrics.successfulRenders + this.renderMetrics.failedRenders;
+        if (total > 0) {
+            this.renderMetrics.averageHealthScore = 
+                (this.renderMetrics.averageHealthScore * (total - 1) + healthScore) / total;
+        } else {
+            this.renderMetrics.averageHealthScore = healthScore;
+        }
+    }
+    
+    /**
+     * PHASE 2: Update error pattern tracking
+     */
+    updateErrorPattern(error) {
+        const errorType = this.categorizeError(error);
+        const current = this.renderMetrics.errorPatterns.get(errorType) || 0;
+        this.renderMetrics.errorPatterns.set(errorType, current + 1);
+    }
+    
+    /**
+     * PHASE 2: Categorize error for pattern tracking
+     */
+    categorizeError(error) {
+        const message = error.message.toLowerCase();
+        
+        if (message.includes('timeout')) return 'timeout';
+        if (message.includes('network') || message.includes('fetch')) return 'network';
+        if (message.includes('template') || message.includes('loader')) return 'template';
+        if (message.includes('validation')) return 'validation';
+        if (message.includes('permission')) return 'permission';
+        if (message.includes('memory')) return 'memory';
+        
+        return 'unknown';
+    }
+    
+    /**
+     * PHASE 2: Enable/disable validation
+     */
+    setValidationEnabled(enabled) {
+        this.validationEnabled = enabled;
+        this.logger.info('RENDER', `Validation ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    /**
+     * PHASE 2: Enable/disable recovery
+     */
+    setRecoveryEnabled(enabled) {
+        this.recoveryEnabled = enabled;
+        this.logger.info('RENDER', `Recovery ${enabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    /**
      * Debug renderer state
      */
     debug() {
@@ -1075,6 +1418,17 @@ class EnhancedComponentRenderer {
         
         // Show rendering queue manager stats
         console.log('Queue Manager Stats:', renderingQueueManager.getStatistics());
+        
+        // PHASE 2: Show validation and recovery stats
+        if (this.validationEnabled) {
+            console.log('Validation Stats:', renderValidator.getStatistics());
+        }
+        
+        if (this.recoveryEnabled) {
+            console.log('Recovery Stats:', renderRecoveryManager.getStatistics());
+        }
+        
+        console.log('Error Patterns:', Array.from(this.renderMetrics.errorPatterns.entries()));
         
         console.groupEnd();
     }

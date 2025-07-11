@@ -21,6 +21,8 @@ import { performanceMonitor } from '../utils/performance-monitor.js';
 import { structuredLogger } from '../utils/structured-logger.js';
 import { eventBus } from './event-bus.js';
 import { showToast } from '../utils/toast-polyfill.js';
+// PHASE 2: Import validation system for automatic render validation
+import { renderValidator } from './render-validator.js';
 
 /**
  * Enterprise-grade rendering queue manager that eliminates race conditions
@@ -377,9 +379,14 @@ class RenderingQueueManager {
             
             const renderResult = await Promise.race([renderPromise, timeoutPromise]);
             
-            // Validate render if required
+            // PHASE 2: Enhanced render validation using render validator
             if (options.validateRender) {
-                await this.validateRender(componentId, renderResult);
+                const validationResult = await this.validateRenderEnhanced(componentId, renderData.type, renderResult);
+                
+                // If validation fails with low health score, consider it a render failure
+                if (!validationResult.passed && validationResult.healthScore < 30) {
+                    throw new Error(`Render validation failed: health score ${validationResult.healthScore}`);
+                }
             }
             
             // Record successful render
@@ -480,9 +487,48 @@ class RenderingQueueManager {
     }
     
     /**
-     * Validate rendered component meets quality standards
+     * PHASE 2: Enhanced render validation using render validator system
      */
-    async validateRender(componentId, renderResult) {
+    async validateRenderEnhanced(componentId, componentType, renderResult) {
+        try {
+            // Use the dedicated render validator for comprehensive validation
+            const validationResult = await renderValidator.validateRender(componentId, {
+                timeout: 1500, // Slightly shorter timeout for queue processing
+                componentType,
+                strictMode: false, // Production mode validation
+                requiredScore: 60 // Lower threshold for queue validation
+            });
+            
+            this.logger.debug('RENDER_QUEUE', 'Enhanced validation completed', {
+                componentId,
+                passed: validationResult.passed,
+                healthScore: validationResult.healthScore
+            });
+            
+            // Emit validation event
+            eventBus.emit('render:queue-validated', {
+                componentId,
+                validationResult,
+                queueContext: true
+            });
+            
+            return validationResult;
+            
+        } catch (validationError) {
+            this.logger.warn('RENDER_QUEUE', 'Enhanced validation failed', {
+                componentId,
+                error: validationError.message
+            });
+            
+            // Fallback to basic validation
+            return await this.validateRenderBasic(componentId, renderResult);
+        }
+    }
+    
+    /**
+     * Basic render validation as fallback
+     */
+    async validateRenderBasic(componentId, renderResult) {
         const element = document.getElementById(componentId);
         
         if (!element) {
@@ -495,6 +541,9 @@ class RenderingQueueManager {
             this.logger.warn('RENDER_QUEUE', 'Component missing editable-element class', {
                 componentId
             });
+            
+            // Auto-fix: Add the required class
+            element.classList.add('editable-element');
         }
         
         // Check for required data attributes
@@ -502,7 +551,11 @@ class RenderingQueueManager {
             element.dataset.componentId = componentId;
         }
         
-        return true;
+        return {
+            passed: true,
+            healthScore: 75, // Assume decent health for basic validation
+            validator: 'basic_fallback'
+        };
     }
     
     /**

@@ -23,6 +23,11 @@ const systems = {
     dynamicComponentLoader: null,
     templateCache: null,
     
+    // PHASE 2: Rendering reliability systems
+    renderingQueueManager: null,
+    renderValidator: null,
+    renderRecoveryManager: null,
+    
     // PHASE 2.3 TASK 4: Enhanced error handling system
     enhancedErrorHandler: null,
     
@@ -79,7 +84,7 @@ export const systemRegistrar = {
                     console.log(`📝 System registered: ${name} (${registrationInfo.instanceType})`);
                     
                     // CRITICAL FIX: Validate system has expected methods for core systems
-                    if (['stateManager', 'componentManager', 'renderer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper'].includes(name)) {
+                    if (['stateManager', 'componentManager', 'renderer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper', 'renderingQueueManager', 'renderValidator', 'renderRecoveryManager'].includes(name)) {
                         systemRegistrar.validateCoreSystem(name, instance);
                     }
                 }
@@ -131,7 +136,7 @@ export const systemRegistrar = {
             name,
             type: systems[name]?.constructor?.name || 'Unknown',
             hasInit: typeof systems[name]?.init === 'function',
-            isCore: ['stateManager', 'componentManager', 'renderer', 'initializer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper'].includes(name)
+            isCore: ['stateManager', 'componentManager', 'renderer', 'initializer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper', 'renderingQueueManager', 'renderValidator', 'renderRecoveryManager'].includes(name)
         }));
         
         console.log('📋 Registered systems:', registeredSystems);
@@ -151,7 +156,10 @@ export const systemRegistrar = {
             dynamicComponentLoader: ['renderComponent', 'getTemplate'],
             templateCache: ['get', 'set'],
             enhancedErrorHandler: ['handleError', 'displayError'],
-            mkcgDataMapper: ['mapDataToComponent', 'getDataAvailability']
+            mkcgDataMapper: ['mapDataToComponent', 'getDataAvailability'],
+            renderingQueueManager: ['addToQueue', 'getStatistics'],
+            renderValidator: ['validateRender', 'getStatistics'],
+            renderRecoveryManager: ['initiateRecovery', 'getStatistics']
         };
         
         const requiredMethods = expectedMethods[name];
@@ -203,7 +211,7 @@ export const systemRegistrar = {
      * CRITICAL FIX: Check if all core systems are registered
      */
     areCoreSytemsReady: () => {
-        const coreSystemNames = ['stateManager', 'componentManager', 'renderer', 'initializer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper'];
+        const coreSystemNames = ['stateManager', 'componentManager', 'renderer', 'initializer', 'dynamicComponentLoader', 'templateCache', 'enhancedErrorHandler', 'mkcgDataMapper', 'renderingQueueManager', 'renderValidator', 'renderRecoveryManager'];
         const missingCoreSystems = coreSystemNames.filter(name => systems[name] === null);
         
         return {
