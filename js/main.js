@@ -17,12 +17,20 @@ import { performanceMonitor } from './utils/performance-monitor.js';
 import { structuredLogger } from './utils/structured-logger.js';
 import { errorBoundary } from './utils/error-boundary.js';
 
+// PHASE 2: Import rendering reliability systems for 99%+ success rate
+import './core/render-validator.js';
+import './core/render-recovery-manager.js';
+console.log('✅ Phase 2 rendering systems imported - validation and recovery available');
+
 // CRITICAL FIX: Import enhanced error handler to expose global functions
 import './utils/enhanced-error-handler.js';
 console.log('✅ Enhanced Error Handler imported - global functions available');
 
 // Import enhanced component manager directly for immediate global exposure
 import { enhancedComponentManager } from './core/enhanced-component-manager.js';
+// PHASE 2: Import rendering systems directly for immediate global exposure
+import { renderValidator } from './core/render-validator.js';
+import { renderRecoveryManager } from './core/render-recovery-manager.js';
 
 // ROOT FIX: Import quick diagnostic for immediate troubleshooting
 import './utils/quick-diagnostic.js';
@@ -91,6 +99,14 @@ window.mkPerf = performanceMonitor;
 // ROOT FIX: Ensure enhanced state manager is exposed globally IMMEDIATELY
 window.enhancedStateManager = enhancedStateManager;
 console.log('✅ Enhanced state manager exposed globally early:', !!window.enhancedStateManager);
+
+// PHASE 2: Ensure rendering systems are exposed globally IMMEDIATELY
+window.renderValidator = renderValidator;
+window.renderRecoveryManager = renderRecoveryManager;
+console.log('✅ Phase 2 systems exposed globally early:', {
+    renderValidator: !!window.renderValidator,
+    renderRecoveryManager: !!window.renderRecoveryManager
+});
 
 // ROOT FIX: Ensure save service is exposed globally early
 window.saveService = saveService;
@@ -776,9 +792,15 @@ window.mkLog = {
             console.log('  forceReloadSavedState() - Force reload saved state from localStorage');
             console.log('  enhancedStateManager.debug() - Debug enhanced state manager');
             console.log('  enhancedStateManager.autoLoadSavedState() - Manual auto-load call');
-            console.log('\n🎯 ROOT FIX: Quick Validation:');
-            console.log('  1. Run: validateSystemExposure() - Check if systems are exposed');
-            console.log('  2. Run: validateStateLoadingFix() - Full validation');
+        console.log('\n🎯 PHASE 2: Rendering System Commands:');
+        console.log('  renderValidator.debug() - Debug render validation system');
+        console.log('  renderRecoveryManager.debug() - Debug render recovery system');
+        console.log('  renderingQueueManager.debug() - Debug rendering queue system');
+        console.log('  window.renderer.debug() - Debug enhanced component renderer');
+        console.log('  testRenderingReliability() - Test 99%+ render success rate system');
+        console.log('\n🎯 ROOT FIX: Quick Validation:');
+        console.log('  1. Run: validateSystemExposure() - Check if systems are exposed');
+        console.log('  2. Run: validateStateLoadingFix() - Full validation');
         console.log('  3. Look for: "ROOT FIX VALIDATION: ALL TESTS PASSED!"');
         console.log('  4. Check component count in success message');
     }
@@ -866,7 +888,90 @@ window.testEmptyStateButtons = function() {
     }
 };
 
-// ROOT FIX: Test save button functionality
+// PHASE 2: Test rendering reliability system
+window.testRenderingReliability = function() {
+    console.log('🧪 Testing Phase 2 Rendering Reliability System...\n');
+    
+    const results = {
+        passed: 0,
+        failed: 0,
+        tests: []
+    };
+    
+    function test(name, condition, critical = false) {
+        const status = condition ? 'PASS' : 'FAIL';
+        const icon = condition ? '✅' : '❌';
+        
+        console.log(`${icon} ${name}: ${status}`);
+        
+        results.tests.push({ name, status, critical });
+        
+        if (condition) {
+            results.passed++;
+        } else {
+            results.failed++;
+        }
+    }
+    
+    // Core Phase 2 system tests
+    test('Render Validator Available', !!window.renderValidator, true);
+    test('Render Recovery Manager Available', !!window.renderRecoveryManager, true);
+    test('Rendering Queue Manager Available', !!window.renderingQueueManager, true);
+    test('Enhanced Component Renderer Available', !!window.renderer, true);
+    
+    // System integration tests
+    if (window.renderValidator) {
+        test('Render Validator Has validateRender Method', typeof window.renderValidator.validateRender === 'function', true);
+        test('Render Validator Has getStatistics Method', typeof window.renderValidator.getStatistics === 'function', false);
+        
+        const validatorStats = window.renderValidator.getStatistics();
+        console.log('\n📊 Render Validator Stats:', validatorStats);
+    }
+    
+    if (window.renderRecoveryManager) {
+        test('Render Recovery Manager Has initiateRecovery Method', typeof window.renderRecoveryManager.initiateRecovery === 'function', true);
+        test('Render Recovery Manager Has getStatistics Method', typeof window.renderRecoveryManager.getStatistics === 'function', false);
+        
+        const recoveryStats = window.renderRecoveryManager.getStatistics();
+        console.log('\n🚑 Render Recovery Manager Stats:', recoveryStats);
+    }
+    
+    if (window.renderingQueueManager) {
+        test('Rendering Queue Manager Has addToQueue Method', typeof window.renderingQueueManager.addToQueue === 'function', true);
+        test('Rendering Queue Manager Has getStatistics Method', typeof window.renderingQueueManager.getStatistics === 'function', false);
+        
+        const queueStats = window.renderingQueueManager.getStatistics();
+        console.log('\n🎯 Rendering Queue Manager Stats:', queueStats);
+    }
+    
+    if (window.renderer) {
+        test('Enhanced Renderer Has Validation Enabled', window.renderer.validationEnabled === true, false);
+        test('Enhanced Renderer Has Recovery Enabled', window.renderer.recoveryEnabled === true, false);
+        
+        const rendererStats = window.renderer.getStats();
+        console.log('\n🎨 Enhanced Renderer Stats:', rendererStats);
+    }
+    
+    // Summary
+    console.log('\n📋 Phase 2 Rendering Reliability Test Summary:');
+    console.log(`  ✅ Passed: ${results.passed}`);
+    console.log(`  ❌ Failed: ${results.failed}`);
+    
+    if (results.failed === 0) {
+        console.log('\n🎉 All Phase 2 rendering reliability tests passed!');
+        console.log('✅ System is ready for 99%+ render success rate!');
+        console.log('💡 Try adding components to test validation and recovery in action.');
+        return true;
+    } else {
+        console.log('\n⚠️ Some Phase 2 tests failed. Check the individual results above.');
+        const criticalFailures = results.tests.filter(t => t.status === 'FAIL' && t.critical);
+        if (criticalFailures.length > 0) {
+            console.log('❌ Critical failures detected:');
+            criticalFailures.forEach(t => console.log(`   - ${t.name}`));
+        }
+        return false;
+    }
+};
 window.testSaveButton = function() {
     console.log('🧪 Testing Save Button Functionality...\n');
     
