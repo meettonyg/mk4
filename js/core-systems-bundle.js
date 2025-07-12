@@ -825,6 +825,15 @@
             };
         }
         
+        // PHASE 1B: Add emergency system validation before event dispatch
+        const validationPassed = window.gmkbSystemValidation ? 
+            window.gmkbSystemValidation.validateImmediateExposure() : true;
+        
+        if (!validationPassed && window.gmkbSystemValidation) {
+            console.log('🚑 PHASE 1B: System validation failed, attempting emergency exposure...');
+            window.gmkbSystemValidation.attemptEmergencyExposure();
+        }
+        
         // Dispatch the event IMMEDIATELY
         try {
             document.dispatchEvent(new CustomEvent('coreSystemsReady', {
