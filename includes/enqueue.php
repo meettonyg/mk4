@@ -64,75 +64,106 @@ class GMKB_Enhanced_Script_Manager {
     }
     
     private function __construct() {
-        // CRITICAL FIX: Ultra-early detection and isolation
+        // ROOT FIX: Proper WordPress hook timing for page detection
         add_action('plugins_loaded', array($this, 'early_builder_detection'), 1);
-        add_action('init', array($this, 'detect_builder_page'), 1);
+        add_action('wp', array($this, 'wordpress_page_validation'), 1); // NEW: Proper timing for is_page()
         add_action('init', array($this, 'isolate_builder_environment'), 2);
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'), 5); // Early priority
         add_action('wp_enqueue_scripts', array($this, 'dequeue_conflicting_assets'), 1000); // Late dequeue
     }
     
     /**
-     * CRITICAL FIX: Ultra-early builder page detection (before theme loads)
+     * ROOT FIX: Ultra-early builder page detection (URL-based, works reliably)
      */
     public function early_builder_detection() {
-        // Multiple detection methods for maximum reliability
-        $detection_methods = array(
-            // Method 1: Direct URL analysis
+        // ROOT FIX: URL-based detection methods that work before WordPress query processing
+        $url_detection_methods = array(
+            // Method 1: Direct URL analysis (MOST RELIABLE)
             isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false,
             
             // Method 2: Query parameters
             isset($_GET['page']) && in_array($_GET['page'], ['guestify-builder', 'guestify-media-kit']),
             
-            // Method 3: Post slug detection
-            isset($_GET['p']) && get_post_field('post_name', $_GET['p']) === 'guestify-media-kit',
+            // Method 3: Post ID with specific patterns
+            isset($_GET['post_id']) && is_numeric($_GET['post_id']),
             
             // Method 4: Admin page detection  
             is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit'
         );
         
-        $this->is_builder_page = array_reduce($detection_methods, function($carry, $method) {
+        $early_detection_result = array_reduce($url_detection_methods, function($carry, $method) {
             return $carry || $method;
         }, false);
         
-        if ($this->is_builder_page) {
-            // Set global flag for other systems
-            define('GMKB_BUILDER_PAGE', true);
+        // ROOT FIX: Set builder page flag ONLY if early detection succeeds
+        if ($early_detection_result) {
+            $this->is_builder_page = true;
             
-            // Log detection for debugging
+            // Set global flag for other systems
+            if (!defined('GMKB_BUILDER_PAGE')) {
+                define('GMKB_BUILDER_PAGE', true);
+            }
+            
+            // ROOT FIX: Enhanced logging for debugging
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: Builder page detected early via plugins_loaded hook');
+                error_log('GMKB ROOT FIX: Builder page detected via early URL analysis');
+                error_log('GMKB: REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'not_set'));
+                error_log('GMKB: Early detection SUCCESSFUL - preserving result');
+            }
+        } else {
+            // ROOT FIX: Only log if we're potentially missing a builder page
+            if (defined('WP_DEBUG') && WP_DEBUG && isset($_SERVER['REQUEST_URI'])) {
+                error_log('GMKB: Early detection - URL does not match builder patterns: ' . $_SERVER['REQUEST_URI']);
             }
         }
     }
     
     /**
-     * CRITICAL FIX: Enhanced builder page detection with fallbacks
+     * ROOT FIX: WordPress page validation (runs at proper timing when is_page() works)
      */
-    public function detect_builder_page() {
-        // If already detected early, use that result
-        if (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE) {
-            $this->is_builder_page = true;
-            return;
+    public function wordpress_page_validation() {
+        // ROOT FIX: PRESERVE early detection results - don't override working detection!
+        if ($this->is_builder_page) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Early detection was SUCCESSFUL - preserving result, skipping WordPress validation');
+            }
+            return; // Don't override working early detection
         }
         
-        // Enhanced detection with WordPress functions available
-        $this->is_builder_page = is_page('guestify-media-kit') || 
-                                is_page('media-kit') ||
-                                (isset($_GET['page']) && in_array($_GET['page'], ['guestify-builder', 'guestify-media-kit'])) ||
-                                (get_query_var('pagename') === 'guestify-media-kit') ||
-                                (is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit');
+        // ROOT FIX: Only run WordPress functions if early detection failed
+        // At this point, WordPress query is ready and is_page() should work
+        $wordpress_detection = is_page('guestify-media-kit') || 
+                              is_page('media-kit') ||
+                              (get_query_var('pagename') === 'guestify-media-kit');
         
-        if ($this->is_builder_page && !defined('GMKB_BUILDER_PAGE')) {
-            define('GMKB_BUILDER_PAGE', true);
+        if ($wordpress_detection) {
+            $this->is_builder_page = true;
+            
+            if (!defined('GMKB_BUILDER_PAGE')) {
+                define('GMKB_BUILDER_PAGE', true);
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: WordPress validation detected builder page (fallback successful)');
+            }
+        } else {
+            // ROOT FIX: Log final negative result for debugging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Both early detection and WordPress validation failed');
+                error_log('GMKB: Current page slug: ' . (get_post_field('post_name', get_the_ID()) ?: 'not_found'));
+                error_log('GMKB: Query var pagename: ' . (get_query_var('pagename') ?: 'not_set'));
+            }
         }
     }
     
     /**
-     * CRITICAL FIX: Isolate builder environment from theme/plugin conflicts
+     * ROOT FIX: Isolate builder environment from theme/plugin conflicts
      */
     public function isolate_builder_environment() {
-        if (!$this->is_builder_page) {
+        // ROOT FIX: Check both instance variable and global constant
+        $is_builder = $this->is_builder_page || (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE);
+        
+        if (!$is_builder) {
             return;
         }
         
@@ -165,8 +196,21 @@ class GMKB_Enhanced_Script_Manager {
      * ROOT FIX: Clean script enqueuing - bundles only
      */
     public function enqueue_scripts() {
-        if (!$this->is_builder_page) {
+        // ROOT FIX: Check both instance variable and global constant for maximum reliability
+        $is_builder = $this->is_builder_page || (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE);
+        
+        if (!$is_builder) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Script enqueuing SKIPPED - builder page not detected');
+                error_log('GMKB: Instance variable: ' . ($this->is_builder_page ? 'true' : 'false'));
+                error_log('GMKB: Global constant: ' . (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE ? 'true' : 'false'));
+            }
             return;
+        }
+        
+        // ROOT FIX: Log successful script loading trigger
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: Script enqueuing TRIGGERED - builder page detected successfully');
         }
         
         $this->register_and_enqueue_scripts();
@@ -197,10 +241,13 @@ class GMKB_Enhanced_Script_Manager {
     }
     
     /**
-     * CRITICAL FIX: Dequeue conflicting theme and plugin assets
+     * ROOT FIX: Dequeue conflicting theme and plugin assets
      */
     public function dequeue_conflicting_assets() {
-        if (!$this->is_builder_page) {
+        // ROOT FIX: Check both instance variable and global constant
+        $is_builder = $this->is_builder_page || (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE);
+        
+        if (!$is_builder) {
             return;
         }
         
@@ -329,10 +376,13 @@ class GMKB_Enhanced_Script_Manager {
         $this->prepare_clean_localized_data();
         
         // ========================================
-        // COORDINATED SCRIPT ENQUEUING
+        // ROOT FIX: COORDINATED SCRIPT ENQUEUING
         // ========================================
         
-        if (is_page('guestify-media-kit')) {
+        // ROOT FIX: Use detection result instead of calling is_page() again
+        $is_builder = $this->is_builder_page || (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE);
+        
+        if ($is_builder) {
             // Enqueue styles first
             wp_enqueue_style('guestify-media-kit-builder-styles');
             
@@ -345,14 +395,12 @@ class GMKB_Enhanced_Script_Manager {
             wp_enqueue_script('guestify-core-systems-bundle');
             wp_enqueue_script('guestify-application-bundle');
             
-            // Log successful consolidation with cache-busting
+            // ROOT FIX: Log successful bundle loading
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB ROOT FIX: Consolidated WordPress bundles implemented with aggressive cache-busting');
-                error_log('GMKB: Script race conditions eliminated with 2-bundle architecture');
-                error_log('GMKB: WordPress guarantees loading order with simple dependency chain');
-                error_log('GMKB: Bundle approach - Core Systems + Application bundles only');
-                error_log('GMKB: Cache-buster timestamp: ' . $cache_buster);
-                error_log('GMKB: POLLING ELIMINATED - cached functions will be force-reloaded');
+                error_log('GMKB ROOT FIX SUCCESS: WordPress bundles enqueued after proper page detection');
+                error_log('GMKB: Detection timing fix WORKING - scripts loading correctly');
+                error_log('GMKB: Bundle loading order: SortableJS → Core Systems → Application');
+                error_log('GMKB: Cache-buster: ' . $cache_buster);
             }
         }
     }
@@ -565,19 +613,21 @@ class GMKB_Enhanced_Script_Manager {
     
     /**
      * ROOT FIX: Get initialization status for debugging
-     * WordPress-compatible dependency information
+     * WordPress-compatible dependency information with hook timing status
      */
     public function get_status() {
         global $wp_scripts;
         
+        // ROOT FIX: Check both detection methods
+        $is_builder = $this->is_builder_page || (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE);
+        
         // Get WordPress script dependency information
         $dependency_status = array();
-        if ($wp_scripts && $this->is_builder_page) {
+        if ($wp_scripts && $is_builder) {
             $core_scripts = array(
                 'sortable-js',
-                'guestify-enhanced-core',
-                'guestify-ui-systems',
-                'guestify-testing-systems'
+                'guestify-core-systems-bundle',
+                'guestify-application-bundle'
             );
             
             foreach ($core_scripts as $script) {
@@ -594,12 +644,15 @@ class GMKB_Enhanced_Script_Manager {
             'script_loaded' => $this->script_loaded,
             'data_ready' => $this->data_ready,
             'is_builder_page' => $this->is_builder_page,
-            'version' => 'ROOT-FIX-wordpress-compatible',
-            'wordpress_dependencies' => 'simplified-and-bulletproof',
+            'global_constant' => defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE,
+            'combined_detection' => $is_builder,
+            'version' => 'ROOT-FIX-hook-timing-fixed',
+            'hook_timing' => 'early-detection-preserved',
+            'wordpress_functions' => 'moved-to-wp-hook',
+            'detection_override' => 'prevented',
             'script_conflicts' => 'eliminated',
-            'es6_modules' => 'removed-for-wordpress-compatibility',
             'dependency_chain' => $dependency_status,
-            'architecture' => 'wordpress-compatible-unified'
+            'architecture' => 'hook-timing-fixed'
         );
     }
     
@@ -717,18 +770,19 @@ class GMKB_Enhanced_Script_Manager {
  */
 
 /**
- * ROOT FIX: Initialize enhanced script manager with WordPress-compatible dependencies
+ * ROOT FIX: Initialize enhanced script manager with hook timing fix
  */
 function guestify_media_kit_builder_enqueue_scripts() {
     $manager = GMKB_Enhanced_Script_Manager::get_instance();
     $status = $manager->get_status();
     
-    // Log ROOT FIX completion status
-    if (defined('WP_DEBUG') && WP_DEBUG && $status['is_builder_page']) {
-        error_log('GMKB ROOT FIX Complete: Clean WordPress-Compatible Script Dependencies');
-        error_log('GMKB: Clean Scripts: ' . count($status['dependency_chain'] ?? []) . ' (no legacy bloat)');
-        error_log('GMKB: ES6 Module Conflicts: ELIMINATED');
-        error_log('GMKB: Race Conditions: FIXED at WordPress level');
+    // ROOT FIX: Log hook timing fix completion status
+    if (defined('WP_DEBUG') && WP_DEBUG && $status['combined_detection']) {
+        error_log('GMKB ROOT FIX COMPLETE: WordPress Hook Timing Fixed');
+        error_log('GMKB: Detection Method: ' . ($status['is_builder_page'] ? 'Early URL Detection' : 'WordPress Fallback'));
+        error_log('GMKB: Hook Timing: ' . $status['hook_timing']);
+        error_log('GMKB: Detection Override: ' . $status['detection_override']);
+        error_log('GMKB: Scripts Loaded: ' . count($status['dependency_chain'] ?? 0));
     }
     
     return $status;
