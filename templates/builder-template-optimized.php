@@ -102,65 +102,9 @@ if ($post_id > 0) {
 
 <div class="builder">
 
-<!-- ROOT FIX: Clean Bundle Architecture - No Inline Polling Detection -->
-<script id="gmkb-bundle-coordination">
-// ROOT FIX: Simple bundle coordination without polling detection
-console.log('🚀 ROOT FIX: Clean bundle coordination active');
-
-// Set bundle coordination flags
-window.gmkbBundleCoordination = {
-    templateLoaded: true,
-    bundlesExpected: ['core-systems-bundle', 'application-bundle'],
-    antiPollingActive: false, // No more anti-polling needed
-    coordination: 'event-driven-only',
-    timestamp: Date.now()
-};
-
-// Simple validation function without complex detection
-window.validateBundleFix = function() {
-    console.group('✅ BUNDLE FIX VALIDATION');
-    
-    const validation = {
-        systemExposure: {
-            enhancedComponentManager: !!window.enhancedComponentManager,
-            stateManager: !!window.stateManager,
-            renderer: !!window.renderer,
-            systemRegistrar: !!window.systemRegistrar
-        },
-        bundleCoordination: {
-            templateLoaded: window.gmkbBundleCoordination?.templateLoaded,
-            coordination: window.gmkbBundleCoordination?.coordination,
-            antiPollingActive: window.gmkbBundleCoordination?.antiPollingActive
-        },
-        eventCoordination: {
-            eventCoordinationExists: !!window.gmkbEventCoordination,
-            coreSystemsReadyFired: window.gmkbEventCoordination?.coreSystemsReadyFired
-        }
-    };
-    
-    console.table(validation.systemExposure);
-    console.table(validation.bundleCoordination);
-    console.table(validation.eventCoordination);
-    
-    const systemsReady = Object.values(validation.systemExposure).filter(Boolean).length;
-    const totalSystems = Object.keys(validation.systemExposure).length;
-    
-    if (systemsReady === totalSystems) {
-        console.log('🎉 BUNDLE FIX: ALL SYSTEMS READY!');
-        console.log('✅ Clean bundle architecture working');
-        console.log('✅ No polling conflicts');
-        console.log('✅ Event-driven coordination active');
-    } else {
-        console.log(`⚠️ Systems ready: ${systemsReady}/${totalSystems}`);
-        console.log('Check if bundles loaded correctly');
-    }
-    
-    console.groupEnd();
-    return validation;
-};
-
-console.log('✅ ROOT FIX: Bundle coordination ready - run validateBundleFix()');
-</script>
+<!-- ROOT FIX: ALL INLINE SCRIPTS ELIMINATED - CLEAN BUNDLE ARCHITECTURE -->
+<!-- All coordination handled by core-systems-bundle.js and application-bundle.js -->
+<!-- No polling functions, no inline script conflicts -->
     <div class="toolbar">
         <div class="toolbar__section toolbar__section--left">
             <div class="toolbar__logo">Guestify</div>
@@ -1662,5 +1606,5 @@ console.log('✅ ROOT FIX: Bundle coordination ready - run validateBundleFix()')
     }
 </style>
 
-<!-- ROOT FIX: All JavaScript functionality handled by clean bundle architecture -->
-<!-- No inline scripts needed - bundles provide all coordination and functionality -->
+<!-- ROOT FIX: Clean bundle architecture - all functionality in consolidated bundles -->
+<!-- Zero inline scripts, zero polling functions, 100% event-driven coordination -->

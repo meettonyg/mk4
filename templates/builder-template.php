@@ -660,12 +660,11 @@
         }
     }
     
-    // ROOT FIX: Minimal script - just log modal status
-    echo '<script type="text/javascript">';
-    echo 'console.log("✅ ROOT FIX: Template loaded - bundles will handle initialization");';
-    echo '</script>';
+    // ROOT FIX: ELIMINATED ALL INLINE SCRIPTS
+    // Zero JavaScript generation in template - everything handled by bundles
+    echo '<!-- ROOT FIX: Template loaded - zero inline scripts, zero polling functions -->';
     
-    // ROOT FIX: Removed inline coordination JavaScript - handled by bundles
+    // ROOT FIX: All coordination handled by consolidated bundles
     
     ?>
 

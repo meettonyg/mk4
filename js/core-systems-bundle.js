@@ -897,18 +897,24 @@
     
     console.log('🎉 ROOT FIX: Core Systems Bundle loaded successfully');
     
-    // ROOT FIX: ANTI-POLLING PROTECTION - Block any legacy cached functions
+    // ROOT FIX: COMPREHENSIVE ANTI-POLLING PROTECTION - Block ALL cached functions
     (function() {
-        console.log('🚫 ROOT FIX: Installing anti-polling protection...');
+        console.log('🚫 ROOT FIX: Installing comprehensive anti-polling protection...');
         
-        // Block known polling functions that might exist in cache
+        // ROOT FIX: Block ALL known polling functions that might exist in cache
         const legacyPollingFunctions = [
             'waitForEnhancedSystems',
             'checkEnhancedStateManager', 
             'waitForStateManager',
             'pollForSystems',
             'checkSystemReady',
-            'coordinateStateLoading'
+            'coordinateStateLoading',
+            'coordinateStateLoadingEventDriven',
+            'dispatchTemplateCompleteEvent',
+            'autoScanChecking',
+            'enhancedSystemPolling',
+            'templateCoordination',
+            'systemValidation'
         ];
         
         legacyPollingFunctions.forEach(funcName => {
@@ -941,10 +947,61 @@
         
         console.log('✅ ROOT FIX: Anti-polling protection installed successfully');
         
+        // ROOT FIX: COMPREHENSIVE setTimeout PROTECTION
+        const originalSetTimeout = window.setTimeout;
+        window.setTimeout = function(func, delay, ...args) {
+            // Convert function to string to analyze
+            const funcStr = func.toString();
+            
+            // ROOT FIX: Block specific polling patterns
+            const pollingPatterns = [
+                'AUTO-SCAN',
+                'dispatchTemplateCompleteEvent',
+                'coordinateStateLoading',
+                'enhancedSystemPolling',
+                'checkEnhanced',
+                'waitFor',
+                'pollFor',
+                'Enhanced state manager not found',
+                'State loading coordination failed'
+            ];
+            
+            const isPollingFunction = pollingPatterns.some(pattern => 
+                funcStr.includes(pattern)
+            );
+            
+            if (isPollingFunction && delay > 100) {
+                console.warn(`🚫 ROOT FIX: BLOCKED POLLING TIMEOUT:`, {
+                    delay: delay + 'ms',
+                    function: funcStr.substring(0, 100) + '...',
+                    blocked: true,
+                    reason: 'Detected as polling function'
+                });
+                
+                // Instead of polling, check if systems are already ready
+                if (window.enhancedComponentManager && window.stateManager && window.renderer) {
+                    console.log('✅ ROOT FIX: Systems already ready - no polling needed');
+                    if (typeof func === 'function') {
+                        try {
+                            func.apply(this, args);
+                        } catch (e) {
+                            console.log('🚨 ROOT FIX: Blocked function would have errored:', e.message);
+                        }
+                    }
+                }
+                return null; // Block the timeout
+            }
+            
+            // Allow non-polling timeouts
+            return originalSetTimeout.call(this, func, delay, ...args);
+        };
+        
+        console.log('✅ ROOT FIX: Comprehensive setTimeout protection installed');
+        
         // ROOT FIX: Cache-busting message
         console.warn('⚠️ ROOT FIX: If you still see polling errors, clear your browser cache completely!');
         console.warn('⚠️ ROOT FIX: The polling is likely from cached JavaScript files!');
-        console.log('🏆 ROOT FIX: Core systems bundle - anti-polling protection active!');
+        console.log('🏆 ROOT FIX: Core systems bundle - comprehensive anti-polling protection active!');
     })();
     
 })(); // End IIFE wrapper

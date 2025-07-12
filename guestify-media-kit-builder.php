@@ -253,45 +253,25 @@ class Guestify_Media_Kit_Builder {
             wp_head();
             ?>
             
-            <!-- ROOT FIX: Enhanced template ready indicator with modal validation -->
-            <script type="text/javascript">
-                window.gmkbTemplateEnhanced = true;
-                window.gmkbTemplateLoadTime = <?php echo time(); ?>;
-                window.gmkbWordPressCompatible = true;
-                window.gmkbModalValidation = <?php echo wp_json_encode($modal_validation); ?>;
-                window.gmkbRootFixActive = true;
-                
-                console.log('🚀 ROOT FIX: Clean WordPress-Compatible Builder Template Ready', {
-                    enhancedStatus: <?php echo wp_json_encode($enhanced_status); ?>,
-                    modalValidation: window.gmkbModalValidation,
-                    templateLoadTime: window.gmkbTemplateLoadTime,
-                    wordPressCompatible: true,
-                    scriptConflicts: 'eliminated',
-                    architecture: 'clean-wordpress-compatible'
-                });
-                
-                // ROOT FIX: Early modal detection helper for JavaScript
-                window.gmkbModalPreValidation = function() {
-                    const requiredModals = ['component-library-overlay', 'template-library-modal', 'global-settings-modal', 'export-modal'];
-                    const results = {
-                        available: [],
-                        missing: [],
-                        ready: true
-                    };
-                    
-                    requiredModals.forEach(modalId => {
-                        const element = document.getElementById(modalId);
-                        if (element && (element.children.length > 0 || element.textContent.trim())) {
-                            results.available.push(modalId);
-                        } else {
-                            results.missing.push(modalId);
-                            results.ready = false;
-                        }
-                    });
-                    
-                    return results;
-                };
-            </script>
+            <!-- ROOT FIX PHASE 1: All inline scripts eliminated - bundles handle data -->
+            <?php
+            // ROOT FIX: Store template data in PHP data localization instead of inline scripts
+            wp_localize_script('guestify-application-bundle', 'gmkbTemplateData', array(
+                'templateEnhanced' => true,
+                'templateLoadTime' => time(),
+                'wordPressCompatible' => true,
+                'modalValidation' => $modal_validation,
+                'rootFixActive' => true,
+                'enhancedStatus' => $enhanced_status,
+                'scriptConflicts' => 'eliminated',
+                'architecture' => 'clean-wordpress-compatible'
+            ));
+            
+            // Log for debugging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Template data passed via wp_localize_script - no inline scripts');
+            }
+            ?>
         </head>
         <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing gmkb-clean gmkb-root-fix" data-modal-validation="<?php echo esc_attr($modal_validation['all_available'] ? 'pass' : 'partial'); ?>" data-template-version="root-fix-clean">
             
@@ -345,55 +325,30 @@ class Guestify_Media_Kit_Builder {
             wp_footer();
             ?>
             
-            <!-- ROOT FIX: Template completion with enhanced modal validation -->
-            <script type="text/javascript">
-                window.gmkbTemplateComplete = true;
-                window.gmkbWordPressTemplateComplete = true;
-                
-                // ROOT FIX: Final modal validation before initialization
-                window.gmkbFinalModalValidation = window.gmkbModalPreValidation();
-                
-                console.log('✅ ROOT FIX: Clean WordPress-Compatible Template Render Complete', {
-                    templateComplete: true,
-                    finalModalValidation: window.gmkbFinalModalValidation,
-                    modalReadiness: window.gmkbFinalModalValidation.ready,
-                    availableModals: window.gmkbFinalModalValidation.available,
-                    missingModals: window.gmkbFinalModalValidation.missing,
-                    wordPressCompatible: true,
-                    rootFixActive: true,
-                    clean: true
-                });
-                
-                // ROOT FIX: Enhanced error boundary removal with modal validation
-                if (!window.gmkbErrors?.length && window.gmkbFinalModalValidation.ready) {
-                    const errorBoundary = document.getElementById('gmkb-template-error-boundary');
-                    if (errorBoundary) errorBoundary.remove();
-                } else if (!window.gmkbFinalModalValidation.ready) {
-                    console.warn('⚠️ ROOT FIX: Some modals not ready at template completion:', 
-                                window.gmkbFinalModalValidation.missing);
-                }
-                
-                // ROOT FIX: Signal template ready for enhanced initialization
-                document.body.classList.remove('gmkb-initializing');
-                document.body.classList.add('gmkb-template-ready', 'gmkb-clean');
-                
-                // FOUNDATIONAL FIX: Event dispatch moved to template after modal validation
-                // The template handles the gmkbWordPressTemplateReady event dispatch after
-                // ensuring all modals are properly loaded and ready
-                console.log('✅ ROOT FIX: Clean template render complete - waiting for modal validation');
-                
-                // ROOT FIX: Event for WordPress-compatible template ready
-                document.dispatchEvent(new CustomEvent('gmkbWordPressTemplateReady', {
-                    detail: {
-                        modalValidation: window.gmkbFinalModalValidation,
-                        templateVersion: 'root-fix-wordpress-compatible',
-                        readyForInit: window.gmkbFinalModalValidation.ready,
-                        wordPressCompatible: true,
-                        scriptConflicts: 'eliminated',
-                        note: 'WordPress-compatible template ready - enhanced systems load via WordPress dependency chain'
-                    }
-                }));
-            </script>
+            <!-- ROOT FIX PHASE 1: Template completion handled by bundles - no inline scripts -->
+            <?php
+            // ROOT FIX: Template completion data passed via PHP data instead of inline scripts
+            wp_localize_script('guestify-application-bundle', 'gmkbTemplateCompletion', array(
+                'templateComplete' => true,
+                'wordPressTemplateComplete' => true,
+                'wordPressCompatible' => true,
+                'rootFixActive' => true,
+                'clean' => true,
+                'templateVersion' => 'root-fix-wordpress-compatible',
+                'scriptConflicts' => 'eliminated'
+            ));
+            
+            // Add body classes via PHP instead of JavaScript
+            add_filter('body_class', function($classes) {
+                $classes[] = 'gmkb-template-ready';
+                $classes[] = 'gmkb-clean';
+                return $classes;
+            });
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Template completion handled by bundles - zero inline scripts');
+            }
+            ?>
         </body>
         </html>
         <?php
