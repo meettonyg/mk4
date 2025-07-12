@@ -203,97 +203,45 @@ async function registerEnhancedSystems() {
         console.log('✅ Enhanced System Registrar: Core registration complete');
         console.log('📋 Registered systems:', registeredSystems);
         
-        // ROOT FIX: IMMEDIATE global exposure after registration to prevent race conditions
-        console.log('🔧 ROOT FIX: Immediately exposing all core systems globally...');
+        // ROOT FIX: SIMPLIFIED global exposure - systems should already be exposed by bundle
+        console.log('🔧 ROOT FIX: Validating systems are already exposed by bundle...');
         
-        // Get all registered systems
-        const allSystems = systemRegistrar.getAll();
+        // ROOT FIX: Quick validation that critical systems are available
+        const coreValidation = {
+            enhancedComponentManager: !!window.enhancedComponentManager,
+            stateManager: !!window.stateManager,
+            renderer: !!window.renderer,
+            systemRegistrar: !!window.systemRegistrar
+        };
         
-        // Expose each system globally with validation
-        Object.entries(allSystems).forEach(([name, instance]) => {
-            if (instance !== null) {
-                window[name] = instance;
-                console.log(`✅ ROOT FIX: Exposed window.${name}`);
-                
-                // Special enhanced component manager validation
-                if (name === 'componentManager' && instance.constructor?.name?.includes('Enhanced')) {
-                    window.enhancedComponentManager = instance;
-                    console.log('✅ ROOT FIX: Also exposed as window.enhancedComponentManager');
-                    
-                    // Validate critical methods
-                    if (typeof instance.addComponent !== 'function') {
-                        console.error('❌ ROOT FIX: Enhanced component manager missing addComponent method!');
-                    } else {
-                        console.log('✅ ROOT FIX: Enhanced component manager addComponent method confirmed');
-                    }
-                }
-                
-                // Special enhanced state manager validation
-                if (name === 'stateManager' && instance.constructor?.name?.includes('Enhanced')) {
-                    window.enhancedStateManager = instance;
-                    console.log('✅ ROOT FIX: Also exposed as window.enhancedStateManager');
-                }
-            } else {
-                console.warn(`⚠️ ROOT FIX: System ${name} is null, not exposing`);
-            }
-        });
+        const availableCount = Object.values(coreValidation).filter(Boolean).length;
+        const requiredCount = Object.keys(coreValidation).length;
         
-        // ROOT FIX: Critical validation after exposure
-        const criticalSystems = ['stateManager', 'componentManager', 'renderer', 'enhancedComponentManager'];
-        const missingCritical = criticalSystems.filter(name => !window[name]);
+        console.log('📊 ROOT FIX: Core system validation:', coreValidation);
+        console.log(`📊 ROOT FIX: ${availableCount}/${requiredCount} core systems available`);
         
-        if (missingCritical.length > 0) {
-            console.error('❌ ROOT FIX: Critical systems missing after exposure:', missingCritical);
+        if (availableCount === requiredCount) {
+            console.log('✅ ROOT FIX: All core systems available from bundle!');
+        } else {
+            console.warn(`⚠️ ROOT FIX: Only ${availableCount}/${requiredCount} core systems available`);
             
-            // EMERGENCY FIX: Try direct exposure
+            // ROOT FIX: Emergency exposure only for missing systems
             if (!window.enhancedComponentManager && enhancedComponentManager) {
                 window.enhancedComponentManager = enhancedComponentManager;
-                console.log('🚑 ROOT FIX: Emergency exposed enhancedComponentManager directly');
-            }
-            
-            if (!window.enhancedStateManager && enhancedStateManager) {
-                window.enhancedStateManager = enhancedStateManager;
-                console.log('🚑 ROOT FIX: Emergency exposed enhancedStateManager directly');
-            }
-            
-            if (!window.componentManager && enhancedComponentManager) {
                 window.componentManager = enhancedComponentManager;
-                console.log('🚑 ROOT FIX: Emergency exposed componentManager as enhancedComponentManager');
+                console.log('🚑 ROOT FIX: Emergency exposed enhancedComponentManager');
             }
             
             if (!window.stateManager && enhancedStateManager) {
                 window.stateManager = enhancedStateManager;
-                console.log('🚑 ROOT FIX: Emergency exposed stateManager as enhancedStateManager');
+                window.enhancedStateManager = enhancedStateManager;
+                console.log('🚑 ROOT FIX: Emergency exposed stateManager');
             }
             
             if (!window.renderer && enhancedComponentRenderer) {
                 window.renderer = enhancedComponentRenderer;
-                console.log('🚑 ROOT FIX: Emergency exposed renderer as enhancedComponentRenderer');
+                console.log('🚑 ROOT FIX: Emergency exposed renderer');
             }
-        } else {
-            console.log('✅ ROOT FIX: All critical systems successfully exposed globally');
-        }
-        
-        // ROOT FIX: Final validation that all systems are properly exposed
-        const finalValidation = {
-            enhancedComponentManager: !!window.enhancedComponentManager,
-            componentManager: !!window.componentManager,
-            enhancedStateManager: !!window.enhancedStateManager,
-            stateManager: !!window.stateManager,
-            renderer: !!window.renderer,
-            dynamicComponentLoader: !!window.dynamicComponentLoader,
-            mkTemplateCache: !!window.mkTemplateCache
-        };
-        
-        console.log('🔍 ROOT FIX: Final system exposure validation:', finalValidation);
-        
-        const exposedCount = Object.values(finalValidation).filter(Boolean).length;
-        const totalRequired = Object.keys(finalValidation).length;
-        
-        if (exposedCount === totalRequired) {
-            console.log('🎉 ROOT FIX: All systems properly exposed globally!');
-        } else {
-            console.warn(`⚠️ ROOT FIX: Only ${exposedCount}/${totalRequired} systems exposed`);
         }
         
         // CRITICAL FIX: Validate all 9 core systems including template loading infrastructure, error handling, data mapper, and rendering queue
@@ -337,55 +285,25 @@ async function registerEnhancedSystems() {
         // PHASE 2: Additional systems will be loaded post-initialization to prevent circular dependencies
         console.log('ℹ️ PHASE 2: Render validator and recovery manager will be loaded after core initialization');
         
-        // =====================================
-        // ROOT FIX: IMMEDIATE EVENT-DRIVEN NOTIFICATION
-        // =====================================
-        console.log('🎉 ROOT FIX: All core systems registered and exposed globally');
-        console.log('🚀 ROOT FIX: Dispatching coreSystemsReady event IMMEDIATELY - NO POLLING NEEDED!');
+        // ROOT FIX: SIMPLIFIED - Bundle handles event dispatch
+        console.log('✅ ROOT FIX: System registration complete - bundle will handle events');
+        console.log('📊 ROOT FIX: Systems registered:', registeredSystems.length);
         
-        // Dispatch ready event IMMEDIATELY
-        const eventDetail = {
-            systems: systemRegistrar.list(),
-            timestamp: Date.now(),
-            globalSystems: {
-                enhancedComponentManager: !!window.enhancedComponentManager,
-                stateManager: !!window.stateManager,
-                renderer: !!window.renderer,
-                dynamicComponentLoader: !!window.dynamicComponentLoader,
-                mkTemplateCache: !!window.mkTemplateCache,
-                enhancedErrorHandler: !!window.enhancedErrorHandler,
-                mkcgDataMapper: !!window.mkcgDataMapper,
-                renderingQueueManager: !!window.renderingQueueManager
-            },
-            architecture: 'enhanced-phase1-immediate',
-            readyTimestamp: Date.now(),
-            performanceData: {
-                initializationTime: Date.now() - (window.gmkbPhase1?.startTime || Date.now()),
-                systemCount: registeredSystems.length
-            },
-            source: 'enhanced-system-registrar',
-            immediate: true
+        // ROOT FIX: Just validate that critical systems are working
+        const finalCheck = {
+            enhancedComponentManager: !!window.enhancedComponentManager && typeof window.enhancedComponentManager.addComponent === 'function',
+            stateManager: !!window.stateManager && typeof window.stateManager.getState === 'function',
+            renderer: !!window.renderer && typeof window.renderer.render === 'function'
         };
         
-        // Dispatch the event synchronously
-        const readyEvent = new CustomEvent('coreSystemsReady', {
-            detail: eventDetail
-        });
+        const workingCount = Object.values(finalCheck).filter(Boolean).length;
+        console.log(`📊 ROOT FIX: ${workingCount}/3 critical systems fully functional`);
         
-        document.dispatchEvent(readyEvent);
-        
-        console.log('✅ ROOT FIX: coreSystemsReady event dispatched IMMEDIATELY!');
-        console.log('📊 Event detail:', eventDetail);
-        
-        // ROOT FIX: Also trigger a delayed event as backup (just in case)
-        setTimeout(() => {
-            if (!window.gmkbEventCoordination?.coreSystemsReadyFired) {
-                console.log('🔄 ROOT FIX: Backup event dispatch (listener may have missed first event)');
-                document.dispatchEvent(new CustomEvent('coreSystemsReady', {
-                    detail: { ...eventDetail, source: 'backup-dispatch', backup: true }
-                }));
-            }
-        }, 100); // Very short backup delay
+        if (workingCount === 3) {
+            console.log('✅ ROOT FIX: All critical systems fully functional!');
+        } else {
+            console.warn('⚠️ ROOT FIX: Some critical systems may not be fully functional:', finalCheck);
+        }
         
         perfEnd();
         return true;

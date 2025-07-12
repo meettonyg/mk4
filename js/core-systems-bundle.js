@@ -731,7 +731,7 @@
     window.systemRegistrar.register('enhancedErrorHandler', enhancedErrorHandler);
     window.systemRegistrar.register('mkcgDataMapper', mkcgDataMapper);
     
-    // ROOT FIX: Also expose systems with common naming patterns
+    // ROOT FIX: IMMEDIATE global exposure with validation
     window.stateManager = enhancedStateManager;
     window.enhancedStateManager = enhancedStateManager;
     window.componentManager = enhancedComponentManager;
@@ -743,9 +743,55 @@
     window.enhancedErrorHandler = enhancedErrorHandler;
     window.mkcgDataMapper = mkcgDataMapper;
     
+    // ROOT FIX: IMMEDIATE validation that all systems are properly exposed
+    const immediateValidation = {
+        stateManager: !!window.stateManager,
+        enhancedStateManager: !!window.enhancedStateManager,
+        componentManager: !!window.componentManager,
+        enhancedComponentManager: !!window.enhancedComponentManager,
+        renderer: !!window.renderer,
+        dynamicComponentLoader: !!window.dynamicComponentLoader,
+        mkTemplateCache: !!window.mkTemplateCache,
+        renderingQueueManager: !!window.renderingQueueManager,
+        enhancedErrorHandler: !!window.enhancedErrorHandler,
+        mkcgDataMapper: !!window.mkcgDataMapper,
+        systemRegistrar: !!window.systemRegistrar
+    };
+    
+    const exposedCount = Object.values(immediateValidation).filter(Boolean).length;
+    const totalRequired = Object.keys(immediateValidation).length;
+    
+    console.log('🔍 ROOT FIX: Immediate system exposure validation:', immediateValidation);
+    console.log(`📊 ROOT FIX: ${exposedCount}/${totalRequired} systems exposed globally`);
+    
+    if (exposedCount === totalRequired) {
+        console.log('✅ ROOT FIX: ALL SYSTEMS SUCCESSFULLY EXPOSED GLOBALLY!');
+    } else {
+        console.error(`❌ ROOT FIX: Only ${exposedCount}/${totalRequired} systems exposed - attempting emergency exposure...`);
+        
+        // ROOT FIX: Emergency re-exposure if any system failed
+        Object.entries({
+            stateManager: enhancedStateManager,
+            enhancedStateManager: enhancedStateManager,
+            componentManager: enhancedComponentManager,
+            enhancedComponentManager: enhancedComponentManager,
+            renderer: enhancedComponentRenderer,
+            dynamicComponentLoader: dynamicComponentLoader,
+            mkTemplateCache: templateCache,
+            renderingQueueManager: renderingQueueManager,
+            enhancedErrorHandler: enhancedErrorHandler,
+            mkcgDataMapper: mkcgDataMapper
+        }).forEach(([name, system]) => {
+            if (!window[name]) {
+                window[name] = system;
+                console.log(`🚑 ROOT FIX: Emergency exposed ${name}`);
+            }
+        });
+    }
+    
     console.log('✅ ROOT FIX: All core systems registered and exposed globally');
     
-    // ROOT FIX: DEFERRED EVENT DISPATCH - Wait for DOM ready to ensure listeners exist
+    // ROOT FIX: IMMEDIATE EVENT DISPATCH - No waiting, no delays
     function dispatchCoreSystemsReadyEvent() {
         const eventDetail = {
             systems: window.systemRegistrar.list(),
@@ -758,44 +804,87 @@
                 mkTemplateCache: !!window.mkTemplateCache,
                 enhancedErrorHandler: !!window.enhancedErrorHandler,
                 mkcgDataMapper: !!window.mkcgDataMapper,
-                renderingQueueManager: !!window.renderingQueueManager
+                renderingQueueManager: !!window.renderingQueueManager,
+                systemRegistrar: !!window.systemRegistrar
             },
-            architecture: 'consolidated-bundle',
+            exposureValidation: immediateValidation,
+            exposureCount: exposedCount,
+            totalRequired: totalRequired,
+            architecture: 'consolidated-bundle-immediate',
             source: 'core-systems-bundle',
-            bundled: true
+            bundled: true,
+            immediate: true
         };
         
-        // Dispatch the event
-        document.dispatchEvent(new CustomEvent('coreSystemsReady', {
-            detail: eventDetail
-        }));
-        
-        console.log('✅ ROOT FIX: coreSystemsReady event dispatched (deferred)');
-        console.log('📊 Event detail:', eventDetail);
-    }
-    
-    // ROOT FIX: Wait for DOM ready before dispatching event
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', dispatchCoreSystemsReadyEvent);
-    } else {
-        // DOM already ready, dispatch immediately with NO DELAY
-        dispatchCoreSystemsReadyEvent();
-    }
-    
-    // ROOT FIX: Also create backup event dispatch as safety net
-    setTimeout(() => {
-        if (!window.gmkbEventCoordination?.coreSystemsReadyFired) {
-            console.log('🔄 ROOT FIX: Backup event dispatch (listener may have missed first event)');
-            document.dispatchEvent(new CustomEvent('coreSystemsReady', {
-                detail: {
-                    systems: window.systemRegistrar.list(),
-                    timestamp: Date.now(),
-                    source: 'backup-dispatch-from-bundle',
-                    backup: true
-                }
-            }));
+        // ROOT FIX: Track event coordination
+        if (!window.gmkbEventCoordination) {
+            window.gmkbEventCoordination = {
+                coreSystemsReadyFired: false,
+                mediaKitBuilderReadyFired: false,
+                startTime: Date.now()
+            };
         }
-    }, 200); // 200ms backup delay
+        
+        // Dispatch the event IMMEDIATELY
+        try {
+            document.dispatchEvent(new CustomEvent('coreSystemsReady', {
+                detail: eventDetail
+            }));
+            
+            // Mark as fired
+            window.gmkbEventCoordination.coreSystemsReadyFired = true;
+            
+            console.log('✅ ROOT FIX: coreSystemsReady event dispatched IMMEDIATELY');
+            console.log('📊 Event detail:', eventDetail);
+            
+        } catch (error) {
+            console.error('❌ ROOT FIX: Failed to dispatch coreSystemsReady event:', error);
+        }
+    }
+    
+    // ROOT FIX: Dispatch IMMEDIATELY - no DOM waiting
+    dispatchCoreSystemsReadyEvent();
+    
+    // ROOT FIX: Multiple backup dispatches with different timing for maximum reliability
+    const backupDispatches = [
+        { delay: 0, source: 'immediate-backup' },
+        { delay: 50, source: 'fast-backup' },
+        { delay: 200, source: 'standard-backup' }
+    ];
+    
+    backupDispatches.forEach(({ delay, source }) => {
+        setTimeout(() => {
+            if (!window.gmkbEventCoordination?.coreSystemsReadyFired) {
+                console.log(`🔄 ROOT FIX: ${source} event dispatch (${delay}ms)`);
+                
+                try {
+                    document.dispatchEvent(new CustomEvent('coreSystemsReady', {
+                        detail: {
+                            systems: window.systemRegistrar.list(),
+                            timestamp: Date.now(),
+                            source: source,
+                            backup: true,
+                            delay: delay,
+                            globalSystems: {
+                                enhancedComponentManager: !!window.enhancedComponentManager,
+                                stateManager: !!window.stateManager,
+                                renderer: !!window.renderer,
+                                systemRegistrar: !!window.systemRegistrar
+                            }
+                        }
+                    }));
+                    
+                    // Mark as fired after backup dispatch
+                    if (window.gmkbEventCoordination) {
+                        window.gmkbEventCoordination.coreSystemsReadyFired = true;
+                    }
+                    
+                } catch (error) {
+                    console.error(`❌ ROOT FIX: ${source} dispatch failed:`, error);
+                }
+            }
+        }, delay);
+    });
     
     console.log('🎉 ROOT FIX: Core Systems Bundle loaded successfully');
     

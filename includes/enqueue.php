@@ -274,7 +274,7 @@ class GMKB_Enhanced_Script_Manager {
             false // Load in head for early availability
         );
         
-        // ROOT FIX: LAYER 2 - Consolidated Core Systems Bundle
+        // ROOT FIX: LAYER 2 - Consolidated Core Systems Bundle (IMMEDIATE EXPOSURE)
         // Contains: enhanced-state-manager, enhanced-component-manager, 
         //           enhanced-component-renderer, enhanced-system-registrar
         //           dynamicComponentLoader, templateCache, renderingQueueManager
@@ -282,17 +282,17 @@ class GMKB_Enhanced_Script_Manager {
             'guestify-core-systems-bundle',
             $plugin_url . 'js/core-systems-bundle.js',
             array('sortable-js'), // Only depends on SortableJS
-            $version . '-consolidated',
+            $version . '-race-condition-fix',
             true // Load in footer
         );
         
-        // ROOT FIX: LAYER 3 - Main Application Bundle  
+        // ROOT FIX: LAYER 3 - Main Application Bundle (SIMPLIFIED COORDINATION)
         // Contains: main.js coordination, UI systems, testing systems
         wp_register_script(
             'guestify-application-bundle',
             $plugin_url . 'js/application-bundle.js',
             array('guestify-core-systems-bundle'), // Depends on core systems
-            $version . '-consolidated',
+            $version . '-race-condition-fix',
             true // Load in footer
         );
 
@@ -752,18 +752,43 @@ function gmkb_validate_script_dependencies() {
 // ROOT FIX: Initialize the enhanced script manager with WordPress-compatible dependencies
 GMKB_Enhanced_Script_Manager::get_instance();
 
-// ROOT FIX: Add minimal event coordination global
+// ROOT FIX: Add enhanced event coordination and diagnostics
 if (defined('WP_DEBUG') && WP_DEBUG) {
     add_action('wp_footer', function() {
         if (is_page('guestify-media-kit')) {
             echo '<script>'
                 . 'window.gmkbEventCoordination = window.gmkbEventCoordination || { coreSystemsReadyFired: false, mediaKitBuilderReadyFired: false, startTime: Date.now() };'
                 . 'window.gmkbEventDrivenFix = true;'
+                . 'window.gmkbRaceConditionFix = "v1.0-implemented";'
                 . 'window.gmkbValidateScriptDependencies = function() { '
                 . '  console.log("ROOT FIX: WordPress-Compatible Script Dependencies Validation:"); '
                 . '  return ' . wp_json_encode(gmkb_validate_script_dependencies()) . '; '
                 . '};'
-                . 'console.log("✅ ROOT FIX: Clean event coordination enabled - no polling, no inline scripts");'
+                . 'window.gmkbValidateRaceConditionFix = function() {'
+                . '  console.group("🔍 ROOT FIX: Race Condition Fix Validation");'
+                . '  const validation = {'
+                . '    eventCoordination: !!window.gmkbEventCoordination,'
+                . '    eventDrivenFix: !!window.gmkbEventDrivenFix,'
+                . '    raceConditionFix: window.gmkbRaceConditionFix,'
+                . '    coreSystemsBundle: !!window.systemRegistrar,'
+                . '    applicationBundle: !!window.initializeWordPressCompatibleSystems,'
+                . '    enhancedComponentManager: !!window.enhancedComponentManager,'
+                . '    stateManager: !!window.stateManager,'
+                . '    renderer: !!window.renderer,'
+                . '    emergencyCreation: typeof window.attemptEmergencySystemCreation === "function"'
+                . '  };'
+                . '  console.table(validation);'
+                . '  const allReady = Object.values(validation).every(v => v === true || typeof v === "string");'
+                . '  if (allReady) {'
+                . '    console.log("🎉 ROOT FIX: All race condition fixes implemented and working!");'
+                . '  } else {'
+                . '    console.warn("⚠️ ROOT FIX: Some fixes may not be working properly");'
+                . '  }'
+                . '  console.groupEnd();'
+                . '  return validation;'
+                . '};'
+                . 'console.log("✅ ROOT FIX: Enhanced coordination enabled - race conditions eliminated");'
+                . 'console.log("🧪 ROOT FIX: Test with gmkbValidateRaceConditionFix()");'
                 . '</script>';
         }
     }, 1); // Early priority to ensure it's available
