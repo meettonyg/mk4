@@ -1129,8 +1129,7 @@
         console.table(testResults.expectedBehavior);
         
         // Test setTimeout interception by trying to create a polling function
-        console.log('
-🧪 ROOT FIX: Testing setTimeout interception...');
+        console.log('\n🧪 ROOT FIX: Testing setTimeout interception...');
         
         try {
             const testPollingFunction = function() {
@@ -1158,19 +1157,16 @@
             .every(Boolean);
         
         if (systemsReady) {
-            console.log('
-🎆 🏆 COMPREHENSIVE POLLING ELIMINATION: 100% SUCCESSFUL! 🏆 🎆');
+            console.log('\n🎆 🏆 COMPREHENSIVE POLLING ELIMINATION: 100% SUCCESSFUL! 🏆 🎆');
             console.log('✅ ALL POLLING FUNCTIONS ELIMINATED');
             console.log('✅ setTimeout INTERCEPTION ACTIVE');
             console.log('✅ LEGACY FUNCTIONS OVERRIDDEN');
             console.log('✅ TEMPLATE SCRIPTS ELIMINATED');
             console.log('✅ CORE SYSTEMS READY WITHOUT POLLING');
-            console.log('
-🎉 Console errors showing "BLOCKED POLLING TIMEOUT" = SUCCESS!');
+            console.log('\n🎉 Console errors showing "BLOCKED POLLING TIMEOUT" = SUCCESS!');
             console.log('🎉 This means cached polling functions are being neutralized!');
         } else {
-            console.warn('
-⚠️ COMPREHENSIVE POLLING ELIMINATION: Some issues detected');
+            console.warn('\n⚠️ COMPREHENSIVE POLLING ELIMINATION: Some issues detected');
             console.log('Check system availability above');
         }
         
@@ -1552,8 +1548,7 @@
         console.table(testResults.bundleArchitecture);
         
         // Test that PHP coordination is properly disabled
-        console.log('
-🧪 TESTING PHP coordination elimination...');
+        console.log('\n🧪 TESTING PHP coordination elimination...');
         
         const phpDisabledChecks = {
             phpCoordinationDisabled: !!window.gmkbPHPCoordinationDisabled,
@@ -1572,21 +1567,18 @@
         const phpProperlyDisabled = Object.values(phpDisabledChecks).every(Boolean);
         
         if (systemsReady && phpProperlyDisabled) {
-            console.log('
-🎆 🚨 PHASE 2: PHP COORDINATION ELIMINATION 100% SUCCESSFUL! 🚨 🎆');
+            console.log('\n🎆 🚨 PHASE 2: PHP COORDINATION ELIMINATION 100% SUCCESSFUL! 🚨 🎆');
             console.log('✅ ALL PHP-GENERATED setTimeout FUNCTIONS ELIMINATED');
             console.log('✅ enhanced-init.php coordination DISABLED');
             console.log('✅ Template completion coordination DISABLED');
             console.log('✅ State loading coordinator DISABLED');
             console.log('✅ Polling detector injector DISABLED');
             console.log('✅ BUNDLES HANDLE ALL COORDINATION');
-            console.log('
-🎉 The 3-second timeout error from line 2317-2319 should now be ELIMINATED!');
+            console.log('\n🎉 The 3-second timeout error from line 2317-2319 should now be ELIMINATED!');
             console.log('🎉 "coordinateStateLoadingEventDriven" function no longer exists!');
             console.log('🏆 ROOT LEVEL PHP POLLING ELIMINATION: COMPLETE!');
         } else {
-            console.warn('
-⚠️ PHASE 2: Some PHP coordination still active - check above results');
+            console.warn('\n⚠️ PHASE 2: Some PHP coordination still active - check above results');
             
             if (!systemsReady) {
                 console.warn('  - Bundle systems not fully ready');
@@ -1641,8 +1633,7 @@
         console.table(testResults.expectedResults);
         
         // Test that validateBundleFix is available and working
-        console.log('
-🧪 TESTING validateBundleFix() function...');
+        console.log('\n🧪 TESTING validateBundleFix() function...');
         if (typeof window.validateBundleFix === 'function') {
             try {
                 const bundleValidation = window.validateBundleFix();
@@ -1667,20 +1658,17 @@
             .every(Boolean);
         
         if (systemsReady) {
-            console.log('
-🎆 🏆 PHASE 2: OPTIMIZED TEMPLATE POLLING ELIMINATION 100% SUCCESSFUL! 🏆 🎆');
+            console.log('\n🎆 🏆 PHASE 2: OPTIMIZED TEMPLATE POLLING ELIMINATION 100% SUCCESSFUL! 🏆 🎆');
             console.log('✅ BOTH TEMPLATES (builder-template.php & builder-template-optimized.php) FIXED');
             console.log('✅ ALL INLINE JAVASCRIPT ELIMINATED');
             console.log('✅ CLEAN BUNDLE ARCHITECTURE ACTIVE');
             console.log('✅ POLLING FUNCTIONS MOVED TO BUNDLES');
             console.log('✅ VALIDATION FUNCTIONS AVAILABLE');
-            console.log('
-🎉 Console errors "BLOCKED POLLING TIMEOUT" = SUCCESS!');
+            console.log('\n🎉 Console errors "BLOCKED POLLING TIMEOUT" = SUCCESS!');
             console.log('🎉 This means cached polling functions are being neutralized!');
             console.log('🏆 ROOT LEVEL POLLING ELIMINATION: PHASE 2 COMPLETE!');
         } else {
-            console.warn('
-⚠️ PHASE 2: Some issues detected - check bundle loading');
+            console.warn('\n⚠️ PHASE 2: Some issues detected - check bundle loading');
         }
         
         console.groupEnd();

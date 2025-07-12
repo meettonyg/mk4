@@ -64,6 +64,17 @@ class GMKB_Enhanced_Script_Manager {
     }
     
     private function __construct() {
+        // ROOT FIX: Check transient on initialization for persistence
+        if (get_transient('gmkb_builder_page_detected')) {
+            $this->is_builder_page = true;
+            if (!defined('GMKB_BUILDER_PAGE')) {
+                define('GMKB_BUILDER_PAGE', true);
+            }
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Builder page restored from transient on init');
+            }
+        }
+        
         // ROOT FIX: Proper WordPress hook timing for page detection
         add_action('plugins_loaded', array($this, 'early_builder_detection'), 1);
         add_action('wp', array($this, 'wordpress_page_validation'), 1); // NEW: Proper timing for is_page()
@@ -76,28 +87,71 @@ class GMKB_Enhanced_Script_Manager {
      * ROOT FIX: Ultra-early builder page detection (URL-based, works reliably)
      */
     public function early_builder_detection() {
+        // ROOT FIX: Enhanced URL detection with detailed logging
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        
+        // ROOT FIX: Parse the URL to handle various formats
+        $parsed_url = parse_url($request_uri);
+        $path = isset($parsed_url['path']) ? $parsed_url['path'] : '';
+        $query_string = isset($parsed_url['query']) ? $parsed_url['query'] : '';
+        
+        // ROOT FIX: Log the exact URL for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: Checking URL: ' . $request_uri);
+            error_log('GMKB ROOT FIX: Parsed path: ' . $path);
+            error_log('GMKB ROOT FIX: Query string: ' . $query_string);
+        }
+        
         // ROOT FIX: URL-based detection methods that work before WordPress query processing
         $url_detection_methods = array(
-            // Method 1: Direct URL analysis (MOST RELIABLE)
-            isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false,
+            // Method 1: Direct URL analysis (MOST RELIABLE) - ENHANCED with more patterns
+            'url_contains' => isset($_SERVER['REQUEST_URI']) && (
+                strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false ||
+                strpos($_SERVER['REQUEST_URI'], '/guestify-media-kit/') !== false ||
+                strpos($_SERVER['REQUEST_URI'], '/guestify-media-kit?') !== false ||
+                preg_match('/\/guestify-media-kit(\/|\?|$)/', $_SERVER['REQUEST_URI'])
+            ),
             
-            // Method 2: Query parameters
-            isset($_GET['page']) && in_array($_GET['page'], ['guestify-builder', 'guestify-media-kit']),
+            // Method 2: Path-only check (handles trailing slashes and query params)
+            'path_check' => (
+                $path === '/guestify-media-kit' ||
+                $path === '/guestify-media-kit/' ||
+                strpos($path, '/guestify-media-kit/') === 0
+            ),
             
-            // Method 3: Post ID with specific patterns
-            isset($_GET['post_id']) && is_numeric($_GET['post_id']),
+            // Method 3: Query parameters
+            'query_params' => isset($_GET['page']) && in_array($_GET['page'], ['guestify-builder', 'guestify-media-kit']),
             
-            // Method 4: Admin page detection  
-            is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit'
+            // Method 4: Post ID in query (indicates builder context)
+            'has_post_id' => isset($_GET['post_id']) && is_numeric($_GET['post_id']),
+            
+            // Method 5: Admin page detection  
+            'admin_page' => is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit',
+            
+            // Method 6: Path info detection
+            'path_info' => isset($_SERVER['PATH_INFO']) && strpos($_SERVER['PATH_INFO'], 'guestify-media-kit') !== false,
+            
+            // Method 7: Request URI ends with media-kit (catches various URL structures)
+            'uri_ends_with' => preg_match('/media-kit\/?($|\?)/', $request_uri)
         );
         
-        $early_detection_result = array_reduce($url_detection_methods, function($carry, $method) {
-            return $carry || $method;
-        }, false);
+        // Check if ANY detection method succeeded
+        $early_detection_result = false;
+        $successful_methods = array();
         
-        // ROOT FIX: Set builder page flag ONLY if early detection succeeds
+        foreach ($url_detection_methods as $method_name => $result) {
+            if ($result) {
+                $early_detection_result = true;
+                $successful_methods[] = $method_name;
+            }
+        }
+        
+        // ROOT FIX: Set builder page flag if early detection succeeds
         if ($early_detection_result) {
             $this->is_builder_page = true;
+            
+            // Store detection result in a transient for persistence across hooks
+            set_transient('gmkb_builder_page_detected', true, 60); // 60 second cache
             
             // Set global flag for other systems
             if (!defined('GMKB_BUILDER_PAGE')) {
@@ -106,14 +160,31 @@ class GMKB_Enhanced_Script_Manager {
             
             // ROOT FIX: Enhanced logging for debugging
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB ROOT FIX: Builder page detected via early URL analysis');
+                error_log('GMKB ROOT FIX: ✅ BUILDER PAGE DETECTED!');
                 error_log('GMKB: REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'not_set'));
-                error_log('GMKB: Early detection SUCCESSFUL - preserving result');
+                error_log('GMKB: Successful detection methods: ' . implode(', ', $successful_methods));
+                error_log('GMKB: is_builder_page set to TRUE');
+                error_log('GMKB: Scripts WILL be enqueued');
             }
         } else {
-            // ROOT FIX: Only log if we're potentially missing a builder page
-            if (defined('WP_DEBUG') && WP_DEBUG && isset($_SERVER['REQUEST_URI'])) {
-                error_log('GMKB: Early detection - URL does not match builder patterns: ' . $_SERVER['REQUEST_URI']);
+            // Check transient as fallback
+            if (get_transient('gmkb_builder_page_detected')) {
+                $this->is_builder_page = true;
+                if (!defined('GMKB_BUILDER_PAGE')) {
+                    define('GMKB_BUILDER_PAGE', true);
+                }
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: ✅ Builder page detected via transient cache');
+                }
+            } else {
+                // ROOT FIX: Enhanced logging when detection fails
+                if (defined('WP_DEBUG') && WP_DEBUG && isset($_SERVER['REQUEST_URI'])) {
+                    error_log('GMKB ROOT FIX: ❌ Builder page NOT detected');
+                    error_log('GMKB: URL checked: ' . $_SERVER['REQUEST_URI']);
+                    error_log('GMKB: All detection methods failed');
+                    error_log('GMKB: Scripts will NOT be enqueued');
+                }
             }
         }
     }
@@ -196,21 +267,95 @@ class GMKB_Enhanced_Script_Manager {
      * ROOT FIX: Clean script enqueuing - bundles only
      */
     public function enqueue_scripts() {
-        // ROOT FIX: Check both instance variable and global constant for maximum reliability
-        $is_builder = $this->is_builder_page || (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE);
+        // ROOT FIX: AGGRESSIVE DETECTION - Log everything for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('========== GMKB SCRIPT ENQUEUE DEBUG START ==========');
+            error_log('GMKB: enqueue_scripts() called');
+            error_log('GMKB: REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'not_set'));
+            error_log('GMKB: Instance variable is_builder_page: ' . ($this->is_builder_page ? 'TRUE' : 'FALSE'));
+            error_log('GMKB: Global constant GMKB_BUILDER_PAGE: ' . (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE ? 'TRUE' : 'FALSE'));
+            error_log('GMKB: Transient gmkb_builder_page_detected: ' . (get_transient('gmkb_builder_page_detected') ? 'TRUE' : 'FALSE'));
+            
+            // Log query vars
+            if (function_exists('get_query_var')) {
+                error_log('GMKB: Query var pagename: ' . get_query_var('pagename'));
+                error_log('GMKB: Query var page_id: ' . get_query_var('page_id'));
+            }
+            
+            // Log current page info
+            if (function_exists('get_queried_object')) {
+                $obj = get_queried_object();
+                if ($obj) {
+                    error_log('GMKB: Queried object type: ' . get_class($obj));
+                    if (isset($obj->post_name)) {
+                        error_log('GMKB: Queried object post_name: ' . $obj->post_name);
+                    }
+                }
+            }
+            
+            // Log is_page results
+            if (function_exists('is_page')) {
+                error_log('GMKB: is_page("guestify-media-kit"): ' . (is_page('guestify-media-kit') ? 'TRUE' : 'FALSE'));
+                error_log('GMKB: is_page("media-kit"): ' . (is_page('media-kit') ? 'TRUE' : 'FALSE'));
+                error_log('GMKB: is_page(46159): ' . (is_page(46159) ? 'TRUE' : 'FALSE')); // The page ID from the HTML
+            }
+        }
+        
+        // ROOT FIX: MOST AGGRESSIVE DETECTION - If URL contains our keywords, FORCE loading
+        $force_load = false;
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $uri = $_SERVER['REQUEST_URI'];
+            if (strpos($uri, 'guestify-media-kit') !== false || 
+                strpos($uri, 'media-kit') !== false ||
+                (isset($_GET['post_id']) && strpos($uri, 'post_id=') !== false)) {
+                $force_load = true;
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: 🔥 FORCE LOAD ACTIVATED - URL contains builder keywords');
+                }
+            }
+        }
+        
+        // ROOT FIX: Check all detection methods
+        $is_builder = $force_load || 
+                      $this->is_builder_page || 
+                      (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE) ||
+                      get_transient('gmkb_builder_page_detected') ||
+                      is_page('guestify-media-kit') ||
+                      is_page('media-kit') ||
+                      is_page(46159); // Page ID from HTML
+        
+        if (!$is_builder) {
+            // Final attempt - check if we're in template redirect context
+            global $gmkb_template_active;
+            if (!empty($gmkb_template_active)) {
+                $is_builder = true;
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: ⚡ Template active global detected');
+                }
+            }
+        }
         
         if (!$is_builder) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB ROOT FIX: Script enqueuing SKIPPED - builder page not detected');
-                error_log('GMKB: Instance variable: ' . ($this->is_builder_page ? 'true' : 'false'));
-                error_log('GMKB: Global constant: ' . (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE ? 'true' : 'false'));
+                error_log('GMKB ROOT FIX: ❌ Script enqueuing SKIPPED - ALL detection methods failed');
+                error_log('========== GMKB SCRIPT ENQUEUE DEBUG END ==========');
             }
             return;
         }
         
-        // ROOT FIX: Log successful script loading trigger
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB ROOT FIX: Script enqueuing TRIGGERED - builder page detected successfully');
+            error_log('GMKB ROOT FIX: ✅ BUILDER PAGE CONFIRMED - PROCEEDING WITH SCRIPT ENQUEUE');
+        }
+        
+        // ROOT FIX: Log successful script loading trigger with details
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: ✅ SCRIPT ENQUEUING TRIGGERED!');
+            error_log('GMKB: Builder page detected successfully');
+            error_log('GMKB: About to enqueue:');
+            error_log('GMKB:   - guestify-media-kit-builder-styles');
+            error_log('GMKB:   - sortable-js');
+            error_log('GMKB:   - guestify-core-systems-bundle');
+            error_log('GMKB:   - guestify-application-bundle');
         }
         
         $this->register_and_enqueue_scripts();
@@ -235,8 +380,31 @@ class GMKB_Enhanced_Script_Manager {
         // ROOT FIX: Only HTML comment - absolutely no JavaScript generation
         echo '<!-- ROOT FIX: All validation eliminated - bundles handle everything with zero polling -->';
         
+        // ROOT FIX: Add debug verification for script output
+        global $wp_scripts;
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB ROOT FIX: ALL inline script generation eliminated - zero setTimeout functions');
+            
+            // Check if scripts are in queue and will be output
+            $scripts_output = array();
+            if ($wp_scripts && isset($wp_scripts->queue)) {
+                if (in_array('guestify-core-systems-bundle', $wp_scripts->queue)) {
+                    $scripts_output[] = 'core-systems-bundle';
+                }
+                if (in_array('guestify-application-bundle', $wp_scripts->queue)) {
+                    $scripts_output[] = 'application-bundle';
+                }
+            }
+            
+            if (!empty($scripts_output)) {
+                echo "\n<!-- GMKB ROOT FIX: ✅ Scripts in footer queue: " . implode(', ', $scripts_output) . " -->\n";
+                error_log('GMKB ROOT FIX: ✅ Scripts will be output in footer: ' . implode(', ', $scripts_output));
+            } else {
+                echo "\n<!-- GMKB ROOT FIX: ❌ WARNING - No scripts in footer queue! Check page detection! -->\n";
+                error_log('GMKB ROOT FIX: ❌ CRITICAL - No scripts in footer queue!');
+                error_log('GMKB: Current URL: ' . ($_SERVER['REQUEST_URI'] ?? 'unknown'));
+                error_log('GMKB: is_builder_page: ' . ($this->is_builder_page ? 'true' : 'false'));
+            }
         }
     }
     
@@ -397,10 +565,24 @@ class GMKB_Enhanced_Script_Manager {
             
             // ROOT FIX: Log successful bundle loading
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB ROOT FIX SUCCESS: WordPress bundles enqueued after proper page detection');
-                error_log('GMKB: Detection timing fix WORKING - scripts loading correctly');
+                error_log('GMKB ROOT FIX SUCCESS: ✅ WordPress bundles enqueued!');
+                error_log('GMKB: Detection fix WORKING - scripts loading correctly');
                 error_log('GMKB: Bundle loading order: SortableJS → Core Systems → Application');
                 error_log('GMKB: Cache-buster: ' . $cache_buster);
+                
+                // ROOT FIX: Verify scripts are actually registered
+                global $wp_scripts;
+                if ($wp_scripts) {
+                    $core_registered = isset($wp_scripts->registered['guestify-core-systems-bundle']);
+                    $app_registered = isset($wp_scripts->registered['guestify-application-bundle']);
+                    error_log('GMKB: Core bundle registered: ' . ($core_registered ? 'YES' : 'NO'));
+                    error_log('GMKB: App bundle registered: ' . ($app_registered ? 'YES' : 'NO'));
+                }
+            }
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: ⚠️ Scripts NOT enqueued - not a builder page');
+                error_log('GMKB: Current URL: ' . ($_SERVER['REQUEST_URI'] ?? 'unknown'));
             }
         }
     }
@@ -609,6 +791,26 @@ class GMKB_Enhanced_Script_Manager {
         }
         
         return $post_id;
+    }
+    
+    /**
+     * ROOT FIX: Force builder page detection - can be called externally
+     * This ensures scripts load when template takeover happens
+     */
+    public function force_builder_page_detection() {
+        $this->is_builder_page = true;
+        
+        // Set transient for persistence
+        set_transient('gmkb_builder_page_detected', true, 60);
+        
+        // Set global constant
+        if (!defined('GMKB_BUILDER_PAGE')) {
+            define('GMKB_BUILDER_PAGE', true);
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: Builder page detection forced externally');
+        }
     }
     
     /**

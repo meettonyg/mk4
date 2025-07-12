@@ -106,6 +106,10 @@ class Guestify_Media_Kit_Builder {
 
     private function init_hooks() {
         add_action( 'init', array( $this, 'load_textdomain' ) );
+        
+        // ROOT FIX: Check for builder page EARLY before scripts enqueue
+        add_action( 'wp', array( $this, 'early_builder_check' ), 1 );
+        
         add_action( 'template_redirect', array( $this, 'isolated_builder_template_takeover' ) );
         add_shortcode( 'guestify_media_kit', array( $this, 'media_kit_shortcode' ) );
         
@@ -126,6 +130,47 @@ class Guestify_Media_Kit_Builder {
     }
 
     /**
+     * ROOT FIX: Early builder page check - runs before wp_enqueue_scripts
+     * This ensures scripts are properly enqueued
+     */
+    public function early_builder_check() {
+        // Check if this is a builder page using multiple methods
+        $is_builder_page = false;
+        
+        // Method 1: URL-based detection
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false) {
+            $is_builder_page = true;
+        }
+        // Method 2: WordPress page detection
+        elseif (is_page('guestify-media-kit') || is_page('media-kit') || is_page(46159)) {
+            $is_builder_page = true;
+        }
+        // Method 3: Query var detection
+        elseif (get_query_var('pagename') === 'guestify-media-kit') {
+            $is_builder_page = true;
+        }
+        // Method 4: Post detection
+        elseif (get_post() && in_array(get_post()->post_name, ['guestify-media-kit', 'media-kit'])) {
+            $is_builder_page = true;
+        }
+        
+        if ($is_builder_page) {
+            // Force script manager to recognize this as a builder page
+            $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
+            $script_manager->force_builder_page_detection();
+            
+            // Set global flag
+            global $gmkb_template_active;
+            $gmkb_template_active = true;
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Early builder check - page detected during wp hook');
+                error_log('GMKB ROOT FIX: Scripts will be properly enqueued');
+            }
+        }
+    }
+    
+    /**
      * ROOT FIX: ENHANCED ISOLATED BUILDER TEMPLATE TAKEOVER
      * - Implements modal loading validation and race condition prevention
      * - Enhanced DOM readiness detection with modal verification
@@ -134,13 +179,59 @@ class Guestify_Media_Kit_Builder {
      * - Clean WordPress-compatible script loading
      */
     public function isolated_builder_template_takeover() {
-        // Enhanced detection with multiple methods
-        $is_builder_page = is_page('guestify-media-kit') || 
-                          is_page('media-kit') ||
-                          (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE);
+        // ROOT FIX: Enhanced detection with URL-based fallback
+        $is_builder_page = false;
+        
+        // Method 1: URL-based detection (most reliable)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false) {
+            $is_builder_page = true;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Template: ✅ Builder page detected via URL: ' . $_SERVER['REQUEST_URI']);
+            }
+        }
+        // Method 2: WordPress page detection
+        elseif (is_page('guestify-media-kit') || is_page('media-kit')) {
+            $is_builder_page = true;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Template: ✅ Builder page detected via is_page()');
+            }
+        }
+        // Method 3: Global constant
+        elseif (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE) {
+            $is_builder_page = true;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Template: ✅ Builder page detected via GMKB_BUILDER_PAGE constant');
+            }
+        }
         
         if (!$is_builder_page) {
+            if (defined('WP_DEBUG') && WP_DEBUG && isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'media-kit') !== false) {
+                error_log('GMKB Template: ❌ Template takeover SKIPPED - detection failed for: ' . $_SERVER['REQUEST_URI']);
+            }
             return;
+        }
+        
+        // ROOT FIX: FORCE SCRIPT LOADING - When template takeover happens, ensure scripts load
+        // This is the critical fix that ensures scripts are enqueued when the template is active
+        $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
+        $script_manager->force_builder_page_detection();
+        
+        // ROOT FIX: Set global flag for script enqueuing
+        global $gmkb_template_active;
+        $gmkb_template_active = true;
+        
+        // ROOT FIX: Also try to enqueue scripts directly if not already done
+        if (!did_action('wp_enqueue_scripts')) {
+            // Hook hasn't fired yet, add with high priority
+            add_action('wp_enqueue_scripts', array($script_manager, 'enqueue_scripts'), 1);
+        } else {
+            // Hook already fired, call directly
+            $script_manager->enqueue_scripts();
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: Template takeover active - forcing script detection');
+            error_log('GMKB ROOT FIX: wp_enqueue_scripts already fired: ' . (did_action('wp_enqueue_scripts') ? 'YES' : 'NO'));
         }
         
         // PHASE 1: Enhanced post_id detection for MKCG integration
@@ -323,6 +414,63 @@ class Guestify_Media_Kit_Builder {
             // - Diagnostic tools (priority 1001)
             // - Modal availability final validation (priority 1002)
             wp_footer();
+            
+            // ROOT FIX: Force output scripts if they weren't printed
+            global $wp_scripts;
+            $core_printed = false;
+            $app_printed = false;
+            
+            if ($wp_scripts && isset($wp_scripts->done) && is_array($wp_scripts->done)) {
+                $core_printed = in_array('guestify-core-systems-bundle', $wp_scripts->done);
+                $app_printed = in_array('guestify-application-bundle', $wp_scripts->done);
+            }
+            
+            if (!$core_printed || !$app_printed) {
+                echo "\n<!-- GMKB ROOT FIX: Manually outputting missing scripts -->\n";
+                
+                // Ensure SortableJS is loaded first
+                if (!in_array('sortable-js', $wp_scripts->done ?? [])) {
+                    echo '<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" id="sortable-js"></script>' . "\n";
+                }
+                
+                if (!$core_printed) {
+                    echo '<script src="' . GUESTIFY_PLUGIN_URL . 'js/core-systems-bundle.js?ver=' . time() . '" id="guestify-core-systems-bundle-js" defer></script>' . "\n";
+                }
+                
+                if (!$app_printed) {
+                    // Add guestifyData if not already added
+                    echo '<script id="guestify-application-bundle-js-extra">' . "\n";
+                    echo 'var guestifyData = ' . json_encode(array(
+                        'ajaxUrl' => admin_url('admin-ajax.php'),
+                        'restUrl' => esc_url_raw(rest_url()),
+                        'siteUrl' => home_url(),
+                        'pluginUrl' => GUESTIFY_PLUGIN_URL,
+                        'nonce' => wp_create_nonce('guestify_media_kit_builder'),
+                        'restNonce' => wp_create_nonce('wp_rest'),
+                        'pluginVersion' => GUESTIFY_VERSION,
+                        'timestamp' => time(),
+                        'builderPage' => true,
+                        'eventDrivenFix' => true,
+                        'consolidatedBundles' => array(
+                            'coreSystemsBundle' => 'guestify-core-systems-bundle',
+                            'applicationBundle' => 'guestify-application-bundle',
+                            'architecture' => 'consolidated-wordpress-bundles',
+                            'raceConditionsFix' => 'implemented'
+                        )
+                    )) . ';' . "\n";
+                    echo '</script>' . "\n";
+                    
+                    echo '<script src="' . GUESTIFY_PLUGIN_URL . 'js/application-bundle.js?ver=' . time() . '" id="guestify-application-bundle-js" defer></script>' . "\n";
+                }
+                
+                echo "<!-- GMKB ROOT FIX: Scripts manually added successfully -->\n";
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: Manually output missing scripts in template footer');
+                }
+            } else {
+                echo "\n<!-- GMKB ROOT FIX: Scripts were properly loaded via WordPress -->\n";
+            }
             ?>
             
             <!-- ROOT FIX PHASE 1: Template completion handled by bundles - no inline scripts -->
