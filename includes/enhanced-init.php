@@ -246,103 +246,23 @@ class GMKB_Enhanced_System {
     }
     
     /**
-     * ROOT FIX: Inject state loading coordination script - NO POLLING
-     * This ensures the enhanced state manager's initializeAfterSystems is called
-     * PURE EVENT-DRIVEN APPROACH - No setTimeout loops
+     * ROOT FIX: Inject state loading coordination script - DISABLED
+     * Bundles handle all coordination - no PHP coordination needed
      */
     public function inject_state_loading_coordination() {
+        // ROOT FIX: DISABLED - bundles handle all coordination
+        return;
+        
         if (!$this->is_builder_page()) {
             return;
         }
         
+        // ROOT FIX: Coordination disabled - output debug info only
         ?>
-        <script id="gmkb-state-loading-coordination">
-            /* ROOT FIX: Enhanced State Loading Coordination - PURE EVENT-DRIVEN */
-            (function() {
-                console.log('🔄 ROOT FIX: Event-driven state loading coordination injected');
-                
-                // ROOT FIX: Pure event-driven approach - NO POLLING
-                function coordinateStateLoadingEventDriven() {
-                    console.log('🎧 ROOT FIX: Starting event-driven coordination');
-                    
-                    // Check immediately if systems are already ready
-                    if (window.enhancedStateManager && 
-                        typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
-                        
-                        console.log('✅ ROOT FIX: Enhanced state manager ready immediately');
-                        window.enhancedStateManager.initializeAfterSystems();
-                        
-                        // Emit success event
-                        window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationComplete', {
-                            detail: {
-                                timestamp: Date.now(),
-                                source: 'immediate-detection',
-                                pollingEliminated: true
-                            }
-                        }));
-                        
-                        return;
-                    }
-                    
-                    // ROOT FIX: Event-driven listener for system readiness
-                    const systemReadyHandler = (event) => {
-                        console.log('🎧 ROOT FIX: Received system ready event:', event.type);
-                        
-                        if (window.enhancedStateManager && 
-                            typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
-                            
-                            console.log('✅ ROOT FIX: Enhanced state manager found via event');
-                            window.enhancedStateManager.initializeAfterSystems();
-                            
-                            // Remove listeners after success
-                            document.removeEventListener('coreSystemsReady', systemReadyHandler);
-                            window.removeEventListener('mediaKitBuilderReady', systemReadyHandler);
-                            
-                            // Emit success event
-                            window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationComplete', {
-                                detail: {
-                                    timestamp: Date.now(),
-                                    source: 'event-driven',
-                                    triggerEvent: event.type,
-                                    pollingEliminated: true
-                                }
-                            }));
-                        }
-                    };
-                    
-                    // Listen for system ready events
-                    document.addEventListener('coreSystemsReady', systemReadyHandler);
-                    window.addEventListener('mediaKitBuilderReady', systemReadyHandler);
-                    
-                    // ROOT FIX: Single backup timeout (NOT polling) - 3 seconds max
-                    setTimeout(() => {
-                        if (!window.enhancedStateManager) {
-                            console.warn('⚠️ ROOT FIX: Systems not ready after 3s - using fallback approach');
-                            
-                            // Try emergency system creation if available
-                            if (typeof window.attemptEmergencySystemCreation === 'function') {
-                                window.attemptEmergencySystemCreation();
-                            }
-                            
-                            // Emit fallback event
-                            window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationFallback', {
-                                detail: {
-                                    timestamp: Date.now(),
-                                    reason: 'timeout-fallback-not-polling'
-                                }
-                            }));
-                        }
-                    }, 3000); // Single timeout, NOT polling
-                }
-                
-                // Start event-driven coordination
-                if (document.readyState === 'complete') {
-                    coordinateStateLoadingEventDriven();
-                } else {
-                    window.addEventListener('load', coordinateStateLoadingEventDriven);
-                }
-                
-            })();
+        <script id="gmkb-state-loading-coordination-disabled">
+            /* ROOT FIX: PHP State Loading Coordination DISABLED */
+            console.log('🚫 ROOT FIX: PHP coordination disabled - bundles handle everything');
+            window.gmkbPHPCoordinationDisabled = true;
         </script>
         <?php
     }
@@ -536,47 +456,15 @@ new GMKB_Enhanced_System();
 // Include enhanced AJAX handlers
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 
-// ROOT FIX: Add action to ensure template completion events are properly dispatched - NO POLLING
+// ROOT FIX: Template completion coordination DISABLED - bundles handle all events
 add_action('wp_footer', function() {
     if (is_page('guestify-media-kit') || is_page('media-kit') || 
         (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE)) {
         ?>
-        <script id="gmkb-template-completion-fix">
-        /* ROOT FIX: Ensure template completion event is dispatched - PURE EVENT-DRIVEN */
-        (function() {
-            if (!window.gmkbTemplateCompleteDispatched) {
-                console.log('🔄 ROOT FIX: Event-driven template completion check');
-                
-                // ROOT FIX: Immediate dispatch if ready, no polling
-                function dispatchTemplateCompleteEvent() {
-                    if (!window.gmkbTemplateCompleteDispatched) {
-                        console.log('✅ ROOT FIX: Dispatching template completion event');
-                        
-                        window.gmkbTemplateCompleteDispatched = true;
-                        document.dispatchEvent(new CustomEvent('gmkbTemplateComplete', {
-                            detail: {
-                                source: 'enhanced-init-event-driven',
-                                timestamp: Date.now(),
-                                allModalsReady: true,
-                                templateVersion: 'enhanced-init-no-polling',
-                                pollingEliminated: true
-                            }
-                        }));
-                    }
-                }
-                
-                // ROOT FIX: Event-driven approach - listen for DOM ready events
-                if (document.readyState === 'complete') {
-                    dispatchTemplateCompleteEvent();
-                } else {
-                    document.addEventListener('DOMContentLoaded', dispatchTemplateCompleteEvent);
-                    window.addEventListener('load', dispatchTemplateCompleteEvent);
-                }
-                
-                // ROOT FIX: Single backup timer (NOT polling) - 1 second max
-                setTimeout(dispatchTemplateCompleteEvent, 1000);
-            }
-        })();
+        <script id="gmkb-template-completion-disabled">
+        /* ROOT FIX: Template completion coordination DISABLED - bundles handle all events */
+        console.log('🚫 ROOT FIX: PHP template completion disabled - bundles handle events');
+        window.gmkbPHPTemplateCompletionDisabled = true;
         </script>
         <?php
     }
