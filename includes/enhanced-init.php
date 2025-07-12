@@ -246,8 +246,9 @@ class GMKB_Enhanced_System {
     }
     
     /**
-     * ROOT FIX: Inject state loading coordination script
+     * ROOT FIX: Inject state loading coordination script - NO POLLING
      * This ensures the enhanced state manager's initializeAfterSystems is called
+     * PURE EVENT-DRIVEN APPROACH - No setTimeout loops
      */
     public function inject_state_loading_coordination() {
         if (!$this->is_builder_page()) {
@@ -256,75 +257,90 @@ class GMKB_Enhanced_System {
         
         ?>
         <script id="gmkb-state-loading-coordination">
-            /* ROOT FIX: Enhanced State Loading Coordination */
+            /* ROOT FIX: Enhanced State Loading Coordination - PURE EVENT-DRIVEN */
             (function() {
-                console.log('🔄 ROOT FIX: State loading coordination injected');
+                console.log('🔄 ROOT FIX: Event-driven state loading coordination injected');
                 
-                // Wait for enhanced state manager to be available
-                function waitForEnhancedStateManager() {
-                    return new Promise((resolve, reject) => {
-                        let attempts = 0;
-                        const maxAttempts = 50; // 5 seconds max
+                // ROOT FIX: Pure event-driven approach - NO POLLING
+                function coordinateStateLoadingEventDriven() {
+                    console.log('🎧 ROOT FIX: Starting event-driven coordination');
+                    
+                    // Check immediately if systems are already ready
+                    if (window.enhancedStateManager && 
+                        typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
                         
-                        function check() {
-                            attempts++;
-                            
-                            if (window.enhancedStateManager && 
-                                typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
-                                console.log('✅ ROOT FIX: Enhanced state manager found, calling initializeAfterSystems');
-                                resolve(window.enhancedStateManager);
-                            } else if (attempts >= maxAttempts) {
-                                console.error('❌ ROOT FIX: Enhanced state manager not found after timeout');
-                                reject(new Error('Enhanced state manager not available'));
-                            } else {
-                                setTimeout(check, 100);
-                            }
-                        }
+                        console.log('✅ ROOT FIX: Enhanced state manager ready immediately');
+                        window.enhancedStateManager.initializeAfterSystems();
                         
-                        check();
-                    });
-                }
-                
-                // Coordinate state loading after all systems are ready
-                async function coordinateStateLoading() {
-                    try {
-                        const stateManager = await waitForEnhancedStateManager();
-                        
-                        // Call the critical initializeAfterSystems method
-                        await stateManager.initializeAfterSystems();
-                        
-                        console.log('🎉 ROOT FIX: State loading coordination completed successfully');
-                        
-                        // Emit coordination complete event
+                        // Emit success event
                         window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationComplete', {
                             detail: {
                                 timestamp: Date.now(),
-                                source: 'php-coordination'
+                                source: 'immediate-detection',
+                                pollingEliminated: true
                             }
                         }));
                         
-                    } catch (error) {
-                        console.error('❌ ROOT FIX: State loading coordination failed:', error);
-                        
-                        // Emit failure event
-                        window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationFailed', {
-                            detail: {
-                                error: error.message,
-                                timestamp: Date.now()
-                            }
-                        }));
+                        return;
                     }
+                    
+                    // ROOT FIX: Event-driven listener for system readiness
+                    const systemReadyHandler = (event) => {
+                        console.log('🎧 ROOT FIX: Received system ready event:', event.type);
+                        
+                        if (window.enhancedStateManager && 
+                            typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
+                            
+                            console.log('✅ ROOT FIX: Enhanced state manager found via event');
+                            window.enhancedStateManager.initializeAfterSystems();
+                            
+                            // Remove listeners after success
+                            document.removeEventListener('coreSystemsReady', systemReadyHandler);
+                            window.removeEventListener('mediaKitBuilderReady', systemReadyHandler);
+                            
+                            // Emit success event
+                            window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationComplete', {
+                                detail: {
+                                    timestamp: Date.now(),
+                                    source: 'event-driven',
+                                    triggerEvent: event.type,
+                                    pollingEliminated: true
+                                }
+                            }));
+                        }
+                    };
+                    
+                    // Listen for system ready events
+                    document.addEventListener('coreSystemsReady', systemReadyHandler);
+                    window.addEventListener('mediaKitBuilderReady', systemReadyHandler);
+                    
+                    // ROOT FIX: Single backup timeout (NOT polling) - 3 seconds max
+                    setTimeout(() => {
+                        if (!window.enhancedStateManager) {
+                            console.warn('⚠️ ROOT FIX: Systems not ready after 3s - using fallback approach');
+                            
+                            // Try emergency system creation if available
+                            if (typeof window.attemptEmergencySystemCreation === 'function') {
+                                window.attemptEmergencySystemCreation();
+                            }
+                            
+                            // Emit fallback event
+                            window.dispatchEvent(new CustomEvent('gmkbStateLoadingCoordinationFallback', {
+                                detail: {
+                                    timestamp: Date.now(),
+                                    reason: 'timeout-fallback-not-polling'
+                                }
+                            }));
+                        }
+                    }, 3000); // Single timeout, NOT polling
                 }
                 
-                // Start coordination when DOM is ready or systems are initialized
+                // Start event-driven coordination
                 if (document.readyState === 'complete') {
-                    coordinateStateLoading();
+                    coordinateStateLoadingEventDriven();
                 } else {
-                    window.addEventListener('load', coordinateStateLoading);
+                    window.addEventListener('load', coordinateStateLoadingEventDriven);
                 }
-                
-                // Also listen for system initialization events
-                window.addEventListener('mediaKitBuilderReady', coordinateStateLoading);
                 
             })();
         </script>
@@ -520,32 +536,45 @@ new GMKB_Enhanced_System();
 // Include enhanced AJAX handlers
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 
-// ROOT FIX: Add action to ensure template completion events are properly dispatched
+// ROOT FIX: Add action to ensure template completion events are properly dispatched - NO POLLING
 add_action('wp_footer', function() {
     if (is_page('guestify-media-kit') || is_page('media-kit') || 
         (defined('GMKB_BUILDER_PAGE') && GMKB_BUILDER_PAGE)) {
         ?>
         <script id="gmkb-template-completion-fix">
-        /* ROOT FIX: Ensure template completion event is dispatched */
+        /* ROOT FIX: Ensure template completion event is dispatched - PURE EVENT-DRIVEN */
         (function() {
             if (!window.gmkbTemplateCompleteDispatched) {
-                console.log('🔄 ROOT FIX: Ensuring template completion event dispatch');
+                console.log('🔄 ROOT FIX: Event-driven template completion check');
                 
-                setTimeout(() => {
+                // ROOT FIX: Immediate dispatch if ready, no polling
+                function dispatchTemplateCompleteEvent() {
                     if (!window.gmkbTemplateCompleteDispatched) {
-                        console.log('✅ ROOT FIX: Dispatching missing template completion event');
+                        console.log('✅ ROOT FIX: Dispatching template completion event');
                         
                         window.gmkbTemplateCompleteDispatched = true;
                         document.dispatchEvent(new CustomEvent('gmkbTemplateComplete', {
                             detail: {
-                                source: 'enhanced-init-fallback',
+                                source: 'enhanced-init-event-driven',
                                 timestamp: Date.now(),
                                 allModalsReady: true,
-                                templateVersion: 'enhanced-init-fixed'
+                                templateVersion: 'enhanced-init-no-polling',
+                                pollingEliminated: true
                             }
                         }));
                     }
-                }, 500); // Give normal dispatch a chance first
+                }
+                
+                // ROOT FIX: Event-driven approach - listen for DOM ready events
+                if (document.readyState === 'complete') {
+                    dispatchTemplateCompleteEvent();
+                } else {
+                    document.addEventListener('DOMContentLoaded', dispatchTemplateCompleteEvent);
+                    window.addEventListener('load', dispatchTemplateCompleteEvent);
+                }
+                
+                // ROOT FIX: Single backup timer (NOT polling) - 1 second max
+                setTimeout(dispatchTemplateCompleteEvent, 1000);
             }
         })();
         </script>
