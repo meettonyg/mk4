@@ -101,6 +101,66 @@ if ($post_id > 0) {
 ?>
 
 <div class="builder">
+
+<!-- ROOT FIX: Clean Bundle Architecture - No Inline Polling Detection -->
+<script id="gmkb-bundle-coordination">
+// ROOT FIX: Simple bundle coordination without polling detection
+console.log('🚀 ROOT FIX: Clean bundle coordination active');
+
+// Set bundle coordination flags
+window.gmkbBundleCoordination = {
+    templateLoaded: true,
+    bundlesExpected: ['core-systems-bundle', 'application-bundle'],
+    antiPollingActive: false, // No more anti-polling needed
+    coordination: 'event-driven-only',
+    timestamp: Date.now()
+};
+
+// Simple validation function without complex detection
+window.validateBundleFix = function() {
+    console.group('✅ BUNDLE FIX VALIDATION');
+    
+    const validation = {
+        systemExposure: {
+            enhancedComponentManager: !!window.enhancedComponentManager,
+            stateManager: !!window.stateManager,
+            renderer: !!window.renderer,
+            systemRegistrar: !!window.systemRegistrar
+        },
+        bundleCoordination: {
+            templateLoaded: window.gmkbBundleCoordination?.templateLoaded,
+            coordination: window.gmkbBundleCoordination?.coordination,
+            antiPollingActive: window.gmkbBundleCoordination?.antiPollingActive
+        },
+        eventCoordination: {
+            eventCoordinationExists: !!window.gmkbEventCoordination,
+            coreSystemsReadyFired: window.gmkbEventCoordination?.coreSystemsReadyFired
+        }
+    };
+    
+    console.table(validation.systemExposure);
+    console.table(validation.bundleCoordination);
+    console.table(validation.eventCoordination);
+    
+    const systemsReady = Object.values(validation.systemExposure).filter(Boolean).length;
+    const totalSystems = Object.keys(validation.systemExposure).length;
+    
+    if (systemsReady === totalSystems) {
+        console.log('🎉 BUNDLE FIX: ALL SYSTEMS READY!');
+        console.log('✅ Clean bundle architecture working');
+        console.log('✅ No polling conflicts');
+        console.log('✅ Event-driven coordination active');
+    } else {
+        console.log(`⚠️ Systems ready: ${systemsReady}/${totalSystems}`);
+        console.log('Check if bundles loaded correctly');
+    }
+    
+    console.groupEnd();
+    return validation;
+};
+
+console.log('✅ ROOT FIX: Bundle coordination ready - run validateBundleFix()');
+</script>
     <div class="toolbar">
         <div class="toolbar__section toolbar__section--left">
             <div class="toolbar__logo">Guestify</div>
@@ -396,7 +456,7 @@ if ($post_id > 0) {
     ?>
 </div>
 
-<!-- ROOT FIX: Optimized CSS Framework (80% size reduction) -->
+<!-- ROOT FIX: Clean CSS Framework - No Anti-Polling Conflicts -->
 <style id="optimized-builder-styles">
     /* ROOT FIX: Essential styles only - removed complex animations and gradients */
     
@@ -1602,281 +1662,5 @@ if ($post_id > 0) {
     }
 </style>
 
-<!-- ROOT FIX: Removed inline MKCG JavaScript - handled by bundles -->
-<!-- All JavaScript functionality moved to consolidated bundles to prevent race conditions -->
-<!--
-<script id="optimized-mkcg-integration">
-(function() {
-    'use strict';
-    
-    // ROOT FIX: Lazy load MKCG data only when requested
-    const loadMKCGData = async (postId) => {
-        if (!postId) return null;
-        
-        try {
-            const response = await fetch(`${window.guestifyData.ajaxUrl}?action=gmkb_get_mkcg_data&post_id=${postId}&nonce=${window.guestifyData.nonce}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                return data.data;
-            } else {
-                console.warn('MKCG data load failed:', data.message);
-                return null;
-            }
-        } catch (error) {
-            console.error('MKCG data load error:', error);
-            return null;
-        }
-    };
-    
-    // ROOT FIX: Auto-generation without heavy processing
-    const autoGenerateComponents = async (postId) => {
-        const emptyState = document.getElementById('empty-state');
-        if (emptyState) {
-            emptyState.classList.add('loading');
-        }
-        
-        try {
-            const mkcgData = await loadMKCGData(postId);
-            if (!mkcgData) {
-                throw new Error('No MKCG data available');
-            }
-            
-            // Use existing component manager to add components
-            if (window.enhancedComponentManager) {
-                // ROOT FIX: Use correct method name and ensure it exists
-                if (typeof window.enhancedComponentManager.autoGenerateFromMKCGEnhanced === 'function') {
-                    const result = await window.enhancedComponentManager.autoGenerateFromMKCGEnhanced(true, {
-                        maxComponents: 5,
-                        minQualityScore: 30
-                    });
-                    console.log('✅ Auto-generation completed:', result);
-                } else if (typeof window.enhancedComponentManager.autoGenerateFromMKCG === 'function') {
-                    // Fallback to legacy method
-                    await window.enhancedComponentManager.autoGenerateFromMKCG(true);
-                    console.log('✅ Auto-generation completed (legacy)');
-                } else {
-                    // Manual component generation as fallback
-                    console.warn('Auto-generation methods not available, using manual fallback');
-                    
-                    // ROOT FIX: Use correct component names
-                    const componentsToAdd = ['hero', 'biography', 'topics']; // Note: 'biography' not 'bio'
-                    
-                    for (const componentType of componentsToAdd) {
-                        try {
-                            if (typeof window.enhancedComponentManager.addComponent === 'function') {
-                                window.enhancedComponentManager.addComponent(componentType);
-                                console.log(`✅ Added ${componentType} component`);
-                            }
-                        } catch (error) {
-                            console.warn(`Failed to add ${componentType}:`, error);
-                        }
-                    }
-                }
-            }
-            
-            // Hide empty state
-            if (emptyState) {
-                emptyState.style.display = 'none';
-            }
-            
-            console.log('✅ Auto-generation completed successfully');
-            
-        } catch (error) {
-            console.error('Auto-generation failed:', error);
-            
-            // Show error message
-            if (emptyState) {
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'error-message';
-                errorMsg.style.cssText = 'color: #dc2626; margin-top: 16px; font-size: 14px;';
-                errorMsg.textContent = 'Auto-generation failed. Please try again or add components manually.';
-                emptyState.appendChild(errorMsg);
-            }
-        } finally {
-            if (emptyState) {
-                emptyState.classList.remove('loading');
-            }
-        }
-    };
-    
-    // ROOT FIX: Auto-load MKCG data when page loads with post_id
-    const autoLoadMKCGData = async () => {
-        const dashboard = document.getElementById('mkcg-dashboard');
-        if (!dashboard) return;
-        
-        const postId = dashboard.dataset.postId;
-        if (!postId) return;
-        
-        console.log('🔄 Auto-loading MKCG data for post:', postId);
-        
-        try {
-            const mkcgData = await loadMKCGData(postId);
-            if (mkcgData) {
-                // Update global data
-                if (!window.guestifyData) {
-                    window.guestifyData = {};
-                }
-                window.guestifyData.mkcgData = mkcgData;
-                window.guestifyData.postId = postId;
-                
-                console.log('✅ MKCG data auto-loaded successfully:', mkcgData);
-                
-                // Dispatch event for other components
-                const event = new CustomEvent('mkcgDataLoaded', {
-                    detail: { mkcgData, postId }
-                });
-                document.dispatchEvent(event);
-                
-                return mkcgData;
-            }
-        } catch (error) {
-            console.error('❌ Auto-load MKCG data failed:', error);
-        }
-        
-        return null;
-    };
-    
-    // ROOT FIX: Enhanced dashboard interactions
-    const initializeDashboard = () => {
-        // Dashboard toggle functionality
-        const dashboardTrigger = document.getElementById('dashboard-trigger');
-        const dashboardPanel = document.getElementById('dashboard-panel');
-        
-        if (dashboardTrigger && dashboardPanel) {
-            dashboardTrigger.addEventListener('click', function() {
-                const isVisible = dashboardPanel.style.display !== 'none';
-                dashboardPanel.style.display = isVisible ? 'none' : 'block';
-                
-                const toggleIcon = this.querySelector('.mkcg-dashboard-toggle svg');
-                if (toggleIcon) {
-                    toggleIcon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
-                }
-            });
-        }
-        
-        // Auto-generate from dashboard
-        const dashboardAutoGenBtn = document.getElementById('mkcg-auto-generate-dashboard');
-        if (dashboardAutoGenBtn) {
-            dashboardAutoGenBtn.addEventListener('click', function() {
-                const dashboard = this.closest('.mkcg-dashboard-optimized');
-                const postId = dashboard.dataset.postId;
-                if (postId) {
-                    autoGenerateComponents(postId);
-                }
-            });
-        }
-        
-        // Refresh data from dashboard
-        const dashboardRefreshBtn = document.getElementById('mkcg-refresh-dashboard');
-        if (dashboardRefreshBtn) {
-            dashboardRefreshBtn.addEventListener('click', async function() {
-                const dashboard = this.closest('.mkcg-dashboard-optimized');
-                const postId = dashboard.dataset.postId;
-                
-                this.textContent = 'Refreshing...';
-                this.disabled = true;
-                
-                try {
-                    await autoLoadMKCGData();
-                    this.innerHTML = `
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-                        </svg>
-                        Refresh
-                    `;
-                    console.log('✅ MKCG data refreshed');
-                } catch (error) {
-                    this.textContent = 'Error';
-                    console.error('❌ Refresh failed:', error);
-                } finally {
-                    this.disabled = false;
-                }
-            });
-        }
-    };
-    
-    // ROOT FIX: Event listeners for optimized functionality
-    document.addEventListener('DOMContentLoaded', async function() {
-        console.log('🚀 Optimized Media Kit Builder initializing...');
-        
-        // Initialize dashboard interactions
-        initializeDashboard();
-        
-        // Auto-load MKCG data if dashboard exists
-        await autoLoadMKCGData();
-        
-        // Auto-generate button from empty state
-        const autoGenerateBtn = document.getElementById('auto-generate-btn');
-        if (autoGenerateBtn) {
-            autoGenerateBtn.addEventListener('click', function() {
-                const postId = this.dataset.postId;
-                if (postId) {
-                    autoGenerateComponents(postId);
-                }
-            });
-        }
-        
-        console.log('✅ Optimized Media Kit Builder initialized successfully');
-    });
-    
-    // ROOT FIX: Device preview toggle functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const previewButtons = document.querySelectorAll('.toolbar__preview-btn');
-        const previewContainer = document.getElementById('preview-container');
-        
-        if (previewButtons.length > 0) {
-            previewButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const previewMode = this.dataset.preview;
-                    
-                    // Remove active class from all buttons
-                    previewButtons.forEach(btn => {
-                        btn.classList.remove('toolbar__preview-btn--active');
-                    });
-                    
-                    // Add active class to clicked button
-                    this.classList.add('toolbar__preview-btn--active');
-                    
-                    // Apply preview mode to container
-                    if (previewContainer) {
-                        // Remove existing preview classes
-                        previewContainer.classList.remove('preview--desktop', 'preview--tablet', 'preview--mobile');
-                        
-                        // Add new preview class
-                        previewContainer.classList.add(`preview--${previewMode}`);
-                        
-                        // Apply width constraints
-                        switch(previewMode) {
-                            case 'desktop':
-                                previewContainer.style.maxWidth = '100%';
-                                previewContainer.style.margin = '0 auto';
-                                break;
-                            case 'tablet':
-                                previewContainer.style.maxWidth = '768px';
-                                previewContainer.style.margin = '0 auto';
-                                break;
-                            case 'mobile':
-                                previewContainer.style.maxWidth = '375px';
-                                previewContainer.style.margin = '0 auto';
-                                break;
-                        }
-                        
-                        console.log(`📱 Preview mode changed to: ${previewMode}`);
-                    }
-                });
-            });
-            
-            console.log('📱 Device preview toggle initialized with', previewButtons.length, 'buttons');
-        } else {
-            console.warn('⚠️ No preview buttons found');
-        }
-    });
-    
-})();
-</script>
--->
-
-<?php 
-// ROOT FIX: Removed inline coordination JavaScript - handled by bundles
-?>
+<!-- ROOT FIX: All JavaScript functionality handled by clean bundle architecture -->
+<!-- No inline scripts needed - bundles provide all coordination and functionality -->

@@ -77,16 +77,25 @@ class Guestify_Media_Kit_Builder {
             require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
         }
         
-        // 7. REST API endpoints
+        // 7. ROOT FIX: POLLING DETECTION DISABLED - Was causing race conditions
+        // The polling detector was injecting polling functions that caused timeout errors
+        // Debug code was creating the very problem it was meant to detect
+        // ALL polling eliminated - bundles now use pure event-driven coordination
+        if (defined('GMKB_ENABLE_POLLING_DEBUG') && GMKB_ENABLE_POLLING_DEBUG) {
+            // Only enable via explicit constant, not WP_DEBUG
+            require_once GUESTIFY_PLUGIN_DIR . 'includes/polling-detector-injector.php';
+        }
+        
+        // 8. REST API endpoints
         require_once GUESTIFY_PLUGIN_DIR . 'includes/api/rest-api-templates.php';
         
-        // 8. Initialize component system
+        // 9. Initialize component system
         $this->component_discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components');
         $this->component_discovery->scan();
         $this->component_loader = new ComponentLoader(GUESTIFY_PLUGIN_DIR . 'components', $this->component_discovery);
         $this->design_panel = new DesignPanel(GUESTIFY_PLUGIN_DIR . 'components');
         
-        // 9. Initialize hooks
+        // 10. Initialize hooks
         $this->init_hooks();
         
         // ROOT FIX: Log clean WordPress-compatible initialization

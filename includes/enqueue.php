@@ -302,7 +302,7 @@ class GMKB_Enhanced_Script_Manager {
      */
     private function register_and_enqueue_scripts() {
         $plugin_url = GUESTIFY_PLUGIN_URL;
-        $version = GUESTIFY_VERSION . '-root-fix-wp-deps';
+        $version = GUESTIFY_VERSION . '-root-fix-anti-polling-' . time();
 
         // Styles registration with critical CSS
         wp_register_style(
@@ -336,7 +336,7 @@ class GMKB_Enhanced_Script_Manager {
             'guestify-core-systems-bundle',
             $plugin_url . 'js/core-systems-bundle.js',
             array('sortable-js'), // Only depends on SortableJS
-            $version . '-race-condition-fix',
+            $version . '-cache-bust-' . wp_rand(1000, 9999),
             true // Load in footer
         );
         
@@ -346,7 +346,7 @@ class GMKB_Enhanced_Script_Manager {
             'guestify-application-bundle',
             $plugin_url . 'js/application-bundle.js',
             array('guestify-core-systems-bundle'), // Depends on core systems
-            $version . '-race-condition-fix',
+            $version . '-cache-bust-' . wp_rand(1000, 9999),
             true // Load in footer
         );
 

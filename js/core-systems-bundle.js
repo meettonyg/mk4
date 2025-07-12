@@ -897,4 +897,54 @@
     
     console.log('🎉 ROOT FIX: Core Systems Bundle loaded successfully');
     
+    // ROOT FIX: ANTI-POLLING PROTECTION - Block any legacy cached functions
+    (function() {
+        console.log('🚫 ROOT FIX: Installing anti-polling protection...');
+        
+        // Block known polling functions that might exist in cache
+        const legacyPollingFunctions = [
+            'waitForEnhancedSystems',
+            'checkEnhancedStateManager', 
+            'waitForStateManager',
+            'pollForSystems',
+            'checkSystemReady',
+            'coordinateStateLoading'
+        ];
+        
+        legacyPollingFunctions.forEach(funcName => {
+            if (window[funcName]) {
+                console.warn(`🚫 ROOT FIX: Blocking legacy polling function: ${funcName}`);
+                const originalFunc = window[funcName];
+                
+                window[funcName] = function(...args) {
+                    console.error(`🚫 BLOCKED: Legacy polling function ${funcName} called (from cache)`);
+                    console.error(`🚫 This function has been disabled to prevent setTimeout loops`);
+                    
+                    // Instead of polling, just return success if systems are ready
+                    if (window.enhancedComponentManager && window.stateManager && window.renderer) {
+                        console.log(`✅ Systems already ready - no polling needed`);
+                        return Promise.resolve({
+                            source: 'anti-polling-bypass',
+                            systems: {
+                                enhancedComponentManager: true,
+                                stateManager: true,
+                                renderer: true
+                            },
+                            blocked: funcName
+                        });
+                    }
+                    
+                    return Promise.reject(new Error(`Function ${funcName} blocked - use event-driven approach`));
+                };
+            }
+        });
+        
+        console.log('✅ ROOT FIX: Anti-polling protection installed successfully');
+        
+        // ROOT FIX: Cache-busting message
+        console.warn('⚠️ ROOT FIX: If you still see polling errors, clear your browser cache completely!');
+        console.warn('⚠️ ROOT FIX: The polling is likely from cached JavaScript files!');
+        console.log('🏆 ROOT FIX: Core systems bundle - anti-polling protection active!');
+    })();
+    
 })(); // End IIFE wrapper

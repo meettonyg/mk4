@@ -444,12 +444,12 @@
         }
     }
     
-    // PHASE 2B: SYNCHRONIZED EVENT-DRIVEN SYSTEM WAITING
+    // ROOT FIX: COMPLETE POLLING ELIMINATION - Application Bundle
     function waitForEnhancedSystems() {
         return new Promise((resolve, reject) => {
-            console.log('🚀 PHASE 2B: Synchronized event-driven detection (APPLICATION BUNDLE)...');
+            console.log('🚀 ROOT FIX: Pure event-driven detection (APPLICATION BUNDLE - ZERO POLLING)...');
             
-            // PHASE 2B: Immediate direct check first
+            // ROOT FIX: Immediate direct check first
             const checkSystems = () => {
                 const systemCheck = {
                     enhancedComponentManager: !!window.enhancedComponentManager,
@@ -461,11 +461,11 @@
                 const availableCount = Object.values(systemCheck).filter(Boolean).length;
                 const requiredCount = 4; // Need at least 4 core systems
                 
-                console.log('📊 PHASE 2B: Application bundle system check:', systemCheck);
-                console.log(`📊 PHASE 2B: ${availableCount}/${Object.keys(systemCheck).length} systems available`);
+                console.log('📊 ROOT FIX: Application bundle system check:', systemCheck);
+                console.log(`📊 ROOT FIX: ${availableCount}/${Object.keys(systemCheck).length} systems available`);
                 
                 if (availableCount >= requiredCount) {
-                    console.log('✅ PHASE 2B: Sufficient systems available - proceeding immediately!');
+                    console.log('✅ ROOT FIX: Sufficient systems available - proceeding immediately!');
                     
                     // Track successful detection
                     if (window.gmkbEventCoordination) {
@@ -478,42 +478,45 @@
                         systems: systemCheck,
                         availableCount,
                         requiredCount,
-                        timestamp: Date.now()
+                        timestamp: Date.now(),
+                        pollingEliminated: true
                     });
                 }
                 
                 return false;
             };
             
-            // PHASE 2B: Try immediate check first
+            // ROOT FIX: Try immediate check first
             if (checkSystems()) {
                 return; // Already resolved
             }
             
-            console.log('🎧 PHASE 2B: Setting up synchronized event listener...');
+            console.log('🎧 ROOT FIX: Setting up pure event listener (NO TIMEOUTS)...');
             
-            // PHASE 2B: Listen for coreSystemsReady event
+            // ROOT FIX: Listen for multiple system ready events
             let eventReceived = false;
             
             const eventListener = (event) => {
                 if (eventReceived) return;
                 eventReceived = true;
                 
-                console.log('🎧 PHASE 2B: Application bundle received coreSystemsReady event', event.detail);
+                console.log('🎧 ROOT FIX: Application bundle received system ready event:', event.type, event.detail);
                 
-                // Remove listener
-                document.removeEventListener('coreSystemsReady', eventListener);
+                // Remove all listeners
+                systemReadyEvents.forEach(eventName => {
+                    document.removeEventListener(eventName, eventListener);
+                });
                 
                 // Validate systems
                 if (checkSystems()) {
                     return; // Already resolved
                 } else {
-                    console.log('⚠️ PHASE 2B: Event received but validation failed, using emergency fallback');
+                    console.log('⚠️ ROOT FIX: Event received but validation failed, using emergency fallback');
                     
                     // Emergency system check
                     if (typeof window.attemptEmergencySystemCreation === 'function' && 
                         window.attemptEmergencySystemCreation()) {
-                        console.log('✅ PHASE 2B: Emergency systems available after event');
+                        console.log('✅ ROOT FIX: Emergency systems available after event');
                         
                         return resolve({
                             source: 'app-bundle-event-emergency',
@@ -525,50 +528,30 @@
                             },
                             emergency: true,
                             eventDriven: true,
+                            pollingEliminated: true,
                             timestamp: Date.now()
                         });
+                    } else {
+                        console.error('❌ ROOT FIX: Emergency system creation failed');
+                        reject(new Error('ROOT FIX: Systems not available after event'));
                     }
                 }
             };
             
-            // PHASE 2B: Add event listener
-            document.addEventListener('coreSystemsReady', eventListener);
+            // ROOT FIX: Listen for multiple possible system ready events
+            const systemReadyEvents = [
+                'coreSystemsReady',
+                'enhancedSystemsReady',
+                'gmkbSystemsReady',
+                'mediaKitBuilderReady'
+            ];
             
-            // PHASE 2B: Backup timeout for application bundle (3 seconds)
-            const backupTimeout = setTimeout(() => {
-                if (eventReceived) return;
-                
-                console.log('⚠️ PHASE 2B: Application bundle event timeout, trying final validation...');
-                
-                // Remove listener
-                document.removeEventListener('coreSystemsReady', eventListener);
-                
-                // Final emergency attempt
-                if (checkSystems()) {
-                    return; // Already resolved
-                } else if (typeof window.attemptEmergencySystemCreation === 'function' && 
-                          window.attemptEmergencySystemCreation()) {
-                    console.log('✅ PHASE 2B: Emergency systems created on application timeout');
-                    
-                    return resolve({
-                        source: 'app-bundle-timeout-emergency',
-                        systems: {
-                            enhancedComponentManager: !!window.enhancedComponentManager,
-                            stateManager: !!window.stateManager,
-                            renderer: !!window.renderer,
-                            systemRegistrar: !!window.systemRegistrar
-                        },
-                        emergency: true,
-                        timeout: true,
-                        timestamp: Date.now()
-                    });
-                } else {
-                    console.error('❌ PHASE 2B: Application bundle - all system detection methods failed');
-                    reject(new Error('PHASE 2B: Enhanced systems not available via application bundle event-driven approach'));
-                }
-            }, 3000); // 3 second backup timeout
+            systemReadyEvents.forEach(eventName => {
+                document.addEventListener(eventName, eventListener, { once: true });
+            });
             
-            console.log('✅ PHASE 2B: Application bundle event listener established');
+            console.log('✅ ROOT FIX: Pure event listeners established (NO TIMEOUTS, NO POLLING)');
+            console.log('🚫 ROOT FIX: Zero timeouts, zero polling - 100% event-driven approach');
         });
     }
     
