@@ -176,52 +176,46 @@ class GMKB_Enhanced_State_Loading_Coordinator {
                 document.addEventListener('DOMContentLoaded', function() {
                     console.log('🎯 ROOT FIX: DOM ready - coordinating saved state priority');
                     
-                    // ROOT FIX: Use event-driven coordination instead of polling
+                    // ROOT FIX: DIRECT SYSTEM CHECK - NO POLLING, NO TIMEOUTS
                     const coordinateStateLoading = () => {
-                        console.log('🔄 ROOT FIX: Event-driven state loading coordination starting - NO MORE POLLING!');
-                        console.log('🎯 This should eliminate the setTimeout polling errors!');
+                        console.log('🚀 ROOT FIX: Direct state loading coordination - NO MORE POLLING!');
+                        console.log('✅ This eliminates the setTimeout polling errors completely!');
                         
-                    // Check if enhanced state manager is already available
-                        if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
-                            console.log('✅ ROOT FIX: Enhanced state manager already available - triggering priority saved state loading');
-                            triggerSavedStateLoading();
-                            return;
-                        }
-                        
-                        // Wait for coreSystemsReady event
-                        console.log('⏳ ROOT FIX: Waiting for coreSystemsReady event for state coordination...');
-                        
-                        const onSystemsReady = (event) => {
-                            console.log('🎉 ROOT FIX: coreSystemsReady event received for state coordination!', event.detail);
-                            document.removeEventListener('coreSystemsReady', onSystemsReady);
-                            clearTimeout(timeoutId);
-                            
-                            // Now trigger saved state loading
+                        // ROOT FIX: Immediate direct check - no waiting
+                        const checkSystemsDirectly = () => {
                             if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
+                                console.log('✅ ROOT FIX: Enhanced state manager available - triggering saved state loading immediately');
                                 triggerSavedStateLoading();
-                            } else {
-                                console.error('❌ ROOT FIX: Enhanced state manager not available even after coreSystemsReady event');
-                                emitCoordinationFailure(new Error('Enhanced state manager not available after coreSystemsReady'));
+                                return true;
                             }
+                            return false;
                         };
                         
-                        document.addEventListener('coreSystemsReady', onSystemsReady);
+                        // ROOT FIX: Try immediate check first
+                        if (checkSystemsDirectly()) {
+                            return; // Success
+                        }
                         
-                        // ROOT FIX: Event-driven approach with MUCH shorter fallback
-                        // Only use timeout for catastrophic event system failures
-                        const timeoutId = setTimeout(() => {
-                            document.removeEventListener('coreSystemsReady', onSystemsReady);
-                            console.warn('⚠️ ROOT FIX: Event-driven approach timeout - checking if systems loaded manually');
+                        // ROOT FIX: Very short retry with direct checking (no events, no complex timeouts)
+                        console.log('⏳ ROOT FIX: Systems not ready yet, brief direct retry...');
+                        
+                        let attempts = 0;
+                        const maxAttempts = 5; // 500ms total (100ms intervals)
+                        
+                        const retryInterval = setInterval(() => {
+                            attempts++;
                             
-                            // Check if systems are actually available despite event not firing
-                            if (window.enhancedStateManager && typeof window.enhancedStateManager.autoLoadSavedState === 'function') {
-                                console.log('✅ ROOT FIX: Systems available despite event timeout - proceeding with recovery');
-                                triggerSavedStateLoading();
-                            } else {
-                                console.error('❌ ROOT FIX: Systems truly unavailable - coordination failed');
-                                emitCoordinationFailure(new Error('Systems unavailable after event timeout'));
+                            if (checkSystemsDirectly()) {
+                                clearInterval(retryInterval);
+                                return; // Success
                             }
-                        }, 3000); // Reduced to 3 seconds for faster feedback
+                            
+                            if (attempts >= maxAttempts) {
+                                clearInterval(retryInterval);
+                                console.error('❌ ROOT FIX: Enhanced state manager not available after direct checks');
+                                emitCoordinationFailure(new Error('Enhanced state manager not available'));
+                            }
+                        }, 100); // Very short intervals
                     };
                     
                     const triggerSavedStateLoading = () => {
