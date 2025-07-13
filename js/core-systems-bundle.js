@@ -135,23 +135,18 @@
                 componentIds.forEach(componentId => {
                     const componentData = state.components[componentId];
                     const componentEl = document.createElement('div');
-                    componentEl.className = 'media-kit-component mk-component';
+                    componentEl.className = 'media-kit-component mk-component component-loading';
                     componentEl.id = componentId;
+                    
+                    // Create loading placeholder while component HTML loads
                     componentEl.innerHTML = `
-                        <div class="component-header">
-                            <h3>${componentData.type || 'Component'}</h3>
-                            <div class="component-controls">
-                                <button onclick="window.componentManager?.removeComponent('${componentId}')" class="remove-btn">Remove</button>
-                            </div>
-                        </div>
-                        <div class="component-content">
-                            <p><strong>Type:</strong> ${componentData.type || 'Unknown'}</p>
-                            <p><strong>ID:</strong> ${componentId}</p>
-                            ${componentData.data ? `<p><strong>Data:</strong> ${JSON.stringify(componentData.data)}</p>` : ''}
+                        <div class="component-loading-state">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">Loading ${componentData.type}...</div>
                         </div>
                     `;
                     
-                    // Add basic component styling
+                    // Add component styling
                     componentEl.style.cssText = `
                         background: white;
                         border: 2px solid #e2e8f0;
@@ -160,20 +155,99 @@
                         margin: 16px 0;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                         position: relative;
-                        transition: border-color 0.2s ease;
+                        transition: all 0.2s ease;
+                        min-height: 100px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
                     `;
                     
-                    // Add hover effect
-                    componentEl.addEventListener('mouseenter', () => {
-                        componentEl.style.borderColor = '#3b82f6';
-                    });
-                    componentEl.addEventListener('mouseleave', () => {
-                        componentEl.style.borderColor = '#e2e8f0';
-                    });
                     appContainer.appendChild(componentEl);
+                    
+                    // Load the actual component HTML via AJAX
+                    this.loadComponentHTML(componentId, componentData);
                 });
                 console.log(`✅ Rendered ${componentIds.length} components.`);
             }
+        },
+        
+        loadComponentHTML(componentId, componentData) {
+            if (!window.guestifyData) {
+                console.error('Guestify data not available for AJAX call');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'guestify_render_component');
+            formData.append('component', componentData.type);
+            formData.append('props', JSON.stringify({
+                componentId: componentId,
+                name: componentData.data?.title || `New ${componentData.type}`,
+                title: componentData.data?.subtitle || 'Professional Title',
+                bio: componentData.data?.description || 'Add your description here',
+                ...componentData.data
+            }));
+            formData.append('nonce', window.guestifyData.nonce);
+            
+            fetch(window.guestifyData.ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data && data.data.html) {
+                    // Update the component in the DOM with actual template HTML
+                    const componentEl = document.getElementById(componentId);
+                    if (componentEl) {
+                        componentEl.innerHTML = data.data.html;
+                        componentEl.classList.remove('component-loading');
+                        componentEl.classList.add('component-loaded');
+                        
+                        // Add hover effects and interaction
+                        componentEl.addEventListener('mouseenter', () => {
+                            componentEl.style.borderColor = '#3b82f6';
+                            componentEl.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
+                        });
+                        componentEl.addEventListener('mouseleave', () => {
+                            componentEl.style.borderColor = '#e2e8f0';
+                            componentEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                        });
+                        
+                        console.log(`✅ Component HTML loaded: ${componentId}`);
+                    }
+                } else {
+                    console.error('Failed to load component HTML:', data);
+                    // Show error state
+                    const componentEl = document.getElementById(componentId);
+                    if (componentEl) {
+                        componentEl.innerHTML = `
+                            <div class="component-error">
+                                <div class="error-icon">⚠️</div>
+                                <div class="error-text">Failed to load ${componentData.type}</div>
+                                <button onclick="window.componentManager?.removeComponent('${componentId}')" class="remove-btn">Remove</button>
+                            </div>
+                        `;
+                        componentEl.classList.remove('component-loading');
+                        componentEl.classList.add('component-error');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('AJAX error loading component:', error);
+                // Show error state
+                const componentEl = document.getElementById(componentId);
+                if (componentEl) {
+                    componentEl.innerHTML = `
+                        <div class="component-error">
+                            <div class="error-icon">⚠️</div>
+                            <div class="error-text">Network error loading ${componentData.type}</div>
+                            <button onclick="window.componentManager?.removeComponent('${componentId}')" class="remove-btn">Remove</button>
+                        </div>
+                    `;
+                    componentEl.classList.remove('component-loading');
+                    componentEl.classList.add('component-error');
+                }
+            });
         }
     };
 

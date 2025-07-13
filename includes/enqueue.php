@@ -622,10 +622,16 @@ class GMKB_Enhanced_Script_Manager {
         
         // ROOT FIX: Simple localization - no inline scripts
         wp_localize_script(
-            'guestify-application-bundle',
-            'guestifyData',
-            $localized_data
+        'guestify-application-bundle',
+        'guestifyData',
+        $localized_data
         );
+            
+            // ROOT FIX: Debug logging for data availability
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: guestifyData localized with AJAX URL: ' . $localized_data['ajaxUrl']);
+                error_log('GMKB ROOT FIX: guestifyData nonce: ' . substr($localized_data['nonce'], 0, 10) . '...');
+            }
         
         $this->data_ready = true;
     }

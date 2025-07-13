@@ -9,7 +9,7 @@
                 </svg>
                 <div class="component-item__name">Hero</div>
             </div>
-            <div class="component-item" draggable="true" data-component="bio">
+            <div class="component-item" draggable="true" data-component="biography">
                 <svg class="component-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14,2 14,8 20,8"></polyline>
@@ -38,7 +38,7 @@
                 </svg>
                 <div class="component-item__name">Stats</div>
             </div>
-            <div class="component-item" draggable="true" data-component="cta">
+            <div class="component-item" draggable="true" data-component="call-to-action">
                 <svg class="component-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M7 7h10v3l3-3-3-3v3H7z"></path>
                     <path d="M17 17H7v-3l-3 3 3 3v-3h10z"></path>
@@ -90,14 +90,14 @@
             <span class="premium-badge">PRO</span>
         </div>
         <div class="component-grid">
-            <div class="component-item component-item--premium" draggable="true" data-component="video">
+            <div class="component-item component-item--premium" draggable="true" data-component="video-intro">
                 <svg class="component-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="23 7 16 12 23 17 23 7"></polygon>
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                 </svg>
                 <div class="component-item__name">Video Intro</div>
             </div>
-            <div class="component-item component-item--premium" draggable="true" data-component="gallery">
+            <div class="component-item component-item--premium" draggable="true" data-component="photo-gallery">
                 <svg class="component-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -105,7 +105,7 @@
                 </svg>
                 <div class="component-item__name">Photo Gallery</div>
             </div>
-            <div class="component-item component-item--premium" draggable="true" data-component="calendar">
+            <div class="component-item component-item--premium" draggable="true" data-component="booking-calendar">
                 <svg class="component-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                     <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -114,7 +114,7 @@
                 </svg>
                 <div class="component-item__name">Booking Calendar</div>
             </div>
-            <div class="component-item component-item--premium" draggable="true" data-component="podcast">
+            <div class="component-item component-item--premium" draggable="true" data-component="podcast-player">
                 <svg class="component-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>

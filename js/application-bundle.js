@@ -90,12 +90,41 @@
     function initializeUISystems() {
         // ROOT FIX: Enhanced UI system initialization with error handling
         try {
+            // Initialize component selection and design panel
+            initializeComponentSelection();
+            
+            // Initialize component controls
+            initializeComponentControls();
+            
+            // Initialize save functionality
+            initializeSaveSystem();
+            
+            // Initialize undo/redo system
+            initializeUndoRedo();
+            
             // Save button functionality
             const saveBtn = document.getElementById('save-btn');
             if (saveBtn) {
                 saveBtn.addEventListener('click', () => {
                     console.log('💾 Save button clicked');
-                    window.stateManager.saveStateToStorage();
+                    const success = window.stateManager.saveStateToStorage();
+                    if (success) {
+                        // Show save success feedback
+                        const originalText = saveBtn.innerHTML;
+                        saveBtn.innerHTML = `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 6L9 17l-5-5"></path>
+                            </svg>
+                            <span>Saved!</span>
+                        `;
+                        saveBtn.style.background = '#10b981';
+                        
+                        setTimeout(() => {
+                            saveBtn.innerHTML = originalText;
+                            saveBtn.style.background = '';
+                            saveBtn.classList.remove('unsaved');
+                        }, 2000);
+                    }
                 });
             }
             
@@ -114,7 +143,7 @@
                     if (window.enhancedComponentManager && window.enhancedComponentManager.addComponent) {
                         window.enhancedComponentManager.addComponent('hero-' + Date.now(), {
                             type: 'hero',
-                            data: { title: 'Your Name', subtitle: 'Professional Title' }
+                            data: { name: 'Your Name', title: 'Professional Title', bio: 'Add your bio here' }
                         });
                     }
                 });
@@ -134,9 +163,9 @@
                     // Add multiple components for demonstration
                     if (window.enhancedComponentManager && window.enhancedComponentManager.addComponent) {
                         const components = [
-                            { type: 'hero', data: { title: 'Generated Hero', subtitle: 'Auto-Generated' } },
-                            { type: 'biography', data: { content: 'This is an auto-generated biography section.' } },
-                            { type: 'topics', data: { topics: ['Topic 1', 'Topic 2', 'Topic 3'] } }
+                            { type: 'hero', data: { name: 'Generated Hero', title: 'Auto-Generated', bio: 'This is an auto-generated hero section.' } },
+                            { type: 'biography', data: { name: 'Biography', title: 'About Me', bio: 'This is an auto-generated biography section.' } },
+                            { type: 'topics', data: { name: 'Topics', title: 'Speaking Topics', bio: 'Topic 1, Topic 2, Topic 3' } }
                         ];
                         
                         components.forEach((comp, index) => {
@@ -225,7 +254,11 @@
                 // Add the component
                 window.enhancedComponentManager.addComponent(componentType + '-' + Date.now(), {
                     type: componentType,
-                    data: { title: `New ${componentType}`, subtitle: 'Drag and dropped component' }
+                    data: { 
+                        name: `New ${componentType}`, 
+                        title: 'Professional Title', 
+                        bio: 'Add your description here'
+                    }
                 });
             }
         });
@@ -268,7 +301,11 @@
                     // Add the component
                     window.enhancedComponentManager.addComponent(componentType + '-' + Date.now(), {
                         type: componentType,
-                        data: { title: `New ${componentType}`, subtitle: 'Added via click' }
+                        data: { 
+                            name: `New ${componentType}`, 
+                            title: 'Professional Title', 
+                            bio: 'Add your description here'
+                        }
                     });
                 }
             });
@@ -305,6 +342,492 @@
         });
         
         console.log(`✅ Tabs functionality initialized for ${tabButtons.length} tabs`);
+    }
+    
+    // ROOT FIX: Component Selection and Design Panel Integration
+    function initializeComponentSelection() {
+        console.log('🎯 Initializing component selection...');
+        
+        const previewContainer = document.getElementById('media-kit-preview');
+        let selectedComponent = null;
+        
+        if (!previewContainer) {
+            console.warn('⚠️ Preview container not found for component selection');
+            return;
+        }
+        
+        // Handle component selection clicks
+        previewContainer.addEventListener('click', (e) => {
+            // Don't interfere with control button clicks
+            if (e.target.closest('.control-btn')) {
+                return;
+            }
+            
+            // Find the clicked component
+            const componentElement = e.target.closest('[data-component-id]');
+            
+            if (componentElement) {
+                e.stopPropagation();
+                selectComponent(componentElement);
+            } else {
+                // Clicked on empty area, deselect
+                selectComponent(null);
+            }
+        });
+        
+        function selectComponent(element) {
+            // Remove previous selection
+            if (selectedComponent) {
+                selectedComponent.classList.remove('component-selected');
+                const oldControls = selectedComponent.querySelector('.element-controls');
+                if (oldControls) {
+                    oldControls.style.display = 'none';
+                }
+            }
+            
+            selectedComponent = element;
+            
+            if (selectedComponent) {
+                selectedComponent.classList.add('component-selected');
+                
+                // Show controls for the selected component
+                let controls = selectedComponent.querySelector('.element-controls');
+                if (!controls) {
+                    controls = createControlButtons();
+                    selectedComponent.appendChild(controls);
+                }
+                controls.style.display = 'flex';
+                
+                // Load design panel
+                const componentId = selectedComponent.getAttribute('data-component-id');
+                if (componentId) {
+                    loadDesignPanel(componentId);
+                    console.log(`🎯 Component selected: ${componentId}`);
+                }
+            } else {
+                // Hide design panel
+                hideDesignPanel();
+            }
+        }
+        
+        function createControlButtons() {
+            const controls = document.createElement('div');
+            controls.className = 'element-controls';
+            controls.style.cssText = `
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                display: none;
+                gap: 4px;
+                background: rgba(0, 0, 0, 0.8);
+                padding: 4px;
+                border-radius: 6px;
+                z-index: 10;
+            `;
+            
+            controls.innerHTML = `
+                <button class="control-btn" title="Move Up" data-action="move-up">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                </button>
+                <button class="control-btn" title="Move Down" data-action="move-down">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <button class="control-btn" title="Duplicate" data-action="duplicate">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+                <button class="control-btn" title="Delete" data-action="delete">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            `;
+            
+            return controls;
+        }
+        
+        console.log('✅ Component selection initialized');
+    }
+    
+    // ROOT FIX: Component Controls Functionality
+    function initializeComponentControls() {
+        console.log('🎮 Initializing component controls...');
+        
+        const previewContainer = document.getElementById('media-kit-preview');
+        
+        if (!previewContainer) {
+            console.warn('⚠️ Preview container not found for component controls');
+            return;
+        }
+        
+        // Use event delegation for control buttons
+        previewContainer.addEventListener('click', (e) => {
+            const controlBtn = e.target.closest('.control-btn');
+            if (!controlBtn) return;
+            
+            e.stopPropagation();
+            e.preventDefault();
+            
+            const componentElement = controlBtn.closest('[data-component-id]');
+            const componentId = componentElement?.getAttribute('data-component-id');
+            
+            if (!componentId) {
+                console.warn('Control button clicked but no component ID found');
+                return;
+            }
+            
+            const action = controlBtn.getAttribute('data-action') || controlBtn.getAttribute('title');
+            console.log(`🎮 Control action: ${action} on component: ${componentId}`);
+            
+            handleComponentAction(componentId, action, componentElement);
+        });
+        
+        function handleComponentAction(componentId, action, element) {
+            switch (action) {
+                case 'move-up':
+                case 'Move Up':
+                    moveComponent(componentId, 'up');
+                    break;
+                case 'move-down':
+                case 'Move Down':
+                    moveComponent(componentId, 'down');
+                    break;
+                case 'duplicate':
+                case 'Duplicate':
+                    duplicateComponent(componentId);
+                    break;
+                case 'delete':
+                case 'Delete':
+                    deleteComponent(componentId);
+                    break;
+                default:
+                    console.warn('Unknown action:', action);
+            }
+        }
+        
+        function moveComponent(componentId, direction) {
+            console.log(`🔄 Moving component ${componentId} ${direction}`);
+            
+            const previewContainer = document.getElementById('media-kit-preview');
+            const componentElement = document.getElementById(componentId);
+            
+            if (!componentElement || !previewContainer) return;
+            
+            const allComponents = Array.from(previewContainer.querySelectorAll('[data-component-id]'));
+            const currentIndex = allComponents.indexOf(componentElement);
+            
+            if (direction === 'up' && currentIndex > 0) {
+                const previousElement = allComponents[currentIndex - 1];
+                previewContainer.insertBefore(componentElement, previousElement);
+            } else if (direction === 'down' && currentIndex < allComponents.length - 1) {
+                const nextElement = allComponents[currentIndex + 1];
+                previewContainer.insertBefore(nextElement, componentElement);
+            }
+            
+            // Save state after move
+            markUnsaved();
+        }
+        
+        function duplicateComponent(componentId) {
+            console.log(`🔄 Duplicating component ${componentId}`);
+            
+            if (!window.enhancedComponentManager) {
+                console.warn('Enhanced component manager not available');
+                return;
+            }
+            
+            // Get the current component data
+            const currentState = window.stateManager._state;
+            const componentData = currentState.components[componentId];
+            
+            if (componentData) {
+                const newId = componentData.type + '-copy-' + Date.now();
+                window.enhancedComponentManager.addComponent(newId, {
+                    ...componentData,
+                    data: {
+                        ...componentData.data,
+                        name: (componentData.data?.name || componentData.type) + ' (Copy)'
+                    }
+                });
+            }
+        }
+        
+        function deleteComponent(componentId) {
+            console.log(`🗑️ Deleting component ${componentId}`);
+            
+            if (window.enhancedComponentManager && window.enhancedComponentManager.removeComponent) {
+                window.enhancedComponentManager.removeComponent(componentId);
+            } else if (window.componentManager && window.componentManager.removeComponent) {
+                window.componentManager.removeComponent(componentId);
+            }
+        }
+        
+        console.log('✅ Component controls initialized');
+    }
+    
+    // ROOT FIX: Save System
+    function initializeSaveSystem() {
+        console.log('💾 Initializing save system...');
+        
+        // Global save function
+        window.triggerSave = () => {
+            const success = window.stateManager.saveStateToStorage();
+            if (success) {
+                showSaveSuccess();
+            }
+            return success;
+        };
+        
+        function showSaveSuccess() {
+            const saveBtn = document.getElementById('save-btn');
+            if (saveBtn) {
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"></path>
+                    </svg>
+                    <span>Saved!</span>
+                `;
+                saveBtn.style.background = '#10b981';
+                
+                setTimeout(() => {
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.style.background = '';
+                }, 2000);
+            }
+        }
+        
+        // Mark as unsaved function
+        window.markUnsaved = markUnsaved;
+        
+        console.log('✅ Save system initialized');
+    }
+    
+    // ROOT FIX: Undo/Redo System
+    function initializeUndoRedo() {
+        console.log('↩️ Initializing undo/redo system...');
+        
+        let stateHistory = [];
+        let currentHistoryIndex = -1;
+        const maxHistorySteps = 50;
+        
+        // Save initial state
+        saveStateToHistory();
+        
+        function saveStateToHistory() {
+            const currentState = JSON.parse(JSON.stringify(window.stateManager._state));
+            
+            // Remove any steps after current index (when user made changes after undo)
+            stateHistory = stateHistory.slice(0, currentHistoryIndex + 1);
+            
+            // Add new state
+            stateHistory.push(currentState);
+            currentHistoryIndex = stateHistory.length - 1;
+            
+            // Limit history size
+            if (stateHistory.length > maxHistorySteps) {
+                stateHistory = stateHistory.slice(-maxHistorySteps);
+                currentHistoryIndex = stateHistory.length - 1;
+            }
+            
+            updateUndoRedoButtons();
+        }
+        
+        function undo() {
+            if (currentHistoryIndex > 0) {
+                currentHistoryIndex--;
+                const previousState = stateHistory[currentHistoryIndex];
+                window.stateManager.setState(previousState);
+                updateUndoRedoButtons();
+                console.log('↩️ Undo performed');
+            }
+        }
+        
+        function redo() {
+            if (currentHistoryIndex < stateHistory.length - 1) {
+                currentHistoryIndex++;
+                const nextState = stateHistory[currentHistoryIndex];
+                window.stateManager.setState(nextState);
+                updateUndoRedoButtons();
+                console.log('↪️ Redo performed');
+            }
+        }
+        
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+            
+            if (undoBtn) {
+                undoBtn.disabled = currentHistoryIndex <= 0;
+            }
+            
+            if (redoBtn) {
+                redoBtn.disabled = currentHistoryIndex >= stateHistory.length - 1;
+            }
+        }
+        
+        // Listen for state changes to save to history
+        document.addEventListener('stateChanged', () => {
+            // Debounce to avoid saving too frequently
+            clearTimeout(window.undoRedoTimeout);
+            window.undoRedoTimeout = setTimeout(saveStateToHistory, 1000);
+        });
+        
+        // Add event listeners to undo/redo buttons
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+        
+        if (undoBtn) {
+            undoBtn.addEventListener('click', undo);
+        }
+        
+        if (redoBtn) {
+            redoBtn.addEventListener('click', redo);
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    redo();
+                } else {
+                    undo();
+                }
+            }
+        });
+        
+        // Global functions
+        window.undo = undo;
+        window.redo = redo;
+        
+        updateUndoRedoButtons();
+        console.log('✅ Undo/redo system initialized');
+    }
+    
+    // ROOT FIX: Design Panel Integration
+    function loadDesignPanel(componentId) {
+        console.log(`📋 Loading design panel for ${componentId}`);
+        
+        // Switch to design tab
+        const designTab = document.querySelector('[data-tab="design"]');
+        const designTabContent = document.getElementById('design-tab');
+        
+        if (designTab && designTabContent) {
+            // Remove active from all tabs
+            document.querySelectorAll('.sidebar__tab').forEach(tab => {
+                tab.classList.remove('sidebar__tab--active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('tab-content--active');
+            });
+            
+            // Activate design tab
+            designTab.classList.add('sidebar__tab--active');
+            designTabContent.classList.add('tab-content--active');
+        }
+        
+        // Load component settings
+        const elementEditor = document.getElementById('element-editor');
+        if (elementEditor) {
+            // Get component data
+            const currentState = window.stateManager._state;
+            const componentData = currentState.components[componentId];
+            
+            if (componentData) {
+                elementEditor.innerHTML = `
+                    <div class="element-editor__title">${componentData.type} Settings</div>
+                    <div class="element-editor__subtitle">Component ID: ${componentId}</div>
+                    
+                    <div class="form-section">
+                        <h4 class="form-section__title">Basic Properties</h4>
+                        <div class="form-field">
+                            <label>Name</label>
+                            <input type="text" value="${componentData.data?.name || ''}" data-property="name">
+                        </div>
+                        <div class="form-field">
+                            <label>Title</label>
+                            <input type="text" value="${componentData.data?.title || ''}" data-property="title">
+                        </div>
+                        <div class="form-field">
+                            <label>Description</label>
+                            <textarea data-property="bio">${componentData.data?.bio || ''}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4 class="form-section__title">Actions</h4>
+                        <button class="btn btn--outline" onclick="window.undo()">Undo</button>
+                        <button class="btn btn--outline" onclick="window.redo()">Redo</button>
+                        <button class="btn btn--danger" onclick="window.enhancedComponentManager?.removeComponent('${componentId}')">Delete Component</button>
+                    </div>
+                `;
+                
+                // Bind property changes
+                elementEditor.querySelectorAll('[data-property]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const property = input.getAttribute('data-property');
+                        const value = input.value;
+                        
+                        // Update component data
+                        const newData = { ...componentData.data };
+                        newData[property] = value;
+                        
+                        // Update state
+                        const newComponents = { ...currentState.components };
+                        newComponents[componentId] = {
+                            ...componentData,
+                            data: newData
+                        };
+                        
+                        window.stateManager.setState({
+                            ...currentState,
+                            components: newComponents
+                        });
+                        
+                        markUnsaved();
+                    });
+                });
+            }
+        }
+    }
+    
+    function hideDesignPanel() {
+        const elementEditor = document.getElementById('element-editor');
+        if (elementEditor) {
+            elementEditor.innerHTML = `
+                <div class="element-editor__title">No Element Selected</div>
+                <div class="element-editor__subtitle">Click on any element in the preview to edit its properties</div>
+                
+                <div class="form-section">
+                    <h4 class="form-section__title">Getting Started</h4>
+                    <ul class="tips-list">
+                        <li>Select an element by clicking on it in the preview</li>
+                        <li>Use the design panel to customize properties</li>
+                        <li>Some components allow direct inline editing</li>
+                        <li>Changes are saved automatically</li>
+                    </ul>
+                </div>
+            `;
+        }
+    }
+    
+    function markUnsaved() {
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn && !saveBtn.classList.contains('unsaved')) {
+            saveBtn.classList.add('unsaved');
+            const span = saveBtn.querySelector('span');
+            if (span) {
+                span.textContent = 'Save*';
+            }
+        }
     }
 
     /**
