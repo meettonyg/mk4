@@ -193,17 +193,53 @@
     }
 
     function initializeMKCGFunctionality() {
+        // ROOT FIX: Preview mode functionality
         const previewContainer = document.getElementById('preview-container');
+        console.log('🔍 Preview container found:', !!previewContainer);
+        
         if (previewContainer) {
-            document.querySelectorAll('.toolbar__preview-btn').forEach(button => {
-                button.addEventListener('click', function() {
+            const previewButtons = document.querySelectorAll('.toolbar__preview-btn');
+            console.log('🔍 Preview buttons found:', previewButtons.length);
+            
+            previewButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
                     const previewMode = this.dataset.preview;
-                    previewContainer.className = 'preview-container'; // Reset classes
-                    previewContainer.classList.add(`preview--${previewMode}`);
-                    console.log(`📱 Preview mode changed to: ${previewMode}`);
+                    console.log(`📱 Preview button clicked: ${previewMode}`);
+                    
+                    // Remove active class from all preview buttons
+                    previewButtons.forEach(btn => {
+                        btn.classList.remove('toolbar__preview-btn--active');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.add('toolbar__preview-btn--active');
+                    
+                    // Find the actual preview container with the media kit
+                    const mediaKitContainer = document.querySelector('.preview__container');
+                    const fallbackContainer = document.querySelector('.preview');
+                    const targetContainer = mediaKitContainer || fallbackContainer || previewContainer;
+                    
+                    if (targetContainer) {
+                        // Remove existing preview classes
+                        targetContainer.classList.remove('preview--tablet', 'preview--mobile', 'preview--desktop');
+                        
+                        // Add new preview class (except for desktop which is default)
+                        if (previewMode !== 'desktop') {
+                            targetContainer.classList.add(`preview--${previewMode}`);
+                        }
+                        
+                        console.log(`✅ Preview mode applied: ${previewMode}`);
+                        console.log('🎯 Target container classes:', targetContainer.className);
+                    } else {
+                        console.warn('⚠️ No suitable container found for preview mode');
+                    }
                 });
             });
+        } else {
+            console.warn('⚠️ Preview container not found!');
         }
+        
         console.log('✅ MKCG Functionality Initialized');
     }
 

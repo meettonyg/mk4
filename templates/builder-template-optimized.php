@@ -538,19 +538,27 @@ if ($post_id > 0) {
     }
     
     /* Visual feedback for preview modes */
-    .preview--tablet .preview__container {
+    .preview--tablet .preview__container,
+    .preview__container.preview--tablet {
         max-width: 768px;
         margin: 0 auto;
         transition: max-width 0.3s ease;
+        border: 2px solid #f59e0b;
+        border-radius: 8px;
     }
     
-    .preview--mobile .preview__container {
+    .preview--mobile .preview__container,
+    .preview__container.preview--mobile {
         max-width: 375px;
         margin: 0 auto;
         transition: max-width 0.3s ease;
+        border: 2px solid #ef4444;
+        border-radius: 8px;
     }
     
-    .preview--desktop .preview__container {
+    .preview--desktop .preview__container,
+    .preview__container.preview--desktop,
+    .preview__container {
         max-width: 100%;
         margin: 0 auto;
         transition: max-width 0.3s ease;
