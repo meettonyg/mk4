@@ -1,0 +1,138 @@
+/**
+ * Component Styles
+ * Individual media kit component styling
+ */
+
+/* Basic component styles */
+.hero {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    margin: 16px 0;
+}
+
+.hero__avatar img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: block;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero__name {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.hero__title {
+    font-size: 18px;
+    opacity: 0.9;
+    margin: 0 0 16px 0;
+    font-weight: 500;
+}
+
+.hero__bio {
+    font-size: 16px;
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Biography component */
+.biography, .biography-component {
+    padding: 32px;
+    background: white;
+    border-radius: 12px;
+    margin: 16px 0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.biography h2, .biography-component h2, .section-title {
+    color: #1e293b;
+    font-size: 24px;
+    margin: 0 0 16px 0;
+    font-weight: 600;
+}
+
+.biography p, .biography-component p, .biography-content p {
+    color: #64748b;
+    line-height: 1.7;
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Topics component */
+.topics, .content-section[data-component="topics"] {
+    padding: 32px;
+    background: white;
+    border-radius: 12px;
+    margin: 16px 0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.topics h2, .content-section[data-component="topics"] h2 {
+    color: #1e293b;
+    font-size: 24px;
+    margin: 0 0 20px 0;
+    font-weight: 600;
+}
+
+.topics-list, .topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.topic-item {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+}
+
+.topic-item h3 {
+    color: #1e293b;
+    font-size: 16px;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.topic-item p {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Component responsive styles */
+@media (max-width: 768px) {
+    .hero {
+        padding: 24px 16px;
+    }
+    
+    .hero__name {
+        font-size: 24px;
+    }
+    
+    .hero__title {
+        font-size: 16px;
+    }
+    
+    .hero__bio {
+        font-size: 14px;
+    }
+    
+    .biography, .biography-component, .topics, .content-section[data-component="topics"] {
+        padding: 20px 16px;
+    }
+    
+    .topics-list, .topics-grid {
+        grid-template-columns: 1fr;
+    }
+}

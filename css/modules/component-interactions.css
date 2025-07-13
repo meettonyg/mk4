@@ -1,0 +1,270 @@
+/**
+ * Component Interaction Styles
+ * Selection, controls, and interaction states
+ */
+
+/* Component selection and interaction styles */
+.component-selected {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px;
+}
+
+/* GEMINI FIX: Component Selection and Element Controls Styles */
+/* Selected component highlighting */
+[data-component-id].selected {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 2px;
+    background: rgba(14, 165, 233, 0.05);
+    position: relative;
+    z-index: 10;
+}
+
+/* Element controls container */
+.element-controls {
+    position: absolute;
+    top: -30px;
+    right: -2px;
+    display: flex;
+    gap: 4px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 20;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Control buttons */
+.control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.control-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+    transform: scale(1.1);
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+/* Specific control button colors */
+.control-btn[title="Delete"]:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.control-btn[title="Duplicate"]:hover {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.control-btn[title="Move Up"]:hover,
+.control-btn[title="Move Down"]:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.control-btn svg {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    fill: none;
+}
+
+/* Ensure controls are visible on hover */
+[data-component-id]:hover .element-controls {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Hide controls by default, show on selection */
+[data-component-id].selected .element-controls {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Ensure component has space for controls */
+[data-component-id] {
+    position: relative;
+    margin-top: 40px; /* Space for controls */
+}
+
+/* First component doesn't need top margin */
+[data-component-id]:first-child {
+    margin-top: 20px;
+}
+
+/* Click feedback for components */
+[data-component-id]:hover {
+    cursor: pointer;
+}
+
+[data-component-id]:active {
+    transform: scale(0.998);
+}
+
+/* Editable elements */
+.editable-element {
+    position: relative;
+}
+
+[contenteditable="true"]:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+[contenteditable="true"]:hover {
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 4px;
+}
+
+/* Component meta states */
+[data-component-id].is-deleting {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+}
+
+[data-component-id].is-deleting::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(239, 68, 68, 0.1);
+    z-index: 1;
+}
+
+[data-component-id].is-moving {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: scale(1.02);
+    z-index: 10;
+}
+
+[data-component-id].is-dirty {
+    position: relative;
+}
+
+[data-component-id].is-dirty::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid rgba(59, 130, 246, 0.5);
+    border-radius: inherit;
+    pointer-events: none;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Component deletion states */
+.component-deleting {
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+    transition: opacity 0.2s ease;
+}
+
+.component-deleting .control-btn {
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
+
+.component-removing {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Prevent control button interaction during actions */
+.control-btn[disabled] {
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
+
+/* Visual feedback for pending actions */
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+/* Ensure control buttons can't be clicked multiple times rapidly */
+.control-btn[data-listener-attached] {
+    user-select: none;
+}
+
+/* Enhanced Component Animation States */
+
+/* Component added animation */
+.component-added {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Component moving state */
+.component-moving {
+    transition: transform 0.3s ease;
+    opacity: 0.8;
+}
+
+/* Component reordered animation */
+.component-reordered {
+    animation: bounce 0.3s ease;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Smooth transitions for all component state changes */
+[data-component-id] {
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}

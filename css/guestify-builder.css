@@ -7,6 +7,23 @@
 @import url('modules/base.css');
 @import url('modules/loading.css');
 
+/* Core Builder Modules */
+@import url('modules/builder-core.css');
+@import url('modules/toolbar-buttons.css');
+@import url('modules/preview-toggle.css');
+@import url('modules/buttons.css');
+@import url('modules/drop-zones.css');
+@import url('modules/empty-state.css');
+@import url('modules/loading-states.css');
+
+/* Component Modules */
+@import url('modules/components.css');
+@import url('modules/component-interactions.css');
+
+/* MKCG Integration */
+@import url('modules/mkcg-dashboard.css');
+@import url('modules/generation-feedback.css');
+
 /* Layout Modules */
 @import url('modules/toolbar.css');
 @import url('modules/sidebar.css');
