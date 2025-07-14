@@ -82,6 +82,112 @@ function gmkb_ajax_load_design_panel() {
 }
 
 /**
+ * ROOT FIX: Load design panel for component (matching JavaScript expectation)
+ * This is the AJAX handler that design-panel-loader.js expects
+ */
+add_action('wp_ajax_guestify_render_design_panel', 'guestify_ajax_render_design_panel');
+function guestify_ajax_render_design_panel() {
+    // Verify nonce - ROOT FIX: Match the nonce name from enqueue.php
+    $nonce_to_check = $_POST['nonce'] ?? '';
+    $valid_nonce = wp_verify_nonce($nonce_to_check, 'guestify_media_kit_builder') || 
+                   wp_verify_nonce($nonce_to_check, 'guestify_nonce');
+    
+    if (empty($nonce_to_check) || !$valid_nonce) {
+        // ROOT FIX: More detailed error logging for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB AJAX Error: Nonce verification failed');
+            error_log('GMKB: Received nonce: ' . substr($nonce_to_check, 0, 10) . '...');
+        }
+        wp_send_json_error('Security check failed - invalid nonce');
+    }
+    
+    $component_type = sanitize_text_field($_POST['component']);
+    
+    if (empty($component_type)) {
+        wp_send_json_error('Component type is required');
+    }
+    
+    // Security: Validate component type to prevent path traversal
+    if (!preg_match('/^[a-zA-Z0-9_-]+$/', $component_type)) {
+        wp_send_json_error('Invalid component type');
+    }
+    
+    // ROOT FIX: Enhanced path validation and loading
+    $panel_file = GMKB_PLUGIN_DIR . 'components/' . $component_type . '/design-panel.php';
+    
+    // ROOT FIX: Log the panel loading attempt
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log("GMKB AJAX: Loading design panel for {$component_type}");
+        error_log("GMKB: Panel file path: {$panel_file}");
+        error_log("GMKB: Panel file exists: " . (file_exists($panel_file) ? 'YES' : 'NO'));
+    }
+    
+    if (file_exists($panel_file)) {
+        // Load custom panel
+        ob_start();
+        include $panel_file;
+        $panel_html = ob_get_clean();
+        
+        if (empty($panel_html)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB AJAX Error: Panel file exists but returned empty content for {$component_type}");
+            }
+            wp_send_json_error('Failed to load design panel content - panel file returned empty content');
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB AJAX Success: Loaded custom design panel for {$component_type} (" . strlen($panel_html) . " chars)");
+        }
+        
+        wp_send_json_success(array(
+            'html' => $panel_html,
+            'component' => $component_type,
+            'source' => 'custom'
+        ));
+    } else {
+        // Fallback: Return generic panel
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB AJAX: Using generic panel fallback for {$component_type}");
+        }
+        
+        $generic_panel = guestify_get_generic_design_panel($component_type);
+        wp_send_json_success(array(
+            'html' => $generic_panel,
+            'component' => $component_type,
+            'fallback' => true,
+            'source' => 'generic'
+        ));
+    }
+}
+
+/**
+ * Generate generic design panel for components without custom panels
+ */
+function guestify_get_generic_design_panel($component_type) {
+    $component_name = ucwords(str_replace(array('-', '_'), ' ', $component_type));
+    
+    return '
+        <div class="element-editor__title">' . esc_html($component_name) . ' Settings</div>
+        <div class="element-editor__subtitle">Configure this component</div>
+        
+        <div class="form-section">
+            <h4 class="form-section__title">Basic Properties</h4>
+            <div class="form-group">
+                <label class="form-label">Component Name</label>
+                <input type="text" class="form-input" data-property="name" placeholder="Component name">
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h4 class="form-section__title">Actions</h4>
+            <div class="form-help-text">
+                This component doesn\'t have custom settings. You can edit it directly in the preview area.
+            </div>
+        </div>
+    ';
+}
+
+/**
  * Save media kit state
  */
 add_action('wp_ajax_gmkb_save_media_kit', 'gmkb_ajax_save_media_kit');
@@ -296,17 +402,22 @@ function gmkb_enqueue_builder_scripts() {
         GMKB_VERSION
     );
     
-    // Localize script data for main script
+    // ROOT FIX: Localize script data with proper guestifyData for design panel loader
     $localize_data = array(
-        'nonce' => wp_create_nonce('gmkb_nonce'),
+        'nonce' => wp_create_nonce('guestify_nonce'),
         'upload_nonce' => wp_create_nonce('media-form'),
         'ajax_url' => admin_url('admin-ajax.php'),
+        'ajaxUrl' => admin_url('admin-ajax.php'), // Alternative name for compatibility
         'plugin_url' => GMKB_PLUGIN_URL,
-        'media_kit_id' => isset($_GET['media_kit_id']) ? intval($_GET['media_kit_id']) : 0
+        'pluginUrl' => GMKB_PLUGIN_URL, // Alternative name for compatibility
+        'media_kit_id' => isset($_GET['media_kit_id']) ? intval($_GET['media_kit_id']) : 0,
+        'restUrl' => rest_url(),
+        'restNonce' => wp_create_nonce('wp_rest')
     );
     
-    // Only localize to the main script - let it handle all module loading
+    // Localize as both gmkb_data and guestifyData for compatibility
     wp_localize_script('guestify-builder-script', 'gmkb_data', $localize_data);
+    wp_localize_script('guestify-builder-script', 'guestifyData', $localize_data);
 }
 
 // Initialize the enhanced system

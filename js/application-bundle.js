@@ -748,7 +748,7 @@
         console.log('✅ Undo/redo system initialized');
     }
     
-    // ROOT FIX: Design Panel Integration
+    // ROOT FIX: Design Panel Integration with AJAX loading
     function loadDesignPanel(componentId) {
         console.log(`📋 Loading design panel for ${componentId}`);
         
@@ -770,7 +770,7 @@
             designTabContent.classList.add('tab-content--active');
         }
         
-        // Load component settings
+        // Load component settings via AJAX
         const elementEditor = document.getElementById('element-editor');
         if (elementEditor) {
             // Get component data
@@ -778,61 +778,196 @@
             const componentData = currentState.components[componentId];
             
             if (componentData) {
+                // Show loading state
                 elementEditor.innerHTML = `
-                    <div class="element-editor__title">${componentData.type} Settings</div>
-                    <div class="element-editor__subtitle">Component ID: ${componentId}</div>
-                    
-                    <div class="form-section">
-                        <h4 class="form-section__title">Basic Properties</h4>
-                        <div class="form-field">
-                            <label>Name</label>
-                            <input type="text" value="${componentData.data?.name || ''}" data-property="name">
-                        </div>
-                        <div class="form-field">
-                            <label>Title</label>
-                            <input type="text" value="${componentData.data?.title || ''}" data-property="title">
-                        </div>
-                        <div class="form-field">
-                            <label>Description</label>
-                            <textarea data-property="bio">${componentData.data?.bio || ''}</textarea>
-                        </div>
+                    <div class="element-editor__title">Loading ${componentData.type} Settings...</div>
+                    <div class="element-editor__subtitle">Please wait while we load the design panel</div>
+                    <div class="loading-spinner" style="text-align: center; padding: 20px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+                            <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                        </svg>
+                        <p style="margin-top: 10px; color: #64748b;">Loading design panel...</p>
                     </div>
-                    
-                    <div class="form-section">
-                        <h4 class="form-section__title">Actions</h4>
-                        <button class="btn btn--outline" onclick="window.undo()">Undo</button>
-                        <button class="btn btn--outline" onclick="window.redo()">Redo</button>
-                        <button class="btn btn--danger" onclick="window.enhancedComponentManager?.removeComponent('${componentId}')">Delete Component</button>
-                    </div>
+                    <style>
+                        @keyframes spin {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                    </style>
                 `;
                 
-                // Bind property changes
-                elementEditor.querySelectorAll('[data-property]').forEach(input => {
-                    input.addEventListener('input', () => {
-                        const property = input.getAttribute('data-property');
-                        const value = input.value;
+                // ROOT FIX: Use AJAX to load component-specific design panel
+                const formData = new FormData();
+                formData.append('action', 'guestify_render_design_panel');
+                formData.append('component', componentData.type);
+                formData.append('component_id', componentId);
+                formData.append('nonce', window.guestifyData?.nonce || window.guestifyData?.restNonce || '');
+                
+                fetch(window.guestifyData?.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data.html) {
+                        // Load the component-specific design panel
+                        elementEditor.innerHTML = data.data.html;
                         
-                        // Update component data
-                        const newData = { ...componentData.data };
-                        newData[property] = value;
+                        console.log(`✅ Loaded design panel for ${componentData.type}`);
                         
-                        // Update state
-                        const newComponents = { ...currentState.components };
-                        newComponents[componentId] = {
-                            ...componentData,
-                            data: newData
-                        };
+                        // ROOT FIX: Initialize component-specific panel scripts
+                        initializeComponentPanelScripts(componentData.type, componentId);
                         
-                        window.stateManager.setState({
-                            ...currentState,
-                            components: newComponents
-                        });
+                        // Bind basic property changes for fallback
+                        bindBasicPropertyChanges(elementEditor, componentId, componentData);
                         
-                        markUnsaved();
-                    });
+                    } else {
+                        // Fallback to generic panel
+                        console.warn(`⚠️ Failed to load design panel for ${componentData.type}, using fallback`);
+                        loadGenericDesignPanel(elementEditor, componentId, componentData);
+                    }
+                })
+                .catch(error => {
+                    console.error(`❌ Error loading design panel for ${componentData.type}:`, error);
+                    // Fallback to generic panel
+                    loadGenericDesignPanel(elementEditor, componentId, componentData);
                 });
             }
         }
+    }
+    
+    // ROOT FIX: Generic design panel fallback
+    function loadGenericDesignPanel(elementEditor, componentId, componentData) {
+        elementEditor.innerHTML = `
+            <div class="element-editor__title">${componentData.type} Settings</div>
+            <div class="element-editor__subtitle">Component ID: ${componentId}</div>
+            
+            <div class="form-section">
+                <h4 class="form-section__title">Basic Properties</h4>
+                <div class="form-field">
+                    <label>Name</label>
+                    <input type="text" value="${componentData.data?.name || ''}" data-property="name">
+                </div>
+                <div class="form-field">
+                    <label>Title</label>
+                    <input type="text" value="${componentData.data?.title || ''}" data-property="title">
+                </div>
+                <div class="form-field">
+                    <label>Description</label>
+                    <textarea data-property="bio">${componentData.data?.bio || ''}</textarea>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h4 class="form-section__title">Actions</h4>
+                <button class="btn btn--outline" onclick="window.undo()">Undo</button>
+                <button class="btn btn--outline" onclick="window.redo()">Redo</button>
+                <button class="btn btn--danger" onclick="window.enhancedComponentManager?.removeComponent('${componentId}')">Delete Component</button>
+            </div>
+        `;
+        
+        bindBasicPropertyChanges(elementEditor, componentId, componentData);
+    }
+    
+    // ROOT FIX: Bind basic property changes for any design panel
+    function bindBasicPropertyChanges(elementEditor, componentId, componentData) {
+        elementEditor.querySelectorAll('[data-property]').forEach(input => {
+            input.addEventListener('input', () => {
+                const property = input.getAttribute('data-property');
+                const value = input.value;
+                
+                // Update component data
+                const currentState = window.stateManager._state;
+                const newData = { ...componentData.data };
+                newData[property] = value;
+                
+                // Update state
+                const newComponents = { ...currentState.components };
+                newComponents[componentId] = {
+                    ...componentData,
+                    data: newData
+                };
+                
+                window.stateManager.setState({
+                    ...currentState,
+                    components: newComponents
+                });
+                
+                markUnsaved();
+            });
+        });
+    }
+    
+    // ROOT FIX: Initialize component-specific panel scripts
+    function initializeComponentPanelScripts(componentType, componentId) {
+        console.log(`🎯 Initializing panel scripts for ${componentType}`);
+        
+        try {
+            // ROOT FIX: Handle topics component specifically
+            if (componentType === 'topics') {
+                // Initialize topics panel if the script is available
+                if (window.topicsPanel && window.topicsPanel.initialize) {
+                    const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                    if (componentElement) {
+                        window.topicsPanel.initialize(componentElement);
+                        console.log(`✅ Topics panel initialized for ${componentId}`);
+                    }
+                } else {
+                    console.log(`📝 Topics panel script not yet loaded, will initialize when available`);
+                    
+                    // ROOT FIX: Load topics panel script if not already loaded
+                    loadComponentPanelScript(componentType, componentId);
+                }
+            }
+            
+            // ROOT FIX: Handle other component types
+            else {
+                // Check if component has its own panel script
+                const panelFunction = window[`${componentType}Panel`];
+                if (panelFunction && panelFunction.initialize) {
+                    const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                    if (componentElement) {
+                        panelFunction.initialize(componentElement);
+                        console.log(`✅ ${componentType} panel initialized`);
+                    }
+                } else {
+                    // Load panel script if not available
+                    loadComponentPanelScript(componentType, componentId);
+                }
+            }
+            
+        } catch (error) {
+            console.error(`❌ Error initializing panel scripts for ${componentType}:`, error);
+        }
+    }
+    
+    // ROOT FIX: Load component panel script dynamically
+    function loadComponentPanelScript(componentType, componentId) {
+        const scriptUrl = `${window.guestifyData?.pluginUrl || ''}components/${componentType}/panel-script.js`;
+        
+        // Check if script is already loaded
+        if (document.querySelector(`script[src*="${componentType}/panel-script.js"]`)) {
+            console.log(`📝 Panel script for ${componentType} already loaded`);
+            return;
+        }
+        
+        console.log(`📦 Loading panel script for ${componentType}...`);
+        
+        const script = document.createElement('script');
+        script.src = scriptUrl;
+        script.onload = () => {
+            console.log(`✅ Panel script loaded for ${componentType}`);
+            
+            // Initialize after script loads
+            setTimeout(() => {
+                initializeComponentPanelScripts(componentType, componentId);
+            }, 100);
+        };
+        script.onerror = () => {
+            console.warn(`⚠️ Failed to load panel script for ${componentType}`);
+        };
+        
+        document.head.appendChild(script);
     }
     
     function hideDesignPanel() {

@@ -557,10 +557,21 @@ class GMKB_Enhanced_Script_Manager {
             // 1. SortableJS (external dependency)
             // 2. Core Systems Bundle (contains all core functionality)
             // 3. Application Bundle (contains UI and component panel functionality)
+            // 4. Component panel scripts (loaded dynamically)
             
             // ROOT FIX: Enqueue working bundle architecture
             wp_enqueue_script('guestify-core-systems-bundle');
             wp_enqueue_script('guestify-application-bundle');
+            
+            // ROOT FIX: Enqueue topics panel script for immediate availability
+            wp_register_script(
+                'guestify-topics-panel',
+                $plugin_url . 'components/topics/panel-script.js',
+                array('guestify-application-bundle'),
+                $cache_buster . '-topics-panel',
+                true
+            );
+            wp_enqueue_script('guestify-topics-panel');
             
             // ROOT FIX: Log successful bundle loading
             if (defined('WP_DEBUG') && WP_DEBUG) {

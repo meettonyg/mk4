@@ -1,701 +1,746 @@
-// panel-script.js
+/**
+ * Topics Component Panel Script - ROOT FIX IMPLEMENTATION
+ * PHASE 3: Simplified, focused JavaScript for better UX
+ * Focus: Core functionality, clean architecture, maintainable code
+ */
 
 // =================================================================================
-// MAIN INITIALIZATION - Single, robust entry point
+// CORE INITIALIZATION - Clean, single-purpose entry point
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎯 Topics Panel Script: Starting initialization...');
+    
     const componentElement = document.querySelector('.editable-element[data-component="topics"]');
     if (componentElement) {
         initializeTopicsPanel(componentElement);
     } else {
-        console.error('Topics component element not found on the page.');
+        console.log('📝 Topics component not found - panel will initialize when component is selected');
     }
 });
 
 /**
- * Main orchestrator for the topics panel.
- * @param {HTMLElement} element The main component element.
+ * Main panel initialization - simplified and focused
+ * @param {HTMLElement} element The main component element
  */
-async function initializeTopicsPanel(element) {
-    console.log('🚀 [1/3] Topics Panel Initialization Started');
-
+function initializeTopicsPanel(element) {
+    console.log('🚀 Initializing Topics Panel...');
+    
     try {
-        // --- Step 1: Attempt to Fetch Stored Data ---
-        const storedData = await loadStoredTopicsData();
-        window.storedTopicsData = storedData; // Make data globally available
-
-        if (storedData) {
-            console.log('✅ [2/3] Server data fetched successfully.');
-        } else {
-            console.warn('📝 [2/3] No stored data found. Panel will load in manual/empty mode.');
-        }
-
-        // --- Step 2: Populate the Panel and Initialize All Controls ---
-        populateAndInitializePanel(element, storedData);
-        console.log('✅ [3/3] Panel UI is fully initialized and populated.');
-
-    } catch (error) {
-        console.error('❌ FATAL: A critical error occurred during panel setup.', error);
-        showDataLoadingStatus('A critical error prevented the panel from loading.', 'error');
-    }
-}
-
-// =================================================================================
-// DATA & UI POPULATION - The final, corrected logic.
-// =================================================================================
-
-/**
- * A unified function to populate the entire panel UI and initialize controls.
- * @param {HTMLElement} element - The main component element.
- * @param {Object|null} storedData - The data from the server, or null.
- */
-function populateAndInitializePanel(element, storedData) {
-    const topicsListContainer = document.getElementById('design-topics-list');
-    if (!topicsListContainer) {
-        console.error('CRITICAL ERROR: The #design-topics-list container was not found in the DOM.');
-        return;
-    }
-    
-    topicsListContainer.innerHTML = ''; // Always start with a clean slate.
-
-    let topicsToRender = [];
-    if (storedData && storedData.topics && Object.keys(storedData.topics).length > 0) {
-        topicsToRender = Object.values(storedData.topics);
-    } else {
-        // Create 5 empty slots for manual entry.
-        for (let i = 0; i < 5; i++) {
-            topicsToRender.push({ value: '', is_empty: true, index: i });
-        }
-    }
-
-    // --- THE DEFINITIVE FIX: Directly call the correct function in a loop ---
-    console.log(`🎨 Rendering ${topicsToRender.length} topic fields...`);
-    topicsToRender.forEach((topicData, index) => {
-        const title = topicData.value || '';
-        // This is the function that actually creates the HTML for each topic field.
-        addTopicToPanel(title, '', 'check', index);
-    });
-
-    // --- Initialize all other controls AFTER the UI is built ---
-    updateDataDrivenSections(storedData); 
-    initializePanelControls(element);
-    setupEnhancedBulkOperations();
-
-    showDataLoadingStatus('Panel loaded successfully!', 'success');
-}
-
-/**
- * Fetches data and returns a promise that always resolves with data or null.
- */
-function loadStoredTopicsData() {
-    return new Promise((resolve) => {
-        const postId = getPostIdForDataLoading();
-        if (!postId) {
-            showDataLoadingStatus('No Post ID found. Ready for new entry.', 'info');
-            return resolve(null);
-        }
-
-        showDataLoadingStatus('Loading stored topics...', 'loading');
-        const ajaxUrl = window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
-        const nonce = window.guestifyData?.nonce;
-
-        if (!nonce) {
-            console.error("CRITICAL: AJAX Nonce is missing.");
-            showDataLoadingStatus('Security nonce missing. Cannot fetch data.', 'error');
-            return resolve(null);
-        }
-
-        const requestData = new URLSearchParams({ action: 'load_stored_topics', post_id: postId, nonce: nonce });
-
-        fetch(ajaxUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: requestData })
-            .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
-            .then(data => {
-                if (data.success && data.data) {
-                    resolve(data.data);
-                } else {
-                    console.error('Server-side error:', data.data?.message || 'Unknown error');
-                    showDataLoadingStatus(`Failed to load data: ${data.data?.message}`, 'error');
-                    resolve(null);
-                }
-            })
-            .catch(error => {
-                console.error('A network error occurred:', error);
-                showDataLoadingStatus(`Network error: ${error.message}`, 'error');
-                resolve(null);
-            });
-    });
-}
-
-// =================================================================================
-// ALL OTHER HELPER FUNCTIONS - Simplified and streamlined
-// =================================================================================
-
-/**
- * Updates the data-driven sections of the panel (previews, counters).
- * @param {Object|null} storedData - The data from the server, or null.
- */
-function updateDataDrivenSections(storedData) {
-    try {
-        const previewSection = document.getElementById('stored-topics-preview');
-
-        if (storedData) {
-            console.log('🎨 Integrating stored data into panel sections...');
-            if (previewSection) {
-                previewSection.style.display = 'block';
-                updateStoredTopicsPreview(storedData);
-            }
-            updateTopicFieldCounter(storedData.total_topics || 0);
-            showEnhancedControls(storedData);
-        } else {
-            console.log('📝 No stored data. Setting up manual entry mode.');
-            if (previewSection) previewSection.style.display = 'none';
-            updateTopicFieldCounter(0);
-        }
-    } catch (error) {
-        console.error('Error updating data-driven sections:', error);
-    }
-}
-
-/**
- * Add a topic to the design panel - THE CORE FUNCTION THAT CREATES TOPIC FIELDS
- */
-function addTopicToPanel(title, description, iconClass, index) {
-    const topicsListContainer = document.getElementById('design-topics-list');
-    if (!topicsListContainer) {
-        console.error('Cannot add topic - topics list container not found');
-        return null;
-    }
-    
-    console.log(`🔧 Adding topic ${index + 1}: "${title || 'Empty'}"`);
-    
-    const topicItem = document.createElement('div');
-    topicItem.className = 'topic-editor-item';
-    topicItem.innerHTML = `
-        <div class="topic-editor-header">
-            <div class="topic-number">#${index + 1}</div>
-            <button class="remove-item-btn" title="Remove topic">×</button>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Topic Title</label>
-            <input type="text" class="form-input" value="${escapeHtml(title || '')}" data-topic-title="${index}" placeholder="Enter topic ${index + 1}...">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Description</label>
-            <textarea class="form-input form-textarea" rows="2" data-topic-description="${index}" placeholder="Describe this topic...">${escapeHtml(description || '')}</textarea>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Icon</label>
-            <select class="form-select" data-topic-icon="${index}">
-                <option value="check" ${iconClass === 'check' ? 'selected' : ''}>Checkmark</option>
-                <option value="star" ${iconClass === 'star' ? 'selected' : ''}>Star</option>
-                <option value="arrow" ${iconClass === 'arrow' ? 'selected' : ''}>Arrow</option>
-                <option value="circle" ${iconClass === 'circle' ? 'selected' : ''}>Circle</option>
-                <option value="info" ${iconClass === 'info' ? 'selected' : ''}>Info</option>
-                <option value="none" ${iconClass === 'none' ? 'selected' : ''}>No Icon</option>
-            </select>
-        </div>
-    `;
-    
-    // Input handlers
-    const inputs = topicItem.querySelectorAll('input, textarea, select');
-    inputs.forEach(input => {
-        input.addEventListener('input', function() {
-            updateTopicsInComponent(document.querySelector('.editable-element--selected'));
-        });
+        // Initialize core panel functionality
+        setupBasicControls(element);
+        setupTopicsEditor();
+        setupDisplayControls(element);
+        setupAdvancedFeatures();
+        setupMKCGIntegration(); // Optional - only if available
         
-        input.addEventListener('change', function() {
-            updateTopicsInComponent(document.querySelector('.editable-element--selected'));
-        });
-    });
-    
-    // Remove button handler
-    const removeBtn = topicItem.querySelector('.remove-item-btn');
-    if (removeBtn) {
-        removeBtn.addEventListener('click', function() {
-            topicItem.remove();
-            updateTopicsInComponent(document.querySelector('.editable-element--selected'));
-            
-            // Renumber topics
-            const items = document.querySelectorAll('.topic-editor-item');
-            items.forEach((item, idx) => {
-                const numberEl = item.querySelector('.topic-number');
-                if (numberEl) {
-                    numberEl.textContent = `#${idx + 1}`;
-                }
-                
-                // Update data attributes
-                const titleInput = item.querySelector('[data-topic-title]');
-                const descInput = item.querySelector('[data-topic-description]');
-                const iconSelect = item.querySelector('[data-topic-icon]');
-                
-                if (titleInput) titleInput.setAttribute('data-topic-title', idx);
-                if (descInput) descInput.setAttribute('data-topic-description', idx);
-                if (iconSelect) iconSelect.setAttribute('data-topic-icon', idx);
-            });
-        });
-    }
-    
-    topicsListContainer.appendChild(topicItem);
-    return topicItem;
-}
-
-/**
- * Update topics in the component based on panel inputs
- */
-function updateTopicsInComponent(element) {
-    if (!element) return;
-    
-    const topicsContainer = element.querySelector('.topics-container');
-    if (!topicsContainer) return;
-    
-    const topicItems = document.querySelectorAll('.topic-editor-item');
-    
-    // Clear existing topics
-    topicsContainer.innerHTML = '';
-    
-    // Add topics from panel
-    topicItems.forEach((item, index) => {
-        const titleInput = item.querySelector(`[data-topic-title="${index}"]`);
-        const descInput = item.querySelector(`[data-topic-description="${index}"]`);
-        const iconSelect = item.querySelector(`[data-topic-icon="${index}"]`);
-        
-        if (titleInput && titleInput.value.trim()) {
-            const topicDiv = document.createElement('div');
-            topicDiv.className = 'topic-item';
-            
-            // Add icon if not 'none'
-            const iconType = iconSelect ? iconSelect.value : 'check';
-            let iconHtml = '';
-            
-            if (iconType !== 'none') {
-                iconHtml = `<div class="topic-icon" data-icon="${iconType}">${getIconSvg(iconType)}</div>`;
-            }
-            
-            // Get show descriptions state
-            const showDescriptions = document.querySelector('[data-property="showDescriptions"]')?.checked !== false;
-            
-            // Build topic HTML
-            topicDiv.innerHTML = `
-                ${iconHtml}
-                <div class="topic-content">
-                    <h3 class="topic-title">${escapeHtml(titleInput.value)}</h3>
-                    <div class="topic-description" style="${showDescriptions ? '' : 'display: none;'}">
-                        ${escapeHtml(descInput ? descInput.value : '')}
-                    </div>
-                </div>
-            `;
-            
-            topicsContainer.appendChild(topicDiv);
-        }
-    });
-    
-    // Trigger save
-    const event = new Event('change', { bubbles: true });
-    element.dispatchEvent(event);
-}
-
-/**
- * Initialize panel controls - essential for panel functionality
- */
-function initializePanelControls(element) {
-    try {
-        console.log('🎯 Initializing panel controls...');
-        
-        // Setup display style controls
-        setupDisplayStyleControls(element);
-        
-        // Setup color picker
-        setupColorPicker('topicColor', element, function(color) {
-            element.style.setProperty('--topic-color', color);
-            
-            // Apply to topic elements
-            const topicTitles = element.querySelectorAll('.topic-title');
-            topicTitles.forEach(title => {
-                title.style.color = color;
-            });
-        });
-        
-        // Setup text content updaters
-        setupTextContentUpdater('title', '.topics-section-title', element);
-        setupTextContentUpdater('introduction', '.topics-introduction', element);
-        
-        // Setup add topic button if it exists
-        const addTopicBtn = document.getElementById('add-topic-btn');
-        if (addTopicBtn) {
-            addTopicBtn.addEventListener('click', function() {
-                const topicsList = document.getElementById('design-topics-list');
-                const newIndex = topicsList ? topicsList.children.length : 0;
-                
-                if (newIndex < 10) { // Allow up to 10 topics
-                    const topicItem = addTopicToPanel('New Topic', 'Description...', 'check', newIndex);
-                    
-                    // Focus the topic title input
-                    const input = topicItem?.querySelector('input');
-                    if (input) {
-                        input.focus();
-                        input.select();
-                    }
-                    
-                    updateTopicsInComponent(element);
-                }
-            });
-        }
-        
-        console.log('✅ Panel controls initialized');
+        console.log('✅ Topics Panel initialized successfully');
         
     } catch (error) {
-        console.error('Error initializing panel controls:', error);
-        // Don't throw - panel should still work
-    }
-}
-
-/**
- * Setup display style controls
- */
-function setupDisplayStyleControls(element) {
-    const displayStyleSelect = document.querySelector('[data-property="displayStyle"]');
-    if (displayStyleSelect) {
-        const currentStyle = element.getAttribute('data-display-style') || 'list';
-        displayStyleSelect.value = currentStyle;
-        
-        displayStyleSelect.addEventListener('change', function() {
-            element.setAttribute('data-display-style', this.value);
-            element.classList.remove('display--list', 'display--grid', 'display--tags', 'display--cards');
-            element.classList.add('display--' + this.value);
-            
-            // Show/hide columns option
-            const columnsGroup = document.querySelector('[data-property="columns"]')?.closest('.form-group');
-            if (columnsGroup) {
-                columnsGroup.style.display = (this.value === 'grid' || this.value === 'cards') ? 'block' : 'none';
-            }
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
-        });
-    }
-}
-
-/**
- * Setup enhanced bulk operations if MKCG is available
- */
-function setupEnhancedBulkOperations() {
-    if (window.topicsMkcgIntegration && window.topicsMkcgIntegration.isInitialized) {
-        console.log('🔧 Setting up MKCG bulk operations...');
-        // MKCG integration will handle its own event listeners
-    } else {
-        console.log('📝 MKCG not available - bulk operations disabled');
+        console.error('❌ Error initializing Topics Panel:', error);
+        showNotification('Panel initialization failed. Some features may not work.', 'error');
     }
 }
 
 // =================================================================================
-// UTILITY FUNCTIONS
+// CORE PANEL CONTROLS - Essential functionality
 // =================================================================================
 
 /**
- * Get post ID for data loading from multiple sources
+ * Setup basic form controls for content and display
+ * @param {HTMLElement} element The component element
  */
-function getPostIdForDataLoading() {
-    try {
-        // Strategy 1: From global guestifyData
-        if (window.guestifyData?.postId) {
-            const postId = parseInt(window.guestifyData.postId);
-            if (postId > 0) {
-                console.log(`🎯 Post ID from guestifyData: ${postId}`);
-                return postId;
-            }
-        }
-        
-        // Strategy 2: From URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const paramStrategies = ['post_id', 'p', 'page_id', 'post'];
-        
-        for (const param of paramStrategies) {
-            const value = urlParams.get(param);
-            if (value && !isNaN(parseInt(value))) {
-                const postId = parseInt(value);
-                if (postId > 0) {
-                    console.log(`🎯 Post ID from URL param '${param}': ${postId}`);
-                    return postId;
-                }
-            }
-        }
-        
-        // Strategy 3: From WordPress admin context
-        if (window.pagenow === 'post') {
-            const adminPostId = document.getElementById('post_ID');
-            if (adminPostId && adminPostId.value) {
-                const postId = parseInt(adminPostId.value);
-                if (postId > 0) {
-                    console.log(`🎯 Post ID from WP admin: ${postId}`);
-                    return postId;
-                }
-            }
-        }
-        
-        console.log('📝 No post ID found - this is normal for new posts');
-        return null;
-        
-    } catch (error) {
-        console.error('Error in post ID detection:', error);
-        return null;
-    }
+function setupBasicControls(element) {
+    console.log('🔧 Setting up basic controls...');
+    
+    // Title and introduction text controls
+    setupTextControl('title', '.topics-section-title', element);
+    setupTextControl('introduction', '.topics-introduction', element);
+    
+    // Color picker
+    setupColorPicker(element);
+    
+    // Checkbox controls
+    setupCheckboxControls(element);
+    
+    console.log('✅ Basic controls initialized');
 }
 
 /**
- * Show data loading status with user feedback
+ * Setup text input controls with live preview
+ * @param {string} property The data property name
+ * @param {string} selector The preview element selector
+ * @param {HTMLElement} element The component element
  */
-function showDataLoadingStatus(message, type = 'info') {
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    
-    // Try to show visual feedback if status element exists
-    let statusEl = document.getElementById('data-loading-status');
-    if (!statusEl) {
-        // Create status element if it doesn't exist
-        statusEl = document.createElement('div');
-        statusEl.id = 'data-loading-status';
-        statusEl.className = 'data-loading-status';
-        
-        // Try to insert into panel
-        const panel = document.querySelector('.element-editor');
-        if (panel) {
-            panel.insertBefore(statusEl, panel.firstElementChild);
-        }
-    }
-    
-    if (statusEl) {
-        const icons = {
-            loading: '⏳',
-            success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️'
-        };
-        
-        statusEl.innerHTML = `
-            <div class="status-content status-${type}">
-                <span class="status-icon">${icons[type] || icons.info}</span>
-                <span class="status-message">${message}</span>
-            </div>
-        `;
-        
-        statusEl.style.cssText = `
-            margin: 10px 0;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            background: ${type === 'success' ? '#f0fdf4' : type === 'error' ? '#fef2f2' : type === 'warning' ? '#fffbeb' : '#f0f9ff'};
-            border: 1px solid ${type === 'success' ? '#bbf7d0' : type === 'error' ? '#fecaca' : type === 'warning' ? '#fed7aa' : '#bae6fd'};
-            color: ${type === 'success' ? '#166534' : type === 'error' ? '#991b1b' : type === 'warning' ? '#92400e' : '#1e40af'};
-        `;
-        
-        // Auto-hide success/info messages
-        if (type === 'success' || type === 'info') {
-            setTimeout(() => {
-                if (statusEl && statusEl.parentNode) {
-                    statusEl.style.opacity = '0';
-                    setTimeout(() => {
-                        if (statusEl.parentNode) statusEl.remove();
-                    }, 300);
-                }
-            }, 3000);
-        }
-    }
-}
-
-/**
- * Update stored topics preview section
- */
-function updateStoredTopicsPreview(storedData) {
-    const dataGrid = document.getElementById('topics-data-grid');
-    const totalCount = document.getElementById('total-topics-count');
-    const qualityScore = document.getElementById('data-quality-score');
-    const lastModified = document.getElementById('last-modified-time');
-    
-    if (totalCount) {
-        totalCount.textContent = storedData.total_topics || 0;
-    }
-    
-    if (qualityScore) {
-        const avgScore = storedData.quality_summary?.average_score || 0;
-        qualityScore.textContent = avgScore;
-    }
-    
-    if (lastModified) {
-        const lastEdit = storedData.metadata?.last_edited;
-        if (lastEdit) {
-            const date = new Date(lastEdit);
-            lastModified.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-        } else {
-            lastModified.textContent = 'Never';
-        }
-    }
-    
-    if (dataGrid && storedData.topics) {
-        dataGrid.innerHTML = '';
-        
-        Object.entries(storedData.topics).forEach(([topicKey, topicData]) => {
-            if (!topicData.is_empty) {
-                const card = createTopicDataCard(topicKey, topicData);
-                dataGrid.appendChild(card);
-            }
-        });
-    }
-}
-
-/**
- * Create topic data card for preview
- */
-function createTopicDataCard(topicKey, topicData) {
-    const card = document.createElement('div');
-    card.className = `topic-data-card quality-${topicData.quality_level || 'poor'}`;
-    
-    card.innerHTML = `
-        <div class="card-header">
-            <span class="topic-index">${topicData.index + 1}</span>
-            <div class="card-badges">
-                <span class="quality-badge">${topicData.quality || 0}%</span>
-            </div>
-        </div>
-        <div class="card-content">
-            <div class="topic-text" title="${escapeHtml(topicData.value)}">
-                ${escapeHtml(topicData.value.length > 60 ? topicData.value.substring(0, 57) + '...' : topicData.value)}
-            </div>
-        </div>
-        <div class="card-actions">
-            <button class="use-topic-btn" onclick="useStoredTopic('${topicKey}')" title="Use this topic">
-                Use
-            </button>
-        </div>
-    `;
-    
-    return card;
-}
-
-/**
- * Update topic field counter
- */
-function updateTopicFieldCounter(totalTopics) {
-    const counter = document.getElementById('topics-field-counter');
-    const activeCount = document.getElementById('active-topics-count');
-    
-    if (counter && activeCount) {
-        counter.style.display = totalTopics > 0 ? 'inline' : 'none';
-        activeCount.textContent = totalTopics;
-    }
-}
-
-/**
- * Show enhanced controls
- */
-function showEnhancedControls(storedData) {
-    const loadBtn = document.getElementById('load-stored-topics-btn');
-    const populateBtn = document.getElementById('populate-fields-btn');
-    
-    if (storedData && storedData.total_topics > 0) {
-        if (loadBtn) loadBtn.style.display = 'inline-flex';
-        if (populateBtn) populateBtn.style.display = 'inline-flex';
-    }
-}
-
-/**
- * Setup text content updater
- */
-function setupTextContentUpdater(property, selector, component) {
+function setupTextControl(property, selector, element) {
     const input = document.querySelector(`[data-property="${property}"]`);
     if (!input) return;
     
-    // Get initial value
-    const element = component.querySelector(selector);
-    if (element) {
-        input.value = element.textContent.trim();
+    // Get initial value from component
+    const previewElement = element.querySelector(selector);
+    if (previewElement) {
+        input.value = previewElement.textContent.trim();
     }
     
-    // Add input listener
-    input.addEventListener('input', function() {
-        const element = component.querySelector(selector);
-        if (element) {
-            element.textContent = this.value;
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            component.dispatchEvent(event);
+    // Add live update listener
+    input.addEventListener('input', debounce(() => {
+        const previewElement = element.querySelector(selector);
+        if (previewElement) {
+            previewElement.textContent = input.value;
+            triggerComponentUpdate(element);
         }
-    });
+    }, 300));
 }
 
 /**
- * Setup color picker
+ * Setup color picker with live preview
+ * @param {HTMLElement} element The component element
  */
-function setupColorPicker(property, element, applyCallback) {
-    const colorInput = document.querySelector(`[data-property="${property}"]`);
+function setupColorPicker(element) {
+    const colorInput = document.querySelector('[data-property="topicColor"]');
     const textInput = colorInput?.nextElementSibling;
     
     if (!colorInput || !textInput) return;
     
     // Sync color and text inputs
-    colorInput.addEventListener('input', function() {
-        textInput.value = this.value;
-        if (applyCallback) {
-            applyCallback(this.value);
-        }
-        
-        // Trigger save
-        const event = new Event('change', { bubbles: true });
-        element.dispatchEvent(event);
+    colorInput.addEventListener('input', () => {
+        textInput.value = colorInput.value;
+        applyColorToComponent(element, colorInput.value);
+        triggerComponentUpdate(element);
     });
     
-    textInput.addEventListener('input', function() {
-        // Validate hex color
-        if (/^#[0-9A-F]{6}$/i.test(this.value)) {
-            colorInput.value = this.value;
-            if (applyCallback) {
-                applyCallback(this.value);
-            }
-            
-            // Trigger save
-            const event = new Event('change', { bubbles: true });
-            element.dispatchEvent(event);
+    textInput.addEventListener('input', () => {
+        if (isValidHexColor(textInput.value)) {
+            colorInput.value = textInput.value;
+            applyColorToComponent(element, textInput.value);
+            triggerComponentUpdate(element);
         }
     });
 }
 
 /**
- * Get icon SVG based on icon type
+ * Apply color theme to component
+ * @param {HTMLElement} element The component element
+ * @param {string} color The hex color value
  */
-function getIconSvg(iconType) {
-    switch (iconType) {
-        case 'check':
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>`;
-        case 'star':
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>`;
-        case 'arrow':
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>`;
-        case 'circle':
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-            </svg>`;
-        case 'info':
-            return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>`;
-        default:
-            return '';
+function applyColorToComponent(element, color) {
+    element.style.setProperty('--topic-color', color);
+    
+    // Apply to topic elements
+    const topicElements = element.querySelectorAll('.topic-icon, .topic-item');
+    topicElements.forEach(el => {
+        if (el.classList.contains('topic-icon')) {
+            el.style.backgroundColor = color;
+        }
+    });
+}
+
+/**
+ * Setup checkbox controls
+ * @param {HTMLElement} element The component element
+ */
+function setupCheckboxControls(element) {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-property]');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            const property = checkbox.dataset.property;
+            element.setAttribute(`data-${property.replace(/([A-Z])/g, '-$1').toLowerCase()}`, checkbox.checked);
+            triggerComponentUpdate(element);
+        });
+    });
+}
+
+// =================================================================================
+// TOPICS EDITOR - Core topic management
+// =================================================================================
+
+let topicCount = 0;
+const MAX_TOPICS = 10;
+
+/**
+ * Setup topics editor functionality
+ */
+function setupTopicsEditor() {
+    console.log('📝 Setting up topics editor...');
+    
+    const addButton = document.getElementById('add-topic-btn');
+    const clearButton = document.getElementById('clear-all-topics-btn');
+    
+    if (addButton) {
+        addButton.addEventListener('click', addNewTopic);
+    }
+    
+    if (clearButton) {
+        clearButton.addEventListener('click', handleClearAllTopics);
+    }
+    
+    // Initialize with existing topics or create empty ones
+    loadExistingTopics();
+    
+    console.log('✅ Topics editor initialized');
+}
+
+/**
+ * Add a new topic to the editor
+ */
+function addNewTopic() {
+    if (topicCount >= MAX_TOPICS) {
+        showNotification(`Maximum of ${MAX_TOPICS} topics allowed`, 'warning');
+        return;
+    }
+    
+    const topicItem = createTopicEditorItem('', '', topicCount);
+    const topicsList = document.getElementById('design-topics-list');
+    
+    if (topicsList && topicItem) {
+        topicsList.appendChild(topicItem);
+        topicCount++;
+        updateTopicsCounter();
+        updateClearButtonVisibility();
+        
+        // Focus the new topic input
+        const input = topicItem.querySelector('input[data-topic-title]');
+        if (input) {
+            input.focus();
+            input.select();
+        }
     }
 }
 
 /**
- * Escape HTML for safe insertion
+ * Create a topic editor item
+ * @param {string} title The topic title
+ * @param {string} description The topic description
+ * @param {number} index The topic index
+ * @returns {HTMLElement} The topic editor item
+ */
+function createTopicEditorItem(title, description, index) {
+    const item = document.createElement('div');
+    item.className = 'topic-editor-item';
+    item.innerHTML = `
+        <div class="topic-editor-header">
+            <span class="topic-number">Topic ${index + 1}</span>
+            <button class="remove-item-btn" type="button" title="Remove topic">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Topic Title</label>
+            <input type="text" class="form-input" data-topic-title="${index}" value="${escapeHtml(title)}" placeholder="Enter topic title...">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description <span class="form-label__optional">(optional)</span></label>
+            <textarea class="form-input form-textarea" rows="2" data-topic-description="${index}" placeholder="Brief description...">${escapeHtml(description)}</textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Icon</label>
+            <select class="form-select" data-topic-icon="${index}">
+                <option value="check" selected>Checkmark</option>
+                <option value="star">Star</option>
+                <option value="arrow">Arrow</option>
+                <option value="circle">Circle</option>
+                <option value="info">Info</option>
+                <option value="none">No Icon</option>
+            </select>
+        </div>
+    `;
+    
+    // Setup event listeners
+    setupTopicItemEvents(item, index);
+    
+    return item;
+}
+
+/**
+ * Setup event listeners for a topic item
+ * @param {HTMLElement} item The topic item element
+ * @param {number} index The topic index
+ */
+function setupTopicItemEvents(item, index) {
+    // Input change listeners
+    const inputs = item.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', debounce(() => {
+            updateComponentPreview();
+        }, 300));
+    });
+    
+    // Remove button listener
+    const removeBtn = item.querySelector('.remove-item-btn');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+            removeTopic(item);
+        });
+    }
+}
+
+/**
+ * Remove a topic item
+ * @param {HTMLElement} item The topic item to remove
+ */
+function removeTopic(item) {
+    item.remove();
+    topicCount--;
+    updateTopicsCounter();
+    updateClearButtonVisibility();
+    renumberTopics();
+    updateComponentPreview();
+}
+
+/**
+ * Handle clear all topics button
+ */
+function handleClearAllTopics() {
+    if (topicCount === 0) return;
+    
+    if (confirm(`Are you sure you want to remove all ${topicCount} topics?`)) {
+        const topicsList = document.getElementById('design-topics-list');
+        if (topicsList) {
+            topicsList.innerHTML = '';
+            topicCount = 0;
+            updateTopicsCounter();
+            updateClearButtonVisibility();
+            updateComponentPreview();
+            showNotification('All topics cleared', 'success');
+        }
+    }
+}
+
+/**
+ * Load existing topics from component
+ */
+function loadExistingTopics() {
+    const component = document.querySelector('.editable-element[data-component="topics"]');
+    if (!component) return;
+    
+    const existingTopics = component.querySelectorAll('.topic-item');
+    
+    if (existingTopics.length > 0) {
+        // Load from existing component
+        existingTopics.forEach((topicEl, index) => {
+            const title = topicEl.querySelector('.topic-title')?.textContent || '';
+            const description = topicEl.querySelector('.topic-description')?.textContent || '';
+            
+            const topicItem = createTopicEditorItem(title, description, index);
+            const topicsList = document.getElementById('design-topics-list');
+            if (topicsList) {
+                topicsList.appendChild(topicItem);
+                topicCount++;
+            }
+        });
+    } else {
+        // Create default empty topics
+        for (let i = 0; i < 3; i++) {
+            const topicItem = createTopicEditorItem('', '', i);
+            const topicsList = document.getElementById('design-topics-list');
+            if (topicsList) {
+                topicsList.appendChild(topicItem);
+                topicCount++;
+            }
+        }
+    }
+    
+    updateTopicsCounter();
+    updateClearButtonVisibility();
+}
+
+/**
+ * Update topics counter
+ */
+function updateTopicsCounter() {
+    const counter = document.getElementById('topic-count');
+    if (counter) {
+        counter.textContent = topicCount;
+    }
+}
+
+/**
+ * Update clear button visibility
+ */
+function updateClearButtonVisibility() {
+    const clearButton = document.getElementById('clear-all-topics-btn');
+    if (clearButton) {
+        clearButton.style.display = topicCount > 0 ? 'flex' : 'none';
+    }
+}
+
+/**
+ * Renumber topics after removal
+ */
+function renumberTopics() {
+    const topicItems = document.querySelectorAll('.topic-editor-item');
+    topicItems.forEach((item, index) => {
+        const numberEl = item.querySelector('.topic-number');
+        if (numberEl) {
+            numberEl.textContent = `Topic ${index + 1}`;
+        }
+        
+        // Update data attributes
+        const titleInput = item.querySelector('[data-topic-title]');
+        const descInput = item.querySelector('[data-topic-description]');
+        const iconSelect = item.querySelector('[data-topic-icon]');
+        
+        if (titleInput) titleInput.setAttribute('data-topic-title', index);
+        if (descInput) descInput.setAttribute('data-topic-description', index);
+        if (iconSelect) iconSelect.setAttribute('data-topic-icon', index);
+    });
+}
+
+// =================================================================================
+// DISPLAY CONTROLS - Layout and styling options
+// =================================================================================
+
+/**
+ * Setup display and layout controls
+ * @param {HTMLElement} element The component element
+ */
+function setupDisplayControls(element) {
+    console.log('🎨 Setting up display controls...');
+    
+    // Display style selector
+    const displayStyleSelect = document.querySelector('[data-property="displayStyle"]');
+    if (displayStyleSelect) {
+        displayStyleSelect.addEventListener('change', () => {
+            const style = displayStyleSelect.value;
+            element.setAttribute('data-display-style', style);
+            updateColumnsVisibility(style);
+            triggerComponentUpdate(element);
+        });
+        
+        // Initialize
+        updateColumnsVisibility(displayStyleSelect.value);
+    }
+    
+    // Columns selector
+    const columnsSelect = document.querySelector('[data-property="columns"]');
+    if (columnsSelect) {
+        columnsSelect.addEventListener('change', () => {
+            element.style.setProperty('--topic-columns', columnsSelect.value);
+            triggerComponentUpdate(element);
+        });
+    }
+    
+    // Other selects
+    const selects = document.querySelectorAll('select[data-property]');
+    selects.forEach(select => {
+        if (select !== displayStyleSelect && select !== columnsSelect) {
+            select.addEventListener('change', () => {
+                const property = select.dataset.property;
+                element.setAttribute(`data-${property.replace(/([A-Z])/g, '-$1').toLowerCase()}`, select.value);
+                triggerComponentUpdate(element);
+            });
+        }
+    });
+    
+    console.log('✅ Display controls initialized');
+}
+
+/**
+ * Update columns field visibility based on display style
+ * @param {string} style The selected display style
+ */
+function updateColumnsVisibility(style) {
+    const columnsGroup = document.getElementById('columns-group');
+    if (columnsGroup) {
+        columnsGroup.style.display = (style === 'grid' || style === 'cards') ? 'block' : 'none';
+    }
+}
+
+// =================================================================================
+// ADVANCED FEATURES - Collapsible sections
+// =================================================================================
+
+/**
+ * Setup advanced features (collapsible sections)
+ */
+function setupAdvancedFeatures() {
+    console.log('⚙️ Setting up advanced features...');
+    
+    // Setup collapsible sections
+    const toggleButtons = document.querySelectorAll('.form-section__toggle');
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', handleSectionToggle);
+        button.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSectionToggle.call(button, e);
+            }
+        });
+    });
+    
+    console.log('✅ Advanced features initialized');
+}
+
+/**
+ * Handle section toggle
+ * @param {Event} e The click event
+ */
+function handleSectionToggle(e) {
+    const section = this.closest('.form-section--collapsible');
+    const content = section.querySelector('.form-section__content');
+    
+    if (section && content) {
+        const isExpanded = section.classList.contains('expanded');
+        
+        if (isExpanded) {
+            // Collapse
+            content.style.display = 'none';
+            section.classList.remove('expanded');
+        } else {
+            // Expand
+            content.style.display = 'block';
+            section.classList.add('expanded');
+        }
+        
+        // Update ARIA attributes for accessibility
+        this.setAttribute('aria-expanded', !isExpanded);
+    }
+}
+
+// =================================================================================
+// MKCG INTEGRATION - Optional advanced features
+// =================================================================================
+
+/**
+ * Setup MKCG integration if available
+ */
+function setupMKCGIntegration() {
+    console.log('🔗 Checking for MKCG integration...');
+    
+    // Check if MKCG is available
+    if (!window.topicsMkcgIntegration) {
+        console.log('📝 MKCG not available - hiding integration section');
+        const mkcgSection = document.getElementById('mkcg-integration');
+        if (mkcgSection) {
+            mkcgSection.style.display = 'none';
+        }
+        return;
+    }
+    
+    // Show MKCG section
+    const mkcgSection = document.getElementById('mkcg-integration');
+    if (mkcgSection) {
+        mkcgSection.style.display = 'block';
+    }
+    
+    // Setup MKCG controls
+    setupMKCGControls();
+    
+    console.log('✅ MKCG integration initialized');
+}
+
+/**
+ * Setup MKCG controls
+ */
+function setupMKCGControls() {
+    const loadButton = document.getElementById('load-saved-topics');
+    const syncButton = document.getElementById('sync-topics');
+    
+    if (loadButton) {
+        loadButton.addEventListener('click', handleLoadSavedTopics);
+    }
+    
+    if (syncButton) {
+        syncButton.addEventListener('click', handleSyncTopics);
+    }
+    
+    // Update status
+    updateMKCGStatus();
+}
+
+/**
+ * Handle load saved topics
+ */
+function handleLoadSavedTopics() {
+    console.log('📥 Loading saved topics...');
+    
+    if (window.topicsMkcgIntegration && window.topicsMkcgIntegration.loadSavedTopics) {
+        try {
+            window.topicsMkcgIntegration.loadSavedTopics()
+                .then(() => {
+                    showNotification('Topics loaded successfully', 'success');
+                    loadExistingTopics(); // Refresh the editor
+                })
+                .catch(error => {
+                    console.error('Error loading topics:', error);
+                    showNotification('Failed to load topics', 'error');
+                });
+        } catch (error) {
+            console.error('Error calling MKCG integration:', error);
+            showNotification('MKCG integration error', 'error');
+        }
+    }
+}
+
+/**
+ * Handle sync topics
+ */
+function handleSyncTopics() {
+    console.log('🔄 Syncing topics...');
+    
+    if (window.topicsMkcgIntegration && window.topicsMkcgIntegration.syncTopics) {
+        try {
+            window.topicsMkcgIntegration.syncTopics()
+                .then(() => {
+                    showNotification('Topics synced successfully', 'success');
+                    loadExistingTopics(); // Refresh the editor
+                })
+                .catch(error => {
+                    console.error('Error syncing topics:', error);
+                    showNotification('Failed to sync topics', 'error');
+                });
+        } catch (error) {
+            console.error('Error calling MKCG integration:', error);
+            showNotification('MKCG integration error', 'error');
+        }
+    }
+}
+
+/**
+ * Update MKCG status indicator
+ */
+function updateMKCGStatus() {
+    const statusDot = document.querySelector('.status-dot');
+    const statusText = document.querySelector('.status-text');
+    const actionsDiv = document.getElementById('mkcg-actions');
+    
+    if (window.topicsMkcgIntegration && window.topicsMkcgIntegration.isConnected) {
+        if (statusDot) statusDot.setAttribute('data-status', 'connected');
+        if (statusText) statusText.textContent = 'Connected to Content Generator';
+        if (actionsDiv) actionsDiv.style.display = 'block';
+    } else {
+        if (statusDot) statusDot.setAttribute('data-status', 'disconnected');
+        if (statusText) statusText.textContent = 'Content Generator not available';
+        if (actionsDiv) actionsDiv.style.display = 'none';
+    }
+}
+
+// =================================================================================
+// COMPONENT PREVIEW UPDATE - Live preview functionality
+// =================================================================================
+
+/**
+ * Update the component preview based on panel inputs
+ */
+function updateComponentPreview() {
+    const component = document.querySelector('.editable-element[data-component="topics"]');
+    if (!component) return;
+    
+    const topicsContainer = component.querySelector('.topics-container');
+    if (!topicsContainer) return;
+    
+    // Clear existing topics
+    topicsContainer.innerHTML = '';
+    
+    // Get all topic items from editor
+    const topicItems = document.querySelectorAll('.topic-editor-item');
+    
+    topicItems.forEach((item, index) => {
+        const titleInput = item.querySelector(`[data-topic-title="${index}"]`);
+        const descInput = item.querySelector(`[data-topic-description="${index}"]`);
+        const iconSelect = item.querySelector(`[data-topic-icon="${index}"]`);
+        
+        const title = titleInput?.value.trim();
+        const description = descInput?.value.trim();
+        const iconType = iconSelect?.value || 'check';
+        
+        if (title) {
+            const topicElement = createTopicPreviewElement(title, description, iconType);
+            topicsContainer.appendChild(topicElement);
+        }
+    });
+    
+    // Trigger component update
+    triggerComponentUpdate(component);
+}
+
+/**
+ * Create a topic preview element
+ * @param {string} title The topic title
+ * @param {string} description The topic description
+ * @param {string} iconType The icon type
+ * @returns {HTMLElement} The topic element
+ */
+function createTopicPreviewElement(title, description, iconType) {
+    const topicDiv = document.createElement('div');
+    topicDiv.className = 'topic-item';
+    
+    // Create icon if not 'none'
+    let iconHtml = '';
+    if (iconType !== 'none') {
+        iconHtml = `<div class="topic-icon" data-icon="${iconType}">${getIconSVG(iconType)}</div>`;
+    }
+    
+    // Check if descriptions should be shown
+    const showDescriptions = document.querySelector('[data-property="showDescriptions"]')?.checked !== false;
+    
+    topicDiv.innerHTML = `
+        ${iconHtml}
+        <div class="topic-content">
+            <h3 class="topic-title">${escapeHtml(title)}</h3>
+            ${description && showDescriptions ? `<p class="topic-description">${escapeHtml(description)}</p>` : ''}
+        </div>
+    `;
+    
+    return topicDiv;
+}
+
+/**
+ * Get SVG icon for topic type
+ * @param {string} iconType The icon type
+ * @returns {string} The SVG HTML
+ */
+function getIconSVG(iconType) {
+    const icons = {
+        check: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+        star: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
+        arrow: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>',
+        circle: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>',
+        info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+    };
+    
+    return icons[iconType] || icons.check;
+}
+
+// =================================================================================
+// UTILITY FUNCTIONS - Helper functions
+// =================================================================================
+
+/**
+ * Trigger component update event
+ * @param {HTMLElement} element The component element
+ */
+function triggerComponentUpdate(element) {
+    const event = new Event('change', { bubbles: true });
+    element.dispatchEvent(event);
+}
+
+/**
+ * Debounce function to limit function calls
+ * @param {Function} func The function to debounce
+ * @param {number} wait The debounce delay in milliseconds
+ * @returns {Function} The debounced function
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+/**
+ * Escape HTML to prevent XSS
+ * @param {string} text The text to escape
+ * @returns {string} The escaped text
  */
 function escapeHtml(text) {
     if (!text) return '';
@@ -705,57 +750,158 @@ function escapeHtml(text) {
 }
 
 /**
- * Global function for using stored topics
+ * Check if a string is a valid hex color
+ * @param {string} color The color string to validate
+ * @returns {boolean} True if valid hex color
  */
-window.useStoredTopic = function(topicKey) {
-    if (!window.storedTopicsData || !window.storedTopicsData.topics[topicKey]) {
-        console.warn('Stored topic not available:', topicKey);
-        return;
-    }
+function isValidHexColor(color) {
+    return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
+}
+
+/**
+ * Show notification to user
+ * @param {string} message The notification message
+ * @param {string} type The notification type (success, error, warning, info)
+ */
+function showNotification(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
     
-    const topicData = window.storedTopicsData.topics[topicKey];
-    console.log('📋 Using stored topic:', topicKey, topicData.value);
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `topics-notification topics-notification--${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-icon">${getNotificationIcon(type)}</span>
+            <span class="notification-message">${escapeHtml(message)}</span>
+            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
     
-    // Find available topic input slot
-    const inputs = document.querySelectorAll('[data-topic-title]');
-    for (let input of inputs) {
-        if (!input.value.trim()) {
-            input.value = topicData.value;
-            updateTopicsInComponent(document.querySelector('.editable-element--selected'));
-            showDataLoadingStatus(`Topic "${topicData.value}" added to panel`, 'success');
-            break;
+    // Add styles
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 400px;
+        font-size: 14px;
+        color: white;
+        animation: slideInRight 0.3s ease-out;
+        background: ${getNotificationColor(type)};
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => notification.remove(), 300);
         }
-    }
+    }, 5000);
+}
+
+/**
+ * Get notification icon
+ * @param {string} type The notification type
+ * @returns {string} The icon character
+ */
+function getNotificationIcon(type) {
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+    return icons[type] || icons.info;
+}
+
+/**
+ * Get notification color
+ * @param {string} type The notification type
+ * @returns {string} The background color
+ */
+function getNotificationColor(type) {
+    const colors = {
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+    return colors[type] || colors.info;
+}
+
+// =================================================================================
+// GLOBAL INTERFACE - For external integration
+// =================================================================================
+
+// Expose clean API for external components
+window.topicsPanel = {
+    initialize: initializeTopicsPanel,
+    updatePreview: updateComponentPreview,
+    addTopic: addNewTopic,
+    clearTopics: handleClearAllTopics,
+    showNotification: showNotification
 };
 
-// Global helper function for clearing all topics (used by MKCG integration)
-window.clearAllTopicsContent = function() {
-    console.log('🗑️ Clearing all topics content...');
-    
-    for (let i = 0; i < 5; i++) {
-        const titleInput = document.querySelector(`[data-topic-title="${i}"]`);
-        const descInput = document.querySelector(`[data-topic-description="${i}"]`);
-        const iconSelect = document.querySelector(`[data-topic-icon="${i}"]`);
+// Add notification animations to page
+if (!document.getElementById('topics-notification-styles')) {
+    const style = document.createElement('style');
+    style.id = 'topics-notification-styles';
+    style.textContent = `
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
         
-        if (titleInput) titleInput.value = '';
-        if (descInput) descInput.value = '';
-        if (iconSelect) iconSelect.value = 'check';
-    }
-    
-    // Update component
-    const component = document.querySelector('.editable-element--selected');
-    if (component) {
-        updateTopicsInComponent(component);
-    }
-    
-    console.log('✅ All topics content cleared');
-};
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+        }
+        
+        .notification-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: inherit;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: auto;
+        }
+        
+        .notification-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    `;
+    document.head.appendChild(style);
+}
 
-// Global helper function for scheduling auto-save (used by MKCG integration)
-window.scheduleAutoSave = function() {
-    console.log('💾 Auto-save scheduled by MKCG integration');
-    // Auto-save logic can be implemented here if needed
-};
-
-console.log('✅ Topics Panel Script loaded with GEMINI\'S SIMPLIFIED DIRECT APPROACH');
-console.log('🎯 Using existing addTopicToPanel() function directly in a simple loop');
+console.log('✅ Topics Panel Script: Loaded successfully with clean architecture');
