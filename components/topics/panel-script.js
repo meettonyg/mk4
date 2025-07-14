@@ -2,22 +2,242 @@
  * Topics Component Panel Script - ROOT FIX IMPLEMENTATION
  * PHASE 3: Simplified, focused JavaScript for better UX
  * Focus: Core functionality, clean architecture, maintainable code
+ * 
+ * ROOT FIX: Ensure immediate availability and error recovery
  */
 
 // =================================================================================
-// CORE INITIALIZATION - Clean, single-purpose entry point
+// EMERGENCY INITIALIZATION - Immediate script loading verification
 // =================================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎯 Topics Panel Script: Starting initialization...');
+(function() {
+    'use strict';
     
-    const componentElement = document.querySelector('.editable-element[data-component="topics"]');
-    if (componentElement) {
-        initializeTopicsPanel(componentElement);
-    } else {
-        console.log('📝 Topics component not found - panel will initialize when component is selected');
+    console.log('🎯 Topics Panel Script: LOADING (Enhanced Debug Mode)');
+    
+    // Immediate availability check
+    if (typeof window.topicsPanel !== 'undefined') {
+        console.log('⚠️ Topics Panel already exists, reinitializing...');
     }
-});
+    
+    // Emergency error handler
+    window.addEventListener('error', function(e) {
+        if (e.filename && e.filename.includes('panel-script')) {
+            console.error('❌ Topics Panel Script Error:', e.message, 'Line:', e.lineno);
+        }
+    });
+    
+    // Initialize immediately if DOM is ready, otherwise wait
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeTopicsPanel);
+    } else {
+        // DOM is already ready
+        initializeTopicsPanel();
+    }
+    
+    function initializeTopicsPanel() {
+        console.log('🚀 Topics Panel: Starting initialization...');
+        
+        try {
+            // Initialize core panel functionality
+            setupTopicsPanel();
+            console.log('✅ Topics Panel initialized successfully');
+        } catch (error) {
+            console.error('❌ Error initializing Topics Panel:', error);
+            
+            // Emergency fallback
+            setupEmergencyTopicsPanel();
+        }
+    }
+    
+    function setupTopicsPanel() {
+        // Create global topics panel object
+        window.topicsPanel = {
+            version: 'root-fix-emergency',
+            initialized: false,
+            data: null
+        };
+        
+        console.log('🔧 Setting up Topics Panel core functions...');
+        
+        // Essential function: Load stored topics data
+        window.topicsPanel.loadStoredTopicsData = function(postId) {
+            console.log('📥 Loading stored topics data for post:', postId);
+            
+            // Get post ID from parameter or detect automatically
+            const targetPostId = postId || detectPostId();
+            
+            if (!targetPostId) {
+                console.warn('⚠️ No post ID available for loading topics');
+                return Promise.reject('No post ID');
+            }
+            
+            // Get AJAX data
+            const ajaxUrl = window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
+            const nonce = window.guestifyData?.nonce || '';
+            
+            if (!nonce) {
+                console.error('❌ No nonce available for AJAX request');
+                return Promise.reject('No nonce');
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'load_stored_topics');
+            formData.append('nonce', nonce);
+            formData.append('post_id', targetPostId);
+            
+            console.log('📡 Making AJAX request to:', ajaxUrl);
+            
+            return fetch(ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('📡 AJAX Response status:', response.status);
+                return response.text();
+            })
+            .then(text => {
+                console.log('📡 Raw AJAX response:', text.substring(0, 200) + '...');
+                
+                try {
+                    const data = JSON.parse(text);
+                    console.log('📊 Parsed AJAX data:', data);
+                    
+                    if (data.success) {
+                        console.log('✅ Topics data loaded successfully!');
+                        window.storedTopicsData = data;
+                        window.topicsPanel.data = data;
+                        
+                        // Try to update the UI if possible
+                        updateTopicsUI(data);
+                        
+                        return data;
+                    } else {
+                        console.error('❌ AJAX call failed:', data.data);
+                        return Promise.reject(data.data || 'Unknown error');
+                    }
+                } catch (parseError) {
+                    console.error('❌ Failed to parse AJAX response:', parseError);
+                    console.log('Raw response that failed to parse:', text);
+                    return Promise.reject('Invalid JSON response');
+                }
+            })
+            .catch(error => {
+                console.error('❌ AJAX request failed:', error);
+                return Promise.reject(error);
+            });
+        };
+        
+        // Auto-load topics data if post ID is available
+        const postId = detectPostId();
+        if (postId) {
+            console.log('🔄 Auto-loading topics for detected post ID:', postId);
+            
+            // Delay slightly to ensure everything is ready
+            setTimeout(() => {
+                window.topicsPanel.loadStoredTopicsData(postId)
+                    .then(data => {
+                        console.log('🎉 Auto-load successful!', data);
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ Auto-load failed:', error);
+                    });
+            }, 1000);
+        }
+        
+        window.topicsPanel.initialized = true;
+        console.log('✅ Topics Panel setup complete');
+    }
+    
+    function setupEmergencyTopicsPanel() {
+        console.log('🚨 Setting up emergency Topics Panel fallback...');
+        
+        window.topicsPanel = {
+            version: 'emergency-fallback',
+            initialized: true,
+            loadStoredTopicsData: function() {
+                console.log('🚨 Emergency handler: Topics data loading not available');
+                return Promise.reject('Emergency mode - full functionality not available');
+            }
+        };
+    }
+    
+    function detectPostId() {
+        // Try multiple sources for post ID
+        const urlParams = new URLSearchParams(window.location.search);
+        let postId = urlParams.get('post_id') || urlParams.get('p') || urlParams.get('page_id');
+        
+        if (!postId) {
+            // Check if it's in the topics container
+            const topicsContainer = document.querySelector('.topics-container');
+            if (topicsContainer) {
+                postId = topicsContainer.getAttribute('data-post-id');
+            }
+        }
+        
+        if (!postId) {
+            // Check global guestify data
+            postId = window.guestifyData?.postId;
+        }
+        
+        console.log('🔍 Detected post ID:', postId);
+        return postId;
+    }
+    
+    function updateTopicsUI(data) {
+        try {
+            if (!data || !data.topics) {
+                return;
+            }
+            
+            console.log('🎨 Updating topics UI with loaded data...');
+            
+            // Show success message if topics found
+            const topicsCount = Object.keys(data.topics).length;
+            if (topicsCount > 0) {
+                showTopicsLoadedMessage(topicsCount);
+            }
+            
+        } catch (error) {
+            console.error('❌ Error updating topics UI:', error);
+        }
+    }
+    
+    function showTopicsLoadedMessage(count) {
+        // Create a temporary notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        `;
+        notification.textContent = `✅ ${count} topics loaded from post data!`;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+    
+})();
+
+console.log('📝 Topics Panel Script: Core emergency functions loaded');
+
+// =================================================================================
+// ORIGINAL PANEL FUNCTIONALITY (Enhanced with error recovery)
+// =================================================================================
 
 /**
  * Main panel initialization - simplified and focused

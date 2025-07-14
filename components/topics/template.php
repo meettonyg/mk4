@@ -4,6 +4,16 @@
  * ROOT FIX: Proper validation, security, and flexible topic management
  */
 
+// ROOT FIX: CRITICAL - Extract variables from ComponentLoader props FIRST
+// This ensures enhanced props from ComponentLoader are properly available
+extract($props ?? []);
+
+// ROOT FIX: Debug what props were actually passed to template
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log("GMKB Topics TEMPLATE ROOT FIX: 📦 Props received: " . print_r($props ?? [], true));
+    error_log("GMKB Topics TEMPLATE ROOT FIX: 🔑 Variables after extract: post_id=" . ($post_id ?? 'undefined') . ", topics=" . (isset($topics) ? count($topics) : 'undefined'));
+}
+
 // Enhanced topic validation and sanitization
 function validateAndSanitizeTopics($topics, $maxTopics = 10) {
     if (!is_array($topics)) {
@@ -41,48 +51,143 @@ $topicColor = sanitize_hex_color($topicColor ?? '#4f46e5');
 $animation = sanitize_text_field($animation ?? 'none');
 $hoverEffect = sanitize_text_field($hoverEffect ?? 'scale');
 
-// ROOT FIX: Dynamic topic processing using MKCG data integration
-// Get post_id from props or detect from URL
+// ROOT FIX: PROPS-FIRST POST_ID DETECTION (ComponentLoader Enhanced)
 $current_post_id = 0;
-if (isset($post_id) && is_numeric($post_id)) {
+
+// PRIORITY 1: Props from ComponentLoader (MOST RELIABLE)
+if (isset($post_id) && is_numeric($post_id) && $post_id > 0) {
     $current_post_id = intval($post_id);
-} elseif (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
-    $current_post_id = intval($_GET['post_id']);
-} elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
-    $current_post_id = intval($_GET['p']);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log("GMKB Topics ROOT FIX: ✅ Post ID from ComponentLoader props: {$current_post_id}");
+    }
+}
+
+// PRIORITY 2: URL parameters (?post_id=32372)
+if ($current_post_id === 0) {
+    if (isset($_GET['post_id']) && is_numeric($_GET['post_id']) && $_GET['post_id'] > 0) {
+        $current_post_id = intval($_GET['post_id']);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?post_id: {$current_post_id}");
+        }
+    } elseif (isset($_GET['p']) && is_numeric($_GET['p']) && $_GET['p'] > 0) {
+        $current_post_id = intval($_GET['p']);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?p: {$current_post_id}");
+        }
+    }
+}
+
+// PRIORITY 3: WordPress context (fallback)
+if ($current_post_id === 0 && function_exists('get_the_ID')) {
+    $wp_post_id = get_the_ID();
+    if ($wp_post_id && $wp_post_id > 0) {
+        $current_post_id = $wp_post_id;
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from WordPress get_the_ID(): {$current_post_id}");
+        }
+    }
+}
+
+// ROOT FIX: Enhanced debugging
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log("GMKB Topics ROOT FIX: 🎯 FINAL post_id detected: {$current_post_id}");
+    error_log("GMKB Topics ROOT FIX: 📍 URL: " . ($_SERVER['REQUEST_URI'] ?? 'not_set'));
+    error_log("GMKB Topics ROOT FIX: 🔍 Available props: " . print_r(array_keys(get_defined_vars()), true));
 }
 
 // Initialize topics array
 $topicsList = [];
 $hasDynamicTopics = false;
 
-// ROOT FIX: Try to get topics from MKCG data integration first
+// ROOT FIX: ENHANCED MKCG DATA INTEGRATION (Props-First)
 if ($current_post_id > 0) {
-    // Check if MKCG integration class is available
-    if (class_exists('GMKB_MKCG_Data_Integration')) {
+    // PRIORITY 1: Check if topics data was passed via ComponentLoader props
+    if (isset($topics) && is_array($topics) && !empty($topics)) {
+        foreach ($topics as $index => $topic_value) {
+            if (!empty($topic_value) && is_string($topic_value)) {
+                $topicsList[] = [
+                    'title' => sanitize_text_field($topic_value),
+                    'description' => '',
+                    'source' => 'componentloader_props',
+                    'meta_key' => "topic_" . ($index + 1)
+                ];
+                $hasDynamicTopics = true;
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG && $hasDynamicTopics) {
+            error_log("GMKB Topics ROOT FIX: ✅ Loaded " . count($topicsList) . " topics from ComponentLoader props");
+        }
+    }
+    
+    // PRIORITY 2: MKCG Integration Class (if props didn't work)
+    if (!$hasDynamicTopics && class_exists('GMKB_MKCG_Data_Integration')) {
         $mkcg_integration = GMKB_MKCG_Data_Integration::get_instance();
         $post_data = $mkcg_integration->get_post_data($current_post_id);
         
         if ($post_data && isset($post_data['topics']['topics']) && !empty($post_data['topics']['topics'])) {
             $mkcg_topics = $post_data['topics']['topics'];
             
-            // Convert MKCG topics to component format
             foreach ($mkcg_topics as $topic_key => $topic_value) {
                 if (!empty($topic_value)) {
                     $topicsList[] = [
                         'title' => sanitize_text_field($topic_value),
-                        'description' => '', // MKCG topics are title-only
-                        'source' => 'mkcg',
+                        'description' => '',
+                        'source' => 'mkcg_integration',
                         'meta_key' => $topic_key
                     ];
                 }
             }
             $hasDynamicTopics = true;
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB Topics ROOT FIX: ✅ Loaded " . count($topicsList) . " topics from MKCG Integration");
+            }
+        }
+    }
+    
+    // PRIORITY 3: Direct Meta Key Detection (USER'S FORMAT: topic_1, topic_2, etc.)
+    if (!$hasDynamicTopics) {
+        $meta_formats = [
+            'topic_',       // USER'S FORMAT (topic_1, topic_2, etc.) - HIGHEST PRIORITY
+            'mkcg_topic_',  // Original MKCG format
+            'topics_',      // Plural topics format
+            '_topic_',      // Underscore prefix format
+            'speaking_topic_', // Descriptive format
+            'pod_topic_'    // Pods plugin format
+        ];
+        
+        foreach ($meta_formats as $format) {
+            $topics_found_this_format = 0;
+            
+            for ($i = 1; $i <= 5; $i++) {
+                $meta_key = $format . $i;
+                $topic_value = get_post_meta($current_post_id, $meta_key, true);
+                
+                if (!empty($topic_value)) {
+                    $topicsList[] = [
+                        'title' => sanitize_text_field($topic_value),
+                        'description' => '',
+                        'source' => 'direct_meta_' . rtrim($format, '_'),
+                        'meta_key' => $meta_key
+                    ];
+                    $topics_found_this_format++;
+                    $hasDynamicTopics = true;
+                }
+            }
+            
+            // If we found topics with this format, log and stop trying other formats
+            if ($topics_found_this_format > 0) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB Topics ROOT FIX: ✅ Found {$topics_found_this_format} topics using format '{$format}' for post {$current_post_id}");
+                }
+                break;
+            }
         }
     }
 }
 
-// ROOT FIX: Fallback to manual topics from props if no MKCG data
+// ROOT FIX: Fallback to manual topics from props if no meta data found
 if (!$hasDynamicTopics && isset($topics) && is_array($topics)) {
     foreach ($topics as $index => $topic) {
         if (is_string($topic) && !empty(trim($topic))) {
@@ -206,12 +311,13 @@ if (empty($topicsList)) {
             </div>
         <?php endif; ?>
 
-        <!-- Topics Grid/List Container -->
+        <!-- ROOT FIX: Topics Grid/List Container with CORRECT Data Attributes -->
         <div class="topics-container" 
              data-layout="<?php echo esc_attr($layoutStyle); ?>"
              data-has-dynamic-topics="<?php echo $hasDynamicTopics ? 'true' : 'false'; ?>"
              data-post-id="<?php echo esc_attr($current_post_id); ?>"
-             data-topics-source="<?php echo esc_attr($topicsList[0]['source'] ?? 'none'); ?>">
+             data-topics-source="<?php echo esc_attr($topicsList[0]['source'] ?? 'none'); ?>"
+             data-topics-count="<?php echo count($topicsList); ?>">
             
             <?php if (!empty($topicsList)): ?>
                 <?php foreach ($topicsList as $index => $topic): ?>
@@ -302,11 +408,22 @@ if (empty($topicsList)) {
                     </div>
                 <?php endforeach; ?>
                 
-                <!-- ROOT FIX: Dynamic topics info for debugging -->
+                <!-- ROOT FIX: Enhanced Debug Info -->
                 <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
-                    <div class="topics-debug-info" style="margin-top: 10px; padding: 5px; background: #f0f0f0; font-size: 10px; color: #666;">
-                        Topics: <?php echo count($topicsList); ?> | Source: <?php echo $hasDynamicTopics ? 'Dynamic' : 'Fallback'; ?> | Post ID: <?php echo $current_post_id; ?>
+                    <div class="topics-debug-info" style="margin-top: 10px; padding: 5px; background: #f0f0f0; font-size: 10px; color: #666; border-left: 3px solid #10b981;">
+                        <strong>🔧 ROOT FIX DEBUG:</strong><br>
+                        Topics Found: <?php echo count($topicsList); ?> | 
+                        Dynamic: <?php echo $hasDynamicTopics ? 'TRUE' : 'FALSE'; ?> | 
+                        Post ID: <?php echo $current_post_id; ?> | 
+                        Source: <?php echo esc_html($topicsList[0]['source'] ?? 'none'); ?><br>
+                        <?php if (!empty($topicsList)): ?>
+                            Topics: <?php echo implode(', ', array_map(function($t) { return '"' . $t['title'] . '"'; }, array_slice($topicsList, 0, 3))); ?><?php echo count($topicsList) > 3 ? '...' : ''; ?>
+                        <?php endif; ?>
                     </div>
+                    <?php 
+                    // ROOT FIX: Log final template state
+                    error_log("GMKB Topics ROOT FIX: 🏁 TEMPLATE COMPLETE - Found " . count($topicsList) . " topics, dynamic: " . ($hasDynamicTopics ? 'TRUE' : 'FALSE') . ", post_id: {$current_post_id}");
+                    ?>
                 <?php endif; ?>
             <?php else: ?>
                 <!-- Fallback message when no topics available -->

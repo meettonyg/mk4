@@ -218,10 +218,15 @@ class ComponentLoader {
                     // Add component-specific data to props
                     switch ($componentName) {
                         case 'topics':
-                            if (isset($mkcgData['topics']['topics'])) {
-                                $enhancedProps['topics'] = array_values($mkcgData['topics']['topics']);
-                            }
-                            break;
+                        if (isset($mkcgData['topics']['topics'])) {
+                        $enhancedProps['topics'] = array_values($mkcgData['topics']['topics']);
+                            
+                            // ROOT FIX: Enhanced logging for topics data
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("ComponentLoader ROOT FIX: ✅ Enhanced topics props with " . count($enhancedProps['topics']) . " topics from MKCG");
+                        }
+                    }
+                    break;
                         case 'biography':
                             if (isset($mkcgData['biography']['biography'])) {
                                 $enhancedProps = array_merge($enhancedProps, $mkcgData['biography']['biography']);
@@ -246,9 +251,14 @@ class ComponentLoader {
                 }
             }
             
-            // Log successful data enhancement for debugging
+            // ROOT FIX: Enhanced logging for data enhancement
             if (defined('WP_DEBUG') && WP_DEBUG && isset($enhancedProps['mkcg_data'])) {
-                error_log("ComponentLoader: Enhanced {$componentName} component with MKCG data for post {$post_id}");
+                error_log("ComponentLoader ROOT FIX: ✅ Enhanced {$componentName} component with MKCG data for post {$post_id}");
+                
+                // Special logging for topics component
+                if ($componentName === 'topics' && isset($enhancedProps['topics'])) {
+                    error_log("ComponentLoader ROOT FIX: 📝 Topics data passed to template: " . print_r($enhancedProps['topics'], true));
+                }
             }
         }
         
@@ -256,44 +266,58 @@ class ComponentLoader {
     }
     
     /**
-     * ROOT FIX: Detect post_id from multiple sources
+     * ROOT FIX: Enhanced post_id detection with comprehensive logging
      * 
      * @param array $props Component props
      * @return int Post ID or 0 if not found
      */
     private function detectPostId($props) {
-        // Check props first
+        $detected_post_id = 0;
+        $detection_method = 'none';
+        
+        // PRIORITY 1: Check props first
         if (isset($props['post_id']) && is_numeric($props['post_id'])) {
-            return intval($props['post_id']);
+            $detected_post_id = intval($props['post_id']);
+            $detection_method = 'props';
         }
-        
-        // Check URL parameters
-        if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
-            return intval($_GET['post_id']);
+        // PRIORITY 2: URL parameters (?post_id=32372)
+        elseif (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+            $detected_post_id = intval($_GET['post_id']);
+            $detection_method = 'url_post_id';
         }
-        
-        if (isset($_GET['p']) && is_numeric($_GET['p'])) {
-            return intval($_GET['p']);
+        elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
+            $detected_post_id = intval($_GET['p']);
+            $detection_method = 'url_p';
         }
-        
-        if (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
-            return intval($_GET['page_id']);
+        elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
+            $detected_post_id = intval($_GET['page_id']);
+            $detection_method = 'url_page_id';
         }
-        
-        // Check for MKCG specific parameter
-        if (isset($_GET['mkcg_post']) && is_numeric($_GET['mkcg_post'])) {
-            return intval($_GET['mkcg_post']);
+        elseif (isset($_GET['mkcg_post']) && is_numeric($_GET['mkcg_post'])) {
+            $detected_post_id = intval($_GET['mkcg_post']);
+            $detection_method = 'url_mkcg_post';
         }
-        
-        // Check WordPress globals if in WordPress context
-        if (function_exists('get_the_ID')) {
+        // PRIORITY 3: WordPress globals as fallback
+        elseif (function_exists('get_the_ID')) {
             $wp_post_id = get_the_ID();
             if ($wp_post_id && $wp_post_id > 0) {
-                return $wp_post_id;
+                $detected_post_id = $wp_post_id;
+                $detection_method = 'get_the_id';
             }
         }
         
-        return 0;
+        // ROOT FIX: Enhanced logging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            if ($detected_post_id > 0) {
+                error_log("ComponentLoader ROOT FIX: ✅ Post ID {$detected_post_id} detected via {$detection_method}");
+            } else {
+                error_log("ComponentLoader ROOT FIX: ❌ No post ID detected. Available: props=" . 
+                    (isset($props['post_id']) ? $props['post_id'] : 'none') . 
+                    ", GET=" . print_r($_GET, true));
+            }
+        }
+        
+        return $detected_post_id;
     }
     
     /**

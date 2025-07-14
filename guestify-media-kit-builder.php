@@ -913,3 +913,16 @@ class Guestify_Media_Kit_Builder {
 
 // Initialize the plugin
 Guestify_Media_Kit_Builder::get_instance();
+
+// ROOT FIX: Ensure Topics AJAX Handler is instantiated
+if (class_exists('GMKB_Topics_Ajax_Handler')) {
+    GMKB_Topics_Ajax_Handler::get_instance();
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: Topics AJAX Handler force-instantiated');
+    }
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: Topics AJAX Handler class not found!');
+    }
+}

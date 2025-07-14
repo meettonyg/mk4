@@ -563,12 +563,13 @@ class GMKB_Enhanced_Script_Manager {
             wp_enqueue_script('guestify-core-systems-bundle');
             wp_enqueue_script('guestify-application-bundle');
             
-            // ROOT FIX: Enqueue topics panel script for immediate availability
+            // ROOT FIX: Enqueue topics panel script for immediate availability with aggressive cache-busting
+            $cache_buster_topics = $cache_buster . '-v' . wp_rand(100000, 999999) . '-force-' . time();
             wp_register_script(
                 'guestify-topics-panel',
                 $plugin_url . 'components/topics/panel-script.js',
                 array('guestify-application-bundle'),
-                $cache_buster . '-topics-panel',
+                $cache_buster_topics,
                 true
             );
             wp_enqueue_script('guestify-topics-panel');

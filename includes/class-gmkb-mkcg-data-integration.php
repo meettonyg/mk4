@@ -135,6 +135,7 @@ class GMKB_MKCG_Data_Integration {
     
     /**
      * Extract topics data from MKCG
+     * ROOT FIX: Enhanced to support multiple meta key formats
      * 
      * @param int $post_id Post ID
      * @return array Topics data
@@ -142,20 +143,51 @@ class GMKB_MKCG_Data_Integration {
     private function get_topics_data($post_id) {
         $topics = array();
         
-        // Extract up to 5 topics (standard MKCG structure)
-        for ($i = 1; $i <= 5; $i++) {
-            $topic_value = get_post_meta($post_id, "mkcg_topic_{$i}", true);
-            if (!empty($topic_value)) {
-                $topics["topic_{$i}"] = sanitize_text_field($topic_value);
+        // Define possible meta key formats
+        $meta_formats = [
+            'mkcg_topic_',    // Original MKCG format
+            'topic_',         // Simple topic format
+            'topics_',        // Plural topics format
+            '_topic_',        // Underscore prefix format
+            'speaking_topic_', // Descriptive format
+            'pod_topic_'      // Pods plugin format
+        ];
+        
+        // Try each format until we find topics
+        $found_format = null;
+        foreach ($meta_formats as $format) {
+            $format_topics = [];
+            
+            // Extract up to 5 topics for this format
+            for ($i = 1; $i <= 5; $i++) {
+                $meta_key = $format . $i;
+                $topic_value = get_post_meta($post_id, $meta_key, true);
+                
+                if (!empty($topic_value)) {
+                    $format_topics["topic_{$i}"] = sanitize_text_field($topic_value);
+                }
+            }
+            
+            // If we found topics with this format, use them and stop searching
+            if (!empty($format_topics)) {
+                $topics = $format_topics;
+                $found_format = $format;
+                break;
             }
         }
         
         // Add topic metadata if available
         $topics_meta = array(
             'count' => count($topics),
+            'meta_format_used' => $found_format,
             'generated_date' => get_post_meta($post_id, 'mkcg_topics_generated_date', true),
             'generator_version' => get_post_meta($post_id, 'mkcg_topics_version', true)
         );
+        
+        // Log successful detection for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG && !empty($topics)) {
+            error_log("GMKB MKCG: Found " . count($topics) . " topics using format '{$found_format}' for post {$post_id}");
+        }
         
         return array(
             'topics' => $topics,
