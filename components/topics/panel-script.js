@@ -41,7 +41,13 @@
         try {
             // Initialize core panel functionality
             setupTopicsPanel();
-            console.log('✅ Topics Panel initialized successfully');
+            
+        // ROOT FIX: Initialize save functionality
+        setTimeout(() => {
+            initializeTopicsSaveFunctionality();
+        }, 1000); // Give component time to fully load
+        
+        console.log('✅ Topics Panel initialized successfully');
         } catch (error) {
             console.error('❌ Error initializing Topics Panel:', error);
             
@@ -557,6 +563,353 @@
     }
     
 })();
+
+// =================================================================================
+// ROOT FIX: SAVE FUNCTIONALITY - Added to existing working script
+// =================================================================================
+
+/**
+ * ROOT FIX: Initialize save functionality for contenteditable topics
+ */
+function initializeTopicsSaveFunctionality() {
+    console.log('💾 ROOT FIX: Initializing topics save functionality...');
+    
+    const component = document.querySelector('.editable-element[data-component="topics"]');
+    if (!component) {
+        console.warn('⚠️ Topics component not found for save functionality');
+        return;
+    }
+    
+    // Setup save interface
+    setupSaveInterface(component);
+    
+    // Setup contenteditable save listeners
+    setupContentEditableSaveListeners(component);
+    
+    // Setup main save button integration
+    setupMainSaveIntegration();
+    
+    console.log('✅ ROOT FIX: Topics save functionality initialized');
+}
+
+/**
+ * ROOT FIX: Setup save interface with status indicators
+ */
+function setupSaveInterface(component) {
+    // Create save status indicator if it doesn't exist
+    let saveInterface = component.querySelector('.topics-save-interface');
+    if (!saveInterface) {
+        const saveStatusHtml = `
+            <div class="topics-save-interface" style="margin-top: 10px;">
+                <div class="save-status" data-status="saved">
+                    <span class="save-indicator">✅</span>
+                    <span class="save-text">Saved</span>
+                    <span class="save-timestamp"></span>
+                </div>
+                <div class="save-actions">
+                    <button class="manual-save-btn" style="display: none; margin-left: 10px; padding: 4px 8px; font-size: 12px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Save Now
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Insert save interface after topics container
+        const container = component.querySelector('.topics-container');
+        if (container) {
+            container.insertAdjacentHTML('afterend', saveStatusHtml);
+            
+            // Setup manual save button
+            const manualSaveBtn = component.querySelector('.manual-save-btn');
+            if (manualSaveBtn) {
+                manualSaveBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    performTopicsSave('manual');
+                });
+            }
+        }
+    }
+    
+    updateSaveStatus('saved');
+}
+
+/**
+ * ROOT FIX: Setup contenteditable save listeners
+ */
+function setupContentEditableSaveListeners(component) {
+    const topicTitles = component.querySelectorAll('.topic-title[contenteditable="true"]');
+    
+    topicTitles.forEach((titleElement, index) => {
+        // Store original value
+        titleElement.dataset.originalValue = titleElement.textContent.trim();
+        
+        // Listen for content changes
+        titleElement.addEventListener('focusout', (e) => {
+            const newValue = e.target.textContent.trim();
+            const oldValue = e.target.dataset.originalValue;
+            
+            if (oldValue !== newValue) {
+                console.log(`📝 ROOT FIX: Topic ${index + 1} changed: "${oldValue}" → "${newValue}"`);
+                
+                // Clean the value
+                const cleanValue = newValue.replace(/\s+/g, ' ').trim();
+                e.target.textContent = cleanValue;
+                e.target.dataset.originalValue = cleanValue;
+                
+                // Mark as unsaved and schedule save
+                updateSaveStatus('unsaved');
+                scheduleAutoSave();
+            }
+        });
+        
+        // Prevent line breaks
+        titleElement.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.target.blur(); // Trigger save
+            }
+        });
+        
+        // Real-time feedback
+        titleElement.addEventListener('input', () => {
+            updateSaveStatus('unsaved');
+        });
+    });
+}
+
+/**
+ * ROOT FIX: Setup main save button integration
+ */
+function setupMainSaveIntegration() {
+    // Listen for main save events
+    if (window.addEventListener) {
+        window.addEventListener('mainSaveTriggered', () => {
+            console.log('🔄 ROOT FIX: Main save triggered - saving topics');
+            performTopicsSave('main_save');
+        });
+    }
+    
+    // Global save trigger function
+    window.triggerTopicsSave = function() {
+        console.log('🔄 ROOT FIX: Global topics save triggered');
+        performTopicsSave('global_save');
+    };
+}
+
+let saveTimeout = null;
+let unsavedChanges = false;
+
+/**
+ * ROOT FIX: Schedule auto-save with debouncing
+ */
+function scheduleAutoSave() {
+    if (saveTimeout) {
+        clearTimeout(saveTimeout);
+    }
+    
+    saveTimeout = setTimeout(() => {
+        if (unsavedChanges) {
+            performTopicsSave('auto');
+        }
+    }, 2000); // 2 second delay
+    
+    console.log('⏱️ ROOT FIX: Auto-save scheduled in 2 seconds');
+}
+
+/**
+ * ROOT FIX: Perform topics save
+ */
+async function performTopicsSave(saveType = 'manual') {
+    const postId = detectPostId();
+    
+    if (!postId) {
+        console.error('❌ ROOT FIX: Cannot save - no post ID available');
+        updateSaveStatus('error', 'No post ID available');
+        return;
+    }
+    
+    console.log(`💾 ROOT FIX: Starting ${saveType} save for post ${postId}`);
+    updateSaveStatus('saving');
+    
+    try {
+        // Collect topics data from DOM
+        const topicsData = collectTopicsFromDOM();
+        
+        console.log('📤 ROOT FIX: Topics data to save:', topicsData);
+        
+        // Prepare AJAX request
+        const requestData = {
+            action: 'save_custom_topics',
+            post_id: postId,
+            topics: topicsData,
+            save_type: saveType,
+            client_timestamp: Math.floor(Date.now() / 1000),
+            nonce: window.guestifyData?.nonce || window.guestifyMediaKit?.nonce || ''
+        };
+        
+        if (!requestData.nonce) {
+            throw new Error('No nonce available for save request');
+        }
+        
+        console.log('📡 ROOT FIX: Sending save request:', requestData);
+        
+        const response = await sendTopicsSaveRequest(requestData);
+        
+        if (response.success) {
+            unsavedChanges = false;
+            updateSaveStatus('saved', `${response.data.topics_saved} topics saved`);
+            
+            console.log('✅ ROOT FIX: Save successful:', response.data);
+            
+            // Update original values
+            updateOriginalValues();
+            
+        } else {
+            throw new Error(response.data?.message || 'Save failed');
+        }
+        
+    } catch (error) {
+        console.error('❌ ROOT FIX: Save failed:', error);
+        updateSaveStatus('error', error.message || 'Save failed');
+    }
+}
+
+/**
+ * ROOT FIX: Collect topics data from DOM
+ */
+function collectTopicsFromDOM() {
+    const component = document.querySelector('.editable-element[data-component="topics"]');
+    const topicsData = {};
+    
+    if (!component) return topicsData;
+    
+    const topicItems = component.querySelectorAll('.topic-item');
+    
+    topicItems.forEach((item, index) => {
+        const titleElement = item.querySelector('.topic-title');
+        if (titleElement) {
+            const title = titleElement.textContent.trim();
+            if (title) {
+                const cleanTitle = title.replace(/\s+/g, ' ').trim();
+                topicsData[`topic_${index + 1}`] = cleanTitle;
+                console.log(`🧽 ROOT FIX: Collected topic_${index + 1}: "${cleanTitle}"`);
+            }
+        }
+    });
+    
+    return topicsData;
+}
+
+/**
+ * ROOT FIX: Send topics save request
+ */
+async function sendTopicsSaveRequest(data) {
+    const url = window.guestifyData?.ajaxUrl || window.guestifyMediaKit?.ajaxUrl || '/wp-admin/admin-ajax.php';
+    
+    const formData = new FormData();
+    Object.keys(data).forEach(key => {
+        if (typeof data[key] === 'object') {
+            formData.append(key, JSON.stringify(data[key]));
+        } else {
+            formData.append(key, data[key]);
+        }
+    });
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+/**
+ * ROOT FIX: Update save status indicator
+ */
+function updateSaveStatus(status, message = '') {
+    const statusElement = document.querySelector('.save-status');
+    const indicatorElement = document.querySelector('.save-indicator');
+    const textElement = document.querySelector('.save-text');
+    const timestampElement = document.querySelector('.save-timestamp');
+    const manualSaveBtn = document.querySelector('.manual-save-btn');
+    
+    if (!statusElement) return;
+    
+    statusElement.dataset.status = status;
+    
+    const statusConfig = {
+        'saved': { 
+            indicator: '✅', 
+            text: 'Saved', 
+            showButton: false,
+            color: '#10b981' 
+        },
+        'saving': { 
+            indicator: '⏳', 
+            text: 'Saving...', 
+            showButton: false,
+            color: '#f59e0b' 
+        },
+        'unsaved': { 
+            indicator: '⚠️', 
+            text: 'Unsaved changes', 
+            showButton: true,
+            color: '#ef4444' 
+        },
+        'error': { 
+            indicator: '❌', 
+            text: 'Save failed', 
+            showButton: true,
+            color: '#ef4444' 
+        }
+    };
+    
+    const config = statusConfig[status] || statusConfig['saved'];
+    
+    if (indicatorElement) indicatorElement.textContent = config.indicator;
+    if (textElement) {
+        textElement.textContent = message || config.text;
+        textElement.style.color = config.color;
+    }
+    
+    if (manualSaveBtn) {
+        manualSaveBtn.style.display = config.showButton ? 'inline-block' : 'none';
+    }
+    
+    if (timestampElement && status === 'saved') {
+        const time = new Date().toLocaleTimeString();
+        timestampElement.textContent = `at ${time}`;
+        timestampElement.style.opacity = '0.6';
+    }
+    
+    // Update global unsaved changes flag
+    unsavedChanges = (status === 'unsaved');
+    
+    console.log(`🔔 ROOT FIX: Save status: ${status} - ${message || config.text}`);
+}
+
+/**
+ * ROOT FIX: Update original values after successful save
+ */
+function updateOriginalValues() {
+    const component = document.querySelector('.editable-element[data-component="topics"]');
+    if (!component) return;
+    
+    const titleElements = component.querySelectorAll('.topic-title[contenteditable="true"]');
+    titleElements.forEach(element => {
+        element.dataset.originalValue = element.textContent.trim();
+    });
+}
+
+// =================================================================================
+// END ROOT FIX: SAVE FUNCTIONALITY
+// =================================================================================
 
 console.log('📝 Topics Panel Script: Core emergency functions loaded');
 
@@ -1980,3 +2333,52 @@ if (!document.getElementById('topics-notification-styles')) {
 }
 
 console.log('✅ Topics Panel Script: Loaded successfully with clean architecture');
+
+// ROOT FIX: Global test functions for debugging
+window.testTopicsSave = function() {
+    console.log('🧪 ROOT FIX: Testing topics save functionality...');
+    
+    if (typeof performTopicsSave !== 'undefined') {
+        const postId = detectPostId();
+        const nonce = window.guestifyData?.nonce || window.guestifyMediaKit?.nonce;
+        
+        console.log('🔍 ROOT FIX: Test data:', { postId, hasNonce: !!nonce });
+        
+        if (postId && nonce) {
+            return performTopicsSave('test');
+        } else {
+            console.error('❌ ROOT FIX: Missing post ID or nonce for test');
+            return Promise.reject('Missing data');
+        }
+    } else {
+        console.error('❌ ROOT FIX: performTopicsSave function not found');
+        return Promise.reject('Function not found');
+    }
+};
+
+window.debugTopicsSave = function() {
+    console.log('🔍 ROOT FIX: Debug topics save system...');
+    
+    const component = document.querySelector('.editable-element[data-component="topics"]');
+    const topics = component?.querySelectorAll('.topic-title');
+    const saveInterface = component?.querySelector('.topics-save-interface');
+    
+    console.log('📊 ROOT FIX: Debug info:', {
+        component: !!component,
+        topicsCount: topics?.length || 0,
+        saveInterface: !!saveInterface,
+        postId: detectPostId(),
+        nonce: !!(window.guestifyData?.nonce || window.guestifyMediaKit?.nonce),
+        topicsData: collectTopicsFromDOM ? collectTopicsFromDOM() : 'function not found'
+    });
+    
+    if (topics) {
+        topics.forEach((topic, index) => {
+            console.log(`📝 Topic ${index + 1}:`, {
+                text: topic.textContent?.trim() || '(empty)',
+                contenteditable: topic.contentEditable,
+                hasListeners: !!topic.dataset.originalValue
+            });
+        });
+    }
+};

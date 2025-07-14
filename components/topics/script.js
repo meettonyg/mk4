@@ -30,6 +30,14 @@ class TopicsComponent {
         if (window.addEventListener) {
             window.addEventListener('mediaKitSystemReady', this.handleSystemReady.bind(this));
             window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
+            
+            // ROOT FIX: Listen for main save button events
+            window.addEventListener('mainSaveTriggered', this.handleMainSave.bind(this));
+        }
+        
+        // ROOT FIX: Integrate with main save system if available
+        if (window.enhancedSystemRegistrar) {
+            window.enhancedSystemRegistrar.addEventListener('save', this.handleMainSave.bind(this));
         }
         
         console.log(`✅ Topics Component: Initialized for post ${this.postId} with ${this.topics.length} topics`);
@@ -197,13 +205,21 @@ class TopicsComponent {
      * ROOT FIX: Handle topic content changes (event-driven)
      */
     handleTopicChange(topic, field, newValue) {
+        // ROOT FIX: Aggressive trimming to remove all whitespace issues
+        const cleanValue = newValue.replace(/\s+/g, ' ').trim();
         const oldValue = topic[field];
         
-        if (oldValue !== newValue) {
-            topic[field] = newValue;
+        if (oldValue !== cleanValue) {
+            topic[field] = cleanValue;
+            
+            // ROOT FIX: Update DOM immediately to show cleaned value
+            if (field === 'title' && topic.titleElement) {
+                topic.titleElement.textContent = cleanValue;
+            }
+            
             this.unsavedChanges = true;
             
-            console.log(`📝 Topic ${topic.index + 1} ${field} changed: "${oldValue}" → "${newValue}"`);
+            console.log(`📝 Topic ${topic.index + 1} ${field} changed: "${oldValue}" → "${cleanValue}"`);
             
             this.updateSaveStatus('unsaved');
             this.scheduleAutoSave();
@@ -249,6 +265,14 @@ class TopicsComponent {
     }
     
     /**
+     * ROOT FIX: Handle main save button (integration with main app)
+     */
+    handleMainSave(e) {
+        console.log('🔄 Main save button triggered - saving topics');
+        this.performSave('main_save');
+    }
+    
+    /**
      * ROOT FIX: Core save functionality
      */
     async performSave(saveType = 'manual') {
@@ -264,6 +288,7 @@ class TopicsComponent {
         }
         
         console.log(`💾 Starting ${saveType} save for post ${this.postId}`);
+        console.log('📊 Current topics data:', this.topics.map(t => `"${t.title}" (${t.title.length} chars)`));
         this.updateSaveStatus('saving');
         
         try {
@@ -273,7 +298,10 @@ class TopicsComponent {
             this.topics.forEach((topic, index) => {
                 const topicKey = `topic_${index + 1}`;
                 if (topic.title && topic.title.trim()) {
-                    topicsData[topicKey] = topic.title.trim();
+                    // ROOT FIX: Aggressive cleaning of topic data
+                    const cleanTitle = topic.title.replace(/\s+/g, ' ').trim();
+                    topicsData[topicKey] = cleanTitle;
+                    console.log(`🧽 Prepared ${topicKey}: "${cleanTitle}"`);
                 }
                 // Note: Descriptions not saved in this version - focusing on titles only
             });
@@ -577,10 +605,25 @@ if (typeof window !== 'undefined') {
                 topics: component.topics,
                 unsavedChanges: component.unsavedChanges,
                 saveStatus: component.saveStatus,
-                nonce: component.nonce ? 'present' : 'missing'
+                nonce: component.nonce ? 'present' : 'missing',
+                topicsData: component.topics.map(t => `"${t.title}" (${t.title.length} chars)`)
             });
+            
+            // ROOT FIX: Test save functionality
+            console.log('🧪 Testing save functionality...');
+            component.performSave('debug_test');
         } else {
             console.log('❌ Topics component not found');
+        }
+    };
+    
+    // ROOT FIX: Global save trigger for main save button integration
+    window.triggerTopicsSave = function() {
+        const components = window.topicsComponentManager.components;
+        console.log(`🔄 Triggering save for ${components.size} topics components`);
+        
+        for (let [id, component] of components) {
+            component.handleMainSave({});
         }
     };
     
