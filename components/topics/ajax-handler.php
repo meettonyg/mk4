@@ -69,6 +69,10 @@ class GMKB_Topics_Ajax_Handler {
         // Register conflict resolution handler
         add_action('wp_ajax_resolve_topics_conflict', array($this, 'ajax_resolve_topics_conflict'));
         
+        // ROOT FIX: Register data retrieval handler for panel enhancement
+        add_action('wp_ajax_load_stored_topics', array($this, 'ajax_load_stored_topics'));
+        add_action('wp_ajax_nopriv_load_stored_topics', array($this, 'ajax_load_stored_topics_nopriv'));
+        
         // PHASE 4: Register topic reordering handler
         add_action('wp_ajax_reorder_mkcg_topics', array($this, 'ajax_reorder_mkcg_topics'));
         add_action('wp_ajax_nopriv_reorder_mkcg_topics', array($this, 'ajax_reorder_mkcg_topics_nopriv'));
@@ -917,6 +921,381 @@ class GMKB_Topics_Ajax_Handler {
     }
     
     /**
+     * ROOT FIX: AJAX handler for loading stored topics data
+     * Retrieves stored topics from WordPress post meta for panel enhancement
+     */
+    public function ajax_load_stored_topics() {
+        try {
+            // Verify nonce for security
+            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
+                wp_send_json_error(array(
+                    'message' => 'Security verification failed',
+                    'code' => 'INVALID_NONCE'
+                ));
+                return;
+            }
+            
+            // Check user capabilities
+            if (!current_user_can('edit_posts')) {
+                wp_send_json_error(array(
+                    'message' => 'Insufficient permissions to load topics',
+                    'code' => 'INSUFFICIENT_PERMISSIONS'
+                ));
+                return;
+            }
+            
+            $post_id = intval($_POST['post_id'] ?? 0);
+            
+            if (!$post_id || $post_id <= 0) {
+                wp_send_json_error(array(
+                    'message' => 'Invalid post ID provided',
+                    'code' => 'INVALID_POST_ID'
+                ));
+                return;
+            }
+            
+            // Verify post exists and is accessible
+            $post = get_post($post_id);
+            if (!$post || $post->post_status === 'trash') {
+                wp_send_json_error(array(
+                    'message' => 'Post not found or inaccessible',
+                    'code' => 'POST_NOT_FOUND',
+                    'post_id' => $post_id
+                ));
+                return;
+            }
+            
+            // Load stored topics data
+            $stored_topics_data = $this->load_stored_topics_data($post_id);
+            
+            wp_send_json_success(array(
+                'message' => 'Stored topics loaded successfully',
+                'post_id' => $post_id,
+                'topics' => $stored_topics_data['topics'],
+                'metadata' => $stored_topics_data['metadata'],
+                'quality_summary' => $stored_topics_data['quality_summary'],
+                'total_topics' => $stored_topics_data['total_topics'],
+                'timestamp' => time(),
+                'server_time' => current_time('mysql')
+            ));
+            
+        } catch (Exception $e) {
+            $this->log_error('AJAX load stored topics error: ' . $e->getMessage(), 'ajax-load', $e);
+            wp_send_json_error(array(
+                'message' => 'Internal server error while loading topics',
+                'code' => 'SERVER_ERROR',
+                'debug' => defined('WP_DEBUG') && WP_DEBUG ? $e->getMessage() : ''
+            ));
+        }
+    }
+    
+    /**
+     * ROOT FIX: AJAX handler for loading stored topics (non-logged-in users)
+     */
+    public function ajax_load_stored_topics_nopriv() {
+        wp_send_json_error(array(
+            'message' => 'Authentication required to load topics',
+            'code' => 'AUTHENTICATION_REQUIRED'
+        ));
+    }
+    
+    /**
+     * ROOT FIX: Load stored topics data from WordPress post meta
+     * ENHANCED: Added comprehensive data quality assessment and user context
+     * 
+     * @param int $post_id Post ID
+     * @return array Comprehensive topics data
+     */
+    private function load_stored_topics_data($post_id) {
+        $start_time = microtime(true);
+        
+        try {
+            $topics = array();
+            $total_topics = 0;
+            $data_sources = array();
+            $quality_distribution = array('excellent' => 0, 'good' => 0, 'fair' => 0, 'poor' => 0);
+            
+            // Load each topic from post meta
+            for ($i = 1; $i <= 5; $i++) {
+                $topic_key = "topic_{$i}";
+                $meta_key = "mkcg_{$topic_key}";
+                
+                $topic_value = get_post_meta($post_id, $meta_key, true);
+                
+                if (!empty($topic_value) && is_string($topic_value)) {
+                    $quality_score = $this->calculate_individual_topic_quality($topic_value);
+                    $quality_level = $this->get_quality_level_from_score($quality_score);
+                    $quality_distribution[$quality_level]++;
+                    
+                    // Enhanced topic data with additional context
+                    $topics[$topic_key] = array(
+                        'value' => sanitize_text_field($topic_value),
+                        'index' => $i - 1,
+                        'meta_key' => $meta_key,
+                        'quality' => $quality_score,
+                        'quality_level' => $quality_level,
+                        'word_count' => str_word_count($topic_value),
+                        'character_count' => strlen($topic_value),
+                        'last_modified' => get_post_meta($post_id, 'mkcg_topics_last_edited', true),
+                        'is_empty' => false,
+                        'data_source' => $this->detect_topic_data_source($post_id, $topic_key),
+                        'edit_history_count' => $this->get_topic_edit_history_count($post_id, $topic_key)
+                    );
+                    $total_topics++;
+                } else {
+                    // Include empty slots for consistent panel structure
+                    $topics[$topic_key] = array(
+                        'value' => '',
+                        'index' => $i - 1,
+                        'meta_key' => $meta_key,
+                        'quality' => 0,
+                        'quality_level' => 'empty',
+                        'word_count' => 0,
+                        'character_count' => 0,
+                        'last_modified' => null,
+                        'is_empty' => true,
+                        'data_source' => 'none',
+                        'edit_history_count' => 0
+                    );
+                }
+            }
+            
+            // ROOT FIX: Enhanced metadata with data source tracking
+            $metadata = array(
+                'last_edited' => get_post_meta($post_id, 'mkcg_topics_last_edited', true),
+                'last_edited_by' => get_post_meta($post_id, 'mkcg_topics_last_edited_by', true),
+                'save_type' => get_post_meta($post_id, 'mkcg_topics_save_type', true),
+                'version' => get_post_meta($post_id, 'mkcg_topics_version', true),
+                'last_reordered' => get_post_meta($post_id, 'mkcg_topics_last_reordered', true),
+                'reorder_info' => get_post_meta($post_id, 'mkcg_topics_reorder_info', true),
+                'data_quality_distribution' => $quality_distribution,
+                'total_edits' => array_sum(array_column($topics, 'edit_history_count')),
+                'has_mkcg_source' => in_array('mkcg', array_column($topics, 'data_source')),
+                'completion_percentage' => $total_topics > 0 ? round(($total_topics / 5) * 100) : 0
+            );
+            
+            // Get user info for last edited by
+            if (!empty($metadata['last_edited_by'])) {
+                $user_info = get_userdata($metadata['last_edited_by']);
+                $metadata['last_edited_by_name'] = $user_info ? $user_info->display_name : 'Unknown User';
+            }
+            
+            // ROOT FIX: Enhanced quality summary with distribution analysis
+            $non_empty_topics = array_filter($topics, function($topic) {
+                return !empty($topic['value']);
+            });
+            
+            $quality_summary = array(
+                'total_topics' => count($non_empty_topics),
+                'average_score' => 0,
+                'quality_level' => 'poor',
+                'distribution' => $quality_distribution,
+                'breakdown' => array(),
+                'recommendations' => $this->generate_quality_recommendations($quality_distribution, $total_topics)
+            );
+            
+            if (count($non_empty_topics) > 0) {
+                $detailed_quality = $this->calculate_topics_quality(array_column($non_empty_topics, 'value'));
+                $quality_summary = array_merge($quality_summary, $detailed_quality);
+            }
+            
+            $processing_time = round((microtime(true) - $start_time) * 1000, 2);
+            
+            // Log successful data load
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB Topics: Successfully loaded {$total_topics} topics for post {$post_id} ({$processing_time}ms)");
+            }
+            
+            return array(
+                'topics' => $topics,
+                'metadata' => $metadata,
+                'quality_summary' => $quality_summary,
+                'total_topics' => $total_topics,
+                'empty_slots' => 5 - $total_topics,
+                'processing_time' => $processing_time,
+                'data_source' => 'wordpress_post_meta',
+                'load_timestamp' => current_time('mysql'),
+                'user_experience' => array(
+                    'can_improve_quality' => $quality_summary['average_score'] < 70,
+                    'has_empty_slots' => $total_topics < 5,
+                    'needs_attention' => $quality_distribution['poor'] > 0 || $total_topics < 1,
+                    'completion_status' => $this->get_completion_status($total_topics, $quality_summary['average_score'])
+                )
+            );
+            
+        } catch (Exception $e) {
+            $this->log_error("Error loading topics data for post {$post_id}: " . $e->getMessage(), 'data-load', $e);
+            
+            // Return safe fallback data
+            return array(
+                'topics' => array(),
+                'metadata' => array(),
+                'quality_summary' => array('total_topics' => 0, 'average_score' => 0, 'quality_level' => 'poor'),
+                'total_topics' => 0,
+                'error' => 'Failed to load topics data',
+                'debug' => defined('WP_DEBUG') && WP_DEBUG ? $e->getMessage() : ''
+            );
+        }
+    }
+    
+    /**
+     * ROOT FIX: Detect topic data source
+     * Determines whether topic came from MKCG, manual entry, or other source
+     * 
+     * @param int $post_id Post ID
+     * @param string $topic_key Topic key (topic_1, etc.)
+     * @return string Data source identifier
+     */
+    private function detect_topic_data_source($post_id, $topic_key) {
+        // Check if there's MKCG metadata indicating this topic came from MKCG
+        $mkcg_source = get_post_meta($post_id, "mkcg_{$topic_key}_source", true);
+        if ($mkcg_source === 'mkcg_import') {
+            return 'mkcg';
+        }
+        
+        // Check save type to infer source
+        $last_save_type = get_post_meta($post_id, 'mkcg_topics_save_type', true);
+        if (in_array($last_save_type, ['mkcg_sync', 'mkcg_import', 'sync_all'])) {
+            return 'mkcg';
+        }
+        
+        // Check if post has any MKCG metadata
+        $has_mkcg_data = get_post_meta($post_id, 'mkcg_last_update', true);
+        if ($has_mkcg_data && $last_save_type !== 'manual') {
+            return 'mkcg';
+        }
+        
+        return 'manual';
+    }
+    
+    /**
+     * ROOT FIX: Get topic edit history count
+     * Tracks how many times a topic has been edited
+     * 
+     * @param int $post_id Post ID
+     * @param string $topic_key Topic key
+     * @return int Edit count
+     */
+    private function get_topic_edit_history_count($post_id, $topic_key) {
+        $edit_count = get_post_meta($post_id, "mkcg_{$topic_key}_edit_count", true);
+        return $edit_count ? intval($edit_count) : 0;
+    }
+    
+    /**
+     * ROOT FIX: Get quality level from score
+     * 
+     * @param int $score Quality score 0-100
+     * @return string Quality level
+     */
+    private function get_quality_level_from_score($score) {
+        if ($score >= 80) return 'excellent';
+        if ($score >= 60) return 'good';
+        if ($score >= 40) return 'fair';
+        return 'poor';
+    }
+    
+    /**
+     * ROOT FIX: Generate quality recommendations
+     * Provides actionable suggestions based on quality distribution
+     * 
+     * @param array $quality_distribution Quality level distribution
+     * @param int $total_topics Total number of topics
+     * @return array Recommendations
+     */
+    private function generate_quality_recommendations($quality_distribution, $total_topics) {
+        $recommendations = array();
+        
+        if ($total_topics === 0) {
+            $recommendations[] = array(
+                'type' => 'action',
+                'priority' => 'high',
+                'message' => 'Add your first topic to get started',
+                'action' => 'add_topic'
+            );
+        } elseif ($total_topics < 3) {
+            $recommendations[] = array(
+                'type' => 'action',
+                'priority' => 'medium',
+                'message' => 'Add more topics to showcase your expertise (aim for 3-5 topics)',
+                'action' => 'add_more_topics'
+            );
+        }
+        
+        if ($quality_distribution['poor'] > 0) {
+            $recommendations[] = array(
+                'type' => 'quality',
+                'priority' => 'high',
+                'message' => "Improve {$quality_distribution['poor']} topic(s) by adding more detail and professional language",
+                'action' => 'improve_quality'
+            );
+        }
+        
+        if ($quality_distribution['fair'] > 1) {
+            $recommendations[] = array(
+                'type' => 'quality',
+                'priority' => 'medium',
+                'message' => 'Several topics could be enhanced with more specific details',
+                'action' => 'enhance_topics'
+            );
+        }
+        
+        if ($total_topics >= 3 && $quality_distribution['excellent'] === 0 && $quality_distribution['good'] < 2) {
+            $recommendations[] = array(
+                'type' => 'optimization',
+                'priority' => 'medium',
+                'message' => 'Focus on creating 2-3 high-quality topics rather than many average ones',
+                'action' => 'focus_quality'
+            );
+        }
+        
+        return $recommendations;
+    }
+    
+    /**
+     * ROOT FIX: Get completion status
+     * Determines overall completion status for user guidance
+     * 
+     * @param int $total_topics Number of topics
+     * @param int $average_quality Average quality score
+     * @return array Status information
+     */
+    private function get_completion_status($total_topics, $average_quality) {
+        if ($total_topics === 0) {
+            return array(
+                'status' => 'empty',
+                'message' => 'Get started by adding your first topic',
+                'progress' => 0,
+                'next_step' => 'Add your primary area of expertise'
+            );
+        }
+        
+        if ($total_topics < 3 || $average_quality < 50) {
+            return array(
+                'status' => 'incomplete',
+                'message' => 'Add more topics and improve quality',
+                'progress' => max(20, min(($total_topics / 5) * 100, ($average_quality / 100) * 100)),
+                'next_step' => $total_topics < 3 ? 'Add more topics' : 'Improve topic quality'
+            );
+        }
+        
+        if ($total_topics >= 3 && $average_quality >= 50 && $average_quality < 75) {
+            return array(
+                'status' => 'good',
+                'message' => 'Good progress! Consider refining for better impact',
+                'progress' => 70,
+                'next_step' => 'Polish topics for professional presentation'
+            );
+        }
+        
+        return array(
+            'status' => 'excellent',
+            'message' => 'Your topics look professional and comprehensive!',
+            'progress' => 100,
+            'next_step' => 'Ready to showcase your expertise'
+        );
+    }
+    
+    /**
      * Get handler status for debugging
      * 
      * @return array Status information
@@ -926,7 +1305,7 @@ class GMKB_Topics_Ajax_Handler {
             'handlers_registered' => true,
             'save_cache_size' => count($this->save_cache),
             'errors_logged' => count($this->errors),
-            'version' => '1.0.0-phase3',
+            'version' => '1.0.0-root-fix-enhanced',
             'capabilities' => array(
                 'batch_save' => true,
                 'validation' => true,
@@ -934,7 +1313,12 @@ class GMKB_Topics_Ajax_Handler {
                 'auto_save_support' => true,
                 'quality_analysis' => true,
                 'topic_reordering' => true,
-                'undo_support' => true
+                'undo_support' => true,
+                'data_retrieval' => true,
+                'enhanced_panel_support' => true,
+                'quality_recommendations' => true,
+                'data_source_tracking' => true,
+                'user_experience_optimization' => true
             )
         );
     }

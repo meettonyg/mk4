@@ -1,4 +1,575 @@
 /**
+ * ROOT FIX: MISSING UTILITY FUNCTIONS COMPLETION
+ * These functions complete the panel-script.js implementation for Topics Component
+ */
+
+/**
+ * ROOT FIX: Complete shouldAutoPopulate function
+ * @param {Object} storedData - Enhanced stored topics data
+ * @returns {boolean} Whether auto-population should be suggested
+ */
+function shouldAutoPopulate(storedData) {
+    if (!storedData || !storedData.topics) {
+        return false;
+    }
+    
+    // Check if current panel fields are mostly empty
+    const currentFields = document.querySelectorAll('[data-topic-title]');
+    const emptyFields = Array.from(currentFields).filter(input => !input.value.trim()).length;
+    
+    // Check data quality
+    const avgQuality = storedData.quality_summary?.average_score || 0;
+    const hasGoodQuality = avgQuality >= 70; // 70% threshold for auto-populate
+    
+    // Check if we have enough good topics
+    const goodTopics = Object.values(storedData.topics).filter(topic => 
+        !topic.is_empty && topic.quality >= 60
+    ).length;
+    
+    // Auto-populate if: mostly empty fields + good quality data + enough topics
+    const shouldAutoPopulate = emptyFields >= 3 && hasGoodQuality && goodTopics >= 3;
+    
+    console.log('🤔 ROOT FIX: Auto-populate analysis:', {
+        emptyFields,
+        avgQuality,
+        goodTopics,
+        shouldAutoPopulate
+    });
+    
+    return shouldAutoPopulate;
+}
+
+/**
+ * ROOT FIX: Handle auto-populate prompt
+ * @param {Object} storedData - Enhanced stored topics data
+ */
+function handleAutoPopulatePrompt(storedData) {
+    if (!storedData || !storedData.topics) {
+        return;
+    }
+    
+    // Create prompt dialog
+    const prompt = document.createElement('div');
+    prompt.className = 'auto-populate-prompt';
+    prompt.innerHTML = `
+        <div class="prompt-overlay">
+            <div class="prompt-dialog">
+                <div class="prompt-header">
+                    <h3>Auto-Populate Topics</h3>
+                    <button class="prompt-close" onclick="this.closest('.auto-populate-prompt').remove()">×</button>
+                </div>
+                <div class="prompt-content">
+                    <div class="prompt-icon">🎯</div>
+                    <div class="prompt-text">
+                        <p>We found <strong>${storedData.total_topics} high-quality topics</strong> in your stored data.</p>
+                        <p>Would you like us to automatically fill in the empty fields?</p>
+                        <div class="quality-preview">
+                            <span class="quality-score">Average Quality: ${storedData.quality_summary?.average_score || 0}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="prompt-actions">
+                    <button class="btn-secondary" onclick="this.closest('.auto-populate-prompt').remove()">
+                        No Thanks
+                    </button>
+                    <button class="btn-primary auto-populate-confirm" onclick="confirmAutoPopulate()">
+                        Auto-Fill Topics
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Style the prompt
+    prompt.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(prompt);
+    
+    // Store data for confirmation
+    window._autoPopulateData = storedData;
+}
+
+/**
+ * ROOT FIX: Confirm auto-populate action
+ */
+window.confirmAutoPopulate = function() {
+    const prompt = document.querySelector('.auto-populate-prompt');
+    const storedData = window._autoPopulateData;
+    
+    if (prompt) prompt.remove();
+    if (!storedData) return;
+    
+    console.log('🎯 ROOT FIX: Confirming auto-populate...');
+    
+    // Populate the fields
+    populateTopicFieldsWithStoredData(storedData.topics);
+    
+    // Show success notification
+    showNotification(`Auto-filled ${storedData.total_topics} topics successfully!`, 'success');
+    
+    // Clean up
+    delete window._autoPopulateData;
+};
+
+/**
+ * ROOT FIX: Show user guidance based on completion status
+ * @param {Object} completionStatus - User completion status data
+ */
+function showUserGuidance(completionStatus) {
+    if (!completionStatus) return;
+    
+    const guidance = document.createElement('div');
+    guidance.className = 'user-guidance-panel';
+    
+    const statusIcon = getStatusIcon(completionStatus.status);
+    const priority = getPriorityIcon(completionStatus.priority);
+    
+    guidance.innerHTML = `
+        <div class="guidance-header">
+            <div class="guidance-status">
+                ${statusIcon} ${completionStatus.status.charAt(0).toUpperCase() + completionStatus.status.slice(1)}
+            </div>
+            <div class="guidance-priority ${completionStatus.priority}">
+                ${priority} ${completionStatus.priority} Priority
+            </div>
+        </div>
+        <div class="guidance-content">
+            <h4>Next Steps</h4>
+            <div class="guidance-message">
+                ${completionStatus.message || 'Continue editing your topics to improve quality.'}
+            </div>
+            ${completionStatus.recommendations ? `
+                <div class="guidance-recommendations">
+                    <h5>Recommendations:</h5>
+                    <ul>
+                        ${completionStatus.recommendations.map(rec => `
+                            <li>
+                                <span class="rec-icon">${rec.type === 'critical' ? '⚠️' : '💡'}</span>
+                                ${rec.message}
+                                ${rec.action ? `<button class="rec-action" onclick="handleRecommendationAction('${rec.action}', '${rec.target}')">${rec.action_label || 'Fix'}</button>` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            ` : ''}
+        </div>
+        <div class="guidance-actions">
+            <button class="btn-secondary" onclick="this.closest('.user-guidance-panel').remove()">
+                Dismiss
+            </button>
+            <button class="btn-primary" onclick="this.closest('.user-guidance-panel').remove()">
+                Got it
+            </button>
+        </div>
+    `;
+    
+    // Style and position
+    guidance.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        width: 320px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        z-index: 9999;
+        animation: slideInRight 0.3s ease-out;
+        font-size: 14px;
+    `;
+    
+    document.body.appendChild(guidance);
+    
+    // Auto-remove after 15 seconds if not dismissed
+    setTimeout(() => {
+        if (guidance.parentNode) {
+            guidance.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => guidance.remove(), 300);
+        }
+    }, 15000);
+}
+
+/**
+ * ROOT FIX: Create quality distribution visualization card
+ * @param {Object} distribution - Quality distribution data
+ * @returns {HTMLElement} Quality distribution card
+ */
+function createQualityDistributionCard(distribution) {
+    const card = document.createElement('div');
+    card.className = 'quality-distribution-card data-card';
+    
+    const total = Object.values(distribution).reduce((sum, count) => sum + count, 0);
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-title">Quality Distribution</span>
+            <span class="card-subtitle">${total} topics analyzed</span>
+        </div>
+        <div class="card-content">
+            <div class="distribution-chart">
+                ${Object.entries(distribution).map(([level, count]) => {
+                    const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+                    return `
+                        <div class="distribution-bar">
+                            <div class="bar-label">
+                                <span class="quality-level quality-${level}">${level.charAt(0).toUpperCase() + level.slice(1)}</span>
+                                <span class="bar-count">${count}</span>
+                            </div>
+                            <div class="bar-track">
+                                <div class="bar-fill quality-${level}" style="width: ${percentage}%"></div>
+                            </div>
+                            <span class="bar-percentage">${percentage}%</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+/**
+ * ROOT FIX: Create empty slots indicator card
+ * @param {number} emptySlots - Number of empty slots
+ * @returns {HTMLElement} Empty slots card
+ */
+function createEmptySlotsCard(emptySlots) {
+    const card = document.createElement('div');
+    card.className = 'empty-slots-card data-card';
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-title">Available Slots</span>
+            <span class="card-subtitle">Ready for content</span>
+        </div>
+        <div class="card-content">
+            <div class="empty-slots-visual">
+                <div class="slots-icon">📝</div>
+                <div class="slots-count">${emptySlots}</div>
+                <div class="slots-text">empty ${emptySlots === 1 ? 'slot' : 'slots'}</div>
+            </div>
+            <div class="slots-suggestion">
+                ${emptySlots > 2 ? 
+                    'Consider adding more topics to maximize your media kit impact.' : 
+                    'You have space for additional topics if needed.'
+                }
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+/**
+ * ROOT FIX: Get status icon based on status type
+ * @param {string} status - Status type
+ * @returns {string} Status icon
+ */
+function getStatusIcon(status) {
+    const icons = {
+        'complete': '✅',
+        'in_progress': '🔄',
+        'needs_attention': '⚠️',
+        'empty': '○',
+        'draft': '📝',
+        'review': '👀',
+        'approved': '✅',
+        'rejected': '❌'
+    };
+    
+    return icons[status] || '○';
+}
+
+/**
+ * ROOT FIX: Get priority icon based on priority level
+ * @param {string} priority - Priority level
+ * @returns {string} Priority icon
+ */
+function getPriorityIcon(priority) {
+    const icons = {
+        'high': '🔴',
+        'medium': '🟡',
+        'low': '🟢',
+        'critical': '⚠️',
+        'urgent': '🚨'
+    };
+    
+    return icons[priority] || '🟢';
+}
+
+/**
+ * ROOT FIX: Handle recommendation actions
+ * @param {string} action - Action type
+ * @param {string} target - Action target
+ */
+function handleRecommendationAction(action, target) {
+    console.log('🎯 ROOT FIX: Handling recommendation action:', action, target);
+    
+    switch (action) {
+        case 'fix_length':
+            // Focus on the problematic input
+            const input = document.querySelector(`[data-topic-title="${target}"]`);
+            if (input) {
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                showNotification('Focus set on topic that needs length adjustment', 'info');
+            }
+            break;
+            
+        case 'improve_quality':
+            // Open quality improvement suggestions
+            const topicItem = document.querySelector(`[data-topic-index="${target}"]`);
+            if (topicItem) {
+                topicItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                showNotification('Quality improvement tips coming soon', 'info');
+            }
+            break;
+            
+        case 'add_content':
+            // Suggest content from stored data
+            if (storedTopicsData && storedTopicsData.topics) {
+                const emptyInput = document.querySelector(`[data-topic-title="${target}"]`);
+                if (emptyInput) {
+                    emptyInput.focus();
+                    showNotification('Content suggestions coming soon', 'info');
+                }
+            }
+            break;
+            
+        case 'review_all':
+            // Show comprehensive review panel
+            showNotification('Comprehensive review coming soon', 'info');
+            break;
+            
+        default:
+            showNotification(`Action "${action}" not yet implemented`, 'info');
+    }
+}
+
+/**
+ * ROOT FIX: Preview stored topic (global function)
+ * @param {string} topicKey - Topic key to preview
+ */
+window.previewStoredTopic = function(topicKey) {
+    if (!storedTopicsData || !storedTopicsData.topics[topicKey]) {
+        showNotification('Topic data not available', 'error');
+        return;
+    }
+    
+    const topicData = storedTopicsData.topics[topicKey];
+    
+    // Create preview modal
+    const modal = document.createElement('div');
+    modal.className = 'topic-preview-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay" onclick="this.closest('.topic-preview-modal').remove()">
+            <div class="modal-dialog" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3>Topic Preview</h3>
+                    <button class="modal-close" onclick="this.closest('.topic-preview-modal').remove()">×</button>
+                </div>
+                <div class="modal-content">
+                    <div class="preview-header">
+                        <div class="topic-number">Topic ${topicData.index + 1}</div>
+                        <div class="topic-badges">
+                            <span class="quality-badge quality-${topicData.quality_level}">
+                                ${topicData.quality}% Quality
+                            </span>
+                            <span class="source-badge source-${topicData.data_source}">
+                                ${topicData.data_source === 'mkcg' ? '🤖 MKCG' : '✏️ Manual'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="preview-content">
+                        <div class="topic-text">
+                            "${escapeHtml(topicData.value)}"
+                        </div>
+                        <div class="topic-analysis">
+                            <div class="analysis-item">
+                                <strong>Word Count:</strong> ${topicData.word_count}
+                            </div>
+                            <div class="analysis-item">
+                                <strong>Character Count:</strong> ${topicData.character_count}
+                            </div>
+                            <div class="analysis-item">
+                                <strong>Last Modified:</strong> ${topicData.last_modified ? new Date(topicData.last_modified).toLocaleString() : 'Never'}
+                            </div>
+                            <div class="analysis-item">
+                                <strong>Edit History:</strong> ${topicData.edit_history_count} changes
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="this.closest('.topic-preview-modal').remove()">
+                        Close
+                    </button>
+                    <button class="btn-primary" onclick="useStoredTopic('${topicKey}'); this.closest('.topic-preview-modal').remove();">
+                        Use This Topic
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Style the modal
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+/**
+ * ROOT FIX: Show data loading status
+ * @param {string} message - Status message
+ * @param {string} type - Status type (loading, success, error, warning)
+ */
+function showDataLoadingStatus(message, type = 'info') {
+    // Find or create status indicator
+    let statusEl = document.getElementById('data-loading-status');
+    if (!statusEl) {
+        statusEl = document.createElement('div');
+        statusEl.id = 'data-loading-status';
+        statusEl.className = 'data-loading-status';
+        
+        // Insert at the top of the MKCG section
+        const mkcgSection = document.getElementById('topics-mkcg-section');
+        if (mkcgSection) {
+            mkcgSection.insertBefore(statusEl, mkcgSection.firstElementChild);
+        }
+    }
+    
+    const icons = {
+        loading: '⏳',
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+    
+    statusEl.innerHTML = `
+        <div class="status-content status-${type}">
+            <span class="status-icon">${icons[type] || icons.info}</span>
+            <span class="status-message">${message}</span>
+        </div>
+    `;
+    
+    statusEl.style.cssText = `
+        margin: 10px 0;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        background: ${type === 'success' ? '#f0fdf4' : type === 'error' ? '#fef2f2' : type === 'warning' ? '#fffbeb' : '#f0f9ff'};
+        border: 1px solid ${type === 'success' ? '#bbf7d0' : type === 'error' ? '#fecaca' : type === 'warning' ? '#fed7aa' : '#bae6fd'};
+        color: ${type === 'success' ? '#166534' : type === 'error' ? '#991b1b' : type === 'warning' ? '#92400e' : '#1e40af'};
+    `;
+    
+    // Auto-hide success/info messages after 3 seconds
+    if (type === 'success' || type === 'info') {
+        setTimeout(() => {
+            if (statusEl && statusEl.parentNode) {
+                statusEl.style.opacity = '0';
+                setTimeout(() => statusEl.remove(), 300);
+            }
+        }, 3000);
+    }
+}
+
+/**
+ * ROOT FIX: Calculate topic quality score
+ * @param {string} topicText - Topic text to analyze
+ * @returns {number} Quality score (0-100)
+ */
+function calculateTopicQuality(topicText) {
+    if (!topicText || typeof topicText !== 'string') {
+        return 0;
+    }
+    
+    const text = topicText.trim();
+    if (text.length === 0) {
+        return 0;
+    }
+    
+    let score = 0;
+    
+    // Length scoring (optimal 10-50 characters)
+    if (text.length >= 10 && text.length <= 50) {
+        score += 30;
+    } else if (text.length >= 5 && text.length <= 80) {
+        score += 20;
+    } else if (text.length >= 3) {
+        score += 10;
+    }
+    
+    // Capitalization
+    if (text[0] === text[0].toUpperCase()) {
+        score += 15;
+    }
+    
+    // Word count (2-8 words optimal)
+    const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+    if (wordCount >= 2 && wordCount <= 8) {
+        score += 25;
+    } else if (wordCount >= 1 && wordCount <= 12) {
+        score += 15;
+    }
+    
+    // No special characters/HTML
+    if (!/[<>{}]/.test(text)) {
+        score += 10;
+    }
+    
+    // Professional language (basic check)
+    if (!/\b(um|uh|like|you know)\b/i.test(text)) {
+        score += 10;
+    }
+    
+    // Descriptive content (contains industry terms or action words)
+    if (/\b(strategy|development|management|leadership|innovation|technology|design|marketing|consulting|training|speaking|presentation)\b/i.test(text)) {
+        score += 10;
+    }
+    
+    return Math.min(100, Math.max(0, score));
+}
+
+/**
+ * ROOT FIX: Get quality level from score
+ * @param {number} score - Quality score (0-100)
+ * @returns {string} Quality level (excellent, good, fair, poor)
+ */
+function getQualityLevel(score) {
+    if (score >= 85) return 'excellent';
+    if (score >= 70) return 'good';
+    if (score >= 50) return 'fair';
+    return 'poor';
+}
+
+console.log('✅ ROOT FIX: All missing utility functions completed successfully');
+/**
  * Topics Component Panel Script
  * Handles the dynamic functionality of the topics design panel
  * PHASE 1: Enhanced with MKCG integration support
@@ -20,6 +591,14 @@ window.componentPanelHandlers['topics'] = function(element, schema) {
 };
 
 /**
+ * ROOT FIX: Enhanced Panel Data Integration Globals
+ * Manages stored topics data and dynamic field creation
+ */
+let storedTopicsData = null;
+let dynamicFieldsCreated = false;
+let panelInitialized = false;
+
+/**
  * PHASE 1: MKCG Integration Global Reference
  * Stores the MKCG integration instance for access by other functions
  */
@@ -34,11 +613,15 @@ let topicsAutoSaveTimer = null;
 const TOPICS_AUTO_SAVE_DELAY = 30000; // 30 seconds
 
 /**
- * Initialize topics panel
+ * ROOT FIX: Enhanced Initialize topics panel with stored data integration
  * @param {HTMLElement} element - The topics component element
  * @param {Object} schema - Component schema (optional)
  */
 function initializeTopicsPanel(element, schema) {
+    console.log('🚀 ROOT FIX: Enhanced Topics Panel Initialization Started');
+    
+    // Mark panel as initializing
+    panelInitialized = false;
     // Log schema if available
     if (schema) {
         console.log('Topics component schema:', schema);
@@ -79,8 +662,21 @@ function initializeTopicsPanel(element, schema) {
         isMkcgMode = false;
     }
     
-    // Setup topics list (existing functionality)
-    setupTopicsList(element);
+    // ROOT FIX: Enhanced initialization sequence
+    Promise.resolve()
+        .then(() => loadStoredTopicsData(element))
+        .then(() => setupEnhancedTopicsList(element))
+        .then(() => setupStoredDataIntegration(element))
+        .then(() => {
+            panelInitialized = true;
+            console.log('✅ ROOT FIX: Enhanced Topics Panel Initialization Complete');
+        })
+        .catch(error => {
+            console.error('❌ ROOT FIX: Panel initialization failed:', error);
+            // Fallback to standard setup
+            setupTopicsList(element);
+            panelInitialized = true;
+        });
     
     // Handle display style change
     const displayStyleSelect = document.querySelector('[data-property="displayStyle"]');
@@ -905,6 +1501,673 @@ function rgbToHex(rgb) {
     const b = parseInt(rgbMatch[3], 10);
     
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+}
+
+/**
+ * ROOT FIX: Load stored topics data from server with enhanced error handling
+ * @param {HTMLElement} element - The topics component element
+ * @returns {Promise} Promise resolving when data is loaded
+ */
+function loadStoredTopicsData(element) {
+    return new Promise((resolve, reject) => {
+        console.log('🔍 ROOT FIX: Loading stored topics data with enhanced integration...');
+        
+        // Try to get post ID from multiple sources
+        const postId = getPostIdForDataLoading();
+        
+        if (!postId) {
+            console.log('⚠️ ROOT FIX: No post ID available - skipping stored data load');
+            showDataLoadingStatus('No post ID available', 'warning');
+            resolve();
+            return;
+        }
+        
+        // Show loading indicator
+        showDataLoadingStatus('Loading stored topics data...', 'loading');
+        
+        // Prepare AJAX request
+        const requestData = {
+            action: 'load_stored_topics',
+            post_id: postId,
+            nonce: window.guestifyData?.nonce || '',
+            include_recommendations: true,
+            include_completion_status: true
+        };
+        
+        console.log('🚀 ROOT FIX: Requesting enhanced stored topics for post:', postId);
+        
+        fetch(window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(requestData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                storedTopicsData = data.data;
+                console.log('✅ ROOT FIX: Enhanced stored topics data loaded successfully:', {
+                    totalTopics: data.data.total_topics,
+                    qualityScore: data.data.quality_summary?.average_score || 0,
+                    processingTime: data.data.processing_time,
+                    hasRecommendations: data.data.quality_summary?.recommendations?.length > 0,
+                    completionStatus: data.data.user_experience?.completion_status?.status
+                });
+                
+                // Enhanced panel update with comprehensive data
+                updatePanelWithStoredData(storedTopicsData);
+                
+                // Show success status
+                showDataLoadingStatus(`Loaded ${data.data.total_topics} topics successfully`, 'success');
+                
+                // Check if user needs guidance
+                if (data.data.user_experience?.needs_attention) {
+                    setTimeout(() => {
+                        showUserGuidance(data.data.user_experience.completion_status);
+                    }, 1500);
+                }
+                
+                resolve(storedTopicsData);
+            } else {
+                const errorMessage = data.data?.message || 'Unknown error occurred';
+                console.warn('⚠️ ROOT FIX: Failed to load stored topics:', errorMessage);
+                showDataLoadingStatus(`Failed to load: ${errorMessage}`, 'error');
+                resolve();
+            }
+        })
+        .catch(error => {
+            console.error('❌ ROOT FIX: Error loading stored topics:', error);
+            showDataLoadingStatus(`Connection error: ${error.message}`, 'error');
+            resolve(); // Don't reject, just continue without stored data
+        });
+    });
+}
+
+/**
+ * ROOT FIX: Get post ID for data loading from multiple sources
+ * @returns {number|null} Post ID or null if not found
+ */
+function getPostIdForDataLoading() {
+    // Strategy 1: From global guestifyData
+    if (window.guestifyData?.postId) {
+        return parseInt(window.guestifyData.postId);
+    }
+    
+    // Strategy 2: From URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramStrategies = ['post_id', 'p', 'page_id', 'mkcg_post'];
+    
+    for (const param of paramStrategies) {
+        const value = urlParams.get(param);
+        if (value && !isNaN(parseInt(value))) {
+            return parseInt(value);
+        }
+    }
+    
+    // Strategy 3: From MKCG integration if available
+    if (topicsMkcgIntegration?.postId) {
+        return parseInt(topicsMkcgIntegration.postId);
+    }
+    
+    return null;
+}
+
+/**
+ * ROOT FIX: Update panel with comprehensive stored data integration
+ * @param {Object} storedData - Enhanced stored topics data
+ */
+function updatePanelWithStoredData(storedData) {
+    if (!storedData || !storedData.topics) {
+        console.log('⚠️ ROOT FIX: No stored data available for panel update');
+        return;
+    }
+    
+    console.log('🎨 ROOT FIX: Updating panel with comprehensive stored data...', {
+        totalTopics: storedData.total_topics,
+        qualityDistribution: storedData.metadata?.data_quality_distribution,
+        hasRecommendations: storedData.quality_summary?.recommendations?.length > 0
+    });
+    
+    // Enhanced stored topics preview section
+    updateStoredTopicsPreview(storedData);
+    
+    // Update topic field counter with quality context
+    updateTopicFieldCounter(storedData.total_topics, storedData.quality_summary);
+    
+    // Show enhanced controls with data context
+    showEnhancedControls(storedData);
+    
+    // Update completion progress indicator
+    updateCompletionProgress(storedData.user_experience?.completion_status);
+    
+    // Show quality recommendations if available
+    if (storedData.quality_summary?.recommendations?.length > 0) {
+        showQualityRecommendations(storedData.quality_summary.recommendations);
+    }
+    
+    // Create dynamic fields if needed
+    if (storedData.total_topics > 0 && !dynamicFieldsCreated) {
+        createDynamicTopicFields(storedData.topics);
+    }
+    
+    // Auto-populate fields if they're empty and we have good quality data
+    if (shouldAutoPopulate(storedData)) {
+        setTimeout(() => {
+            handleAutoPopulatePrompt(storedData);
+        }, 2000);
+    }
+}
+
+/**
+ * ROOT FIX: Update comprehensive stored topics preview display
+ * @param {Object} storedData - Enhanced stored topics data
+ */
+function updateStoredTopicsPreview(storedData) {
+    const previewSection = document.getElementById('stored-topics-preview');
+    const dataGrid = document.getElementById('topics-data-grid');
+    const totalCount = document.getElementById('total-topics-count');
+    const qualityScore = document.getElementById('data-quality-score');
+    const lastModified = document.getElementById('last-modified-time');
+    
+    if (!previewSection || !dataGrid) {
+        console.warn('⚠️ ROOT FIX: Preview section elements not found');
+        return;
+    }
+    
+    // Show preview section with enhanced styling
+    previewSection.style.display = 'block';
+    previewSection.classList.add('preview-loaded');
+    
+    // Update summary stats with enhanced context
+    if (totalCount) {
+        totalCount.textContent = storedData.total_topics || 0;
+        totalCount.className = `total-count status-${storedData.user_experience?.completion_status?.status || 'unknown'}`;
+    }
+    
+    if (qualityScore) {
+        const avgScore = storedData.quality_summary?.average_score || 0;
+        qualityScore.textContent = avgScore;
+        qualityScore.className = `quality-score quality-${getQualityLevel(avgScore)}`;
+        qualityScore.title = `Average quality: ${avgScore}% (${getQualityLevel(avgScore)})`;
+    }
+    
+    if (lastModified) {
+        const lastEdit = storedData.metadata?.last_edited;
+        if (lastEdit) {
+            const date = new Date(lastEdit);
+            const editedBy = storedData.metadata?.last_edited_by_name;
+            lastModified.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            lastModified.title = editedBy ? `Last edited by ${editedBy}` : 'Last modification time';
+        } else {
+            lastModified.textContent = 'Never';
+            lastModified.title = 'No edit history available';
+        }
+    }
+    
+    // Create enhanced topic data cards
+    dataGrid.innerHTML = '';
+    
+    // Show quality distribution if available
+    if (storedData.metadata?.data_quality_distribution) {
+        const distributionCard = createQualityDistributionCard(storedData.metadata.data_quality_distribution);
+        dataGrid.appendChild(distributionCard);
+    }
+    
+    Object.entries(storedData.topics).forEach(([topicKey, topicData]) => {
+        if (!topicData.is_empty) {
+            const card = createEnhancedTopicDataCard(topicKey, topicData);
+            dataGrid.appendChild(card);
+        }
+    });
+    
+    // Show empty slots indicator if relevant
+    if (storedData.empty_slots > 0) {
+        const emptySlotsCard = createEmptySlotsCard(storedData.empty_slots);
+        dataGrid.appendChild(emptySlotsCard);
+    }
+}
+
+/**
+ * ROOT FIX: Create enhanced topic data card for preview
+ * @param {string} topicKey - Topic key (topic_1, etc.)
+ * @param {Object} topicData - Enhanced topic data object
+ * @returns {HTMLElement} Enhanced topic card element
+ */
+function createEnhancedTopicDataCard(topicKey, topicData) {
+    const card = document.createElement('div');
+    card.className = `topic-data-card quality-${topicData.quality_level} source-${topicData.data_source}`;
+    card.setAttribute('data-topic-key', topicKey);
+    
+    const sourceIcon = {
+        'mkcg': '🤖',
+        'manual': '✏️',
+        'none': '○'
+    }[topicData.data_source] || '?';
+    
+    const lastModified = topicData.last_modified ? 
+        new Date(topicData.last_modified).toLocaleDateString() : 'Never';
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="topic-index" title="Topic ${topicData.index + 1}">${topicData.index + 1}</span>
+            <div class="card-badges">
+                <span class="quality-badge quality-${topicData.quality_level}" title="Quality: ${topicData.quality}% (${topicData.quality_level})">
+                    ${topicData.quality}%
+                </span>
+                <span class="source-badge source-${topicData.data_source}" title="Source: ${topicData.data_source}">
+                    ${sourceIcon}
+                </span>
+            </div>
+        </div>
+        <div class="card-content">
+            <div class="topic-text" title="${escapeHtml(topicData.value)}">
+                ${escapeHtml(topicData.value.length > 60 ? topicData.value.substring(0, 57) + '...' : topicData.value)}
+            </div>
+            <div class="topic-meta">
+                <span class="word-count" title="Word count">${topicData.word_count} words</span>
+                <span class="char-count" title="Character count">${topicData.character_count} chars</span>
+                <span class="edit-count" title="Edit history">${topicData.edit_history_count} edits</span>
+            </div>
+            <div class="last-modified" title="Last modified: ${lastModified}">
+                Modified: ${lastModified}
+            </div>
+        </div>
+        <div class="card-actions">
+            <button class="use-topic-btn" onclick="useStoredTopic('${topicKey}')" title="Use this topic in panel">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Use
+            </button>
+            <button class="preview-topic-btn" onclick="previewStoredTopic('${topicKey}')" title="Preview full content">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                View
+            </button>
+        </div>
+    `;
+    
+    return card;
+}
+
+/**
+ * ROOT FIX: Update topic field counter display
+ * @param {number} totalTopics - Total number of topics
+ */
+function updateTopicFieldCounter(totalTopics) {
+    const counter = document.getElementById('topics-field-counter');
+    const activeCount = document.getElementById('active-topics-count');
+    
+    if (counter && activeCount) {
+        counter.style.display = totalTopics > 0 ? 'inline' : 'none';
+        activeCount.textContent = totalTopics;
+    }
+}
+
+/**
+ * ROOT FIX: Show enhanced controls based on stored data
+ * @param {Object} storedData - Stored topics data
+ */
+function showEnhancedControls(storedData) {
+    const loadBtn = document.getElementById('load-stored-topics-btn');
+    const populateBtn = document.getElementById('populate-fields-btn');
+    
+    if (storedData.total_topics > 0) {
+        if (loadBtn) loadBtn.style.display = 'inline-flex';
+        if (populateBtn) populateBtn.style.display = 'inline-flex';
+    }
+}
+
+/**
+ * ROOT FIX: Setup enhanced topics list with stored data integration
+ * @param {HTMLElement} element - The topics component element
+ * @returns {Promise} Promise resolving when setup is complete
+ */
+function setupEnhancedTopicsList(element) {
+    return new Promise((resolve) => {
+        console.log('🎨 ROOT FIX: Setting up enhanced topics list...');
+        
+        // Call existing setup function first
+        setupTopicsList(element);
+        
+        // Add enhanced functionality
+        setupStoredDataEventHandlers();
+        
+        resolve();
+    });
+}
+
+/**
+ * ROOT FIX: Setup stored data integration features
+ * @param {HTMLElement} element - The topics component element
+ * @returns {Promise} Promise resolving when setup is complete
+ */
+function setupStoredDataIntegration(element) {
+    return new Promise((resolve) => {
+        console.log('🔗 ROOT FIX: Setting up stored data integration...');
+        
+        // Setup event handlers for new controls
+        setupEnhancedEventHandlers();
+        
+        // Initialize dynamic field creation if we have stored data
+        if (storedTopicsData && storedTopicsData.total_topics > 0) {
+            setTimeout(() => {
+                createDynamicTopicFields(storedTopicsData.topics);
+                resolve();
+            }, 100);
+        } else {
+            resolve();
+        }
+    });
+}
+
+/**
+ * ROOT FIX: Setup event handlers for stored data functionality
+ */
+function setupStoredDataEventHandlers() {
+    // Load stored topics button
+    const loadBtn = document.getElementById('load-stored-topics-btn');
+    if (loadBtn) {
+        loadBtn.addEventListener('click', handleLoadStoredTopics);
+    }
+    
+    // Populate fields button
+    const populateBtn = document.getElementById('populate-fields-btn');
+    if (populateBtn) {
+        populateBtn.addEventListener('click', handlePopulateFields);
+    }
+}
+
+/**
+ * ROOT FIX: Setup enhanced event handlers
+ */
+function setupEnhancedEventHandlers() {
+    console.log('🎯 ROOT FIX: Setting up enhanced event handlers...');
+    
+    // Refresh stored data when MKCG data is refreshed
+    const refreshBtn = document.querySelector('.mkcg-refresh-btn');
+    if (refreshBtn) {
+        const originalHandler = refreshBtn.onclick;
+        refreshBtn.onclick = function(e) {
+            if (originalHandler) originalHandler.call(this, e);
+            // Reload stored data after MKCG refresh
+            setTimeout(() => {
+                loadStoredTopicsData(document.querySelector('.editable-element--selected'));
+            }, 1000);
+        };
+    }
+}
+
+/**
+ * ROOT FIX: Handle load stored topics button click
+ */
+function handleLoadStoredTopics(e) {
+    e.preventDefault();
+    console.log('📋 ROOT FIX: Loading stored topics into panel...');
+    
+    const element = document.querySelector('.editable-element--selected');
+    loadStoredTopicsData(element)
+        .then(() => {
+            showNotification('Stored topics data refreshed successfully', 'success');
+        })
+        .catch(error => {
+            console.error('Failed to reload stored topics:', error);
+            showNotification('Failed to reload stored topics data', 'error');
+        });
+}
+
+/**
+ * ROOT FIX: Handle populate fields button click
+ */
+function handlePopulateFields(e) {
+    e.preventDefault();
+    console.log('📋 ROOT FIX: Populating fields with stored data...');
+    
+    if (!storedTopicsData || !storedTopicsData.topics) {
+        showNotification('No stored topics data available', 'warning');
+        return;
+    }
+    
+    populateTopicFieldsWithStoredData(storedTopicsData.topics);
+    showNotification(`Populated ${storedTopicsData.total_topics} topics from stored data`, 'success');
+}
+
+/**
+ * ROOT FIX: Create dynamic topic fields based on stored data
+ * @param {Object} topicsData - Topics data object
+ */
+function createDynamicTopicFields(topicsData) {
+    if (dynamicFieldsCreated) {
+        return;
+    }
+    
+    console.log('🎨 ROOT FIX: Creating dynamic topic fields...');
+    
+    const dynamicZone = document.getElementById('dynamic-field-zone');
+    const container = document.getElementById('dynamic-fields-container');
+    
+    if (!dynamicZone || !container) {
+        return;
+    }
+    
+    // Show dynamic field zone
+    dynamicZone.style.display = 'block';
+    
+    // Create fields for each stored topic
+    Object.entries(topicsData).forEach(([topicKey, topicData]) => {
+        if (topicData.value) {
+            const field = createDynamicTopicField(topicKey, topicData);
+            container.appendChild(field);
+        }
+    });
+    
+    dynamicFieldsCreated = true;
+    console.log('✅ ROOT FIX: Dynamic topic fields created successfully');
+}
+
+/**
+ * ROOT FIX: Create a dynamic topic field
+ * @param {string} topicKey - Topic key
+ * @param {Object} topicData - Topic data
+ * @returns {HTMLElement} Dynamic field element
+ */
+function createDynamicTopicField(topicKey, topicData) {
+    const field = document.createElement('div');
+    field.className = 'dynamic-topic-field';
+    field.setAttribute('data-topic-key', topicKey);
+    
+    const qualityLevel = getQualityLevel(topicData.quality);
+    
+    field.innerHTML = `
+        <div class="field-header">
+            <label class="field-label">
+                Topic ${topicData.index + 1}
+                <span class="quality-indicator quality-${qualityLevel}" title="Quality: ${topicData.quality}%">
+                    ${topicData.quality}%
+                </span>
+            </label>
+            <div class="field-actions">
+                <button class="sync-field-btn" onclick="syncDynamicField('${topicKey}')" title="Sync with stored data">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10"></path>
+                        <path d="M3.51 15a9 9 0 0 0 14.85 3.36L23 14"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="field-content">
+            <input type="text" 
+                   class="dynamic-topic-input" 
+                   value="${escapeHtml(topicData.value)}"
+                   data-topic-key="${topicKey}"
+                   placeholder="Enter topic...">
+            <div class="field-meta">
+                <span class="word-count">${topicData.word_count} words</span>
+                <span class="char-count">${topicData.character_count} chars</span>
+                <span class="last-modified" title="Last modified: ${topicData.last_modified || 'Never'}">
+                    Modified: ${topicData.last_modified ? new Date(topicData.last_modified).toLocaleDateString() : 'Never'}
+                </span>
+            </div>
+        </div>
+    `;
+    
+    // Add input event handler
+    const input = field.querySelector('.dynamic-topic-input');
+    if (input) {
+        input.addEventListener('input', function() {
+            updateDynamicFieldMeta(this);
+            scheduleAutoSave();
+        });
+    }
+    
+    return field;
+}
+
+/**
+ * ROOT FIX: Populate topic fields with stored data
+ * @param {Object} topicsData - Topics data object
+ */
+function populateTopicFieldsWithStoredData(topicsData) {
+    Object.entries(topicsData).forEach(([topicKey, topicData]) => {
+        if (topicData.value) {
+            // Find corresponding panel input
+            const input = document.querySelector(`[data-topic-title="${topicData.index}"]`);
+            if (input) {
+                input.value = topicData.value;
+                
+                // Update character counters and indicators if in MKCG mode
+                if (typeof updateCharCounter === 'function') {
+                    const topicItem = input.closest('.enhanced-topic-item');
+                    if (topicItem) {
+                        updateCharCounter(input, topicItem);
+                        if (typeof updateTopicIndicators === 'function') {
+                            updateTopicIndicators(topicItem, topicData.index);
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Update component preview
+    updateTopicsInComponent(document.querySelector('.editable-element--selected'));
+}
+
+/**
+ * ROOT FIX: Global functions for topic card actions
+ */
+window.useStoredTopic = function(topicKey) {
+    if (!storedTopicsData || !storedTopicsData.topics[topicKey]) {
+        return;
+    }
+    
+    const topicData = storedTopicsData.topics[topicKey];
+    console.log('📋 Using stored topic:', topicKey, topicData.value);
+    
+    // Find available topic input slot
+    const inputs = document.querySelectorAll('[data-topic-title]');
+    for (let input of inputs) {
+        if (!input.value.trim()) {
+            input.value = topicData.value;
+            
+            // Update UI indicators
+            if (typeof updateCharCounter === 'function') {
+                const topicItem = input.closest('.enhanced-topic-item');
+                if (topicItem) {
+                    updateCharCounter(input, topicItem);
+                    if (typeof updateTopicIndicators === 'function') {
+                        const index = parseInt(input.getAttribute('data-topic-title'));
+                        updateTopicIndicators(topicItem, index);
+                    }
+                }
+            }
+            
+            updateTopicsInComponent(document.querySelector('.editable-element--selected'));
+            showNotification(`Topic "${topicData.value}" added to panel`, 'success');
+            break;
+        }
+    }
+};
+
+window.editStoredTopic = function(topicKey) {
+    console.log('✏️ Editing stored topic:', topicKey);
+    // Future enhancement: Open topic in edit mode
+    showNotification('Topic editing feature coming soon', 'info');
+};
+
+window.syncDynamicField = function(topicKey) {
+    if (!storedTopicsData || !storedTopicsData.topics[topicKey]) {
+        return;
+    }
+    
+    const field = document.querySelector(`[data-topic-key="${topicKey}"]`);
+    const input = field?.querySelector('.dynamic-topic-input');
+    
+    if (input) {
+        const topicData = storedTopicsData.topics[topicKey];
+        input.value = topicData.value;
+        updateDynamicFieldMeta(input);
+        showNotification(`Field synced with stored data`, 'success');
+    }
+};
+
+/**
+ * ROOT FIX: Update dynamic field metadata display
+ * @param {HTMLElement} input - Input element
+ */
+function updateDynamicFieldMeta(input) {
+    const field = input.closest('.dynamic-topic-field');
+    if (!field) return;
+    
+    const value = input.value;
+    const wordCount = value ? value.split(/\s+/).filter(word => word.length > 0).length : 0;
+    const charCount = value.length;
+    
+    const wordSpan = field.querySelector('.word-count');
+    const charSpan = field.querySelector('.char-count');
+    
+    if (wordSpan) wordSpan.textContent = `${wordCount} words`;
+    if (charSpan) charSpan.textContent = `${charCount} chars`;
+}
+
+/**
+ * ROOT FIX: Show user notification
+ * @param {string} message - Notification message
+ * @param {string} type - Notification type (success, error, warning, info)
+ */
+function showNotification(message, type = 'info') {
+    // Use existing notification system if available
+    if (typeof showSaveNotification === 'function') {
+        showSaveNotification(message, type);
+        return;
+    }
+    
+    // Fallback notification
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Simple visual notification
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 10000;
+        padding: 12px 16px; border-radius: 6px; color: white;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
 }
 
 /**
