@@ -156,7 +156,7 @@ class Guestify_Media_Kit_Builder {
         
         if ($is_builder_page) {
             // Force script manager to recognize this as a builder page
-            $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
+            $script_manager = GMKB_Root_Fix_Script_Manager::get_instance();
             $script_manager->force_builder_page_detection();
             
             // Set global flag
@@ -213,7 +213,7 @@ class Guestify_Media_Kit_Builder {
         
         // ROOT FIX: FORCE SCRIPT LOADING - When template takeover happens, ensure scripts load
         // This is the critical fix that ensures scripts are enqueued when the template is active
-        $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
+        $script_manager = GMKB_Root_Fix_Script_Manager::get_instance();
         $script_manager->force_builder_page_detection();
         
         // ROOT FIX: Set global flag for script enqueuing
@@ -253,7 +253,7 @@ class Guestify_Media_Kit_Builder {
         $modal_validation = $this->validate_modal_html_availability();
         
         // Ensure enhanced script manager is active
-        $script_manager = GMKB_Enhanced_Script_Manager::get_instance();
+        $script_manager = GMKB_Root_Fix_Script_Manager::get_instance();
         $manager_status = $script_manager->get_status();
         
         // Enhanced status including modal validation
