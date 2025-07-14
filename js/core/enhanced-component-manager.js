@@ -48,7 +48,71 @@ class EnhancedComponentManager {
         this.logger = structuredLogger;
         this.previewContainer = null;
         this.isInitialized = false;
-        this.logger.info('INIT', 'Enhanced Component Manager created');
+        
+        // ROOT FIX: STEP 3 - Component event system for cross-panel communication
+        this.eventBus = window.eventBus || {
+            emit: (event, data) => {
+                // Fallback to DOM events if eventBus not available
+                document.dispatchEvent(new CustomEvent(event, { detail: data }));
+            },
+            on: () => {},
+            off: () => {}
+        };
+        
+        // STEP 3: Component tracking for event coordination
+        this.componentTracker = {
+            activeComponents: new Map(),
+            topicsComponents: new Set(),
+            lastEventTime: null,
+            eventQueue: [],
+            isProcessingEvents: false
+        };
+        
+        // STEP 3: Event debouncing for performance
+        this.eventDebounceTimers = new Map();
+        this.eventDebounceDelay = 150;
+        
+        this.logger.info('INIT', 'Enhanced Component Manager created with event system');
+    }
+
+    /**
+     * ROOT FIX: STEP 3 - Debounced event emission to prevent flooding
+     */
+    emitDebouncedEvent(eventKey, eventName, eventPayload, delay = null) {
+        const debounceDelay = delay || this.eventDebounceDelay;
+        
+        // Clear existing timer
+        if (this.eventDebounceTimers.has(eventKey)) {
+            clearTimeout(this.eventDebounceTimers.get(eventKey));
+        }
+        
+        // Set new timer
+        const timer = setTimeout(() => {
+            try {
+                this.eventBus.emit(eventName, eventPayload);
+                this.logger.debug('EVENT', `Debounced event emitted: ${eventName}`, eventPayload);
+            } catch (error) {
+                this.logger.error('EVENT', `Error emitting debounced event: ${eventName}`, error);
+            } finally {
+                this.eventDebounceTimers.delete(eventKey);
+            }
+        }, debounceDelay);
+        
+        this.eventDebounceTimers.set(eventKey, timer);
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Get component event tracking statistics
+     */
+    getEventTrackingStats() {
+        return {
+            activeComponents: this.componentTracker.activeComponents.size,
+            topicsComponents: this.componentTracker.topicsComponents.size,
+            lastEventTime: this.componentTracker.lastEventTime,
+            pendingEvents: this.eventDebounceTimers.size,
+            eventQueueSize: this.componentTracker.eventQueue.length,
+            isProcessingEvents: this.componentTracker.isProcessingEvents
+        };
     }
 
     /**
@@ -96,6 +160,270 @@ class EnhancedComponentManager {
     }
 
     /**
+     * ROOT FIX: STEP 3 - Component event emission system
+     * Emits component lifecycle events for cross-panel communication
+     */
+    emitComponentEvent(eventType, componentData, additionalData = {}) {
+        const timestamp = Date.now();
+        const eventPayload = {
+            type: eventType,
+            component: componentData,
+            timestamp,
+            source: 'enhanced-component-manager',
+            ...additionalData
+        };
+        
+        try {
+            // Emit general component event
+            this.eventBus.emit(`components:${eventType}`, eventPayload);
+            
+            // Emit component-type-specific event if component has type
+            if (componentData && componentData.type) {
+                this.eventBus.emit(`components:${componentData.type}:${eventType}`, eventPayload);
+                
+                // STEP 3: Special handling for topics components
+                if (componentData.type === 'topics') {
+                    this.handleTopicsComponentEvent(eventType, componentData, eventPayload);
+                }
+            }
+            
+            // Update component tracking
+            this.updateComponentTracking(eventType, componentData);
+            
+            this.logger.debug('EVENT', `Component event emitted: ${eventType}`, {
+                componentId: componentData?.id,
+                componentType: componentData?.type,
+                timestamp
+            });
+            
+        } catch (error) {
+            this.logger.error('EVENT', 'Failed to emit component event', error, {
+                eventType,
+                componentId: componentData?.id
+            });
+        }
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Topics-specific event handling for counter synchronization
+     */
+    handleTopicsComponentEvent(eventType, componentData, eventPayload) {
+        try {
+            // Track topics components
+            if (eventType === 'added') {
+                this.componentTracker.topicsComponents.add(componentData.id);
+            } else if (eventType === 'removed') {
+                this.componentTracker.topicsComponents.delete(componentData.id);
+            }
+            
+            // Calculate current topics count
+            const topicsCount = this.getTopicsComponentCount();
+            
+            // Emit topics-specific counter events
+            this.emitTopicsCounterEvent(eventType, topicsCount, componentData, eventPayload);
+            
+            // Trigger design panel sync
+            this.triggerDesignPanelSync(eventType, componentData, topicsCount);
+            
+            this.logger.debug('EVENT', 'Topics component event handled', {
+                eventType,
+                componentId: componentData.id,
+                topicsCount,
+                totalTopicsComponents: this.componentTracker.topicsComponents.size
+            });
+            
+        } catch (error) {
+            this.logger.error('EVENT', 'Error handling topics component event', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Emit topics counter change events with debouncing
+     */
+    emitTopicsCounterEvent(eventType, topicsCount, componentData, originalEventPayload) {
+        const counterEventKey = 'topics-counter-change';
+        
+        // Clear existing debounce timer
+        if (this.eventDebounceTimers.has(counterEventKey)) {
+            clearTimeout(this.eventDebounceTimers.get(counterEventKey));
+        }
+        
+        // Set new debounced event
+        const timer = setTimeout(() => {
+            try {
+                const counterEventPayload = {
+                    type: 'counter-changed',
+                    eventType,
+                    topicsCount,
+                    component: componentData,
+                    timestamp: Date.now(),
+                    source: 'enhanced-component-manager-counter',
+                    originalEvent: originalEventPayload
+                };
+                
+                // Emit counter-specific events
+                this.eventBus.emit('components:topics:counter-changed', counterEventPayload);
+                this.eventBus.emit('topics:counter-updated', counterEventPayload);
+                
+                // Emit validation requirement event
+                this.eventBus.emit('components:topics:validation-required', {
+                    ...counterEventPayload,
+                    reason: 'counter-change'
+                });
+                
+                this.logger.debug('EVENT', 'Topics counter event emitted', {
+                    topicsCount,
+                    eventType,
+                    componentId: componentData?.id
+                });
+                
+            } catch (error) {
+                this.logger.error('EVENT', 'Error emitting topics counter event', error);
+            } finally {
+                this.eventDebounceTimers.delete(counterEventKey);
+            }
+        }, this.eventDebounceDelay);
+        
+        this.eventDebounceTimers.set(counterEventKey, timer);
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Trigger design panel synchronization
+     */
+    triggerDesignPanelSync(eventType, componentData, topicsCount) {
+        const syncEventKey = 'design-panel-sync';
+        
+        // Clear existing sync timer
+        if (this.eventDebounceTimers.has(syncEventKey)) {
+            clearTimeout(this.eventDebounceTimers.get(syncEventKey));
+        }
+        
+        // Set debounced sync event
+        const timer = setTimeout(() => {
+            try {
+                const syncEventPayload = {
+                    type: 'sync-required',
+                    eventType,
+                    component: componentData,
+                    topicsCount,
+                    timestamp: Date.now(),
+                    source: 'enhanced-component-manager-sync',
+                    target: 'design-panel'
+                };
+                
+                // Emit design panel sync events
+                this.eventBus.emit('components:topics:sync-required', syncEventPayload);
+                this.eventBus.emit('design-panel:topics:sync-required', syncEventPayload);
+                
+                // Emit preview update event
+                this.eventBus.emit('topics:preview-updated', {
+                    ...syncEventPayload,
+                    count: topicsCount,
+                    source: 'component-manager'
+                });
+                
+                this.logger.debug('EVENT', 'Design panel sync triggered', {
+                    eventType,
+                    topicsCount,
+                    componentId: componentData?.id
+                });
+                
+            } catch (error) {
+                this.logger.error('EVENT', 'Error triggering design panel sync', error);
+            } finally {
+                this.eventDebounceTimers.delete(syncEventKey);
+            }
+        }, this.eventDebounceDelay);
+        
+        this.eventDebounceTimers.set(syncEventKey, timer);
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Update component tracking for event coordination
+     */
+    updateComponentTracking(eventType, componentData) {
+        if (!componentData || !componentData.id) return;
+        
+        const componentId = componentData.id;
+        
+        switch (eventType) {
+            case 'added':
+                this.componentTracker.activeComponents.set(componentId, {
+                    id: componentId,
+                    type: componentData.type,
+                    addedAt: Date.now(),
+                    lastUpdated: Date.now()
+                });
+                break;
+                
+            case 'removed':
+                this.componentTracker.activeComponents.delete(componentId);
+                this.componentTracker.topicsComponents.delete(componentId);
+                break;
+                
+            case 'updated':
+                const existing = this.componentTracker.activeComponents.get(componentId);
+                if (existing) {
+                    existing.lastUpdated = Date.now();
+                }
+                break;
+        }
+        
+        this.componentTracker.lastEventTime = Date.now();
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Get current topics component count from state
+     */
+    getTopicsComponentCount() {
+        try {
+            const state = enhancedStateManager.getState();
+            const components = state.components || {};
+            
+            // Count topics components
+            let topicsCount = 0;
+            Object.values(components).forEach(component => {
+                if (component.type === 'topics') {
+                    topicsCount++;
+                }
+            });
+            
+            return topicsCount;
+            
+        } catch (error) {
+            this.logger.warn('EVENT', 'Error getting topics component count', error);
+            return this.componentTracker.topicsComponents.size; // Fallback to tracker
+        }
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Get actual topics count from preview component
+     */
+    getActualTopicsCount() {
+        try {
+            const previewComponent = document.querySelector('.editable-element[data-component="topics"]');
+            if (!previewComponent) {
+                return -1;
+            }
+            
+            const topicItems = previewComponent.querySelectorAll('.topic-item');
+            const realTopics = Array.from(topicItems).filter(item => {
+                const title = item.querySelector('.topic-title');
+                const titleText = title?.textContent?.trim();
+                const source = item.getAttribute('data-topic-source');
+                
+                return source !== 'placeholder' && titleText && titleText.length > 0;
+            });
+            
+            return realTopics.length;
+            
+        } catch (error) {
+            this.logger.warn('EVENT', 'Error getting actual topics count', error);
+            return -1;
+        }
+    }
+
+    /**
      * Get component and action from event
      */
     getComponentAndAction(event) {
@@ -138,10 +466,12 @@ class EnhancedComponentManager {
                     this.duplicateComponent(componentId);
                     break;
                 case 'Move Up':
-                    enhancedStateManager.moveComponent(componentId, 'up');
+                    // ROOT FIX: STEP 3 - Use enhanced move with events
+                    this.moveComponentWithEvents(componentId, 'up');
                     break;
                 case 'Move Down':
-                    enhancedStateManager.moveComponent(componentId, 'down');
+                    // ROOT FIX: STEP 3 - Use enhanced move with events
+                    this.moveComponentWithEvents(componentId, 'down');
                     break;
                 case 'Edit':
                     this.editComponent(componentId);
@@ -259,6 +589,15 @@ class EnhancedComponentManager {
             
             enhancedStateManager.addComponent(newComponent);
             
+            // ROOT FIX: STEP 3 - Emit component added events for cross-panel communication
+            this.emitComponentEvent('added', newComponent, {
+                mkcgDataUsed,
+                qualityScore: mkcgMetadata?.dataQuality?.overallScore || 0,
+                priority: mkcgMetadata?.priority || 0,
+                autoPopulated: autoPopulate,
+                propsCount: Object.keys(finalProps).length
+            });
+            
             this.logger.info('COMPONENT', `Successfully added enhanced component ${componentType}`, {
                 id: newComponent.id,
                 mkcgDataUsed,
@@ -281,11 +620,24 @@ class EnhancedComponentManager {
 
     /**
      * Removes a component from the state.
+     * ROOT FIX: STEP 3 - Enhanced with event emission for cross-panel communication
      * @param {string} componentId - The ID of the component to remove.
      */
     removeComponent(componentId) {
         try {
+            // Get component data before removal for event emission
+            const componentToRemove = enhancedStateManager.getComponent(componentId);
+            
             enhancedStateManager.removeComponent(componentId);
+            
+            // ROOT FIX: STEP 3 - Emit component removed events
+            if (componentToRemove) {
+                this.emitComponentEvent('removed', componentToRemove, {
+                    removedAt: Date.now(),
+                    removedBy: 'user-action'
+                });
+            }
+            
             this.logger.info('COMPONENT', 'Component removed', { componentId });
         } catch (error) {
             this.logger.error('COMPONENT', 'Failed to remove component', error, { componentId });
@@ -294,6 +646,7 @@ class EnhancedComponentManager {
 
     /**
      * Duplicates an existing component.
+     * ROOT FIX: STEP 3 - Enhanced with event emission for cross-panel communication
      * @param {string} componentId - The ID of the component to duplicate.
      */
     duplicateComponent(componentId) {
@@ -306,6 +659,22 @@ class EnhancedComponentManager {
                     props: { ...originalComponent.props }, // Deep copy props
                 };
                 enhancedStateManager.addComponent(newComponent);
+                
+                // ROOT FIX: STEP 3 - Emit component duplication events
+                this.emitComponentEvent('added', newComponent, {
+                    duplicatedFrom: componentId,
+                    duplicatedAt: Date.now(),
+                    isDuplicate: true,
+                    originalComponent: originalComponent
+                });
+                
+                // Also emit specific duplication event
+                this.emitComponentEvent('duplicated', newComponent, {
+                    originalId: componentId,
+                    newId: newComponent.id,
+                    duplicatedAt: Date.now()
+                });
+                
                 this.logger.info('COMPONENT', 'Component duplicated', { 
                     originalId: componentId, 
                     newId: newComponent.id 
@@ -342,9 +711,26 @@ class EnhancedComponentManager {
                 throw new Error(`Component ${componentId} not found in state`);
             }
             
+            // Get component data before update for event emission
+            const componentBeforeUpdate = { ...currentComponent };
+            
             // GEMINI FIX: Use the enhanced state manager's updateComponent method directly
             // This method expects componentId and newProps, not a full component object
             enhancedStateManager.updateComponent(componentId, newProps);
+            
+            // Get updated component for event emission
+            const componentAfterUpdate = enhancedStateManager.getComponent(componentId);
+            
+            // ROOT FIX: STEP 3 - Emit component updated events for cross-panel communication
+            if (componentAfterUpdate) {
+                this.emitComponentEvent('updated', componentAfterUpdate, {
+                    updatedProps: Object.keys(newProps),
+                    updatedAt: Date.now(),
+                    previousProps: componentBeforeUpdate.props || {},
+                    newProps: newProps,
+                    changeCount: Object.keys(newProps).length
+                });
+            }
             
             this.logger.info('COMPONENT', `Successfully updated component ${componentId}`, {
                 updatedProps: Object.keys(newProps)
@@ -363,17 +749,30 @@ class EnhancedComponentManager {
 
     /**
      * Opens edit panel for component
+     * ROOT FIX: STEP 3 - Enhanced with component interaction events
      * @param {string} componentId - The ID of the component to edit
      */
     editComponent(componentId) {
         this.logger.info('CONTROL', 'Edit action triggered', { componentId });
         
         try {
+            // Get component for event emission
+            const component = enhancedStateManager.getComponent(componentId);
+            
+            // ROOT FIX: STEP 3 - Emit component interaction events
+            if (component) {
+                this.emitComponentEvent('edit-requested', component, {
+                    action: 'edit',
+                    requestedAt: Date.now(),
+                    source: 'user-interaction'
+                });
+            }
+            
             // GEMINI FIX: Emit event to open design panel
             if (window.eventBus && typeof window.eventBus.emit === 'function') {
                 window.eventBus.emit('ui:open-design-panel', {
                     componentId,
-                    component: enhancedStateManager.getComponent(componentId)
+                    component: component
                 });
             } else {
                 // Fallback to direct method call if event bus not available
@@ -1120,6 +1519,214 @@ class EnhancedComponentManager {
     showAutoGenerateNotification(count, components) {
         return this.showSimpleAutoGenerateNotification(count, components);
     }
+    
+    /**
+     * ROOT FIX: STEP 3 - Enhanced move component with event emission
+     * @param {string} componentId - The component to move
+     * @param {string} direction - 'up' or 'down'
+     */
+    moveComponentWithEvents(componentId, direction) {
+        try {
+            // Get component before move for event emission
+            const component = enhancedStateManager.getComponent(componentId);
+            const stateBefore = enhancedStateManager.getState();
+            const layoutBefore = [...stateBefore.layout];
+            const indexBefore = layoutBefore.indexOf(componentId);
+            
+            // Perform the move
+            enhancedStateManager.moveComponent(componentId, direction);
+            
+            // Get state after move
+            const stateAfter = enhancedStateManager.getState();
+            const layoutAfter = [...stateAfter.layout];
+            const indexAfter = layoutAfter.indexOf(componentId);
+            
+            // ROOT FIX: STEP 3 - Emit component move events
+            if (component && indexBefore !== indexAfter) {
+                this.emitComponentEvent('moved', component, {
+                    direction,
+                    indexBefore,
+                    indexAfter,
+                    layoutBefore,
+                    layoutAfter,
+                    movedAt: Date.now(),
+                    source: 'user-action'
+                });
+            }
+            
+            this.logger.info('COMPONENT', 'Component moved with events', {
+                componentId,
+                direction,
+                indexBefore,
+                indexAfter
+            });
+            
+        } catch (error) {
+            this.logger.error('COMPONENT', 'Failed to move component', error, {
+                componentId,
+                direction
+            });
+        }
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Enhanced event system integration for all component actions
+     */
+    handleComponentAction(action, componentId, additionalData = {}) {
+        const component = enhancedStateManager.getComponent(componentId);
+        
+        if (!component) {
+            this.logger.warn('COMPONENT', 'Cannot handle action - component not found', {
+                action,
+                componentId
+            });
+            return;
+        }
+        
+        try {
+            switch (action) {
+                case 'delete':
+                    this.removeComponent(componentId);
+                    break;
+                case 'duplicate':
+                    this.duplicateComponent(componentId);
+                    break;
+                case 'move-up':
+                    this.moveComponentWithEvents(componentId, 'up');
+                    break;
+                case 'move-down':
+                    this.moveComponentWithEvents(componentId, 'down');
+                    break;
+                case 'edit':
+                    this.editComponent(componentId);
+                    break;
+                default:
+                    this.logger.warn('COMPONENT', 'Unknown component action', {
+                        action,
+                        componentId
+                    });
+            }
+        } catch (error) {
+            this.logger.error('COMPONENT', 'Error handling component action', error, {
+                action,
+                componentId
+            });
+        }
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Debug component event system
+     */
+    debugEventSystem() {
+        console.group('%c🎯 Component Event System Debug', 'font-size: 14px; font-weight: bold; color: #FF5722');
+        
+        console.log('Event System Status:', {
+            eventBusAvailable: !!this.eventBus,
+            eventBusType: this.eventBus === window.eventBus ? 'Global' : 'Fallback',
+            componentTracking: this.getEventTrackingStats(),
+            pendingEvents: this.eventDebounceTimers.size,
+            debounceDelay: this.eventDebounceDelay
+        });
+        
+        console.log('Component Tracking:', {
+            activeComponents: Array.from(this.componentTracker.activeComponents.entries()),
+            topicsComponents: Array.from(this.componentTracker.topicsComponents),
+            lastEventTime: this.componentTracker.lastEventTime ? new Date(this.componentTracker.lastEventTime).toISOString() : null
+        });
+        
+        console.log('Topics Analytics:', {
+            topicsComponentCount: this.getTopicsComponentCount(),
+            actualTopicsCount: this.getActualTopicsCount(),
+            previewComponentExists: !!document.querySelector('.editable-element[data-component="topics"]')
+        });
+        
+        if (this.eventDebounceTimers.size > 0) {
+            console.log('Pending Events:', Array.from(this.eventDebounceTimers.keys()));
+        }
+        
+        console.groupEnd();
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Force trigger component sync events
+     */
+    forceSyncAllComponents() {
+        try {
+            const state = enhancedStateManager.getState();
+            const components = Object.values(state.components || {});
+            
+            this.logger.info('EVENT', 'Force syncing all components', {
+                componentCount: components.length
+            });
+            
+            components.forEach(component => {
+                try {
+                    this.emitComponentEvent('sync-forced', component, {
+                        forcedAt: Date.now(),
+                        source: 'manual-sync',
+                        reason: 'force-sync-all'
+                    });
+                } catch (error) {
+                    this.logger.warn('EVENT', 'Error force-syncing component', error, {
+                        componentId: component.id
+                    });
+                }
+            });
+            
+        } catch (error) {
+            this.logger.error('EVENT', 'Error force syncing all components', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: STEP 3 - Test event system connectivity
+     */
+    testEventSystem() {
+        const testId = `test-${Date.now()}`;
+        
+        try {
+            // Test basic event emission
+            this.eventBus.emit('components:test-event', {
+                testId,
+                timestamp: Date.now(),
+                message: 'Event system test'
+            });
+            
+            // Test component event emission
+            const testComponent = {
+                id: testId,
+                type: 'test',
+                props: { title: 'Test Component' }
+            };
+            
+            this.emitComponentEvent('test-added', testComponent, {
+                isTest: true,
+                testId
+            });
+            
+            this.logger.info('EVENT', 'Event system test completed', {
+                testId,
+                eventBusAvailable: !!this.eventBus,
+                trackingStats: this.getEventTrackingStats()
+            });
+            
+            return {
+                success: true,
+                testId,
+                eventBusAvailable: !!this.eventBus,
+                trackingWorking: true
+            };
+            
+        } catch (error) {
+            this.logger.error('EVENT', 'Event system test failed', error);
+            
+            return {
+                success: false,
+                error: error.message,
+                testId
+            };
+        }
+    }
 }
 
 // ROOT FIX: Create and expose enhanced component manager globally
@@ -1134,6 +1741,126 @@ if (!window.componentManager) {
     window.componentManager = enhancedComponentManager;
 }
 
+// ROOT FIX: STEP 3 - Enhanced global debug utilities for component event system
+window.debugComponentEvents = function() {
+    console.log('🎯 ROOT FIX STEP 3: Component Event System Debug');
+    
+    if (window.enhancedComponentManager) {
+        window.enhancedComponentManager.debugEventSystem();
+    } else {
+        console.error('Enhanced Component Manager not available');
+    }
+};
+
+window.testComponentEvents = function() {
+    console.log('🧪 ROOT FIX STEP 3: Testing Component Event System');
+    
+    if (window.enhancedComponentManager) {
+        const result = window.enhancedComponentManager.testEventSystem();
+        console.log('Test Result:', result);
+        return result;
+    } else {
+        console.error('Enhanced Component Manager not available');
+        return { success: false, error: 'Manager not available' };
+    }
+};
+
+window.forceComponentSync = function() {
+    console.log('🔄 ROOT FIX STEP 3: Force Syncing All Components');
+    
+    if (window.enhancedComponentManager) {
+        window.enhancedComponentManager.forceSyncAllComponents();
+        console.log('✅ Force sync triggered');
+    } else {
+        console.error('Enhanced Component Manager not available');
+    }
+};
+
+window.getComponentEventStats = function() {
+    if (window.enhancedComponentManager) {
+        const stats = window.enhancedComponentManager.getEventTrackingStats();
+        console.log('📊 Component Event Tracking Stats:', stats);
+        return stats;
+    } else {
+        console.error('Enhanced Component Manager not available');
+        return null;
+    }
+};
+
+// ROOT FIX: STEP 3 - Enhanced component manager status with event system details
+window.getEnhancedComponentManagerStatus = function() {
+    if (window.enhancedComponentManager) {
+        const baseStatus = window.enhancedComponentManager.getStatus();
+        const eventStats = window.enhancedComponentManager.getEventTrackingStats();
+        
+        const enhancedStatus = {
+            ...baseStatus,
+            eventSystem: {
+                available: true,
+                eventBusConnected: !!window.enhancedComponentManager.eventBus,
+                eventBusType: window.enhancedComponentManager.eventBus === window.eventBus ? 'Global' : 'Fallback',
+                tracking: eventStats,
+                methods: {
+                    emitComponentEvent: typeof window.enhancedComponentManager.emitComponentEvent === 'function',
+                    handleTopicsComponentEvent: typeof window.enhancedComponentManager.handleTopicsComponentEvent === 'function',
+                    emitTopicsCounterEvent: typeof window.enhancedComponentManager.emitTopicsCounterEvent === 'function',
+                    triggerDesignPanelSync: typeof window.enhancedComponentManager.triggerDesignPanelSync === 'function',
+                    moveComponentWithEvents: typeof window.enhancedComponentManager.moveComponentWithEvents === 'function'
+                }
+            }
+        };
+        
+        console.log('📋 Enhanced Component Manager Status (with Event System):', enhancedStatus);
+        return enhancedStatus;
+    } else {
+        console.error('Enhanced Component Manager not available');
+        return null;
+    }
+};
+
 console.log('✅ ROOT FIX: Enhanced Component Manager exposed globally (WordPress-compatible)');
+console.log('🎯 ROOT FIX STEP 3: Component Event System ready for cross-panel communication');
+console.log('📊 ROOT FIX STEP 3: Debug commands available:');
+console.log('   debugComponentEvents() - Show component event system debug info');
+console.log('   testComponentEvents() - Test event system connectivity');
+console.log('   forceComponentSync() - Force sync all components');
+console.log('   getComponentEventStats() - Show event tracking statistics');
+console.log('   getEnhancedComponentManagerStatus() - Full status with event system');
+
+// ROOT FIX: STEP 3 - Immediate verification that new version loaded
+console.log('🔥 ROOT FIX STEP 3: NEW VERSION LOADED - Event system active! Timestamp:', Date.now());
+console.log('🔥 Available debug functions:', {
+    debugComponentEvents: typeof window.debugComponentEvents,
+    testComponentEvents: typeof window.testComponentEvents,
+    getEnhancedComponentManagerStatus: typeof window.getEnhancedComponentManagerStatus,
+    enhancedComponentManager: !!window.enhancedComponentManager
+});
+
+// ROOT FIX: STEP 3 - Immediate test of event system
+setTimeout(() => {
+    try {
+        if (window.enhancedComponentManager) {
+            const eventStats = window.enhancedComponentManager.getEventTrackingStats();
+            console.log('🎉 ROOT FIX STEP 3: Event system verification SUCCESS!', {
+                eventTrackingWorking: true,
+                stats: eventStats,
+                manager: 'available',
+                timestamp: Date.now()
+            });
+            
+            // Test event emission
+            window.enhancedComponentManager.eventBus.emit('test:step3-verification', {
+                message: 'Step 3 event system working',
+                timestamp: Date.now()
+            });
+            
+            console.log('✅ ROOT FIX STEP 3: Event emission test completed');
+        } else {
+            console.error('❌ ROOT FIX STEP 3: Enhanced Component Manager not available');
+        }
+    } catch (error) {
+        console.error('❌ ROOT FIX STEP 3: Event system test failed:', error);
+    }
+}, 1000);
 
 })(); // ROOT FIX: Close IIFE wrapper

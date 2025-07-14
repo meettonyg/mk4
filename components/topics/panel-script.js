@@ -1084,11 +1084,14 @@ let topicCount = 0;
 const MAX_TOPICS = 10;
 
 /**
- * Setup topics editor functionality
- * ROOT FIX: Enhanced to handle dynamic panel loading and ensure proper event binding
+ * ROOT FIX: Setup topics editor functionality with enhanced real-time sync
+ * Handles dynamic panel loading, event delegation, and component synchronization
  */
 function setupTopicsEditor() {
-    console.log('📝 ROOT FIX: Setting up topics editor...');
+    console.log('📝 ROOT FIX: Setting up enhanced topics editor with real-time sync...');
+    
+    // ROOT FIX: Setup component state monitoring for real-time updates
+    setupComponentStateMonitoring();
     
     // ROOT FIX: Use more robust selectors and error handling
     const addButton = document.getElementById('add-topic-btn');
@@ -1127,11 +1130,189 @@ function setupTopicsEditor() {
     // ROOT FIX: Set up delegation for dynamically added buttons
     setupButtonDelegation();
     
-    console.log('✅ ROOT FIX: Topics editor initialized successfully');
+    // ROOT FIX: Setup bidirectional sync with preview component
+    setupBidirectionalSync();
+    
+    // ROOT FIX: Initial counter sync
+    updateTopicsCounter();
+    
+    console.log('✅ ROOT FIX: Enhanced topics editor initialized successfully');
 }
 
 /**
- * ROOT FIX: Set up event delegation for dynamically loaded content
+ * ROOT FIX: Setup component state monitoring for real-time updates
+ * Monitors the preview component for changes and syncs with design panel
+ */
+function setupComponentStateMonitoring() {
+    console.log('🔍 ROOT FIX: Setting up component state monitoring...');
+    
+    // ROOT FIX: Listen for component changes in preview
+    document.addEventListener('componentUpdated', (event) => {
+        if (event.detail?.componentType === 'topics') {
+            console.log('🔄 ROOT FIX: Topics component updated, syncing counter...');
+            setTimeout(() => {
+                updateTopicsCounter();
+                syncEditorWithComponent();
+            }, 100); // Small delay to ensure DOM is updated
+        }
+    });
+    
+    // ROOT FIX: Listen for state changes
+    document.addEventListener('stateChanged', (event) => {
+        if (event.detail?.state?.components) {
+            const topicsComponents = Object.values(event.detail.state.components)
+                .filter(comp => comp.type === 'topics');
+            
+            if (topicsComponents.length > 0) {
+                console.log('🔄 ROOT FIX: State changed with topics, syncing counter...');
+                setTimeout(() => {
+                    updateTopicsCounter();
+                }, 100);
+            }
+        }
+    });
+    
+    // ROOT FIX: Use MutationObserver to watch for DOM changes in topics component
+    const targetComponent = document.querySelector('.editable-element[data-component="topics"]');
+    if (targetComponent) {
+        const observer = new MutationObserver((mutations) => {
+            let topicsChanged = false;
+            
+            mutations.forEach((mutation) => {
+                // Check if topic items were added or removed
+                if (mutation.type === 'childList') {
+                    const addedTopics = Array.from(mutation.addedNodes)
+                        .filter(node => node.nodeType === 1 && node.classList?.contains('topic-item'));
+                    const removedTopics = Array.from(mutation.removedNodes)
+                        .filter(node => node.nodeType === 1 && node.classList?.contains('topic-item'));
+                    
+                    if (addedTopics.length > 0 || removedTopics.length > 0) {
+                        topicsChanged = true;
+                    }
+                }
+                
+                // Check if topic content was modified
+                if (mutation.type === 'characterData' || mutation.type === 'attributes') {
+                    if (mutation.target.closest && mutation.target.closest('.topic-item')) {
+                        topicsChanged = true;
+                    }
+                }
+            });
+            
+            if (topicsChanged) {
+                console.log('🔄 ROOT FIX: Topics DOM changed, syncing counter...');
+                debounce(() => updateTopicsCounter(), 200)();
+            }
+        });
+        
+        observer.observe(targetComponent, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: ['data-topic-source', 'data-topic-count']
+        });
+        
+        // Store observer for cleanup if needed
+        window.topicsComponentObserver = observer;
+        
+        console.log('✅ ROOT FIX: MutationObserver setup for topics component');
+    }
+    
+    console.log('✅ ROOT FIX: Component state monitoring setup complete');
+}
+
+/**
+ * ROOT FIX: Setup bidirectional synchronization between design panel and preview
+ * Ensures changes in either direction are properly reflected
+ */
+function setupBidirectionalSync() {
+    console.log('🔗 ROOT FIX: Setting up bidirectional sync...');
+    
+    // ROOT FIX: Sync from preview to design panel
+    const syncFromPreview = () => {
+        const actualCount = getActualTopicCount();
+        if (actualCount >= 0 && actualCount !== topicCount) {
+            console.log(`🔄 ROOT FIX: Syncing from preview: ${topicCount} → ${actualCount}`);
+            topicCount = actualCount;
+            updateTopicsCounter();
+            updateClearButtonVisibility();
+        }
+    };
+    
+    // ROOT FIX: Sync from design panel to preview (when updateComponentPreview is called)
+    const originalUpdatePreview = window.updateComponentPreview;
+    if (typeof originalUpdatePreview === 'function') {
+        window.updateComponentPreview = function(...args) {
+            const result = originalUpdatePreview.apply(this, args);
+            
+            // After preview update, sync counter
+            setTimeout(() => {
+                updateTopicsCounter();
+            }, 100);
+            
+            return result;
+        };
+        
+        console.log('✅ ROOT FIX: Enhanced updateComponentPreview with counter sync');
+    }
+    
+    // ROOT FIX: Listen for global events that might affect topics
+    document.addEventListener('topicsComponentUpdated', syncFromPreview);
+    document.addEventListener('topicsComponentChanged', syncFromPreview);
+    
+    // ROOT FIX: Periodic sync check (fallback)
+    setInterval(() => {
+        if (document.getElementById('topic-count')) {
+            syncFromPreview();
+        }
+    }, 5000); // Check every 5 seconds
+    
+    console.log('✅ ROOT FIX: Bidirectional sync setup complete');
+}
+
+/**
+ * ROOT FIX: Sync design panel editor with actual component state
+ * Updates the editor topics list to match what's in the preview
+ */
+function syncEditorWithComponent() {
+    console.log('🔄 ROOT FIX: Syncing editor with component state...');
+    
+    try {
+        const component = document.querySelector('.editable-element[data-component="topics"]');
+        if (!component) {
+            console.log('ℹ️ ROOT FIX: No topics component found for sync');
+            return;
+        }
+        
+        const topicItems = component.querySelectorAll('.topic-item');
+        const realTopics = Array.from(topicItems).filter(item => {
+            const title = item.querySelector('.topic-title');
+            const titleText = title?.textContent?.trim();
+            const source = item.getAttribute('data-topic-source');
+            
+            return source !== 'placeholder' && titleText && titleText.length > 0;
+        });
+        
+        // Update editor topic count
+        if (realTopics.length !== topicCount) {
+            console.log(`🔄 ROOT FIX: Editor sync: ${topicCount} → ${realTopics.length} topics`);
+            topicCount = realTopics.length;
+            updateTopicsCounter();
+            updateClearButtonVisibility();
+            
+            // Optional: Could also sync the actual topic content in the editor
+            // This would be more complex and might interfere with user editing
+        }
+        
+    } catch (error) {
+        console.error('❌ ROOT FIX: Error syncing editor with component:', error);
+    }
+}
+
+/**
+ * ROOT FIX: Enhanced event delegation for dynamically loaded content
+ * Includes automatic counter updates and component sync
  */
 function setupButtonDelegation() {
     // Use event delegation on the document for buttons that might be loaded later
@@ -1141,7 +1322,9 @@ function setupButtonDelegation() {
             e.preventDefault();
             e.stopPropagation();
             console.log('📝 ROOT FIX: Add Topic button clicked via delegation');
-            addNewTopic();
+            
+            // ROOT FIX: Enhanced add topic with counter sync
+            addNewTopicEnhanced();
             return;
         }
         
@@ -1150,20 +1333,75 @@ function setupButtonDelegation() {
             e.preventDefault();
             e.stopPropagation();
             console.log('🗑️ ROOT FIX: Clear All button clicked via delegation');
-            handleClearAllTopics();
+            
+            // ROOT FIX: Enhanced clear all with counter sync
+            handleClearAllTopicsEnhanced();
             return;
         }
     });
     
-    console.log('✅ ROOT FIX: Button delegation set up for dynamic content');
+    console.log('✅ ROOT FIX: Enhanced button delegation set up for dynamic content');
 }
 
 /**
- * Add a new topic to the editor
+ * ROOT FIX: Enhanced add new topic with automatic counter sync
+ * Ensures counter is updated immediately and component is synced
+ */
+function addNewTopicEnhanced() {
+    console.log('➕ ROOT FIX: Adding new topic with enhanced sync...');
+    
+    // Call original add topic function
+    addNewTopic();
+    
+    // ROOT FIX: Immediate counter sync after adding
+    setTimeout(() => {
+        updateTopicsCounter();
+        updateComponentPreview();
+        
+        // ROOT FIX: Dispatch event for other systems
+        document.dispatchEvent(new CustomEvent('topicAdded', {
+            detail: { count: topicCount, timestamp: Date.now() }
+        }));
+        
+        console.log('✅ ROOT FIX: New topic added and synced');
+    }, 50);
+}
+
+/**
+ * ROOT FIX: Enhanced clear all topics with automatic counter sync
+ * Ensures counter is updated immediately and component is synced
+ */
+function handleClearAllTopicsEnhanced() {
+    console.log('🗑️ ROOT FIX: Clearing all topics with enhanced sync...');
+    
+    const oldCount = topicCount;
+    
+    // Call original clear all function
+    handleClearAllTopics();
+    
+    // ROOT FIX: Immediate counter sync after clearing
+    setTimeout(() => {
+        updateTopicsCounter();
+        updateComponentPreview();
+        
+        // ROOT FIX: Dispatch event for other systems
+        document.dispatchEvent(new CustomEvent('topicsCleared', {
+            detail: { previousCount: oldCount, currentCount: topicCount, timestamp: Date.now() }
+        }));
+        
+        console.log('✅ ROOT FIX: All topics cleared and synced');
+    }, 50);
+}
+
+/**
+ * ROOT FIX: Enhanced add new topic with immediate sync and validation
  */
 function addNewTopic() {
+    console.log('➕ ROOT FIX: Adding new topic...');
+    
     if (topicCount >= MAX_TOPICS) {
         showNotification(`Maximum of ${MAX_TOPICS} topics allowed`, 'warning');
+        console.warn(`⚠️ ROOT FIX: Maximum topics reached (${MAX_TOPICS})`);
         return;
     }
     
@@ -1173,8 +1411,17 @@ function addNewTopic() {
     if (topicsList && topicItem) {
         topicsList.appendChild(topicItem);
         topicCount++;
+        
+        console.log(`📝 ROOT FIX: Topic added, count now: ${topicCount}`);
+        
+        // ROOT FIX: Enhanced counter and UI updates
         updateTopicsCounter();
         updateClearButtonVisibility();
+        
+        // ROOT FIX: Trigger preview update immediately
+        if (typeof updateComponentPreview === 'function') {
+            updateComponentPreview();
+        }
         
         // Focus the new topic input
         const input = topicItem.querySelector('input[data-topic-title]');
@@ -1182,6 +1429,20 @@ function addNewTopic() {
             input.focus();
             input.select();
         }
+        
+        // ROOT FIX: Remove empty state message if it exists
+        const emptyMessage = topicsList.querySelector('.topics-empty-state');
+        if (emptyMessage) {
+            emptyMessage.remove();
+            console.log('✅ ROOT FIX: Removed empty state message');
+        }
+        
+        console.log('✅ ROOT FIX: New topic added successfully');
+    } else {
+        console.error('❌ ROOT FIX: Could not add topic - missing elements:', {
+            topicsList: !!topicsList,
+            topicItem: !!topicItem
+        });
     }
 }
 
@@ -1277,42 +1538,132 @@ function setupTopicItemEvents(item, index) {
 }
 
 /**
- * Remove a topic item
+ * ROOT FIX: Enhanced remove topic with immediate sync and validation
  * @param {HTMLElement} item The topic item to remove
  */
 function removeTopic(item) {
+    console.log('🗑️ ROOT FIX: Removing topic...');
+    
+    const topicTitle = item.querySelector('input[data-topic-title]')?.value || 'Unknown';
+    
     item.remove();
     topicCount--;
+    
+    console.log(`🗑️ ROOT FIX: Topic removed ("${topicTitle}"), count now: ${topicCount}`);
+    
+    // ROOT FIX: Enhanced counter and UI updates
     updateTopicsCounter();
     updateClearButtonVisibility();
     renumberTopics();
-    updateComponentPreview();
+    
+    // ROOT FIX: Trigger preview update immediately
+    if (typeof updateComponentPreview === 'function') {
+        updateComponentPreview();
+    }
+    
+    // ROOT FIX: Show empty state if no topics remain
+    if (topicCount === 0) {
+        const topicsList = document.getElementById('design-topics-list');
+        if (topicsList && !topicsList.querySelector('.topics-empty-state')) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'topics-empty-state';
+            emptyMessage.innerHTML = `
+                <div style="
+                    text-align: center;
+                    padding: 20px;
+                    color: #6b7280;
+                    font-style: italic;
+                    border: 2px dashed #d1d5db;
+                    border-radius: 8px;
+                    background: #f9fafb;
+                ">
+                    <div style="margin-bottom: 8px;">📝</div>
+                    <div>Click "Add Topic" to get started</div>
+                    <div style="font-size: 12px; margin-top: 4px; opacity: 0.7;">Only real topics will be shown - no placeholder content</div>
+                </div>
+            `;
+            topicsList.appendChild(emptyMessage);
+            console.log('✅ ROOT FIX: Added empty state message');
+        }
+    }
+    
+    // ROOT FIX: Dispatch removal event
+    document.dispatchEvent(new CustomEvent('topicRemoved', {
+        detail: { title: topicTitle, count: topicCount, timestamp: Date.now() }
+    }));
+    
+    console.log('✅ ROOT FIX: Topic removed successfully');
 }
 
 /**
- * Handle clear all topics button
+ * ROOT FIX: Enhanced handle clear all topics with immediate sync
  */
 function handleClearAllTopics() {
-    if (topicCount === 0) return;
+    console.log('🗑️ ROOT FIX: Handling clear all topics...');
+    
+    if (topicCount === 0) {
+        console.log('ℹ️ ROOT FIX: No topics to clear');
+        return;
+    }
+    
+    const oldCount = topicCount;
     
     if (confirm(`Are you sure you want to remove all ${topicCount} topics?`)) {
         const topicsList = document.getElementById('design-topics-list');
         if (topicsList) {
             topicsList.innerHTML = '';
             topicCount = 0;
+            
+            console.log(`🗑️ ROOT FIX: Cleared all topics (${oldCount} → 0)`);
+            
+            // ROOT FIX: Enhanced counter and UI updates
             updateTopicsCounter();
             updateClearButtonVisibility();
-            updateComponentPreview();
+            
+            // ROOT FIX: Trigger preview update immediately
+            if (typeof updateComponentPreview === 'function') {
+                updateComponentPreview();
+            }
+            
+            // ROOT FIX: Add empty state message
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'topics-empty-state';
+            emptyMessage.innerHTML = `
+                <div style="
+                    text-align: center;
+                    padding: 20px;
+                    color: #6b7280;
+                    font-style: italic;
+                    border: 2px dashed #d1d5db;
+                    border-radius: 8px;
+                    background: #f9fafb;
+                ">
+                    <div style="margin-bottom: 8px;">📝</div>
+                    <div>Click "Add Topic" to get started</div>
+                    <div style="font-size: 12px; margin-top: 4px; opacity: 0.7;">All topics have been cleared</div>
+                </div>
+            `;
+            topicsList.appendChild(emptyMessage);
+            
             showNotification('All topics cleared', 'success');
+            
+            // ROOT FIX: Dispatch clear event
+            document.dispatchEvent(new CustomEvent('allTopicsCleared', {
+                detail: { previousCount: oldCount, timestamp: Date.now() }
+            }));
+            
+            console.log('✅ ROOT FIX: All topics cleared successfully');
         }
     }
 }
 
 /**
- * ROOT FIX: Load existing topics from component with dynamic data support
- * Enhanced to properly sync side panel counter with actual component topics
+ * ROOT FIX: Enhanced load existing topics with real-time sync and validation
+ * Properly syncs side panel counter with actual component topics and sets up monitoring
  */
 function loadExistingTopics() {
+    console.log('📥 ROOT FIX: Loading existing topics with enhanced sync...');
+    
     const component = document.querySelector('.editable-element[data-component="topics"]');
     if (!component) {
         console.warn('⚠️ ROOT FIX: No topics component found for loading existing topics');
@@ -1431,7 +1782,17 @@ function loadExistingTopics() {
     updateTopicsCounter();
     updateClearButtonVisibility();
     
-    console.log(`✅ ROOT FIX: Topics counter updated to show ${topicCount} topics`);
+    // ROOT FIX: Validate sync after loading
+    setTimeout(() => {
+        const actualCount = getActualTopicCount();
+        if (actualCount >= 0 && actualCount !== topicCount) {
+            console.log(`🔄 ROOT FIX: Post-load sync correction: ${topicCount} → ${actualCount}`);
+            topicCount = actualCount;
+            updateTopicsCounter();
+        }
+    }, 500);
+    
+    console.log(`✅ ROOT FIX: Enhanced topics loading complete - ${topicCount} topics`);
 }
 
 /**
@@ -1512,12 +1873,125 @@ function hideLoadingMessage() {
 }
 
 /**
- * Update topics counter
+ * ROOT FIX: Enhanced topics counter with real-time synchronization
+ * Syncs with actual component state and provides fallback detection
  */
 function updateTopicsCounter() {
+    console.log('🔄 ROOT FIX: Updating topics counter with real-time sync...');
+    
+    // Get counter element
     const counter = document.getElementById('topic-count');
-    if (counter) {
-        counter.textContent = topicCount;
+    if (!counter) {
+        console.warn('⚠️ ROOT FIX: Topic counter element not found');
+        return;
+    }
+    
+    // ROOT FIX: Multi-source topic count detection
+    const actualCount = getActualTopicCount();
+    const editorCount = topicCount;
+    
+    console.log('📊 ROOT FIX: Topic count sources:', {
+        actualComponentCount: actualCount,
+        editorCount: editorCount,
+        usingCount: actualCount >= 0 ? actualCount : editorCount
+    });
+    
+    // ROOT FIX: Use actual component count if available, otherwise use editor count
+    const finalCount = actualCount >= 0 ? actualCount : editorCount;
+    
+    // Update counter with animation
+    if (counter.textContent !== finalCount.toString()) {
+        counter.style.transition = 'all 0.3s ease';
+        counter.style.transform = 'scale(1.1)';
+        counter.textContent = finalCount;
+        
+        setTimeout(() => {
+            counter.style.transform = 'scale(1)';
+        }, 200);
+        
+        console.log(`✅ ROOT FIX: Counter updated to ${finalCount}`);
+        
+        // ROOT FIX: Dispatch counter update event
+        document.dispatchEvent(new CustomEvent('topicsCounterUpdated', {
+            detail: { count: finalCount, source: actualCount >= 0 ? 'component' : 'editor' }
+        }));
+    }
+    
+    // ROOT FIX: Update editor count to match actual count for consistency
+    if (actualCount >= 0 && actualCount !== editorCount) {
+        topicCount = actualCount;
+        console.log(`🔄 ROOT FIX: Synced editor count (${editorCount} → ${actualCount})`);
+    }
+}
+
+/**
+ * ROOT FIX: Get actual topic count from the preview component
+ * Provides multiple detection strategies for accurate counting
+ */
+function getActualTopicCount() {
+    try {
+        const component = document.querySelector('.editable-element[data-component="topics"]');
+        if (!component) {
+            console.log('ℹ️ ROOT FIX: Topics component not found in preview');
+            return -1;
+        }
+        
+        // Strategy 1: Count actual topic items in component
+        const topicItems = component.querySelectorAll('.topic-item');
+        if (topicItems.length > 0) {
+            // Filter out empty or placeholder topics
+            const realTopics = Array.from(topicItems).filter(item => {
+                const title = item.querySelector('.topic-title');
+                const titleText = title?.textContent?.trim();
+                const source = item.getAttribute('data-topic-source');
+                
+                // Skip placeholder topics
+                if (source === 'placeholder' || !titleText || titleText.length === 0) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            console.log(`📊 ROOT FIX: Found ${realTopics.length} real topics (${topicItems.length} total)`);
+            return realTopics.length;
+        }
+        
+        // Strategy 2: Check topics container data attribute
+        const topicsContainer = component.querySelector('.topics-container');
+        if (topicsContainer) {
+            const dataCount = topicsContainer.getAttribute('data-topics-count');
+            if (dataCount && !isNaN(parseInt(dataCount))) {
+                const count = parseInt(dataCount);
+                console.log(`📊 ROOT FIX: Using data-topics-count: ${count}`);
+                return count;
+            }
+        }
+        
+        // Strategy 3: Check state manager if available
+        if (window.enhancedStateManager || window.stateManager) {
+            const stateManager = window.enhancedStateManager || window.stateManager;
+            const state = stateManager.getState();
+            
+            // Find topics component in state
+            const componentsArray = Object.values(state.components || {});
+            const topicsComponent = componentsArray.find(comp => comp.type === 'topics');
+            
+            if (topicsComponent && topicsComponent.data && topicsComponent.data.topics) {
+                const stateTopics = Object.values(topicsComponent.data.topics).filter(topic => 
+                    topic && typeof topic === 'string' && topic.trim().length > 0
+                );
+                console.log(`📊 ROOT FIX: Using state manager count: ${stateTopics.length}`);
+                return stateTopics.length;
+            }
+        }
+        
+        console.log('ℹ️ ROOT FIX: No topics found via any detection strategy');
+        return 0;
+        
+    } catch (error) {
+        console.error('❌ ROOT FIX: Error getting actual topic count:', error);
+        return -1;
     }
 }
 
@@ -1808,11 +2282,11 @@ function updateMKCGStatus() {
 // =================================================================================
 
 /**
- * ROOT FIX: Enhanced component preview update with real-time sync
- * Fixes live preview not updating when design panel values change
+ * ROOT FIX: Enhanced component preview update with bidirectional sync
+ * Fixes live preview updates and ensures counter synchronization
  */
 function updateComponentPreview() {
-    console.log('🎨 ROOT FIX: Updating component preview...');
+    console.log('🎨 ROOT FIX: Updating component preview with enhanced sync...');
     
     const component = document.querySelector('.editable-element[data-component="topics"]');
     if (!component) {
@@ -1899,6 +2373,20 @@ function updateComponentPreview() {
     
     console.log(`✅ ROOT FIX: Component preview updated with ${updatedTopicsCount} topics`);
     
+    // ROOT FIX: Immediate counter sync after preview update
+    setTimeout(() => {
+        console.log('🔄 ROOT FIX: Post-preview update counter sync...');
+        updateTopicsCounter();
+        
+        // ROOT FIX: Validate the sync worked
+        const actualCount = getActualTopicCount();
+        if (actualCount !== updatedTopicsCount) {
+            console.warn(`⚠️ ROOT FIX: Counter sync mismatch: expected ${updatedTopicsCount}, got ${actualCount}`);
+        } else {
+            console.log(`✅ ROOT FIX: Counter sync validated: ${actualCount} topics`);
+        }
+    }, 100);
+    
     // ROOT FIX: Trigger enhanced component update event
     triggerEnhancedComponentUpdate(component);
     
@@ -1906,6 +2394,15 @@ function updateComponentPreview() {
     if (updatedTopicsCount > 0) {
         showPreviewUpdateNotification(updatedTopicsCount);
     }
+    
+    // ROOT FIX: Dispatch preview update event for other systems
+    document.dispatchEvent(new CustomEvent('topicsPreviewUpdated', {
+        detail: { 
+            count: updatedTopicsCount, 
+            timestamp: Date.now(),
+            source: 'design_panel_preview_update'
+        }
+    }));
 }
 
 /**
@@ -2208,7 +2705,7 @@ window.initializeTopicsDesignPanel = function() {
     }
 };
 
-// ROOT FIX: Auto-initialize when panel content is loaded
+// ROOT FIX: Enhanced auto-initialization with real-time sync
 function initializeWhenReady() {
     // Check if we're in a design panel context
     const isInDesignPanel = document.querySelector('.element-editor__title') || 
@@ -2216,20 +2713,77 @@ function initializeWhenReady() {
                            document.querySelector('.topics-editor');
     
     if (isInDesignPanel) {
-        console.log('🎯 ROOT FIX: Design panel context detected, initializing...');
+        console.log('🎯 ROOT FIX: Enhanced design panel context detected, initializing...');
         
         // Small delay to ensure DOM is fully ready
         setTimeout(() => {
             const component = document.querySelector('.editable-element[data-component="topics"]');
             if (component) {
                 initializeTopicsPanel(component);
-                console.log('✅ ROOT FIX: Auto-initialized topics panel');
+                console.log('✅ ROOT FIX: Auto-initialized enhanced topics panel');
             } else {
                 console.warn('⚠️ ROOT FIX: Component not found for auto-initialization, trying alternative setup');
                 setupTopicsEditor(); // Try just the editor setup
             }
+            
+            // ROOT FIX: Setup global counter sync monitoring
+            setupGlobalCounterSync();
+            
         }, 100);
     }
+}
+
+/**
+ * ROOT FIX: Setup global counter synchronization monitoring
+ * Ensures counter stays in sync regardless of how topics are modified
+ */
+function setupGlobalCounterSync() {
+    console.log('🌐 ROOT FIX: Setting up global counter sync monitoring...');
+    
+    // ROOT FIX: Monitor for any DOM changes that might affect topics
+    const targetNode = document.body;
+    const observer = new MutationObserver((mutations) => {
+        let shouldSync = false;
+        
+        mutations.forEach((mutation) => {
+            // Check if any topics-related elements changed
+            if (mutation.type === 'childList') {
+                const relevantChanges = Array.from(mutation.addedNodes).concat(Array.from(mutation.removedNodes))
+                    .some(node => {
+                        if (node.nodeType === 1) { // Element node
+                            return node.classList?.contains('topic-item') ||
+                                   node.classList?.contains('topic-editor-item') ||
+                                   node.querySelector?.('.topic-item') ||
+                                   node.querySelector?.('.topic-editor-item');
+                        }
+                        return false;
+                    });
+                
+                if (relevantChanges) {
+                    shouldSync = true;
+                }
+            }
+        });
+        
+        if (shouldSync) {
+            console.log('🔄 ROOT FIX: Global mutation detected, syncing counter...');
+            debounce(() => {
+                if (document.getElementById('topic-count')) {
+                    updateTopicsCounter();
+                }
+            }, 300)();
+        }
+    });
+    
+    observer.observe(targetNode, {
+        childList: true,
+        subtree: true
+    });
+    
+    // Store observer for cleanup if needed
+    window.globalTopicsObserver = observer;
+    
+    console.log('✅ ROOT FIX: Global counter sync monitoring active');
 }
 
 // ROOT FIX: Call auto-initialize
@@ -2518,9 +3072,18 @@ if (!document.getElementById('topics-notification-styles')) {
     document.head.appendChild(style);
 }
 
-console.log('✅ Topics Panel Script: Loaded successfully with clean architecture');
+console.log('✅ ROOT FIX: Enhanced Topics Panel Script loaded with real-time sync architecture');
+console.log('📊 ROOT FIX: Available debug commands:');
+console.log('   debugTopicsCounter() - Debug counter sync system');
+console.log('   fixTopicsCounter() - Attempt to fix counter issues');
+console.log('   testTopicsCounterSync() - Test counter sync functionality');
+console.log('   debugTopicsSave() - Debug save system');
+console.log('   testTopicsSave() - Test save functionality');
+console.log('🔄 ROOT FIX: Real-time synchronization active between design panel and preview component');
+console.log('⚡ ROOT FIX: Enhanced event delegation and state monitoring enabled');
+console.log('🎯 ROOT FIX: Bidirectional sync ensures counter accuracy from any modification source');
 
-// ROOT FIX: Global test functions for debugging
+// ROOT FIX: Enhanced global test and debug functions
 window.testTopicsSave = function() {
     console.log('🧪 ROOT FIX: Testing topics save functionality...');
     
@@ -2566,5 +3129,125 @@ window.debugTopicsSave = function() {
                 hasListeners: !!topic.dataset.originalValue
             });
         });
+    }
+};
+
+// ROOT FIX: Enhanced debug functions for counter sync
+window.debugTopicsCounter = function() {
+    console.log('🔍 ROOT FIX: Debug topics counter sync system...');
+    
+    const counterElement = document.getElementById('topic-count');
+    const component = document.querySelector('.editable-element[data-component="topics"]');
+    const actualCount = getActualTopicCount();
+    const editorCount = topicCount;
+    
+    const debugInfo = {
+        counterElement: {
+            exists: !!counterElement,
+            value: counterElement?.textContent,
+            visible: counterElement ? window.getComputedStyle(counterElement).display !== 'none' : false
+        },
+        component: {
+            exists: !!component,
+            topicItems: component?.querySelectorAll('.topic-item').length || 0,
+            realTopics: actualCount,
+            dataAttribute: component?.querySelector('.topics-container')?.getAttribute('data-topics-count')
+        },
+        editor: {
+            topicCount: editorCount,
+            editorItems: document.querySelectorAll('.topic-editor-item').length,
+            addButton: !!document.getElementById('add-topic-btn'),
+            clearButton: !!document.getElementById('clear-all-topics-btn')
+        },
+        sync: {
+            actualCount: actualCount,
+            editorCount: editorCount,
+            counterValue: counterElement?.textContent,
+            inSync: actualCount === editorCount && editorCount.toString() === counterElement?.textContent
+        },
+        monitoring: {
+            componentObserver: !!window.topicsComponentObserver,
+            globalObserver: !!window.globalTopicsObserver,
+            eventListeners: 'Attached to document'
+        }
+    };
+    
+    console.table(debugInfo.counterElement);
+    console.table(debugInfo.component);
+    console.table(debugInfo.editor);
+    console.table(debugInfo.sync);
+    console.table(debugInfo.monitoring);
+    
+    if (!debugInfo.sync.inSync) {
+        console.warn('⚠️ ROOT FIX: Counter not in sync! Attempting manual sync...');
+        updateTopicsCounter();
+        
+        setTimeout(() => {
+            const newCounterValue = document.getElementById('topic-count')?.textContent;
+            console.log(`🔄 ROOT FIX: Post-sync counter value: ${newCounterValue}`);
+        }, 100);
+    } else {
+        console.log('✅ ROOT FIX: Counter is in perfect sync!');
+    }
+    
+    return debugInfo;
+};
+
+window.fixTopicsCounter = function() {
+    console.log('🔧 ROOT FIX: Attempting to fix topics counter...');
+    
+    // Force counter update
+    updateTopicsCounter();
+    
+    // Re-setup monitoring if missing
+    if (!window.topicsComponentObserver) {
+        console.log('🔄 ROOT FIX: Re-setting up component monitoring...');
+        setupComponentStateMonitoring();
+    }
+    
+    if (!window.globalTopicsObserver) {
+        console.log('🔄 ROOT FIX: Re-setting up global monitoring...');
+        setupGlobalCounterSync();
+    }
+    
+    // Re-setup bidirectional sync
+    setupBidirectionalSync();
+    
+    console.log('✅ ROOT FIX: Counter fix attempt completed');
+    
+    // Return debug info
+    return window.debugTopicsCounter();
+};
+
+window.testTopicsCounterSync = function() {
+    console.log('🧪 ROOT FIX: Testing topics counter sync...');
+    
+    const initialCount = getActualTopicCount();
+    console.log(`📊 Initial count: ${initialCount}`);
+    
+    // Test 1: Add a topic and check sync
+    console.log('Test 1: Adding topic...');
+    if (typeof addNewTopic === 'function') {
+        addNewTopic();
+        
+        setTimeout(() => {
+            const newCount = getActualTopicCount();
+            const counterValue = document.getElementById('topic-count')?.textContent;
+            console.log(`📊 After add - Actual: ${newCount}, Counter: ${counterValue}`);
+            
+            // Test 2: Update counter and check
+            console.log('Test 2: Updating counter...');
+            updateTopicsCounter();
+            
+            setTimeout(() => {
+                const finalCounterValue = document.getElementById('topic-count')?.textContent;
+                console.log(`📊 After update - Counter: ${finalCounterValue}`);
+                
+                const success = newCount.toString() === finalCounterValue;
+                console.log(success ? '✅ Counter sync test PASSED' : '❌ Counter sync test FAILED');
+            }, 100);
+        }, 200);
+    } else {
+        console.error('❌ addNewTopic function not available');
     }
 };

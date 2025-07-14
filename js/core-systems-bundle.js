@@ -258,7 +258,16 @@
         systemRegistrar.register('stateManager', stateManager);
         systemRegistrar.register('enhancedStateManager', stateManager);
         systemRegistrar.register('componentManager', componentManager);
-        systemRegistrar.register('enhancedComponentManager', componentManager);
+        
+        // ROOT FIX: STEP 3 - Preserve enhanced component manager if it exists
+        if (!window.enhancedComponentManager) {
+            console.log('⚠️ Enhanced Component Manager not found, using basic component manager');
+            systemRegistrar.register('enhancedComponentManager', componentManager);
+        } else {
+            console.log('✅ Enhanced Component Manager preserved - event system active!');
+            systemRegistrar.register('enhancedComponentManager', window.enhancedComponentManager);
+        }
+        
         systemRegistrar.register('renderer', renderer);
 
         Object.values(systemRegistrar.systems).forEach(system => {
@@ -272,6 +281,30 @@
      * Dispatches the final 'coreSystemsReady' event.
      */
     function dispatchReadyEvent() {
+        // ROOT FIX: STEP 3 - Verify enhanced component manager status
+        console.log('🔍 ROOT FIX STEP 3: Verifying enhanced component manager status...');
+        
+        if (window.enhancedComponentManager && typeof window.enhancedComponentManager.getEventTrackingStats === 'function') {
+            console.log('✅ ROOT FIX STEP 3: Enhanced Component Manager with event system ACTIVE!');
+            
+            // Test the event system immediately
+            try {
+                const stats = window.enhancedComponentManager.getEventTrackingStats();
+                console.log('📊 ROOT FIX STEP 3: Event tracking stats:', stats);
+                
+                // Verify debug functions are available
+                console.log('🛠️ ROOT FIX STEP 3: Debug functions available:', {
+                    debugComponentEvents: typeof window.debugComponentEvents,
+                    testComponentEvents: typeof window.testComponentEvents,
+                    getEnhancedComponentManagerStatus: typeof window.getEnhancedComponentManagerStatus
+                });
+            } catch (error) {
+                console.error('❌ ROOT FIX STEP 3: Error testing event system:', error);
+            }
+        } else {
+            console.warn('⚠️ ROOT FIX STEP 3: Enhanced Component Manager event system NOT available');
+        }
+        
         document.dispatchEvent(new CustomEvent('coreSystemsReady'));
         window.gmkbCoreSystemsReadyFired = true; 
         console.log('🎉🎉 Core Systems Ready! Event dispatched and flag set.');

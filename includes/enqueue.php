@@ -521,11 +521,22 @@ class GMKB_Enhanced_Script_Manager {
         // ROOT FIX: WORKING BUNDLE ARCHITECTURE
         // Use the proven bundle files that contain complete functionality
         
+        // ROOT FIX: Enqueue enhanced component manager BEFORE core systems bundle
+        // This ensures the enhanced component manager loads first and isn't overwritten
+        wp_register_script(
+            'guestify-enhanced-component-manager',
+            $plugin_url . 'js/core/enhanced-component-manager.js',
+            array('sortable-js'), // Only depends on SortableJS
+            $cache_buster . '-enhanced-manager',
+            true
+        );
+        wp_enqueue_script('guestify-enhanced-component-manager');
+        
         // LAYER 2: Core Systems Bundle (contains all core functionality)
         wp_register_script(
             'guestify-core-systems-bundle',
             $plugin_url . 'js/core-systems-bundle.js',
-            array('sortable-js'), // Only depends on SortableJS
+            array('guestify-enhanced-component-manager'), // NOW depends on enhanced component manager
             $cache_buster . '-core-bundle',
             true
         );
@@ -590,15 +601,16 @@ class GMKB_Enhanced_Script_Manager {
             
             // ROOT FIX: Log successful bundle loading
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB ROOT FIX SUCCESS: ✅ Working bundle architecture enqueued!');
-                error_log('GMKB: Detection fix WORKING - bundle scripts loading correctly');
-                error_log('GMKB: Loading order: SortableJS → Core Systems Bundle → Application Bundle');
+                error_log('GMKB ROOT FIX SUCCESS: ✅ Enhanced Component Manager + Bundle architecture enqueued!');
+                error_log('GMKB: Detection fix WORKING - enhanced component manager + bundle scripts loading correctly');
+                error_log('GMKB: Loading order: SortableJS → Enhanced Component Manager → Core Systems Bundle → Application Bundle');
                 error_log('GMKB: Cache-buster: ' . $cache_buster);
                 
                 // ROOT FIX: Verify bundle scripts are actually registered
                 global $wp_scripts;
                 if ($wp_scripts) {
                     $bundles = [
+                        'enhanced-component-manager' => 'guestify-enhanced-component-manager',
                         'core-systems-bundle' => 'guestify-core-systems-bundle',
                         'application-bundle' => 'guestify-application-bundle'
                     ];

@@ -8,6 +8,19 @@ import {
     debounce
 } from '../utils/helpers.js';
 
+// ROOT FIX: Enhanced debounce for immediate use in design panel
+const quickDebounce = (func, wait = 100) => {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+};
+
 class DesignPanel {
     constructor() {
         // FIXED: Use existing element-editor in left sidebar
@@ -44,18 +57,18 @@ class DesignPanel {
     }
 
     /**
-     * Loads the design panel with the controls for a specific component.
-     * FIXED: Now uses WordPress AJAX endpoint instead of direct PHP file access.
+     * ROOT FIX: Enhanced design panel loading with bidirectional sync support
+     * FIXED: Now uses WordPress AJAX endpoint and includes real-time component sync
      * @param {string} componentId - The ID of the component to load.
      */
     async load(componentId) {
-        console.log(`🎯 Loading design panel for component: ${componentId}`);
+        console.log(`🎯 ROOT FIX: Loading enhanced design panel for component: ${componentId}`);
         
         this.currentComponentId = componentId;
         const component = this.getComponent(componentId);
         
         if (!component) {
-            console.warn(`⚠️ Component not found in any state manager: ${componentId}`);
+            console.warn(`⚠️ ROOT FIX: Component not found in any state manager: ${componentId}`);
             
             // DEBUG: Show available components
             this.debugAvailableComponents();
@@ -72,7 +85,7 @@ class DesignPanel {
             return;
         }
 
-        console.log(`📋 Component found:`, component);
+        console.log(`📋 ROOT FIX: Component found:`, component);
 
         try {
             // Show loading state
@@ -109,14 +122,20 @@ class DesignPanel {
             }
 
             const html = data.data.html;
-            console.log(`✅ Design panel loaded for ${component.type}`);
+            console.log(`✅ ROOT FIX: Design panel loaded for ${component.type}`);
             
             this.panel.innerHTML = html;
             this.bindControls(component.props || component.data || {});
+            
+            // ROOT FIX: Setup component-specific enhancements
+            if (component.type === 'topics') {
+                this.setupTopicsSpecificEnhancements(componentId);
+            }
+            
             this.show();
             
         } catch (error) {
-            console.error('❌ Error loading design panel:', error);
+            console.error('❌ ROOT FIX: Error loading design panel:', error);
             
             // Enhanced error handling with specific WordPress error support
             let errorMessage = error.message;
@@ -172,6 +191,341 @@ class DesignPanel {
             this.show();
         }
     }
+    
+    /**
+     * ROOT FIX: Setup topics-specific enhancements for real-time sync
+     * Implements bidirectional communication and counter synchronization
+     * @param {string} componentId - The topics component ID
+     */
+    setupTopicsSpecificEnhancements(componentId) {
+        console.log('🎯 ROOT FIX: Setting up topics-specific enhancements...');
+        
+        try {
+            // ROOT FIX: Setup real-time counter monitoring
+            this.setupTopicsCounterMonitoring();
+            
+            // ROOT FIX: Setup preview component sync
+            this.setupTopicsPreviewSync(componentId);
+            
+            // ROOT FIX: Setup event listeners for topics events
+            this.setupTopicsEventListeners();
+            
+            // ROOT FIX: Initial sync check
+            setTimeout(() => {
+                this.syncTopicsCounterWithPreview();
+            }, 500);
+            
+            console.log('✅ ROOT FIX: Topics-specific enhancements setup complete');
+            
+        } catch (error) {
+            console.error('❌ ROOT FIX: Error setting up topics enhancements:', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Setup topics counter monitoring for real-time updates
+     * Monitors counter changes and validates sync
+     */
+    setupTopicsCounterMonitoring() {
+        console.log('📊 ROOT FIX: Setting up topics counter monitoring...');
+        
+        const counterElement = document.getElementById('topic-count');
+        if (!counterElement) {
+            console.warn('⚠️ ROOT FIX: Topic counter element not found');
+            return;
+        }
+        
+        // ROOT FIX: Monitor counter changes with MutationObserver
+        const counterObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'characterData' || 
+                    (mutation.type === 'childList' && mutation.target === counterElement)) {
+                    const newValue = counterElement.textContent;
+                    console.log(`🔄 ROOT FIX: Counter changed to: ${newValue}`);
+                    
+                    // ROOT FIX: Validate counter accuracy
+                    setTimeout(() => {
+                        this.validateTopicsCounterAccuracy();
+                    }, 100);
+                }
+            });
+        });
+        
+        counterObserver.observe(counterElement, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+        
+        // Store observer for cleanup
+        this.topicsCounterObserver = counterObserver;
+        
+        console.log('✅ ROOT FIX: Topics counter monitoring active');
+    }
+    
+    /**
+     * ROOT FIX: Setup topics preview sync for bidirectional communication
+     * Ensures changes in preview are reflected in design panel
+     * @param {string} componentId - The topics component ID
+     */
+    setupTopicsPreviewSync(componentId) {
+        console.log('🔗 ROOT FIX: Setting up topics preview sync...');
+        
+        // ROOT FIX: Monitor preview component for changes
+        const previewComponent = document.querySelector('.editable-element[data-component="topics"]');
+        if (!previewComponent) {
+            console.warn('⚠️ ROOT FIX: Preview topics component not found');
+            return;
+        }
+        
+        // ROOT FIX: Setup MutationObserver for preview changes
+        const previewObserver = new MutationObserver((mutations) => {
+            let topicsChanged = false;
+            
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    const topicsContainer = mutation.target.closest('.topics-container');
+                    if (topicsContainer) {
+                        topicsChanged = true;
+                    }
+                }
+                
+                // Check for attribute changes related to topics
+                if (mutation.type === 'attributes' && 
+                    ['data-topics-count', 'data-has-dynamic-topics'].includes(mutation.attributeName)) {
+                    topicsChanged = true;
+                }
+            });
+            
+            if (topicsChanged) {
+                console.log('🔄 ROOT FIX: Preview topics changed, syncing design panel...');
+                debounce(() => {
+                    this.syncTopicsCounterWithPreview();
+                }, 300)();
+            }
+        });
+        
+        previewObserver.observe(previewComponent, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['data-topics-count', 'data-has-dynamic-topics', 'data-topics-source']
+        });
+        
+        // Store observer for cleanup
+        this.topicsPreviewObserver = previewObserver;
+        
+        console.log('✅ ROOT FIX: Topics preview sync active');
+    }
+    
+    /**
+     * ROOT FIX: Setup topics event listeners for cross-component communication
+     * Listens for events from other parts of the system
+     */
+    setupTopicsEventListeners() {
+        console.log('🎧 ROOT FIX: Setting up topics event listeners...');
+        
+        // ROOT FIX: Listen for topics counter updates
+        document.addEventListener('topicsCounterUpdated', (event) => {
+            const { count, source } = event.detail;
+            console.log(`🔄 ROOT FIX: Received counter update: ${count} from ${source}`);
+            
+            // ROOT FIX: Update design panel display if needed
+            this.updateTopicsCounterDisplay(count);
+        });
+        
+        // ROOT FIX: Listen for topics preview updates
+        document.addEventListener('topicsPreviewUpdated', (event) => {
+            const { count, source } = event.detail;
+            console.log(`🔄 ROOT FIX: Received preview update: ${count} topics from ${source}`);
+            
+            // ROOT FIX: Sync design panel with preview
+            setTimeout(() => {
+                this.syncTopicsCounterWithPreview();
+            }, 100);
+        });
+        
+        // ROOT FIX: Listen for topic addition/removal events
+        document.addEventListener('topicAdded', (event) => {
+            console.log('➕ ROOT FIX: Topic added event received');
+            this.syncTopicsCounterWithPreview();
+        });
+        
+        document.addEventListener('topicRemoved', (event) => {
+            console.log('🗑️ ROOT FIX: Topic removed event received');
+            this.syncTopicsCounterWithPreview();
+        });
+        
+        document.addEventListener('topicsCleared', (event) => {
+            console.log('🗑️ ROOT FIX: Topics cleared event received');
+            this.syncTopicsCounterWithPreview();
+        });
+        
+        console.log('✅ ROOT FIX: Topics event listeners active');
+    }
+    
+    /**
+     * ROOT FIX: Sync topics counter with preview component
+     * Ensures design panel counter matches actual topics in preview
+     */
+    syncTopicsCounterWithPreview() {
+        console.log('🔄 ROOT FIX: Syncing topics counter with preview...');
+        
+        try {
+            const previewComponent = document.querySelector('.editable-element[data-component="topics"]');
+            if (!previewComponent) {
+                console.log('ℹ️ ROOT FIX: No preview component for sync');
+                return;
+            }
+            
+            // ROOT FIX: Count actual topics in preview
+            const topicItems = previewComponent.querySelectorAll('.topic-item');
+            const realTopics = Array.from(topicItems).filter(item => {
+                const title = item.querySelector('.topic-title');
+                const titleText = title?.textContent?.trim();
+                const source = item.getAttribute('data-topic-source');
+                
+                return source !== 'placeholder' && titleText && titleText.length > 0;
+            });
+            
+            const actualCount = realTopics.length;
+            const counterElement = document.getElementById('topic-count');
+            const currentCounterValue = counterElement?.textContent;
+            
+            console.log('📊 ROOT FIX: Sync data:', {
+                actualTopicsInPreview: actualCount,
+                currentCounterValue: currentCounterValue,
+                needsUpdate: actualCount.toString() !== currentCounterValue
+            });
+            
+            // ROOT FIX: Update counter if different
+            if (counterElement && actualCount.toString() !== currentCounterValue) {
+                console.log(`🔄 ROOT FIX: Updating counter: ${currentCounterValue} → ${actualCount}`);
+                
+                counterElement.style.transition = 'all 0.3s ease';
+                counterElement.style.transform = 'scale(1.1)';
+                counterElement.textContent = actualCount;
+                
+                setTimeout(() => {
+                    counterElement.style.transform = 'scale(1)';
+                }, 200);
+                
+                // ROOT FIX: Dispatch sync complete event
+                document.dispatchEvent(new CustomEvent('topicsCounterSynced', {
+                    detail: { 
+                        previousValue: currentCounterValue,
+                        newValue: actualCount,
+                        source: 'design_panel_sync'
+                    }
+                }));
+            }
+            
+        } catch (error) {
+            console.error('❌ ROOT FIX: Error syncing topics counter:', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Validate topics counter accuracy
+     * Checks if counter matches actual component state
+     */
+    validateTopicsCounterAccuracy() {
+        console.log('🔍 ROOT FIX: Validating topics counter accuracy...');
+        
+        try {
+            const counterElement = document.getElementById('topic-count');
+            const counterValue = parseInt(counterElement?.textContent || '0');
+            
+            // Get actual count from preview
+            const previewComponent = document.querySelector('.editable-element[data-component="topics"]');
+            const actualCount = this.getActualTopicsCount(previewComponent);
+            
+            // Get count from editor
+            const editorItems = document.querySelectorAll('.topic-editor-item');
+            const editorCount = editorItems.length;
+            
+            const validation = {
+                counterValue: counterValue,
+                actualCount: actualCount,
+                editorCount: editorCount,
+                counterAccurate: counterValue === actualCount,
+                editorSynced: editorCount === actualCount,
+                fullyInSync: counterValue === actualCount && editorCount === actualCount
+            };
+            
+            console.log('📊 ROOT FIX: Counter validation:', validation);
+            
+            if (!validation.fullyInSync) {
+                console.warn('⚠️ ROOT FIX: Counter not fully in sync, attempting correction...');
+                
+                // ROOT FIX: Use actual count as source of truth
+                if (actualCount >= 0) {
+                    this.updateTopicsCounterDisplay(actualCount);
+                }
+            } else {
+                console.log('✅ ROOT FIX: Counter validation passed - all systems in sync');
+            }
+            
+            return validation;
+            
+        } catch (error) {
+            console.error('❌ ROOT FIX: Error validating counter accuracy:', error);
+            return { error: error.message };
+        }
+    }
+    
+    /**
+     * ROOT FIX: Get actual topics count from preview component
+     * Provides accurate count of real topics (excluding placeholders)
+     * @param {HTMLElement} component - The topics component
+     * @returns {number} The actual count of topics
+     */
+    getActualTopicsCount(component) {
+        if (!component) {
+            return -1;
+        }
+        
+        try {
+            const topicItems = component.querySelectorAll('.topic-item');
+            const realTopics = Array.from(topicItems).filter(item => {
+                const title = item.querySelector('.topic-title');
+                const titleText = title?.textContent?.trim();
+                const source = item.getAttribute('data-topic-source');
+                
+                return source !== 'placeholder' && titleText && titleText.length > 0;
+            });
+            
+            return realTopics.length;
+            
+        } catch (error) {
+            console.error('❌ ROOT FIX: Error counting topics:', error);
+            return -1;
+        }
+    }
+    
+    /**
+     * ROOT FIX: Update topics counter display
+     * Updates the counter element with animation
+     * @param {number} count - The new count to display
+     */
+    updateTopicsCounterDisplay(count) {
+        const counterElement = document.getElementById('topic-count');
+        if (!counterElement) {
+            return;
+        }
+        
+        if (counterElement.textContent !== count.toString()) {
+            console.log(`🔄 ROOT FIX: Updating counter display to: ${count}`);
+            
+            counterElement.style.transition = 'all 0.3s ease';
+            counterElement.style.transform = 'scale(1.1)';
+            counterElement.textContent = count;
+            
+            setTimeout(() => {
+                counterElement.style.transform = 'scale(1)';
+            }, 200);
+        }
+    }
 
     /**
      * Debug function to show available components
@@ -212,22 +566,31 @@ class DesignPanel {
     }
 
     /**
-     * Binds the design panel controls to the component's properties.
+     * ROOT FIX: Enhanced control binding with topics-specific sync
+     * Binds the design panel controls to the component's properties with real-time sync
      * @param {object} props - The component's properties.
      */
     bindControls(props) {
         const inputs = this.panel.querySelectorAll('[data-property]');
-        console.log(`🔗 Binding ${inputs.length} controls to component properties:`, props);
+        console.log(`🔗 ROOT FIX: Binding ${inputs.length} controls to component properties:`, props);
         
         const debouncedUpdate = debounce((id, newProps) => {
             if (window.enhancedComponentManager && typeof window.enhancedComponentManager.updateComponent === 'function') {
                 window.enhancedComponentManager.updateComponent(id, newProps);
-                console.log(`🔄 Updated via enhanced manager: ${id}`);
+                console.log(`🔄 ROOT FIX: Updated via enhanced manager: ${id}`);
             } else if (window.componentManager && typeof window.componentManager.updateComponent === 'function') {
                 window.componentManager.updateComponent(id, newProps);
-                console.log(`🔄 Updated via regular manager: ${id}`);
+                console.log(`🔄 ROOT FIX: Updated via regular manager: ${id}`);
             } else {
-                console.warn('No component manager available for updates');
+                console.warn('ROOT FIX: No component manager available for updates');
+            }
+            
+            // ROOT FIX: Trigger topics sync if this is a topics component
+            const currentComponent = this.getComponent(this.currentComponentId);
+            if (currentComponent?.type === 'topics') {
+                setTimeout(() => {
+                    this.syncTopicsCounterWithPreview();
+                }, 100);
             }
         }, 300);
 
@@ -235,7 +598,7 @@ class DesignPanel {
             const propName = input.dataset.property;
             if (props.hasOwnProperty(propName)) {
                 input.value = props[propName];
-                console.log(`📝 Bound property ${propName} = ${props[propName]}`);
+                console.log(`📝 ROOT FIX: Bound property ${propName} = ${props[propName]}`);
             }
 
             input.addEventListener('input', () => {
@@ -244,10 +607,62 @@ class DesignPanel {
                     const newProps = { ...(currentComponent.props || currentComponent.data || {}) };
                     newProps[propName] = input.value;
                     debouncedUpdate(this.currentComponentId, newProps);
-                    console.log(`🔄 Updated ${propName} = ${input.value}`);
+                    console.log(`🔄 ROOT FIX: Updated ${propName} = ${input.value}`);
+                    
+                    // ROOT FIX: Immediate topics sync for topics-related properties
+                    if (currentComponent.type === 'topics' && 
+                        ['title', 'displayStyle', 'columns', 'topicColor'].includes(propName)) {
+                        setTimeout(() => {
+                            this.syncTopicsCounterWithPreview();
+                        }, 150);
+                    }
+                }
+            });
+            
+            // ROOT FIX: Also listen for change events (for selects, checkboxes)
+            input.addEventListener('change', () => {
+                const currentComponent = this.getComponent(this.currentComponentId);
+                if (currentComponent?.type === 'topics') {
+                    setTimeout(() => {
+                        this.syncTopicsCounterWithPreview();
+                    }, 100);
                 }
             });
         });
+        
+        // ROOT FIX: Setup special handling for Add Topic button
+        const addTopicBtn = this.panel.querySelector('#add-topic-btn');
+        if (addTopicBtn) {
+            this.setupAddTopicButtonEnhancement(addTopicBtn);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Setup Add Topic button enhancement with sync integration
+     * Ensures counter updates immediately when Add Topic is clicked
+     * @param {HTMLElement} button - The Add Topic button element
+     */
+    setupAddTopicButtonEnhancement(button) {
+        console.log('➕ ROOT FIX: Setting up Add Topic button enhancement...');
+        
+        // ROOT FIX: Override the existing click handler
+        const originalClickHandler = button.onclick;
+        
+        button.addEventListener('click', (event) => {
+            console.log('➕ ROOT FIX: Add Topic button clicked - enhancing with sync...');
+            
+            // ROOT FIX: Small delay to allow normal processing, then sync
+            setTimeout(() => {
+                this.syncTopicsCounterWithPreview();
+                
+                // ROOT FIX: Validate counter was updated correctly
+                setTimeout(() => {
+                    this.validateTopicsCounterAccuracy();
+                }, 200);
+            }, 100);
+        }, { passive: true }); // Don't interfere with existing handlers
+        
+        console.log('✅ ROOT FIX: Add Topic button enhancement active');
     }
 
     /**
@@ -276,9 +691,13 @@ class DesignPanel {
     }
 
     /**
-     * Hides the design panel (shows default state).
+     * ROOT FIX: Enhanced hide method with cleanup
+     * Hides the design panel and cleans up topics-specific observers
      */
     hide() {
+        // ROOT FIX: Cleanup topics-specific observers
+        this.cleanupTopicsEnhancements();
+        
         this.panel.innerHTML = `
             <div class="element-editor__title">No Element Selected</div>
             <div class="element-editor__subtitle">Click on any element in the preview to edit its properties</div>
@@ -293,9 +712,93 @@ class DesignPanel {
                 </ul>
             </div>
         `;
-        console.log('📋 Design panel hidden, showing default state');
+        console.log('📋 ROOT FIX: Design panel hidden with cleanup, showing default state');
+    }
+    
+    /**
+     * ROOT FIX: Cleanup topics-specific enhancements
+     * Removes observers and event listeners to prevent memory leaks
+     */
+    cleanupTopicsEnhancements() {
+        console.log('🧹 ROOT FIX: Cleaning up topics enhancements...');
+        
+        try {
+            // ROOT FIX: Disconnect observers
+            if (this.topicsCounterObserver) {
+                this.topicsCounterObserver.disconnect();
+                this.topicsCounterObserver = null;
+                console.log('✅ ROOT FIX: Topics counter observer cleaned up');
+            }
+            
+            if (this.topicsPreviewObserver) {
+                this.topicsPreviewObserver.disconnect();
+                this.topicsPreviewObserver = null;
+                console.log('✅ ROOT FIX: Topics preview observer cleaned up');
+            }
+            
+            console.log('✅ ROOT FIX: Topics enhancements cleanup complete');
+            
+        } catch (error) {
+            console.error('❌ ROOT FIX: Error during topics cleanup:', error);
+        }
     }
 }
 
-// Export the designPanel instance so it can be imported by other modules.
+// ROOT FIX: Enhanced design panel instance with topics sync capabilities
 export const designPanel = new DesignPanel();
+
+// ROOT FIX: Expose enhanced design panel functions globally for debugging
+window.debugDesignPanel = function() {
+    console.log('🔍 ROOT FIX: Design Panel Debug Information');
+    
+    const debugInfo = {
+        currentComponent: designPanel.currentComponentId,
+        panelVisible: designPanel.panel?.style?.display !== 'none',
+        topicsEnhancements: {
+            counterObserver: !!designPanel.topicsCounterObserver,
+            previewObserver: !!designPanel.topicsPreviewObserver
+        },
+        counters: {
+            topicCountElement: !!document.getElementById('topic-count'),
+            currentValue: document.getElementById('topic-count')?.textContent,
+            editorItems: document.querySelectorAll('.topic-editor-item').length,
+            previewItems: document.querySelectorAll('.topic-item').length
+        }
+    };
+    
+    console.table(debugInfo.topicsEnhancements);
+    console.table(debugInfo.counters);
+    
+    if (designPanel.currentComponentId) {
+        const component = designPanel.getComponent(designPanel.currentComponentId);
+        console.log('Current component data:', component);
+    }
+    
+    return debugInfo;
+};
+
+window.testDesignPanelSync = function() {
+    console.log('🧪 ROOT FIX: Testing design panel sync...');
+    
+    if (designPanel.currentComponentId) {
+        const component = designPanel.getComponent(designPanel.currentComponentId);
+        if (component?.type === 'topics') {
+            console.log('Testing topics counter sync...');
+            designPanel.syncTopicsCounterWithPreview();
+            
+            setTimeout(() => {
+                const validation = designPanel.validateTopicsCounterAccuracy();
+                console.log('Sync test results:', validation);
+            }, 300);
+        } else {
+            console.log('Current component is not topics type:', component?.type);
+        }
+    } else {
+        console.log('No current component selected');
+    }
+};
+
+console.log('✅ ROOT FIX: Enhanced Design Panel with bidirectional topics sync ready');
+console.log('📊 ROOT FIX: Debug commands available:');
+console.log('   debugDesignPanel() - Show design panel debug info');
+console.log('   testDesignPanelSync() - Test topics counter sync');
