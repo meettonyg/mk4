@@ -204,16 +204,16 @@ function loadComponentPanelScript(componentType, element, schema) {
     } else if (componentType === 'stats') {
         initializeStatsPanel(element);
     } else {
-        // Try to dynamically load panel-script.js if it exists
+        // ROOT FIX: Load script.js instead of panel-script.js to get TopicsComponent class
         // Get plugin URL from global object
         // Direct approach - no fallbacks
         // Get the current site URL
         const siteUrl = window.location.origin;
         
-        // Direct path to the component script
-        const scriptUrl = `${siteUrl}/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/panel-script.js`;
+        // ROOT FIX: Direct path to the component script.js (contains TopicsComponent)
+        const scriptUrl = `${siteUrl}/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/script.js`;
         
-        console.log('Loading panel script from:', scriptUrl);
+        console.log('ROOT FIX: Loading script.js from:', scriptUrl);
         
         fetch(scriptUrl, { method: 'HEAD' })
             .then(response => {
@@ -234,7 +234,7 @@ function loadComponentPanelScript(componentType, element, schema) {
             .catch((error) => {
                 // Script doesn't exist, or error loading - that's fine,
                 // we'll just use the generic controls
-                console.log(`No panel script for ${componentType}, using generic controls`); 
+                console.log(`ROOT FIX: No script.js for ${componentType}, using generic controls`); 
             });
     }
 }

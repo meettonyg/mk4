@@ -943,20 +943,21 @@
     
     // ROOT FIX: Load component panel script dynamically
     function loadComponentPanelScript(componentType, componentId) {
-        const scriptUrl = `${window.guestifyData?.pluginUrl || ''}components/${componentType}/panel-script.js`;
+        // ROOT FIX: Load script.js instead of panel-script.js to get TopicsComponent class
+        const scriptUrl = `${window.guestifyData?.pluginUrl || ''}components/${componentType}/script.js`;
         
-        // Check if script is already loaded
-        if (document.querySelector(`script[src*="${componentType}/panel-script.js"]`)) {
-            console.log(`📝 Panel script for ${componentType} already loaded`);
+        // ROOT FIX: Check if script.js is already loaded
+        if (document.querySelector(`script[src*="${componentType}/script.js"]`)) {
+            console.log(`📝 ROOT FIX: Script.js for ${componentType} already loaded`);
             return;
         }
         
-        console.log(`📦 Loading panel script for ${componentType}...`);
+        console.log(`📦 ROOT FIX: Loading script.js for ${componentType}...`);
         
         const script = document.createElement('script');
         script.src = scriptUrl;
         script.onload = () => {
-            console.log(`✅ Panel script loaded for ${componentType}`);
+            console.log(`✅ ROOT FIX: Script.js loaded for ${componentType}`);
             
             // Initialize after script loads
             setTimeout(() => {
@@ -964,7 +965,7 @@
             }, 100);
         };
         script.onerror = () => {
-            console.warn(`⚠️ Failed to load panel script for ${componentType}`);
+            console.warn(`⚠️ ROOT FIX: Failed to load script.js for ${componentType}`);
         };
         
         document.head.appendChild(script);

@@ -12,7 +12,14 @@ class TopicsComponent {
         this.lastSaveTimestamp = Date.now();
         this.unsavedChanges = false;
         this.saveStatus = 'saved'; // 'saved', 'saving', 'unsaved', 'error'
-        this.nonce = window.guestifyMediaKit?.nonce || '';
+        this.nonce = window.guestifyData?.nonce || window.guestifyMediaKit?.nonce || '';
+        
+        // ROOT FIX: Debug nonce availability
+        if (this.nonce) {
+            console.log('✅ Topics Component: Nonce found:', this.nonce.substring(0, 10) + '...');
+        } else {
+            console.warn('⚠️ Topics Component: No nonce available - save functionality may fail');
+        }
         
         this.init();
     }
@@ -64,9 +71,9 @@ class TopicsComponent {
             this.postId = urlParams.get('post_id') || urlParams.get('p') || urlParams.get('page_id');
         }
         
-        // Priority 4: Global WordPress variables
-        if (!this.postId && window.guestifyMediaKit?.postId) {
-            this.postId = window.guestifyMediaKit.postId;
+        // Priority 4: Global WordPress variables (check both sources)
+        if (!this.postId && (window.guestifyData?.postId || window.guestifyMediaKit?.postId)) {
+            this.postId = window.guestifyData?.postId || window.guestifyMediaKit?.postId;
         }
         
         // Convert to integer
@@ -345,7 +352,7 @@ class TopicsComponent {
      * ROOT FIX: Send AJAX request with proper error handling
      */
     async sendAjaxRequest(data) {
-        const url = window.guestifyMediaKit?.ajaxUrl || '/wp-admin/admin-ajax.php';
+        const url = window.guestifyData?.ajaxUrl || window.guestifyMediaKit?.ajaxUrl || '/wp-admin/admin-ajax.php';
         
         const formData = new FormData();
         Object.keys(data).forEach(key => {
@@ -481,13 +488,13 @@ class TopicsComponent {
         console.log('🚀 Topics Component: Media Kit system ready detected');
         
         // Re-extract nonce and other globals that might now be available
-        if (window.guestifyMediaKit?.nonce) {
-            this.nonce = window.guestifyMediaKit.nonce;
+        if (window.guestifyData?.nonce || window.guestifyMediaKit?.nonce) {
+            this.nonce = window.guestifyData?.nonce || window.guestifyMediaKit?.nonce;
         }
         
         // Re-extract post ID if it wasn't available before
-        if (!this.postId && window.guestifyMediaKit?.postId) {
-            this.postId = parseInt(window.guestifyMediaKit.postId, 10);
+        if (!this.postId && (window.guestifyData?.postId || window.guestifyMediaKit?.postId)) {
+            this.postId = parseInt(window.guestifyData?.postId || window.guestifyMediaKit?.postId, 10);
             console.log(`✅ Post ID updated from system: ${this.postId}`);
         }
     }

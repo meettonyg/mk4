@@ -171,6 +171,22 @@ class GMKB_Topics_Ajax_Handler {
         // Extract and validate parameters
         $post_id = intval($_POST['post_id'] ?? 0);
         $topics_data = $_POST['topics'] ?? array();
+        
+        // ROOT FIX: Handle JSON string input from JavaScript
+        if (is_string($topics_data)) {
+            $decoded_topics = json_decode($topics_data, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded_topics)) {
+                $topics_data = $decoded_topics;
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: Successfully decoded JSON topics data: ' . print_r($topics_data, true));
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: Failed to decode topics JSON: ' . $topics_data);
+                }
+            }
+        }
+        
         $save_type = sanitize_text_field($_POST['save_type'] ?? 'manual');
         $client_timestamp = intval($_POST['client_timestamp'] ?? time());
         
@@ -204,6 +220,15 @@ class GMKB_Topics_Ajax_Handler {
                 'resolution_required' => true
             ));
             return;
+        }
+        
+        // ROOT FIX: Enhanced debugging for topic validation
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: About to validate topics data: ' . print_r($topics_data, true));
+            error_log('GMKB ROOT FIX: Topics data type: ' . gettype($topics_data));
+            if (is_array($topics_data)) {
+                error_log('GMKB ROOT FIX: Topics data keys: ' . implode(', ', array_keys($topics_data)));
+            }
         }
         
         // Validate and sanitize topics data
@@ -310,6 +335,11 @@ class GMKB_Topics_Ajax_Handler {
      * @return string|false Sanitized topic or false if invalid
      */
     private function sanitize_topic_value($topic_value) {
+        // ROOT FIX: Enhanced debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB ROOT FIX: sanitize_topic_value called with: '{$topic_value}' (type: " . gettype($topic_value) . ")");
+        }
+        
         // Convert to string
         if (!is_string($topic_value)) {
             $topic_value = strval($topic_value);
@@ -320,16 +350,25 @@ class GMKB_Topics_Ajax_Handler {
         
         // Check length constraints
         if (strlen($topic_value) > 100) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: Topic rejected - too long: " . strlen($topic_value) . " chars");
+            }
             return false; // Topic too long
         }
         
         // Allow empty values (for clearing topics)
         if (empty($topic_value)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: Empty topic value allowed");
+            }
             return '';
         }
         
         // Check minimum length for non-empty topics
         if (strlen($topic_value) < 3) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: Topic rejected - too short: " . strlen($topic_value) . " chars (min 3)");
+            }
             return false; // Topic too short
         }
         
@@ -339,12 +378,23 @@ class GMKB_Topics_Ajax_Handler {
         // Additional validation - check for potentially harmful content
         if ($sanitized !== $topic_value) {
             // HTML or other unwanted content was stripped
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: Topic rejected - content sanitized away: orig='{$topic_value}' sanitized='{$sanitized}'");
+            }
             return false;
         }
         
         // Validate allowed characters (alphanumeric, spaces, common punctuation)
         if (!preg_match('/^[a-zA-Z0-9\s\-.,!?\'\"()&]+$/', $sanitized)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: Topic rejected - invalid characters: '{$sanitized}'");
+                error_log("GMKB ROOT FIX: Character analysis: " . json_encode(str_split($sanitized)));
+            }
             return false; // Contains disallowed characters
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB ROOT FIX: Topic validation SUCCESS: '{$sanitized}'");
         }
         
         return $sanitized;
@@ -1693,6 +1743,11 @@ class GMKB_Topics_Ajax_Handler {
      * Specifically for custom post fields format
      */
     private function validate_and_sanitize_custom_topics($topics_data) {
+        // ROOT FIX: Enhanced debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: validate_and_sanitize_custom_topics called with: ' . print_r($topics_data, true));
+        }
+        
         $result = array(
             'valid' => true,
             'topics' => array(),
@@ -1722,14 +1777,24 @@ class GMKB_Topics_Ajax_Handler {
             
             // Sanitize topic value
             if (!empty($topic_value)) {
-                $sanitized_topic = $this->sanitize_topic_value($topic_value);
-                
-                if ($sanitized_topic !== false) {
-                    $result['topics'][$topic_key] = $sanitized_topic;
-                } else {
-                    $result['errors'][] = "Custom topic {$i} contains invalid content";
-                }
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: Processing topic {$i} with value: '{$topic_value}' (length: " . strlen($topic_value) . ")");
             }
+            
+            $sanitized_topic = $this->sanitize_topic_value($topic_value);
+            
+            if ($sanitized_topic !== false) {
+                    $result['topics'][$topic_key] = $sanitized_topic;
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("GMKB ROOT FIX: Topic {$i} validated successfully: '{$sanitized_topic}'");
+                        }
+                    } else {
+                        $result['errors'][] = "Custom topic {$i} contains invalid content";
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("GMKB ROOT FIX: Topic {$i} FAILED validation: '{$topic_value}'");
+                        }
+                    }
+                }
             // Empty topics are allowed - they will be saved as empty to clear existing data
         }
         
