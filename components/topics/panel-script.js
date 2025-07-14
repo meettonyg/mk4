@@ -1,7 +1,7 @@
 // panel-script.js
 
 // =================================================================================
-// MAIN INITIALIZATION - A single, robust entry point for the panel.
+// MAIN INITIALIZATION - Single, robust entry point
 // =================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,34 +14,26 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Main orchestrator for the topics panel. It ensures a stable,
- * predictable loading sequence using async/await.
- * @param {HTMLElement} element - The main component element.
+ * Main orchestrator for the topics panel.
+ * @param {HTMLElement} element The main component element.
  */
 async function initializeTopicsPanel(element) {
-    console.log('🚀 [1/4] Topics Panel Initialization Started');
+    console.log('🚀 [1/3] Topics Panel Initialization Started');
 
     try {
-        // --- Step 1: Instantiate MKCG Integration (if available) ---
-        if (window.TopicsMKCGIntegration) {
-            window.topicsMkcgIntegration = new window.TopicsMKCGIntegration(element, document.querySelector('.element-editor'));
-            console.log('✅ [2/4] MKCG Integration class instantiated.');
-        }
-
-        // --- Step 2: Fetch Data from Server (handles all cases gracefully) ---
+        // --- Step 1: Attempt to Fetch Stored Data ---
         const storedData = await loadStoredTopicsData();
         window.storedTopicsData = storedData; // Make data globally available
 
         if (storedData) {
-            console.log('✅ [3/4] Server data fetched and ready.', storedData);
+            console.log('✅ [2/3] Server data fetched successfully.');
         } else {
-            console.warn('📝 [3/4] No stored data found. Panel will load in a manual/empty state.');
+            console.warn('📝 [2/3] No stored data found. Panel will load in manual/empty mode.');
         }
 
-        // --- Step 3: Populate the Panel and Initialize Controls (Guaranteed to Run) ---
-        // GEMINI'S UNIFIED FIX: Single function that guarantees 5 topic fields are always created
+        // --- Step 2: Populate the Panel and Initialize All Controls ---
         populateAndInitializePanel(element, storedData);
-        console.log('✅ [4/4] Panel UI is fully initialized and populated.');
+        console.log('✅ [3/3] Panel UI is fully initialized and populated.');
 
     } catch (error) {
         console.error('❌ FATAL: A critical error occurred during panel setup.', error);
@@ -50,8 +42,48 @@ async function initializeTopicsPanel(element) {
 }
 
 // =================================================================================
-// DATA & UI POPULATION - The core corrected logic.
+// DATA & UI POPULATION - The final, corrected logic.
 // =================================================================================
+
+/**
+ * A unified function to populate the entire panel UI and initialize controls.
+ * @param {HTMLElement} element - The main component element.
+ * @param {Object|null} storedData - The data from the server, or null.
+ */
+function populateAndInitializePanel(element, storedData) {
+    const topicsListContainer = document.getElementById('design-topics-list');
+    if (!topicsListContainer) {
+        console.error('CRITICAL ERROR: The #design-topics-list container was not found in the DOM.');
+        return;
+    }
+    
+    topicsListContainer.innerHTML = ''; // Always start with a clean slate.
+
+    let topicsToRender = [];
+    if (storedData && storedData.topics && Object.keys(storedData.topics).length > 0) {
+        topicsToRender = Object.values(storedData.topics);
+    } else {
+        // Create 5 empty slots for manual entry.
+        for (let i = 0; i < 5; i++) {
+            topicsToRender.push({ value: '', is_empty: true, index: i });
+        }
+    }
+
+    // --- THE DEFINITIVE FIX: Directly call the correct function in a loop ---
+    console.log(`🎨 Rendering ${topicsToRender.length} topic fields...`);
+    topicsToRender.forEach((topicData, index) => {
+        const title = topicData.value || '';
+        // This is the function that actually creates the HTML for each topic field.
+        addTopicToPanel(title, '', 'check', index);
+    });
+
+    // --- Initialize all other controls AFTER the UI is built ---
+    updateDataDrivenSections(storedData); 
+    initializePanelControls(element);
+    setupEnhancedBulkOperations();
+
+    showDataLoadingStatus('Panel loaded successfully!', 'success');
+}
 
 /**
  * Fetches data and returns a promise that always resolves with data or null.
@@ -80,241 +112,35 @@ function loadStoredTopicsData() {
             .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
             .then(data => {
                 if (data.success && data.data) {
-                    showDataLoadingStatus('Data loaded successfully!', 'success');
                     resolve(data.data);
                 } else {
-                    const serverMessage = data.data?.message || "Server returned an error.";
-                    console.error('Server-side error:', serverMessage, data.data?.debug || '');
-                    showDataLoadingStatus(`Failed to load data: ${serverMessage}`, 'error');
+                    console.error('Server-side error:', data.data?.message || 'Unknown error');
+                    showDataLoadingStatus(`Failed to load data: ${data.data?.message}`, 'error');
                     resolve(null);
                 }
             })
             .catch(error => {
-                console.error('A network or fetch error occurred:', error);
+                console.error('A network error occurred:', error);
                 showDataLoadingStatus(`Network error: ${error.message}`, 'error');
                 resolve(null);
             });
     });
 }
 
-/**
- * GEMINI'S UNIFIED UI POPULATION FIX
- * 
- * A single, unified function that GUARANTEES 5 topic fields are always created.
- * This eliminates race conditions and scattered function calls that were causing
- * the missing topic input fields issue.
- * 
- * @param {HTMLElement} element - The main component element.
- * @param {Object|null} storedData - The data from the server, or null.
- */
-function populateAndInitializePanel(element, storedData) {
-    console.log('🚀 GEMINI\'S UNIFIED FIX: Starting guaranteed 5-field creation...');
-    
-    try {
-        // STEP 1: Verify DOM structure exists
-        const topicsListContainer = document.getElementById('design-topics-list');
-        if (!topicsListContainer) {
-            console.error('❌ CRITICAL: #design-topics-list container not found in DOM');
-            showDataLoadingStatus('Panel container missing - cannot create topic fields', 'error');
-            return;
-        }
-        
-        // STEP 2: Clear container to ensure clean state
-        topicsListContainer.innerHTML = '';
-        console.log('🧹 Container cleared for fresh field creation');
-        
-        // STEP 3: GUARANTEED FIELD CREATION - Always create exactly 5 topic fields
-        console.log('🎨 GUARANTEED: Creating exactly 5 topic input fields...');
-        
-        for (let i = 0; i < 5; i++) {
-            let topicTitle = '';
-            let topicDescription = '';
-            let topicIcon = 'check';
-            
-            // If we have stored data, try to populate this field
-            if (storedData && storedData.topics) {
-                const topicKey = `topic_${i + 1}`;
-                const topicData = storedData.topics[topicKey];
-                
-                if (topicData && !topicData.is_empty) {
-                    topicTitle = topicData.value || '';
-                    console.log(`📊 Populating field ${i + 1} with stored data: "${topicTitle}"`);
-                } else {
-                    console.log(`📝 Creating empty field ${i + 1} for manual entry`);
-                }
-            } else {
-                console.log(`📝 Creating empty field ${i + 1} (no stored data available)`);
-            }
-            
-            // GUARANTEED: Create the topic field regardless of data availability
-            const fieldCreated = createTopicField(i, topicTitle, topicDescription, topicIcon, topicsListContainer);
-            
-            if (!fieldCreated) {
-                console.error(`❌ Failed to create topic field ${i + 1}`);
-                showDataLoadingStatus(`Failed to create topic field ${i + 1}`, 'error');
-            } else {
-                console.log(`✅ Topic field ${i + 1} created successfully`);
-            }
-        }
-        
-        // STEP 4: Verify all fields were created
-        const createdFields = topicsListContainer.querySelectorAll('.topic-editor-item');
-        if (createdFields.length !== 5) {
-            console.error(`❌ FIELD CREATION FAILED: Expected 5 fields, got ${createdFields.length}`);
-            showDataLoadingStatus(`Only ${createdFields.length} of 5 topic fields created`, 'error');
-        } else {
-            console.log(`✅ SUCCESS: All 5 topic fields created and verified`);
-            showDataLoadingStatus('All topic fields created successfully!', 'success');
-        }
-        
-        // STEP 5: Initialize all controls and functionality
-        console.log('🎯 Initializing panel controls and functionality...');
-        initializePanelControls(element, storedData);
-        updatePanelWithStoredData(storedData);
-        setupEnhancedBulkOperations();
-        
-        // STEP 6: Final verification and user feedback
-        const finalFieldCount = document.querySelectorAll('.topic-editor-item').length;
-        console.log(`✅ GEMINI'S UNIFIED FIX COMPLETE: ${finalFieldCount} topic fields ready for use`);
-        
-        // Update field counter
-        updateTopicFieldCounter(storedData ? (storedData.total_topics || 0) : 0);
-        
-    } catch (error) {
-        console.error('❌ CRITICAL ERROR in unified panel population:', error);
-        showDataLoadingStatus('Critical error during panel setup', 'error');
-        throw error; // Re-throw to be caught by parent
-    }
-}
-
-/**
- * GEMINI'S GUARANTEED FIELD CREATION FUNCTION
- * 
- * Creates a single topic field with robust error handling.
- * This function GUARANTEES field creation or provides detailed error reporting.
- * 
- * @param {number} index - Field index (0-4)
- * @param {string} title - Topic title
- * @param {string} description - Topic description  
- * @param {string} iconClass - Icon class
- * @param {HTMLElement} container - Container element
- * @returns {boolean} True if field was created successfully
- */
-function createTopicField(index, title, description, iconClass, container) {
-    try {
-        console.log(`🔧 Creating topic field ${index + 1}: "${title || 'Empty'}"`);
-        
-        // Create the topic item element
-        const topicItem = document.createElement('div');
-        topicItem.className = 'topic-editor-item';
-        
-        // Build the HTML structure
-        topicItem.innerHTML = `
-            <div class="topic-editor-header">
-                <div class="topic-number">#${index + 1}</div>
-                <button class="remove-item-btn" title="Remove topic">×</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Topic Title</label>
-                <input type="text" class="form-input" value="${escapeHtml(title || '')}" data-topic-title="${index}" placeholder="Enter topic ${index + 1}...">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Description</label>
-                <textarea class="form-input form-textarea" rows="2" data-topic-description="${index}" placeholder="Describe this topic...">${escapeHtml(description || '')}</textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Icon</label>
-                <select class="form-select" data-topic-icon="${index}">
-                    <option value="check" ${iconClass === 'check' ? 'selected' : ''}>Checkmark</option>
-                    <option value="star" ${iconClass === 'star' ? 'selected' : ''}>Star</option>
-                    <option value="arrow" ${iconClass === 'arrow' ? 'selected' : ''}>Arrow</option>
-                    <option value="circle" ${iconClass === 'circle' ? 'selected' : ''}>Circle</option>
-                    <option value="info" ${iconClass === 'info' ? 'selected' : ''}>Info</option>
-                    <option value="none" ${iconClass === 'none' ? 'selected' : ''}>No Icon</option>
-                </select>
-            </div>
-        `;
-        
-        // Add event listeners for inputs
-        const inputs = topicItem.querySelectorAll('input, textarea, select');
-        inputs.forEach(input => {
-            input.addEventListener('input', function() {
-                const component = document.querySelector('.editable-element--selected');
-                if (component) {
-                    updateTopicsInComponent(component);
-                }
-            });
-            
-            input.addEventListener('change', function() {
-                const component = document.querySelector('.editable-element--selected');
-                if (component) {
-                    updateTopicsInComponent(component);
-                }
-            });
-        });
-        
-        // Add remove button handler
-        const removeBtn = topicItem.querySelector('.remove-item-btn');
-        if (removeBtn) {
-            removeBtn.addEventListener('click', function() {
-                topicItem.remove();
-                
-                // Update component and renumber remaining topics
-                const component = document.querySelector('.editable-element--selected');
-                if (component) {
-                    updateTopicsInComponent(component);
-                }
-                
-                // Renumber remaining topics
-                const remainingItems = container.querySelectorAll('.topic-editor-item');
-                remainingItems.forEach((item, idx) => {
-                    const numberEl = item.querySelector('.topic-number');
-                    if (numberEl) {
-                        numberEl.textContent = `#${idx + 1}`;
-                    }
-                    
-                    // Update data attributes
-                    const titleInput = item.querySelector('[data-topic-title]');
-                    const descInput = item.querySelector('[data-topic-description]');
-                    const iconSelect = item.querySelector('[data-topic-icon]');
-                    
-                    if (titleInput) titleInput.setAttribute('data-topic-title', idx);
-                    if (descInput) descInput.setAttribute('data-topic-description', idx);
-                    if (iconSelect) iconSelect.setAttribute('data-topic-icon', idx);
-                });
-            });
-        }
-        
-        // Add to container
-        container.appendChild(topicItem);
-        
-        // Verify the field was added successfully
-        const addedField = container.querySelector(`[data-topic-title="${index}"]`);
-        if (!addedField) {
-            console.error(`❌ Failed to verify topic field ${index + 1} was added to DOM`);
-            return false;
-        }
-        
-        console.log(`✅ Topic field ${index + 1} created and verified successfully`);
-        return true;
-        
-    } catch (error) {
-        console.error(`❌ Error creating topic field ${index + 1}:`, error);
-        return false;
-    }
-}
+// =================================================================================
+// ALL OTHER HELPER FUNCTIONS - Simplified and streamlined
+// =================================================================================
 
 /**
  * Updates the data-driven sections of the panel (previews, counters).
- * Enhanced for the unified approach.
  * @param {Object|null} storedData - The data from the server, or null.
  */
-function updatePanelWithStoredData(storedData) {
+function updateDataDrivenSections(storedData) {
     try {
         const previewSection = document.getElementById('stored-topics-preview');
 
         if (storedData) {
-            console.log('🎨 Integrating stored data into enhanced panel sections...');
+            console.log('🎨 Integrating stored data into panel sections...');
             if (previewSection) {
                 previewSection.style.display = 'block';
                 updateStoredTopicsPreview(storedData);
@@ -327,37 +153,91 @@ function updatePanelWithStoredData(storedData) {
             updateTopicFieldCounter(0);
         }
     } catch (error) {
-        console.error('Error updating panel with stored data:', error);
-        // Don't throw - panel should still work
+        console.error('Error updating data-driven sections:', error);
     }
 }
 
-// =================================================================================
-// UI UTILITY FUNCTIONS (ENHANCED FOR UNIFIED APPROACH)
-// =================================================================================
-
 /**
- * LEGACY FUNCTION - Now redirects to the guaranteed field creation approach
- * Kept for backward compatibility with MKCG integration
+ * Add a topic to the design panel - THE CORE FUNCTION THAT CREATES TOPIC FIELDS
  */
 function addTopicToPanel(title, description, iconClass, index) {
-    console.log(`🔄 Legacy addTopicToPanel called - redirecting to guaranteed field creation`);
-    
     const topicsListContainer = document.getElementById('design-topics-list');
     if (!topicsListContainer) {
         console.error('Cannot add topic - topics list container not found');
         return null;
     }
     
-    // Use the guaranteed field creation function
-    const success = createTopicField(index, title, description, iconClass, topicsListContainer);
+    console.log(`🔧 Adding topic ${index + 1}: "${title || 'Empty'}"`);
     
-    if (success) {
-        const createdField = topicsListContainer.querySelector(`[data-topic-title="${index}"]`);
-        return createdField ? createdField.closest('.topic-editor-item') : null;
+    const topicItem = document.createElement('div');
+    topicItem.className = 'topic-editor-item';
+    topicItem.innerHTML = `
+        <div class="topic-editor-header">
+            <div class="topic-number">#${index + 1}</div>
+            <button class="remove-item-btn" title="Remove topic">×</button>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Topic Title</label>
+            <input type="text" class="form-input" value="${escapeHtml(title || '')}" data-topic-title="${index}" placeholder="Enter topic ${index + 1}...">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-input form-textarea" rows="2" data-topic-description="${index}" placeholder="Describe this topic...">${escapeHtml(description || '')}</textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Icon</label>
+            <select class="form-select" data-topic-icon="${index}">
+                <option value="check" ${iconClass === 'check' ? 'selected' : ''}>Checkmark</option>
+                <option value="star" ${iconClass === 'star' ? 'selected' : ''}>Star</option>
+                <option value="arrow" ${iconClass === 'arrow' ? 'selected' : ''}>Arrow</option>
+                <option value="circle" ${iconClass === 'circle' ? 'selected' : ''}>Circle</option>
+                <option value="info" ${iconClass === 'info' ? 'selected' : ''}>Info</option>
+                <option value="none" ${iconClass === 'none' ? 'selected' : ''}>No Icon</option>
+            </select>
+        </div>
+    `;
+    
+    // Input handlers
+    const inputs = topicItem.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            updateTopicsInComponent(document.querySelector('.editable-element--selected'));
+        });
+        
+        input.addEventListener('change', function() {
+            updateTopicsInComponent(document.querySelector('.editable-element--selected'));
+        });
+    });
+    
+    // Remove button handler
+    const removeBtn = topicItem.querySelector('.remove-item-btn');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            topicItem.remove();
+            updateTopicsInComponent(document.querySelector('.editable-element--selected'));
+            
+            // Renumber topics
+            const items = document.querySelectorAll('.topic-editor-item');
+            items.forEach((item, idx) => {
+                const numberEl = item.querySelector('.topic-number');
+                if (numberEl) {
+                    numberEl.textContent = `#${idx + 1}`;
+                }
+                
+                // Update data attributes
+                const titleInput = item.querySelector('[data-topic-title]');
+                const descInput = item.querySelector('[data-topic-description]');
+                const iconSelect = item.querySelector('[data-topic-icon]');
+                
+                if (titleInput) titleInput.setAttribute('data-topic-title', idx);
+                if (descInput) descInput.setAttribute('data-topic-description', idx);
+                if (iconSelect) iconSelect.setAttribute('data-topic-icon', idx);
+            });
+        });
     }
     
-    return null;
+    topicsListContainer.appendChild(topicItem);
+    return topicItem;
 }
 
 /**
@@ -418,7 +298,7 @@ function updateTopicsInComponent(element) {
 /**
  * Initialize panel controls - essential for panel functionality
  */
-function initializePanelControls(element, storedData) {
+function initializePanelControls(element) {
     try {
         console.log('🎯 Initializing panel controls...');
         
@@ -877,5 +757,5 @@ window.scheduleAutoSave = function() {
     // Auto-save logic can be implemented here if needed
 };
 
-console.log('✅ Topics Panel Script loaded with GEMINI\'S UNIFIED GUARANTEED FIELD CREATION APPROACH');
-console.log('🎯 Panel will now GUARANTEE 5 topic input fields are always created');
+console.log('✅ Topics Panel Script loaded with GEMINI\'S SIMPLIFIED DIRECT APPROACH');
+console.log('🎯 Using existing addTopicToPanel() function directly in a simple loop');
