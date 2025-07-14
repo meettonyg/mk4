@@ -30,6 +30,7 @@ class TopicsMKCGIntegration {
     
     /**
      * Initialize Topics MKCG Integration
+     * GEMINI'S APPROACH: Simple state setup, no auto-initialization
      * 
      * @param {HTMLElement} element - The topics component element
      * @param {HTMLElement} panelContainer - The design panel container
@@ -50,8 +51,8 @@ class TopicsMKCGIntegration {
         // PHASE 6: Enhanced Validation System Initialization
         this.initValidationSystem();
         
-        // Initialize the integration
-        this.init();
+        // GEMINI'S APPROACH: No auto-initialization, just state setup
+        console.log('🔧 MKCG Integration constructor - ready for manual init() call');
     }
     
     /**
@@ -134,53 +135,45 @@ class TopicsMKCGIntegration {
     
     /**
      * Initialize the MKCG integration system
+     * GEMINI'S APPROACH: Simple, focused initialization
      * 
      * @returns {Promise<boolean>} Success status
      */
     async init() {
         try {
-            console.log('🔧 TopicsMKCGIntegration: Starting initialization...');
+            console.log('🔧 MKCG Integration init() called by panel script');
             
             // Step 1: Detect post ID
             this.postId = this.detectPostId();
             if (!this.postId) {
-                this.handleError('No valid post ID detected', 'post-detection');
+                console.log('📝 No post ID - MKCG integration disabled');
                 return false;
             }
             
             // Step 2: Detect and validate MKCG data
             const hasData = await this.detectMKCGData();
             if (!hasData) {
-                console.log('📝 TopicsMKCGIntegration: No MKCG data available - panel will remain in manual mode');
+                console.log('📝 No MKCG data available');
                 return false;
             }
             
-            // Step 3: Validate data availability for Topics
+            // Step 3: Validate data for Topics
             const isValid = this.validateDataAvailability();
             if (!isValid) {
-                this.handleError('MKCG data validation failed', 'data-validation');
+                console.log('📝 MKCG data not valid for Topics');
                 return false;
             }
             
             // Step 4: Enhance panel with MKCG controls
             this.enhancePanelWithMKCGControls();
             
-            // Step 5: Inject MKCG data into panel
-            this.injectMKCGDataIntoPanel();
-            
-            // Step 6: Prepare save-back system foundation
-            this.prepareSaveBackSystem();
-            
-            // Step 7: Setup event listeners
+            // Step 5: Setup event listeners
             this.setupEventListeners();
-            
-            // PHASE 6: Initialize enhanced validation monitoring
-            this.initValidationMonitoring();
             
             this.isInitialized = true;
             const initTime = performance.now() - this.initStartTime;
             
-            console.log('✅ TopicsMKCGIntegration: Initialization complete', {
+            console.log('✅ MKCG Integration complete', {
                 postId: this.postId,
                 topicsAvailable: Object.keys(this.mkcgData.topics.topics).length,
                 initTime: `${initTime.toFixed(2)}ms`
@@ -189,10 +182,12 @@ class TopicsMKCGIntegration {
             return true;
             
         } catch (error) {
-            this.handleError(`Initialization failed: ${error.message}`, 'initialization', error);
+            console.error('❌ MKCG Integration failed:', error);
             return false;
         }
     }
+    
+
     
     /**
      * Detect post ID using multiple strategies
