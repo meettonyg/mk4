@@ -574,6 +574,28 @@ class GMKB_Enhanced_Script_Manager {
             );
             wp_enqueue_script('guestify-topics-panel');
             
+            // ROOT FIX: Enqueue topics component script for save functionality
+            wp_register_script(
+                'guestify-topics-component',
+                $plugin_url . 'components/topics/script.js',
+                array('guestify-application-bundle'),
+                $cache_buster . '-topics-component',
+                true
+            );
+            wp_enqueue_script('guestify-topics-component');
+            
+            // ROOT FIX: Pass additional data to topics component
+            wp_localize_script(
+                'guestify-topics-component',
+                'guestifyMediaKit',
+                array(
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('guestify_media_kit_builder'),
+                    'postId' => $this->get_current_post_id(),
+                    'saveAction' => 'save_custom_topics'
+                )
+            );
+            
             // ROOT FIX: Log successful bundle loading
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('GMKB ROOT FIX SUCCESS: ✅ Working bundle architecture enqueued!');
@@ -625,6 +647,11 @@ class GMKB_Enhanced_Script_Manager {
             'timestamp' => time(),
             'builderPage' => true,
             'eventDrivenFix' => true, // ROOT FIX: Event coordination flag
+            'postId' => $this->get_current_post_id(), // ROOT FIX: Add post ID for save functionality
+            'saveActions' => array( // ROOT FIX: Available save actions
+                'customTopics' => 'save_custom_topics',
+                'mkcgTopics' => 'save_mkcg_topics'
+            ),
             'consolidatedBundles' => array(
                 'coreSystemsBundle' => 'guestify-core-systems-bundle',
                 'applicationBundle' => 'guestify-application-bundle',

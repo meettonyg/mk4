@@ -62,6 +62,10 @@ class GMKB_Topics_Ajax_Handler {
         add_action('wp_ajax_save_mkcg_topics', array($this, 'ajax_save_mkcg_topics'));
         add_action('wp_ajax_nopriv_save_mkcg_topics', array($this, 'ajax_save_mkcg_topics_nopriv'));
         
+        // ROOT FIX: Add AJAX handlers for custom post fields (topic_1, topic_2, etc.)
+        add_action('wp_ajax_save_custom_topics', array($this, 'ajax_save_custom_topics'));
+        add_action('wp_ajax_nopriv_save_custom_topics', array($this, 'ajax_save_custom_topics_nopriv'));
+        
         // Register validation AJAX handler
         add_action('wp_ajax_validate_mkcg_topics', array($this, 'ajax_validate_mkcg_topics'));
         add_action('wp_ajax_nopriv_validate_mkcg_topics', array($this, 'ajax_validate_mkcg_topics_nopriv'));
@@ -1530,6 +1534,350 @@ class GMKB_Topics_Ajax_Handler {
     }
     
     /**
+     * ROOT FIX: AJAX handler for saving to custom post fields (topic_1, topic_2, etc.)
+     * This is the NEW save method that writes directly to custom post fields
+     */
+    public function ajax_save_custom_topics() {
+        try {
+            // ROOT FIX: Ensure WordPress context is available
+            if (!$this->ensure_wordpress_context()) {
+                wp_send_json_error(array(
+                    'message' => 'WordPress context not available',
+                    'code' => 'WORDPRESS_CONTEXT_ERROR',
+                    'debug' => 'WordPress core functions not properly loaded for custom topics save'
+                ));
+                return;
+            }
+            
+            // Verify nonce for security
+            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
+                wp_send_json_error(array(
+                    'message' => 'Security verification failed',
+                    'code' => 'INVALID_NONCE',
+                    'debug' => 'Nonce verification failed for custom topics save: ' . ($_POST['nonce'] ?? 'missing')
+                ));
+                return;
+            }
+            
+            // ROOT FIX: Enhanced user capability checking
+            $user_check = $this->validate_user_permissions();
+            if (!$user_check['valid']) {
+                wp_send_json_error(array(
+                    'message' => $user_check['message'],
+                    'code' => $user_check['code'],
+                    'debug' => $user_check['debug'] ?? ''
+                ));
+                return;
+            }
+            
+            $this->process_custom_topics_save_request();
+            
+        } catch (Exception $e) {
+            $this->log_error('AJAX custom topics save error: ' . $e->getMessage(), 'ajax-custom-save', $e);
+            
+            $error_details = array(
+                'message' => 'Internal server error during custom topics save',
+                'code' => 'SERVER_ERROR',
+                'timestamp' => current_time('mysql'),
+                'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 'unknown'
+            );
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                $error_details['debug'] = array(
+                    'exception_message' => $e->getMessage(),
+                    'exception_file' => $e->getFile(),
+                    'exception_line' => $e->getLine(),
+                    'request_data_keys' => array_keys($_POST)
+                );
+            }
+            
+            wp_send_json_error($error_details);
+        }
+    }
+    
+    /**
+     * ROOT FIX: AJAX handler for custom topics (non-logged-in users)
+     */
+    public function ajax_save_custom_topics_nopriv() {
+        wp_send_json_error(array(
+            'message' => 'Authentication required to save custom topics',
+            'code' => 'AUTHENTICATION_REQUIRED'
+        ));
+    }
+    
+    /**
+     * ROOT FIX: Process custom topics save request
+     * Saves directly to custom post fields (topic_1, topic_2, etc.)
+     */
+    private function process_custom_topics_save_request() {
+        $start_time = microtime(true);
+        
+        // Extract and validate parameters
+        $post_id = intval($_POST['post_id'] ?? 0);
+        $topics_data = $_POST['topics'] ?? array();
+        $save_type = sanitize_text_field($_POST['save_type'] ?? 'manual');
+        $client_timestamp = intval($_POST['client_timestamp'] ?? time());
+        
+        // Validate required parameters
+        if (!$post_id || $post_id <= 0) {
+            wp_send_json_error(array(
+                'message' => 'Invalid post ID provided',
+                'code' => 'INVALID_POST_ID'
+            ));
+            return;
+        }
+        
+        // Verify post exists and is accessible
+        $post = get_post($post_id);
+        if (!$post || $post->post_status === 'trash') {
+            wp_send_json_error(array(
+                'message' => 'Post not found or inaccessible',
+                'code' => 'POST_NOT_FOUND',
+                'post_id' => $post_id
+            ));
+            return;
+        }
+        
+        // Check for concurrent editing conflicts
+        $conflict_check = $this->check_for_custom_topics_conflicts($post_id, $client_timestamp);
+        if ($conflict_check['has_conflict']) {
+            wp_send_json_error(array(
+                'message' => 'Concurrent editing conflict detected',
+                'code' => 'EDIT_CONFLICT',
+                'conflict_details' => $conflict_check,
+                'resolution_required' => true
+            ));
+            return;
+        }
+        
+        // Validate and sanitize topics data
+        $validated_topics = $this->validate_and_sanitize_custom_topics($topics_data);
+        if (!$validated_topics['valid']) {
+            wp_send_json_error(array(
+                'message' => 'Custom topics data validation failed',
+                'code' => 'VALIDATION_FAILED',
+                'validation_errors' => $validated_topics['errors']
+            ));
+            return;
+        }
+        
+        // Perform save operation to custom post fields
+        $save_result = $this->save_custom_topics_to_post_meta($post_id, $validated_topics['topics'], $save_type);
+        
+        if ($save_result['success']) {
+            $processing_time = round((microtime(true) - $start_time) * 1000, 2);
+            
+            wp_send_json_success(array(
+                'message' => 'Custom topics saved successfully',
+                'post_id' => $post_id,
+                'topics_saved' => count($validated_topics['topics']),
+                'save_type' => $save_type,
+                'timestamp' => time(),
+                'server_time' => current_time('mysql'),
+                'processing_time' => $processing_time,
+                'quality_summary' => $this->calculate_topics_quality($validated_topics['topics']),
+                'field_format' => 'custom_post_fields',
+                'saved_fields' => $save_result['saved_fields']
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => 'Failed to save custom topics',
+                'code' => 'CUSTOM_SAVE_FAILED',
+                'details' => $save_result['error']
+            ));
+        }
+    }
+    
+    /**
+     * ROOT FIX: Validate and sanitize custom topics data
+     * Specifically for custom post fields format
+     */
+    private function validate_and_sanitize_custom_topics($topics_data) {
+        $result = array(
+            'valid' => true,
+            'topics' => array(),
+            'errors' => array()
+        );
+        
+        // Ensure topics_data is an array
+        if (!is_array($topics_data)) {
+            $result['valid'] = false;
+            $result['errors'][] = 'Custom topics data must be an array';
+            return $result;
+        }
+        
+        // Validate each topic (expecting up to 5 topics)
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_key = "topic_{$i}";
+            $topic_value = '';
+            
+            // Check if topic data exists in various possible formats
+            if (isset($topics_data[$topic_key])) {
+                $topic_value = $topics_data[$topic_key];
+            } elseif (isset($topics_data[$i - 1])) {
+                $topic_value = $topics_data[$i - 1];
+            } elseif (isset($topics_data["topic{$i}"])) {
+                $topic_value = $topics_data["topic{$i}"];
+            }
+            
+            // Sanitize topic value
+            if (!empty($topic_value)) {
+                $sanitized_topic = $this->sanitize_topic_value($topic_value);
+                
+                if ($sanitized_topic !== false) {
+                    $result['topics'][$topic_key] = $sanitized_topic;
+                } else {
+                    $result['errors'][] = "Custom topic {$i} contains invalid content";
+                }
+            }
+            // Empty topics are allowed - they will be saved as empty to clear existing data
+        }
+        
+        // Check for validation errors
+        if (!empty($result['errors'])) {
+            $result['valid'] = false;
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * ROOT FIX: Save custom topics to WordPress post meta
+     * Saves to custom post fields: topic_1, topic_2, topic_3, topic_4, topic_5
+     */
+    private function save_custom_topics_to_post_meta($post_id, $topics, $save_type = 'manual') {
+        try {
+            // ROOT FIX: Ensure WordPress functions are available
+            if (!function_exists('current_time') || !function_exists('get_current_user_id') || !function_exists('update_post_meta')) {
+                throw new Exception('Required WordPress functions not available for custom post meta operations');
+            }
+            
+            $save_timestamp = current_time('mysql');
+            $user_id = get_current_user_id();
+            $topics_saved = 0;
+            $saved_fields = array();
+            
+            // ROOT FIX: Validate post ID before attempting save
+            if (!$post_id || !is_numeric($post_id) || $post_id <= 0) {
+                throw new Exception('Invalid post ID provided for custom topics save operation');
+            }
+            
+            // Save each topic to individual custom post fields (topic_1, topic_2, etc.)
+            for ($i = 1; $i <= 5; $i++) {
+                $topic_key = "topic_{$i}";
+                $meta_key = $topic_key; // ROOT FIX: Save directly to topic_1, topic_2, etc.
+                
+                if (isset($topics[$topic_key])) {
+                    // Save non-empty topic
+                    $topic_value = $topics[$topic_key];
+                    $update_result = update_post_meta($post_id, $meta_key, $topic_value);
+                    
+                    if ($update_result !== false) {
+                        $topics_saved++;
+                        $saved_fields[] = $meta_key;
+                    }
+                } else {
+                    // Clear empty topic (save empty string to explicitly clear)
+                    update_post_meta($post_id, $meta_key, '');
+                    $saved_fields[] = $meta_key . ' (cleared)';
+                }
+            }
+            
+            // Save metadata about this save operation
+            update_post_meta($post_id, 'custom_topics_last_edited', $save_timestamp);
+            update_post_meta($post_id, 'custom_topics_last_edited_by', $user_id);
+            update_post_meta($post_id, 'custom_topics_save_type', $save_type);
+            update_post_meta($post_id, 'custom_topics_version', '1.0.0-custom-fields');
+            
+            // Log successful save for debugging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB Custom Topics: Successfully saved {$topics_saved} topics for post {$post_id} (type: {$save_type}) to fields: " . implode(', ', $saved_fields));
+            }
+            
+            return array(
+                'success' => true,
+                'topics_saved' => $topics_saved,
+                'timestamp' => $save_timestamp,
+                'save_type' => $save_type,
+                'saved_fields' => $saved_fields
+            );
+            
+        } catch (Exception $e) {
+            $this->log_error("Error saving custom topics to post {$post_id}: " . $e->getMessage(), 'custom-save-operation', $e);
+            
+            return array(
+                'success' => false,
+                'error' => 'Database save operation failed for custom topics',
+                'debug' => defined('WP_DEBUG') && WP_DEBUG ? $e->getMessage() : ''
+            );
+        }
+    }
+    
+    /**
+     * ROOT FIX: Check for conflicts specific to custom topics
+     */
+    private function check_for_custom_topics_conflicts($post_id, $client_timestamp) {
+        try {
+            // Get last edited timestamp from server
+            $last_edited = get_post_meta($post_id, 'custom_topics_last_edited', true);
+            
+            if (empty($last_edited)) {
+                // No previous edit timestamp - no conflict
+                return array(
+                    'has_conflict' => false,
+                    'message' => 'No previous custom topics edits detected'
+                );
+            }
+            
+            $server_timestamp = strtotime($last_edited);
+            
+            // Check if server data is newer than client data
+            if ($server_timestamp > $client_timestamp) {
+                $last_edited_by = get_post_meta($post_id, 'custom_topics_last_edited_by', true);
+                $current_user_id = get_current_user_id();
+                
+                // Check if it was edited by a different user
+                if ($last_edited_by && $last_edited_by != $current_user_id) {
+                    $editor_info = get_userdata($last_edited_by);
+                    $editor_name = $editor_info ? $editor_info->display_name : 'Unknown User';
+                    
+                    return array(
+                        'has_conflict' => true,
+                        'message' => "Custom topics were modified by {$editor_name}",
+                        'server_timestamp' => $server_timestamp,
+                        'client_timestamp' => $client_timestamp,
+                        'last_edited_by' => $editor_name,
+                        'time_difference' => $server_timestamp - $client_timestamp
+                    );
+                }
+                
+                return array(
+                    'has_conflict' => true,
+                    'message' => 'Custom topics were modified from another session',
+                    'server_timestamp' => $server_timestamp,
+                    'client_timestamp' => $client_timestamp,
+                    'time_difference' => $server_timestamp - $client_timestamp
+                );
+            }
+            
+            return array(
+                'has_conflict' => false,
+                'message' => 'No custom topics conflicts detected'
+            );
+            
+        } catch (Exception $e) {
+            $this->log_error("Error checking custom topics conflicts for post {$post_id}: " . $e->getMessage(), 'custom-conflict-check', $e);
+            
+            // In case of error, allow save to proceed (fail-safe approach)
+            return array(
+                'has_conflict' => false,
+                'message' => 'Custom topics conflict check failed - proceeding with save',
+                'error' => $e->getMessage()
+            );
+        }
+    }
+    
+    /**
      * Get handler status for debugging
      * 
      * @return array Status information
@@ -1555,7 +1903,10 @@ class GMKB_Topics_Ajax_Handler {
                 'quality_recommendations' => true,
                 'data_source_tracking' => true,
                 'user_experience_optimization' => true,
-                'wordpress_context_validation' => true
+                'wordpress_context_validation' => true,
+                'custom_post_fields_save' => true,
+                'single_source_of_truth' => true,
+                'direct_field_mapping' => true
             )
         );
     }

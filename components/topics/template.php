@@ -278,6 +278,9 @@ if (empty($topicsList)) {
      data-component-type="topics"
      data-layout="<?php echo esc_attr($layoutStyle); ?>"
      data-columns="<?php echo esc_attr($columns); ?>"
+     data-post-id="<?php echo esc_attr($current_post_id); ?>"
+     data-save-enabled="true"
+     data-nonce="<?php echo wp_create_nonce('guestify_media_kit_builder'); ?>"
      style="--topic-color: <?php echo esc_attr($topicColor); ?>">
      
     <!-- Enhanced Element Controls -->
