@@ -325,6 +325,14 @@ class GMKB_Topics_Ajax_Handler {
             $result['valid'] = false;
         }
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: ========== VALIDATION RESULT ==========');
+            error_log('GMKB ROOT FIX: Validation result: ' . ($result['valid'] ? 'VALID' : 'INVALID'));
+            error_log('GMKB ROOT FIX: Valid topics: ' . print_r($result['topics'], true));
+            error_log('GMKB ROOT FIX: Validation errors: ' . print_r($result['errors'], true));
+            error_log('GMKB ROOT FIX: ========== VALIDATION DEBUG END ==========');
+        }
+        
         return $result;
     }
     
@@ -389,6 +397,15 @@ class GMKB_Topics_Ajax_Handler {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log("GMKB ROOT FIX: Topic rejected - invalid characters: '{$sanitized}'");
                 error_log("GMKB ROOT FIX: Character analysis: " . json_encode(str_split($sanitized)));
+                error_log("GMKB ROOT FIX: Character codes: " . json_encode(array_map('ord', str_split($sanitized))));
+                error_log("GMKB ROOT FIX: Regex pattern used: /^[a-zA-Z0-9\\s\\-.,!?\\'\\\"()&]+$/");
+                
+                // Check each character individually
+                $chars = str_split($sanitized);
+                foreach ($chars as $i => $char) {
+                    $matches = preg_match('/[a-zA-Z0-9\s\-.,!?\'\"()&]/', $char);
+                    error_log("GMKB ROOT FIX: Char {$i}: '{$char}' (code: " . ord($char) . ") matches: " . ($matches ? 'YES' : 'NO'));
+                }
             }
             return false; // Contains disallowed characters
         }
@@ -1662,11 +1679,63 @@ class GMKB_Topics_Ajax_Handler {
     private function process_custom_topics_save_request() {
         $start_time = microtime(true);
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: ========== CUSTOM TOPICS SAVE REQUEST DEBUG ==========');
+            error_log('GMKB ROOT FIX: Raw $_POST data: ' . print_r($_POST, true));
+        }
+        
         // Extract and validate parameters
         $post_id = intval($_POST['post_id'] ?? 0);
         $topics_data = $_POST['topics'] ?? array();
         $save_type = sanitize_text_field($_POST['save_type'] ?? 'manual');
         $client_timestamp = intval($_POST['client_timestamp'] ?? time());
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: Extracted parameters:');
+            error_log('GMKB ROOT FIX: - post_id: ' . $post_id . ' (type: ' . gettype($post_id) . ')');
+            error_log('GMKB ROOT FIX: - topics_data: ' . print_r($topics_data, true));
+            error_log('GMKB ROOT FIX: - topics_data type: ' . gettype($topics_data));
+            error_log('GMKB ROOT FIX: - save_type: ' . $save_type);
+            error_log('GMKB ROOT FIX: - client_timestamp: ' . $client_timestamp);
+        }
+        
+        // ROOT FIX: Handle JSON string input from JavaScript (THE MISSING PIECE!)
+        if (is_string($topics_data)) {
+            // ROOT FIX: WordPress automatically adds slashes to POST data, so we need to strip them first
+            $topics_data = stripslashes($topics_data);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: After stripslashes: ' . $topics_data);
+            }
+            
+            $decoded_topics = json_decode($topics_data, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded_topics)) {
+                $topics_data = $decoded_topics;
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: Successfully decoded JSON topics data: ' . print_r($topics_data, true));
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: Failed to decode topics JSON: ' . $topics_data);
+                    error_log('GMKB ROOT FIX: JSON error: ' . json_last_error_msg());
+                    error_log('GMKB ROOT FIX: Raw JSON string length: ' . strlen($topics_data));
+                    error_log('GMKB ROOT FIX: First 100 chars: ' . substr($topics_data, 0, 100));
+                }
+                wp_send_json_error(array(
+                    'message' => 'Invalid JSON format in topics data',
+                    'code' => 'JSON_DECODE_ERROR',
+                    'json_error' => json_last_error_msg(),
+                    'raw_data' => substr($topics_data, 0, 200) // First 200 chars for debugging
+                ));
+                return;
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: After JSON decode - topics_data: ' . print_r($topics_data, true));
+            error_log('GMKB ROOT FIX: After JSON decode - topics_data type: ' . gettype($topics_data));
+            error_log('GMKB ROOT FIX: After JSON decode - is_array: ' . (is_array($topics_data) ? 'YES' : 'NO'));
+        }
         
         // Validate required parameters
         if (!$post_id || $post_id <= 0) {
@@ -1745,7 +1814,16 @@ class GMKB_Topics_Ajax_Handler {
     private function validate_and_sanitize_custom_topics($topics_data) {
         // ROOT FIX: Enhanced debugging
         if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: ========== VALIDATION DEBUG START ==========');
             error_log('GMKB ROOT FIX: validate_and_sanitize_custom_topics called with: ' . print_r($topics_data, true));
+            error_log('GMKB ROOT FIX: Topics data type: ' . gettype($topics_data));
+            error_log('GMKB ROOT FIX: Topics data is_array: ' . (is_array($topics_data) ? 'YES' : 'NO'));
+            if (is_array($topics_data)) {
+                error_log('GMKB ROOT FIX: Topics data keys: ' . implode(', ', array_keys($topics_data)));
+                foreach ($topics_data as $key => $value) {
+                    error_log("GMKB ROOT FIX: Key '{$key}' => Value '{$value}' (type: " . gettype($value) . ", length: " . (is_string($value) ? strlen($value) : 'N/A') . ")");
+                }
+            }
         }
         
         $result = array(
@@ -1766,35 +1844,56 @@ class GMKB_Topics_Ajax_Handler {
             $topic_key = "topic_{$i}";
             $topic_value = '';
             
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: ========== PROCESSING TOPIC {$i} ===========");
+            }
+            
             // Check if topic data exists in various possible formats
             if (isset($topics_data[$topic_key])) {
                 $topic_value = $topics_data[$topic_key];
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB ROOT FIX: Found topic via key '{$topic_key}': '{$topic_value}'");
+                }
             } elseif (isset($topics_data[$i - 1])) {
                 $topic_value = $topics_data[$i - 1];
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB ROOT FIX: Found topic via index " . ($i - 1) . ": '{$topic_value}'");
+                }
             } elseif (isset($topics_data["topic{$i}"])) {
                 $topic_value = $topics_data["topic{$i}"];
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB ROOT FIX: Found topic via key 'topic{$i}': '{$topic_value}'");
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB ROOT FIX: No data found for topic {$i} in any format");
+                }
             }
             
             // Sanitize topic value
             if (!empty($topic_value)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("GMKB ROOT FIX: Processing topic {$i} with value: '{$topic_value}' (length: " . strlen($topic_value) . ")");
-            }
-            
-            $sanitized_topic = $this->sanitize_topic_value($topic_value);
-            
-            if ($sanitized_topic !== false) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB ROOT FIX: Processing topic {$i} with value: '{$topic_value}' (length: " . strlen($topic_value) . ")");
+                }
+                
+                $sanitized_topic = $this->sanitize_topic_value($topic_value);
+                
+                if ($sanitized_topic !== false) {
                     $result['topics'][$topic_key] = $sanitized_topic;
-                        if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log("GMKB ROOT FIX: Topic {$i} validated successfully: '{$sanitized_topic}'");
-                        }
-                    } else {
-                        $result['errors'][] = "Custom topic {$i} contains invalid content";
-                        if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log("GMKB ROOT FIX: Topic {$i} FAILED validation: '{$topic_value}'");
-                        }
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("GMKB ROOT FIX: Topic {$i} validated successfully: '{$sanitized_topic}'");
+                    }
+                } else {
+                    $result['errors'][] = "Custom topic {$i} contains invalid content: '{$topic_value}'";
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("GMKB ROOT FIX: Topic {$i} FAILED validation: '{$topic_value}'");
                     }
                 }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB ROOT FIX: Topic {$i} is empty, skipping validation");
+                }
+            }
             // Empty topics are allowed - they will be saved as empty to clear existing data
         }
         

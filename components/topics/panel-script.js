@@ -1085,25 +1085,77 @@ const MAX_TOPICS = 10;
 
 /**
  * Setup topics editor functionality
+ * ROOT FIX: Enhanced to handle dynamic panel loading and ensure proper event binding
  */
 function setupTopicsEditor() {
-    console.log('📝 Setting up topics editor...');
+    console.log('📝 ROOT FIX: Setting up topics editor...');
     
+    // ROOT FIX: Use more robust selectors and error handling
     const addButton = document.getElementById('add-topic-btn');
     const clearButton = document.getElementById('clear-all-topics-btn');
     
     if (addButton) {
+        // ROOT FIX: Remove existing listeners to prevent duplicates
+        addButton.removeEventListener('click', addNewTopic);
         addButton.addEventListener('click', addNewTopic);
+        console.log('✅ ROOT FIX: Add Topic button event listener attached');
+    } else {
+        console.warn('⚠️ ROOT FIX: Add Topic button not found! ID: add-topic-btn');
+        
+        // ROOT FIX: Try to find button with alternative selectors
+        const altButton = document.querySelector('.add-topic-btn') || document.querySelector('[data-action="add-topic"]');
+        if (altButton) {
+            altButton.removeEventListener('click', addNewTopic);
+            altButton.addEventListener('click', addNewTopic);
+            console.log('✅ ROOT FIX: Found Add Topic button with alternative selector');
+        } else {
+            console.error('❌ ROOT FIX: Could not find Add Topic button with any selector!');
+        }
     }
     
     if (clearButton) {
+        clearButton.removeEventListener('click', handleClearAllTopics);
         clearButton.addEventListener('click', handleClearAllTopics);
+        console.log('✅ ROOT FIX: Clear All button event listener attached');
+    } else {
+        console.warn('⚠️ ROOT FIX: Clear All button not found (this is normal if no topics exist)');
     }
     
-    // Initialize with existing topics or create empty ones
+    // ROOT FIX: Initialize with existing topics or create empty ones
     loadExistingTopics();
     
-    console.log('✅ Topics editor initialized');
+    // ROOT FIX: Set up delegation for dynamically added buttons
+    setupButtonDelegation();
+    
+    console.log('✅ ROOT FIX: Topics editor initialized successfully');
+}
+
+/**
+ * ROOT FIX: Set up event delegation for dynamically loaded content
+ */
+function setupButtonDelegation() {
+    // Use event delegation on the document for buttons that might be loaded later
+    document.addEventListener('click', function(e) {
+        // Handle Add Topic button clicks
+        if (e.target.matches('#add-topic-btn, .add-topic-btn, [data-action="add-topic"]')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📝 ROOT FIX: Add Topic button clicked via delegation');
+            addNewTopic();
+            return;
+        }
+        
+        // Handle Clear All button clicks
+        if (e.target.matches('#clear-all-topics-btn, .clear-all-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🗑️ ROOT FIX: Clear All button clicked via delegation');
+            handleClearAllTopics();
+            return;
+        }
+    });
+    
+    console.log('✅ ROOT FIX: Button delegation set up for dynamic content');
 }
 
 /**
@@ -1258,10 +1310,15 @@ function handleClearAllTopics() {
 
 /**
  * ROOT FIX: Load existing topics from component with dynamic data support
+ * Enhanced to properly sync side panel counter with actual component topics
  */
 function loadExistingTopics() {
     const component = document.querySelector('.editable-element[data-component="topics"]');
-    if (!component) return;
+    if (!component) {
+        console.warn('⚠️ ROOT FIX: No topics component found for loading existing topics');
+        updateTopicsCounter(); // Update counter to show 0
+        return;
+    }
     
     const existingTopics = component.querySelectorAll('.topic-item');
     const topicsContainer = component.querySelector('.topics-container');
@@ -1271,15 +1328,26 @@ function loadExistingTopics() {
     const postId = topicsContainer?.getAttribute('data-post-id');
     const topicsSource = topicsContainer?.getAttribute('data-topics-source');
     
-    console.log('🎯 Loading topics:', {
+    console.log('🎯 ROOT FIX: Loading topics:', {
         existingCount: existingTopics.length,
         hasDynamicTopics,
         postId,
         source: topicsSource
     });
     
+    // ROOT FIX: Reset the editor topics count
+    topicCount = 0;
+    
+    // Clear existing topics list
+    const topicsList = document.getElementById('design-topics-list');
+    if (topicsList) {
+        topicsList.innerHTML = '';
+    }
+    
     if (existingTopics.length > 0) {
         // Load from existing component
+        let realTopicsCount = 0; // ROOT FIX: Count only real topics, not placeholders
+        
         existingTopics.forEach((topicEl, index) => {
             const title = topicEl.querySelector('.topic-title')?.textContent || '';
             const description = topicEl.querySelector('.topic-description')?.textContent || '';
@@ -1287,12 +1355,12 @@ function loadExistingTopics() {
             const metaKey = topicEl.getAttribute('data-meta-key');
             
             // ROOT FIX: Skip any placeholder topics completely
-            if (source === 'placeholder') {
-                console.log('🚫 ROOT FIX: Skipping placeholder topic:', title);
+            if (source === 'placeholder' || !title.trim()) {
+                console.log('🚫 ROOT FIX: Skipping placeholder/empty topic:', title);
                 return;
             }
             
-            const topicItem = createTopicEditorItem(title, description, index);
+            const topicItem = createTopicEditorItem(title, description, realTopicsCount);
             
             // ROOT FIX: Add source indicator to editor item
             if (source === 'mkcg' && metaKey) {
@@ -1316,48 +1384,54 @@ function loadExistingTopics() {
                 topicItem.appendChild(sourceIndicator);
             }
             
-            const topicsList = document.getElementById('design-topics-list');
             if (topicsList) {
                 topicsList.appendChild(topicItem);
-                topicCount++;
+                realTopicsCount++; // ROOT FIX: Only count real topics
             }
         });
         
+        // ROOT FIX: Set the actual topics count, not index count
+        topicCount = realTopicsCount;
+        
         // ROOT FIX: Show dynamic data info if available
         if (hasDynamicTopics && postId) {
-            showDynamicDataInfo(postId, topicsSource, existingTopics.length);
+            showDynamicDataInfo(postId, topicsSource, realTopicsCount);
         }
         
+        console.log(`✅ ROOT FIX: Loaded ${realTopicsCount} real topics (skipped placeholders)`);
+        
     } else {
-    // ROOT FIX: NEVER create placeholder topics - show empty editor instead
-    console.log('🚫 ROOT FIX: No existing topics found - showing empty editor (NO PLACEHOLDERS)');
-    
-    // Show helpful message instead of creating placeholder topics
-    const topicsList = document.getElementById('design-topics-list');
-    if (topicsList) {
-    const emptyMessage = document.createElement('div');
-    emptyMessage.className = 'topics-empty-state';
-    emptyMessage.innerHTML = `
-    <div style="
-    text-align: center;
-    padding: 20px;
-    color: #6b7280;
-    font-style: italic;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    background: #f9fafb;
-    ">
-    <div style="margin-bottom: 8px;">📝</div>
-    <div>Click "Add Topic" to get started</div>
-        <div style="font-size: 12px; margin-top: 4px; opacity: 0.7;">Only real topics will be shown - no placeholder content</div>
-        </div>
-        `;
-    topicsList.appendChild(emptyMessage);
+        // ROOT FIX: NEVER create placeholder topics - show empty editor instead
+        console.log('🚫 ROOT FIX: No existing topics found - showing empty editor (NO PLACEHOLDERS)');
+        
+        // Show helpful message instead of creating placeholder topics
+        if (topicsList) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'topics-empty-state';
+            emptyMessage.innerHTML = `
+                <div style="
+                    text-align: center;
+                    padding: 20px;
+                    color: #6b7280;
+                    font-style: italic;
+                    border: 2px dashed #d1d5db;
+                    border-radius: 8px;
+                    background: #f9fafb;
+                ">
+                    <div style="margin-bottom: 8px;">📝</div>
+                    <div>Click "Add Topic" to get started</div>
+                    <div style="font-size: 12px; margin-top: 4px; opacity: 0.7;">Only real topics will be shown - no placeholder content</div>
+                </div>
+            `;
+            topicsList.appendChild(emptyMessage);
+        }
     }
-    }
     
+    // ROOT FIX: Always update the counter with the actual count
     updateTopicsCounter();
     updateClearButtonVisibility();
+    
+    console.log(`✅ ROOT FIX: Topics counter updated to show ${topicCount} topics`);
 }
 
 /**
@@ -2110,6 +2184,122 @@ function getNotificationColor(type) {
 // GLOBAL INTERFACE - For external integration
 // =================================================================================
 
+// ROOT FIX: Global initialization function for external calls
+window.initializeTopicsDesignPanel = function() {
+    console.log('🚀 ROOT FIX: External call to initialize Topics Design Panel');
+    
+    // Initialize all panel functionality
+    try {
+        setupTopicsEditor();
+        
+        // Also set up other panel features
+        const component = document.querySelector('.editable-element[data-component="topics"]');
+        if (component) {
+            setupBasicControls(component);
+            setupDisplayControls(component);
+            setupAdvancedFeatures();
+        }
+        
+        console.log('✅ ROOT FIX: Topics Design Panel initialized successfully from external call');
+        return true;
+    } catch (error) {
+        console.error('❌ ROOT FIX: Error initializing Topics Design Panel:', error);
+        return false;
+    }
+};
+
+// ROOT FIX: Auto-initialize when panel content is loaded
+function initializeWhenReady() {
+    // Check if we're in a design panel context
+    const isInDesignPanel = document.querySelector('.element-editor__title') || 
+                           document.querySelector('#add-topic-btn') ||
+                           document.querySelector('.topics-editor');
+    
+    if (isInDesignPanel) {
+        console.log('🎯 ROOT FIX: Design panel context detected, initializing...');
+        
+        // Small delay to ensure DOM is fully ready
+        setTimeout(() => {
+            const component = document.querySelector('.editable-element[data-component="topics"]');
+            if (component) {
+                initializeTopicsPanel(component);
+                console.log('✅ ROOT FIX: Auto-initialized topics panel');
+            } else {
+                console.warn('⚠️ ROOT FIX: Component not found for auto-initialization, trying alternative setup');
+                setupTopicsEditor(); // Try just the editor setup
+            }
+        }, 100);
+    }
+}
+
+// ROOT FIX: Call auto-initialize
+initializeWhenReady();
+
+// ROOT FIX: Also listen for dynamic content loading
+if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                // Check if topics-related content was added
+                for (let node of mutation.addedNodes) {
+                    if (node.nodeType === 1) { // Element node
+                        if (node.querySelector && (
+                            node.querySelector('#add-topic-btn') ||
+                            node.querySelector('.topics-editor') ||
+                            node.id === 'add-topic-btn'
+                        )) {
+                            console.log('🔄 ROOT FIX: Topics panel content detected via mutation observer');
+                            setTimeout(() => {
+                                setupTopicsEditor();
+                            }, 50);
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    });
+    
+    // Start observing
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+// ROOT FIX: Also listen for dynamic content loading
+if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                // Check if topics-related content was added
+                for (let node of mutation.addedNodes) {
+                    if (node.nodeType === 1) { // Element node
+                        if (node.querySelector && (
+                            node.querySelector('#add-topic-btn') ||
+                            node.querySelector('.topics-editor') ||
+                            node.id === 'add-topic-btn'
+                        )) {
+                            console.log('🔄 ROOT FIX: Topics panel content detected via mutation observer');
+                            setTimeout(() => {
+                                setupTopicsEditor();
+                            }, 50);
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    });
+    
+    // Start observing
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    console.log('✅ ROOT FIX: Mutation observer set up for dynamic content');
+}
+
 // Expose clean API for external components
 window.topicsPanel = {
     initialize: initializeTopicsPanel,
@@ -2119,10 +2309,6 @@ window.topicsPanel = {
     showNotification: showNotification,
     // ROOT FIX: Include the loadStoredTopicsData function that was missing
     loadStoredTopicsData: function(postId) {
-        console.log('📥 ROOT FIX: Loading stored topics data for post:', postId);
-        
-        // Get post ID from parameter or detect automatically
-        const targetPostId = postId || detectPostId();
         
         if (!targetPostId) {
             console.warn('⚠️ No post ID available for loading topics');

@@ -299,19 +299,37 @@ class TopicsComponent {
         this.updateSaveStatus('saving');
         
         try {
+            // DEBUG: Log topics before processing
+            console.log('🔍 DEBUG: Raw topics data before processing:', this.topics);
+            
             // Prepare topics data for custom post fields format
             const topicsData = {};
             
             this.topics.forEach((topic, index) => {
                 const topicKey = `topic_${index + 1}`;
+                console.log(`🔍 DEBUG: Processing topic ${index}:`, {
+                    topicKey,
+                    title: topic.title,
+                    titleType: typeof topic.title,
+                    titleLength: topic.title ? topic.title.length : 0,
+                    hasTrim: topic.title && topic.title.trim(),
+                    trimmedLength: topic.title && topic.title.trim() ? topic.title.trim().length : 0
+                });
+                
                 if (topic.title && topic.title.trim()) {
                     // ROOT FIX: Aggressive cleaning of topic data
                     const cleanTitle = topic.title.replace(/\s+/g, ' ').trim();
                     topicsData[topicKey] = cleanTitle;
-                    console.log(`🧽 Prepared ${topicKey}: "${cleanTitle}"`);
+                    console.log(`🧽 Prepared ${topicKey}: "${cleanTitle}" (length: ${cleanTitle.length})`);
+                } else {
+                    console.log(`⚠️ DEBUG: Skipping empty topic ${index}: "${topic.title}"`);
                 }
                 // Note: Descriptions not saved in this version - focusing on titles only
             });
+            
+            console.log('🔍 DEBUG: Final topics data object:', topicsData);
+            console.log('🔍 DEBUG: Topics data keys:', Object.keys(topicsData));
+            console.log('🔍 DEBUG: Topics data values:', Object.values(topicsData));
             
             const requestData = {
                 action: 'save_custom_topics',
@@ -324,7 +342,51 @@ class TopicsComponent {
             
             console.log('📤 Sending save request:', requestData);
             
+            // ROOT FIX: Enhanced debugging of request data
+            console.log('🔍 DEBUG: Request details:');
+            console.log('  - action:', requestData.action);
+            console.log('  - post_id:', requestData.post_id, '(type:', typeof requestData.post_id, ')');
+            console.log('  - topics data:', requestData.topics);
+            console.log('  - topics JSON:', JSON.stringify(requestData.topics));
+            console.log('  - save_type:', requestData.save_type);
+            console.log('  - nonce:', requestData.nonce ? requestData.nonce.substring(0, 10) + '...' : 'MISSING');
+            
+            // ROOT FIX: Debug what will actually be sent in FormData
+            console.log('🔍 DEBUG: What will be sent in FormData:');
+            const formDataPreview = new FormData();
+            Object.keys(requestData).forEach(key => {
+                if (typeof requestData[key] === 'object') {
+                    const jsonValue = JSON.stringify(requestData[key]);
+                    formDataPreview.append(key, jsonValue);
+                    console.log(`  - ${key}: ${jsonValue}`);
+                } else {
+                    formDataPreview.append(key, requestData[key]);
+                    console.log(`  - ${key}: ${requestData[key]}`);
+                }
+            });
+            
+            // Check individual topic values
+            Object.entries(requestData.topics).forEach(([key, value]) => {
+                console.log(`  - ${key}:`, {
+                    value: value,
+                    type: typeof value,
+                    length: value ? value.length : 0,
+                    chars: value ? Array.from(value).map(c => c.charCodeAt(0)) : []
+                });
+            });
+            
             const response = await this.sendAjaxRequest(requestData);
+            
+            // ROOT FIX: Enhanced response debugging
+            console.log('📡 AJAX Response received:', response);
+            if (!response.success && response.data) {
+                console.log('❌ Response error details:', {
+                    message: response.data.message || response.data,
+                    code: response.data.code,
+                    validation_errors: response.data.validation_errors,
+                    full_data: response.data
+                });
+            }
             
             if (response.success) {
                 this.unsavedChanges = false;
