@@ -63,6 +63,13 @@ class ComponentLoader {
         // ROOT FIX: Enhance props with post data and MKCG integration
         $enhancedProps = $this->enhancePropsWithPostData($props, $componentName);
         
+        // ROOT FIX: Debug enhanced props before template
+        if (defined('WP_DEBUG') && WP_DEBUG && $componentName === 'topics') {
+            error_log("ComponentLoader ROOT FIX: 🚀 About to load topics template with enhanced props:");
+            error_log("ComponentLoader ROOT FIX: 📊 Enhanced props keys: " . implode(', ', array_keys($enhancedProps)));
+            error_log("ComponentLoader ROOT FIX: 🎯 post_id=" . ($enhancedProps['post_id'] ?? 'undefined') . ", topics=" . (isset($enhancedProps['topics']) ? count($enhancedProps['topics']) : 'undefined'));
+        }
+        
         // Extract enhanced props to make them available in the template
         extract($enhancedProps);
 
@@ -321,48 +328,107 @@ class ComponentLoader {
     }
     
     /**
-     * ROOT FIX: Get MKCG data for a specific component
+     * ROOT FIX: Get MKCG data for a specific component with direct meta fallback
      * 
      * @param int $post_id Post ID
      * @param string $componentName Component name
      * @return array|null MKCG data or null if not available
      */
     private function getMkcgDataForComponent($post_id, $componentName) {
-        // Check if MKCG integration class is available
-        if (!class_exists('GMKB_MKCG_Data_Integration')) {
-            return null;
+        // First try MKCG integration class
+        if (class_exists('GMKB_MKCG_Data_Integration')) {
+            try {
+                $mkcg_integration = GMKB_MKCG_Data_Integration::get_instance();
+                $post_data = $mkcg_integration->get_post_data($post_id);
+                
+                if ($post_data) {
+                    // Return relevant data for the component
+                    switch ($componentName) {
+                        case 'topics':
+                            if (isset($post_data['topics']['topics']) && !empty($post_data['topics']['topics'])) {
+                                return $post_data;
+                            }
+                            break;
+                        case 'biography':
+                            return isset($post_data['biography']) ? $post_data : null;
+                        case 'questions':
+                            return isset($post_data['questions']) ? $post_data : null;
+                        case 'authority-hook':
+                            return isset($post_data['authority_hook']) ? $post_data : null;
+                        case 'social':
+                            return isset($post_data['social_media']) ? $post_data : null;
+                        default:
+                            return $post_data;
+                    }
+                }
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ComponentLoader: Error getting MKCG data for {$componentName}: " . $e->getMessage());
+                }
+            }
         }
         
-        try {
-            $mkcg_integration = GMKB_MKCG_Data_Integration::get_instance();
-            $post_data = $mkcg_integration->get_post_data($post_id);
-            
-            if (!$post_data) {
-                return null;
-            }
-            
-            // Return relevant data for the component
-            switch ($componentName) {
-                case 'topics':
-                    return isset($post_data['topics']) ? $post_data : null;
-                case 'biography':
-                    return isset($post_data['biography']) ? $post_data : null;
-                case 'questions':
-                    return isset($post_data['questions']) ? $post_data : null;
-                case 'authority-hook':
-                    return isset($post_data['authority_hook']) ? $post_data : null;
-                case 'social':
-                    return isset($post_data['social_media']) ? $post_data : null;
-                default:
-                    return $post_data;
-            }
-            
-        } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ComponentLoader: Error getting MKCG data for {$componentName}: " . $e->getMessage());
-            }
-            return null;
+        // ROOT FIX: Fallback to direct meta key detection for topics
+        if ($componentName === 'topics') {
+            return $this->getTopicsFromDirectMeta($post_id);
         }
+        
+        return null;
+    }
+    
+    /**
+     * ROOT FIX: Get topics directly from post meta (fallback method)
+     * 
+     * @param int $post_id Post ID
+     * @return array|null Topics data in MKCG format or null
+     */
+    private function getTopicsFromDirectMeta($post_id) {
+        $topics = [];
+        
+        // Try user's format first: topic_1, topic_2, etc.
+        $meta_formats = [
+            'topic_',       // USER'S FORMAT (highest priority)
+            'mkcg_topic_',  // MKCG format
+            'topics_',      // Plural format
+            '_topic_'       // Underscore prefix
+        ];
+        
+        foreach ($meta_formats as $format) {
+            $found_topics = [];
+            
+            for ($i = 1; $i <= 5; $i++) {
+                $meta_key = $format . $i;
+                $topic_value = get_post_meta($post_id, $meta_key, true);
+                
+                if (!empty($topic_value)) {
+                    $found_topics["topic_{$i}"] = sanitize_text_field($topic_value);
+                }
+            }
+            
+            if (!empty($found_topics)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ComponentLoader ROOT FIX: ✅ Found " . count($found_topics) . " topics using direct meta format '{$format}'");
+                }
+                
+                // Return in MKCG-compatible format
+                return [
+                    'topics' => [
+                        'topics' => $found_topics,
+                        'meta' => [
+                            'source' => 'direct_meta_' . rtrim($format, '_'),
+                            'format_used' => $format,
+                            'count' => count($found_topics)
+                        ]
+                    ]
+                ];
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("ComponentLoader ROOT FIX: ❌ No topics found in any meta format for post {$post_id}");
+        }
+        
+        return null;
     }
     
     /**

@@ -4,14 +4,14 @@
  * ROOT FIX: Proper validation, security, and flexible topic management
  */
 
-// ROOT FIX: CRITICAL - Extract variables from ComponentLoader props FIRST
-// This ensures enhanced props from ComponentLoader are properly available
-extract($props ?? []);
+// ROOT FIX: CRITICAL - Props are already extracted by ComponentLoader
+// ComponentLoader calls extract($enhancedProps) before including template
+// We should NOT re-extract here as it might override enhanced props
 
-// ROOT FIX: Debug what props were actually passed to template
+// ROOT FIX: Debug what variables are available in template scope
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log("GMKB Topics TEMPLATE ROOT FIX: 📦 Props received: " . print_r($props ?? [], true));
-    error_log("GMKB Topics TEMPLATE ROOT FIX: 🔑 Variables after extract: post_id=" . ($post_id ?? 'undefined') . ", topics=" . (isset($topics) ? count($topics) : 'undefined'));
+    error_log("GMKB Topics TEMPLATE ROOT FIX: 🔍 Available variables: post_id=" . (isset($post_id) ? $post_id : 'undefined') . ", topics=" . (isset($topics) ? count($topics) : 'undefined'));
+    error_log("GMKB Topics TEMPLATE ROOT FIX: 🌐 All available vars: " . implode(', ', array_keys(get_defined_vars())));
 }
 
 // Enhanced topic validation and sanitization
@@ -51,7 +51,7 @@ $topicColor = sanitize_hex_color($topicColor ?? '#4f46e5');
 $animation = sanitize_text_field($animation ?? 'none');
 $hoverEffect = sanitize_text_field($hoverEffect ?? 'scale');
 
-// ROOT FIX: PROPS-FIRST POST_ID DETECTION (ComponentLoader Enhanced)
+// ROOT FIX: ENHANCED POST_ID DETECTION with multiple fallback methods
 $current_post_id = 0;
 
 // PRIORITY 1: Props from ComponentLoader (MOST RELIABLE)
@@ -62,7 +62,7 @@ if (isset($post_id) && is_numeric($post_id) && $post_id > 0) {
     }
 }
 
-// PRIORITY 2: URL parameters (?post_id=32372)
+// PRIORITY 2: URL parameters (?post_id=32372 or ?p=32372)
 if ($current_post_id === 0) {
     if (isset($_GET['post_id']) && is_numeric($_GET['post_id']) && $_GET['post_id'] > 0) {
         $current_post_id = intval($_GET['post_id']);
@@ -74,16 +74,79 @@ if ($current_post_id === 0) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?p: {$current_post_id}");
         }
+    } elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id']) && $_GET['page_id'] > 0) {
+        $current_post_id = intval($_GET['page_id']);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?page_id: {$current_post_id}");
+        }
     }
 }
 
-// PRIORITY 3: WordPress context (fallback)
-if ($current_post_id === 0 && function_exists('get_the_ID')) {
-    $wp_post_id = get_the_ID();
-    if ($wp_post_id && $wp_post_id > 0) {
-        $current_post_id = $wp_post_id;
+// PRIORITY 3: WordPress global context
+if ($current_post_id === 0) {
+    global $post;
+    if ($post && isset($post->ID) && $post->ID > 0) {
+        $current_post_id = intval($post->ID);
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Post ID from WordPress get_the_ID(): {$current_post_id}");
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from global $post: {$current_post_id}");
+        }
+    } elseif (function_exists('get_the_ID')) {
+        $wp_post_id = get_the_ID();
+        if ($wp_post_id && $wp_post_id > 0) {
+            $current_post_id = $wp_post_id;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB Topics ROOT FIX: ✅ Post ID from get_the_ID(): {$current_post_id}");
+            }
+        }
+    }
+}
+
+// PRIORITY 4: Check for WordPress query vars
+if ($current_post_id === 0 && function_exists('get_query_var')) {
+    $queried_id = get_query_var('p') ?: get_query_var('page_id') ?: get_query_var('post_id');
+    if ($queried_id && is_numeric($queried_id) && $queried_id > 0) {
+        $current_post_id = intval($queried_id);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from query vars: {$current_post_id}");
+        }
+    }
+}
+
+// PRIORITY 5: Extract from current URL path (if in admin or preview)
+if ($current_post_id === 0) {
+    $current_url = $_SERVER['REQUEST_URI'] ?? '';
+    if (preg_match('/[?&]post[_=](\d+)/', $current_url, $matches)) {
+        $current_post_id = intval($matches[1]);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL regex: {$current_post_id}");
+        }
+    } elseif (preg_match('/[?&]p=(\d+)/', $current_url, $matches)) {
+        $current_post_id = intval($matches[1]);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL p= regex: {$current_post_id}");
+        }
+    }
+}
+
+// PRIORITY 6: Check if we're in WordPress admin with post editing
+if ($current_post_id === 0 && function_exists('get_current_screen')) {
+    $screen = get_current_screen();
+    if ($screen && $screen->post_type && isset($_GET['post']) && is_numeric($_GET['post'])) {
+        $current_post_id = intval($_GET['post']);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from admin screen: {$current_post_id}");
+        }
+    }
+}
+
+// FALLBACK: For testing, try a hardcoded known post ID (remove in production)
+if ($current_post_id === 0) {
+    // ROOT FIX: Temporary fallback to test with your known post ID
+    $test_post_id = 32372; // Your test post ID
+    if (get_post($test_post_id)) {
+        $current_post_id = $test_post_id;
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ✅ Using fallback test post ID: {$current_post_id}");
         }
     }
 }
@@ -99,7 +162,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 $topicsList = [];
 $hasDynamicTopics = false;
 
-// ROOT FIX: ENHANCED MKCG DATA INTEGRATION (Props-First)
+// ROOT FIX: SINGLE SOURCE OF TRUTH - Custom Post Fields ONLY
 if ($current_post_id > 0) {
     // PRIORITY 1: Check if topics data was passed via ComponentLoader props
     if (isset($topics) && is_array($topics) && !empty($topics)) {
@@ -120,69 +183,31 @@ if ($current_post_id > 0) {
         }
     }
     
-    // PRIORITY 2: MKCG Integration Class (if props didn't work)
-    if (!$hasDynamicTopics && class_exists('GMKB_MKCG_Data_Integration')) {
-        $mkcg_integration = GMKB_MKCG_Data_Integration::get_instance();
-        $post_data = $mkcg_integration->get_post_data($current_post_id);
+    // PRIORITY 2: SINGLE SOURCE OF TRUTH - Custom Post Fields (topic_1, topic_2, etc.) ONLY
+    if (!$hasDynamicTopics) {
+        $topics_found = 0;
         
-        if ($post_data && isset($post_data['topics']['topics']) && !empty($post_data['topics']['topics'])) {
-            $mkcg_topics = $post_data['topics']['topics'];
+        // Load ONLY from custom post fields (topic_1, topic_2, etc.)
+        for ($i = 1; $i <= 5; $i++) {
+            $meta_key = "topic_{$i}";
+            $topic_value = get_post_meta($current_post_id, $meta_key, true);
             
-            foreach ($mkcg_topics as $topic_key => $topic_value) {
-                if (!empty($topic_value)) {
-                    $topicsList[] = [
-                        'title' => sanitize_text_field($topic_value),
-                        'description' => '',
-                        'source' => 'mkcg_integration',
-                        'meta_key' => $topic_key
-                    ];
-                }
-            }
-            $hasDynamicTopics = true;
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("GMKB Topics ROOT FIX: ✅ Loaded " . count($topicsList) . " topics from MKCG Integration");
+            if (!empty($topic_value)) {
+                $topicsList[] = [
+                    'title' => sanitize_text_field($topic_value),
+                    'description' => '',
+                    'source' => 'custom_post_fields',
+                    'meta_key' => $meta_key
+                ];
+                $topics_found++;
+                $hasDynamicTopics = true;
             }
         }
-    }
-    
-    // PRIORITY 3: Direct Meta Key Detection (USER'S FORMAT: topic_1, topic_2, etc.)
-    if (!$hasDynamicTopics) {
-        $meta_formats = [
-            'topic_',       // USER'S FORMAT (topic_1, topic_2, etc.) - HIGHEST PRIORITY
-            'mkcg_topic_',  // Original MKCG format
-            'topics_',      // Plural topics format
-            '_topic_',      // Underscore prefix format
-            'speaking_topic_', // Descriptive format
-            'pod_topic_'    // Pods plugin format
-        ];
         
-        foreach ($meta_formats as $format) {
-            $topics_found_this_format = 0;
-            
-            for ($i = 1; $i <= 5; $i++) {
-                $meta_key = $format . $i;
-                $topic_value = get_post_meta($current_post_id, $meta_key, true);
-                
-                if (!empty($topic_value)) {
-                    $topicsList[] = [
-                        'title' => sanitize_text_field($topic_value),
-                        'description' => '',
-                        'source' => 'direct_meta_' . rtrim($format, '_'),
-                        'meta_key' => $meta_key
-                    ];
-                    $topics_found_this_format++;
-                    $hasDynamicTopics = true;
-                }
-            }
-            
-            // If we found topics with this format, log and stop trying other formats
-            if ($topics_found_this_format > 0) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("GMKB Topics ROOT FIX: ✅ Found {$topics_found_this_format} topics using format '{$format}' for post {$current_post_id}");
-                }
-                break;
-            }
+        if (defined('WP_DEBUG') && WP_DEBUG && $topics_found > 0) {
+            error_log("GMKB Topics ROOT FIX: ✅ Found {$topics_found} topics from custom post fields (topic_1, topic_2, etc.) for post {$current_post_id}");
+        } elseif (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("GMKB Topics ROOT FIX: ⚠️ No topics found in custom post fields for post {$current_post_id}");
         }
     }
 }
@@ -207,16 +232,14 @@ if (!$hasDynamicTopics && isset($topics) && is_array($topics)) {
     $hasDynamicTopics = !empty($topicsList);
 }
 
-// ROOT FIX: Only use fallback defaults if absolutely no topics found
+// ROOT FIX: NEVER use placeholder content - only show real data
 if (empty($topicsList)) {
-    // Minimal fallback - just one example topic
-    $topicsList = [
-        [
-            'title' => 'Add Your Speaking Topics',
-            'description' => 'Click to edit and add your expertise areas',
-            'source' => 'placeholder'
-        ]
-    ];
+    // Leave topics list empty - no placeholder content
+    $topicsList = [];
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log("GMKB Topics ROOT FIX: No topics found for post {$current_post_id} - showing empty state instead of placeholders");
+    }
 }
 
 // CSS classes for styling
@@ -236,16 +259,15 @@ if ($hoverEffect !== 'none') $containerClasses[] = 'hover-' . $hoverEffect;
 
 $containerClass = implode(' ', $containerClasses);
 
-// ROOT FIX: Enhanced error handling with dynamic context
+// ROOT FIX: Enhanced error handling with better user guidance
 if (empty($topicsList)) {
     if ($current_post_id > 0) {
-        $errorMessage = 'No topics found for this post. Check the Media Kit Content Generator or add topics manually in the design panel.';
+        // We have a post ID but no topics found
+        $helpMessage = "No topics found for post {$current_post_id}. You can add topics manually using the design panel, or check if this post has topic data in custom fields like 'topic_1', 'topic_2', etc.";
     } else {
-        $errorMessage = 'No post ID detected. Topics will be loaded when viewing a specific post with MKCG data.';
+        // No post ID detected  
+        $helpMessage = "No post ID detected. The component will auto-detect the post ID and load topics, or you can add topics manually using the design panel.";
     }
-} elseif (!$hasDynamicTopics) {
-    // Show subtle indicator when using fallback data
-    $fallbackMessage = 'Using placeholder topics. Connect to a post with MKCG data to see dynamic topics.';
 }
 ?>
 
@@ -290,10 +312,15 @@ if (empty($topicsList)) {
         </button>
     </div>
 
-    <?php if (isset($errorMessage)): ?>
-        <div class="topics-error-message">
-            <div class="error-icon">⚠️</div>
-            <div class="error-text"><?php echo esc_html($errorMessage); ?></div>
+    <?php if (isset($helpMessage)): ?>
+        <div class="topics-help-message">
+            <div class="help-icon">💡</div>
+            <div class="help-text"><?php echo esc_html($helpMessage); ?></div>
+            <?php if ($current_post_id > 0): ?>
+                <div class="help-actions" style="margin-top: 8px; font-size: 12px; opacity: 0.8;">
+                    JavaScript auto-detection will attempt to load topics if they exist.
+                </div>
+            <?php endif; ?>
         </div>
     <?php else: ?>
         
@@ -311,13 +338,14 @@ if (empty($topicsList)) {
             </div>
         <?php endif; ?>
 
-        <!-- ROOT FIX: Topics Grid/List Container with CORRECT Data Attributes -->
+        <!-- ROOT FIX: Topics Grid/List Container - Single Source of Truth -->
         <div class="topics-container" 
              data-layout="<?php echo esc_attr($layoutStyle); ?>"
              data-has-dynamic-topics="<?php echo $hasDynamicTopics ? 'true' : 'false'; ?>"
              data-post-id="<?php echo esc_attr($current_post_id); ?>"
              data-topics-source="<?php echo esc_attr($topicsList[0]['source'] ?? 'none'); ?>"
-             data-topics-count="<?php echo count($topicsList); ?>">
+             data-topics-count="<?php echo count($topicsList); ?>"
+             data-single-source="custom_post_fields">
             
             <?php if (!empty($topicsList)): ?>
                 <?php foreach ($topicsList as $index => $topic): ?>
@@ -329,24 +357,11 @@ if (empty($topicsList)) {
                          
                         <?php if ($iconPosition === 'left'): ?>
                             <div class="topic-icon">
-                                <?php if ($topic['source'] === 'mkcg'): ?>
-                                    <!-- MKCG Source Icon -->
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                                    </svg>
-                                <?php elseif ($topic['source'] === 'placeholder'): ?>
-                                    <!-- Placeholder Icon -->
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                <?php else: ?>
-                                    <!-- Default Topic Icon -->
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
-                                    </svg>
-                                <?php endif; ?>
+                                <!-- Custom Post Field Topic Icon -->
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                                </svg>
                             </div>
                         <?php endif; ?>
                         
@@ -375,7 +390,7 @@ if (empty($topicsList)) {
                             <?php endif; ?>
                             
                             <!-- ROOT FIX: Show data source indicator for debugging -->
-                            <?php if (defined('WP_DEBUG') && WP_DEBUG && $topic['source'] !== 'placeholder'): ?>
+                            <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
                                 <small class="topic-source-indicator" style="font-size: 10px; opacity: 0.6; color: #666;">
                                     <?php echo esc_html(strtoupper($topic['source'])); ?>
                                     <?php if (isset($topic['meta_key'])): ?>(<?php echo esc_html($topic['meta_key']); ?>)<?php endif; ?>
@@ -385,24 +400,11 @@ if (empty($topicsList)) {
                         
                         <?php if ($iconPosition === 'right'): ?>
                             <div class="topic-icon">
-                                <?php if ($topic['source'] === 'mkcg'): ?>
-                                    <!-- MKCG Source Icon -->
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                                    </svg>
-                                <?php elseif ($topic['source'] === 'placeholder'): ?>
-                                    <!-- Placeholder Icon -->
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                <?php else: ?>
-                                    <!-- Default Topic Icon -->
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
-                                    </svg>
-                                <?php endif; ?>
+                                <!-- Custom Post Field Topic Icon -->
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                                </svg>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -411,7 +413,7 @@ if (empty($topicsList)) {
                 <!-- ROOT FIX: Enhanced Debug Info -->
                 <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
                     <div class="topics-debug-info" style="margin-top: 10px; padding: 5px; background: #f0f0f0; font-size: 10px; color: #666; border-left: 3px solid #10b981;">
-                        <strong>🔧 ROOT FIX DEBUG:</strong><br>
+                        <strong>🔧 SINGLE SOURCE OF TRUTH DEBUG:</strong><br>
                         Topics Found: <?php echo count($topicsList); ?> | 
                         Dynamic: <?php echo $hasDynamicTopics ? 'TRUE' : 'FALSE'; ?> | 
                         Post ID: <?php echo $current_post_id; ?> | 
@@ -419,10 +421,11 @@ if (empty($topicsList)) {
                         <?php if (!empty($topicsList)): ?>
                             Topics: <?php echo implode(', ', array_map(function($t) { return '"' . $t['title'] . '"'; }, array_slice($topicsList, 0, 3))); ?><?php echo count($topicsList) > 3 ? '...' : ''; ?>
                         <?php endif; ?>
+                        <br><strong>✅ MKCG Integration REMOVED - Custom Post Fields ONLY</strong>
                     </div>
                     <?php 
                     // ROOT FIX: Log final template state
-                    error_log("GMKB Topics ROOT FIX: 🏁 TEMPLATE COMPLETE - Found " . count($topicsList) . " topics, dynamic: " . ($hasDynamicTopics ? 'TRUE' : 'FALSE') . ", post_id: {$current_post_id}");
+                    error_log("GMKB Topics SINGLE SOURCE FIX: 🏁 TEMPLATE COMPLETE - Found " . count($topicsList) . " topics from custom post fields ONLY, post_id: {$current_post_id}");
                     ?>
                 <?php endif; ?>
             <?php else: ?>

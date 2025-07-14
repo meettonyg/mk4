@@ -1045,15 +1045,41 @@ class GMKB_Topics_Ajax_Handler {
             // Load stored topics data
             $stored_topics_data = $this->load_stored_topics_data($post_id);
             
+            // ROOT FIX: Convert complex topic objects to JavaScript-compatible format
+            $javascript_topics = array();
+            $enhanced_metadata = $stored_topics_data['metadata'];
+            
+            foreach ($stored_topics_data['topics'] as $topic_key => $topic_data) {
+                if (is_array($topic_data) && isset($topic_data['value'])) {
+                    // Extract just the topic value for JavaScript compatibility
+                    $javascript_topics[$topic_key] = $topic_data['value'];
+                    
+                    // Store enhanced metadata separately for advanced features
+                    $enhanced_metadata[$topic_key] = array(
+                        'quality' => $topic_data['quality'] ?? 0,
+                        'quality_level' => $topic_data['quality_level'] ?? 'unknown',
+                        'word_count' => $topic_data['word_count'] ?? 0,
+                        'data_source' => $topic_data['data_source'] ?? 'unknown',
+                        'meta_key' => $topic_data['meta_key'] ?? '',
+                        'index' => $topic_data['index'] ?? 0
+                    );
+                } else {
+                    // Fallback for simple string values or malformed data
+                    $javascript_topics[$topic_key] = is_string($topic_data) ? $topic_data : '';
+                }
+            }
+            
             wp_send_json_success(array(
                 'message' => 'Stored topics loaded successfully',
                 'post_id' => $post_id,
-                'topics' => $stored_topics_data['topics'],
-                'metadata' => $stored_topics_data['metadata'],
+                'topics' => $javascript_topics, // ROOT FIX: Simple string values for JavaScript
+                'metadata' => $enhanced_metadata, // Enhanced metadata preserved
                 'quality_summary' => $stored_topics_data['quality_summary'],
-                'total_topics' => $stored_topics_data['total_topics'],
+                'total_topics' => count(array_filter($javascript_topics)), // Accurate count
                 'timestamp' => time(),
-                'server_time' => current_time('mysql')
+                'server_time' => current_time('mysql'),
+                'data_format' => 'javascript_compatible', // ROOT FIX: Format indicator
+                'enhanced_features_available' => true // Feature flag for advanced panels
             ));
             
         } catch (Exception $e) {
