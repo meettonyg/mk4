@@ -84,23 +84,37 @@ class GMKB_Topics_Ajax_Handler {
     
     /**
      * AJAX handler: Save MKCG topics (logged-in users)
+     * ROOT FIX: Enhanced WordPress context validation and error handling
      */
     public function ajax_save_mkcg_topics() {
         try {
-            // Verify nonce for security
-            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
+            // ROOT FIX: Ensure WordPress is fully loaded for AJAX context
+            if (!$this->ensure_wordpress_context()) {
                 wp_send_json_error(array(
-                    'message' => 'Security verification failed',
-                    'code' => 'INVALID_NONCE'
+                    'message' => 'WordPress context not available',
+                    'code' => 'WORDPRESS_CONTEXT_ERROR',
+                    'debug' => 'WordPress core functions not properly loaded for AJAX request'
                 ));
                 return;
             }
             
-            // Check user capabilities
-            if (!current_user_can('edit_posts')) {
+            // Verify nonce for security
+            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
                 wp_send_json_error(array(
-                    'message' => 'Insufficient permissions to save topics',
-                    'code' => 'INSUFFICIENT_PERMISSIONS'
+                    'message' => 'Security verification failed',
+                    'code' => 'INVALID_NONCE',
+                    'debug' => 'Nonce verification failed: ' . ($_POST['nonce'] ?? 'missing')
+                ));
+                return;
+            }
+            
+            // ROOT FIX: Enhanced user capability checking with better error details
+            $user_check = $this->validate_user_permissions();
+            if (!$user_check['valid']) {
+                wp_send_json_error(array(
+                    'message' => $user_check['message'],
+                    'code' => $user_check['code'],
+                    'debug' => $user_check['debug'] ?? ''
                 ));
                 return;
             }
@@ -109,11 +123,28 @@ class GMKB_Topics_Ajax_Handler {
             
         } catch (Exception $e) {
             $this->log_error('AJAX save error: ' . $e->getMessage(), 'ajax-save', $e);
-            wp_send_json_error(array(
-                'message' => 'Internal server error',
+            
+            // ROOT FIX: Enhanced error reporting for debugging
+            $error_details = array(
+                'message' => 'Internal server error during topic save',
                 'code' => 'SERVER_ERROR',
-                'debug' => defined('WP_DEBUG') && WP_DEBUG ? $e->getMessage() : ''
-            ));
+                'timestamp' => current_time('mysql'),
+                'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 'unknown'
+            );
+            
+            // Add debug information if WP_DEBUG is enabled
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                $error_details['debug'] = array(
+                    'exception_message' => $e->getMessage(),
+                    'exception_file' => $e->getFile(),
+                    'exception_line' => $e->getLine(),
+                    'php_version' => PHP_VERSION,
+                    'wordpress_functions_available' => $this->check_wordpress_functions_availability(),
+                    'request_data_keys' => array_keys($_POST)
+                );
+            }
+            
+            wp_send_json_error($error_details);
         }
     }
     
@@ -325,9 +356,19 @@ class GMKB_Topics_Ajax_Handler {
      */
     private function save_topics_to_post_meta($post_id, $topics, $save_type = 'manual') {
         try {
+            // ROOT FIX: Ensure WordPress functions are available before proceeding
+            if (!function_exists('current_time') || !function_exists('get_current_user_id') || !function_exists('update_post_meta')) {
+                throw new Exception('Required WordPress functions not available for post meta operations');
+            }
+            
             $save_timestamp = current_time('mysql');
             $user_id = get_current_user_id();
             $topics_saved = 0;
+            
+            // ROOT FIX: Validate post ID before attempting save
+            if (!$post_id || !is_numeric($post_id) || $post_id <= 0) {
+                throw new Exception('Invalid post ID provided for save operation');
+            }
             
             // Save each topic to individual meta fields
             for ($i = 1; $i <= 5; $i++) {
@@ -529,9 +570,19 @@ class GMKB_Topics_Ajax_Handler {
     
     /**
      * AJAX handler: Validate topics without saving
+     * ROOT FIX: Enhanced with WordPress context validation
      */
     public function ajax_validate_mkcg_topics() {
         try {
+            // ROOT FIX: Ensure WordPress context is available
+            if (!$this->ensure_wordpress_context()) {
+                wp_send_json_error(array(
+                    'message' => 'WordPress context not available for validation',
+                    'code' => 'WORDPRESS_CONTEXT_ERROR'
+                ));
+                return;
+            }
+            
             // Verify nonce for security
             if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
                 wp_send_json_error(array(
@@ -705,9 +756,19 @@ class GMKB_Topics_Ajax_Handler {
     
     /**
      * PHASE 4: AJAX handler for topic reordering (logged-in users)
+     * ROOT FIX: Enhanced with WordPress context validation
      */
     public function ajax_reorder_mkcg_topics() {
         try {
+            // ROOT FIX: Ensure WordPress context is available
+            if (!$this->ensure_wordpress_context()) {
+                wp_send_json_error(array(
+                    'message' => 'WordPress context not available for reordering',
+                    'code' => 'WORDPRESS_CONTEXT_ERROR'
+                ));
+                return;
+            }
+            
             // Verify nonce for security
             if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
                 wp_send_json_error(array(
@@ -717,11 +778,13 @@ class GMKB_Topics_Ajax_Handler {
                 return;
             }
             
-            // Check user capabilities
-            if (!current_user_can('edit_posts')) {
+            // ROOT FIX: Enhanced user permission validation
+            $user_check = $this->validate_user_permissions();
+            if (!$user_check['valid']) {
                 wp_send_json_error(array(
-                    'message' => 'Insufficient permissions to reorder topics',
-                    'code' => 'INSUFFICIENT_PERMISSIONS'
+                    'message' => $user_check['message'],
+                    'code' => $user_check['code'],
+                    'debug' => $user_check['debug'] ?? ''
                 ));
                 return;
             }
@@ -923,23 +986,37 @@ class GMKB_Topics_Ajax_Handler {
     /**
      * ROOT FIX: AJAX handler for loading stored topics data
      * Retrieves stored topics from WordPress post meta for panel enhancement
+     * Enhanced with proper WordPress context validation
      */
     public function ajax_load_stored_topics() {
         try {
-            // Verify nonce for security
-            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
+            // ROOT FIX: Ensure WordPress context is available
+            if (!$this->ensure_wordpress_context()) {
                 wp_send_json_error(array(
-                    'message' => 'Security verification failed',
-                    'code' => 'INVALID_NONCE'
+                    'message' => 'WordPress context not available for loading topics',
+                    'code' => 'WORDPRESS_CONTEXT_ERROR',
+                    'debug' => 'Required WordPress functions not loaded'
                 ));
                 return;
             }
             
-            // Check user capabilities
-            if (!current_user_can('edit_posts')) {
+            // Verify nonce for security
+            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
                 wp_send_json_error(array(
-                    'message' => 'Insufficient permissions to load topics',
-                    'code' => 'INSUFFICIENT_PERMISSIONS'
+                    'message' => 'Security verification failed',
+                    'code' => 'INVALID_NONCE',
+                    'debug' => 'Nonce verification failed for load topics request'
+                ));
+                return;
+            }
+            
+            // ROOT FIX: Enhanced user permission validation
+            $user_check = $this->validate_user_permissions();
+            if (!$user_check['valid']) {
+                wp_send_json_error(array(
+                    'message' => $user_check['message'],
+                    'code' => $user_check['code'],
+                    'debug' => $user_check['debug'] ?? ''
                 ));
                 return;
             }
@@ -1296,6 +1373,137 @@ class GMKB_Topics_Ajax_Handler {
     }
     
     /**
+     * ROOT FIX: Ensure WordPress context is properly loaded for AJAX requests
+     * 
+     * @return bool True if WordPress context is available, false otherwise
+     */
+    private function ensure_wordpress_context() {
+        // Check if essential WordPress functions are available
+        $required_functions = [
+            'wp_verify_nonce',
+            'current_user_can', 
+            'get_current_user_id',
+            'get_post',
+            'update_post_meta',
+            'get_post_meta',
+            'current_time',
+            'wp_send_json_success',
+            'wp_send_json_error'
+        ];
+        
+        foreach ($required_functions as $function) {
+            if (!function_exists($function)) {
+                $this->log_error("Required WordPress function '{$function}' not available in AJAX context", 'wordpress-context');
+                return false;
+            }
+        }
+        
+        // Check if WordPress constants are defined
+        $required_constants = ['ABSPATH', 'WP_DEBUG'];
+        foreach ($required_constants as $constant) {
+            if (!defined($constant)) {
+                $this->log_error("Required WordPress constant '{$constant}' not defined", 'wordpress-context');
+                return false;
+            }
+        }
+        
+        // Verify that we have a valid WordPress database connection
+        global $wpdb;
+        if (!$wpdb || !is_object($wpdb)) {
+            $this->log_error('WordPress database object not available', 'wordpress-context');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * ROOT FIX: Enhanced user permission validation with detailed error reporting
+     * 
+     * @return array Validation result with detailed information
+     */
+    private function validate_user_permissions() {
+        // Check if user functions are available
+        if (!function_exists('current_user_can') || !function_exists('get_current_user_id')) {
+            return array(
+                'valid' => false,
+                'message' => 'User authentication functions not available',
+                'code' => 'AUTH_FUNCTIONS_MISSING',
+                'debug' => 'current_user_can or get_current_user_id functions not loaded'
+            );
+        }
+        
+        // Get current user ID with error handling
+        $user_id = get_current_user_id();
+        if (!$user_id || $user_id === 0) {
+            return array(
+                'valid' => false,
+                'message' => 'User not authenticated for AJAX request',
+                'code' => 'USER_NOT_AUTHENTICATED',
+                'debug' => "User ID: {$user_id}, Session active: " . (is_user_logged_in() ? 'yes' : 'no')
+            );
+        }
+        
+        // Check required capabilities
+        if (!current_user_can('edit_posts')) {
+            $user_info = get_userdata($user_id);
+            $user_roles = $user_info ? implode(', ', $user_info->roles) : 'unknown';
+            
+            return array(
+                'valid' => false,
+                'message' => 'Insufficient permissions to save topics',
+                'code' => 'INSUFFICIENT_PERMISSIONS',
+                'debug' => "User ID: {$user_id}, Roles: {$user_roles}, Required: edit_posts capability"
+            );
+        }
+        
+        // Additional capability checks for media kit editing
+        $additional_caps = ['upload_files', 'edit_published_posts'];
+        $missing_caps = [];
+        
+        foreach ($additional_caps as $cap) {
+            if (!current_user_can($cap)) {
+                $missing_caps[] = $cap;
+            }
+        }
+        
+        if (!empty($missing_caps)) {
+            $this->log_error("User missing recommended capabilities: " . implode(', ', $missing_caps), 'user-permissions');
+            // Don't fail for recommended caps, just log
+        }
+        
+        return array(
+            'valid' => true,
+            'user_id' => $user_id,
+            'message' => 'User permissions validated successfully',
+            'missing_recommended_caps' => $missing_caps
+        );
+    }
+    
+    /**
+     * ROOT FIX: Check availability of critical WordPress functions for debugging
+     * 
+     * @return array Function availability status
+     */
+    private function check_wordpress_functions_availability() {
+        $functions = [
+            'wp_verify_nonce' => function_exists('wp_verify_nonce'),
+            'current_user_can' => function_exists('current_user_can'),
+            'get_current_user_id' => function_exists('get_current_user_id'),
+            'get_post' => function_exists('get_post'),
+            'update_post_meta' => function_exists('update_post_meta'),
+            'get_post_meta' => function_exists('get_post_meta'),
+            'current_time' => function_exists('current_time'),
+            'wp_send_json_success' => function_exists('wp_send_json_success'),
+            'wp_send_json_error' => function_exists('wp_send_json_error'),
+            'is_user_logged_in' => function_exists('is_user_logged_in'),
+            'get_userdata' => function_exists('get_userdata')
+        ];
+        
+        return $functions;
+    }
+    
+    /**
      * Get handler status for debugging
      * 
      * @return array Status information
@@ -1306,6 +1514,8 @@ class GMKB_Topics_Ajax_Handler {
             'save_cache_size' => count($this->save_cache),
             'errors_logged' => count($this->errors),
             'version' => '1.0.0-root-fix-enhanced',
+            'wordpress_context' => $this->ensure_wordpress_context(),
+            'user_permissions' => $this->validate_user_permissions(),
             'capabilities' => array(
                 'batch_save' => true,
                 'validation' => true,
@@ -1318,7 +1528,8 @@ class GMKB_Topics_Ajax_Handler {
                 'enhanced_panel_support' => true,
                 'quality_recommendations' => true,
                 'data_source_tracking' => true,
-                'user_experience_optimization' => true
+                'user_experience_optimization' => true,
+                'wordpress_context_validation' => true
             )
         );
     }

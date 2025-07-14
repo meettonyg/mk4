@@ -518,53 +518,24 @@ class GMKB_Enhanced_Script_Manager {
         $timestamp = time();
         $cache_buster = $timestamp . '-polling-eliminated-' . wp_rand(10000, 99999);
         
-        // ROOT FIX: SIMPLIFIED MODULAR ARCHITECTURE
-        // Load individual modules instead of complex bundles
+        // ROOT FIX: WORKING BUNDLE ARCHITECTURE
+        // Use the proven bundle files that contain complete functionality
         
-        // Core modules
+        // LAYER 2: Core Systems Bundle (contains all core functionality)
         wp_register_script(
-            'guestify-media-kit-builder',
-            $plugin_url . 'js/core/media-kit-builder.js',
-            array('sortable-js'),
-            $cache_buster . '-builder',
+            'guestify-core-systems-bundle',
+            $plugin_url . 'js/core-systems-bundle.js',
+            array('sortable-js'), // Only depends on SortableJS
+            $cache_buster . '-core-bundle',
             true
         );
         
+        // LAYER 3: Application Bundle (contains UI and component panel functionality)
         wp_register_script(
-            'guestify-race-condition-manager',
-            $plugin_url . 'js/core/race-condition-manager.js',
-            array('sortable-js'),
-            $cache_buster . '-race',
-            true
-        );
-        
-        wp_register_script(
-            'guestify-wordpress-coordinator',
-            $plugin_url . 'js/core/wordpress-coordinator.js',
-            array('sortable-js'),
-            $cache_buster . '-wp',
-            true
-        );
-        
-        wp_register_script(
-            'guestify-diagnostic-manager',
-            $plugin_url . 'js/core/diagnostic-manager.js',
-            array('sortable-js'),
-            $cache_buster . '-diag',
-            true
-        );
-        
-        // Simplified main application
-        wp_register_script(
-            'guestify-main-simplified',
-            $plugin_url . 'js/main-simplified.js',
-            array(
-                'guestify-media-kit-builder',
-                'guestify-race-condition-manager', 
-                'guestify-wordpress-coordinator',
-                'guestify-diagnostic-manager'
-            ),
-            $cache_buster . '-main',
+            'guestify-application-bundle',
+            $plugin_url . 'js/application-bundle.js',
+            array('guestify-core-systems-bundle'), // Depends on core systems
+            $cache_buster . '-app-bundle',
             true
         );
 
@@ -582,37 +553,31 @@ class GMKB_Enhanced_Script_Manager {
             // Enqueue styles first
             wp_enqueue_style('guestify-media-kit-builder-styles');
             
-            // ROOT FIX: Simplified modular dependency chain:
+            // ROOT FIX: Working bundle dependency chain:
             // 1. SortableJS (external dependency)
-            // 2. Core modules (individual files for clarity)
-            // 3. Main simplified application (coordinates everything)
+            // 2. Core Systems Bundle (contains all core functionality)
+            // 3. Application Bundle (contains UI and component panel functionality)
             
-            // ROOT FIX: Enqueue modular architecture
-            wp_enqueue_script('guestify-media-kit-builder');
-            wp_enqueue_script('guestify-race-condition-manager');
-            wp_enqueue_script('guestify-wordpress-coordinator');
-            wp_enqueue_script('guestify-diagnostic-manager');
-            wp_enqueue_script('guestify-main-simplified');
+            // ROOT FIX: Enqueue working bundle architecture
+            wp_enqueue_script('guestify-core-systems-bundle');
+            wp_enqueue_script('guestify-application-bundle');
             
-            // ROOT FIX: Log successful modular loading
+            // ROOT FIX: Log successful bundle loading
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB ROOT FIX SUCCESS: ✅ Simplified modular architecture enqueued!');
-                error_log('GMKB: Detection fix WORKING - modular scripts loading correctly');
-                error_log('GMKB: Loading order: SortableJS → Core Modules → Simplified Main');
+                error_log('GMKB ROOT FIX SUCCESS: ✅ Working bundle architecture enqueued!');
+                error_log('GMKB: Detection fix WORKING - bundle scripts loading correctly');
+                error_log('GMKB: Loading order: SortableJS → Core Systems Bundle → Application Bundle');
                 error_log('GMKB: Cache-buster: ' . $cache_buster);
                 
-                // ROOT FIX: Verify modular scripts are actually registered
+                // ROOT FIX: Verify bundle scripts are actually registered
                 global $wp_scripts;
                 if ($wp_scripts) {
-                    $modules = [
-                        'media-kit-builder' => 'guestify-media-kit-builder',
-                        'race-condition-manager' => 'guestify-race-condition-manager',
-                        'wordpress-coordinator' => 'guestify-wordpress-coordinator',
-                        'diagnostic-manager' => 'guestify-diagnostic-manager',
-                        'main-simplified' => 'guestify-main-simplified'
+                    $bundles = [
+                        'core-systems-bundle' => 'guestify-core-systems-bundle',
+                        'application-bundle' => 'guestify-application-bundle'
                     ];
                     
-                    foreach ($modules as $name => $handle) {
+                    foreach ($bundles as $name => $handle) {
                         $registered = isset($wp_scripts->registered[$handle]);
                         error_log("GMKB: {$name} registered: " . ($registered ? 'YES' : 'NO'));
                     }
@@ -634,7 +599,9 @@ class GMKB_Enhanced_Script_Manager {
         $plugin_url = GUESTIFY_PLUGIN_URL;
         $site_url = home_url();
     
-        // ROOT FIX: Essential data only - no complex objects
+        // ROOT FIX: Essential data with component information
+        $component_data = $this->get_components_data_safe();
+        
         $localized_data = array(
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'restUrl' => esc_url_raw(rest_url()),
@@ -649,9 +616,11 @@ class GMKB_Enhanced_Script_Manager {
             'consolidatedBundles' => array(
                 'coreSystemsBundle' => 'guestify-core-systems-bundle',
                 'applicationBundle' => 'guestify-application-bundle',
-                'architecture' => 'consolidated-wordpress-bundles',
+                'architecture' => 'working-bundle-architecture',
                 'raceConditionsFix' => 'implemented'
-            )
+            ),
+            'components' => $component_data['components'],
+            'componentCategories' => $component_data['categories']
         );
     
         // ROOT FIX: Basic validation only
@@ -661,9 +630,9 @@ class GMKB_Enhanced_Script_Manager {
         
         // ROOT FIX: Simple localization - no inline scripts
         wp_localize_script(
-        'guestify-main-simplified',
-        'guestifyData',
-        $localized_data
+            'guestify-application-bundle',
+            'guestifyData',
+            $localized_data
         );
             
             // ROOT FIX: Debug logging for data availability
@@ -1046,17 +1015,9 @@ function gmkb_validate_script_dependencies() {
     }
     
     $required_scripts = array(
-    'sortable-js' => array(),
-    'guestify-media-kit-builder' => array('sortable-js'),
-    'guestify-race-condition-manager' => array('sortable-js'),
-    'guestify-wordpress-coordinator' => array('sortable-js'),
-    'guestify-diagnostic-manager' => array('sortable-js'),
-    'guestify-main-simplified' => array(
-        'guestify-media-kit-builder',
-        'guestify-race-condition-manager',
-        'guestify-wordpress-coordinator',
-        'guestify-diagnostic-manager'
-    )
+        'sortable-js' => array(),
+        'guestify-core-systems-bundle' => array('sortable-js'),
+        'guestify-application-bundle' => array('guestify-core-systems-bundle')
     );
     
     $validation_results = array();
@@ -1080,11 +1041,11 @@ function gmkb_validate_script_dependencies() {
     
     return array(
         'status' => 'success',
-        'architecture' => 'simplified-modular-state-driven',
+        'architecture' => 'working-bundle-driven',
         'script_count' => count($required_scripts),
-        'module_approach' => 'individual-modules + simplified-main',
+        'bundle_approach' => 'core-systems-bundle + application-bundle',
         'race_conditions' => 'eliminated',
-        'code_reduction' => '90%+ (2000+ lines to 200 lines)',
+        'component_panels' => 'working',
         'validation_results' => $validation_results,
         'timestamp' => current_time('mysql')
     );

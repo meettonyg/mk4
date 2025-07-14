@@ -1,0 +1,548 @@
+/**
+ * @file topics-panel-root-fix.js
+ * @description Root Fix for Topics Component Panel Loading Issue
+ * @version 1.0.0-root-fix
+ * 
+ * This script fixes the infinite loading spinner issue with the Topics component panel
+ * by ensuring the component panel handlers are properly registered and executed.
+ */
+
+(function() {
+    'use strict';
+    
+    console.log('🎯 ROOT FIX: Topics Panel Fix Loading...');
+    
+    // Wait for core systems to be ready
+    function initializeTopicsPanelFix() {
+        console.log('🎯 ROOT FIX: Initializing Topics Panel Fix...');
+        
+        // Ensure component panel handlers registry exists
+        if (!window.componentPanelHandlers) {
+            window.componentPanelHandlers = {};
+            console.log('🎯 ROOT FIX: Created component panel handlers registry');
+        }
+        
+        // Enhance the existing loadDesignPanel function to handle Topics
+        enhanceDesignPanelLoading();
+        
+        // Register Topics component panel handler
+        registerTopicsComponentHandler();
+        
+        // Load the Topics panel script if not already loaded
+        loadTopicsPanelScript();
+        
+        console.log('✅ ROOT FIX: Topics Panel Fix Initialized');
+    }
+    
+    function enhanceDesignPanelLoading() {
+        // Check if the loadDesignPanel function exists in the application bundle
+        let originalLoadDesignPanel = null;
+        
+        // Try to find the function in various scopes
+        if (window.loadDesignPanel) {
+            originalLoadDesignPanel = window.loadDesignPanel;
+        }
+        
+        // Create enhanced loadDesignPanel function
+        window.loadDesignPanel = function(componentId) {
+            console.log(`🎯 ROOT FIX: Enhanced loadDesignPanel called for ${componentId}`);
+            
+            // Get component data to determine type
+            const currentState = window.stateManager?._state;
+            const componentData = currentState?.components?.[componentId];
+            
+            if (componentData && componentData.type === 'topics') {
+                console.log('🎯 ROOT FIX: Topics component detected, loading specific panel');
+                loadTopicsSpecificPanel(componentId, componentData);
+                return;
+            }
+            
+            // Fall back to original function if available
+            if (originalLoadDesignPanel) {
+                originalLoadDesignPanel(componentId);
+            } else {
+                // Fallback generic panel loading
+                loadGenericDesignPanel(componentId);
+            }
+        };
+        
+        console.log('🎯 ROOT FIX: Design panel loading enhanced');
+    }
+    
+    function loadTopicsSpecificPanel(componentId, componentData) {
+        console.log('🎯 ROOT FIX: Loading Topics-specific design panel');
+        
+        // Switch to design tab
+        const designTab = document.querySelector('[data-tab="design"]');
+        const designTabContent = document.getElementById('design-tab');
+        
+        if (designTab && designTabContent) {
+            // Remove active from all tabs
+            document.querySelectorAll('.sidebar__tab').forEach(tab => {
+                tab.classList.remove('sidebar__tab--active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('tab-content--active');
+            });
+            
+            // Activate design tab
+            designTab.classList.add('sidebar__tab--active');
+            designTabContent.classList.add('tab-content--active');
+        }
+        
+        // Load Topics-specific panel content
+        const elementEditor = document.getElementById('element-editor');
+        if (elementEditor) {
+            // Show loading state
+            elementEditor.innerHTML = `
+                <div class="element-editor__title">Topics Component Settings</div>
+                <div class="element-editor__subtitle">Component ID: ${componentId}</div>
+                <div class="loading-panel">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Loading Topics panel...</div>
+                </div>
+            `;
+            
+            // Try to initialize Topics panel handler
+            if (window.componentPanelHandlers && window.componentPanelHandlers['topics']) {
+                try {
+                    const componentElement = document.getElementById(componentId);
+                    window.componentPanelHandlers['topics'](componentElement, componentData);
+                    console.log('✅ ROOT FIX: Topics panel handler executed successfully');
+                } catch (error) {
+                    console.error('❌ ROOT FIX: Error executing Topics panel handler:', error);
+                    showTopicsPanelError(elementEditor, error);
+                }
+            } else {
+                console.log('⚠️ ROOT FIX: Topics panel handler not found, loading fallback');
+                loadTopicsFallbackPanel(elementEditor, componentId, componentData);
+            }
+        }
+    }
+    
+    function loadTopicsFallbackPanel(elementEditor, componentId, componentData) {
+        console.log('🎯 ROOT FIX: Loading Topics fallback panel');
+        
+        elementEditor.innerHTML = `
+            <div class="element-editor__title">Topics Component</div>
+            <div class="element-editor__subtitle">Basic Settings (Fallback Mode)</div>
+            
+            <div class="form-section">
+                <h4 class="form-section__title">Topics Data</h4>
+                <div class="form-field">
+                    <label>Component Name</label>
+                    <input type="text" value="${componentData.data?.name || 'Topics'}" data-property="name">
+                </div>
+                <div class="form-field">
+                    <label>Section Title</label>
+                    <input type="text" value="${componentData.data?.title || 'Speaking Topics'}" data-property="title">
+                </div>
+                <div class="form-field">
+                    <label>Introduction</label>
+                    <textarea data-property="bio" rows="3">${componentData.data?.bio || 'Add your introduction here'}</textarea>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h4 class="form-section__title">Topics List</h4>
+                <div class="topics-list-editor">
+                    <div class="topic-item">
+                        <label>Topic 1</label>
+                        <input type="text" placeholder="Enter first topic..." data-topic-index="0">
+                    </div>
+                    <div class="topic-item">
+                        <label>Topic 2</label>
+                        <input type="text" placeholder="Enter second topic..." data-topic-index="1">
+                    </div>
+                    <div class="topic-item">
+                        <label>Topic 3</label>
+                        <input type="text" placeholder="Enter third topic..." data-topic-index="2">
+                    </div>
+                    <div class="topic-item">
+                        <label>Topic 4</label>
+                        <input type="text" placeholder="Enter fourth topic..." data-topic-index="3">
+                    </div>
+                    <div class="topic-item">
+                        <label>Topic 5</label>
+                        <input type="text" placeholder="Enter fifth topic..." data-topic-index="4">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h4 class="form-section__title">Actions</h4>
+                <div class="action-buttons">
+                    <button class="btn btn--outline" onclick="window.loadStoredTopics?.('${componentId}')">
+                        📋 Load Stored Topics
+                    </button>
+                    <button class="btn btn--outline" onclick="window.saveTopicsData?.('${componentId}')">
+                        💾 Save Topics
+                    </button>
+                    <button class="btn btn--danger" onclick="window.enhancedComponentManager?.removeComponent('${componentId}')">
+                        🗑️ Delete Component
+                    </button>
+                </div>
+            </div>
+            
+            <style>
+            .loading-panel {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+            }
+            .loading-spinner {
+                width: 20px;
+                height: 20px;
+                border: 2px solid #e2e8f0;
+                border-top: 2px solid #3b82f6;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 10px;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .topics-list-editor .topic-item {
+                margin-bottom: 10px;
+            }
+            .topics-list-editor label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: 500;
+            }
+            .topics-list-editor input {
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+            }
+            .action-buttons {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .action-buttons .btn {
+                padding: 8px 12px;
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+                background: white;
+                cursor: pointer;
+                font-size: 12px;
+            }
+            .action-buttons .btn:hover {
+                background: #f8fafc;
+            }
+            .action-buttons .btn--danger {
+                border-color: #f87171;
+                color: #dc2626;
+            }
+            .action-buttons .btn--danger:hover {
+                background: #fef2f2;
+            }
+            </style>
+        `;
+        
+        // Bind property changes
+        bindTopicsPropertyChanges(elementEditor, componentId, componentData);
+        
+        console.log('✅ ROOT FIX: Topics fallback panel loaded');
+    }
+    
+    function bindTopicsPropertyChanges(elementEditor, componentId, componentData) {
+        elementEditor.querySelectorAll('[data-property]').forEach(input => {
+            input.addEventListener('input', () => {
+                const property = input.getAttribute('data-property');
+                const value = input.value;
+                
+                updateComponentData(componentId, property, value);
+            });
+        });
+        
+        // Bind topic inputs
+        elementEditor.querySelectorAll('[data-topic-index]').forEach(input => {
+            input.addEventListener('input', () => {
+                const index = input.getAttribute('data-topic-index');
+                const value = input.value;
+                
+                updateTopicData(componentId, index, value);
+            });
+        });
+    }
+    
+    function updateComponentData(componentId, property, value) {
+        if (!window.stateManager) return;
+        
+        const currentState = window.stateManager._state;
+        const componentData = currentState.components[componentId];
+        
+        if (componentData) {
+            const newData = { ...componentData.data };
+            newData[property] = value;
+            
+            const newComponents = { ...currentState.components };
+            newComponents[componentId] = {
+                ...componentData,
+                data: newData
+            };
+            
+            window.stateManager.setState({
+                ...currentState,
+                components: newComponents
+            });
+            
+            if (window.markUnsaved) {
+                window.markUnsaved();
+            }
+        }
+    }
+    
+    function updateTopicData(componentId, index, value) {
+        console.log(`🎯 ROOT FIX: Updating topic ${index} for component ${componentId}: ${value}`);
+        
+        if (!window.stateManager) return;
+        
+        const currentState = window.stateManager._state;
+        const componentData = currentState.components[componentId];
+        
+        if (componentData) {
+            const newData = { ...componentData.data };
+            if (!newData.topics) {
+                newData.topics = {};
+            }
+            
+            newData.topics[`topic_${parseInt(index) + 1}`] = value;
+            
+            const newComponents = { ...currentState.components };
+            newComponents[componentId] = {
+                ...componentData,
+                data: newData
+            };
+            
+            window.stateManager.setState({
+                ...currentState,
+                components: newComponents
+            });
+            
+            if (window.markUnsaved) {
+                window.markUnsaved();
+            }
+        }
+    }
+    
+    function showTopicsPanelError(elementEditor, error) {
+        elementEditor.innerHTML = `
+            <div class="element-editor__title">Topics Component - Error</div>
+            <div class="error-panel">
+                <div class="error-icon">⚠️</div>
+                <div class="error-message">
+                    Failed to load Topics design panel
+                </div>
+                <div class="error-details">
+                    ${error.message}
+                </div>
+                <button class="btn" onclick="location.reload()">
+                    🔄 Reload Page
+                </button>
+            </div>
+            
+            <style>
+            .error-panel {
+                padding: 20px;
+                text-align: center;
+                border: 1px solid #f87171;
+                border-radius: 8px;
+                background: #fef2f2;
+                margin: 10px 0;
+            }
+            .error-icon {
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+            .error-message {
+                font-weight: 500;
+                color: #dc2626;
+                margin-bottom: 10px;
+            }
+            .error-details {
+                font-size: 12px;
+                color: #6b7280;
+                margin-bottom: 15px;
+            }
+            </style>
+        `;
+    }
+    
+    function loadGenericDesignPanel(componentId) {
+        const elementEditor = document.getElementById('element-editor');
+        if (!elementEditor) return;
+        
+        const currentState = window.stateManager?._state;
+        const componentData = currentState?.components?.[componentId];
+        
+        if (componentData) {
+            elementEditor.innerHTML = `
+                <div class="element-editor__title">${componentData.type} Settings</div>
+                <div class="element-editor__subtitle">Component ID: ${componentId}</div>
+                
+                <div class="form-section">
+                    <h4 class="form-section__title">Basic Properties</h4>
+                    <div class="form-field">
+                        <label>Name</label>
+                        <input type="text" value="${componentData.data?.name || ''}" data-property="name">
+                    </div>
+                    <div class="form-field">
+                        <label>Title</label>
+                        <input type="text" value="${componentData.data?.title || ''}" data-property="title">
+                    </div>
+                    <div class="form-field">
+                        <label>Description</label>
+                        <textarea data-property="bio">${componentData.data?.bio || ''}</textarea>
+                    </div>
+                </div>
+            `;
+            
+            // Bind property changes
+            elementEditor.querySelectorAll('[data-property]').forEach(input => {
+                input.addEventListener('input', () => {
+                    const property = input.getAttribute('data-property');
+                    const value = input.value;
+                    updateComponentData(componentId, property, value);
+                });
+            });
+        }
+    }
+    
+    function registerTopicsComponentHandler() {
+        // Register a basic Topics component handler as fallback
+        if (!window.componentPanelHandlers) {
+            window.componentPanelHandlers = {};
+        }
+        
+        window.componentPanelHandlers['topics'] = function(element, schema) {
+            console.log('🎯 ROOT FIX: Topics component handler called', element, schema);
+            
+            // Get component ID from element
+            const componentId = element?.id || element?.getAttribute('data-component-id');
+            if (componentId) {
+                loadTopicsSpecificPanel(componentId, schema);
+            }
+        };
+        
+        console.log('✅ ROOT FIX: Topics component handler registered');
+    }
+    
+    function loadTopicsPanelScript() {
+        const scriptPath = `${window.guestifyData?.pluginUrl || ''}components/topics/panel-script.js`;
+        
+        // Check if script already exists
+        const existingScript = document.querySelector(`script[src*="topics/panel-script.js"]`);
+        if (existingScript) {
+            console.log('✅ ROOT FIX: Topics panel script already loaded');
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = scriptPath;
+        script.async = true;
+        
+        script.onload = () => {
+            console.log('✅ ROOT FIX: Topics panel script loaded successfully');
+            
+            // Check if the script registered its handler
+            if (window.componentPanelHandlers && window.componentPanelHandlers['topics']) {
+                console.log('🎯 ROOT FIX: Topics panel handler confirmed after script load');
+            }
+        };
+        
+        script.onerror = (error) => {
+            console.warn('⚠️ ROOT FIX: Failed to load Topics panel script, using fallback');
+            // Fallback is already registered above
+        };
+        
+        document.head.appendChild(script);
+        console.log('📄 ROOT FIX: Loading Topics panel script from', scriptPath);
+    }
+    
+    // Global helper functions for Topics
+    window.loadStoredTopics = function(componentId) {
+        console.log('📋 ROOT FIX: Loading stored topics for', componentId);
+        
+        if (!window.guestifyData) {
+            console.error('Guestify data not available');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('action', 'load_stored_topics');
+        formData.append('post_id', window.guestifyData.postId || '1');
+        formData.append('nonce', window.guestifyData.nonce);
+        
+        fetch(window.guestifyData.ajaxUrl, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('✅ ROOT FIX: Stored topics loaded successfully', data.data);
+                // Update the form fields with stored data
+                updateTopicsFormFields(data.data);
+            } else {
+                console.error('❌ ROOT FIX: Failed to load stored topics:', data);
+            }
+        })
+        .catch(error => {
+            console.error('❌ ROOT FIX: Error loading stored topics:', error);
+        });
+    };
+    
+    window.saveTopicsData = function(componentId) {
+        console.log('💾 ROOT FIX: Saving topics data for', componentId);
+        
+        const currentState = window.stateManager?._state;
+        const componentData = currentState?.components?.[componentId];
+        
+        if (componentData && componentData.data && componentData.data.topics) {
+            console.log('✅ ROOT FIX: Topics data saved to state', componentData.data.topics);
+            
+            if (window.markUnsaved) {
+                window.markUnsaved();
+            }
+        }
+    };
+    
+    function updateTopicsFormFields(storedData) {
+        if (!storedData || !storedData.topics) return;
+        
+        Object.entries(storedData.topics).forEach(([key, topicData]) => {
+            if (topicData && !topicData.is_empty) {
+                const index = topicData.index;
+                const input = document.querySelector(`[data-topic-index="${index}"]`);
+                if (input) {
+                    input.value = topicData.value;
+                    console.log(`✅ ROOT FIX: Updated topic ${index + 1}: ${topicData.value}`);
+                }
+            }
+        });
+    }
+    
+    // Initialize when core systems are ready
+    if (window.gmkbCoreSystemsReadyFired) {
+        initializeTopicsPanelFix();
+    } else {
+        document.addEventListener('coreSystemsReady', initializeTopicsPanelFix, { once: true });
+    }
+    
+    // Also initialize on DOM ready as backup
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeTopicsPanelFix);
+    } else {
+        // DOM is already ready, but wait a bit for other scripts
+        setTimeout(initializeTopicsPanelFix, 500);
+    }
+    
+    console.log('🎯 ROOT FIX: Topics Panel Fix script loaded');
+    
+})();
