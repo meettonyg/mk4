@@ -311,41 +311,187 @@ function handleClearAllTopics() {
 }
 
 /**
- * Load existing topics from component
+ * ROOT FIX: Load existing topics from component with dynamic data support
  */
 function loadExistingTopics() {
     const component = document.querySelector('.editable-element[data-component="topics"]');
     if (!component) return;
     
     const existingTopics = component.querySelectorAll('.topic-item');
+    const topicsContainer = component.querySelector('.topics-container');
+    
+    // ROOT FIX: Check if we have dynamic topics from MKCG
+    const hasDynamicTopics = topicsContainer?.getAttribute('data-has-dynamic-topics') === 'true';
+    const postId = topicsContainer?.getAttribute('data-post-id');
+    const topicsSource = topicsContainer?.getAttribute('data-topics-source');
+    
+    console.log('🎯 Loading topics:', {
+        existingCount: existingTopics.length,
+        hasDynamicTopics,
+        postId,
+        source: topicsSource
+    });
     
     if (existingTopics.length > 0) {
         // Load from existing component
         existingTopics.forEach((topicEl, index) => {
             const title = topicEl.querySelector('.topic-title')?.textContent || '';
             const description = topicEl.querySelector('.topic-description')?.textContent || '';
+            const source = topicEl.getAttribute('data-topic-source') || 'unknown';
+            const metaKey = topicEl.getAttribute('data-meta-key');
+            
+            // Skip placeholder topics when loading into editor
+            if (source === 'placeholder' && title.includes('Add Your Speaking Topics')) {
+                return;
+            }
             
             const topicItem = createTopicEditorItem(title, description, index);
+            
+            // ROOT FIX: Add source indicator to editor item
+            if (source === 'mkcg' && metaKey) {
+                const sourceIndicator = document.createElement('div');
+                sourceIndicator.className = 'topic-source-badge';
+                sourceIndicator.innerHTML = `
+                    <span class="source-icon">⚡</span>
+                    <span class="source-text">MKCG: ${metaKey}</span>
+                `;
+                sourceIndicator.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 10px;
+                    color: #10b981;
+                    background: #f0fdf4;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    margin-top: 4px;
+                `;
+                topicItem.appendChild(sourceIndicator);
+            }
+            
             const topicsList = document.getElementById('design-topics-list');
             if (topicsList) {
                 topicsList.appendChild(topicItem);
                 topicCount++;
             }
         });
+        
+        // ROOT FIX: Show dynamic data info if available
+        if (hasDynamicTopics && postId) {
+            showDynamicDataInfo(postId, topicsSource, existingTopics.length);
+        }
+        
     } else {
-        // Create default empty topics
-        for (let i = 0; i < 3; i++) {
-            const topicItem = createTopicEditorItem('', '', i);
-            const topicsList = document.getElementById('design-topics-list');
-            if (topicsList) {
-                topicsList.appendChild(topicItem);
-                topicCount++;
-            }
+        // ROOT FIX: Don't create default empty topics if we're waiting for dynamic data
+        if (hasDynamicTopics && postId) {
+            showLoadingMessage('Loading MKCG topics for this post...');
+            
+            // Try to load fresh data
+            setTimeout(() => {
+                if (window.topicsMkcgIntegration && window.topicsMkcgIntegration.loadSavedTopics) {
+                    window.topicsMkcgIntegration.loadSavedTopics()
+                        .then(() => {
+                            hideLoadingMessage();
+                            loadExistingTopics(); // Recursive call to load the fresh data
+                        })
+                        .catch(error => {
+                            hideLoadingMessage();
+                            console.error('Failed to load MKCG topics:', error);
+                            createDefaultTopics();
+                        });
+                } else {
+                    hideLoadingMessage();
+                    createDefaultTopics();
+                }
+            }, 1000);
+        } else {
+            createDefaultTopics();
         }
     }
     
     updateTopicsCounter();
     updateClearButtonVisibility();
+}
+
+/**
+ * ROOT FIX: Create default empty topics
+ */
+function createDefaultTopics() {
+    for (let i = 0; i < 3; i++) {
+        const topicItem = createTopicEditorItem('', '', i);
+        const topicsList = document.getElementById('design-topics-list');
+        if (topicsList) {
+            topicsList.appendChild(topicItem);
+            topicCount++;
+        }
+    }
+}
+
+/**
+ * ROOT FIX: Show dynamic data information
+ */
+function showDynamicDataInfo(postId, source, topicCount) {
+    const topicsList = document.getElementById('design-topics-list');
+    if (!topicsList) return;
+    
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'dynamic-data-info';
+    infoDiv.innerHTML = `
+        <div style="
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #0284c7;
+        ">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <span style="font-size: 14px;">🔗</span>
+                <strong>Dynamic Topics Loaded</strong>
+            </div>
+            <div>Post ID: ${postId} | Source: ${source.toUpperCase()} | Topics: ${topicCount}</div>
+            <div style="margin-top: 4px; font-size: 11px; opacity: 0.8;">
+                These topics are automatically loaded from your custom post data.
+            </div>
+        </div>
+    `;
+    
+    topicsList.insertBefore(infoDiv, topicsList.firstChild);
+}
+
+/**
+ * ROOT FIX: Show loading message
+ */
+function showLoadingMessage(message) {
+    const topicsList = document.getElementById('design-topics-list');
+    if (!topicsList) return;
+    
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'topics-loading-message';
+    loadingDiv.innerHTML = `
+        <div style="
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+            font-style: italic;
+        ">
+            <div style="margin-bottom: 8px;">⏳</div>
+            <div>${message}</div>
+        </div>
+    `;
+    
+    topicsList.appendChild(loadingDiv);
+}
+
+/**
+ * ROOT FIX: Hide loading message
+ */
+function hideLoadingMessage() {
+    const loadingMessage = document.getElementById('topics-loading-message');
+    if (loadingMessage) {
+        loadingMessage.remove();
+    }
 }
 
 /**

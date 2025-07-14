@@ -577,16 +577,35 @@ class Guestify_Media_Kit_Builder {
             return new WP_Error( 'invalid_component', 'Component slug is required', array( 'status' => 400 ) );
         }
         
+        // ROOT FIX: Enhance props with post_id for dynamic data loading
+        if (!isset($props['post_id'])) {
+            $post_id = $this->detect_mkcg_post_id();
+            if ($post_id > 0) {
+                $props['post_id'] = $post_id;
+            }
+        }
+        
         $html = $this->component_loader->loadComponent( $component_slug, $props );
         
         if ( $html === false ) {
             return new WP_Error( 'component_not_found', 'Component not found', array( 'status' => 404 ) );
         }
         
-        return array(
+        $response = array(
             'success' => true,
             'html' => $html
         );
+        
+        // ROOT FIX: Add debug info about dynamic data loading
+        if (defined('WP_DEBUG') && WP_DEBUG && isset($props['post_id'])) {
+            $response['debug'] = array(
+                'post_id' => $props['post_id'],
+                'component' => $component_slug,
+                'enhanced_props' => true
+            );
+        }
+        
+        return $response;
     }
     
     /**
@@ -631,13 +650,31 @@ class Guestify_Media_Kit_Builder {
             wp_send_json_error( 'Component slug is required' );
         }
         
+        // ROOT FIX: Enhance props with post_id for dynamic data loading
+        if (!isset($props['post_id'])) {
+            $post_id = $this->detect_mkcg_post_id();
+            if ($post_id > 0) {
+                $props['post_id'] = $post_id;
+            }
+        }
+        
         $html = $this->component_loader->loadComponent( $component_slug, $props );
         
         if ( $html === false ) {
             wp_send_json_error( 'Component not found' );
         }
         
-        wp_send_json_success( array( 'html' => $html ) );
+        // ROOT FIX: Add debug info about dynamic data loading
+        $response = array( 'html' => $html );
+        if (defined('WP_DEBUG') && WP_DEBUG && isset($props['post_id'])) {
+            $response['debug'] = array(
+                'post_id' => $props['post_id'],
+                'component' => $component_slug,
+                'enhanced_props' => true
+            );
+        }
+        
+        wp_send_json_success( $response );
     }
     
     /**

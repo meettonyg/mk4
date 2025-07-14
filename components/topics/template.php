@@ -41,35 +41,77 @@ $topicColor = sanitize_hex_color($topicColor ?? '#4f46e5');
 $animation = sanitize_text_field($animation ?? 'none');
 $hoverEffect = sanitize_text_field($hoverEffect ?? 'scale');
 
-// Process and validate topics
-$defaultTopics = [
-    ['title' => 'Technology Innovation', 'description' => 'Latest trends in tech and innovation'],
-    ['title' => 'Digital Transformation', 'description' => 'Helping businesses adapt to digital age'],
-    ['title' => 'Leadership & Strategy', 'description' => 'Effective leadership in modern organizations'],
-    ['title' => 'Future of Work', 'description' => 'Remote work and workplace evolution']
-];
+// ROOT FIX: Dynamic topic processing using MKCG data integration
+// Get post_id from props or detect from URL
+$current_post_id = 0;
+if (isset($post_id) && is_numeric($post_id)) {
+    $current_post_id = intval($post_id);
+} elseif (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+    $current_post_id = intval($_GET['post_id']);
+} elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
+    $current_post_id = intval($_GET['p']);
+}
 
-// Enhanced topic processing
-if (isset($topics) && is_array($topics)) {
-    $processedTopics = [];
+// Initialize topics array
+$topicsList = [];
+$hasDynamicTopics = false;
+
+// ROOT FIX: Try to get topics from MKCG data integration first
+if ($current_post_id > 0) {
+    // Check if MKCG integration class is available
+    if (class_exists('GMKB_MKCG_Data_Integration')) {
+        $mkcg_integration = GMKB_MKCG_Data_Integration::get_instance();
+        $post_data = $mkcg_integration->get_post_data($current_post_id);
+        
+        if ($post_data && isset($post_data['topics']['topics']) && !empty($post_data['topics']['topics'])) {
+            $mkcg_topics = $post_data['topics']['topics'];
+            
+            // Convert MKCG topics to component format
+            foreach ($mkcg_topics as $topic_key => $topic_value) {
+                if (!empty($topic_value)) {
+                    $topicsList[] = [
+                        'title' => sanitize_text_field($topic_value),
+                        'description' => '', // MKCG topics are title-only
+                        'source' => 'mkcg',
+                        'meta_key' => $topic_key
+                    ];
+                }
+            }
+            $hasDynamicTopics = true;
+        }
+    }
+}
+
+// ROOT FIX: Fallback to manual topics from props if no MKCG data
+if (!$hasDynamicTopics && isset($topics) && is_array($topics)) {
     foreach ($topics as $index => $topic) {
-        if (is_string($topic)) {
-            $processedTopics[] = [
+        if (is_string($topic) && !empty(trim($topic))) {
+            $topicsList[] = [
                 'title' => sanitize_text_field($topic),
-                'description' => ''
+                'description' => '',
+                'source' => 'manual'
             ];
-        } elseif (is_array($topic)) {
-            $processedTopics[] = [
-                'title' => sanitize_text_field($topic['title'] ?? $topic[0] ?? ''),
-                'description' => sanitize_textarea_field($topic['description'] ?? $topic[1] ?? '')
+        } elseif (is_array($topic) && !empty($topic['title'])) {
+            $topicsList[] = [
+                'title' => sanitize_text_field($topic['title']),
+                'description' => sanitize_textarea_field($topic['description'] ?? ''),
+                'source' => 'manual'
             ];
         }
     }
-    $topicsList = array_filter($processedTopics, function($topic) {
-        return !empty($topic['title']);
-    });
-} else {
-    $topicsList = $defaultTopics;
+    $hasDynamicTopics = !empty($topicsList);
+}
+
+// ROOT FIX: Only use fallback defaults if absolutely no topics found
+if (empty($topicsList)) {
+    // Minimal fallback - just one example topic
+    $topicsList = [
+        [
+            'title' => 'Add Your Speaking Topics',
+            'description' => 'Click to edit and add your expertise areas',
+            'source' => 'placeholder'
+        ]
+    ];
 }
 
 // CSS classes for styling
@@ -89,9 +131,16 @@ if ($hoverEffect !== 'none') $containerClasses[] = 'hover-' . $hoverEffect;
 
 $containerClass = implode(' ', $containerClasses);
 
-// Error handling
+// ROOT FIX: Enhanced error handling with dynamic context
 if (empty($topicsList)) {
-    $errorMessage = 'No valid topics found. Please add some topics in the design panel.';
+    if ($current_post_id > 0) {
+        $errorMessage = 'No topics found for this post. Check the Media Kit Content Generator or add topics manually in the design panel.';
+    } else {
+        $errorMessage = 'No post ID detected. Topics will be loaded when viewing a specific post with MKCG data.';
+    }
+} elseif (!$hasDynamicTopics) {
+    // Show subtle indicator when using fallback data
+    $fallbackMessage = 'Using placeholder topics. Connect to a post with MKCG data to see dynamic topics.';
 }
 ?>
 
@@ -158,55 +207,113 @@ if (empty($topicsList)) {
         <?php endif; ?>
 
         <!-- Topics Grid/List Container -->
-        <div class="topics-container" data-layout="<?php echo esc_attr($layoutStyle); ?>">
-            <?php foreach ($topicsList as $index => $topic): ?>
-                <div class="topic-item" 
-                     data-topic-index="<?php echo esc_attr($index); ?>"
-                     data-topic-id="<?php echo esc_attr($componentId . '_topic_' . $index); ?>">
-                     
-                    <?php if ($iconPosition === 'left'): ?>
-                        <div class="topic-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
-                            </svg>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <div class="topic-content">
-                        <div class="topic-title" 
-                             contenteditable="true" 
-                             data-setting="topic_<?php echo esc_attr($index + 1); ?>">
-                            <?php echo esc_html($topic['title']); ?>
-                        </div>
-                        
-                        <?php if ($showDescriptions && !empty($topic['description'])): ?>
-                            <div class="topic-description" 
-                                 contenteditable="true" 
-                                 data-setting="topic_<?php echo esc_attr($index + 1); ?>_description">
-                                <?php echo esc_html($topic['description']); ?>
+        <div class="topics-container" 
+             data-layout="<?php echo esc_attr($layoutStyle); ?>"
+             data-has-dynamic-topics="<?php echo $hasDynamicTopics ? 'true' : 'false'; ?>"
+             data-post-id="<?php echo esc_attr($current_post_id); ?>"
+             data-topics-source="<?php echo esc_attr($topicsList[0]['source'] ?? 'none'); ?>">
+            
+            <?php if (!empty($topicsList)): ?>
+                <?php foreach ($topicsList as $index => $topic): ?>
+                    <div class="topic-item" 
+                         data-topic-index="<?php echo esc_attr($index); ?>"
+                         data-topic-id="<?php echo esc_attr($componentId . '_topic_' . $index); ?>"
+                         data-topic-source="<?php echo esc_attr($topic['source'] ?? 'unknown'); ?>"
+                         <?php if (isset($topic['meta_key'])): ?>data-meta-key="<?php echo esc_attr($topic['meta_key']); ?>"<?php endif; ?>>
+                         
+                        <?php if ($iconPosition === 'left'): ?>
+                            <div class="topic-icon">
+                                <?php if ($topic['source'] === 'mkcg'): ?>
+                                    <!-- MKCG Source Icon -->
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                    </svg>
+                                <?php elseif ($topic['source'] === 'placeholder'): ?>
+                                    <!-- Placeholder Icon -->
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                <?php else: ?>
+                                    <!-- Default Topic Icon -->
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                                    </svg>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                         
-                        <?php if ($expandable): ?>
-                            <button class="topic-expand-btn" aria-label="Expand topic details">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                            </button>
+                        <div class="topic-content">
+                            <div class="topic-title" 
+                                 contenteditable="true" 
+                                 data-setting="topic_<?php echo esc_attr($index + 1); ?>"
+                                 data-original-source="<?php echo esc_attr($topic['source']); ?>">
+                                <?php echo esc_html($topic['title']); ?>
+                            </div>
+                            
+                            <?php if ($showDescriptions && !empty($topic['description'])): ?>
+                                <div class="topic-description" 
+                                     contenteditable="true" 
+                                     data-setting="topic_<?php echo esc_attr($index + 1); ?>_description">
+                                    <?php echo esc_html($topic['description']); ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($expandable): ?>
+                                <button class="topic-expand-btn" aria-label="Expand topic details">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                            <?php endif; ?>
+                            
+                            <!-- ROOT FIX: Show data source indicator for debugging -->
+                            <?php if (defined('WP_DEBUG') && WP_DEBUG && $topic['source'] !== 'placeholder'): ?>
+                                <small class="topic-source-indicator" style="font-size: 10px; opacity: 0.6; color: #666;">
+                                    <?php echo esc_html(strtoupper($topic['source'])); ?>
+                                    <?php if (isset($topic['meta_key'])): ?>(<?php echo esc_html($topic['meta_key']); ?>)<?php endif; ?>
+                                </small>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <?php if ($iconPosition === 'right'): ?>
+                            <div class="topic-icon">
+                                <?php if ($topic['source'] === 'mkcg'): ?>
+                                    <!-- MKCG Source Icon -->
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                    </svg>
+                                <?php elseif ($topic['source'] === 'placeholder'): ?>
+                                    <!-- Placeholder Icon -->
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                <?php else: ?>
+                                    <!-- Default Topic Icon -->
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                                    </svg>
+                                <?php endif; ?>
+                            </div>
                         <?php endif; ?>
                     </div>
-                    
-                    <?php if ($iconPosition === 'right'): ?>
-                        <div class="topic-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
-                            </svg>
-                        </div>
-                    <?php endif; ?>
+                <?php endforeach; ?>
+                
+                <!-- ROOT FIX: Dynamic topics info for debugging -->
+                <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
+                    <div class="topics-debug-info" style="margin-top: 10px; padding: 5px; background: #f0f0f0; font-size: 10px; color: #666;">
+                        Topics: <?php echo count($topicsList); ?> | Source: <?php echo $hasDynamicTopics ? 'Dynamic' : 'Fallback'; ?> | Post ID: <?php echo $current_post_id; ?>
+                    </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <!-- Fallback message when no topics available -->
+                <div class="no-topics-message">
+                    <p>No topics available. Add topics through the design panel or Media Kit Content Generator.</p>
                 </div>
-            <?php endforeach; ?>
+            <?php endif; ?>
         </div>
         
     <?php endif; ?>
