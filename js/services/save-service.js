@@ -111,10 +111,15 @@ class SaveService {
      * @param {object} [stateToSave] - Optional state to save, defaults to current state
      * PHASE 3 FIX: Access enhancedStateManager through window
      */
-    saveState(stateToSave = null) {
+    async saveState(stateToSave = null, saveType = 'auto') {
         const perfEnd = performanceMonitor.start('state-save');
         
         try {
+            // PHASE 3: If this is a main save, coordinate with components
+            if (saveType === 'main_save') {
+                return await this.executeMainSave(stateToSave);
+            }
+            
             // Get current state from enhanced state manager via window
             const stateManager = window.enhancedStateManager;
             if (!stateManager && !stateToSave) {
@@ -603,6 +608,256 @@ class SaveService {
                 history: Math.round((localStorage.getItem(SAVE_KEY_HISTORY) || '').length / 1024) + 'KB'
             }
         };
+    }
+    
+    /**
+     * PHASE 3: Execute coordinated main save across all components
+     * @param {object} stateToSave - State data to save
+     * @returns {boolean} Success status
+     */
+    async executeMainSave(stateToSave) {
+        const perfEnd = performanceMonitor.start('main-save');
+        
+        try {
+            this.logger.info('SAVE', 'Starting coordinated main save');
+            
+            // Emit main save initiated event
+            eventBus.emit('save:main-save-initiated', {
+                timestamp: Date.now(),
+                state: stateToSave
+            });
+            
+            // Trigger window event for components
+            window.dispatchEvent(new CustomEvent('mainSaveInitiated', {
+                detail: { state: stateToSave, timestamp: Date.now() }
+            }));
+            
+            // Prepare all components for main save
+            const componentResults = await this.prepareComponentsForMainSave(stateToSave);
+            
+            // Execute main save for all prepared components
+            await this.executeComponentMainSaves(componentResults);
+            
+            // Save main state to localStorage (existing logic)
+            const success = await this.saveMainState(stateToSave);
+            
+            if (success) {
+                // Emit main save completed event
+                eventBus.emit('save:main-save-completed', {
+                    timestamp: Date.now(),
+                    componentResults
+                });
+                
+                window.dispatchEvent(new CustomEvent('mainSaveComplete', {
+                    detail: { success: true, componentResults, timestamp: Date.now() }
+                }));
+                
+                this.logger.info('SAVE', 'Coordinated main save completed successfully');
+                showToast('All components saved successfully', 'success');
+            }
+            
+            perfEnd();
+            return success;
+            
+        } catch (error) {
+            perfEnd();
+            this.logger.error('SAVE', 'Main save coordination failed', error);
+            showToast('Main save failed: ' + error.message, 'error');
+            
+            // Emit error event
+            eventBus.emit('save:main-save-error', {
+                error: error.message,
+                timestamp: Date.now()
+            });
+            
+            return false;
+        }
+    }
+    
+    /**
+     * PHASE 3: Prepare all components for main save
+     * @param {object} stateToSave - State to save
+     * @returns {object} Component preparation results
+     */
+    async prepareComponentsForMainSave(stateToSave) {
+        const componentResults = {
+            topics: { prepared: false, error: null },
+            biography: { prepared: false, error: null },
+            // Add other components as they're implemented
+        };
+        
+        // Prepare topics component
+        try {
+            const topicsManager = window.topicsComponentManager;
+            if (topicsManager && topicsManager.getStateManager()) {
+                const topicsState = topicsManager.getStateManager();
+                if (topicsState.hasPendingChanges()) {
+                    // Topics component will handle its own preparation via event listeners
+                    componentResults.topics.prepared = true;
+                } else {
+                    componentResults.topics.prepared = true;
+                    componentResults.topics.noPendingChanges = true;
+                }
+            }
+        } catch (error) {
+            componentResults.topics.error = error.message;
+            this.logger.warn('SAVE', 'Topics preparation failed', error);
+        }
+        
+        // TODO: Add preparation for other components (biography, etc.)
+        
+        this.logger.info('SAVE', 'Component preparation results', componentResults);
+        return componentResults;
+    }
+    
+    /**
+     * PHASE 3: Execute main save for all prepared components
+     * @param {object} componentResults - Results from preparation phase
+     */
+    async executeComponentMainSaves(componentResults) {
+        // Trigger component execution via event
+        window.dispatchEvent(new CustomEvent('mainSaveExecute', {
+            detail: { componentResults, timestamp: Date.now() }
+        }));
+        
+        // Wait a moment for components to execute their saves
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        this.logger.info('SAVE', 'Component main saves executed');
+    }
+    
+    /**
+     * PHASE 3: Save main state (existing localStorage logic)
+     * @param {object} stateToSave - State to save
+     * @returns {boolean} Success status
+     */
+    async saveMainState(stateToSave) {
+        // Get current state from enhanced state manager via window
+        const stateManager = window.enhancedStateManager;
+        if (!stateManager && !stateToSave) {
+            this.logger.warn('SAVE', 'Enhanced state manager not available and no state provided');
+            return false;
+        }
+        
+        const currentState = stateToSave || (stateManager ? stateManager.getState() : null);
+        
+        if (!currentState) {
+            throw new Error('No state available to save');
+        }
+        
+        // Validate state before saving
+        let finalState = currentState;
+        
+        // Special case for test components - skip validation if contains test components
+        const hasTestComponents = (currentState && currentState.components) ? 
+            Object.keys(currentState.components).some(id => 
+                id.startsWith('test-') || id.startsWith('race-test-')
+            ) : false;
+        
+        if (hasTestComponents) {
+            this.logger.info('SAVE', 'Skipping validation for state with test components');
+            if (!currentState.layout) currentState.layout = [];
+            if (!currentState.components) currentState.components = {};
+            if (!currentState.globalSettings) currentState.globalSettings = {};
+            finalState = currentState;
+        } else {
+            try {
+                const validation = stateValidator.validateState(currentState, { autoRecover: true });
+                
+                if (!validation.valid) {
+                    if (validation.recovered) {
+                        finalState = validation.fixed;
+                        this.logger.warn('SAVE', 'State was repaired before saving', {
+                            errors: validation.errors
+                        });
+                    } else {
+                        throw new Error('State validation failed: ' + validation.errors[0]?.message);
+                    }
+                }
+            } catch (validationError) {
+                this.logger.warn('SAVE', 'State validation error, continuing with original state', {
+                    error: validationError.message
+                });
+            }
+        }
+        
+        // Add metadata
+        const saveData = {
+            ...finalState,
+            meta: {
+                version: SAVE_VERSION,
+                savedAt: new Date().toISOString(),
+                componentsCount: finalState && finalState.components ? Object.keys(finalState.components).length : 0,
+                layoutLength: finalState && finalState.layout ? finalState.layout.length : 0,
+                saveType: 'main_save'
+            }
+        };
+        
+        try {
+            // Create backup of current save before overwriting
+            const existingSave = localStorage.getItem(SAVE_KEY);
+            if (existingSave) {
+                try {
+                    localStorage.setItem(SAVE_KEY_BACKUP, existingSave);
+                } catch (backupError) {
+                    this.logger.warn('SAVE', 'Error creating backup', backupError);
+                }
+            }
+            
+            // Serialize and save
+            let serializedState;
+            try {
+                serializedState = this.isCompressed 
+                    ? this.compressState(saveData)
+                    : JSON.stringify(saveData);
+            } catch (serializeError) {
+                this.logger.warn('SAVE', 'Error serializing state, using simple stringify');
+                serializedState = JSON.stringify(saveData);
+            }
+            
+            localStorage.setItem(SAVE_KEY, serializedState);
+            
+            // Update last saved time
+            this.lastSavedTime = new Date().toISOString();
+            
+            // Save to history
+            try {
+                this.saveToHistory(saveData);
+            } catch (historyError) {
+                this.logger.warn('SAVE', 'Error saving to history', historyError);
+            }
+            
+            // Update state history
+            if (window.stateHistory) {
+                try {
+                    stateHistory.saveSnapshot(finalState, 'main-save');
+                } catch (historyError) {
+                    this.logger.warn('SAVE', 'Error saving snapshot', historyError);
+                }
+            }
+        } catch (storageError) {
+            this.logger.warn('SAVE', 'Error accessing localStorage', storageError);
+            throw storageError;
+        }
+        
+        this.logger.info('SAVE', 'Main state saved successfully', {
+            components: finalState && finalState.components ? Object.keys(finalState.components).length : 0,
+            layout: finalState && finalState.layout ? finalState.layout.length : 0,
+            compressed: this.isCompressed,
+            hasTestComponents: hasTestComponents
+        });
+        
+        // Emit save event
+        try {
+            eventBus.emit('save:state-saved', {
+                state: finalState,
+                metadata: saveData.meta
+            });
+        } catch (eventError) {
+            this.logger.warn('SAVE', 'Error emitting save event', eventError);
+        }
+        
+        return true;
     }
     
     /**

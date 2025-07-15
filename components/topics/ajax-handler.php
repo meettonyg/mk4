@@ -66,6 +66,11 @@ class GMKB_Topics_Ajax_Handler {
         add_action('wp_ajax_save_custom_topics', array($this, 'ajax_save_custom_topics'));
         add_action('wp_ajax_nopriv_save_custom_topics', array($this, 'ajax_save_custom_topics_nopriv'));
         
+        // PHASE 3: Enhanced main save coordination handlers
+        add_action('wp_ajax_topics_main_save_prepare', array($this, 'ajax_topics_main_save_prepare'));
+        add_action('wp_ajax_topics_main_save_execute', array($this, 'ajax_topics_main_save_execute'));
+        add_action('wp_ajax_topics_save_status', array($this, 'ajax_topics_save_status'));
+        
         // Register validation AJAX handler
         add_action('wp_ajax_validate_mkcg_topics', array($this, 'ajax_validate_mkcg_topics'));
         add_action('wp_ajax_nopriv_validate_mkcg_topics', array($this, 'ajax_validate_mkcg_topics_nopriv'));
@@ -84,6 +89,11 @@ class GMKB_Topics_Ajax_Handler {
         // Add hooks for cache management
         add_action('updated_post_meta', array($this, 'clear_save_cache'), 10, 2);
         add_action('deleted_post_meta', array($this, 'clear_save_cache'), 10, 2);
+        
+        // PHASE 3: Hook into main Media Kit Builder save events
+        add_action('gmkb_before_main_save', array($this, 'prepare_for_main_save'), 10, 2);
+        add_action('gmkb_main_save_components', array($this, 'execute_main_save'), 10, 2);
+        add_action('gmkb_after_main_save', array($this, 'finalize_main_save'), 10, 3);
     }
     
     /**
@@ -2042,6 +2052,310 @@ class GMKB_Topics_Ajax_Handler {
     }
     
     /**
+     * PHASE 3: AJAX handler for main save preparation
+     * Prepares topics data for coordinated main save operation
+     */
+    public function ajax_topics_main_save_prepare() {
+        try {
+            // Verify nonce and permissions
+            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
+                wp_send_json_error(array(
+                    'message' => 'Security verification failed',
+                    'code' => 'INVALID_NONCE'
+                ));
+                return;
+            }
+            
+            $user_check = $this->validate_user_permissions();
+            if (!$user_check['valid']) {
+                wp_send_json_error($user_check);
+                return;
+            }
+            
+            $post_id = intval($_POST['post_id'] ?? 0);
+            $topics_data = $_POST['topics'] ?? array();
+            
+            // Handle JSON string input
+            if (is_string($topics_data)) {
+                $topics_data = stripslashes($topics_data);
+                $decoded_topics = json_decode($topics_data, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded_topics)) {
+                    $topics_data = $decoded_topics;
+                }
+            }
+            
+            // Validate topics data
+            $validated_topics = $this->validate_and_sanitize_custom_topics($topics_data);
+            
+            if (!$validated_topics['valid']) {
+                wp_send_json_error(array(
+                    'message' => 'Topics validation failed',
+                    'code' => 'VALIDATION_FAILED',
+                    'validation_errors' => $validated_topics['errors']
+                ));
+                return;
+            }
+            
+            // Store validated data in transient for main save
+            $transient_key = "topics_main_save_{$post_id}_" . get_current_user_id();
+            set_transient($transient_key, $validated_topics['topics'], 300); // 5 minutes
+            
+            wp_send_json_success(array(
+                'message' => 'Topics prepared for main save',
+                'post_id' => $post_id,
+                'topics_count' => count($validated_topics['topics']),
+                'transient_key' => $transient_key,
+                'preparation_timestamp' => time()
+            ));
+            
+        } catch (Exception $e) {
+            $this->log_error('Main save preparation error: ' . $e->getMessage(), 'main-save-prepare', $e);
+            wp_send_json_error(array(
+                'message' => 'Preparation failed',
+                'code' => 'PREPARATION_ERROR'
+            ));
+        }
+    }
+    
+    /**
+     * PHASE 3: AJAX handler for main save execution
+     * Executes topics save as part of coordinated main save
+     */
+    public function ajax_topics_main_save_execute() {
+        try {
+            // Verify nonce and permissions
+            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
+                wp_send_json_error(array(
+                    'message' => 'Security verification failed',
+                    'code' => 'INVALID_NONCE'
+                ));
+                return;
+            }
+            
+            $user_check = $this->validate_user_permissions();
+            if (!$user_check['valid']) {
+                wp_send_json_error($user_check);
+                return;
+            }
+            
+            $post_id = intval($_POST['post_id'] ?? 0);
+            $transient_key = sanitize_text_field($_POST['transient_key'] ?? '');
+            
+            if (empty($transient_key)) {
+                wp_send_json_error(array(
+                    'message' => 'No prepared data found',
+                    'code' => 'NO_PREPARED_DATA'
+                ));
+                return;
+            }
+            
+            // Retrieve prepared topics data
+            $topics_data = get_transient($transient_key);
+            if ($topics_data === false) {
+                wp_send_json_error(array(
+                    'message' => 'Prepared data expired or not found',
+                    'code' => 'PREPARED_DATA_EXPIRED'
+                ));
+                return;
+            }
+            
+            // Execute the save
+            $save_result = $this->save_custom_topics_to_post_meta($post_id, $topics_data, 'main_save');
+            
+            // Clean up transient
+            delete_transient($transient_key);
+            
+            if ($save_result['success']) {
+                wp_send_json_success(array(
+                    'message' => 'Topics saved via main save',
+                    'post_id' => $post_id,
+                    'topics_saved' => $save_result['topics_saved'],
+                    'execution_timestamp' => time(),
+                    'save_type' => 'main_save'
+                ));
+            } else {
+                wp_send_json_error(array(
+                    'message' => 'Main save execution failed',
+                    'code' => 'EXECUTION_FAILED',
+                    'details' => $save_result['error']
+                ));
+            }
+            
+        } catch (Exception $e) {
+            $this->log_error('Main save execution error: ' . $e->getMessage(), 'main-save-execute', $e);
+            wp_send_json_error(array(
+                'message' => 'Execution failed',
+                'code' => 'EXECUTION_ERROR'
+            ));
+        }
+    }
+    
+    /**
+     * PHASE 3: AJAX handler for topics save status
+     * Returns current save status for coordination
+     */
+    public function ajax_topics_save_status() {
+        try {
+            // Verify nonce
+            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
+                wp_send_json_error(array(
+                    'message' => 'Security verification failed',
+                    'code' => 'INVALID_NONCE'
+                ));
+                return;
+            }
+            
+            $post_id = intval($_POST['post_id'] ?? 0);
+            
+            if (!$post_id) {
+                wp_send_json_error(array(
+                    'message' => 'Invalid post ID',
+                    'code' => 'INVALID_POST_ID'
+                ));
+                return;
+            }
+            
+            // Get save status information
+            $status = array(
+                'last_edited' => get_post_meta($post_id, 'custom_topics_last_edited', true),
+                'last_edited_by' => get_post_meta($post_id, 'custom_topics_last_edited_by', true),
+                'save_type' => get_post_meta($post_id, 'custom_topics_save_type', true),
+                'version' => get_post_meta($post_id, 'custom_topics_version', true),
+                'has_pending_changes' => false, // Will be determined by client
+                'component_ready' => true,
+                'last_main_save' => get_post_meta($post_id, 'gmkb_last_main_save', true)
+            );
+            
+            // Check for current topics data
+            $current_topics = array();
+            for ($i = 1; $i <= 5; $i++) {
+                $topic_value = get_post_meta($post_id, "topic_{$i}", true);
+                if (!empty($topic_value)) {
+                    $current_topics["topic_{$i}"] = $topic_value;
+                }
+            }
+            
+            wp_send_json_success(array(
+                'status' => $status,
+                'current_topics' => $current_topics,
+                'topics_count' => count($current_topics),
+                'status_timestamp' => time(),
+                'component' => 'topics'
+            ));
+            
+        } catch (Exception $e) {
+            $this->log_error('Save status error: ' . $e->getMessage(), 'save-status', $e);
+            wp_send_json_error(array(
+                'message' => 'Status check failed',
+                'code' => 'STATUS_ERROR'
+            ));
+        }
+    }
+    
+    /**
+     * PHASE 3: Prepare topics for main save (WordPress hook)
+     * Called by gmkb_before_main_save action
+     */
+    public function prepare_for_main_save($post_id, $save_context) {
+        try {
+            // Log preparation start
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB Topics: Preparing for main save - Post ID: {$post_id}, Context: " . print_r($save_context, true));
+            }
+            
+            // Store save context for later use
+            update_post_meta($post_id, '_gmkb_topics_save_context', $save_context);
+            update_post_meta($post_id, '_gmkb_topics_prepare_timestamp', time());
+            
+            // Set component status to 'preparing'
+            update_post_meta($post_id, '_gmkb_topics_save_status', 'preparing');
+            
+        } catch (Exception $e) {
+            $this->log_error("Error preparing topics for main save: {$e->getMessage()}", 'main-save-prepare-hook', $e);
+        }
+    }
+    
+    /**
+     * PHASE 3: Execute topics save during main save (WordPress hook)
+     * Called by gmkb_main_save_components action
+     */
+    public function execute_main_save($post_id, $save_data) {
+        try {
+            // Log execution start
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB Topics: Executing main save - Post ID: {$post_id}");
+            }
+            
+            // Check if topics data is included in save_data
+            if (isset($save_data['topics']) && is_array($save_data['topics'])) {
+                // Validate and save topics data from main save
+                $validated_topics = $this->validate_and_sanitize_custom_topics($save_data['topics']);
+                
+                if ($validated_topics['valid']) {
+                    $save_result = $this->save_custom_topics_to_post_meta($post_id, $validated_topics['topics'], 'main_save');
+                    
+                    // Update save status
+                    if ($save_result['success']) {
+                        update_post_meta($post_id, '_gmkb_topics_save_status', 'success');
+                        update_post_meta($post_id, '_gmkb_topics_main_save_result', $save_result);
+                    } else {
+                        update_post_meta($post_id, '_gmkb_topics_save_status', 'error');
+                        update_post_meta($post_id, '_gmkb_topics_main_save_error', $save_result['error']);
+                    }
+                } else {
+                    update_post_meta($post_id, '_gmkb_topics_save_status', 'validation_failed');
+                    update_post_meta($post_id, '_gmkb_topics_validation_errors', $validated_topics['errors']);
+                }
+            } else {
+                // No topics data in main save - mark as skipped
+                update_post_meta($post_id, '_gmkb_topics_save_status', 'skipped');
+            }
+            
+        } catch (Exception $e) {
+            update_post_meta($post_id, '_gmkb_topics_save_status', 'error');
+            update_post_meta($post_id, '_gmkb_topics_main_save_error', $e->getMessage());
+            $this->log_error("Error executing topics main save: {$e->getMessage()}", 'main-save-execute-hook', $e);
+        }
+    }
+    
+    /**
+     * PHASE 3: Finalize topics save after main save (WordPress hook)
+     * Called by gmkb_after_main_save action
+     */
+    public function finalize_main_save($post_id, $save_result, $save_context) {
+        try {
+            // Log finalization start
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB Topics: Finalizing main save - Post ID: {$post_id}, Success: " . ($save_result ? 'YES' : 'NO'));
+            }
+            
+            // Get topics save status
+            $topics_status = get_post_meta($post_id, '_gmkb_topics_save_status', true);
+            
+            // Update finalization timestamp
+            update_post_meta($post_id, '_gmkb_topics_finalize_timestamp', time());
+            
+            // Clean up temporary save context
+            delete_post_meta($post_id, '_gmkb_topics_save_context');
+            delete_post_meta($post_id, '_gmkb_topics_prepare_timestamp');
+            
+            // If main save was successful and topics were saved, update main save reference
+            if ($save_result && $topics_status === 'success') {
+                update_post_meta($post_id, 'gmkb_last_main_save', current_time('mysql'));
+                update_post_meta($post_id, 'gmkb_topics_included_in_main_save', true);
+            }
+            
+            // Log final status
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB Topics: Main save finalized - Status: {$topics_status}");
+            }
+            
+        } catch (Exception $e) {
+            $this->log_error("Error finalizing topics main save: {$e->getMessage()}", 'main-save-finalize-hook', $e);
+        }
+    }
+    
+    /**
      * Get handler status for debugging
      * 
      * @return array Status information
@@ -2051,7 +2365,7 @@ class GMKB_Topics_Ajax_Handler {
             'handlers_registered' => true,
             'save_cache_size' => count($this->save_cache),
             'errors_logged' => count($this->errors),
-            'version' => '1.0.0-root-fix-enhanced',
+            'version' => '1.0.0-phase3-enhanced',
             'wordpress_context' => $this->ensure_wordpress_context(),
             'user_permissions' => $this->validate_user_permissions(),
             'capabilities' => array(
@@ -2070,7 +2384,11 @@ class GMKB_Topics_Ajax_Handler {
                 'wordpress_context_validation' => true,
                 'custom_post_fields_save' => true,
                 'single_source_of_truth' => true,
-                'direct_field_mapping' => true
+                'direct_field_mapping' => true,
+                'main_save_coordination' => true,
+                'save_status_reporting' => true,
+                'coordinated_save_preparation' => true,
+                'transient_data_management' => true
             )
         );
     }

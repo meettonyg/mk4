@@ -1,3253 +1,1221 @@
 /**
- * Topics Component Panel Script - ROOT FIX IMPLEMENTATION
- * PHASE 3: Simplified, focused JavaScript for better UX
- * Focus: Core functionality, clean architecture, maintainable code
+ * Topics Design Panel Script - PHASE 3 ROOT FIX Implementation
+ * Seamless integration with Phase 2 bidirectional bridge for live editing
  * 
- * ROOT FIX: Ensure immediate availability and error recovery
+ * FEATURES:
+ * - Live topics editor with drag-and-drop reordering
+ * - Real-time quality scoring and enhancement suggestions
+ * - Bidirectional sync with preview through state manager
+ * - Auto-save with conflict resolution
+ * - Integration with MKCG content generator
+ * - Advanced UI interactions and feedback
+ * 
+ * @version 3.0.0-phase3-integration
  */
 
-// =================================================================================
-// EMERGENCY INITIALIZATION - Immediate script loading verification
-// =================================================================================
+class TopicsDesignPanelManager {
+    constructor() {
+        this.isInitialized = false;
+        this.stateManager = null;
+        this.sortable = null;
+        this.saveTimeout = null;
+        this.qualityTimer = null;
+        this.eventListeners = new Map();
+        
+        // UI elements
+        this.elements = {
+            container: null,
+            topicsList: null,
+            loading: null,
+            addPrompt: null,
+            addForm: null,
+            newTopicInput: null,
+            saveStatus: null,
+            counter: null,
+            qualityOverview: null
+        };
+        
+        // Configuration
+        this.config = {
+            maxTopics: 10,
+            autoSaveDelay: 2000,
+            qualityUpdateDelay: 500,
+            animationDuration: 300
+        };
+        
+        console.log('🎨 Topics Design Panel: Initializing...');
+        this.init();
+    }
 
-(function() {
-    'use strict';
-    
-    console.log('🎯 Topics Panel Script: LOADING (Enhanced Debug Mode)');
-    
-    // Immediate availability check
-    if (typeof window.topicsPanel !== 'undefined') {
-        console.log('⚠️ Topics Panel already exists, reinitializing...');
-    }
-    
-    // Emergency error handler
-    window.addEventListener('error', function(e) {
-        if (e.filename && e.filename.includes('panel-script')) {
-            console.error('❌ Topics Panel Script Error:', e.message, 'Line:', e.lineno);
+    async init() {
+        // Wait for DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initialize());
+        } else {
+            this.initialize();
         }
-    });
-    
-    // Initialize immediately if DOM is ready, otherwise wait
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeTopicsPanel);
-    } else {
-        // DOM is already ready
-        initializeTopicsPanel();
     }
-    
-    function initializeTopicsPanel() {
-        console.log('🚀 Topics Panel: Starting initialization...');
-        
+
+    async initialize() {
         try {
-            // Initialize core panel functionality
-            setupTopicsPanel();
+            // Find UI elements
+            this.findUIElements();
             
-        // ROOT FIX: Initialize save functionality
-        setTimeout(() => {
-            initializeTopicsSaveFunctionality();
-        }, 1000); // Give component time to fully load
-        
-        console.log('✅ Topics Panel initialized successfully');
-        } catch (error) {
-            console.error('❌ Error initializing Topics Panel:', error);
+            // Connect to state manager
+            await this.connectToStateManager();
             
-            // Emergency fallback
-            setupEmergencyTopicsPanel();
-        }
-    }
-    
-    function setupTopicsPanel() {
-        // Create global topics panel object
-        window.topicsPanel = {
-            version: 'root-fix-emergency',
-            initialized: false,
-            data: null
-        };
-        
-        console.log('🔧 Setting up Topics Panel core functions...');
-        
-        // Essential function: Load stored topics data
-        window.topicsPanel.loadStoredTopicsData = function(postId) {
-            console.log('📥 Loading stored topics data for post:', postId);
+            // Setup event handlers
+            this.setupEventListeners();
+            this.setupStateListeners();
+            this.setupSortable();
+            this.setupCollapsibleSections();
             
-            // Get post ID from parameter or detect automatically
-            const targetPostId = postId || detectPostId();
+            // Load initial data
+            await this.loadInitialData();
             
-            if (!targetPostId) {
-                console.warn('⚠️ No post ID available for loading topics');
-                return Promise.reject('No post ID');
-            }
+            // Initialize UI state
+            this.updateUI();
             
-            // Get AJAX data
-            const ajaxUrl = window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
-            const nonce = window.guestifyData?.nonce || '';
+            this.isInitialized = true;
+            console.log('✅ Topics Design Panel: Initialization complete');
             
-            if (!nonce) {
-                console.error('❌ No nonce available for AJAX request');
-                return Promise.reject('No nonce');
-            }
-            
-            const formData = new FormData();
-            formData.append('action', 'load_stored_topics');
-            formData.append('nonce', nonce);
-            formData.append('post_id', targetPostId);
-            
-            console.log('📡 Making AJAX request to:', ajaxUrl);
-            
-            return fetch(ajaxUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                console.log('📡 AJAX Response status:', response.status);
-                return response.text();
-            })
-            .then(text => {
-                console.log('📡 Raw AJAX response:', text.substring(0, 200) + '...');
-                
-                try {
-                    const data = JSON.parse(text);
-                    console.log('📊 Parsed AJAX data:', data);
-                    
-                    if (data.success) {
-                        console.log('✅ Topics data loaded successfully!');
-                        window.storedTopicsData = data;
-                        window.topicsPanel.data = data;
-                        
-                        // Try to update the UI if possible
-                        updateTopicsUI(data);
-                        
-                        return data;
-                    } else {
-                        console.error('❌ AJAX call failed:', data.data);
-                        return Promise.reject(data.data || 'Unknown error');
-                    }
-                } catch (parseError) {
-                    console.error('❌ ROOT FIX: Failed to parse AJAX response:', parseError);
-                    console.log('📄 ROOT FIX: Raw response that failed to parse:', text.substring(0, 500));
-                    
-                    // ROOT FIX: Enhanced error analysis
-                    const errorDetails = {
-                        error_type: 'JSON_PARSE_ERROR',
-                        parse_error: parseError.message,
-                        response_length: text.length,
-                        response_start: text.substring(0, 100),
-                        contains_html: text.includes('<html'),
-                        contains_php_error: text.includes('Fatal error') || text.includes('Warning:'),
-                        post_id: targetPostId
-                    };
-                    
-                    console.error('🔍 ROOT FIX: Detailed error analysis:', errorDetails);
-                    
-                    return Promise.reject(`Invalid JSON response: ${parseError.message}`);
-                }
-            })
-            .catch(error => {
-                console.error('❌ AJAX request failed:', error);
-                return Promise.reject(error);
+            // Trigger ready event
+            this.triggerEvent('topicsDesignPanelReady', {
+                panel: this,
+                topicsCount: this.stateManager?.getTopics().length || 0
             });
+            
+        } catch (error) {
+            console.error('❌ Topics Design Panel: Initialization failed:', error);
+            this.showError('Failed to initialize design panel: ' + error.message);
+        }
+    }
+
+    /**
+     * Find and cache UI elements
+     */
+    findUIElements() {
+        this.elements = {
+            container: document.getElementById('live-topics-container'),
+            topicsList: document.getElementById('live-topics-list'),
+            loading: document.getElementById('topics-loading'),
+            addPrompt: document.getElementById('add-topic-prompt'),
+            addForm: document.getElementById('add-topic-form'),
+            newTopicInput: document.getElementById('new-topic-input'),
+            saveStatus: document.getElementById('topics-save-status'),
+            counter: document.getElementById('live-topic-count'),
+            qualityOverview: document.getElementById('topics-quality-overview'),
+            
+            // Add topic interface
+            addFirstBtn: document.getElementById('add-first-topic-btn'),
+            confirmAddBtn: document.getElementById('confirm-add-topic'),
+            cancelAddBtn: document.getElementById('cancel-add-topic'),
+            
+            // Settings
+            sectionTitleInput: document.getElementById('section-title-input'),
+            sectionIntroInput: document.getElementById('section-intro-input'),
+            displayStyleSelect: document.getElementById('display-style-select'),
+            columnsSelect: document.getElementById('columns-select'),
+            
+            // Integration
+            loadFromMkcgBtn: document.getElementById('load-from-mkcg'),
+            syncWithMkcgBtn: document.getElementById('sync-with-mkcg'),
+            integrationStatus: document.getElementById('integration-status-text')
         };
+
+        // Validate required elements
+        const required = ['container', 'topicsList', 'loading'];
+        const missing = required.filter(key => !this.elements[key]);
         
-        // ROOT FIX: If auto-load failed but we have a post ID, show reload option
-        const postId = detectPostId();
-        if (postId && !window.storedTopicsData) {
-            console.log('🔄 ROOT FIX: Post ID detected by JavaScript, attempting component reload...');
+        if (missing.length > 0) {
+            throw new Error(`Missing required UI elements: ${missing.join(', ')}`);
+        }
+
+        console.log('🎯 Topics Design Panel: UI elements found and cached');
+    }
+
+    /**
+     * Connect to global state manager
+     */
+    async connectToStateManager() {
+        // Ensure state manager exists
+        if (!window.topicsStateManager) {
+            // Wait a bit for it to initialize
+            await new Promise(resolve => setTimeout(resolve, 100));
             
-            // Show reload button in the component
-            showComponentReloadOption(postId);
-            
-            // Auto-attempt to load topics data
-            setTimeout(() => {
-                if (window.topicsPanel && window.topicsPanel.loadStoredTopicsData) {
-                    console.log('🔄 ROOT FIX: Auto-attempting to load topics data...');
-                    window.topicsPanel.loadStoredTopicsData(postId)
-                        .then(data => {
-                            console.log('✅ ROOT FIX: Successfully loaded topics after JavaScript detection!');
-                            hideComponentReloadOption();
-                        })
-                        .catch(error => {
-                            console.warn('⚠️ ROOT FIX: Auto-reload failed, reload option still available');
-                        });
+            if (!window.topicsStateManager) {
+                // Create it if still missing
+                const { TopicsStateManager } = await import('./script.js');
+                window.topicsStateManager = new TopicsStateManager();
+            }
+        }
+        
+        this.stateManager = window.topicsStateManager;
+        
+        // Extract and set post ID if needed
+        const postId = this.extractPostId();
+        if (postId && !this.stateManager.postId) {
+            this.stateManager.setPostId(postId);
+        }
+        
+        console.log('🔗 Topics Design Panel: Connected to state manager');
+    }
+
+    /**
+     * Extract post ID from various sources
+     */
+    extractPostId() {
+        return (
+            new URLSearchParams(window.location.search).get('post_id') ||
+            new URLSearchParams(window.location.search).get('p') ||
+            window.guestifyData?.postId ||
+            window.guestifyMediaKit?.postId ||
+            document.querySelector('[data-post-id]')?.dataset.postId
+        );
+    }
+
+    /**
+     * Setup DOM event listeners
+     */
+    setupEventListeners() {
+        // Add topic buttons
+        this.elements.addFirstBtn?.addEventListener('click', () => this.showAddTopicForm());
+        this.elements.confirmAddBtn?.addEventListener('click', () => this.addNewTopic());
+        this.elements.cancelAddBtn?.addEventListener('click', () => this.hideAddTopicForm());
+
+        // New topic input
+        this.elements.newTopicInput?.addEventListener('input', (e) => this.validateNewTopicInput(e.target));
+        this.elements.newTopicInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.addNewTopic();
+            }
+        });
+
+        // Section settings
+        this.elements.sectionTitleInput?.addEventListener('input', (e) => this.updateSectionTitle(e.target.value));
+        this.elements.sectionIntroInput?.addEventListener('input', (e) => this.updateSectionIntro(e.target.value));
+
+        // Display options
+        this.elements.displayStyleSelect?.addEventListener('change', (e) => this.updateDisplayStyle(e.target.value));
+        this.elements.columnsSelect?.addEventListener('change', (e) => this.updateColumns(e.target.value));
+
+        // Integration actions
+        this.elements.loadFromMkcgBtn?.addEventListener('click', () => this.loadFromMKCG());
+        this.elements.syncWithMkcgBtn?.addEventListener('click', () => this.syncWithMKCG());
+
+        console.log('🔗 Topics Design Panel: Event listeners configured');
+    }
+
+    /**
+     * Setup state manager event listeners
+     */
+    setupStateListeners() {
+        if (!this.stateManager) return;
+
+        // Listen for topics changes
+        const listenerId = this.stateManager.addEventListener('topicsChanged', 
+            (e) => this.handleStateTopicsChanged(e), 
+            'designPanel_topicsChanged'
+        );
+        this.eventListeners.set('topicsChanged', listenerId);
+
+        // Listen for individual topic updates
+        const topicUpdateListenerId = this.stateManager.addEventListener('topicUpdated',
+            (e) => this.handleStateTopicUpdated(e),
+            'designPanel_topicUpdated'
+        );
+        this.eventListeners.set('topicUpdated', topicUpdateListenerId);
+
+        // Listen for save events
+        const saveListenerId = this.stateManager.addEventListener('saveSuccess',
+            (e) => this.handleStateSaveSuccess(e),
+            'designPanel_saveSuccess'
+        );
+        this.eventListeners.set('saveSuccess', saveListenerId);
+
+        const saveErrorListenerId = this.stateManager.addEventListener('saveError',
+            (e) => this.handleStateSaveError(e),
+            'designPanel_saveError'
+        );
+        this.eventListeners.set('saveError', saveErrorListenerId);
+
+        console.log('🔗 Topics Design Panel: State listeners configured');
+    }
+
+    /**
+     * Setup sortable drag-and-drop
+     */
+    setupSortable() {
+        if (!this.elements.topicsList || !window.Sortable) {
+            console.warn('⚠️ Sortable not available');
+            return;
+        }
+
+        this.sortable = Sortable.create(this.elements.topicsList, {
+            animation: 150,
+            ghostClass: 'topic-item-ghost',
+            chosenClass: 'topic-item-chosen',
+            dragClass: 'topic-item-drag',
+            handle: '.topic-drag-handle',
+            filter: '.topics-loading, .add-topic-interface',
+            preventOnFilter: false,
+            onStart: (evt) => {
+                evt.item.classList.add('is-dragging');
+                this.triggerEvent('topicDragStart', { index: evt.oldIndex });
+            },
+            onEnd: (evt) => {
+                evt.item.classList.remove('is-dragging');
+                
+                if (evt.oldIndex !== evt.newIndex) {
+                    this.handleTopicReorder(evt.oldIndex, evt.newIndex);
                 }
-            }, 1000);
-        }
-        
-        window.topicsPanel.initialized = true;
-        console.log('✅ Topics Panel setup complete');
-    }
-    
-    function setupEmergencyTopicsPanel() {
-        console.log('🚨 Setting up emergency Topics Panel fallback...');
-        
-        window.topicsPanel = {
-            version: 'emergency-fallback',
-            initialized: true,
-            loadStoredTopicsData: function() {
-                console.log('🚨 Emergency handler: Topics data loading not available');
-                return Promise.reject('Emergency mode - full functionality not available');
+                
+                this.triggerEvent('topicDragEnd', { 
+                    fromIndex: evt.oldIndex, 
+                    toIndex: evt.newIndex 
+                });
             }
-        };
+        });
+
+        console.log('🎯 Topics Design Panel: Sortable drag-and-drop enabled');
     }
-    
-    function detectPostId() {
-    // ROOT FIX: Enhanced post ID detection with multiple methods
-    
-    // Method 1: URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    let postId = urlParams.get('post_id') || urlParams.get('p') || urlParams.get('page_id') || urlParams.get('post');
-    
-    if (postId) {
-    console.log('🎯 ROOT FIX: Post ID from URL params:', postId);
-    return postId;
+
+    /**
+     * Setup collapsible sections
+     */
+    setupCollapsibleSections() {
+        const toggles = document.querySelectorAll('.form-section__toggle');
+        
+        toggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const section = toggle.closest('.form-section--collapsible');
+                const content = section?.querySelector('.form-section__content');
+                
+                if (content) {
+                    const isExpanded = content.style.display !== 'none';
+                    content.style.display = isExpanded ? 'none' : 'block';
+                    section.classList.toggle('expanded', !isExpanded);
+                }
+            });
+        });
     }
-    
-    // Method 2: Check topics container data attribute
-    const topicsContainer = document.querySelector('.topics-container');
-    if (topicsContainer) {
-    postId = topicsContainer.getAttribute('data-post-id');
-        if (postId && postId !== '0') {
-            console.log('🎯 ROOT FIX: Post ID from topics container:', postId);
-            return postId;
-        }
-    }
-    
-    // Method 3: Check component data attribute
-    const component = document.querySelector('.editable-element[data-component="topics"]');
-    if (component) {
-        postId = component.getAttribute('data-post-id') || component.getAttribute('data-id');
-        if (postId && postId !== '0') {
-            console.log('🎯 ROOT FIX: Post ID from component:', postId);
-            return postId;
-        }
-    }
-    
-    // Method 4: Global guestify data
-    if (window.guestifyData && window.guestifyData.postId) {
-        postId = window.guestifyData.postId;
-        console.log('🎯 ROOT FIX: Post ID from guestifyData:', postId);
-        return postId;
-    }
-    
-    // Method 5: WordPress admin context
-    if (window.location.href.includes('wp-admin')) {
-        const adminMatch = window.location.href.match(/[?&]post=([0-9]+)/);
-        if (adminMatch) {
-            postId = adminMatch[1];
-            console.log('🎯 ROOT FIX: Post ID from admin URL:', postId);
-            return postId;
-        }
-    }
-    
-    // Method 6: Body class detection (WordPress often adds post-id-123 classes)
-    const bodyClasses = document.body.className;
-    const postIdMatch = bodyClasses.match(/post-id-([0-9]+)/);
-    if (postIdMatch) {
-        postId = postIdMatch[1];
-        console.log('🎯 ROOT FIX: Post ID from body class:', postId);
-        return postId;
-    }
-    
-    // Method 7: Check for WordPress REST API context
-    if (window.wp && window.wp.api && window.wp.api.models && window.wp.api.models.Post) {
-        // This is a more advanced detection for WordPress REST API contexts
+
+    /**
+     * Load initial data
+     */
+    async loadInitialData() {
+        if (!this.stateManager) return;
+
+        this.showLoading(true);
+        
         try {
-            const currentPost = window.wp.api.models.Post.prototype.get('id');
-            if (currentPost) {
-                postId = currentPost;
-                console.log('🎯 ROOT FIX: Post ID from WP API:', postId);
-                return postId;
+            // Load topics if state is empty
+            if (this.stateManager.getTopics().length === 0) {
+                await this.stateManager.loadTopics('auto');
             }
-        } catch (e) {
-            // REST API not available or accessible
+            
+            // Render current state
+            this.renderTopicsList();
+            this.updateTopicsCounter();
+            this.updateQualityOverview();
+            this.checkIntegrationStatus();
+            
+        } catch (error) {
+            console.error('Failed to load initial data:', error);
+            this.showError('Failed to load topics: ' + error.message);
+        } finally {
+            this.showLoading(false);
         }
     }
-    
-    // Method 8: Fallback to test post ID for development
-    if (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') || window.location.hostname.includes('.local')) {
-        const testPostId = '32372'; // Your test post ID
-        console.log('🎯 ROOT FIX: Using test post ID for development:', testPostId);
-        return testPostId;
-    }
-    
-    console.log('⚠️ ROOT FIX: No post ID detected from any method');
-    return null;
-}
-    
-    // ROOT FIX: Add component re-render function
-    function triggerComponentReRender(topicsData, postId) {
-        console.log('🔄 ROOT FIX: Attempting to re-render component with fresh data');
-        
-        const component = document.querySelector('.editable-element[data-component="topics"]');
-        const topicsContainer = component?.querySelector('.topics-container');
-        
-        if (!component || !topicsContainer) {
-            console.warn('⚠️ Component or container not found for re-render');
+
+    /**
+     * Handle state topics changed
+     */
+    handleStateTopicsChanged(e) {
+        if (e.data.source === 'designPanel') {
+            // Ignore changes originating from design panel
             return;
         }
         
-        // ROOT FIX: Update data attributes with fresh values
-        topicsContainer.setAttribute('data-has-dynamic-topics', 'true');
-        topicsContainer.setAttribute('data-post-id', postId);
-        topicsContainer.setAttribute('data-topics-source', 'ajax_loaded');
-        topicsContainer.setAttribute('data-topics-count', Object.keys(topicsData).length);
+        console.log('🔄 Design Panel: Syncing with state changes');
+        this.renderTopicsList();
+        this.updateTopicsCounter();
+        this.updateQualityOverview();
+    }
+
+    /**
+     * Handle state topic updated
+     */
+    handleStateTopicUpdated(e) {
+        if (e.data.source === 'designPanel') {
+            return;
+        }
         
-        console.log('✅ ROOT FIX: Updated component data attributes');
+        console.log(`📝 Design Panel: Updating topic ${e.data.topicId}`);
+        this.updateTopicInList(e.data.index, e.data.topic);
+    }
+
+    /**
+     * Render topics list
+     */
+    renderTopicsList() {
+        if (!this.elements.topicsList) return;
+
+        const topics = this.stateManager?.getTopics() || [];
         
-        // Clear and rebuild topics
-        topicsContainer.innerHTML = '';
-        
-        Object.entries(topicsData).forEach(([key, value], index) => {
-            if (value && value.trim()) {
-                const topicElement = createTopicElementFromData(value, index, 'ajax_loaded', key);
-                topicsContainer.appendChild(topicElement);
-            }
+        // Clear existing topics (but keep loading and add interface)
+        const existingItems = this.elements.topicsList.querySelectorAll('.live-topic-item');
+        existingItems.forEach(item => item.remove());
+
+        if (topics.length === 0) {
+            this.showAddTopicPrompt();
+            return;
+        }
+
+        // Render each topic
+        topics.forEach((topic, index) => {
+            const topicEl = this.createTopicElement(topic, index);
+            this.elements.topicsList.insertBefore(topicEl, this.elements.loading);
         });
-        
-        console.log('✅ ROOT FIX: Component re-rendered with', Object.keys(topicsData).length, 'topics');
-        
-        // Show success notification
-        showTopicsLoadedMessage(Object.keys(topicsData).length);
-        
-        // Refresh the panel if it's open
-        setTimeout(() => {
-            loadExistingTopics();
-        }, 500);
+
+        this.hideAddTopicPrompt();
+        this.showQualityOverview();
     }
-    
-    // ROOT FIX: Create topic element from loaded data
-    function createTopicElementFromData(title, index, source, metaKey) {
-        const topicDiv = document.createElement('div');
-        topicDiv.className = 'topic-item';
-        topicDiv.setAttribute('data-topic-index', index);
-        topicDiv.setAttribute('data-topic-id', `topics_topic_${index}`);
-        topicDiv.setAttribute('data-topic-source', source);
-        topicDiv.setAttribute('data-meta-key', metaKey);
+
+    /**
+     * Create topic element for design panel
+     */
+    createTopicElement(topic, index) {
+        const quality = this.getQualityLevel(topic.quality);
         
-        topicDiv.innerHTML = `
-            <div class="topic-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                </svg>
+        const topicEl = document.createElement('div');
+        topicEl.className = 'live-topic-item';
+        topicEl.dataset.topicId = topic.id;
+        topicEl.dataset.index = index;
+        
+        topicEl.innerHTML = `
+            <div class="topic-drag-handle" title="Drag to reorder">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
+            
             <div class="topic-content">
-                <div class="topic-title">${escapeHtml(title)}</div>
+                <input type="text" 
+                       class="topic-input" 
+                       value="${this.escapeHtml(topic.title)}"
+                       data-topic-id="${topic.id}"
+                       data-original-value="${this.escapeHtml(topic.title)}"
+                       maxlength="100"
+                       placeholder="Enter topic title...">
+                
+                <div class="topic-meta">
+                    <div class="topic-quality">
+                        <span class="quality-label ${quality}">${quality.toUpperCase()}</span>
+                        <div class="quality-bar">
+                            <div class="quality-fill ${quality}" style="width: ${topic.quality}%"></div>
+                        </div>
+                        <span class="quality-score">${topic.quality}%</span>
+                    </div>
+                    <span class="topic-source">Source: ${topic.source}</span>
+                    <span class="topic-chars">${topic.title.length}/100</span>
+                </div>
             </div>
-        `;
-        
-        return topicDiv;
-    }
-    
-    function updateTopicsUI(data) {
-        try {
-            if (!data || !data.topics) {
-                return;
-            }
             
-            console.log('🎨 Updating topics UI with loaded data...');
-            
-            // Show success message if topics found
-            const topicsCount = Object.keys(data.topics).length;
-            if (topicsCount > 0) {
-                showTopicsLoadedMessage(topicsCount);
-            }
-            
-        } catch (error) {
-            console.error('❌ Error updating topics UI:', error);
-        }
-    }
-    
-    // ROOT FIX: Show component reload option when post ID is detected by JavaScript
-    function showComponentReloadOption(postId) {
-        const component = document.querySelector('.editable-element[data-component="topics"]');
-        if (!component) return;
-        
-        // Remove existing reload option
-        const existingReload = component.querySelector('.topics-reload-option');
-        if (existingReload) {
-            existingReload.remove();
-        }
-        
-        // Create reload option
-        const reloadDiv = document.createElement('div');
-        reloadDiv.className = 'topics-reload-option';
-        reloadDiv.innerHTML = `
-            <div style="
-                background: #e3f2fd;
-                border: 1px solid #2196f3;
-                border-radius: 6px;
-                padding: 12px;
-                margin: 10px;
-                text-align: center;
-                font-size: 14px;
-                color: #1976d2;
-            ">
-                <div style="margin-bottom: 8px; font-weight: 500;">
-                    🔄 Post ID ${postId} detected!
-                </div>
-                <div style="margin-bottom: 10px; font-size: 12px; opacity: 0.8;">
-                    Click to load your topics from this post
-                </div>
-                <button class="topics-reload-btn" style="
-                    background: #2196f3;
-                    color: white;
-                    border: none;
-                    padding: 6px 12px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    font-weight: 500;
-                ">
-                    Load Topics Now
+            <div class="topic-actions">
+                <button class="topic-action-btn" title="Enhance Quality" data-action="enhance">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                </button>
+                <button class="topic-action-btn" title="Duplicate Topic" data-action="duplicate">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+                <button class="topic-action-btn danger" title="Delete Topic" data-action="delete">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                    </svg>
                 </button>
             </div>
         `;
-        
-        // Add click handler
-        const reloadBtn = reloadDiv.querySelector('.topics-reload-btn');
-        reloadBtn.addEventListener('click', () => {
-            console.log('🔄 ROOT FIX: Manual reload requested for post:', postId);
-            reloadBtn.textContent = 'Loading...';
-            reloadBtn.disabled = true;
-            
-            if (window.topicsPanel && window.topicsPanel.loadStoredTopicsData) {
-                window.topicsPanel.loadStoredTopicsData(postId)
-                    .then(data => {
-                        console.log('✅ ROOT FIX: Manual reload successful!');
-                        hideComponentReloadOption();
-                    })
-                    .catch(error => {
-                        console.error('❌ ROOT FIX: Manual reload failed:', error);
-                        reloadBtn.textContent = 'Retry';
-                        reloadBtn.disabled = false;
-                    });
-            }
-        });
-        
-        // Insert at the top of the component
-        component.insertBefore(reloadDiv, component.firstChild);
-        
-        console.log('🔄 ROOT FIX: Reload option shown for post:', postId);
-    }
-    
-    function hideComponentReloadOption() {
-        const reloadOption = document.querySelector('.topics-reload-option');
-        if (reloadOption) {
-            reloadOption.style.opacity = '0';
-            reloadOption.style.transition = 'opacity 0.3s ease-out';
-            
-            setTimeout(() => {
-                if (reloadOption.parentNode) {
-                    reloadOption.parentNode.removeChild(reloadOption);
-                }
-            }, 300);
-            
-            console.log('✅ ROOT FIX: Reload option hidden');
-        }
-    }
-    
-    function showTopicsLoadedMessage(count) {
-        // Create a temporary notification
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            z-index: 10000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        `;
-        notification.textContent = `✅ ${count} topics loaded from post data!`;
-        
-        document.body.appendChild(notification);
-        
-        // Remove after 3 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 3000);
-    }
-    
-    // ROOT FIX: Component loading indicators
-    function showComponentLoadingIndicator() {
-        const component = document.querySelector('.editable-element[data-component="topics"]');
-        if (!component) return;
-        
-        // Remove existing indicator
-        const existingIndicator = component.querySelector('.topics-loading-overlay');
-        if (existingIndicator) {
-            existingIndicator.remove();
-        }
-        
-        // Create loading overlay
-        const loadingOverlay = document.createElement('div');
-        loadingOverlay.className = 'topics-loading-overlay';
-        loadingOverlay.innerHTML = `
-            <div class="loading-content">
-                <div class="loading-spinner"></div>
-                <div class="loading-text">🔄 Refreshing topics from post data...</div>
-            </div>
-        `;
-        
-        loadingOverlay.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            border-radius: 8px;
-        `;
-        
-        // Style the loading content
-        const style = document.createElement('style');
-        style.textContent = `
-            .loading-content {
-                text-align: center;
-                color: #6b7280;
-            }
-            .loading-spinner {
-                width: 32px;
-                height: 32px;
-                border: 3px solid #e5e7eb;
-                border-top: 3px solid #10b981;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 12px;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            .loading-text {
-                font-size: 14px;
-                font-weight: 500;
-            }
-        `;
-        
-        if (!document.getElementById('topics-loading-styles')) {
-            style.id = 'topics-loading-styles';
-            document.head.appendChild(style);
-        }
-        
-        // Ensure component has relative positioning
-        component.style.position = 'relative';
-        component.appendChild(loadingOverlay);
-        
-        console.log('🔄 ROOT FIX: Loading indicator shown');
-    }
-    
-    function hideComponentLoadingIndicator() {
-        const loadingOverlay = document.querySelector('.topics-loading-overlay');
-        if (loadingOverlay) {
-            loadingOverlay.style.opacity = '0';
-            loadingOverlay.style.transition = 'opacity 0.3s ease-out';
-            
-            setTimeout(() => {
-                if (loadingOverlay.parentNode) {
-                    loadingOverlay.parentNode.removeChild(loadingOverlay);
-                }
-            }, 300);
-            
-            console.log('✅ ROOT FIX: Loading indicator hidden');
-        }
-    }
-    
-})();
 
-// =================================================================================
-// ROOT FIX: SAVE FUNCTIONALITY - Added to existing working script
-// =================================================================================
-
-/**
- * ROOT FIX: Initialize save functionality for contenteditable topics
- */
-function initializeTopicsSaveFunctionality() {
-    console.log('💾 ROOT FIX: Initializing topics save functionality...');
-    
-    const component = document.querySelector('.editable-element[data-component="topics"]');
-    if (!component) {
-        console.warn('⚠️ Topics component not found for save functionality');
-        return;
+        // Setup event listeners
+        this.setupTopicElementListeners(topicEl, topic);
+        
+        return topicEl;
     }
-    
-    // Setup save interface
-    setupSaveInterface(component);
-    
-    // Setup contenteditable save listeners
-    setupContentEditableSaveListeners(component);
-    
-    // Setup main save button integration
-    setupMainSaveIntegration();
-    
-    console.log('✅ ROOT FIX: Topics save functionality initialized');
-}
 
-/**
- * ROOT FIX: Setup save interface with status indicators
- */
-function setupSaveInterface(component) {
-    // Create save status indicator if it doesn't exist
-    let saveInterface = component.querySelector('.topics-save-interface');
-    if (!saveInterface) {
-        const saveStatusHtml = `
-            <div class="topics-save-interface" style="margin-top: 10px;">
-                <div class="save-status" data-status="saved">
-                    <span class="save-indicator">✅</span>
-                    <span class="save-text">Saved</span>
-                    <span class="save-timestamp"></span>
-                </div>
-                <div class="save-actions">
-                    <button class="manual-save-btn" style="display: none; margin-left: 10px; padding: 4px 8px; font-size: 12px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        Save Now
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        // Insert save interface after topics container
-        const container = component.querySelector('.topics-container');
-        if (container) {
-            container.insertAdjacentHTML('afterend', saveStatusHtml);
-            
-            // Setup manual save button
-            const manualSaveBtn = component.querySelector('.manual-save-btn');
-            if (manualSaveBtn) {
-                manualSaveBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    performTopicsSave('manual');
-                });
-            }
-        }
-    }
-    
-    updateSaveStatus('saved');
-}
+    /**
+     * Setup event listeners for topic element
+     */
+    setupTopicElementListeners(topicEl, topic) {
+        const input = topicEl.querySelector('.topic-input');
+        const actionButtons = topicEl.querySelectorAll('.topic-action-btn');
 
-/**
- * ROOT FIX: Setup contenteditable save listeners
- */
-function setupContentEditableSaveListeners(component) {
-    const topicTitles = component.querySelectorAll('.topic-title[contenteditable="true"]');
-    
-    topicTitles.forEach((titleElement, index) => {
-        // Store original value
-        titleElement.dataset.originalValue = titleElement.textContent.trim();
-        
-        // Listen for content changes
-        titleElement.addEventListener('focusout', (e) => {
-            const newValue = e.target.textContent.trim();
-            const oldValue = e.target.dataset.originalValue;
-            
-            if (oldValue !== newValue) {
-                console.log(`📝 ROOT FIX: Topic ${index + 1} changed: "${oldValue}" → "${newValue}"`);
-                
-                // Clean the value
-                const cleanValue = newValue.replace(/\s+/g, ' ').trim();
-                e.target.textContent = cleanValue;
-                e.target.dataset.originalValue = cleanValue;
-                
-                // Mark as unsaved and schedule save
-                updateSaveStatus('unsaved');
-                scheduleAutoSave();
-            }
-        });
-        
-        // Prevent line breaks
-        titleElement.addEventListener('keypress', (e) => {
+        // Input handling
+        input?.addEventListener('input', (e) => this.handleTopicInput(e, topic));
+        input?.addEventListener('blur', (e) => this.handleTopicBlur(e, topic));
+        input?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault();
-                e.target.blur(); // Trigger save
+                e.target.blur();
             }
         });
+
+        // Action buttons
+        actionButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleTopicAction(btn.dataset.action, topic, topicEl);
+            });
+        });
+    }
+
+    /**
+     * Handle topic input changes
+     */
+    handleTopicInput(e, topic) {
+        const newValue = e.target.value;
+        const topicEl = e.target.closest('.live-topic-item');
         
-        // Real-time feedback
-        titleElement.addEventListener('input', () => {
-            updateSaveStatus('unsaved');
-        });
-    });
-}
-
-/**
- * ROOT FIX: Setup main save button integration
- */
-function setupMainSaveIntegration() {
-    // Listen for main save events
-    if (window.addEventListener) {
-        window.addEventListener('mainSaveTriggered', () => {
-            console.log('🔄 ROOT FIX: Main save triggered - saving topics');
-            performTopicsSave('main_save');
-        });
-    }
-    
-    // Global save trigger function
-    window.triggerTopicsSave = function() {
-        console.log('🔄 ROOT FIX: Global topics save triggered');
-        performTopicsSave('global_save');
-    };
-}
-
-let saveTimeout = null;
-let unsavedChanges = false;
-
-/**
- * ROOT FIX: Schedule auto-save with debouncing
- */
-function scheduleAutoSave() {
-    if (saveTimeout) {
-        clearTimeout(saveTimeout);
-    }
-    
-    saveTimeout = setTimeout(() => {
-        if (unsavedChanges) {
-            performTopicsSave('auto');
+        // Update character count
+        const charCount = topicEl?.querySelector('.topic-chars');
+        if (charCount) {
+            charCount.textContent = `${newValue.length}/100`;
         }
-    }, 2000); // 2 second delay
-    
-    console.log('⏱️ ROOT FIX: Auto-save scheduled in 2 seconds');
-}
-
-/**
- * ROOT FIX: Perform topics save
- */
-async function performTopicsSave(saveType = 'manual') {
-    const postId = detectPostId();
-    
-    if (!postId) {
-        console.error('❌ ROOT FIX: Cannot save - no post ID available');
-        updateSaveStatus('error', 'No post ID available');
-        return;
+        
+        // Update quality in real-time with debouncing
+        if (this.qualityTimer) {
+            clearTimeout(this.qualityTimer);
+        }
+        
+        this.qualityTimer = setTimeout(() => {
+            this.updateTopicQualityDisplay(topicEl, newValue);
+        }, this.config.qualityUpdateDelay);
+        
+        // Mark as unsaved
+        this.setSaveStatus('unsaved');
     }
-    
-    console.log(`💾 ROOT FIX: Starting ${saveType} save for post ${postId}`);
-    updateSaveStatus('saving');
-    
-    try {
-        // Collect topics data from DOM
-        const topicsData = collectTopicsFromDOM();
+
+    /**
+     * Handle topic blur (save changes)
+     */
+    handleTopicBlur(e, topic) {
+        const newValue = e.target.value.trim();
+        const originalValue = e.target.dataset.originalValue;
         
-        console.log('📤 ROOT FIX: Topics data to save:', topicsData);
+        if (newValue !== originalValue) {
+            // Update state manager (this will sync with preview)
+            this.stateManager.updateTopic(topic.id, { title: newValue }, 'designPanel');
+            
+            // Update original value
+            e.target.dataset.originalValue = newValue;
+            
+            // Schedule auto-save
+            this.scheduleAutoSave();
+            
+            console.log(`📝 Design Panel: Topic updated - "${originalValue}" → "${newValue}"`);
+        }
+    }
+
+    /**
+     * Handle topic actions
+     */
+    handleTopicAction(action, topic, topicEl) {
+        switch (action) {
+            case 'enhance':
+                this.enhanceTopicQuality(topic);
+                break;
+            case 'duplicate':
+                this.duplicateTopic(topic);
+                break;
+            case 'delete':
+                this.deleteTopic(topic, topicEl);
+                break;
+        }
+    }
+
+    /**
+     * Enhance topic quality
+     */
+    enhanceTopicQuality(topic) {
+        const suggestions = this.getQualityEnhancements(topic.title);
         
-        // Prepare AJAX request
-        const requestData = {
-            action: 'save_custom_topics',
-            post_id: postId,
-            topics: topicsData,
-            save_type: saveType,
-            client_timestamp: Math.floor(Date.now() / 1000),
-            nonce: window.guestifyData?.nonce || window.guestifyMediaKit?.nonce || ''
+        if (suggestions.length > 0) {
+            const message = `Quality Enhancement Suggestions for "${topic.title}":\n\n` +
+                           suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n') +
+                           '\n\nChoose an option:';
+            
+            // Show enhancement dialog
+            this.showEnhancementDialog(topic, suggestions);
+        } else {
+            this.showMessage(`"${topic.title}" already has excellent quality!`, 'success');
+        }
+    }
+
+    /**
+     * Get quality enhancement suggestions
+     */
+    getQualityEnhancements(title) {
+        const enhancements = [];
+        
+        if (title.length < 20) {
+            enhancements.push(`${title} Strategies and Best Practices`);
+            enhancements.push(`Advanced ${title} Techniques`);
+        }
+        
+        if (!title.includes('and') && !title.includes('&')) {
+            enhancements.push(`${title} and Implementation`);
+            enhancements.push(`${title} and Real-World Applications`);
+        }
+        
+        if (title.charAt(0) !== title.charAt(0).toUpperCase()) {
+            enhancements.push(title.charAt(0).toUpperCase() + title.slice(1));
+        }
+        
+        if (!/\b(strategy|strategies|techniques|methods|approaches|solutions)\b/i.test(title)) {
+            enhancements.push(`${title} Strategies`);
+            enhancements.push(`${title} Methodologies`);
+        }
+        
+        return enhancements.slice(0, 4);
+    }
+
+    /**
+     * Show enhancement dialog
+     */
+    showEnhancementDialog(topic, suggestions) {
+        const dialog = document.createElement('div');
+        dialog.className = 'enhancement-dialog-overlay';
+        dialog.innerHTML = `
+            <div class="enhancement-dialog">
+                <div class="dialog-header">
+                    <h3>Enhance Topic Quality</h3>
+                    <button class="dialog-close">&times;</button>
+                </div>
+                <div class="dialog-content">
+                    <p>Original: <strong>"${this.escapeHtml(topic.title)}"</strong></p>
+                    <p>Choose an enhancement:</p>
+                    <div class="enhancement-options">
+                        ${suggestions.map((suggestion, index) => `
+                            <button class="enhancement-option" data-index="${index}">
+                                <span class="option-number">${index + 1}</span>
+                                <span class="option-text">${this.escapeHtml(suggestion)}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="dialog-actions">
+                    <button class="btn btn--secondary dialog-cancel">Cancel</button>
+                    <button class="btn btn--primary" id="apply-custom">Apply Custom</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+        
+        // Event listeners
+        const closeBtn = dialog.querySelector('.dialog-close');
+        const cancelBtn = dialog.querySelector('.dialog-cancel');
+        const optionBtns = dialog.querySelectorAll('.enhancement-option');
+        
+        const closeDialog = () => {
+            document.body.removeChild(dialog);
         };
         
-        if (!requestData.nonce) {
-            throw new Error('No nonce available for save request');
-        }
+        closeBtn?.addEventListener('click', closeDialog);
+        cancelBtn?.addEventListener('click', closeDialog);
         
-        console.log('📡 ROOT FIX: Sending save request:', requestData);
-        
-        const response = await sendTopicsSaveRequest(requestData);
-        
-        if (response.success) {
-            unsavedChanges = false;
-            updateSaveStatus('saved', `${response.data.topics_saved} topics saved`);
-            
-            console.log('✅ ROOT FIX: Save successful:', response.data);
-            
-            // Update original values
-            updateOriginalValues();
-            
-        } else {
-            throw new Error(response.data?.message || 'Save failed');
-        }
-        
-    } catch (error) {
-        console.error('❌ ROOT FIX: Save failed:', error);
-        updateSaveStatus('error', error.message || 'Save failed');
-    }
-}
-
-/**
- * ROOT FIX: Collect topics data from DOM
- */
-function collectTopicsFromDOM() {
-    const component = document.querySelector('.editable-element[data-component="topics"]');
-    const topicsData = {};
-    
-    if (!component) return topicsData;
-    
-    const topicItems = component.querySelectorAll('.topic-item');
-    
-    topicItems.forEach((item, index) => {
-        const titleElement = item.querySelector('.topic-title');
-        if (titleElement) {
-            const title = titleElement.textContent.trim();
-            if (title) {
-                const cleanTitle = title.replace(/\s+/g, ' ').trim();
-                topicsData[`topic_${index + 1}`] = cleanTitle;
-                console.log(`🧽 ROOT FIX: Collected topic_${index + 1}: "${cleanTitle}"`);
-            }
-        }
-    });
-    
-    return topicsData;
-}
-
-/**
- * ROOT FIX: Send topics save request
- */
-async function sendTopicsSaveRequest(data) {
-    const url = window.guestifyData?.ajaxUrl || window.guestifyMediaKit?.ajaxUrl || '/wp-admin/admin-ajax.php';
-    
-    const formData = new FormData();
-    Object.keys(data).forEach(key => {
-        if (typeof data[key] === 'object') {
-            formData.append(key, JSON.stringify(data[key]));
-        } else {
-            formData.append(key, data[key]);
-        }
-    });
-    
-    const response = await fetch(url, {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin'
-    });
-    
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    return result;
-}
-
-/**
- * ROOT FIX: Update save status indicator
- */
-function updateSaveStatus(status, message = '') {
-    const statusElement = document.querySelector('.save-status');
-    const indicatorElement = document.querySelector('.save-indicator');
-    const textElement = document.querySelector('.save-text');
-    const timestampElement = document.querySelector('.save-timestamp');
-    const manualSaveBtn = document.querySelector('.manual-save-btn');
-    
-    if (!statusElement) return;
-    
-    statusElement.dataset.status = status;
-    
-    const statusConfig = {
-        'saved': { 
-            indicator: '✅', 
-            text: 'Saved', 
-            showButton: false,
-            color: '#10b981' 
-        },
-        'saving': { 
-            indicator: '⏳', 
-            text: 'Saving...', 
-            showButton: false,
-            color: '#f59e0b' 
-        },
-        'unsaved': { 
-            indicator: '⚠️', 
-            text: 'Unsaved changes', 
-            showButton: true,
-            color: '#ef4444' 
-        },
-        'error': { 
-            indicator: '❌', 
-            text: 'Save failed', 
-            showButton: true,
-            color: '#ef4444' 
-        }
-    };
-    
-    const config = statusConfig[status] || statusConfig['saved'];
-    
-    if (indicatorElement) indicatorElement.textContent = config.indicator;
-    if (textElement) {
-        textElement.textContent = message || config.text;
-        textElement.style.color = config.color;
-    }
-    
-    if (manualSaveBtn) {
-        manualSaveBtn.style.display = config.showButton ? 'inline-block' : 'none';
-    }
-    
-    if (timestampElement && status === 'saved') {
-        const time = new Date().toLocaleTimeString();
-        timestampElement.textContent = `at ${time}`;
-        timestampElement.style.opacity = '0.6';
-    }
-    
-    // Update global unsaved changes flag
-    unsavedChanges = (status === 'unsaved');
-    
-    console.log(`🔔 ROOT FIX: Save status: ${status} - ${message || config.text}`);
-}
-
-/**
- * ROOT FIX: Update original values after successful save
- */
-function updateOriginalValues() {
-    const component = document.querySelector('.editable-element[data-component="topics"]');
-    if (!component) return;
-    
-    const titleElements = component.querySelectorAll('.topic-title[contenteditable="true"]');
-    titleElements.forEach(element => {
-        element.dataset.originalValue = element.textContent.trim();
-    });
-}
-
-// =================================================================================
-// END ROOT FIX: SAVE FUNCTIONALITY
-// =================================================================================
-
-console.log('📝 Topics Panel Script: Core emergency functions loaded');
-
-// =================================================================================
-// ORIGINAL PANEL FUNCTIONALITY (Enhanced with error recovery)
-// =================================================================================
-
-/**
- * Main panel initialization - simplified and focused
- * @param {HTMLElement} element The main component element
- */
-function initializeTopicsPanel(element) {
-    console.log('🚀 Initializing Topics Panel...');
-    
-    try {
-        // Initialize core panel functionality
-        setupBasicControls(element);
-        setupTopicsEditor();
-        setupDisplayControls(element);
-        setupAdvancedFeatures();
-        setupMKCGIntegration(); // Optional - only if available
-        
-        console.log('✅ Topics Panel initialized successfully');
-        
-    } catch (error) {
-        console.error('❌ Error initializing Topics Panel:', error);
-        showNotification('Panel initialization failed. Some features may not work.', 'error');
-    }
-}
-
-// =================================================================================
-// CORE PANEL CONTROLS - Essential functionality
-// =================================================================================
-
-/**
- * Setup basic form controls for content and display
- * @param {HTMLElement} element The component element
- */
-function setupBasicControls(element) {
-    console.log('🔧 Setting up basic controls...');
-    
-    // Title and introduction text controls
-    setupTextControl('title', '.topics-section-title', element);
-    setupTextControl('introduction', '.topics-introduction', element);
-    
-    // Color picker
-    setupColorPicker(element);
-    
-    // Checkbox controls
-    setupCheckboxControls(element);
-    
-    console.log('✅ Basic controls initialized');
-}
-
-/**
- * Setup text input controls with live preview
- * ROOT FIX: Enhanced with proper event triggering and preview updates
- * @param {string} property The data property name
- * @param {string} selector The preview element selector
- * @param {HTMLElement} element The component element
- */
-function setupTextControl(property, selector, element) {
-    const input = document.querySelector(`[data-property="${property}"]`);
-    if (!input) return;
-    
-    // Get initial value from component
-    const previewElement = element.querySelector(selector);
-    if (previewElement) {
-        input.value = previewElement.textContent.trim();
-    }
-    
-    // ROOT FIX: Enhanced live update listener with immediate preview updates
-    input.addEventListener('input', debounce(() => {
-        const previewElement = element.querySelector(selector);
-        if (previewElement) {
-            previewElement.textContent = input.value;
-            
-            // ROOT FIX: Trigger both component update AND enhanced preview update
-            triggerComponentUpdate(element);
-            triggerEnhancedComponentUpdate(element);
-            
-            console.log(`🎨 ROOT FIX: Text control "${property}" updated to: "${input.value}"`);
-        }
-    }, 150)); // ROOT FIX: Reduced debounce for more responsive updates
-}
-
-/**
- * Setup color picker with live preview
- * ROOT FIX: Enhanced with immediate updates and better event handling
- * @param {HTMLElement} element The component element
- */
-function setupColorPicker(element) {
-    const colorInput = document.querySelector('[data-property="topicColor"]');
-    const textInput = colorInput?.nextElementSibling;
-    
-    if (!colorInput || !textInput) return;
-    
-    // ROOT FIX: Enhanced color input with immediate preview updates
-    colorInput.addEventListener('input', () => {
-        console.log('🎨 ROOT FIX: Color picker changed to:', colorInput.value);
-        textInput.value = colorInput.value;
-        applyColorToComponent(element, colorInput.value);
-        
-        // ROOT FIX: Trigger both update types for immediate response
-        triggerComponentUpdate(element);
-        triggerEnhancedComponentUpdate(element);
-    });
-    
-    // ROOT FIX: Enhanced text input with validation and immediate updates
-    textInput.addEventListener('input', () => {
-        if (isValidHexColor(textInput.value)) {
-            console.log('🎨 ROOT FIX: Color text input changed to:', textInput.value);
-            colorInput.value = textInput.value;
-            applyColorToComponent(element, textInput.value);
-            
-            // ROOT FIX: Trigger both update types for immediate response
-            triggerComponentUpdate(element);
-            triggerEnhancedComponentUpdate(element);
-        }
-    });
-}
-
-/**
- * Apply color theme to component
- * @param {HTMLElement} element The component element
- * @param {string} color The hex color value
- */
-function applyColorToComponent(element, color) {
-    element.style.setProperty('--topic-color', color);
-    
-    // Apply to topic elements
-    const topicElements = element.querySelectorAll('.topic-icon, .topic-item');
-    topicElements.forEach(el => {
-        if (el.classList.contains('topic-icon')) {
-            el.style.backgroundColor = color;
-        }
-    });
-}
-
-/**
- * Setup checkbox controls
- * ROOT FIX: Enhanced with immediate updates and better logging
- * @param {HTMLElement} element The component element
- */
-function setupCheckboxControls(element) {
-    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-property]');
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-            const property = checkbox.dataset.property;
-            const attributeName = `data-${property.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-            
-            console.log(`✅ ROOT FIX: Checkbox "${property}" changed to:`, checkbox.checked);
-            
-            element.setAttribute(attributeName, checkbox.checked);
-            
-            // ROOT FIX: Trigger both update types for immediate response
-            triggerComponentUpdate(element);
-            triggerEnhancedComponentUpdate(element);
-            
-            // ROOT FIX: Also trigger preview update for immediate visual feedback
-            updateComponentPreview();
-        });
-    });
-}
-
-// =================================================================================
-// TOPICS EDITOR - Core topic management
-// =================================================================================
-
-let topicCount = 0;
-const MAX_TOPICS = 10;
-
-/**
- * ROOT FIX: Setup topics editor functionality with enhanced real-time sync
- * Handles dynamic panel loading, event delegation, and component synchronization
- */
-function setupTopicsEditor() {
-    console.log('📝 ROOT FIX: Setting up enhanced topics editor with real-time sync...');
-    
-    // ROOT FIX: Setup component state monitoring for real-time updates
-    setupComponentStateMonitoring();
-    
-    // ROOT FIX: Use more robust selectors and error handling
-    const addButton = document.getElementById('add-topic-btn');
-    const clearButton = document.getElementById('clear-all-topics-btn');
-    
-    if (addButton) {
-        // ROOT FIX: Remove existing listeners to prevent duplicates
-        addButton.removeEventListener('click', addNewTopic);
-        addButton.addEventListener('click', addNewTopic);
-        console.log('✅ ROOT FIX: Add Topic button event listener attached');
-    } else {
-        console.warn('⚠️ ROOT FIX: Add Topic button not found! ID: add-topic-btn');
-        
-        // ROOT FIX: Try to find button with alternative selectors
-        const altButton = document.querySelector('.add-topic-btn') || document.querySelector('[data-action="add-topic"]');
-        if (altButton) {
-            altButton.removeEventListener('click', addNewTopic);
-            altButton.addEventListener('click', addNewTopic);
-            console.log('✅ ROOT FIX: Found Add Topic button with alternative selector');
-        } else {
-            console.error('❌ ROOT FIX: Could not find Add Topic button with any selector!');
-        }
-    }
-    
-    if (clearButton) {
-        clearButton.removeEventListener('click', handleClearAllTopics);
-        clearButton.addEventListener('click', handleClearAllTopics);
-        console.log('✅ ROOT FIX: Clear All button event listener attached');
-    } else {
-        console.warn('⚠️ ROOT FIX: Clear All button not found (this is normal if no topics exist)');
-    }
-    
-    // ROOT FIX: Initialize with existing topics or create empty ones
-    loadExistingTopics();
-    
-    // ROOT FIX: Set up delegation for dynamically added buttons
-    setupButtonDelegation();
-    
-    // ROOT FIX: Setup bidirectional sync with preview component
-    setupBidirectionalSync();
-    
-    // ROOT FIX: Initial counter sync
-    updateTopicsCounter();
-    
-    console.log('✅ ROOT FIX: Enhanced topics editor initialized successfully');
-}
-
-/**
- * ROOT FIX: Setup component state monitoring for real-time updates
- * Monitors the preview component for changes and syncs with design panel
- */
-function setupComponentStateMonitoring() {
-    console.log('🔍 ROOT FIX: Setting up component state monitoring...');
-    
-    // ROOT FIX: Listen for component changes in preview
-    document.addEventListener('componentUpdated', (event) => {
-        if (event.detail?.componentType === 'topics') {
-            console.log('🔄 ROOT FIX: Topics component updated, syncing counter...');
-            setTimeout(() => {
-                updateTopicsCounter();
-                syncEditorWithComponent();
-            }, 100); // Small delay to ensure DOM is updated
-        }
-    });
-    
-    // ROOT FIX: Listen for state changes
-    document.addEventListener('stateChanged', (event) => {
-        if (event.detail?.state?.components) {
-            const topicsComponents = Object.values(event.detail.state.components)
-                .filter(comp => comp.type === 'topics');
-            
-            if (topicsComponents.length > 0) {
-                console.log('🔄 ROOT FIX: State changed with topics, syncing counter...');
-                setTimeout(() => {
-                    updateTopicsCounter();
-                }, 100);
-            }
-        }
-    });
-    
-    // ROOT FIX: Use MutationObserver to watch for DOM changes in topics component
-    const targetComponent = document.querySelector('.editable-element[data-component="topics"]');
-    if (targetComponent) {
-        const observer = new MutationObserver((mutations) => {
-            let topicsChanged = false;
-            
-            mutations.forEach((mutation) => {
-                // Check if topic items were added or removed
-                if (mutation.type === 'childList') {
-                    const addedTopics = Array.from(mutation.addedNodes)
-                        .filter(node => node.nodeType === 1 && node.classList?.contains('topic-item'));
-                    const removedTopics = Array.from(mutation.removedNodes)
-                        .filter(node => node.nodeType === 1 && node.classList?.contains('topic-item'));
-                    
-                    if (addedTopics.length > 0 || removedTopics.length > 0) {
-                        topicsChanged = true;
-                    }
+        optionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index);
+                const newTitle = suggestions[index];
+                
+                // Update topic
+                this.stateManager.updateTopic(topic.id, { title: newTitle }, 'designPanel');
+                
+                // Update input field
+                const topicInput = document.querySelector(`input[data-topic-id="${topic.id}"]`);
+                if (topicInput) {
+                    topicInput.value = newTitle;
+                    topicInput.dataset.originalValue = newTitle;
+                    topicInput.dispatchEvent(new Event('input'));
                 }
                 
-                // Check if topic content was modified
-                if (mutation.type === 'characterData' || mutation.type === 'attributes') {
-                    if (mutation.target.closest && mutation.target.closest('.topic-item')) {
-                        topicsChanged = true;
-                    }
-                }
+                this.showMessage(`Topic enhanced: "${newTitle}"`, 'success');
+                closeDialog();
             });
-            
-            if (topicsChanged) {
-                console.log('🔄 ROOT FIX: Topics DOM changed, syncing counter...');
-                debounce(() => updateTopicsCounter(), 200)();
+        });
+        
+        // Close on overlay click
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                closeDialog();
             }
         });
-        
-        observer.observe(targetComponent, {
-            childList: true,
-            subtree: true,
-            characterData: true,
-            attributes: true,
-            attributeFilter: ['data-topic-source', 'data-topic-count']
-        });
-        
-        // Store observer for cleanup if needed
-        window.topicsComponentObserver = observer;
-        
-        console.log('✅ ROOT FIX: MutationObserver setup for topics component');
     }
-    
-    console.log('✅ ROOT FIX: Component state monitoring setup complete');
-}
 
-/**
- * ROOT FIX: Setup bidirectional synchronization between design panel and preview
- * Ensures changes in either direction are properly reflected
- */
-function setupBidirectionalSync() {
-    console.log('🔗 ROOT FIX: Setting up bidirectional sync...');
-    
-    // ROOT FIX: Sync from preview to design panel
-    const syncFromPreview = () => {
-        const actualCount = getActualTopicCount();
-        if (actualCount >= 0 && actualCount !== topicCount) {
-            console.log(`🔄 ROOT FIX: Syncing from preview: ${topicCount} → ${actualCount}`);
-            topicCount = actualCount;
-            updateTopicsCounter();
-            updateClearButtonVisibility();
-        }
-    };
-    
-    // ROOT FIX: Sync from design panel to preview (when updateComponentPreview is called)
-    const originalUpdatePreview = window.updateComponentPreview;
-    if (typeof originalUpdatePreview === 'function') {
-        window.updateComponentPreview = function(...args) {
-            const result = originalUpdatePreview.apply(this, args);
-            
-            // After preview update, sync counter
-            setTimeout(() => {
-                updateTopicsCounter();
-            }, 100);
-            
-            return result;
-        };
+    /**
+     * Duplicate topic
+     */
+    duplicateTopic(topic) {
+        const newTopic = this.stateManager.addTopic({
+            title: `${topic.title} (Copy)`,
+            description: topic.description,
+            source: 'duplicated'
+        }, -1, 'designPanel');
         
-        console.log('✅ ROOT FIX: Enhanced updateComponentPreview with counter sync');
+        this.scheduleAutoSave();
+        this.showMessage(`Topic duplicated: "${newTopic.title}"`, 'success');
+        
+        console.log(`📋 Design Panel: Topic duplicated - "${topic.title}"`);
     }
-    
-    // ROOT FIX: Listen for global events that might affect topics
-    document.addEventListener('topicsComponentUpdated', syncFromPreview);
-    document.addEventListener('topicsComponentChanged', syncFromPreview);
-    
-    // ROOT FIX: Periodic sync check (fallback)
-    setInterval(() => {
-        if (document.getElementById('topic-count')) {
-            syncFromPreview();
-        }
-    }, 5000); // Check every 5 seconds
-    
-    console.log('✅ ROOT FIX: Bidirectional sync setup complete');
-}
 
-/**
- * ROOT FIX: Sync design panel editor with actual component state
- * Updates the editor topics list to match what's in the preview
- */
-function syncEditorWithComponent() {
-    console.log('🔄 ROOT FIX: Syncing editor with component state...');
-    
-    try {
-        const component = document.querySelector('.editable-element[data-component="topics"]');
-        if (!component) {
-            console.log('ℹ️ ROOT FIX: No topics component found for sync');
-            return;
-        }
+    /**
+     * Delete topic
+     */
+    deleteTopic(topic, topicEl) {
+        if (!confirm(`Delete topic "${topic.title}"?`)) return;
         
-        const topicItems = component.querySelectorAll('.topic-item');
-        const realTopics = Array.from(topicItems).filter(item => {
-            const title = item.querySelector('.topic-title');
-            const titleText = title?.textContent?.trim();
-            const source = item.getAttribute('data-topic-source');
-            
-            return source !== 'placeholder' && titleText && titleText.length > 0;
-        });
+        // Remove from state
+        this.stateManager.removeTopic(topic.id, 'designPanel');
         
-        // Update editor topic count
-        if (realTopics.length !== topicCount) {
-            console.log(`🔄 ROOT FIX: Editor sync: ${topicCount} → ${realTopics.length} topics`);
-            topicCount = realTopics.length;
-            updateTopicsCounter();
-            updateClearButtonVisibility();
-            
-            // Optional: Could also sync the actual topic content in the editor
-            // This would be more complex and might interfere with user editing
-        }
-        
-    } catch (error) {
-        console.error('❌ ROOT FIX: Error syncing editor with component:', error);
-    }
-}
-
-/**
- * ROOT FIX: Enhanced event delegation for dynamically loaded content
- * Includes automatic counter updates and component sync
- */
-function setupButtonDelegation() {
-    // Use event delegation on the document for buttons that might be loaded later
-    document.addEventListener('click', function(e) {
-        // Handle Add Topic button clicks
-        if (e.target.matches('#add-topic-btn, .add-topic-btn, [data-action="add-topic"]')) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('📝 ROOT FIX: Add Topic button clicked via delegation');
-            
-            // ROOT FIX: Enhanced add topic with counter sync
-            addNewTopicEnhanced();
-            return;
-        }
-        
-        // Handle Clear All button clicks
-        if (e.target.matches('#clear-all-topics-btn, .clear-all-btn')) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🗑️ ROOT FIX: Clear All button clicked via delegation');
-            
-            // ROOT FIX: Enhanced clear all with counter sync
-            handleClearAllTopicsEnhanced();
-            return;
-        }
-    });
-    
-    console.log('✅ ROOT FIX: Enhanced button delegation set up for dynamic content');
-}
-
-/**
- * ROOT FIX: Enhanced add new topic with automatic counter sync
- * Ensures counter is updated immediately and component is synced
- */
-function addNewTopicEnhanced() {
-    console.log('➕ ROOT FIX: Adding new topic with enhanced sync...');
-    
-    // Call original add topic function
-    addNewTopic();
-    
-    // ROOT FIX: Immediate counter sync after adding
-    setTimeout(() => {
-        updateTopicsCounter();
-        updateComponentPreview();
-        
-        // ROOT FIX: Dispatch event for other systems
-        document.dispatchEvent(new CustomEvent('topicAdded', {
-            detail: { count: topicCount, timestamp: Date.now() }
-        }));
-        
-        console.log('✅ ROOT FIX: New topic added and synced');
-    }, 50);
-}
-
-/**
- * ROOT FIX: Enhanced clear all topics with automatic counter sync
- * Ensures counter is updated immediately and component is synced
- */
-function handleClearAllTopicsEnhanced() {
-    console.log('🗑️ ROOT FIX: Clearing all topics with enhanced sync...');
-    
-    const oldCount = topicCount;
-    
-    // Call original clear all function
-    handleClearAllTopics();
-    
-    // ROOT FIX: Immediate counter sync after clearing
-    setTimeout(() => {
-        updateTopicsCounter();
-        updateComponentPreview();
-        
-        // ROOT FIX: Dispatch event for other systems
-        document.dispatchEvent(new CustomEvent('topicsCleared', {
-            detail: { previousCount: oldCount, currentCount: topicCount, timestamp: Date.now() }
-        }));
-        
-        console.log('✅ ROOT FIX: All topics cleared and synced');
-    }, 50);
-}
-
-/**
- * ROOT FIX: Enhanced add new topic with immediate sync and validation
- */
-function addNewTopic() {
-    console.log('➕ ROOT FIX: Adding new topic...');
-    
-    if (topicCount >= MAX_TOPICS) {
-        showNotification(`Maximum of ${MAX_TOPICS} topics allowed`, 'warning');
-        console.warn(`⚠️ ROOT FIX: Maximum topics reached (${MAX_TOPICS})`);
-        return;
-    }
-    
-    const topicItem = createTopicEditorItem('', '', topicCount);
-    const topicsList = document.getElementById('design-topics-list');
-    
-    if (topicsList && topicItem) {
-        topicsList.appendChild(topicItem);
-        topicCount++;
-        
-        console.log(`📝 ROOT FIX: Topic added, count now: ${topicCount}`);
-        
-        // ROOT FIX: Enhanced counter and UI updates
-        updateTopicsCounter();
-        updateClearButtonVisibility();
-        
-        // ROOT FIX: Trigger preview update immediately
-        if (typeof updateComponentPreview === 'function') {
-            updateComponentPreview();
-        }
-        
-        // Focus the new topic input
-        const input = topicItem.querySelector('input[data-topic-title]');
-        if (input) {
-            input.focus();
-            input.select();
-        }
-        
-        // ROOT FIX: Remove empty state message if it exists
-        const emptyMessage = topicsList.querySelector('.topics-empty-state');
-        if (emptyMessage) {
-            emptyMessage.remove();
-            console.log('✅ ROOT FIX: Removed empty state message');
-        }
-        
-        console.log('✅ ROOT FIX: New topic added successfully');
-    } else {
-        console.error('❌ ROOT FIX: Could not add topic - missing elements:', {
-            topicsList: !!topicsList,
-            topicItem: !!topicItem
-        });
-    }
-}
-
-/**
- * Create a topic editor item
- * @param {string} title The topic title
- * @param {string} description The topic description
- * @param {number} index The topic index
- * @returns {HTMLElement} The topic editor item
- */
-function createTopicEditorItem(title, description, index) {
-    const item = document.createElement('div');
-    item.className = 'topic-editor-item';
-    item.innerHTML = `
-        <div class="topic-editor-header">
-            <span class="topic-number">Topic ${index + 1}</span>
-            <button class="remove-item-btn" type="button" title="Remove topic">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Topic Title</label>
-            <input type="text" class="form-input" data-topic-title="${index}" value="${escapeHtml(title)}" placeholder="Enter topic title...">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Description <span class="form-label__optional">(optional)</span></label>
-            <textarea class="form-input form-textarea" rows="2" data-topic-description="${index}" placeholder="Brief description...">${escapeHtml(description)}</textarea>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Icon</label>
-            <select class="form-select" data-topic-icon="${index}">
-                <option value="check" selected>Checkmark</option>
-                <option value="star">Star</option>
-                <option value="arrow">Arrow</option>
-                <option value="circle">Circle</option>
-                <option value="info">Info</option>
-                <option value="none">No Icon</option>
-            </select>
-        </div>
-    `;
-    
-    // Setup event listeners
-    setupTopicItemEvents(item, index);
-    
-    return item;
-}
-
-/**
- * Setup event listeners for a topic item
- * ROOT FIX: Enhanced with immediate preview updates and better event handling
- * @param {HTMLElement} item The topic item element
- * @param {number} index The topic index
- */
-function setupTopicItemEvents(item, index) {
-    // ROOT FIX: Enhanced input change listeners with immediate preview updates
-    const inputs = item.querySelectorAll('input, textarea, select');
-    inputs.forEach(input => {
-        input.addEventListener('input', debounce(() => {
-            console.log(`📝 ROOT FIX: Topic ${index + 1} input changed:`, {
-                type: input.type || input.tagName.toLowerCase(),
-                value: input.value,
-                dataAttribute: input.getAttribute('data-topic-title') || input.getAttribute('data-topic-description') || input.getAttribute('data-topic-icon')
-            });
-            
-            // ROOT FIX: Immediate preview update
-            updateComponentPreview();
-            
-            // ROOT FIX: Also trigger enhanced component events for state synchronization
-            const component = document.querySelector('.editable-element[data-component="topics"]');
-            if (component) {
-                triggerEnhancedComponentUpdate(component);
-            }
-        }, 100)); // ROOT FIX: Reduced debounce for more responsive topic updates
-        
-        // ROOT FIX: Also listen for 'change' events for select dropdowns
-        input.addEventListener('change', () => {
-            console.log(`🔄 ROOT FIX: Topic ${index + 1} selection changed:`, input.value);
-            updateComponentPreview();
-        });
-    });
-    
-    // Remove button listener
-    const removeBtn = item.querySelector('.remove-item-btn');
-    if (removeBtn) {
-        removeBtn.addEventListener('click', () => {
-            console.log(`🗑️ ROOT FIX: Removing topic ${index + 1}`);
-            removeTopic(item);
-        });
-    }
-}
-
-/**
- * ROOT FIX: Enhanced remove topic with immediate sync and validation
- * @param {HTMLElement} item The topic item to remove
- */
-function removeTopic(item) {
-    console.log('🗑️ ROOT FIX: Removing topic...');
-    
-    const topicTitle = item.querySelector('input[data-topic-title]')?.value || 'Unknown';
-    
-    item.remove();
-    topicCount--;
-    
-    console.log(`🗑️ ROOT FIX: Topic removed ("${topicTitle}"), count now: ${topicCount}`);
-    
-    // ROOT FIX: Enhanced counter and UI updates
-    updateTopicsCounter();
-    updateClearButtonVisibility();
-    renumberTopics();
-    
-    // ROOT FIX: Trigger preview update immediately
-    if (typeof updateComponentPreview === 'function') {
-        updateComponentPreview();
-    }
-    
-    // ROOT FIX: Show empty state if no topics remain
-    if (topicCount === 0) {
-        const topicsList = document.getElementById('design-topics-list');
-        if (topicsList && !topicsList.querySelector('.topics-empty-state')) {
-            const emptyMessage = document.createElement('div');
-            emptyMessage.className = 'topics-empty-state';
-            emptyMessage.innerHTML = `
-                <div style="
-                    text-align: center;
-                    padding: 20px;
-                    color: #6b7280;
-                    font-style: italic;
-                    border: 2px dashed #d1d5db;
-                    border-radius: 8px;
-                    background: #f9fafb;
-                ">
-                    <div style="margin-bottom: 8px;">📝</div>
-                    <div>Click "Add Topic" to get started</div>
-                    <div style="font-size: 12px; margin-top: 4px; opacity: 0.7;">Only real topics will be shown - no placeholder content</div>
-                </div>
-            `;
-            topicsList.appendChild(emptyMessage);
-            console.log('✅ ROOT FIX: Added empty state message');
-        }
-    }
-    
-    // ROOT FIX: Dispatch removal event
-    document.dispatchEvent(new CustomEvent('topicRemoved', {
-        detail: { title: topicTitle, count: topicCount, timestamp: Date.now() }
-    }));
-    
-    console.log('✅ ROOT FIX: Topic removed successfully');
-}
-
-/**
- * ROOT FIX: Enhanced handle clear all topics with immediate sync
- */
-function handleClearAllTopics() {
-    console.log('🗑️ ROOT FIX: Handling clear all topics...');
-    
-    if (topicCount === 0) {
-        console.log('ℹ️ ROOT FIX: No topics to clear');
-        return;
-    }
-    
-    const oldCount = topicCount;
-    
-    if (confirm(`Are you sure you want to remove all ${topicCount} topics?`)) {
-        const topicsList = document.getElementById('design-topics-list');
-        if (topicsList) {
-            topicsList.innerHTML = '';
-            topicCount = 0;
-            
-            console.log(`🗑️ ROOT FIX: Cleared all topics (${oldCount} → 0)`);
-            
-            // ROOT FIX: Enhanced counter and UI updates
-            updateTopicsCounter();
-            updateClearButtonVisibility();
-            
-            // ROOT FIX: Trigger preview update immediately
-            if (typeof updateComponentPreview === 'function') {
-                updateComponentPreview();
-            }
-            
-            // ROOT FIX: Add empty state message
-            const emptyMessage = document.createElement('div');
-            emptyMessage.className = 'topics-empty-state';
-            emptyMessage.innerHTML = `
-                <div style="
-                    text-align: center;
-                    padding: 20px;
-                    color: #6b7280;
-                    font-style: italic;
-                    border: 2px dashed #d1d5db;
-                    border-radius: 8px;
-                    background: #f9fafb;
-                ">
-                    <div style="margin-bottom: 8px;">📝</div>
-                    <div>Click "Add Topic" to get started</div>
-                    <div style="font-size: 12px; margin-top: 4px; opacity: 0.7;">All topics have been cleared</div>
-                </div>
-            `;
-            topicsList.appendChild(emptyMessage);
-            
-            showNotification('All topics cleared', 'success');
-            
-            // ROOT FIX: Dispatch clear event
-            document.dispatchEvent(new CustomEvent('allTopicsCleared', {
-                detail: { previousCount: oldCount, timestamp: Date.now() }
-            }));
-            
-            console.log('✅ ROOT FIX: All topics cleared successfully');
-        }
-    }
-}
-
-/**
- * ROOT FIX: Enhanced load existing topics with real-time sync and validation
- * Properly syncs side panel counter with actual component topics and sets up monitoring
- */
-function loadExistingTopics() {
-    console.log('📥 ROOT FIX: Loading existing topics with enhanced sync...');
-    
-    const component = document.querySelector('.editable-element[data-component="topics"]');
-    if (!component) {
-        console.warn('⚠️ ROOT FIX: No topics component found for loading existing topics');
-        updateTopicsCounter(); // Update counter to show 0
-        return;
-    }
-    
-    const existingTopics = component.querySelectorAll('.topic-item');
-    const topicsContainer = component.querySelector('.topics-container');
-    
-    // ROOT FIX: Check if we have dynamic topics from MKCG
-    const hasDynamicTopics = topicsContainer?.getAttribute('data-has-dynamic-topics') === 'true';
-    const postId = topicsContainer?.getAttribute('data-post-id');
-    const topicsSource = topicsContainer?.getAttribute('data-topics-source');
-    
-    console.log('🎯 ROOT FIX: Loading topics:', {
-        existingCount: existingTopics.length,
-        hasDynamicTopics,
-        postId,
-        source: topicsSource
-    });
-    
-    // ROOT FIX: Reset the editor topics count
-    topicCount = 0;
-    
-    // Clear existing topics list
-    const topicsList = document.getElementById('design-topics-list');
-    if (topicsList) {
-        topicsList.innerHTML = '';
-    }
-    
-    if (existingTopics.length > 0) {
-        // Load from existing component
-        let realTopicsCount = 0; // ROOT FIX: Count only real topics, not placeholders
-        
-        existingTopics.forEach((topicEl, index) => {
-            const title = topicEl.querySelector('.topic-title')?.textContent || '';
-            const description = topicEl.querySelector('.topic-description')?.textContent || '';
-            const source = topicEl.getAttribute('data-topic-source') || 'unknown';
-            const metaKey = topicEl.getAttribute('data-meta-key');
-            
-            // ROOT FIX: Skip any placeholder topics completely
-            if (source === 'placeholder' || !title.trim()) {
-                console.log('🚫 ROOT FIX: Skipping placeholder/empty topic:', title);
-                return;
-            }
-            
-            const topicItem = createTopicEditorItem(title, description, realTopicsCount);
-            
-            // ROOT FIX: Add source indicator to editor item
-            if (source === 'mkcg' && metaKey) {
-                const sourceIndicator = document.createElement('div');
-                sourceIndicator.className = 'topic-source-badge';
-                sourceIndicator.innerHTML = `
-                    <span class="source-icon">⚡</span>
-                    <span class="source-text">MKCG: ${metaKey}</span>
-                `;
-                sourceIndicator.style.cssText = `
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    font-size: 10px;
-                    color: #10b981;
-                    background: #f0fdf4;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    margin-top: 4px;
-                `;
-                topicItem.appendChild(sourceIndicator);
-            }
-            
-            if (topicsList) {
-                topicsList.appendChild(topicItem);
-                realTopicsCount++; // ROOT FIX: Only count real topics
-            }
-        });
-        
-        // ROOT FIX: Set the actual topics count, not index count
-        topicCount = realTopicsCount;
-        
-        // ROOT FIX: Show dynamic data info if available
-        if (hasDynamicTopics && postId) {
-            showDynamicDataInfo(postId, topicsSource, realTopicsCount);
-        }
-        
-        console.log(`✅ ROOT FIX: Loaded ${realTopicsCount} real topics (skipped placeholders)`);
-        
-    } else {
-        // ROOT FIX: NEVER create placeholder topics - show empty editor instead
-        console.log('🚫 ROOT FIX: No existing topics found - showing empty editor (NO PLACEHOLDERS)');
-        
-        // Show helpful message instead of creating placeholder topics
-        if (topicsList) {
-            const emptyMessage = document.createElement('div');
-            emptyMessage.className = 'topics-empty-state';
-            emptyMessage.innerHTML = `
-                <div style="
-                    text-align: center;
-                    padding: 20px;
-                    color: #6b7280;
-                    font-style: italic;
-                    border: 2px dashed #d1d5db;
-                    border-radius: 8px;
-                    background: #f9fafb;
-                ">
-                    <div style="margin-bottom: 8px;">📝</div>
-                    <div>Click "Add Topic" to get started</div>
-                    <div style="font-size: 12px; margin-top: 4px; opacity: 0.7;">Only real topics will be shown - no placeholder content</div>
-                </div>
-            `;
-            topicsList.appendChild(emptyMessage);
-        }
-    }
-    
-    // ROOT FIX: Always update the counter with the actual count
-    updateTopicsCounter();
-    updateClearButtonVisibility();
-    
-    // ROOT FIX: Validate sync after loading
-    setTimeout(() => {
-        const actualCount = getActualTopicCount();
-        if (actualCount >= 0 && actualCount !== topicCount) {
-            console.log(`🔄 ROOT FIX: Post-load sync correction: ${topicCount} → ${actualCount}`);
-            topicCount = actualCount;
-            updateTopicsCounter();
-        }
-    }, 500);
-    
-    console.log(`✅ ROOT FIX: Enhanced topics loading complete - ${topicCount} topics`);
-}
-
-/**
- * ROOT FIX: REMOVED - No longer create default/placeholder topics
- * This function has been disabled to prevent placeholder content
- */
-function createDefaultTopics() {
-    console.log('🚫 ROOT FIX: createDefaultTopics() called but DISABLED - no placeholder topics will be created');
-    // Function disabled - we only show real topics now
-    return;
-}
-
-/**
- * ROOT FIX: Show dynamic data information
- */
-function showDynamicDataInfo(postId, source, topicCount) {
-    const topicsList = document.getElementById('design-topics-list');
-    if (!topicsList) return;
-    
-    const infoDiv = document.createElement('div');
-    infoDiv.className = 'dynamic-data-info';
-    infoDiv.innerHTML = `
-        <div style="
-            background: #f0f9ff;
-            border: 1px solid #0ea5e9;
-            border-radius: 6px;
-            padding: 8px 12px;
-            margin-bottom: 12px;
-            font-size: 12px;
-            color: #0284c7;
-        ">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <span style="font-size: 14px;">🔗</span>
-                <strong>Dynamic Topics Loaded</strong>
-            </div>
-            <div>Post ID: ${postId} | Source: ${source.toUpperCase()} | Topics: ${topicCount}</div>
-            <div style="margin-top: 4px; font-size: 11px; opacity: 0.8;">
-                These topics are automatically loaded from your custom post data.
-            </div>
-        </div>
-    `;
-    
-    topicsList.insertBefore(infoDiv, topicsList.firstChild);
-}
-
-/**
- * ROOT FIX: Show loading message
- */
-function showLoadingMessage(message) {
-    const topicsList = document.getElementById('design-topics-list');
-    if (!topicsList) return;
-    
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'topics-loading-message';
-    loadingDiv.innerHTML = `
-        <div style="
-            text-align: center;
-            padding: 20px;
-            color: #6b7280;
-            font-style: italic;
-        ">
-            <div style="margin-bottom: 8px;">⏳</div>
-            <div>${message}</div>
-        </div>
-    `;
-    
-    topicsList.appendChild(loadingDiv);
-}
-
-/**
- * ROOT FIX: Hide loading message
- */
-function hideLoadingMessage() {
-    const loadingMessage = document.getElementById('topics-loading-message');
-    if (loadingMessage) {
-        loadingMessage.remove();
-    }
-}
-
-/**
- * ROOT FIX: Enhanced topics counter with real-time synchronization
- * Syncs with actual component state and provides fallback detection
- */
-function updateTopicsCounter() {
-    console.log('🔄 ROOT FIX: Updating topics counter with real-time sync...');
-    
-    // Get counter element
-    const counter = document.getElementById('topic-count');
-    if (!counter) {
-        console.warn('⚠️ ROOT FIX: Topic counter element not found');
-        return;
-    }
-    
-    // ROOT FIX: Multi-source topic count detection
-    const actualCount = getActualTopicCount();
-    const editorCount = topicCount;
-    
-    console.log('📊 ROOT FIX: Topic count sources:', {
-        actualComponentCount: actualCount,
-        editorCount: editorCount,
-        usingCount: actualCount >= 0 ? actualCount : editorCount
-    });
-    
-    // ROOT FIX: Use actual component count if available, otherwise use editor count
-    const finalCount = actualCount >= 0 ? actualCount : editorCount;
-    
-    // Update counter with animation
-    if (counter.textContent !== finalCount.toString()) {
-        counter.style.transition = 'all 0.3s ease';
-        counter.style.transform = 'scale(1.1)';
-        counter.textContent = finalCount;
+        // Remove from DOM with animation
+        topicEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        topicEl.style.opacity = '0';
+        topicEl.style.transform = 'translateX(-20px)';
         
         setTimeout(() => {
-            counter.style.transform = 'scale(1)';
-        }, 200);
-        
-        console.log(`✅ ROOT FIX: Counter updated to ${finalCount}`);
-        
-        // ROOT FIX: Dispatch counter update event
-        document.dispatchEvent(new CustomEvent('topicsCounterUpdated', {
-            detail: { count: finalCount, source: actualCount >= 0 ? 'component' : 'editor' }
-        }));
-    }
-    
-    // ROOT FIX: Update editor count to match actual count for consistency
-    if (actualCount >= 0 && actualCount !== editorCount) {
-        topicCount = actualCount;
-        console.log(`🔄 ROOT FIX: Synced editor count (${editorCount} → ${actualCount})`);
-    }
-}
-
-/**
- * ROOT FIX: Get actual topic count from the preview component
- * Provides multiple detection strategies for accurate counting
- */
-function getActualTopicCount() {
-    try {
-        const component = document.querySelector('.editable-element[data-component="topics"]');
-        if (!component) {
-            console.log('ℹ️ ROOT FIX: Topics component not found in preview');
-            return -1;
-        }
-        
-        // Strategy 1: Count actual topic items in component
-        const topicItems = component.querySelectorAll('.topic-item');
-        if (topicItems.length > 0) {
-            // Filter out empty or placeholder topics
-            const realTopics = Array.from(topicItems).filter(item => {
-                const title = item.querySelector('.topic-title');
-                const titleText = title?.textContent?.trim();
-                const source = item.getAttribute('data-topic-source');
-                
-                // Skip placeholder topics
-                if (source === 'placeholder' || !titleText || titleText.length === 0) {
-                    return false;
-                }
-                
-                return true;
-            });
-            
-            console.log(`📊 ROOT FIX: Found ${realTopics.length} real topics (${topicItems.length} total)`);
-            return realTopics.length;
-        }
-        
-        // Strategy 2: Check topics container data attribute
-        const topicsContainer = component.querySelector('.topics-container');
-        if (topicsContainer) {
-            const dataCount = topicsContainer.getAttribute('data-topics-count');
-            if (dataCount && !isNaN(parseInt(dataCount))) {
-                const count = parseInt(dataCount);
-                console.log(`📊 ROOT FIX: Using data-topics-count: ${count}`);
-                return count;
-            }
-        }
-        
-        // Strategy 3: Check state manager if available
-        if (window.enhancedStateManager || window.stateManager) {
-            const stateManager = window.enhancedStateManager || window.stateManager;
-            const state = stateManager.getState();
-            
-            // Find topics component in state
-            const componentsArray = Object.values(state.components || {});
-            const topicsComponent = componentsArray.find(comp => comp.type === 'topics');
-            
-            if (topicsComponent && topicsComponent.data && topicsComponent.data.topics) {
-                const stateTopics = Object.values(topicsComponent.data.topics).filter(topic => 
-                    topic && typeof topic === 'string' && topic.trim().length > 0
-                );
-                console.log(`📊 ROOT FIX: Using state manager count: ${stateTopics.length}`);
-                return stateTopics.length;
-            }
-        }
-        
-        console.log('ℹ️ ROOT FIX: No topics found via any detection strategy');
-        return 0;
-        
-    } catch (error) {
-        console.error('❌ ROOT FIX: Error getting actual topic count:', error);
-        return -1;
-    }
-}
-
-/**
- * Update clear button visibility
- */
-function updateClearButtonVisibility() {
-    const clearButton = document.getElementById('clear-all-topics-btn');
-    if (clearButton) {
-        clearButton.style.display = topicCount > 0 ? 'flex' : 'none';
-    }
-}
-
-/**
- * Renumber topics after removal
- */
-function renumberTopics() {
-    const topicItems = document.querySelectorAll('.topic-editor-item');
-    topicItems.forEach((item, index) => {
-        const numberEl = item.querySelector('.topic-number');
-        if (numberEl) {
-            numberEl.textContent = `Topic ${index + 1}`;
-        }
-        
-        // Update data attributes
-        const titleInput = item.querySelector('[data-topic-title]');
-        const descInput = item.querySelector('[data-topic-description]');
-        const iconSelect = item.querySelector('[data-topic-icon]');
-        
-        if (titleInput) titleInput.setAttribute('data-topic-title', index);
-        if (descInput) descInput.setAttribute('data-topic-description', index);
-        if (iconSelect) iconSelect.setAttribute('data-topic-icon', index);
-    });
-}
-
-// =================================================================================
-// DISPLAY CONTROLS - Layout and styling options
-// =================================================================================
-
-/**
- * Setup display and layout controls
- * @param {HTMLElement} element The component element
- */
-function setupDisplayControls(element) {
-    console.log('🎨 Setting up display controls...');
-    
-    // ROOT FIX: Enhanced display style selector with immediate updates
-    const displayStyleSelect = document.querySelector('[data-property="displayStyle"]');
-    if (displayStyleSelect) {
-        displayStyleSelect.addEventListener('change', () => {
-            const style = displayStyleSelect.value;
-            console.log('🎨 ROOT FIX: Display style changed to:', style);
-            
-            element.setAttribute('data-display-style', style);
-            updateColumnsVisibility(style);
-            
-            // ROOT FIX: Trigger all update types for immediate response
-            triggerComponentUpdate(element);
-            triggerEnhancedComponentUpdate(element);
-            updateComponentPreview();
-        });
-        
-        // Initialize
-        updateColumnsVisibility(displayStyleSelect.value);
-    }
-    
-    // ROOT FIX: Enhanced columns selector with immediate updates
-    const columnsSelect = document.querySelector('[data-property="columns"]');
-    if (columnsSelect) {
-        columnsSelect.addEventListener('change', () => {
-            console.log('📊 ROOT FIX: Columns changed to:', columnsSelect.value);
-            
-            element.style.setProperty('--topic-columns', columnsSelect.value);
-            element.setAttribute('data-columns', columnsSelect.value);
-            
-            // ROOT FIX: Trigger all update types for immediate response
-            triggerComponentUpdate(element);
-            triggerEnhancedComponentUpdate(element);
-            updateComponentPreview();
-        });
-    }
-    
-    // ROOT FIX: Enhanced other selects with immediate updates
-    const selects = document.querySelectorAll('select[data-property]');
-    selects.forEach(select => {
-        if (select !== displayStyleSelect && select !== columnsSelect) {
-            select.addEventListener('change', () => {
-                const property = select.dataset.property;
-                const attributeName = `data-${property.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-                
-                console.log(`🔄 ROOT FIX: Select "${property}" changed to:`, select.value);
-                
-                element.setAttribute(attributeName, select.value);
-                
-                // ROOT FIX: Trigger all update types for immediate response
-                triggerComponentUpdate(element);
-                triggerEnhancedComponentUpdate(element);
-                updateComponentPreview();
-            });
-        }
-    });
-    
-    console.log('✅ Display controls initialized');
-}
-
-/**
- * Update columns field visibility based on display style
- * @param {string} style The selected display style
- */
-function updateColumnsVisibility(style) {
-    const columnsGroup = document.getElementById('columns-group');
-    if (columnsGroup) {
-        columnsGroup.style.display = (style === 'grid' || style === 'cards') ? 'block' : 'none';
-    }
-}
-
-// =================================================================================
-// ADVANCED FEATURES - Collapsible sections
-// =================================================================================
-
-/**
- * Setup advanced features (collapsible sections)
- */
-function setupAdvancedFeatures() {
-    console.log('⚙️ Setting up advanced features...');
-    
-    // Setup collapsible sections
-    const toggleButtons = document.querySelectorAll('.form-section__toggle');
-    toggleButtons.forEach(button => {
-        button.addEventListener('click', handleSectionToggle);
-        button.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleSectionToggle.call(button, e);
-            }
-        });
-    });
-    
-    console.log('✅ Advanced features initialized');
-}
-
-/**
- * Handle section toggle
- * @param {Event} e The click event
- */
-function handleSectionToggle(e) {
-    const section = this.closest('.form-section--collapsible');
-    const content = section.querySelector('.form-section__content');
-    
-    if (section && content) {
-        const isExpanded = section.classList.contains('expanded');
-        
-        if (isExpanded) {
-            // Collapse
-            content.style.display = 'none';
-            section.classList.remove('expanded');
-        } else {
-            // Expand
-            content.style.display = 'block';
-            section.classList.add('expanded');
-        }
-        
-        // Update ARIA attributes for accessibility
-        this.setAttribute('aria-expanded', !isExpanded);
-    }
-}
-
-// =================================================================================
-// MKCG INTEGRATION - Optional advanced features
-// =================================================================================
-
-/**
- * Setup MKCG integration if available
- */
-function setupMKCGIntegration() {
-    console.log('🔗 Checking for MKCG integration...');
-    
-    // Check if MKCG is available
-    if (!window.topicsMkcgIntegration) {
-        console.log('📝 MKCG not available - hiding integration section');
-        const mkcgSection = document.getElementById('mkcg-integration');
-        if (mkcgSection) {
-            mkcgSection.style.display = 'none';
-        }
-        return;
-    }
-    
-    // Show MKCG section
-    const mkcgSection = document.getElementById('mkcg-integration');
-    if (mkcgSection) {
-        mkcgSection.style.display = 'block';
-    }
-    
-    // Setup MKCG controls
-    setupMKCGControls();
-    
-    console.log('✅ MKCG integration initialized');
-}
-
-/**
- * Setup MKCG controls
- */
-function setupMKCGControls() {
-    const loadButton = document.getElementById('load-saved-topics');
-    const syncButton = document.getElementById('sync-topics');
-    
-    if (loadButton) {
-        loadButton.addEventListener('click', handleLoadSavedTopics);
-    }
-    
-    if (syncButton) {
-        syncButton.addEventListener('click', handleSyncTopics);
-    }
-    
-    // Update status
-    updateMKCGStatus();
-}
-
-/**
- * Handle load saved topics
- */
-function handleLoadSavedTopics() {
-    console.log('📥 Loading saved topics...');
-    
-    if (window.topicsMkcgIntegration && window.topicsMkcgIntegration.loadSavedTopics) {
-        try {
-            window.topicsMkcgIntegration.loadSavedTopics()
-                .then(() => {
-                    showNotification('Topics loaded successfully', 'success');
-                    loadExistingTopics(); // Refresh the editor
-                })
-                .catch(error => {
-                    console.error('Error loading topics:', error);
-                    showNotification('Failed to load topics', 'error');
-                });
-        } catch (error) {
-            console.error('Error calling MKCG integration:', error);
-            showNotification('MKCG integration error', 'error');
-        }
-    }
-}
-
-/**
- * Handle sync topics
- */
-function handleSyncTopics() {
-    console.log('🔄 Syncing topics...');
-    
-    if (window.topicsMkcgIntegration && window.topicsMkcgIntegration.syncTopics) {
-        try {
-            window.topicsMkcgIntegration.syncTopics()
-                .then(() => {
-                    showNotification('Topics synced successfully', 'success');
-                    loadExistingTopics(); // Refresh the editor
-                })
-                .catch(error => {
-                    console.error('Error syncing topics:', error);
-                    showNotification('Failed to sync topics', 'error');
-                });
-        } catch (error) {
-            console.error('Error calling MKCG integration:', error);
-            showNotification('MKCG integration error', 'error');
-        }
-    }
-}
-
-/**
- * Update MKCG status indicator
- */
-function updateMKCGStatus() {
-    const statusDot = document.querySelector('.status-dot');
-    const statusText = document.querySelector('.status-text');
-    const actionsDiv = document.getElementById('mkcg-actions');
-    
-    if (window.topicsMkcgIntegration && window.topicsMkcgIntegration.isConnected) {
-        if (statusDot) statusDot.setAttribute('data-status', 'connected');
-        if (statusText) statusText.textContent = 'Connected to Content Generator';
-        if (actionsDiv) actionsDiv.style.display = 'block';
-    } else {
-        if (statusDot) statusDot.setAttribute('data-status', 'disconnected');
-        if (statusText) statusText.textContent = 'Content Generator not available';
-        if (actionsDiv) actionsDiv.style.display = 'none';
-    }
-}
-
-// =================================================================================
-// COMPONENT PREVIEW UPDATE - Live preview functionality
-// =================================================================================
-
-/**
- * ROOT FIX: Enhanced component preview update with bidirectional sync
- * Fixes live preview updates and ensures counter synchronization
- */
-function updateComponentPreview() {
-    console.log('🎨 ROOT FIX: Updating component preview with enhanced sync...');
-    
-    const component = document.querySelector('.editable-element[data-component="topics"]');
-    if (!component) {
-        console.warn('⚠️ ROOT FIX: Component not found for preview update');
-        return;
-    }
-
-    const topicsContainer = component.querySelector('.topics-container');
-    if (!topicsContainer) {
-        console.warn('⚠️ ROOT FIX: Topics container not found');
-        return;
-    }
-
-    // ROOT FIX: Preserve dynamic data attributes
-    const hasLoadedData = topicsContainer.getAttribute('data-has-dynamic-topics') === 'true';
-    const postId = topicsContainer.getAttribute('data-post-id');
-    const dataSource = topicsContainer.getAttribute('data-topics-source');
-    
-    console.log('🔍 ROOT FIX: Component state before update:', {
-        hasLoadedData,
-        postId,
-        dataSource,
-        currentTopicsCount: topicsContainer.children.length
-    });
-
-    // ROOT FIX: Clear existing topics but preserve container attributes
-    const currentAttributes = {
-        'data-has-dynamic-topics': topicsContainer.getAttribute('data-has-dynamic-topics'),
-        'data-post-id': topicsContainer.getAttribute('data-post-id'),
-        'data-topics-source': topicsContainer.getAttribute('data-topics-source'),
-        'data-topics-count': topicsContainer.getAttribute('data-topics-count')
-    };
-    
-    topicsContainer.innerHTML = '';
-    
-    // ROOT FIX: Restore preserved attributes
-    Object.entries(currentAttributes).forEach(([attr, value]) => {
-        if (value) {
-            topicsContainer.setAttribute(attr, value);
-        }
-    });
-
-    // Get all topic items from editor
-    const topicItems = document.querySelectorAll('.topic-editor-item');
-    let updatedTopicsCount = 0;
-    
-    console.log(`🎯 ROOT FIX: Processing ${topicItems.length} topic items from editor`);
-
-    topicItems.forEach((item, index) => {
-        const titleInput = item.querySelector(`[data-topic-title="${index}"]`);
-        const descInput = item.querySelector(`[data-topic-description="${index}"]`);
-        const iconSelect = item.querySelector(`[data-topic-icon="${index}"]`);
-
-        const title = titleInput?.value.trim();
-        const description = descInput?.value.trim();
-        const iconType = iconSelect?.value || 'check';
-        
-        console.log(`📝 ROOT FIX: Topic ${index + 1}:`, {
-            title: title || '(empty)',
-            description: description || '(empty)',
-            iconType,
-            hasTitle: !!title
-        });
-
-        if (title) {
-            const topicElement = createTopicPreviewElement(title, description, iconType, index);
-            
-            // ROOT FIX: Add enhanced attributes for tracking
-            topicElement.setAttribute('data-topic-index', index);
-            topicElement.setAttribute('data-topic-source', 'design_panel');
-            topicElement.setAttribute('data-topic-id', `topics_topic_${index}`);
-            
-            topicsContainer.appendChild(topicElement);
-            updatedTopicsCount++;
-            
-            console.log(`✅ ROOT FIX: Added topic ${index + 1} to preview: "${title}"`);
-        } else {
-            console.log(`⏭️ ROOT FIX: Skipping empty topic ${index + 1}`);
-        }
-    });
-    
-    // ROOT FIX: Update topics count attribute
-    topicsContainer.setAttribute('data-topics-count', updatedTopicsCount);
-    
-    console.log(`✅ ROOT FIX: Component preview updated with ${updatedTopicsCount} topics`);
-    
-    // ROOT FIX: Immediate counter sync after preview update
-    setTimeout(() => {
-        console.log('🔄 ROOT FIX: Post-preview update counter sync...');
-        updateTopicsCounter();
-        
-        // ROOT FIX: Validate the sync worked
-        const actualCount = getActualTopicCount();
-        if (actualCount !== updatedTopicsCount) {
-            console.warn(`⚠️ ROOT FIX: Counter sync mismatch: expected ${updatedTopicsCount}, got ${actualCount}`);
-        } else {
-            console.log(`✅ ROOT FIX: Counter sync validated: ${actualCount} topics`);
-        }
-    }, 100);
-    
-    // ROOT FIX: Trigger enhanced component update event
-    triggerEnhancedComponentUpdate(component);
-    
-    // ROOT FIX: Show update notification for user feedback
-    if (updatedTopicsCount > 0) {
-        showPreviewUpdateNotification(updatedTopicsCount);
-    }
-    
-    // ROOT FIX: Dispatch preview update event for other systems
-    document.dispatchEvent(new CustomEvent('topicsPreviewUpdated', {
-        detail: { 
-            count: updatedTopicsCount, 
-            timestamp: Date.now(),
-            source: 'design_panel_preview_update'
-        }
-    }));
-}
-
-/**
- * Create a topic preview element
- * ROOT FIX: Enhanced with index parameter and better error handling
- * @param {string} title The topic title
- * @param {string} description The topic description
- * @param {string} iconType The icon type
- * @param {number} index The topic index (optional)
- * @returns {HTMLElement} The topic element
- */
-function createTopicPreviewElement(title, description, iconType, index = 0) {
-    const topicDiv = document.createElement('div');
-    topicDiv.className = 'topic-item';
-    
-    // ROOT FIX: Add data attributes for tracking
-    topicDiv.setAttribute('data-topic-preview-index', index);
-    topicDiv.setAttribute('data-topic-title', title);
-    
-    // Create icon if not 'none'
-    let iconHtml = '';
-    if (iconType !== 'none') {
-        iconHtml = `<div class="topic-icon" data-icon="${iconType}">${getIconSVG(iconType)}</div>`;
-    }
-    
-    // Check if descriptions should be shown
-    const showDescriptions = document.querySelector('[data-property="showDescriptions"]')?.checked !== false;
-    
-    topicDiv.innerHTML = `
-        ${iconHtml}
-        <div class="topic-content">
-            <h3 class="topic-title">${escapeHtml(title)}</h3>
-            ${description && showDescriptions ? `<p class="topic-description">${escapeHtml(description)}</p>` : ''}
-        </div>
-    `;
-    
-    return topicDiv;
-}
-
-/**
- * Get SVG icon for topic type
- * @param {string} iconType The icon type
- * @returns {string} The SVG HTML
- */
-function getIconSVG(iconType) {
-    const icons = {
-        check: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
-        star: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
-        arrow: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>',
-        circle: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>',
-        info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
-    };
-    
-    return icons[iconType] || icons.check;
-}
-
-// =================================================================================
-// UTILITY FUNCTIONS - Helper functions
-// =================================================================================
-
-/**
- * ROOT FIX: Trigger component update event (was missing)
- * @param {HTMLElement} element The component element
- */
-function triggerComponentUpdate(element) {
-    if (!element) return;
-    
-    console.log('🔄 ROOT FIX: Triggering component update event');
-    
-    // Create and dispatch component update event
-    const updateEvent = new CustomEvent('componentUpdated', {
-        bubbles: true,
-        detail: {
-            componentType: 'topics',
-            element: element,
-            timestamp: Date.now()
-        }
-    });
-    
-    element.dispatchEvent(updateEvent);
-    
-    // Also dispatch on document for global listeners
-    document.dispatchEvent(new CustomEvent('topicsComponentChanged', {
-        bubbles: true,
-        detail: {
-            element: element,
-            timestamp: Date.now()
-        }
-    }));
-}
-
-/**
- * ROOT FIX: Enhanced component update event with state tracking
- * @param {HTMLElement} element The component element
- */
-function triggerEnhancedComponentUpdate(element) {
-    console.log('🔄 ROOT FIX: Triggering enhanced component update...');
-    
-    // Original component update
-    triggerComponentUpdate(element);
-    
-    // ROOT FIX: Add custom component updated event
-    const customEvent = new CustomEvent('topicsComponentUpdated', {
-        bubbles: true,
-        detail: {
-            componentType: 'topics',
-            timestamp: Date.now(),
-            updateSource: 'design_panel',
-            topicsCount: element.querySelector('.topics-container')?.children.length || 0
-        }
-    });
-    
-    element.dispatchEvent(customEvent);
-    console.log('✅ ROOT FIX: Enhanced component update event dispatched');
-}
-
-/**
- * ROOT FIX: Show preview update notification for user feedback
- * @param {number} topicsCount Number of topics updated
- */
-function showPreviewUpdateNotification(topicsCount) {
-    // Create subtle notification
-    const notification = document.createElement('div');
-    notification.className = 'topics-preview-update-notification';
-    notification.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(16, 185, 129, 0.9);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 12px;
-        z-index: 9999;
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out;
-        pointer-events: none;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    `;
-    
-    notification.textContent = `✨ Preview updated (${topicsCount} topics)`;
-    document.body.appendChild(notification);
-    
-    // Fade in
-    setTimeout(() => {
-        notification.style.opacity = '1';
-    }, 10);
-    
-    // Fade out and remove
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
+            if (topicEl.parentNode) {
+                topicEl.parentNode.removeChild(topicEl);
             }
         }, 300);
-    }, 1500);
-}
-
-/**
- * Debounce function to limit function calls
- * @param {Function} func The function to debounce
- * @param {number} wait The debounce delay in milliseconds
- * @returns {Function} The debounced function
- */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-/**
- * Escape HTML to prevent XSS
- * @param {string} text The text to escape
- * @returns {string} The escaped text
- */
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-/**
- * Check if a string is a valid hex color
- * @param {string} color The color string to validate
- * @returns {boolean} True if valid hex color
- */
-function isValidHexColor(color) {
-    return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
-}
-
-/**
- * Show notification to user
- * @param {string} message The notification message
- * @param {string} type The notification type (success, error, warning, info)
- */
-function showNotification(message, type = 'info') {
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `topics-notification topics-notification--${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <span class="notification-icon">${getNotificationIcon(type)}</span>
-            <span class="notification-message">${escapeHtml(message)}</span>
-            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
-        </div>
-    `;
-    
-    // Add styles
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10000;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        max-width: 400px;
-        font-size: 14px;
-        color: white;
-        animation: slideInRight 0.3s ease-out;
-        background: ${getNotificationColor(type)};
-    `;
-    
-    // Add to page
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.style.animation = 'slideOutRight 0.3s ease-out';
-            setTimeout(() => notification.remove(), 300);
-        }
-    }, 5000);
-}
-
-/**
- * Get notification icon
- * @param {string} type The notification type
- * @returns {string} The icon character
- */
-function getNotificationIcon(type) {
-    const icons = {
-        success: '✅',
-        error: '❌',
-        warning: '⚠️',
-        info: 'ℹ️'
-    };
-    return icons[type] || icons.info;
-}
-
-/**
- * Get notification color
- * @param {string} type The notification type
- * @returns {string} The background color
- */
-function getNotificationColor(type) {
-    const colors = {
-        success: '#10b981',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#3b82f6'
-    };
-    return colors[type] || colors.info;
-}
-
-// =================================================================================
-// GLOBAL INTERFACE - For external integration
-// =================================================================================
-
-// ROOT FIX: Global initialization function for external calls
-window.initializeTopicsDesignPanel = function() {
-    console.log('🚀 ROOT FIX: External call to initialize Topics Design Panel');
-    
-    // Initialize all panel functionality
-    try {
-        setupTopicsEditor();
         
-        // Also set up other panel features
-        const component = document.querySelector('.editable-element[data-component="topics"]');
-        if (component) {
-            setupBasicControls(component);
-            setupDisplayControls(component);
-            setupAdvancedFeatures();
-        }
+        this.scheduleAutoSave();
+        this.showMessage(`Topic deleted: "${topic.title}"`, 'info');
         
-        console.log('✅ ROOT FIX: Topics Design Panel initialized successfully from external call');
-        return true;
-    } catch (error) {
-        console.error('❌ ROOT FIX: Error initializing Topics Design Panel:', error);
-        return false;
+        console.log(`🗑️ Design Panel: Topic deleted - "${topic.title}"`);
     }
-};
 
-// ROOT FIX: Enhanced auto-initialization with real-time sync
-function initializeWhenReady() {
-    // Check if we're in a design panel context
-    const isInDesignPanel = document.querySelector('.element-editor__title') || 
-                           document.querySelector('#add-topic-btn') ||
-                           document.querySelector('.topics-editor');
-    
-    if (isInDesignPanel) {
-        console.log('🎯 ROOT FIX: Enhanced design panel context detected, initializing...');
+    /**
+     * Handle topic reorder
+     */
+    handleTopicReorder(fromIndex, toIndex) {
+        if (fromIndex === toIndex) return;
         
-        // Small delay to ensure DOM is fully ready
-        setTimeout(() => {
-            const component = document.querySelector('.editable-element[data-component="topics"]');
-            if (component) {
-                initializeTopicsPanel(component);
-                console.log('✅ ROOT FIX: Auto-initialized enhanced topics panel');
-            } else {
-                console.warn('⚠️ ROOT FIX: Component not found for auto-initialization, trying alternative setup');
-                setupTopicsEditor(); // Try just the editor setup
-            }
-            
-            // ROOT FIX: Setup global counter sync monitoring
-            setupGlobalCounterSync();
-            
-        }, 100);
+        const success = this.stateManager.reorderTopics(fromIndex, toIndex, 'designPanel');
+        
+        if (success) {
+            this.scheduleAutoSave();
+            this.showMessage(`Topic moved from position ${fromIndex + 1} to ${toIndex + 1}`, 'info');
+            console.log(`🔄 Design Panel: Topic reordered from ${fromIndex} to ${toIndex}`);
+        }
     }
-}
 
-/**
- * ROOT FIX: Setup global counter synchronization monitoring
- * Ensures counter stays in sync regardless of how topics are modified
- */
-function setupGlobalCounterSync() {
-    console.log('🌐 ROOT FIX: Setting up global counter sync monitoring...');
-    
-    // ROOT FIX: Monitor for any DOM changes that might affect topics
-    const targetNode = document.body;
-    const observer = new MutationObserver((mutations) => {
-        let shouldSync = false;
-        
-        mutations.forEach((mutation) => {
-            // Check if any topics-related elements changed
-            if (mutation.type === 'childList') {
-                const relevantChanges = Array.from(mutation.addedNodes).concat(Array.from(mutation.removedNodes))
-                    .some(node => {
-                        if (node.nodeType === 1) { // Element node
-                            return node.classList?.contains('topic-item') ||
-                                   node.classList?.contains('topic-editor-item') ||
-                                   node.querySelector?.('.topic-item') ||
-                                   node.querySelector?.('.topic-editor-item');
-                        }
-                        return false;
-                    });
-                
-                if (relevantChanges) {
-                    shouldSync = true;
-                }
-            }
-        });
-        
-        if (shouldSync) {
-            console.log('🔄 ROOT FIX: Global mutation detected, syncing counter...');
-            debounce(() => {
-                if (document.getElementById('topic-count')) {
-                    updateTopicsCounter();
-                }
-            }, 300)();
+    /**
+     * Show add topic form
+     */
+    showAddTopicForm() {
+        if (this.elements.addPrompt) {
+            this.elements.addPrompt.style.display = 'none';
         }
-    });
-    
-    observer.observe(targetNode, {
-        childList: true,
-        subtree: true
-    });
-    
-    // Store observer for cleanup if needed
-    window.globalTopicsObserver = observer;
-    
-    console.log('✅ ROOT FIX: Global counter sync monitoring active');
-}
+        if (this.elements.addForm) {
+            this.elements.addForm.style.display = 'block';
+        }
+        if (this.elements.newTopicInput) {
+            this.elements.newTopicInput.focus();
+        }
+    }
 
-// ROOT FIX: Call auto-initialize
-initializeWhenReady();
+    /**
+     * Hide add topic form
+     */
+    hideAddTopicForm() {
+        if (this.elements.addForm) {
+            this.elements.addForm.style.display = 'none';
+        }
+        if (this.elements.addPrompt) {
+            this.elements.addPrompt.style.display = 'block';
+        }
+        if (this.elements.newTopicInput) {
+            this.elements.newTopicInput.value = '';
+        }
+    }
 
-// ROOT FIX: Also listen for dynamic content loading
-if (typeof MutationObserver !== 'undefined') {
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                // Check if topics-related content was added
-                for (let node of mutation.addedNodes) {
-                    if (node.nodeType === 1) { // Element node
-                        if (node.querySelector && (
-                            node.querySelector('#add-topic-btn') ||
-                            node.querySelector('.topics-editor') ||
-                            node.id === 'add-topic-btn'
-                        )) {
-                            console.log('🔄 ROOT FIX: Topics panel content detected via mutation observer');
-                            setTimeout(() => {
-                                setupTopicsEditor();
-                            }, 50);
-                            break;
-                        }
-                    }
-                }
-            }
-        });
-    });
-    
-    // Start observing
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-    
-// ROOT FIX: Also listen for dynamic content loading
-if (typeof MutationObserver !== 'undefined') {
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                // Check if topics-related content was added
-                for (let node of mutation.addedNodes) {
-                    if (node.nodeType === 1) { // Element node
-                        if (node.querySelector && (
-                            node.querySelector('#add-topic-btn') ||
-                            node.querySelector('.topics-editor') ||
-                            node.id === 'add-topic-btn'
-                        )) {
-                            console.log('🔄 ROOT FIX: Topics panel content detected via mutation observer');
-                            setTimeout(() => {
-                                setupTopicsEditor();
-                            }, 50);
-                            break;
-                        }
-                    }
-                }
-            }
-        });
-    });
-    
-    // Start observing
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-    
-    console.log('✅ ROOT FIX: Mutation observer set up for dynamic content');
-}
+    /**
+     * Add new topic
+     */
+    addNewTopic() {
+        const input = this.elements.newTopicInput;
+        const title = input?.value.trim();
+        
+        if (!title || title.length < 3) {
+            this.showMessage('Topic must be at least 3 characters long', 'error');
+            return;
+        }
+        
+        if (title.length > 100) {
+            this.showMessage('Topic cannot be longer than 100 characters', 'error');
+            return;
+        }
+        
+        // Check for duplicates
+        const existingTopics = this.stateManager.getTopics();
+        if (existingTopics.some(t => t.title.toLowerCase() === title.toLowerCase())) {
+            this.showMessage('Topic already exists', 'error');
+            return;
+        }
+        
+        // Add to state
+        const newTopic = this.stateManager.addTopic({
+            title: title,
+            description: '',
+            source: 'design_panel'
+        }, -1, 'designPanel');
+        
+        // Clear form
+        this.hideAddTopicForm();
+        
+        // Schedule save
+        this.scheduleAutoSave();
+        
+        this.showMessage(`Topic added: "${newTopic.title}"`, 'success');
+        console.log(`➕ Design Panel: Topic added - "${newTopic.title}"`);
+    }
 
-// Expose clean API for external components
-window.topicsPanel = {
-    initialize: initializeTopicsPanel,
-    updatePreview: updateComponentPreview,
-    addTopic: addNewTopic,
-    clearTopics: handleClearAllTopics,
-    showNotification: showNotification,
-    // ROOT FIX: Include the loadStoredTopicsData function that was missing
-    loadStoredTopicsData: function(postId) {
+    /**
+     * Validate new topic input
+     */
+    validateNewTopicInput(input) {
+        const title = input.value;
+        const charCounter = document.querySelector('.char-counter');
+        const qualityIndicator = document.querySelector('#new-topic-quality span');
         
-        if (!targetPostId) {
-            console.warn('⚠️ No post ID available for loading topics');
-            return Promise.reject('No post ID');
+        // Update character counter
+        if (charCounter) {
+            charCounter.textContent = `${title.length}/100`;
         }
         
-        // Get AJAX data
-        const ajaxUrl = window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
-        const nonce = window.guestifyData?.nonce || '';
-        
-        if (!nonce) {
-            console.error('❌ No nonce available for AJAX request');
-            return Promise.reject('No nonce');
+        // Update quality indicator
+        if (qualityIndicator && title.length > 0) {
+            const quality = this.stateManager?.calculateQuality(title) || 0;
+            const level = this.getQualityLevel(quality);
+            
+            qualityIndicator.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+            qualityIndicator.className = level;
         }
-        
-        const formData = new FormData();
-        formData.append('action', 'load_stored_topics');
-        formData.append('nonce', nonce);
-        formData.append('post_id', targetPostId);
-        
-        console.log('📡 ROOT FIX: Making AJAX request to load topics for post:', targetPostId);
-        
-        return fetch(ajaxUrl, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.text())
-        .then(text => {
-            try {
-                const data = JSON.parse(text);
-                console.log('📊 ROOT FIX: Parsed AJAX data:', data);
-                
-                if (data.success) {
-                    console.log('✅ ROOT FIX: Topics data loaded successfully!');
-                    window.storedTopicsData = data;
-                    
-                    // ROOT FIX: Trigger component re-render with loaded data
-                    if (data.data && data.data.topics) {
-                        const component = document.querySelector('.editable-element[data-component="topics"]');
-                        const topicsContainer = component?.querySelector('.topics-container');
-                        
-                        if (component && topicsContainer) {
-                            // Update data attributes with fresh values
-                            topicsContainer.setAttribute('data-has-dynamic-topics', 'true');
-                            topicsContainer.setAttribute('data-post-id', targetPostId);
-                            topicsContainer.setAttribute('data-topics-source', 'ajax_loaded');
-                            topicsContainer.setAttribute('data-topics-count', Object.keys(data.data.topics).length);
-                            
-                            // Clear and rebuild topics
-                            topicsContainer.innerHTML = '';
-                            
-                            // ROOT FIX: Enhanced topic processing with proper type checking
-                            Object.entries(data.data.topics).forEach(([key, value], index) => {
-                                let topicTitle = '';
-                                let topicMetadata = {};
-                                
-                                // ROOT FIX: Handle both simple strings and complex objects
-                                if (typeof value === 'string') {
-                                    topicTitle = value;
-                                    // Check for enhanced metadata if available
-                                    if (data.data.metadata && data.data.metadata[key]) {
-                                        topicMetadata = data.data.metadata[key];
-                                    }
-                                } else if (typeof value === 'object' && value !== null) {
-                                    // Handle legacy object format
-                                    topicTitle = value.value || value.title || String(value);
-                                    topicMetadata = {
-                                        quality: value.quality || 0,
-                                        data_source: value.data_source || 'unknown',
-                                        meta_key: value.meta_key || key
-                                    };
-                                } else {
-                                    // Fallback for unexpected data types
-                                    topicTitle = String(value || '');
-                                }
-                                
-                                // ROOT FIX: Only process non-empty topics with proper validation
-                                if (topicTitle && topicTitle.trim() && topicTitle.trim().length > 0) {
-                                    const sanitizedTitle = escapeHtml(topicTitle.trim());
-                                    
-                                    const topicDiv = document.createElement('div');
-                                    topicDiv.className = 'topic-item';
-                                    topicDiv.setAttribute('data-topic-index', index);
-                                    topicDiv.setAttribute('data-topic-source', data.data.data_format === 'javascript_compatible' ? 'ajax_loaded_enhanced' : 'ajax_loaded');
-                                    topicDiv.setAttribute('data-meta-key', key);
-                                    
-                                    // ROOT FIX: Add enhanced metadata attributes if available
-                                    if (topicMetadata.quality) {
-                                        topicDiv.setAttribute('data-topic-quality', topicMetadata.quality);
-                                    }
-                                    if (topicMetadata.data_source) {
-                                        topicDiv.setAttribute('data-topic-data-source', topicMetadata.data_source);
-                                    }
-                                    
-                                    topicDiv.innerHTML = `
-                                        <div class="topic-icon">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="topic-content">
-                                            <div class="topic-title">${sanitizedTitle}</div>
-                                        </div>
-                                    `;
-                                    
-                                    topicsContainer.appendChild(topicDiv);
-                                } else {
-                                    console.log(`🔍 ROOT FIX: Skipping empty/invalid topic at key '${key}':`, value);
-                                }
-                            });
-                            
-                            console.log('✅ ROOT FIX: Component re-rendered with', Object.keys(data.data.topics).length, 'topics');
-                            
-                            // Show success notification
-                            const notification = document.createElement('div');
-                            notification.style.cssText = `
-                                position: fixed;
-                                top: 20px;
-                                right: 20px;
-                                background: #10b981;
-                                color: white;
-                                padding: 12px 20px;
-                                border-radius: 6px;
-                                z-index: 10000;
-                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                                font-size: 14px;
-                                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                            `;
-                            notification.textContent = `✅ ROOT FIX: ${Object.keys(data.data.topics).length} topics loaded!`;
-                            document.body.appendChild(notification);
-                            setTimeout(() => notification.remove(), 3000);
-                        }
-                    }
-                    
-                    return data;
-                } else {
-                    console.error('❌ ROOT FIX: AJAX call failed:', data.data);
-                    return Promise.reject(data.data || 'Unknown error');
-                }
-            } catch (parseError) {
-                console.error('❌ ROOT FIX: Failed to parse AJAX response:', parseError);
-                return Promise.reject('Invalid JSON response');
-            }
-        })
-        .catch(error => {
-            console.error('❌ ROOT FIX: AJAX request failed:', error);
-            return Promise.reject(error);
-        });
-    },
-    version: 'root-fix-complete'
-};
+    }
 
-// Add notification animations to page
-if (!document.getElementById('topics-notification-styles')) {
-    const style = document.createElement('style');
-    style.id = 'topics-notification-styles';
-    style.textContent = `
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+    /**
+     * Update topic quality display
+     */
+    updateTopicQualityDisplay(topicEl, title) {
+        const quality = this.stateManager?.calculateQuality(title) || 0;
+        const level = this.getQualityLevel(quality);
+        
+        const qualityFill = topicEl?.querySelector('.quality-fill');
+        const qualityScore = topicEl?.querySelector('.quality-score');
+        const qualityLabel = topicEl?.querySelector('.quality-label');
+        
+        if (qualityFill) {
+            qualityFill.style.width = `${quality}%`;
+            qualityFill.className = `quality-fill ${level}`;
         }
         
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
+        if (qualityScore) {
+            qualityScore.textContent = `${quality}%`;
         }
         
-        .notification-content {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 16px;
+        if (qualityLabel) {
+            qualityLabel.textContent = level.toUpperCase();
+            qualityLabel.className = `quality-label ${level}`;
         }
-        
-        .notification-close {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: inherit;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            margin-left: auto;
-        }
-        
-        .notification-close:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-    `;
-    document.head.appendChild(style);
-}
+    }
 
-console.log('✅ ROOT FIX: Enhanced Topics Panel Script loaded with real-time sync architecture');
-console.log('📊 ROOT FIX: Available debug commands:');
-console.log('   debugTopicsCounter() - Debug counter sync system');
-console.log('   fixTopicsCounter() - Attempt to fix counter issues');
-console.log('   testTopicsCounterSync() - Test counter sync functionality');
-console.log('   debugTopicsSave() - Debug save system');
-console.log('   testTopicsSave() - Test save functionality');
-console.log('🔄 ROOT FIX: Real-time synchronization active between design panel and preview component');
-console.log('⚡ ROOT FIX: Enhanced event delegation and state monitoring enabled');
-console.log('🎯 ROOT FIX: Bidirectional sync ensures counter accuracy from any modification source');
+    /**
+     * Get quality level from score
+     */
+    getQualityLevel(score) {
+        if (score >= 80) return 'excellent';
+        if (score >= 60) return 'good';
+        if (score >= 40) return 'fair';
+        return 'poor';
+    }
 
-// ROOT FIX: Enhanced global test and debug functions
-window.testTopicsSave = function() {
-    console.log('🧪 ROOT FIX: Testing topics save functionality...');
-    
-    if (typeof performTopicsSave !== 'undefined') {
-        const postId = detectPostId();
-        const nonce = window.guestifyData?.nonce || window.guestifyMediaKit?.nonce;
+    /**
+     * Update topics counter
+     */
+    updateTopicsCounter() {
+        const topics = this.stateManager?.getTopics() || [];
+        if (this.elements.counter) {
+            this.elements.counter.textContent = topics.length;
+        }
         
-        console.log('🔍 ROOT FIX: Test data:', { postId, hasNonce: !!nonce });
-        
-        if (postId && nonce) {
-            return performTopicsSave('test');
+        // Update UI based on topic count
+        if (topics.length === 0) {
+            this.showAddTopicPrompt();
         } else {
-            console.error('❌ ROOT FIX: Missing post ID or nonce for test');
-            return Promise.reject('Missing data');
+            this.hideAddTopicPrompt();
+            this.showQualityOverview();
         }
-    } else {
-        console.error('❌ ROOT FIX: performTopicsSave function not found');
-        return Promise.reject('Function not found');
     }
-};
 
-window.debugTopicsSave = function() {
-    console.log('🔍 ROOT FIX: Debug topics save system...');
-    
-    const component = document.querySelector('.editable-element[data-component="topics"]');
-    const topics = component?.querySelectorAll('.topic-title');
-    const saveInterface = component?.querySelector('.topics-save-interface');
-    
-    console.log('📊 ROOT FIX: Debug info:', {
-        component: !!component,
-        topicsCount: topics?.length || 0,
-        saveInterface: !!saveInterface,
-        postId: detectPostId(),
-        nonce: !!(window.guestifyData?.nonce || window.guestifyMediaKit?.nonce),
-        topicsData: collectTopicsFromDOM ? collectTopicsFromDOM() : 'function not found'
-    });
-    
-    if (topics) {
-        topics.forEach((topic, index) => {
-            console.log(`📝 Topic ${index + 1}:`, {
-                text: topic.textContent?.trim() || '(empty)',
-                contenteditable: topic.contentEditable,
-                hasListeners: !!topic.dataset.originalValue
+    /**
+     * Update quality overview
+     */
+    updateQualityOverview() {
+        const topics = this.stateManager?.getTopics() || [];
+        
+        if (topics.length === 0) {
+            this.hideQualityOverview();
+            return;
+        }
+        
+        const stats = this.calculateQualityStats(topics);
+        
+        // Update quality stats
+        const avgQualityEl = document.getElementById('average-quality');
+        const completionEl = document.getElementById('completion-rate');
+        const excellenceEl = document.getElementById('excellence-count');
+        
+        if (avgQualityEl) avgQualityEl.textContent = `${stats.averageQuality}%`;
+        if (completionEl) completionEl.textContent = `${stats.completionRate}%`;
+        if (excellenceEl) excellenceEl.textContent = stats.excellentTopics;
+        
+        // Update recommendations
+        this.updateQualityRecommendations(stats);
+        
+        this.showQualityOverview();
+    }
+
+    /**
+     * Calculate quality statistics
+     */
+    calculateQualityStats(topics) {
+        const totalTopics = topics.length;
+        const maxTopics = this.config.maxTopics;
+        const validTopics = topics.filter(t => t.isValid);
+        const excellentTopics = topics.filter(t => t.quality >= 80);
+        
+        const averageQuality = totalTopics > 0 ? 
+            Math.round(topics.reduce((sum, t) => sum + t.quality, 0) / totalTopics) : 0;
+        
+        const completionRate = Math.round((totalTopics / maxTopics) * 100);
+        
+        return {
+            totalTopics,
+            validTopics: validTopics.length,
+            excellentTopics: excellentTopics.length,
+            averageQuality,
+            completionRate
+        };
+    }
+
+    /**
+     * Update quality recommendations
+     */
+    updateQualityRecommendations(stats) {
+        const recommendationsEl = document.getElementById('quality-recommendations');
+        if (!recommendationsEl) return;
+        
+        const recommendations = [];
+        
+        if (stats.totalTopics < 3) {
+            recommendations.push({
+                type: 'action',
+                icon: '➕',
+                text: 'Add more topics to showcase your expertise (aim for 3-5 topics)'
             });
-        });
-    }
-};
-
-// ROOT FIX: Enhanced debug functions for counter sync
-window.debugTopicsCounter = function() {
-    console.log('🔍 ROOT FIX: Debug topics counter sync system...');
-    
-    const counterElement = document.getElementById('topic-count');
-    const component = document.querySelector('.editable-element[data-component="topics"]');
-    const actualCount = getActualTopicCount();
-    const editorCount = topicCount;
-    
-    const debugInfo = {
-        counterElement: {
-            exists: !!counterElement,
-            value: counterElement?.textContent,
-            visible: counterElement ? window.getComputedStyle(counterElement).display !== 'none' : false
-        },
-        component: {
-            exists: !!component,
-            topicItems: component?.querySelectorAll('.topic-item').length || 0,
-            realTopics: actualCount,
-            dataAttribute: component?.querySelector('.topics-container')?.getAttribute('data-topics-count')
-        },
-        editor: {
-            topicCount: editorCount,
-            editorItems: document.querySelectorAll('.topic-editor-item').length,
-            addButton: !!document.getElementById('add-topic-btn'),
-            clearButton: !!document.getElementById('clear-all-topics-btn')
-        },
-        sync: {
-            actualCount: actualCount,
-            editorCount: editorCount,
-            counterValue: counterElement?.textContent,
-            inSync: actualCount === editorCount && editorCount.toString() === counterElement?.textContent
-        },
-        monitoring: {
-            componentObserver: !!window.topicsComponentObserver,
-            globalObserver: !!window.globalTopicsObserver,
-            eventListeners: 'Attached to document'
         }
-    };
-    
-    console.table(debugInfo.counterElement);
-    console.table(debugInfo.component);
-    console.table(debugInfo.editor);
-    console.table(debugInfo.sync);
-    console.table(debugInfo.monitoring);
-    
-    if (!debugInfo.sync.inSync) {
-        console.warn('⚠️ ROOT FIX: Counter not in sync! Attempting manual sync...');
-        updateTopicsCounter();
         
-        setTimeout(() => {
-            const newCounterValue = document.getElementById('topic-count')?.textContent;
-            console.log(`🔄 ROOT FIX: Post-sync counter value: ${newCounterValue}`);
-        }, 100);
-    } else {
-        console.log('✅ ROOT FIX: Counter is in perfect sync!');
-    }
-    
-    return debugInfo;
-};
-
-window.fixTopicsCounter = function() {
-    console.log('🔧 ROOT FIX: Attempting to fix topics counter...');
-    
-    // Force counter update
-    updateTopicsCounter();
-    
-    // Re-setup monitoring if missing
-    if (!window.topicsComponentObserver) {
-        console.log('🔄 ROOT FIX: Re-setting up component monitoring...');
-        setupComponentStateMonitoring();
-    }
-    
-    if (!window.globalTopicsObserver) {
-        console.log('🔄 ROOT FIX: Re-setting up global monitoring...');
-        setupGlobalCounterSync();
-    }
-    
-    // Re-setup bidirectional sync
-    setupBidirectionalSync();
-    
-    console.log('✅ ROOT FIX: Counter fix attempt completed');
-    
-    // Return debug info
-    return window.debugTopicsCounter();
-};
-
-window.testTopicsCounterSync = function() {
-    console.log('🧪 ROOT FIX: Testing topics counter sync...');
-    
-    const initialCount = getActualTopicCount();
-    console.log(`📊 Initial count: ${initialCount}`);
-    
-    // Test 1: Add a topic and check sync
-    console.log('Test 1: Adding topic...');
-    if (typeof addNewTopic === 'function') {
-        addNewTopic();
+        if (stats.averageQuality < 60) {
+            recommendations.push({
+                type: 'quality',
+                icon: '✨',
+                text: 'Improve topic quality by adding more specific details'
+            });
+        }
         
-        setTimeout(() => {
-            const newCount = getActualTopicCount();
-            const counterValue = document.getElementById('topic-count')?.textContent;
-            console.log(`📊 After add - Actual: ${newCount}, Counter: ${counterValue}`);
-            
-            // Test 2: Update counter and check
-            console.log('Test 2: Updating counter...');
-            updateTopicsCounter();
-            
-            setTimeout(() => {
-                const finalCounterValue = document.getElementById('topic-count')?.textContent;
-                console.log(`📊 After update - Counter: ${finalCounterValue}`);
-                
-                const success = newCount.toString() === finalCounterValue;
-                console.log(success ? '✅ Counter sync test PASSED' : '❌ Counter sync test FAILED');
-            }, 100);
-        }, 200);
-    } else {
-        console.error('❌ addNewTopic function not available');
+        if (stats.excellentTopics === 0 && stats.totalTopics > 0) {
+            recommendations.push({
+                type: 'enhance',
+                icon: '🚀',
+                text: 'Use the enhance button to improve your topics automatically'
+            });
+        }
+        
+        if (recommendations.length === 0) {
+            recommendations.push({
+                type: 'success',
+                icon: '✅',
+                text: 'Great job! Your topics look professional and comprehensive'
+            });
+        }
+        
+        recommendationsEl.innerHTML = recommendations.map(rec => `
+            <div class="recommendation recommendation--${rec.type}">
+                <span class="recommendation-icon">${rec.icon}</span>
+                <span class="recommendation-text">${rec.text}</span>
+            </div>
+        `).join('');
     }
-};
+
+    /**
+     * Schedule auto-save
+     */
+    scheduleAutoSave() {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        
+        this.setSaveStatus('unsaved');
+        
+        this.saveTimeout = setTimeout(() => {
+            if (this.stateManager?.hasPendingChanges()) {
+                this.performSave('auto');
+            }
+        }, this.config.autoSaveDelay);
+    }
+
+    /**
+     * Perform save operation
+     */
+    async performSave(saveType = 'manual') {
+        if (!this.stateManager) return;
+        
+        console.log(`💾 Design Panel: Starting ${saveType} save`);
+        this.setSaveStatus('saving');
+        
+        try {
+            const success = await this.stateManager.saveTopics(saveType);
+            
+            if (success) {
+                this.setSaveStatus('saved');
+                console.log('✅ Design Panel: Save successful');
+            } else {
+                this.setSaveStatus('error', 'Save failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ Design Panel: Save failed:', error);
+            this.setSaveStatus('error', error.message);
+        }
+    }
+
+    /**
+     * Set save status
+     */
+    setSaveStatus(status, message = '') {
+        const statusEl = this.elements.saveStatus;
+        if (!statusEl) return;
+        
+        const iconEl = statusEl.querySelector('.save-icon');
+        const textEl = statusEl.querySelector('.save-text');
+        const timestampEl = statusEl.querySelector('.save-timestamp');
+        
+        statusEl.dataset.status = status;
+        
+        const configs = {
+            saved: { icon: '✅', text: 'Saved', color: '#10b981' },
+            saving: { icon: '⏳', text: 'Saving...', color: '#f59e0b' },
+            unsaved: { icon: '⚠️', text: 'Unsaved changes', color: '#ef4444' },
+            error: { icon: '❌', text: 'Save failed', color: '#ef4444' }
+        };
+        
+        const config = configs[status] || configs.saved;
+        
+        if (iconEl) iconEl.textContent = config.icon;
+        if (textEl) {
+            textEl.textContent = message || config.text;
+            textEl.style.color = config.color;
+        }
+        
+        if (timestampEl && status === 'saved') {
+            timestampEl.textContent = `at ${new Date().toLocaleTimeString()}`;
+        }
+    }
+
+    /**
+     * Handle state save success
+     */
+    handleStateSaveSuccess(e) {
+        console.log('✅ Design Panel: State save successful');
+        this.setSaveStatus('saved', `${e.data.response.topics_saved || 0} topics saved`);
+    }
+
+    /**
+     * Handle state save error
+     */
+    handleStateSaveError(e) {
+        console.error('❌ Design Panel: State save error:', e.data.error);
+        this.setSaveStatus('error', 'Save failed');
+    }
+
+    /**
+     * Update preview settings
+     */
+    updateSectionTitle(title) {
+        // Update preview via state or direct DOM manipulation
+        this.triggerEvent('updateSectionTitle', { title });
+    }
+
+    updateSectionIntro(intro) {
+        this.triggerEvent('updateSectionIntro', { intro });
+    }
+
+    updateDisplayStyle(style) {
+        this.triggerEvent('updateDisplayStyle', { style });
+    }
+
+    updateColumns(columns) {
+        this.triggerEvent('updateColumns', { columns });
+    }
+
+    /**
+     * Integration functions
+     */
+    async loadFromMKCG() {
+        this.showMessage('Loading topics from MKCG...', 'info');
+        
+        try {
+            // TODO: Implement MKCG integration
+            console.log('🔄 Loading from MKCG...');
+            
+        } catch (error) {
+            console.error('Failed to load from MKCG:', error);
+            this.showMessage('Failed to load from MKCG: ' + error.message, 'error');
+        }
+    }
+
+    async syncWithMKCG() {
+        this.showMessage('Syncing with MKCG...', 'info');
+        
+        try {
+            // TODO: Implement MKCG sync
+            console.log('🔄 Syncing with MKCG...');
+            
+        } catch (error) {
+            console.error('Failed to sync with MKCG:', error);
+            this.showMessage('Failed to sync with MKCG: ' + error.message, 'error');
+        }
+    }
+
+    checkIntegrationStatus() {
+        // TODO: Check MKCG integration status
+        if (this.elements.integrationStatus) {
+            this.elements.integrationStatus.textContent = 'Ready for integration';
+        }
+    }
+
+    /**
+     * UI helper methods
+     */
+    showAddTopicPrompt() {
+        const addInterface = document.getElementById('add-topic-interface');
+        if (addInterface) {
+            addInterface.style.display = 'block';
+        }
+    }
+
+    hideAddTopicPrompt() {
+        const addInterface = document.getElementById('add-topic-interface');
+        if (addInterface) {
+            addInterface.style.display = 'none';
+        }
+    }
+
+    showQualityOverview() {
+        if (this.elements.qualityOverview) {
+            this.elements.qualityOverview.style.display = 'block';
+        }
+    }
+
+    hideQualityOverview() {
+        if (this.elements.qualityOverview) {
+            this.elements.qualityOverview.style.display = 'none';
+        }
+    }
+
+    showLoading(show) {
+        if (this.elements.loading) {
+            this.elements.loading.style.display = show ? 'flex' : 'none';
+        }
+    }
+
+    showMessage(message, type = 'info') {
+        console.log(`📢 Design Panel: ${message}`);
+        
+        // TODO: Implement proper toast/notification system
+        // For now, use temporary alert
+        if (type === 'error') {
+            console.error(message);
+        }
+    }
+
+    showError(message) {
+        this.showMessage(message, 'error');
+    }
+
+    updateUI() {
+        this.updateTopicsCounter();
+        this.updateQualityOverview();
+    }
+
+    /**
+     * Utility methods
+     */
+    triggerEvent(eventName, data) {
+        const event = new CustomEvent(eventName, { detail: data });
+        window.dispatchEvent(event);
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Cleanup
+     */
+    destroy() {
+        // Clear timeouts
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        if (this.qualityTimer) {
+            clearTimeout(this.qualityTimer);
+        }
+        
+        // Remove state listeners
+        if (this.stateManager) {
+            this.eventListeners.forEach((listenerId, event) => {
+                this.stateManager.removeEventListener(event, listenerId);
+            });
+        }
+        
+        // Destroy sortable
+        if (this.sortable) {
+            this.sortable.destroy();
+        }
+        
+        console.log('🧹 Topics Design Panel: Cleaned up');
+    }
+}
+
+// Initialize design panel when DOM is ready
+if (typeof window !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            window.topicsDesignPanelManager = new TopicsDesignPanelManager();
+        });
+    } else {
+        window.topicsDesignPanelManager = new TopicsDesignPanelManager();
+    }
+    
+    console.log('🎨 Topics Design Panel Script: Loaded and ready');
+}

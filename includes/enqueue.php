@@ -124,7 +124,7 @@ class GMKB_Root_Fix_Script_Manager {
      */
     private function register_and_enqueue_scripts() {
         $plugin_url = GUESTIFY_PLUGIN_URL;
-        $version = GUESTIFY_VERSION . '-root-fix-' . time(); // Aggressive cache busting
+        $version = GUESTIFY_VERSION . '-phase3-fix-' . time(); // Aggressive cache busting
         
         // ROOT FIX: Register styles first
         wp_register_style(
@@ -144,7 +144,7 @@ class GMKB_Root_Fix_Script_Manager {
             true // Load in footer
         );
         
-        // ROOT FIX: STEP 2 - Enhanced Component Manager (MUST LOAD FIRST)
+        // ROOT FIX: STEP 2 - Enhanced Component Manager (CRITICAL - MUST LOAD FIRST)
         wp_register_script(
             'guestify-enhanced-component-manager',
             $plugin_url . 'js/core/enhanced-component-manager.js',
@@ -153,43 +153,44 @@ class GMKB_Root_Fix_Script_Manager {
             true
         );
         
-        // ROOT FIX: STEP 3 - Core Systems Bundle (preserves enhanced manager)
+        // ROOT FIX: STEP 3 - Core Systems Bundle (depends on enhanced manager)
         wp_register_script(
             'guestify-core-systems-bundle',
             $plugin_url . 'js/core-systems-bundle.js',
-            array('guestify-enhanced-component-manager'), // Depends on enhanced manager
+            array('guestify-enhanced-component-manager'), // MUST depend on enhanced manager
             $version,
             true
         );
         
-        // ROOT FIX: STEP 4 - Application Bundle (UI and functionality)
+        // ROOT FIX: STEP 4 - Application Bundle (depends on core systems)
         wp_register_script(
             'guestify-application-bundle',
             $plugin_url . 'js/application-bundle.js',
-            array('guestify-core-systems-bundle'), // Depends on core systems
+            array('guestify-core-systems-bundle'), // MUST depend on core systems
             $version,
             true
         );
         
-        // ROOT FIX: STEP 5 - Topics Component Script (component functionality)
+        // ROOT FIX: STEP 5 - Topics Component Script (depends on application bundle)
         wp_register_script(
             'guestify-topics-component',
             $plugin_url . 'components/topics/script.js',
-            array('guestify-application-bundle'), // Depends on application bundle
+            array('guestify-application-bundle'), // MUST depend on application bundle
             $version,
             true
         );
         
-        // ROOT FIX: STEP 6 - Topics Panel Script (design panel)
+        // ROOT FIX: STEP 6 - Topics Panel Script (depends on topics component)
         wp_register_script(
             'guestify-topics-panel',
             $plugin_url . 'components/topics/panel-script.js',
-            array('guestify-topics-component'), // Depends on topics component
+            array('guestify-topics-component'), // MUST depend on topics component
             $version,
             true
         );
         
-        // ROOT FIX: Enqueue all scripts in dependency order
+        // ROOT FIX: Enqueue scripts in STRICT dependency order
+        wp_enqueue_script('sortable-js');
         wp_enqueue_script('guestify-enhanced-component-manager');
         wp_enqueue_script('guestify-core-systems-bundle');
         wp_enqueue_script('guestify-application-bundle');
@@ -200,7 +201,7 @@ class GMKB_Root_Fix_Script_Manager {
         $this->localize_ajax_data();
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('ROOT FIX: All scripts registered and enqueued successfully');
+            error_log('PHASE 3 FIX: All scripts registered and enqueued in correct dependency order');
         }
     }
     
@@ -222,7 +223,16 @@ class GMKB_Root_Fix_Script_Manager {
             'timestamp' => time(),
             'saveActions' => array(
                 'customTopics' => 'save_custom_topics',
-                'mkcgTopics' => 'save_mkcg_topics'
+                'mkcgTopics' => 'save_mkcg_topics',
+                'topicsMainSavePrepare' => 'topics_main_save_prepare',
+                'topicsMainSaveExecute' => 'topics_main_save_execute',
+                'topicsSaveStatus' => 'topics_save_status'
+            ),
+            'mainSaveCoordination' => array(
+                'enabled' => true,
+                'phase3Enhanced' => true,
+                'coordinatedComponents' => array('topics'),
+                'timeout' => 30000 // 30 seconds
             )
         );
         
@@ -337,11 +347,17 @@ class GMKB_Root_Fix_Script_Manager {
             'scripts_loaded' => $this->scripts_loaded,
             'current_url' => $_SERVER['REQUEST_URI'] ?? '',
             'post_id' => $this->get_current_post_id(),
-            'version' => 'ROOT-FIX-1.0.0',
-            'architecture' => 'simplified-bulletproof-dependencies',
+            'version' => 'PHASE3-ENHANCED-1.0.0',
+            'architecture' => 'coordinated-main-save-system',
             'ajax_data_available' => true,
             'admin_support' => true,
-            'cache_busting' => 'aggressive'
+            'cache_busting' => 'aggressive',
+            'phase3_features' => array(
+                'main_save_coordination' => true,
+                'component_save_aggregation' => true,
+                'enhanced_topics_integration' => true,
+                'save_status_reporting' => true
+            )
         );
     }
 }
