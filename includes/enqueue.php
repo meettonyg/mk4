@@ -102,6 +102,14 @@ function gmkb_enqueue_assets() {
         array(),
         $version
     );
+    
+    // Enqueue server integration styles
+    wp_enqueue_style(
+        'gmkb-server-integration',
+        $plugin_url . 'css/server-integration.css',
+        array( 'gmkb-main-styles' ), // Depends on main styles
+        $version
+    );
 
     // Log successful enqueue for debugging
     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {

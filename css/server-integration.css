@@ -1,0 +1,335 @@
+/**
+ * Server Integration CSS
+ * Styles for the server-integrated component system
+ */
+
+/* Component wrapper and controls */
+.component-wrapper {
+    position: relative;
+    margin: 20px 0;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.component-wrapper:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.component-controls {
+    position: absolute;
+    top: -12px;
+    right: 10px;
+    display: none;
+    gap: 4px;
+    z-index: 100;
+}
+
+.component-wrapper:hover .component-controls {
+    display: flex;
+}
+
+.component-control-btn {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.component-control-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.component-control-btn.remove-component {
+    color: #dc2626;
+}
+
+.component-control-btn.remove-component:hover {
+    background: #fee2e2;
+    border-color: #dc2626;
+}
+
+.component-control-btn.edit-component {
+    color: #3b82f6;
+}
+
+.component-control-btn.edit-component:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+/* Component content area */
+.component-content {
+    padding: 20px;
+}
+
+/* Fallback component styling */
+.component-content .fallback {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    padding: 16px;
+    margin: 0;
+}
+
+.fallback-notice {
+    font-size: 12px;
+    color: #d97706;
+    font-style: italic;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+/* Component loading indicator */
+.component-loading-indicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    z-index: 10000;
+    min-width: 300px;
+}
+
+.component-loading-indicator .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.component-loading-indicator .loading-spinner {
+    font-size: 24px;
+    animation: spin 1s linear infinite;
+}
+
+.component-loading-indicator h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #10b981;
+}
+
+.component-loading-indicator p {
+    margin: 0;
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+/* Component library improvements */
+.component-grid-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #6b7280;
+}
+
+.component-grid-loading .loading-spinner {
+    margin-bottom: 16px;
+    animation: spin 1s linear infinite;
+}
+
+.component-grid-loading .loading-spinner svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Component item styling */
+.component-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    background: white;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.component-item:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.component-item__preview {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.component-preview-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.component-item__info h4 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.component-item__info p {
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.premium-badge {
+    background: #fbbf24;
+    color: #92400e;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+
+.component-item__actions {
+    text-align: center;
+}
+
+.add-component-btn {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    background: #3b82f6;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.add-component-btn:hover {
+    background: #2563eb;
+}
+
+.add-component-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* Auto-generate button styling */
+.btn[data-action="auto-generate-all"] {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn[data-action="auto-generate-all"]:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.15);
+}
+
+/* MKCG Dashboard auto-generate button */
+.mkcg-action-btn {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mkcg-auto-generate-btn {
+    background: #10b981;
+    color: white;
+    border-color: #10b981;
+}
+
+.mkcg-auto-generate-btn:hover {
+    background: #059669;
+    border-color: #059669;
+}
+
+.mkcg-refresh-btn:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+/* Animation keyframes */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .component-controls {
+        top: -8px;
+        right: 8px;
+    }
+    
+    .component-control-btn {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .component-loading-indicator {
+        min-width: 250px;
+        padding: 20px;
+    }
+}
+
+/* Status indicators for components */
+.component-wrapper[data-status="loading"] {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.component-wrapper[data-status="error"] {
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+
+.component-wrapper[data-status="success"] {
+    border-color: #10b981;
+}
+
+/* Empty state enhancements for auto-loading */
+.empty-state-optimized .preview-component {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #f3f4f6;
+    border-radius: 16px;
+    font-size: 12px;
+    margin: 2px;
+}
+
+.empty-state-optimized .mkcg-preview-components {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 16px 0;
+}
+
+.empty-state-optimized .more-indicator {
+    background: #e5e7eb;
+    color: #6b7280;
+}

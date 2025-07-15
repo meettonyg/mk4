@@ -434,72 +434,155 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * MISSING FUNCTIONALITY: Save media kit state to database
+     * FIXED: Save media kit state to database with enhanced error handling
      */
     public function ajax_save_media_kit() {
+        // Enhanced error logging for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔄 GMKB: ajax_save_media_kit called');
+            error_log('📊 POST data: ' . print_r($_POST, true));
+        }
+        
+        // Check if nonce exists
+        $nonce = isset($_POST['nonce']) ? $_POST['nonce'] : '';
+        if (empty($nonce)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: No nonce provided in request');
+            }
+            wp_send_json_error('No nonce provided');
+            return;
+        }
+        
         // Verify nonce for security
-        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'gmkb_nonce' ) ) {
-            wp_send_json_error( 'Invalid nonce' );
+        if (!wp_verify_nonce($nonce, 'gmkb_nonce')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Nonce verification failed');
+                error_log('  Provided nonce: ' . $nonce);
+                error_log('  Expected action: gmkb_nonce');
+            }
+            wp_send_json_error('Invalid nonce');
+            return;
         }
         
-        $post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
-        $state_data = isset( $_POST['state'] ) ? $_POST['state'] : '';
+        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+        $state_data = isset($_POST['state']) ? $_POST['state'] : '';
         
-        if ( ! $post_id ) {
-            wp_send_json_error( 'Post ID is required' );
+        if (!$post_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: No post ID provided');
+            }
+            wp_send_json_error('Post ID is required');
+            return;
         }
         
-        if ( empty( $state_data ) ) {
-            wp_send_json_error( 'State data is required' );
+        if (empty($state_data)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: No state data provided');
+            }
+            wp_send_json_error('State data is required');
+            return;
         }
         
         // Decode and validate JSON
-        $state = json_decode( stripslashes( $state_data ), true );
-        if ( json_last_error() !== JSON_ERROR_NONE ) {
-            wp_send_json_error( 'Invalid JSON data' );
+        $state = json_decode(stripslashes($state_data), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: JSON decode error: ' . json_last_error_msg());
+            }
+            wp_send_json_error('Invalid JSON data: ' . json_last_error_msg());
+            return;
+        }
+        
+        // Validate post exists
+        $post = get_post($post_id);
+        if (!$post) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Post not found: ' . $post_id);
+            }
+            wp_send_json_error('Post not found');
+            return;
         }
         
         // Save to post meta
-        $success = update_post_meta( $post_id, 'gmkb_media_kit_state', $state );
+        $success = update_post_meta($post_id, 'gmkb_media_kit_state', $state);
         
-        if ( $success !== false ) {
-            wp_send_json_success( array( 
+        if ($success !== false) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Media kit saved successfully for post ' . $post_id);
+                error_log('📊 Components saved: ' . count($state['components'] ?? []));
+            }
+            wp_send_json_success(array(
                 'message' => 'Media kit saved successfully',
-                'timestamp' => time()
-            ) );
+                'timestamp' => time(),
+                'post_id' => $post_id,
+                'components_count' => count($state['components'] ?? [])
+            ));
         } else {
-            wp_send_json_error( 'Failed to save media kit' );
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Failed to save media kit to post ' . $post_id);
+            }
+            wp_send_json_error('Failed to save media kit');
         }
     }
     
     /**
-     * MISSING FUNCTIONALITY: Load media kit state from database
+     * FIXED: Load media kit state from database with enhanced error handling
      */
     public function ajax_load_media_kit() {
-        $post_id = isset( $_GET['post_id'] ) ? intval( $_GET['post_id'] ) : 0;
+        // Enhanced error logging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔄 GMKB: ajax_load_media_kit called');
+            error_log('📊 GET data: ' . print_r($_GET, true));
+        }
         
-        if ( ! $post_id ) {
-            wp_send_json_error( 'Post ID is required' );
+        $post_id = isset($_GET['post_id']) ? intval($_GET['post_id']) : 0;
+        
+        if (!$post_id) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: No post ID provided for load');
+            }
+            wp_send_json_error('Post ID is required');
+            return;
+        }
+        
+        // Validate post exists
+        $post = get_post($post_id);
+        if (!$post) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Post not found for load: ' . $post_id);
+            }
+            wp_send_json_error('Post not found');
+            return;
         }
         
         // Load from post meta
-        $state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
+        $state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
         
-        if ( empty( $state ) ) {
+        if (empty($state)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('📝 GMKB: No saved state found for post ' . $post_id);
+            }
             // Return empty state if nothing saved
-            wp_send_json_success( array(
+            wp_send_json_success(array(
                 'state' => array(
                     'components' => array(),
                     'layout' => array(),
                     'globalSettings' => array()
                 ),
-                'message' => 'No saved state found'
-            ) );
+                'message' => 'No saved state found',
+                'post_id' => $post_id
+            ));
         } else {
-            wp_send_json_success( array(
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Loaded state for post ' . $post_id);
+                error_log('📊 Components loaded: ' . count($state['components'] ?? []));
+            }
+            wp_send_json_success(array(
                 'state' => $state,
-                'message' => 'Media kit loaded successfully'
-            ) );
+                'message' => 'Media kit loaded successfully',
+                'post_id' => $post_id,
+                'components_count' => count($state['components'] ?? [])
+            ));
         }
     }
     
