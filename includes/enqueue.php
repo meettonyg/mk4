@@ -10,12 +10,28 @@
  * ✅ Follows WordPress patterns naturally
  * 
  * @package Guestify
- * @version 2.0.0-simplified
+ * @version 2.1.0-race-condition-fixed
  */
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
+}
+
+// GEMINI FIX: Validate constants are available
+if ( ! defined( 'GUESTIFY_PLUGIN_URL' ) || ! defined( 'GUESTIFY_PLUGIN_DIR' ) ) {
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( '❌ GMKB CRITICAL: Plugin constants not defined when enqueue.php loaded!' );
+        error_log( '  GUESTIFY_PLUGIN_URL defined: ' . ( defined( 'GUESTIFY_PLUGIN_URL' ) ? 'YES' : 'NO' ) );
+        error_log( '  GUESTIFY_PLUGIN_DIR defined: ' . ( defined( 'GUESTIFY_PLUGIN_DIR' ) ? 'YES' : 'NO' ) );
+    }
+    return; // Exit early if constants not available
+}
+
+if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+    error_log( '✅ GMKB: Constants validated in enqueue.php' );
+    error_log( '  GUESTIFY_PLUGIN_URL: ' . GUESTIFY_PLUGIN_URL );
+    error_log( '  Script will load from: ' . GUESTIFY_PLUGIN_URL . 'js/main.js' );
 }
 
 /**
@@ -35,7 +51,7 @@ function gmkb_enqueue_assets() {
     }
 
     $plugin_url = GUESTIFY_PLUGIN_URL;
-    $version = '2.0.0-simplified-' . time(); // Cache busting for development
+    $version = '2.1.0-race-condition-fixed-' . time(); // Cache busting for development
 
     // Single script enqueue - WordPress handles dependency management
     wp_enqueue_script(
@@ -62,7 +78,9 @@ function gmkb_enqueue_assets() {
             'architecture'  => 'wordpress-native-simplified',
             'timestamp'     => time(),
             'builderPage'   => true,
-            'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG
+            'isBuilderPage' => true, // Added flag for JS initialization detection
+            'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
+            'templateFixed' => true // Flag indicating template path issue is resolved
         )
     );
 

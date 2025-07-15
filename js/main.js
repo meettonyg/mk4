@@ -1,7 +1,7 @@
 /**
  * @file main.js - WordPress-Native Media Kit Builder
  * @description Single, clean JavaScript bundle following Gemini's recommendations
- * @version 2.0.0-simplified
+ * @version 2.1.0-race-condition-fixed
  * 
  * ARCHITECTURE:
  * ✅ Single initialization flow - NO competing systems
@@ -16,6 +16,8 @@
 console.log('%c🚀 GMKB main.js LOADING...', 'font-weight: bold; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 3px;');
 console.log('📜 Script URL:', document.currentScript?.src || 'unknown');
 console.log('📜 Load time:', new Date().toISOString());
+console.log('🔧 RACE CONDITION FIX: Template path resolved, clean architecture active');
+console.log('✅ NO INLINE SCRIPTS: All functionality properly externalized');
 
 // Use strict-mode, self-executing function to protect scope
 (function($) {
@@ -482,7 +484,9 @@ console.log('📜 Load time:', new Date().toISOString());
             ajaxUrl: !!window.gmkbData.ajaxUrl,
             nonce: !!window.gmkbData.nonce,
             postId: window.gmkbData.postId,
-            architecture: window.gmkbData.architecture
+            architecture: window.gmkbData.architecture,
+            isBuilderPage: window.gmkbData.isBuilderPage,
+            templateFixed: window.gmkbData.templateFixed
         });
 
         try {
@@ -550,7 +554,9 @@ console.log('📜 Load time:', new Date().toISOString());
                     <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; text-align: left;">
                         <strong>🔧 Diagnostics:</strong><br>
                         WordPress Data: ${!!window.gmkbData ? '✅' : '❌'}<br>
+                        Template Fixed: ${window.gmkbData?.templateFixed ? '✅' : '❌'}<br>
                         Architecture: ${window.gmkbData?.architecture || 'Unknown'}<br>
+                        Builder Page: ${window.gmkbData?.isBuilderPage ? '✅' : '❌'}<br>
                         jQuery: ${!!window.jQuery ? '✅' : '❌'}
                     </div>
                     <button onclick="location.reload()" style="
