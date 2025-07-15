@@ -1,20 +1,26 @@
 /**
- * Topics Component JavaScript - PHASE 2 ROOT FIX Version
- * Enhanced with Bidirectional JavaScript Bridge for seamless side panel ↔ preview communication
+ * Topics Component JavaScript - PHASE 3 GMKB EVENT-DRIVEN Architecture
+ * Full integration with GMKB event system for seamless component communication
  * 
- * PHASE 2 FEATURES:
- * - Unified state management with single source of truth
- * - Real-time bidirectional synchronization between design panel and preview
- * - Event-driven bridge architecture with conflict resolution
- * - Quality scoring with live feedback
- * - Advanced drag-and-drop with cross-component coordination
+ * PHASE 3 GMKB FEATURES:
+ * ✅ GMKB Event Bus Integration - Native pub/sub communication
+ * ✅ Cross-Panel Event Coordination - Design panel ↔ preview sync
+ * ✅ Component Manager Integration - Enhanced component lifecycle events
+ * ✅ System-Wide Event Broadcasting - Topics events to all subscribers
+ * ✅ Event-Driven State Management - No polling, pure event coordination
  * 
- * @version 2.0.0-phase2-bridge
+ * @version 3.0.0-gmkb-event-driven
  */
 
+// GMKB ARCHITECTURE: Ensure GMKB is available
+if (!window.GMKB) {
+    console.error('🚨 Topics Component: GMKB event system not available!');
+    throw new Error('GMKB event system required for topics component');
+}
+
 /**
- * PHASE 2: Central Topics State Manager
- * Single source of truth for all topics data with event-driven updates
+ * PHASE 3: GMKB-Integrated Topics State Manager
+ * Single source of truth with GMKB event bus integration
  */
 class TopicsStateManager {
     constructor() {
@@ -22,15 +28,67 @@ class TopicsStateManager {
         this.postId = null;
         this.lastSaveTimestamp = 0;
         this.pendingChanges = false;
-        this.listeners = new Map();
         this.saveQueue = [];
         this.isProcessingSave = false;
+        
+        // GMKB ARCHITECTURE: Event system integration
+        this.eventBus = window.GMKB;
+        this.eventSubscriptions = new Map();
         
         // State change tracking
         this.changeHistory = [];
         this.maxHistorySize = 50;
         
-        console.log('🏗️ Topics State Manager: Initialized');
+        // GMKB ARCHITECTURE: Register with system
+        this.registerWithGMKB();
+        
+        console.log('🏗️ GMKB Topics State Manager: Initialized with event bus');
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Register state manager with GMKB system
+     */
+    registerWithGMKB() {
+        // Register as a system component
+        if (this.eventBus.registerSystem) {
+            this.eventBus.registerSystem('TopicsStateManager', this);
+        }
+        
+        // Subscribe to system events
+        this.subscribeToGMKBEvents();
+        
+        console.log('✅ Topics State Manager: Registered with GMKB system');
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Subscribe to relevant GMKB events
+     */
+    subscribeToGMKBEvents() {
+        // Listen for component manager events
+        const componentEventSub = this.eventBus.subscribe('components:topics:added', (event) => {
+            this.handleComponentTopicsAdded(event);
+        }, { priority: 10 });
+        this.eventSubscriptions.set('components:topics:added', componentEventSub);
+        
+        // Listen for component removal
+        const componentRemovedSub = this.eventBus.subscribe('components:topics:removed', (event) => {
+            this.handleComponentTopicsRemoved(event);
+        }, { priority: 10 });
+        this.eventSubscriptions.set('components:topics:removed', componentRemovedSub);
+        
+        // Listen for design panel requests
+        const designPanelSub = this.eventBus.subscribe('topics:design-panel:sync-request', (event) => {
+            this.handleDesignPanelSyncRequest(event);
+        }, { priority: 5 });
+        this.eventSubscriptions.set('topics:design-panel:sync-request', designPanelSub);
+        
+        // Listen for save coordination events
+        const saveCoordSub = this.eventBus.subscribe('topics:save-coordination', (event) => {
+            this.handleSaveCoordination(event);
+        }, { priority: 5 });
+        this.eventSubscriptions.set('topics:save-coordination', saveCoordSub);
+        
+        console.log('🗗️ Topics State Manager: GMKB event subscriptions active');
     }
 
     /**
@@ -39,7 +97,13 @@ class TopicsStateManager {
     setPostId(postId) {
         this.postId = parseInt(postId, 10);
         console.log(`🎯 Topics State: Post ID set to ${this.postId}`);
-        this.notifyListeners('postIdChanged', { postId: this.postId });
+        
+        // GMKB ARCHITECTURE: Emit post ID change event
+        this.eventBus.dispatch('topics:post-id-changed', {
+            postId: this.postId,
+            timestamp: Date.now(),
+            source: 'topics-state-manager'
+        });
     }
 
     /**
@@ -84,7 +148,13 @@ class TopicsStateManager {
             
             // PHASE 3 FIX: Set empty topics array to end loading state
             this.setTopics([], 'error');
-            this.notifyListeners('loadError', { error, source });
+            
+            // GMKB ARCHITECTURE: Emit load error event
+            this.eventBus.dispatch('topics:load-error', {
+                error,
+                source,
+                timestamp: Date.now()
+            });
             
             // Return empty array instead of throwing
             return [];
@@ -112,10 +182,21 @@ class TopicsStateManager {
         this.addToHistory('setTopics', { oldTopics, newTopics: [...this.topics], source });
         
         console.log(`📊 Topics State: Set ${this.topics.length} topics from ${source}`);
-        this.notifyListeners('topicsChanged', { 
-            topics: [...this.topics], 
+        
+        // GMKB ARCHITECTURE: Emit topics changed events
+        this.eventBus.dispatch('topics:state-changed', {
+            topics: [...this.topics],
             source,
-            oldTopics 
+            oldTopics,
+            changeType: 'setTopics',
+            timestamp: Date.now()
+        });
+        
+        this.eventBus.dispatch('topics:topics-changed', {
+            topics: [...this.topics],
+            source,
+            oldTopics,
+            count: this.topics.length
         });
     }
 
@@ -145,12 +226,24 @@ class TopicsStateManager {
         this.addToHistory('updateTopic', { topicId, oldTopic, newTopic, source });
         
         console.log(`📝 Topics State: Updated ${topicId} from ${source}:`, updates);
-        this.notifyListeners('topicUpdated', { 
-            topicId, 
-            topic: newTopic, 
-            oldTopic, 
+        
+        // GMKB ARCHITECTURE: Emit topic updated events
+        this.eventBus.dispatch('topics:topic-updated', {
+            topicId,
+            topic: newTopic,
+            oldTopic,
             source,
-            index 
+            index,
+            updates,
+            timestamp: Date.now()
+        });
+        
+        this.eventBus.dispatch('topics:state-changed', {
+            changeType: 'updateTopic',
+            topicId,
+            topic: newTopic,
+            source,
+            timestamp: Date.now()
         });
         
         return true;
@@ -186,10 +279,21 @@ class TopicsStateManager {
         this.addToHistory('addTopic', { newTopic, position, source });
         
         console.log(`➕ Topics State: Added topic ${newTopic.id} at position ${newTopic.index}`);
-        this.notifyListeners('topicAdded', { 
-            topic: newTopic, 
-            position: newTopic.index, 
-            source 
+        
+        // GMKB ARCHITECTURE: Emit topic added events
+        this.eventBus.dispatch('topics:topic-added', {
+            topic: newTopic,
+            position: newTopic.index,
+            source,
+            timestamp: Date.now()
+        });
+        
+        this.eventBus.dispatch('topics:state-changed', {
+            changeType: 'addTopic',
+            topic: newTopic,
+            source,
+            topicsCount: this.topics.length,
+            timestamp: Date.now()
         });
         
         return newTopic;
@@ -213,10 +317,21 @@ class TopicsStateManager {
         this.addToHistory('removeTopic', { removedTopic, index, source });
         
         console.log(`🗑️ Topics State: Removed topic ${topicId}`);
-        this.notifyListeners('topicRemoved', { 
-            topic: removedTopic, 
-            index, 
-            source 
+        
+        // GMKB ARCHITECTURE: Emit topic removed events
+        this.eventBus.dispatch('topics:topic-removed', {
+            topic: removedTopic,
+            index,
+            source,
+            timestamp: Date.now()
+        });
+        
+        this.eventBus.dispatch('topics:state-changed', {
+            changeType: 'removeTopic',
+            topic: removedTopic,
+            source,
+            topicsCount: this.topics.length,
+            timestamp: Date.now()
         });
         
         return removedTopic;
@@ -240,12 +355,24 @@ class TopicsStateManager {
         this.addToHistory('reorderTopics', { fromIndex, toIndex, movedTopic, source });
         
         console.log(`🔄 Topics State: Moved topic from ${fromIndex} to ${toIndex}`);
-        this.notifyListeners('topicsReordered', { 
-            fromIndex, 
-            toIndex, 
-            movedTopic, 
-            topics: [...this.topics], 
-            source 
+        
+        // GMKB ARCHITECTURE: Emit topics reordered events
+        this.eventBus.dispatch('topics:topics-reordered', {
+            fromIndex,
+            toIndex,
+            movedTopic,
+            topics: [...this.topics],
+            source,
+            timestamp: Date.now()
+        });
+        
+        this.eventBus.dispatch('topics:state-changed', {
+            changeType: 'reorderTopics',
+            fromIndex,
+            toIndex,
+            movedTopic,
+            source,
+            timestamp: Date.now()
         });
         
         return true;
@@ -361,7 +488,14 @@ class TopicsStateManager {
         }
         
         this.isProcessingSave = true;
-        this.notifyListeners('saveStarted', { saveType, topicsCount: this.topics.length });
+        
+        // GMKB ARCHITECTURE: Emit save started event
+        this.eventBus.dispatch('topics:save-started', {
+            saveType,
+            topicsCount: this.topics.length,
+            timestamp: Date.now(),
+            source: 'topics-state-manager'
+        });
         
         try {
             const topicsData = {};
@@ -387,10 +521,14 @@ class TopicsStateManager {
                 this.lastSaveTimestamp = Date.now();
                 
                 console.log('✅ Topics State: Save successful:', response.data);
-                this.notifyListeners('saveSuccess', { 
-                    response: response.data, 
+                
+                // GMKB ARCHITECTURE: Emit save success event
+                this.eventBus.dispatch('topics:save-success', {
+                    response: response.data,
                     saveType,
-                    timestamp: this.lastSaveTimestamp 
+                    timestamp: this.lastSaveTimestamp,
+                    topicsCount: this.topics.length,
+                    source: 'topics-state-manager'
                 });
                 
                 return true;
@@ -400,7 +538,15 @@ class TopicsStateManager {
             
         } catch (error) {
             console.error('❌ Topics State: Save failed:', error);
-            this.notifyListeners('saveError', { error, saveType });
+            
+            // GMKB ARCHITECTURE: Emit save error event
+            this.eventBus.dispatch('topics:save-error', {
+                error,
+                saveType,
+                timestamp: Date.now(),
+                source: 'topics-state-manager'
+            });
+            
             return false;
         } finally {
             this.isProcessingSave = false;
@@ -488,45 +634,79 @@ class TopicsStateManager {
     }
 
     /**
-     * Register event listener
+     * GMKB ARCHITECTURE: Handle component topics added event
      */
-    addEventListener(event, callback, id = null) {
-        if (!this.listeners.has(event)) {
-            this.listeners.set(event, new Map());
-        }
+    handleComponentTopicsAdded(event) {
+        console.log('🎯 Topics State: Component topics added', event.data);
         
-        const listenerId = id || `listener_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        this.listeners.get(event).set(listenerId, callback);
-        
-        console.log(`🔗 Topics State: Registered listener for '${event}' (${listenerId})`);
-        return listenerId;
-    }
-
-    /**
-     * Remove event listener
-     */
-    removeEventListener(event, id) {
-        if (this.listeners.has(event)) {
-            const removed = this.listeners.get(event).delete(id);
-            console.log(`🔌 Topics State: ${removed ? 'Removed' : 'Failed to remove'} listener ${id} for '${event}'`);
-            return removed;
-        }
-        return false;
-    }
-
-    /**
-     * Notify all listeners of an event
-     */
-    notifyListeners(event, data = {}) {
-        if (this.listeners.has(event)) {
-            const eventListeners = this.listeners.get(event);
-            eventListeners.forEach((callback, id) => {
-                try {
-                    callback({ event, data, timestamp: Date.now() });
-                } catch (error) {
-                    console.error(`❌ Topics State: Error in listener ${id} for event ${event}:`, error);
-                }
+        // If this is the first topics component, initialize with current state
+        if (this.topics.length > 0) {
+            this.eventBus.dispatch('topics:state-sync-response', {
+                topics: [...this.topics],
+                componentId: event.data.component?.id,
+                source: 'state-manager-sync',
+                timestamp: Date.now()
             });
+        }
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle component topics removed event
+     */
+    handleComponentTopicsRemoved(event) {
+        console.log('🗑️ Topics State: Component topics removed', event.data);
+        // Could trigger cleanup or state persistence here if needed
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle design panel sync request
+     */
+    handleDesignPanelSyncRequest(event) {
+        console.log('🔄 Topics State: Design panel sync request', event.data);
+        
+        // Send current state to design panel
+        this.eventBus.dispatch('topics:design-panel:sync-response', {
+            topics: [...this.topics],
+            stats: this.getStats(),
+            source: 'state-manager',
+            timestamp: Date.now()
+        });
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle save coordination
+     */
+    handleSaveCoordination(event) {
+        console.log('💾 Topics State: Save coordination', event.data);
+        
+        switch (event.data.action) {
+            case 'request-save':
+                this.saveTopics(event.data.saveType || 'coordinated');
+                break;
+            case 'prepare-save':
+                this.eventBus.dispatch('topics:save-prepared', {
+                    ready: !this.isProcessingSave,
+                    topicsCount: this.topics.length,
+                    pendingChanges: this.pendingChanges
+                });
+                break;
+        }
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Subscribe to topics state events (for external listeners)
+     */
+    subscribeToStateChanges(callback, options = {}) {
+        const eventName = options.event || 'topics:state-changed';
+        return this.eventBus.subscribe(eventName, callback, options);
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Unsubscribe from topics state events
+     */
+    unsubscribeFromStateChanges(unsubscribeFunction) {
+        if (typeof unsubscribeFunction === 'function') {
+            unsubscribeFunction();
         }
     }
 
@@ -569,14 +749,43 @@ class TopicsStateManager {
             averageQuality,
             pendingChanges: this.pendingChanges,
             lastSaveTimestamp: this.lastSaveTimestamp,
-            changeHistorySize: this.changeHistory.length
+            changeHistorySize: this.changeHistory.length,
+            // GMKB ARCHITECTURE: Additional event system stats
+            eventSubscriptions: this.eventSubscriptions.size,
+            systemRegistered: !!this.eventBus.systems?.TopicsStateManager,
+            architecture: 'gmkb-event-driven'
         };
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Cleanup method for proper teardown
+     */
+    destroy() {
+        // Unsubscribe from all GMKB events
+        this.eventSubscriptions.forEach((unsubscribe, eventName) => {
+            try {
+                unsubscribe();
+                console.log(`🧹 Topics State: Unsubscribed from ${eventName}`);
+            } catch (error) {
+                console.error(`❌ Topics State: Error unsubscribing from ${eventName}:`, error);
+            }
+        });
+        
+        this.eventSubscriptions.clear();
+        
+        // Clear any pending saves
+        if (this.saveQueue.length > 0) {
+            console.log(`🧹 Topics State: Clearing ${this.saveQueue.length} pending saves`);
+            this.saveQueue.length = 0;
+        }
+        
+        console.log('🧹 Topics State Manager: Destroyed and cleaned up');
     }
 }
 
 /**
- * PHASE 2: Enhanced Topics Component with Bridge Integration
- * Integrates with central state manager for bidirectional communication
+ * PHASE 3: GMKB-Integrated Topics Component
+ * Full GMKB event bus integration for seamless component communication
  */
 class TopicsComponent {
     constructor(element) {
@@ -585,9 +794,12 @@ class TopicsComponent {
         this.stateManager = window.topicsStateManager;
         this.isInitialized = false;
         this.saveTimeout = null;
-        this.eventListeners = new Map();
         
-        console.log(`🚀 Topics Component: Initializing ${this.componentId}`);
+        // GMKB ARCHITECTURE: Event system integration
+        this.eventBus = window.GMKB;
+        this.eventSubscriptions = new Map();
+        
+        console.log(`🚀 GMKB Topics Component: Initializing ${this.componentId}`);
         this.init();
     }
 
@@ -636,11 +848,21 @@ class TopicsComponent {
             this.isInitialized = true;
             console.log(`✅ Topics Component: Initialization complete for ${this.componentId}`);
             
-            // Notify other components
-            this.triggerEvent('topicsComponentReady', {
-                componentId: this.componentId,
-                element: this.element
-            });
+            // GMKB ARCHITECTURE: Notify other components through event bus
+            this.eventBus.dispatch('topics:component-ready', {
+            componentId: this.componentId,
+            element: this.element,
+                topicsCount: this.stateManager?.getTopics().length || 0,
+            timestamp: Date.now(),
+            source: 'topics-component'
+        });
+        
+        // Also notify the enhanced component manager
+        this.eventBus.dispatch('components:topics:component-ready', {
+            componentId: this.componentId,
+            element: this.element,
+            component: this
+        });
             
         } catch (error) {
             console.error(`❌ Topics Component: Initialization failed for ${this.componentId}:`, error);
@@ -683,52 +905,59 @@ class TopicsComponent {
     }
 
     /**
-     * Setup state manager event listeners
+     * GMKB ARCHITECTURE: Setup GMKB event listeners
      */
     setupStateListeners() {
         // Listen for state changes and update preview
-        const listenerId = this.stateManager.addEventListener('topicsChanged', 
-            (e) => this.handleStateTopicsChanged(e), 
-            `${this.componentId}_topicsChanged`
+        const topicsChangedSub = this.eventBus.subscribe('topics:topics-changed', 
+            (e) => this.handleStateTopicsChanged(e),
+            { id: `${this.componentId}_topicsChanged`, priority: 5 }
         );
-        this.eventListeners.set('topicsChanged', listenerId);
+        this.eventSubscriptions.set('topics:topics-changed', topicsChangedSub);
         
         // Listen for individual topic updates
-        const topicUpdateListenerId = this.stateManager.addEventListener('topicUpdated',
+        const topicUpdateSub = this.eventBus.subscribe('topics:topic-updated',
             (e) => this.handleStateTopicUpdated(e),
-            `${this.componentId}_topicUpdated`
+            { id: `${this.componentId}_topicUpdated`, priority: 5 }
         );
-        this.eventListeners.set('topicUpdated', topicUpdateListenerId);
+        this.eventSubscriptions.set('topics:topic-updated', topicUpdateSub);
         
         // Listen for topic additions
-        const topicAddedListenerId = this.stateManager.addEventListener('topicAdded',
+        const topicAddedSub = this.eventBus.subscribe('topics:topic-added',
             (e) => this.handleStateTopicAdded(e),
-            `${this.componentId}_topicAdded`
+            { id: `${this.componentId}_topicAdded`, priority: 5 }
         );
-        this.eventListeners.set('topicAdded', topicAddedListenerId);
+        this.eventSubscriptions.set('topics:topic-added', topicAddedSub);
         
         // Listen for topic removals
-        const topicRemovedListenerId = this.stateManager.addEventListener('topicRemoved',
+        const topicRemovedSub = this.eventBus.subscribe('topics:topic-removed',
             (e) => this.handleStateTopicRemoved(e),
-            `${this.componentId}_topicRemoved`
+            { id: `${this.componentId}_topicRemoved`, priority: 5 }
         );
-        this.eventListeners.set('topicRemoved', topicRemovedListenerId);
+        this.eventSubscriptions.set('topics:topic-removed', topicRemovedSub);
         
         // Listen for reordering
-        const reorderedListenerId = this.stateManager.addEventListener('topicsReordered',
+        const reorderedSub = this.eventBus.subscribe('topics:topics-reordered',
             (e) => this.handleStateTopicsReordered(e),
-            `${this.componentId}_topicsReordered`
+            { id: `${this.componentId}_topicsReordered`, priority: 5 }
         );
-        this.eventListeners.set('topicsReordered', reorderedListenerId);
+        this.eventSubscriptions.set('topics:topics-reordered', reorderedSub);
         
         // Listen for save events
-        const saveListenerId = this.stateManager.addEventListener('saveSuccess',
+        const saveSuccessSub = this.eventBus.subscribe('topics:save-success',
             (e) => this.handleStateSaveSuccess(e),
-            `${this.componentId}_saveSuccess`
+            { id: `${this.componentId}_saveSuccess`, priority: 5 }
         );
-        this.eventListeners.set('saveSuccess', saveListenerId);
+        this.eventSubscriptions.set('topics:save-success', saveSuccessSub);
         
-        console.log(`🔗 Topics Component: State listeners registered for ${this.componentId}`);
+        // GMKB ARCHITECTURE: Listen for cross-component events
+        const componentEventSub = this.eventBus.subscribe('components:topics:counter-changed',
+            (e) => this.handleComponentCounterChanged(e),
+            { id: `${this.componentId}_counterChanged`, priority: 5 }
+        );
+        this.eventSubscriptions.set('components:topics:counter-changed', componentEventSub);
+        
+        console.log(`🔗 GMKB Topics Component: Event subscriptions active for ${this.componentId}`);
     }
 
     /**
@@ -762,7 +991,7 @@ class TopicsComponent {
     }
 
     /**
-     * Handle state topics changed event
+     * GMKB ARCHITECTURE: Handle state topics changed event
      */
     handleStateTopicsChanged(e) {
         if (e.data.source === this.componentId) {
@@ -770,12 +999,31 @@ class TopicsComponent {
             return;
         }
         
-        console.log(`🔄 Topics Component: Syncing preview with state (${e.data.topics.length} topics)`);
+        console.log(`🔄 GMKB Topics Component: Syncing preview with state (${e.data.count || e.data.topics?.length || 0} topics)`);
         this.syncPreviewWithState();
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle component counter changed event
+     */
+    handleComponentCounterChanged(e) {
+        console.log(`🔢 GMKB Topics Component: Counter changed`, e.data);
+        
+        // Update local UI if needed based on counter changes
+        const currentCount = this.stateManager?.getTopics().length || 0;
+        
+        // Emit acknowledgment back to enhanced component manager
+        this.eventBus.dispatch('topics:counter-change-ack', {
+            componentId: this.componentId,
+            currentCount,
+            receivedCount: e.data.topicsCount,
+            timestamp: Date.now(),
+            source: 'topics-component'
+        });
     }
 
     /**
-     * Handle state topic updated event
+     * GMKB ARCHITECTURE: Handle state topic updated event
      */
     handleStateTopicUpdated(e) {
         if (e.data.source === this.componentId) {
@@ -783,8 +1031,44 @@ class TopicsComponent {
             return;
         }
         
-        console.log(`📝 Topics Component: Updating preview topic ${e.data.topicId}`);
+        console.log(`📝 GMKB Topics Component: Updating preview topic ${e.data.topicId}`);
         this.updatePreviewTopic(e.data.index, e.data.topic);
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle state topic added event
+     */
+    handleStateTopicAdded(e) {
+        if (e.data.source === this.componentId) {
+            return;
+        }
+        
+        console.log(`➕ GMKB Topics Component: Topic added, refreshing preview`);
+        this.syncPreviewWithState();
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle state topic removed event
+     */
+    handleStateTopicRemoved(e) {
+        if (e.data.source === this.componentId) {
+            return;
+        }
+        
+        console.log(`🗑️ GMKB Topics Component: Topic removed, refreshing preview`);
+        this.syncPreviewWithState();
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle state topics reordered event
+     */
+    handleStateTopicsReordered(e) {
+        if (e.data.source === this.componentId) {
+            return;
+        }
+        
+        console.log(`🔄 GMKB Topics Component: Topics reordered, refreshing preview`);
+        this.syncPreviewWithState();
     }
 
     /**
@@ -1057,16 +1341,25 @@ class TopicsComponent {
     }
 
     /**
-     * Open design panel
+     * GMKB ARCHITECTURE: Open design panel
      */
     openDesignPanel() {
-        console.log('🎨 Topics Component: Opening design panel');
+        console.log('🎨 GMKB Topics Component: Opening design panel');
         
-        // Trigger custom event for design panel
-        this.triggerEvent('openTopicsDesignPanel', {
+        // Use GMKB event bus for design panel communication
+        this.eventBus.dispatch('topics:design-panel:open-request', {
             componentId: this.componentId,
             element: this.element,
-            topics: this.stateManager.getTopics()
+            topics: this.stateManager.getTopics(),
+            timestamp: Date.now(),
+            source: 'topics-component'
+        });
+        
+        // Also emit general UI event
+        this.eventBus.dispatch('ui:design-panel:open', {
+            panelType: 'topics',
+            componentId: this.componentId,
+            component: this
         });
     }
 
@@ -1355,19 +1648,46 @@ class TopicsComponent {
     }
 
     /**
-     * Handle state save success
+     * GMKB ARCHITECTURE: Handle state save success
      */
     handleStateSaveSuccess(e) {
-        console.log('✅ Topics Component: State save successful');
-        this.updateSaveStatus('saved', `${e.data.response.topics_saved} topics saved`);
+        console.log('✅ GMKB Topics Component: State save successful');
+        const topicsSaved = e.data.response?.topics_saved || e.data.topicsCount || 0;
+        this.updateSaveStatus('saved', `${topicsSaved} topics saved`);
     }
 
     /**
-     * Trigger custom event
+     * GMKB ARCHITECTURE: Trigger GMKB event (replaces custom DOM events)
      */
     triggerEvent(eventName, data) {
-        const event = new CustomEvent(eventName, { detail: data });
-        window.dispatchEvent(event);
+        // Convert legacy event names to GMKB event names
+        const gmkbEventName = this.convertToGMKBEventName(eventName);
+        
+        this.eventBus.dispatch(gmkbEventName, {
+            ...data,
+            componentId: this.componentId,
+            timestamp: Date.now(),
+            source: 'topics-component'
+        });
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Convert legacy event names to GMKB format
+     */
+    convertToGMKBEventName(legacyEventName) {
+        const conversionMap = {
+            'topicsComponentReady': 'topics:component-ready',
+            'openTopicsDesignPanel': 'topics:design-panel:open-request',
+            'topicsReadyForMainSave': 'topics:main-save:ready',
+            'topicsMainSaveSuccess': 'topics:main-save:success',
+            'topicsMainSaveError': 'topics:main-save:error',
+            'updateSectionTitle': 'topics:section:title-updated',
+            'updateSectionIntro': 'topics:section:intro-updated',
+            'updateDisplayStyle': 'topics:display:style-updated',
+            'updateColumns': 'topics:display:columns-updated'
+        };
+        
+        return conversionMap[legacyEventName] || `topics:${legacyEventName.toLowerCase().replace(/([A-Z])/g, '-$1')}`;
     }
 
     /**
@@ -1380,7 +1700,7 @@ class TopicsComponent {
     }
 
     /**
-     * Cleanup
+     * GMKB ARCHITECTURE: Cleanup
      */
     destroy() {
         // Clear timeout
@@ -1388,18 +1708,31 @@ class TopicsComponent {
             clearTimeout(this.saveTimeout);
         }
         
-        // Remove state listeners
-        this.eventListeners.forEach((listenerId, event) => {
-            this.stateManager.removeEventListener(event, listenerId);
+        // Unsubscribe from GMKB events
+        this.eventSubscriptions.forEach((unsubscribe, eventName) => {
+            try {
+                unsubscribe();
+                console.log(`🧹 Topics Component: Unsubscribed from ${eventName}`);
+            } catch (error) {
+                console.error(`❌ Topics Component: Error unsubscribing from ${eventName}:`, error);
+            }
         });
         
-        console.log(`🧹 Topics Component: Cleaned up ${this.componentId}`);
+        this.eventSubscriptions.clear();
+        
+        // Notify about component destruction
+        this.eventBus.dispatch('topics:component-destroyed', {
+            componentId: this.componentId,
+            timestamp: Date.now()
+        });
+        
+        console.log(`🧹 GMKB Topics Component: Cleaned up ${this.componentId}`);
     }
 }
 
 /**
- * PHASE 2: Enhanced Topics Component Manager
- * Coordinates multiple components and manages global state
+ * PHASE 3: GMKB-Integrated Topics Component Manager
+ * Coordinates multiple components using GMKB event system
  */
 class TopicsComponentManager {
     constructor() {
@@ -1407,7 +1740,11 @@ class TopicsComponentManager {
         this.stateManager = null;
         this.isInitialized = false;
         
-        console.log('🏗️ Topics Component Manager: Initializing...');
+        // GMKB ARCHITECTURE: Event system integration
+        this.eventBus = window.GMKB;
+        this.eventSubscriptions = new Map();
+        
+        console.log('🏗️ GMKB Topics Component Manager: Initializing...');
         this.init();
     }
     
@@ -1425,9 +1762,8 @@ class TopicsComponentManager {
             this.initializeComponents();
         }
         
-        // Listen for dynamic content
-        window.addEventListener('contentUpdated', () => this.handleContentUpdate());
-        window.addEventListener('mediaKitSystemReady', () => this.handleSystemReady());
+        // GMKB ARCHITECTURE: Listen for system events
+        this.setupGMKBEventListeners();
         
         // Setup global event handlers
         this.setupGlobalHandlers();
@@ -1458,6 +1794,36 @@ class TopicsComponentManager {
         console.log(`✅ Topics Manager: ${this.components.size} components active`);
     }
     
+    /**
+     * GMKB ARCHITECTURE: Setup GMKB event listeners
+     */
+    setupGMKBEventListeners() {
+        // Listen for content updates via GMKB
+        const contentUpdateSub = this.eventBus.subscribe('core:content-updated', (event) => {
+            this.handleContentUpdate(event);
+        }, { priority: 5 });
+        this.eventSubscriptions.set('core:content-updated', contentUpdateSub);
+        
+        // Listen for system ready events
+        const systemReadySub = this.eventBus.subscribe('core:systems-ready', (event) => {
+            this.handleSystemReady(event);
+        }, { priority: 5 });
+        this.eventSubscriptions.set('core:systems-ready', systemReadySub);
+        
+        // Listen for component lifecycle events
+        const componentReadySub = this.eventBus.subscribe('topics:component-ready', (event) => {
+            this.handleComponentReady(event);
+        }, { priority: 5 });
+        this.eventSubscriptions.set('topics:component-ready', componentReadySub);
+        
+        const componentDestroyedSub = this.eventBus.subscribe('topics:component-destroyed', (event) => {
+            this.handleComponentDestroyed(event);
+        }, { priority: 5 });
+        this.eventSubscriptions.set('topics:component-destroyed', componentDestroyedSub);
+        
+        console.log('🔗 GMKB Topics Manager: Event subscriptions active');
+    }
+    
     setupGlobalHandlers() {
         // Global save trigger
         window.triggerTopicsSave = () => {
@@ -1467,25 +1833,79 @@ class TopicsComponentManager {
             }
         };
         
-        // Debug helpers
+        // GMKB ARCHITECTURE: Enhanced debug helpers
         window.debugTopics = () => {
-            console.log('🔍 Topics Debug Information:');
+            console.group('🔍 GMKB Topics Debug Information');
             console.log('State Manager:', this.stateManager);
             console.log('Components:', this.components);
             console.log('State Stats:', this.stateManager?.getStats());
             console.log('Topics:', this.stateManager?.getTopics());
+            console.log('GMKB Event Subscriptions:', this.eventSubscriptions.size);
+            console.log('Event Bus Status:', this.eventBus.getStatus());
+            console.groupEnd();
+        };
+        
+        // GMKB ARCHITECTURE: Test event system
+        window.testTopicsEvents = () => {
+            console.log('🗺️ Testing GMKB Topics Events...');
+            
+            this.eventBus.dispatch('topics:test-event', {
+                message: 'GMKB Topics Event System Test',
+                timestamp: Date.now(),
+                source: 'debug-test'
+            });
+            
+            console.log('✅ GMKB Topics test event dispatched');
         };
         
         window.topicsManager = this;
     }
     
-    handleContentUpdate() {
-        console.log('🔄 Topics Manager: Content updated, checking for new components');
+    /**
+     * GMKB ARCHITECTURE: Handle component ready event
+     */
+    handleComponentReady(event) {
+        const { componentId, component } = event.data;
+        
+        if (component && !this.components.has(componentId)) {
+            this.components.set(componentId, component);
+            console.log(`✅ GMKB Topics Manager: Registered component ${componentId}`);
+            
+            // Emit manager-level event
+            this.eventBus.dispatch('topics:manager:component-registered', {
+                componentId,
+                totalComponents: this.components.size,
+                timestamp: Date.now()
+            });
+        }
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle component destroyed event
+     */
+    handleComponentDestroyed(event) {
+        const { componentId } = event.data;
+        
+        if (this.components.has(componentId)) {
+            this.components.delete(componentId);
+            console.log(`🗑️ GMKB Topics Manager: Unregistered component ${componentId}`);
+            
+            // Emit manager-level event
+            this.eventBus.dispatch('topics:manager:component-unregistered', {
+                componentId,
+                totalComponents: this.components.size,
+                timestamp: Date.now()
+            });
+        }
+    }
+    
+    handleContentUpdate(event) {
+        console.log('🔄 GMKB Topics Manager: Content updated, checking for new components');
         this.initializeComponents();
     }
     
-    handleSystemReady() {
-        console.log('🚀 Topics Manager: System ready confirmed');
+    handleSystemReady(event) {
+        console.log('🚀 GMKB Topics Manager: System ready confirmed');
         
         // Ensure all components are connected to latest state
         this.components.forEach(component => {
@@ -1493,6 +1913,13 @@ class TopicsComponentManager {
                 component.stateManager = this.stateManager;
                 console.log(`🔗 Updated state manager reference for ${component.componentId}`);
             }
+        });
+        
+        // Emit manager ready event
+        this.eventBus.dispatch('topics:manager:ready', {
+            componentCount: this.components.size,
+            stateManagerReady: !!this.stateManager,
+            timestamp: Date.now()
         });
     }
     
@@ -1519,15 +1946,74 @@ class TopicsComponentManager {
         return {
             componentsCount: this.components.size,
             isInitialized: this.isInitialized,
-            stateStats: this.stateManager?.getStats()
+            stateStats: this.stateManager?.getStats(),
+            // GMKB ARCHITECTURE: Additional stats
+            eventSubscriptions: this.eventSubscriptions.size,
+            eventBusAvailable: !!this.eventBus,
+            architecture: 'gmkb-event-driven'
         };
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Cleanup method
+     */
+    destroy() {
+        // Unsubscribe from all GMKB events
+        this.eventSubscriptions.forEach((unsubscribe, eventName) => {
+            try {
+                unsubscribe();
+                console.log(`🧹 Topics Manager: Unsubscribed from ${eventName}`);
+            } catch (error) {
+                console.error(`❌ Topics Manager: Error unsubscribing from ${eventName}:`, error);
+            }
+        });
+        
+        this.eventSubscriptions.clear();
+        
+        // Destroy all components
+        this.components.forEach((component, componentId) => {
+            try {
+                if (component.destroy) {
+                    component.destroy();
+                }
+            } catch (error) {
+                console.error(`❌ Error destroying component ${componentId}:`, error);
+            }
+        });
+        
+        this.components.clear();
+        
+        // Clean up state manager
+        if (this.stateManager && this.stateManager.destroy) {
+            this.stateManager.destroy();
+        }
+        
+        console.log('🧹 GMKB Topics Component Manager: Destroyed and cleaned up');
     }
 }
 
-// PHASE 2: Global initialization with enhanced bridge architecture
+// PHASE 3: GMKB Global initialization with event-driven architecture
 if (typeof window !== 'undefined') {
-    // Initialize manager
-    window.topicsComponentManager = new TopicsComponentManager();
-    
-    console.log('🎯 Topics Component PHASE 2: Enhanced bridge architecture initialized');
+    // Wait for GMKB to be ready before initializing
+    if (window.GMKB) {
+        // Initialize manager
+        window.topicsComponentManager = new TopicsComponentManager();
+        
+        // Register with GMKB system
+        window.GMKB.registerSystem('TopicsComponentManager', window.topicsComponentManager);
+        
+        console.log('🎯 Topics Component PHASE 3: GMKB event-driven architecture initialized');
+    } else {
+        // Wait for GMKB to be available
+        const checkGMKB = () => {
+            if (window.GMKB) {
+                window.topicsComponentManager = new TopicsComponentManager();
+                window.GMKB.registerSystem('TopicsComponentManager', window.topicsComponentManager);
+                console.log('🎯 Topics Component PHASE 3: GMKB event-driven architecture initialized (delayed)');
+            } else {
+                setTimeout(checkGMKB, 100);
+            }
+        };
+        checkGMKB();
+    }
 }

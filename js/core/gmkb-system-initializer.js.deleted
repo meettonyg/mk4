@@ -1,0 +1,380 @@
+/**
+ * @file system-initializer.js
+ * @description GMKB System Initializer - Orchestrates system registration and initialization
+ * @version 1.0.0
+ * 
+ * GEMINI'S ARCHITECTURAL SOLUTION:
+ * ✅ Manages system lifecycle and dependencies
+ * ✅ Coordinates initialization sequence
+ * ✅ Provides fallback recovery mechanisms
+ * ✅ Event-driven system coordination
+ */
+
+(function(window) {
+    'use strict';
+
+    // PHASE 1: WordPress-guaranteed GMKB namespace validation (NO POLLING)
+    if (!window.GMKB) {
+        console.error('❌ PHASE 1: GMKB namespace not available - WordPress dependency chain broken');
+        console.error('💡 PHASE 1: Check WordPress script loading order in enqueue.php');
+        
+        // PHASE 1: No recovery attempts - fail fast
+        throw new Error('GMKB namespace missing - WordPress dependency failure');
+    }
+    
+    // PHASE 1: Validate GMKB completeness
+    if (!window.GMKB.registerSystem || !window.GMKB.dispatch) {
+        console.error('❌ PHASE 1: GMKB namespace incomplete - missing core methods');
+        throw new Error('GMKB namespace incomplete - core methods missing');
+    }
+    
+    console.log('✅ PHASE 1: GMKB namespace validation passed - WordPress dependency chain working');
+
+    /**
+     * System Initializer - Manages system registration and initialization
+     */
+    const SystemInitializer = {
+        
+        // System registration queue
+        _registrationQueue: [],
+        
+        // Initialization state
+        _initState: {
+            initialized: false,
+            initializationStarted: false,
+            initializationCallbacks: []
+        },
+
+        /**
+         * Register a system with the initializer
+         * @param {string} systemName - Name of the system
+         * @param {function|object} systemFactory - Factory function or instance
+         * @param {object} options - Registration options
+         */
+        register(systemName, systemFactory, options = {}) {
+            if (!systemName) {
+                console.error('❌ SystemInitializer: System name is required');
+                return false;
+            }
+
+            const registration = {
+                name: systemName,
+                factory: systemFactory,
+                priority: options.priority || 0,
+                required: options.required !== false, // Default to required
+                dependencies: options.dependencies || [],
+                initialized: false,
+                instance: null,
+                error: null
+            };
+
+            this._registrationQueue.push(registration);
+            
+            // Sort by priority (higher priority = earlier initialization)
+            this._registrationQueue.sort((a, b) => b.priority - a.priority);
+
+            console.log(`📝 SystemInitializer: Registered ${systemName} (priority: ${registration.priority})`);
+
+            // Auto-initialize if DOM is ready and we haven't started yet
+            if (!this._initState.initializationStarted && this._isDOMReady()) {
+                this.initialize();
+            }
+
+            return true;
+        },
+
+        /**
+         * Initialize all registered systems
+         */
+        async initialize() {
+            if (this._initState.initializationStarted) {
+                console.warn('⚠️ SystemInitializer: Initialization already started');
+                return;
+            }
+
+            this._initState.initializationStarted = true;
+            console.log('🚀 SystemInitializer: Starting system initialization...');
+
+            try {
+                // Initialize systems in priority order
+                await this._initializeSystems();
+                
+                // Mark as initialized
+                this._initState.initialized = true;
+                
+                console.log('✅ SystemInitializer: All systems initialized successfully');
+                
+                // Dispatch initialization complete event
+                window.GMKB.dispatch('core:initialization-complete', {
+                    initializedSystems: this._getInitializedSystems(),
+                    timestamp: Date.now()
+                });
+
+                // Execute initialization callbacks
+                this._initState.initializationCallbacks.forEach(callback => {
+                    try {
+                        callback();
+                    } catch (error) {
+                        console.error('❌ SystemInitializer: Error in initialization callback:', error);
+                    }
+                });
+
+            } catch (error) {
+                console.error('❌ SystemInitializer: Critical error during initialization:', error);
+                
+                // Dispatch initialization error event
+                window.GMKB.dispatch('core:initialization-error', {
+                    error: error.message,
+                    timestamp: Date.now()
+                });
+            }
+        },
+
+        /**
+         * Initialize systems in dependency order
+         * @private
+         */
+        async _initializeSystems() {
+            const systemsToInitialize = [...this._registrationQueue];
+            const initializedSystems = new Set();
+            const maxRetries = 3;
+            let retryCount = 0;
+
+            while (systemsToInitialize.length > 0 && retryCount < maxRetries) {
+                const previousLength = systemsToInitialize.length;
+
+                for (let i = systemsToInitialize.length - 1; i >= 0; i--) {
+                    const system = systemsToInitialize[i];
+                    
+                    // Check if dependencies are met
+                    if (this._areDependenciesMet(system, initializedSystems)) {
+                        try {
+                            console.log(`🔧 SystemInitializer: Initializing ${system.name}...`);
+                            
+                            // Create system instance
+                            system.instance = await this._createSystemInstance(system);
+                            
+                            // Register with GMKB
+                            window.GMKB.registerSystem(system.name, system.instance);
+                            
+                            // Mark as initialized
+                            system.initialized = true;
+                            initializedSystems.add(system.name);
+                            
+                            // Remove from queue
+                            systemsToInitialize.splice(i, 1);
+                            
+                            console.log(`✅ SystemInitializer: ${system.name} initialized successfully`);
+                            
+                        } catch (error) {
+                            console.error(`❌ SystemInitializer: Failed to initialize ${system.name}:`, error);
+                            system.error = error;
+                            
+                            if (system.required) {
+                                throw new Error(`Required system ${system.name} failed to initialize: ${error.message}`);
+                            } else {
+                                // Remove non-required failed system
+                                systemsToInitialize.splice(i, 1);
+                            }
+                        }
+                    }
+                }
+
+                // If no progress was made, increment retry count
+                if (systemsToInitialize.length === previousLength) {
+                    retryCount++;
+                    console.warn(`⚠️ SystemInitializer: No progress on iteration ${retryCount}, retrying...`);
+                    
+                    if (retryCount >= maxRetries) {
+                        const pendingSystems = systemsToInitialize.map(s => s.name);
+                        console.error(`❌ SystemInitializer: Failed to initialize systems: ${pendingSystems.join(', ')}`);
+                        
+                        // Check if any required systems are pending
+                        const requiredPending = systemsToInitialize.filter(s => s.required);
+                        if (requiredPending.length > 0) {
+                            throw new Error(`Required systems failed to initialize: ${requiredPending.map(s => s.name).join(', ')}`);
+                        }
+                    }
+                } else {
+                    retryCount = 0; // Reset retry count on progress
+                }
+            }
+        },
+
+        /**
+         * Check if system dependencies are met
+         * @private
+         */
+        _areDependenciesMet(system, initializedSystems) {
+            if (!system.dependencies || system.dependencies.length === 0) {
+                return true;
+            }
+
+            return system.dependencies.every(dep => initializedSystems.has(dep));
+        },
+
+        /**
+         * Create system instance from factory
+         * @private
+         */
+        async _createSystemInstance(system) {
+            if (typeof system.factory === 'function') {
+                // Factory function
+                return await system.factory();
+            } else if (typeof system.factory === 'object' && system.factory !== null) {
+                // Already an instance
+                return system.factory;
+            } else {
+                throw new Error(`Invalid system factory for ${system.name}`);
+            }
+        },
+
+        /**
+         * Get list of initialized systems
+         * @private
+         */
+        _getInitializedSystems() {
+            return this._registrationQueue
+                .filter(system => system.initialized)
+                .map(system => ({
+                    name: system.name,
+                    priority: system.priority,
+                    required: system.required
+                }));
+        },
+
+        /**
+         * Check if DOM is ready
+         * @private
+         */
+        _isDOMReady() {
+            return document.readyState === 'complete' || document.readyState === 'interactive';
+        },
+
+        /**
+         * Wait for initialization to complete
+         * @param {function} callback - Callback to execute when initialized
+         */
+        ready(callback) {
+            if (typeof callback !== 'function') {
+                console.error('❌ SystemInitializer.ready: Callback must be a function');
+                return;
+            }
+
+            if (this._initState.initialized) {
+                callback();
+            } else {
+                this._initState.initializationCallbacks.push(callback);
+            }
+        },
+
+        /**
+         * Get system status for debugging
+         */
+        getStatus() {
+            return {
+                initialized: this._initState.initialized,
+                initializationStarted: this._initState.initializationStarted,
+                registeredSystems: this._registrationQueue.length,
+                initializedSystems: this._registrationQueue.filter(s => s.initialized).length,
+                systems: this._registrationQueue.map(s => ({
+                    name: s.name,
+                    initialized: s.initialized,
+                    required: s.required,
+                    priority: s.priority,
+                    dependencies: s.dependencies,
+                    hasError: !!s.error
+                }))
+            };
+        },
+
+        /**
+         * Force re-initialization (for debugging)
+         */
+        forceReinitialize() {
+            console.warn('⚠️ SystemInitializer: Force re-initializing systems...');
+            
+            this._initState.initialized = false;
+            this._initState.initializationStarted = false;
+            
+            // Reset system states
+            this._registrationQueue.forEach(system => {
+                system.initialized = false;
+                system.instance = null;
+                system.error = null;
+            });
+
+            // Re-initialize
+            this.initialize();
+        },
+
+        /**
+         * Debug the system initializer
+         */
+        debug() {
+            console.group('%c🎛️ System Initializer Debug', 'font-size: 16px; font-weight: bold; color: #dc2626');
+            
+            const status = this.getStatus();
+            console.log('📊 Status:', status);
+            
+            if (status.systems.length > 0) {
+                console.log('🔧 Systems:');
+                status.systems.forEach(system => {
+                    const status = system.initialized ? '✅' : (system.hasError ? '❌' : '⏳');
+                    console.log(`  ${status} ${system.name} (priority: ${system.priority}, required: ${system.required})`);
+                    if (system.dependencies.length > 0) {
+                        console.log(`    Dependencies: ${system.dependencies.join(', ')}`);
+                    }
+                });
+            }
+            
+            console.groupEnd();
+        }
+    };
+
+    // Auto-initialize when DOM is ready
+    if (SystemInitializer._isDOMReady()) {
+        // DOM is already ready, schedule initialization
+        setTimeout(() => {
+            if (!SystemInitializer._initState.initializationStarted) {
+                SystemInitializer.initialize();
+            }
+        }, 1);
+    } else {
+        // Wait for DOM ready
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (!SystemInitializer._initState.initializationStarted) {
+                    SystemInitializer.initialize();
+                }
+            }, 1);
+        });
+    }
+
+    // PHASE 1: WordPress event-driven initialization (NO POLLING)
+    function initializeSystemInitializer() {
+        console.log('🔧 PHASE 1: Initializing WordPress-coordinated system initializer...');
+        
+        // Expose the system initializer globally
+        window.GMKB.initializer = SystemInitializer;
+        
+        // Listen for WordPress readiness events
+        document.addEventListener('gmkb:wordpress-ready', (event) => {
+            console.log('✅ PHASE 1: System initializer received WordPress ready event');
+            
+            // Auto-initialize if DOM is ready and we haven't started yet
+            if (!SystemInitializer._initState.initializationStarted && SystemInitializer._isDOMReady()) {
+                console.log('🚀 PHASE 1: Auto-starting system initialization via WordPress event');
+                SystemInitializer.initialize();
+            }
+        });
+        
+        console.log('✅ PHASE 1: System initializer exposed on GMKB.initializer with WordPress integration');
+    }
+    
+    // PHASE 1: Start initialization with event-driven coordination
+    initializeSystemInitializer();
+
+    console.log('🎛️ PHASE 1: GMKB System Initializer ready with WordPress coordination');
+
+})(window);

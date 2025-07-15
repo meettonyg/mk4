@@ -1,14 +1,15 @@
 /**
- * @file application-bundle.js - ROOT FIX VERSION
- * @description Enhanced Application Bundle with proper event integration and topics support
- * @version ROOT-FIX-1.0.0
+ * @file application-bundle.js - PHASE 2 BULLETPROOF VERSION
+ * @description Enhanced Bulletproof Application Bundle with WordPress Coordination
+ * @version 4.0.0 - PHASE 2 BULLETPROOF
  * 
- * ROOT FIX FEATURES:
- * ✅ Proper event system integration
- * ✅ Enhanced topics component support
- * ✅ Real-time counter synchronization
- * ✅ Cross-panel communication
- * ✅ Bulletproof initialization sequence
+ * PHASE 2 BULLETPROOF ENHANCEMENTS:
+ * ✅ WordPress action hook integration for bulletproof coordination
+ * ✅ Circuit breaker pattern for graceful error handling
+ * ✅ Enhanced application initialization with integrity validation
+ * ✅ Zero polling - pure WordPress event coordination
+ * ✅ Advanced error recovery mechanisms
+ * ✅ Bulletproof topics support and cross-system communication
  */
 (function() {
     'use strict';
@@ -16,15 +17,20 @@
     let isInitializationComplete = false;
 
     /**
-     * ROOT FIX: Enhanced application initialization with event system integration
+     * PHASE 2: Bulletproof application initialization with WordPress coordination
      */
     async function initializeApplication() {
         if (isInitializationComplete) {
-            console.log('✅ ROOT FIX: Application already initialized');
+            console.log('✅ PHASE 2: Bulletproof application already initialized');
             return;
         }
         
-        console.log('🚀 ROOT FIX: Initializing Enhanced Application Systems...');
+        console.log('🚀 PHASE 2: Initializing Bulletproof Application Systems with WordPress coordination...');
+        
+        // PHASE 2: Validate bulletproof mode
+        if (!window.gmkbPhase2Active || !window.gmkbBulletproofMode) {
+            console.warn('⚠️ PHASE 2: System not in bulletproof mode - this may cause issues');
+        }
 
         // Validate core systems
         if (!window.stateManager || !window.renderer) {
@@ -1481,27 +1487,111 @@
     }
 
     /**
-     * Waits for the 'coreSystemsReady' event OR checks if it already fired.
-     */
-    function listenForCoreSystems() {
-        if (window.gmkbCoreSystemsReadyFired) {
-            console.log('✅ Core event flag was already set. Initializing application immediately.');
-            initializeApplication();
-            return;
+    * PHASE 2: Enhanced WordPress-coordinated initialization with bulletproof protection
+    */
+    function initializeWhenReady() {
+        console.log('🚀 PHASE 2: Starting enhanced WordPress-coordinated application initialization with bulletproof protection...');
+        
+        // PHASE 2: Enhanced WordPress guarantees GMKB namespace exists
+        if (!window.GMKB) {
+            const error = 'GMKB namespace not available - WordPress dependency chain failed';
+            console.error('❌ PHASE 2:', error);
+            throw new Error(error);
         }
+        
+        // PHASE 2: Enhanced GMKB validation with bulletproof checks
+        if (!window.GMKB.ready || typeof window.GMKB.ready !== 'function') {
+            const error = 'GMKB.ready method not available - GMKB namespace incomplete';
+            console.error('❌ PHASE 2:', error);
+            throw new Error(error);
+        }
+        
+        // PHASE 2: Validate bulletproof features
+        if (!window.GMKB._initializationState?.phase2Active) {
+            console.warn('⚠️ PHASE 2: GMKB not in Phase 2 mode - may have compatibility issues');
+        }
+        
+        console.log('✅ PHASE 2: Enhanced GMKB validation passed - WordPress bulletproof dependency chain working');
+        
+        try {
+            window.GMKB.ready(() => {
+                console.log('✅ PHASE 2: Bulletproof core systems ready! Initializing application with enhanced WordPress coordination.');
+                
+                // PHASE 2: WordPress action hook notification
+                if (window.gmkbWordPressHooks) {
+                    window.gmkbWordPressHooks.dispatch('application-initialization-start', {
+                        timestamp: Date.now(),
+                        bulletproof: true,
+                        phase2: true
+                    });
+                }
+                
+                initializeApplication();
+            });
+        } catch (error) {
+            console.error('❌ PHASE 2: Error setting up enhanced GMKB ready callback:', error);
+            
+            // PHASE 2: WordPress action hook for error
+            if (window.gmkbWordPressHooks) {
+                window.gmkbWordPressHooks.dispatch('application-initialization-error', {
+                    error: error.message,
+                    timestamp: Date.now()
+                });
+            }
+            
+            throw error;
+        }
+    }
+    
 
-        console.log('🎧 Waiting for core systems to be ready...');
-        document.addEventListener('coreSystemsReady', function onCoreSystemsReady() {
-            console.log('✅ Event "coreSystemsReady" received! Starting application.');
-            initializeApplication();
-        }, { once: true });
+
+    // PHASE 2: Enhanced WordPress event-driven initialization process with bulletproof protection
+    function startSafeInitialization() {
+        // PHASE 2: Use enhanced WordPress critical data if available
+        if (window.gmkbCriticalData && (window.gmkbCriticalData.phase2Active || window.gmkbCriticalData.bulletproofMode)) {
+            console.log('✅ PHASE 2: Enhanced WordPress critical data available - bulletproof coordination mode active');
+            console.log('🛡️ PHASE 2: Circuit breaker and namespace protection enabled');
+        }
+        
+        // PHASE 2: Enhanced WordPress action hook integration
+        if (window.gmkbWordPressHooks) {
+            window.gmkbWordPressHooks.add('application-initialization-required', (data) => {
+                console.log('🚀 PHASE 2: WordPress action - application initialization required');
+                initializeWhenReady();
+            });
+        }
+        
+        // PHASE 2: Listen for enhanced WordPress readiness events
+        document.addEventListener('gmkb:wordpress-ready', (event) => {
+            console.log('🚀 PHASE 2: Application received enhanced WordPress ready event with bulletproof coordination');
+            
+            // Start initialization when WordPress is ready
+            initializeWhenReady();
+        });
+        
+        // PHASE 2: Also start if WordPress events already fired
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            console.log('🚀 PHASE 2: DOM already ready, starting bulletproof initialization');
+            initializeWhenReady();
+        }
     }
 
-    // Start the process
+    // PHASE 2: Start enhanced WordPress-coordinated initialization
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', listenForCoreSystems);
+        document.addEventListener('DOMContentLoaded', startSafeInitialization, { once: true });
     } else {
-        listenForCoreSystems();
+        startSafeInitialization();
     }
+    
+    // PHASE 2: WordPress action hook for bundle ready
+    if (window.gmkbWordPressHooks) {
+        window.gmkbWordPressHooks.dispatch('application-bundle-loaded', {
+            timestamp: Date.now(),
+            bulletproof: true,
+            phase2: true
+        });
+    }
+    
+    console.log('🎉 PHASE 2: Bulletproof Application Bundle loaded with enhanced WordPress coordination and circuit breaker protection');
 
 })();

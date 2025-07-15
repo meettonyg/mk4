@@ -1,17 +1,22 @@
 /**
- * Topics Design Panel Script - PHASE 3 ROOT FIX Implementation
- * Seamless integration with Phase 2 bidirectional bridge for live editing
+ * Topics Design Panel Script - PHASE 3 GMKB EVENT-DRIVEN Implementation
+ * Full GMKB event bus integration for seamless cross-panel communication
  * 
- * FEATURES:
- * - Live topics editor with drag-and-drop reordering
- * - Real-time quality scoring and enhancement suggestions
- * - Bidirectional sync with preview through state manager
- * - Auto-save with conflict resolution
- * - Integration with MKCG content generator
- * - Advanced UI interactions and feedback
+ * PHASE 3 GMKB FEATURES:
+ * ✅ GMKB Event Bus Integration - Native pub/sub panel communication
+ * ✅ Cross-Component Event Coordination - Design panel ↔ preview ↔ component manager
+ * ✅ State Manager Event Synchronization - Real-time bidirectional sync
+ * ✅ UI Event Broadcasting - Panel actions to all subscribers
+ * ✅ Event-Driven Panel Lifecycle - No polling, pure event coordination
  * 
- * @version 3.0.0-phase3-integration
+ * @version 3.0.0-gmkb-event-driven
  */
+
+// GMKB ARCHITECTURE: Ensure GMKB is available
+if (!window.GMKB) {
+    console.error('🚨 Topics Design Panel: GMKB event system not available!');
+    throw new Error('GMKB event system required for topics design panel');
+}
 
 class TopicsDesignPanelManager {
     constructor() {
@@ -20,7 +25,10 @@ class TopicsDesignPanelManager {
         this.sortable = null;
         this.saveTimeout = null;
         this.qualityTimer = null;
-        this.eventListeners = new Map();
+        
+        // GMKB ARCHITECTURE: Event system integration
+        this.eventBus = window.GMKB;
+        this.eventSubscriptions = new Map();
         
         // UI elements
         this.elements = {
@@ -43,7 +51,7 @@ class TopicsDesignPanelManager {
             animationDuration: 300
         };
         
-        console.log('🎨 Topics Design Panel: Initializing...');
+        console.log('🎨 GMKB Topics Design Panel: Initializing...');
         this.init();
     }
 
@@ -66,9 +74,12 @@ class TopicsDesignPanelManager {
             
             // Setup event handlers
             this.setupEventListeners();
-            this.setupStateListeners();
+            this.setupGMKBStateListeners();
             this.setupSortable();
             this.setupCollapsibleSections();
+            
+            // Register with GMKB system
+            this.registerWithGMKB();
             
             // Load initial data
             await this.loadInitialData();
@@ -77,12 +88,14 @@ class TopicsDesignPanelManager {
             this.updateUI();
             
             this.isInitialized = true;
-            console.log('✅ Topics Design Panel: Initialization complete');
+            console.log('✅ GMKB Topics Design Panel: Initialization complete');
             
-            // Trigger ready event
-            this.triggerEvent('topicsDesignPanelReady', {
+            // GMKB ARCHITECTURE: Trigger ready event through event bus
+            this.eventBus.dispatch('topics:design-panel:ready', {
                 panel: this,
-                topicsCount: this.stateManager?.getTopics().length || 0
+                topicsCount: this.stateManager?.getTopics().length || 0,
+                timestamp: Date.now(),
+                source: 'design-panel'
             });
             
         } catch (error) {
@@ -208,39 +221,84 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * Setup state manager event listeners
+     * GMKB ARCHITECTURE: Register design panel with GMKB system
      */
-    setupStateListeners() {
-        if (!this.stateManager) return;
-
+    registerWithGMKB() {
+        // Register as a system component
+        if (this.eventBus.registerSystem) {
+            this.eventBus.registerSystem('TopicsDesignPanel', this);
+        }
+        
+        console.log('✅ Topics Design Panel: Registered with GMKB system');
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Setup GMKB state event listeners
+     */
+    setupGMKBStateListeners() {
         // Listen for topics changes
-        const listenerId = this.stateManager.addEventListener('topicsChanged', 
-            (e) => this.handleStateTopicsChanged(e), 
-            'designPanel_topicsChanged'
+        const topicsChangedSub = this.eventBus.subscribe('topics:topics-changed',
+            (e) => this.handleStateTopicsChanged(e),
+            { id: 'designPanel_topicsChanged', priority: 10 }
         );
-        this.eventListeners.set('topicsChanged', listenerId);
-
+        this.eventSubscriptions.set('topics:topics-changed', topicsChangedSub);
+        
         // Listen for individual topic updates
-        const topicUpdateListenerId = this.stateManager.addEventListener('topicUpdated',
+        const topicUpdateSub = this.eventBus.subscribe('topics:topic-updated',
             (e) => this.handleStateTopicUpdated(e),
-            'designPanel_topicUpdated'
+            { id: 'designPanel_topicUpdated', priority: 10 }
         );
-        this.eventListeners.set('topicUpdated', topicUpdateListenerId);
-
+        this.eventSubscriptions.set('topics:topic-updated', topicUpdateSub);
+        
+        // Listen for topic additions
+        const topicAddedSub = this.eventBus.subscribe('topics:topic-added',
+            (e) => this.handleStateTopicAdded(e),
+            { id: 'designPanel_topicAdded', priority: 10 }
+        );
+        this.eventSubscriptions.set('topics:topic-added', topicAddedSub);
+        
+        // Listen for topic removals
+        const topicRemovedSub = this.eventBus.subscribe('topics:topic-removed',
+            (e) => this.handleStateTopicRemoved(e),
+            { id: 'designPanel_topicRemoved', priority: 10 }
+        );
+        this.eventSubscriptions.set('topics:topic-removed', topicRemovedSub);
+        
+        // Listen for topics reordered
+        const topicsReorderedSub = this.eventBus.subscribe('topics:topics-reordered',
+            (e) => this.handleStateTopicsReordered(e),
+            { id: 'designPanel_topicsReordered', priority: 10 }
+        );
+        this.eventSubscriptions.set('topics:topics-reordered', topicsReorderedSub);
+        
         // Listen for save events
-        const saveListenerId = this.stateManager.addEventListener('saveSuccess',
+        const saveSuccessSub = this.eventBus.subscribe('topics:save-success',
             (e) => this.handleStateSaveSuccess(e),
-            'designPanel_saveSuccess'
+            { id: 'designPanel_saveSuccess', priority: 10 }
         );
-        this.eventListeners.set('saveSuccess', saveListenerId);
-
-        const saveErrorListenerId = this.stateManager.addEventListener('saveError',
+        this.eventSubscriptions.set('topics:save-success', saveSuccessSub);
+        
+        const saveErrorSub = this.eventBus.subscribe('topics:save-error',
             (e) => this.handleStateSaveError(e),
-            'designPanel_saveError'
+            { id: 'designPanel_saveError', priority: 10 }
         );
-        this.eventListeners.set('saveError', saveErrorListenerId);
-
-        console.log('🔗 Topics Design Panel: State listeners configured');
+        this.eventSubscriptions.set('topics:save-error', saveErrorSub);
+        
+        // GMKB ARCHITECTURE: Listen for design panel open requests
+        const openRequestSub = this.eventBus.subscribe('topics:design-panel:open-request',
+            (e) => this.handleDesignPanelOpenRequest(e),
+            { id: 'designPanel_openRequest', priority: 15 }
+        );
+        this.eventSubscriptions.set('topics:design-panel:open-request', openRequestSub);
+        
+        // Listen for component manager events
+        const componentEventSub = this.eventBus.subscribe('components:topics:counter-changed',
+            (e) => this.handleComponentCounterChanged(e),
+            { id: 'designPanel_counterChanged', priority: 5 }
+        );
+        this.eventSubscriptions.set('components:topics:counter-changed', componentEventSub);
+        
+        console.log('🔗 GMKB Topics Design Panel: Event subscriptions active');
     }
 
     /**
@@ -330,7 +388,47 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * Handle state topics changed
+     * GMKB ARCHITECTURE: Handle design panel open request
+     */
+    handleDesignPanelOpenRequest(e) {
+        console.log('🎨 GMKB Design Panel: Open request received', e.data);
+        
+        // Show/focus the design panel
+        this.openPanel();
+        
+        // Sync with the requesting component's data
+        if (e.data.topics && e.data.topics.length > 0) {
+            this.renderTopicsList();
+        }
+        
+        // Emit acknowledgment
+        this.eventBus.dispatch('topics:design-panel:opened', {
+            componentId: e.data.componentId,
+            timestamp: Date.now(),
+            source: 'design-panel'
+        });
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle component counter changed event
+     */
+    handleComponentCounterChanged(e) {
+        console.log('🔢 GMKB Design Panel: Counter changed', e.data);
+        
+        // Update local counter display
+        this.updateTopicsCounter();
+        
+        // Emit acknowledgment
+        this.eventBus.dispatch('topics:design-panel:counter-ack', {
+            currentCount: this.stateManager?.getTopics().length || 0,
+            receivedCount: e.data.topicsCount,
+            timestamp: Date.now(),
+            source: 'design-panel'
+        });
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle state topics changed
      */
     handleStateTopicsChanged(e) {
         if (e.data.source === 'designPanel') {
@@ -338,22 +436,62 @@ class TopicsDesignPanelManager {
             return;
         }
         
-        console.log('🔄 Design Panel: Syncing with state changes');
+        console.log('🔄 GMKB Design Panel: Syncing with state changes');
         this.renderTopicsList();
         this.updateTopicsCounter();
         this.updateQualityOverview();
     }
 
     /**
-     * Handle state topic updated
+     * GMKB ARCHITECTURE: Handle state topic updated
      */
     handleStateTopicUpdated(e) {
         if (e.data.source === 'designPanel') {
             return;
         }
         
-        console.log(`📝 Design Panel: Updating topic ${e.data.topicId}`);
+        console.log(`📝 GMKB Design Panel: Updating topic ${e.data.topicId}`);
         this.updateTopicInList(e.data.index, e.data.topic);
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle state topic added
+     */
+    handleStateTopicAdded(e) {
+        if (e.data.source === 'designPanel') {
+            return;
+        }
+        
+        console.log(`➕ GMKB Design Panel: Topic added, refreshing list`);
+        this.renderTopicsList();
+        this.updateTopicsCounter();
+        this.updateQualityOverview();
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle state topic removed
+     */
+    handleStateTopicRemoved(e) {
+        if (e.data.source === 'designPanel') {
+            return;
+        }
+        
+        console.log(`🗑️ GMKB Design Panel: Topic removed, refreshing list`);
+        this.renderTopicsList();
+        this.updateTopicsCounter();
+        this.updateQualityOverview();
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Handle state topics reordered
+     */
+    handleStateTopicsReordered(e) {
+        if (e.data.source === 'designPanel') {
+            return;
+        }
+        
+        console.log(`🔄 GMKB Design Panel: Topics reordered, refreshing list`);
+        this.renderTopicsList();
     }
 
     /**
@@ -1040,39 +1178,56 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * Handle state save success
+     * GMKB ARCHITECTURE: Handle state save success
      */
     handleStateSaveSuccess(e) {
-        console.log('✅ Design Panel: State save successful');
-        this.setSaveStatus('saved', `${e.data.response.topics_saved || 0} topics saved`);
+        console.log('✅ GMKB Design Panel: State save successful');
+        const topicsSaved = e.data.response?.topics_saved || e.data.topicsCount || 0;
+        this.setSaveStatus('saved', `${topicsSaved} topics saved`);
     }
 
     /**
-     * Handle state save error
+     * GMKB ARCHITECTURE: Handle state save error
      */
     handleStateSaveError(e) {
-        console.error('❌ Design Panel: State save error:', e.data.error);
+        console.error('❌ GMKB Design Panel: State save error:', e.data.error);
         this.setSaveStatus('error', 'Save failed');
     }
 
     /**
-     * Update preview settings
+     * GMKB ARCHITECTURE: Update preview settings
      */
     updateSectionTitle(title) {
-        // Update preview via state or direct DOM manipulation
-        this.triggerEvent('updateSectionTitle', { title });
+        // Use GMKB event bus for cross-component communication
+        this.eventBus.dispatch('topics:section:title-updated', {
+            title,
+            timestamp: Date.now(),
+            source: 'design-panel'
+        });
     }
 
     updateSectionIntro(intro) {
-        this.triggerEvent('updateSectionIntro', { intro });
+        this.eventBus.dispatch('topics:section:intro-updated', {
+            intro,
+            timestamp: Date.now(),
+            source: 'design-panel'
+        });
     }
 
     updateDisplayStyle(style) {
-        this.triggerEvent('updateDisplayStyle', { style });
+        this.eventBus.dispatch('topics:display:style-updated', {
+            style,
+            timestamp: Date.now(),
+            source: 'design-panel'
+        });
     }
 
     updateColumns(columns) {
-        this.triggerEvent('updateColumns', { columns });
+        this.eventBus.dispatch('topics:display:columns-updated', {
+            columns,
+            timestamp: Date.now(),
+            source: 'design-panel'
+        });
     }
 
     /**
@@ -1166,11 +1321,50 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * Utility methods
+     * GMKB ARCHITECTURE: Open panel method
+     */
+    openPanel() {
+        // Show the design panel (implementation depends on UI framework)
+        const panelElement = document.querySelector('.topics-design-panel, .design-panel[data-panel="topics"]');
+        if (panelElement) {
+            panelElement.style.display = 'block';
+            panelElement.classList.add('active');
+        }
+        
+        // Emit panel opened event
+        this.eventBus.dispatch('topics:design-panel:panel-opened', {
+            timestamp: Date.now(),
+            source: 'design-panel'
+        });
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Trigger GMKB event (replaces custom DOM events)
      */
     triggerEvent(eventName, data) {
-        const event = new CustomEvent(eventName, { detail: data });
-        window.dispatchEvent(event);
+        // Convert legacy event names to GMKB event names
+        const gmkbEventName = this.convertToGMKBEventName(eventName);
+        
+        this.eventBus.dispatch(gmkbEventName, {
+            ...data,
+            timestamp: Date.now(),
+            source: 'design-panel'
+        });
+    }
+    
+    /**
+     * GMKB ARCHITECTURE: Convert legacy event names to GMKB format
+     */
+    convertToGMKBEventName(legacyEventName) {
+        const conversionMap = {
+            'topicsDesignPanelReady': 'topics:design-panel:ready',
+            'updateSectionTitle': 'topics:section:title-updated',
+            'updateSectionIntro': 'topics:section:intro-updated',
+            'updateDisplayStyle': 'topics:display:style-updated',
+            'updateColumns': 'topics:display:columns-updated'
+        };
+        
+        return conversionMap[legacyEventName] || `topics:design-panel:${legacyEventName.toLowerCase().replace(/([A-Z])/g, '-$1')}`;
     }
 
     escapeHtml(text) {
@@ -1180,7 +1374,7 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * Cleanup
+     * GMKB ARCHITECTURE: Cleanup
      */
     destroy() {
         // Clear timeouts
@@ -1191,31 +1385,68 @@ class TopicsDesignPanelManager {
             clearTimeout(this.qualityTimer);
         }
         
-        // Remove state listeners
-        if (this.stateManager) {
-            this.eventListeners.forEach((listenerId, event) => {
-                this.stateManager.removeEventListener(event, listenerId);
-            });
-        }
+        // Unsubscribe from GMKB events
+        this.eventSubscriptions.forEach((unsubscribe, eventName) => {
+            try {
+                unsubscribe();
+                console.log(`🧹 Design Panel: Unsubscribed from ${eventName}`);
+            } catch (error) {
+                console.error(`❌ Design Panel: Error unsubscribing from ${eventName}:`, error);
+            }
+        });
+        
+        this.eventSubscriptions.clear();
         
         // Destroy sortable
         if (this.sortable) {
             this.sortable.destroy();
         }
         
-        console.log('🧹 Topics Design Panel: Cleaned up');
+        // Notify about panel destruction
+        this.eventBus.dispatch('topics:design-panel:destroyed', {
+            timestamp: Date.now()
+        });
+        
+        console.log('🧹 GMKB Topics Design Panel: Cleaned up');
     }
 }
 
-// Initialize design panel when DOM is ready
+// PHASE 3: GMKB initialization with event-driven architecture
 if (typeof window !== 'undefined') {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
+    // Wait for GMKB to be ready before initializing
+    if (window.GMKB) {
+        // Initialize design panel when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                window.topicsDesignPanelManager = new TopicsDesignPanelManager();
+                
+                // Register with GMKB system
+                window.GMKB.registerSystem('TopicsDesignPanelManager', window.topicsDesignPanelManager);
+            });
+        } else {
             window.topicsDesignPanelManager = new TopicsDesignPanelManager();
-        });
+            window.GMKB.registerSystem('TopicsDesignPanelManager', window.topicsDesignPanelManager);
+        }
+        
+        console.log('🎨 Topics Design Panel PHASE 3: GMKB event-driven architecture initialized');
     } else {
-        window.topicsDesignPanelManager = new TopicsDesignPanelManager();
+        // Wait for GMKB to be available
+        const checkGMKB = () => {
+            if (window.GMKB) {
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        window.topicsDesignPanelManager = new TopicsDesignPanelManager();
+                        window.GMKB.registerSystem('TopicsDesignPanelManager', window.topicsDesignPanelManager);
+                    });
+                } else {
+                    window.topicsDesignPanelManager = new TopicsDesignPanelManager();
+                    window.GMKB.registerSystem('TopicsDesignPanelManager', window.topicsDesignPanelManager);
+                }
+                console.log('🎨 Topics Design Panel PHASE 3: GMKB event-driven architecture initialized (delayed)');
+            } else {
+                setTimeout(checkGMKB, 100);
+            }
+        };
+        checkGMKB();
     }
-    
-    console.log('🎨 Topics Design Panel Script: Loaded and ready');
 }

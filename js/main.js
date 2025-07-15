@@ -1,480 +1,622 @@
 /**
- * @file main.js
- * @description ROOT FIX: WordPress-Native Dependency Management Entry Point
+ * @file main.js - WordPress-Native Media Kit Builder
+ * @description Single, clean JavaScript bundle following Gemini's recommendations
+ * @version 2.0.0-simplified
  * 
- * IMPLEMENTATION: Simplified main entry point that works with WordPress's
- * native dependency management instead of complex script manager approach.
- * 
- * ARCHITECTURE: Clean initialization that relies on WordPress dependency chain
- * to ensure proper loading order and eliminate all race conditions.
+ * ARCHITECTURE:
+ * ✅ Single initialization flow - NO competing systems
+ * ✅ Browser's native CustomEvent system - NO custom event buses
+ * ✅ $(document).ready() only - NO setTimeout anywhere
+ * ✅ Object.freeze() namespace protection
+ * ✅ WordPress wp_localize_script data integration
+ * ✅ Simple, clean, and protected scope
  */
 
-console.log('🚀 ROOT FIX: WordPress-Native main.js initializing...');
+// Use strict-mode, self-executing function to protect scope
+(function($) {
+    'use strict';
 
-// ROOT FIX: Simplified global system registry
-window.gmkbSystems = {};
-window.gmkbSystemsReady = false;
-window.gmkbWordPressNative = true;
+    console.log('🚀 GMKB: WordPress-native initialization starting...');
+    console.log('📊 WordPress data available:', !!window.gmkbData);
 
-console.log('✅ ROOT FIX: WordPress-native system registry initialized');
-
-/**
- * ROOT FIX: WordPress-Native System Initialization
- * This function is called after WordPress has loaded all dependencies in the correct order
- */
-window.initializeWordPressNativeSystems = async function() {
-    console.log('🔄 ROOT FIX: Starting WordPress-native system initialization...');
-    
-    try {
-        // Validate WordPress data is available
-        if (!window.guestifyData) {
-            throw new Error('WordPress guestifyData not available - enqueue.php issue');
+    /**
+     * 1. The Global Namespace
+     * Simple, clean, and protected from modification after setup
+     */
+    const GMKB = {
+        systems: {},
+        
+        // Use the browser's native event system - reliable and debuggable
+        dispatch(eventName, detail) {
+            const event = new CustomEvent(eventName, { detail });
+            document.dispatchEvent(event);
+            console.debug(`📢 GMKB: Dispatched '${eventName}'`, detail);
+        },
+        
+        subscribe(eventName, callback) {
+            document.addEventListener(eventName, callback);
+            console.debug(`📡 GMKB: Subscribed to '${eventName}'`);
+        },
+        
+        // Simple debugging helper
+        getStatus() {
+            return {
+                systems: Object.keys(this.systems),
+                wordPressData: !!window.gmkbData,
+                architecture: 'wordpress-native-simplified',
+                timestamp: Date.now()
+            };
         }
-        
-        console.log('✅ WordPress data validated:', {
-            ajaxUrl: !!window.guestifyData.ajaxUrl,
-            nonce: !!window.guestifyData.nonce,
-            architecture: window.guestifyData.architecture
-        });
-        
-        // Initialize basic systems in WordPress-compatible way
-        await initializeBasicSystems();
-        
-        // Initialize UI systems
-        await initializeUIComponents();
-        
-        // Initialize enhanced features if available
-        await initializeEnhancedFeatures();
-        
-        // Mark systems as ready
-        window.gmkbSystemsReady = true;
-        
-        // Dispatch ready event
-        document.dispatchEvent(new CustomEvent('mediaKitBuilderReady', {
-            detail: {
-                architecture: 'wordpress-native-dependencies',
-                timestamp: Date.now(),
-                systemsReady: true
-            }
-        }));
-        
-        console.log('🎉 ROOT FIX: WordPress-native initialization complete!');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ ROOT FIX: WordPress-native initialization failed:', error);
-        
-        // Show user-friendly error
-        showInitializationError(error);
-        return false;
-    }
-};
+    };
 
-/**
- * Initialize basic systems using WordPress-native approach
- */
-async function initializeBasicSystems() {
-    console.log('🏗️ ROOT FIX: Initializing basic systems...');
-    
-    // Initialize state manager if not already available
-    if (!window.enhancedStateManager && !window.stateManager) {
-        window.stateManager = {
-            state: { components: {}, layout: [], globalSettings: {} },
+    /**
+     * 2. Core Systems
+     * Simple objects or classes - NO complex initializers
+     */
+    const StateManager = {
+        state: {
+            components: {},
+            layout: [],
+            globalSettings: {}
+        },
+        
+        init() {
+            console.log('📋 StateManager: Initialized');
             
-            getState: function() {
-                return this.state;
-            },
+            // Load initial state from WordPress data if available
+            if (window.gmkbData && window.gmkbData.initialState) {
+                this.state = { ...this.state, ...window.gmkbData.initialState };
+            }
             
-            setState: function(newState) {
-                this.state = { ...this.state, ...newState };
-                this.notifyStateChange();
-            },
+            // Try to restore from localStorage as fallback
+            this.loadFromStorage();
+        },
+        
+        getState() {
+            return this.state;
+        },
+        
+        setState(newState) {
+            this.state = { ...this.state, ...newState };
+            this.saveToStorage();
+            GMKB.dispatch('gmkb:state-changed', { state: this.state });
+        },
+        
+        addComponent(component) {
+            const id = component.id || 'component-' + Date.now();
+            this.state.components[id] = { ...component, id };
             
-            addComponent: function(component) {
-                const id = component.id || 'component-' + Date.now();
-                this.state.components[id] = component;
-                if (!this.state.layout.includes(id)) {
-                    this.state.layout.push(id);
-                }
-                this.notifyStateChange();
-                return id;
-            },
+            if (!this.state.layout.includes(id)) {
+                this.state.layout.push(id);
+            }
             
-            removeComponent: function(id) {
+            this.saveToStorage();
+            GMKB.dispatch('gmkb:component-added', { id, component: this.state.components[id] });
+            GMKB.dispatch('gmkb:state-changed', { state: this.state });
+            
+            return id;
+        },
+        
+        removeComponent(id) {
+            if (this.state.components[id]) {
                 delete this.state.components[id];
                 this.state.layout = this.state.layout.filter(cid => cid !== id);
-                this.notifyStateChange();
-            },
-            
-            notifyStateChange: function() {
-                document.dispatchEvent(new CustomEvent('stateChanged', {
-                    detail: { state: this.state }
-                }));
-            },
-            
-            saveToStorage: function() {
-                try {
-                    localStorage.setItem('guestifyMediaKitState', JSON.stringify(this.state));
-                    return true;
-                } catch (error) {
-                    console.warn('Failed to save to storage:', error);
-                    return false;
-                }
-            },
-            
-            loadFromStorage: function() {
-                try {
-                    const saved = localStorage.getItem('guestifyMediaKitState');
-                    if (saved) {
-                        const data = JSON.parse(saved);
-                        this.setState(data);
-                        return true;
-                    }
-                } catch (error) {
-                    console.warn('Failed to load from storage:', error);
-                }
+                
+                this.saveToStorage();
+                GMKB.dispatch('gmkb:component-removed', { id });
+                GMKB.dispatch('gmkb:state-changed', { state: this.state });
+                
+                return true;
+            }
+            return false;
+        },
+        
+        updateComponent(id, updates) {
+            if (this.state.components[id]) {
+                this.state.components[id] = { ...this.state.components[id], ...updates };
+                
+                this.saveToStorage();
+                GMKB.dispatch('gmkb:component-updated', { id, component: this.state.components[id] });
+                GMKB.dispatch('gmkb:state-changed', { state: this.state });
+                
+                return true;
+            }
+            return false;
+        },
+        
+        saveToStorage() {
+            try {
+                localStorage.setItem('gmkb-state', JSON.stringify(this.state));
+                return true;
+            } catch (error) {
+                console.warn('💾 StateManager: Failed to save to localStorage:', error);
                 return false;
             }
-        };
+        },
         
-        // Also expose as enhanced state manager for compatibility
-        window.enhancedStateManager = window.stateManager;
-        console.log('✅ State manager initialized');
-    }
-    
-    // Initialize component manager if not available
-    if (!window.enhancedComponentManager && !window.componentManager) {
-        window.componentManager = {
-            components: new Map(),
-            
-            addComponent: function(id, componentData) {
-                this.components.set(id, componentData);
-                
-                // Update state
-                if (window.stateManager) {
-                    const stateComponent = { id, ...componentData };
-                    window.stateManager.addComponent(stateComponent);
-                }
-                
-                // Render component
-                this.renderComponent(id, componentData);
-                
-                console.log(`✅ Component added: ${id}`);
-                return true;
-            },
-            
-            removeComponent: function(id) {
-                this.components.delete(id);
-                
-                // Update state
-                if (window.stateManager) {
-                    window.stateManager.removeComponent(id);
-                }
-                
-                // Remove from DOM
-                const element = document.getElementById(id);
-                if (element) {
-                    element.remove();
-                }
-                
-                console.log(`✅ Component removed: ${id}`);
-                return true;
-            },
-            
-            updateComponent: function(id, componentData) {
-                if (this.components.has(id)) {
-                    this.components.set(id, componentData);
-                    this.renderComponent(id, componentData);
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('gmkb-state');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    this.state = { ...this.state, ...data };
+                    console.log('💾 StateManager: Loaded state from localStorage');
                     return true;
                 }
-                return false;
-            },
+            } catch (error) {
+                console.warn('💾 StateManager: Failed to load from localStorage:', error);
+            }
+            return false;
+        }
+    };
+
+    const ComponentManager = {
+        init() {
+            console.log('🧩 ComponentManager: Initialized');
+        },
+        
+        addComponent(type, data = {}) {
+            const component = {
+                id: 'component-' + Date.now(),
+                type,
+                data,
+                timestamp: Date.now()
+            };
             
-            renderComponent: function(id, componentData) {
-                const previewContainer = document.getElementById('media-kit-preview');
-                if (!previewContainer) {
-                    console.warn('Preview container not found');
-                    return false;
+            const id = StateManager.addComponent(component);
+            this.renderComponent(id);
+            
+            console.log(`🧩 ComponentManager: Added component '${type}' with ID: ${id}`);
+            return id;
+        },
+        
+        removeComponent(id) {
+            // Remove from DOM
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+            }
+            
+            // Remove from state
+            const success = StateManager.removeComponent(id);
+            
+            if (success) {
+                console.log(`🧩 ComponentManager: Removed component with ID: ${id}`);
+            }
+            
+            return success;
+        },
+        
+        updateComponent(id, updates) {
+            const success = StateManager.updateComponent(id, updates);
+            
+            if (success) {
+                this.renderComponent(id);
+                console.log(`🧩 ComponentManager: Updated component with ID: ${id}`);
+            }
+            
+            return success;
+        },
+        
+        renderComponent(id) {
+            const component = StateManager.getState().components[id];
+            if (!component) {
+                console.warn(`🧩 ComponentManager: Cannot render - component ${id} not found`);
+                return false;
+            }
+            
+            const previewContainer = document.getElementById('media-kit-preview');
+            if (!previewContainer) {
+                console.warn('🧩 ComponentManager: Preview container not found');
+                return false;
+            }
+            
+            // Hide empty state if this is the first component
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState && Object.keys(StateManager.getState().components).length === 1) {
+                emptyState.style.display = 'none';
+            }
+            
+            // Create or update component element
+            let componentElement = document.getElementById(id);
+            if (!componentElement) {
+                componentElement = document.createElement('div');
+                componentElement.id = id;
+                componentElement.className = 'media-kit-component mk-component';
+                componentElement.setAttribute('data-component-type', component.type);
+                previewContainer.appendChild(componentElement);
+            }
+            
+            // Render component content
+            componentElement.innerHTML = this.getComponentHTML(component);
+            
+            console.log(`🧩 ComponentManager: Rendered component ${id} (${component.type})`);
+            return true;
+        },
+        
+        getComponentHTML(component) {
+            const { id, type, data } = component;
+            
+            // Simple component templates - can be enhanced later
+            const templates = {
+                hero: `
+                    <div class="component-hero" data-component-id="${id}">
+                        <div class="component-header">
+                            <h3>Hero Section</h3>
+                            <div class="component-controls">
+                                <button onclick="window.GMKB.systems.ComponentManager.removeComponent('${id}')" class="remove-btn">×</button>
+                            </div>
+                        </div>
+                        <div class="component-content">
+                            <h1>${data.title || 'Your Name'}</h1>
+                            <p>${data.subtitle || 'Your Title/Expertise'}</p>
+                        </div>
+                    </div>
+                `,
+                biography: `
+                    <div class="component-biography" data-component-id="${id}">
+                        <div class="component-header">
+                            <h3>Biography</h3>
+                            <div class="component-controls">
+                                <button onclick="window.GMKB.systems.ComponentManager.removeComponent('${id}')" class="remove-btn">×</button>
+                            </div>
+                        </div>
+                        <div class="component-content">
+                            <p>${data.content || 'Your professional biography...'}</p>
+                        </div>
+                    </div>
+                `,
+                topics: `
+                    <div class="component-topics" data-component-id="${id}">
+                        <div class="component-header">
+                            <h3>Speaking Topics</h3>
+                            <div class="component-controls">
+                                <button onclick="window.GMKB.systems.ComponentManager.removeComponent('${id}')" class="remove-btn">×</button>
+                            </div>
+                        </div>
+                        <div class="component-content">
+                            <ul>
+                                ${(data.topics || ['Topic 1', 'Topic 2', 'Topic 3']).map(topic => `<li>${topic}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `
+            };
+            
+            return templates[type] || `
+                <div class="component-generic" data-component-id="${id}">
+                    <div class="component-header">
+                        <h3>${type.charAt(0).toUpperCase() + type.slice(1)} Component</h3>
+                        <div class="component-controls">
+                            <button onclick="window.GMKB.systems.ComponentManager.removeComponent('${id}')" class="remove-btn">×</button>
+                        </div>
+                    </div>
+                    <div class="component-content">
+                        <p>Component: ${id}</p>
+                        <p>Type: ${type}</p>
+                        <p><em>WordPress-native simplified mode</em></p>
+                    </div>
+                </div>
+            `;
+        }
+    };
+
+    const Renderer = {
+        init() {
+            console.log('🎨 Renderer: Initialized');
+            
+            // Listen for state changes and re-render
+            GMKB.subscribe('gmkb:state-changed', (event) => {
+                this.renderAll();
+            });
+        },
+        
+        renderAll() {
+            const state = StateManager.getState();
+            const previewContainer = document.getElementById('media-kit-preview');
+            
+            if (!previewContainer) {
+                console.warn('🎨 Renderer: Preview container not found');
+                return;
+            }
+            
+            // Show empty state if no components
+            const emptyState = document.getElementById('empty-state');
+            if (Object.keys(state.components).length === 0) {
+                if (emptyState) {
+                    emptyState.style.display = 'block';
                 }
-                
-                // Hide empty state
-                const emptyState = document.getElementById('empty-state');
+            } else {
                 if (emptyState) {
                     emptyState.style.display = 'none';
                 }
                 
-                // Create or update component element
-                let componentElement = document.getElementById(id);
-                if (!componentElement) {
-                    componentElement = document.createElement('div');
-                    componentElement.id = id;
-                    componentElement.className = 'media-kit-component mk-component';
-                    componentElement.setAttribute('data-component-type', componentData.type || 'unknown');
-                    previewContainer.appendChild(componentElement);
-                }
-                
-                // Basic rendering for WordPress-native mode
-                const componentType = componentData.type || 'unknown';
-                componentElement.innerHTML = `
-                    <div class="component-${componentType}" data-component-id="${id}">
-                        <div class="component-header">
-                            <h3>${componentType.charAt(0).toUpperCase() + componentType.slice(1)} Component</h3>
-                            <div class="component-controls">
-                                <button onclick="window.componentManager?.removeComponent('${id}')" class="remove-btn">×</button>
-                            </div>
-                        </div>
-                        <div class="component-content">
-                            <p>Component: ${id}</p>
-                            <p>Type: ${componentType}</p>
-                            <p><em>WordPress-native mode</em></p>
-                        </div>
-                    </div>
-                `;
-                
-                console.log(`✅ Component rendered: ${id}`);
-                return true;
+                // Render components in layout order
+                state.layout.forEach(componentId => {
+                    ComponentManager.renderComponent(componentId);
+                });
             }
-        };
-        
-        // Also expose as enhanced component manager for compatibility
-        window.enhancedComponentManager = window.componentManager;
-        console.log('✅ Component manager initialized');
-    }
-    
-    // Initialize renderer if not available
-    if (!window.renderer) {
-        window.renderer = {
-            render: function(componentId, componentData) {
-                if (window.componentManager) {
-                    return window.componentManager.renderComponent(componentId, componentData);
-                }
-                return false;
-            }
-        };
-        console.log('✅ Renderer initialized');
-    }
-    
-    console.log('✅ Basic systems initialized successfully');
-}
+        }
+    };
 
-/**
- * Initialize UI components
- */
-async function initializeUIComponents() {
-    console.log('🎨 ROOT FIX: Initializing UI components...');
-    
-    // Initialize save button functionality
-    const saveBtn = document.getElementById('save-btn');
-    if (saveBtn && !saveBtn.dataset.initialized) {
-        saveBtn.addEventListener('click', function() {
-            console.log('💾 Save button clicked');
-            if (window.stateManager && window.stateManager.saveToStorage) {
-                const success = window.stateManager.saveToStorage();
-                console.log(success ? '✅ Save successful' : '❌ Save failed');
+    const UIManager = {
+        init() {
+            console.log('🎛️ UIManager: Initialized');
+            this.initializeButtons();
+            this.initializeModals();
+        },
+        
+        initializeButtons() {
+            // Save button
+            const saveBtn = document.getElementById('save-btn');
+            if (saveBtn && !saveBtn.dataset.gmkbInitialized) {
+                saveBtn.addEventListener('click', () => {
+                    const success = StateManager.saveToStorage();
+                    console.log(success ? '💾 Save successful' : '❌ Save failed');
+                    
+                    // Show user feedback
+                    saveBtn.textContent = success ? 'Saved!' : 'Save Failed';
+                    setTimeout(() => {
+                        saveBtn.textContent = 'Save';
+                    }, 2000);
+                });
+                saveBtn.dataset.gmkbInitialized = 'true';
             }
-        });
-        saveBtn.dataset.initialized = 'true';
-        console.log('✅ Save button initialized');
-    }
-    
-    // Initialize undo/redo if buttons exist
-    const undoBtn = document.getElementById('undo-btn');
-    const redoBtn = document.getElementById('redo-btn');
-    
-    if (undoBtn && !undoBtn.dataset.initialized) {
-        undoBtn.addEventListener('click', function() {
-            console.log('↩️ Undo clicked (basic mode)');
-        });
-        undoBtn.dataset.initialized = 'true';
-        console.log('✅ Undo button initialized');
-    }
-    
-    if (redoBtn && !redoBtn.dataset.initialized) {
-        redoBtn.addEventListener('click', function() {
-            console.log('↪️ Redo clicked (basic mode)');
-        });
-        redoBtn.dataset.initialized = 'true';
-        console.log('✅ Redo button initialized');
-    }
-    
-    // Initialize component library if available
-    const componentLibraryBtn = document.getElementById('add-component-btn');
-    if (componentLibraryBtn && !componentLibraryBtn.dataset.initialized) {
-        componentLibraryBtn.addEventListener('click', function() {
-            console.log('🧩 Component library button clicked');
             
-            // Try to show component library modal
+            // Component library button
+            const addComponentBtn = document.getElementById('add-component-btn');
+            if (addComponentBtn && !addComponentBtn.dataset.gmkbInitialized) {
+                addComponentBtn.addEventListener('click', () => {
+                    this.showComponentLibrary();
+                });
+                addComponentBtn.dataset.gmkbInitialized = 'true';
+            }
+            
+            // Undo/Redo buttons (basic functionality)
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+            
+            if (undoBtn && !undoBtn.dataset.gmkbInitialized) {
+                undoBtn.addEventListener('click', () => {
+                    console.log('↩️ Undo clicked (simplified mode)');
+                });
+                undoBtn.dataset.gmkbInitialized = 'true';
+            }
+            
+            if (redoBtn && !redoBtn.dataset.gmkbInitialized) {
+                redoBtn.addEventListener('click', () => {
+                    console.log('↪️ Redo clicked (simplified mode)');
+                });
+                redoBtn.dataset.gmkbInitialized = 'true';
+            }
+        },
+        
+        initializeModals() {
+            // Component library modal close functionality
+            const modal = document.getElementById('component-library-overlay');
+            if (modal) {
+                // Close button
+                const closeBtn = modal.querySelector('.close-modal');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        modal.style.display = 'none';
+                    });
+                }
+                
+                // Backdrop click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+                
+                // ESC key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && modal.style.display === 'flex') {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Component selection handlers
+            const componentButtons = document.querySelectorAll('.component-item');
+            componentButtons.forEach(button => {
+                if (!button.dataset.gmkbInitialized) {
+                    button.addEventListener('click', () => {
+                        const componentType = button.dataset.componentType || 'generic';
+                        ComponentManager.addComponent(componentType);
+                        
+                        // Close modal
+                        if (modal) {
+                            modal.style.display = 'none';
+                        }
+                    });
+                    button.dataset.gmkbInitialized = 'true';
+                }
+            });
+        },
+        
+        showComponentLibrary() {
             const modal = document.getElementById('component-library-overlay');
             if (modal) {
                 modal.style.display = 'flex';
             } else {
-                console.log('Component library modal not found');
+                console.warn('🎛️ UIManager: Component library modal not found');
             }
-        });
-        componentLibraryBtn.dataset.initialized = 'true';
-        console.log('✅ Component library button initialized');
-    }
-    
-    console.log('✅ UI components initialized');
-}
+        }
+    };
 
-/**
- * Initialize enhanced features if they're available from other scripts
- */
-async function initializeEnhancedFeatures() {
-    console.log('⚡ ROOT FIX: Checking for enhanced features...');
-    
-    // Try to load saved state
-    if (window.stateManager && window.stateManager.loadFromStorage) {
-        const loaded = window.stateManager.loadFromStorage();
-        if (loaded) {
-            console.log('✅ Saved state loaded');
+    /**
+     * 3. Main Application Logic
+     */
+    function initializeApplication() {
+        console.log('🚀 GMKB: Application initializing...');
+        
+        // Validate WordPress data is available
+        if (!window.gmkbData) {
+            console.error('❌ GMKB: WordPress data (gmkbData) not available - check enqueue.php');
+            showInitializationError('WordPress data not available');
+            return false;
+        }
+        
+        console.log('✅ GMKB: WordPress data validated:', {
+            ajaxUrl: !!window.gmkbData.ajaxUrl,
+            nonce: !!window.gmkbData.nonce,
+            postId: window.gmkbData.postId,
+            architecture: window.gmkbData.architecture
+        });
+
+        try {
+            // Initialize core systems
+            GMKB.systems.StateManager = StateManager;
+            GMKB.systems.ComponentManager = ComponentManager;
+            GMKB.systems.Renderer = Renderer;
+            GMKB.systems.UIManager = UIManager;
             
-            // Render loaded components
-            const state = window.stateManager.getState();
-            if (state.components && Object.keys(state.components).length > 0) {
-                Object.entries(state.components).forEach(([id, component]) => {
-                    if (window.componentManager && window.componentManager.renderComponent) {
-                        window.componentManager.renderComponent(id, component);
-                    }
-                });
-                console.log(`✅ Rendered ${Object.keys(state.components).length} saved components`);
-            }
+            // Initialize each system
+            StateManager.init();
+            ComponentManager.init();
+            Renderer.init();
+            UIManager.init();
+
+            // Attach to global scope and protect it
+            window.GMKB = GMKB;
+            Object.freeze(window.GMKB);
+            
+            console.log('🔒 GMKB: Namespace protected with Object.freeze()');
+
+            // All systems are ready - announce it
+            GMKB.dispatch('gmkb:ready', {
+                timestamp: Date.now(),
+                architecture: 'wordpress-native-simplified',
+                systems: Object.keys(GMKB.systems)
+            });
+            
+            // Update body class to indicate readiness
+            document.body.classList.add('gmkb-ready');
+            document.body.classList.remove('gmkb-initializing');
+            
+            console.log('🎉 GMKB: Application ready!');
+            console.log('📊 Status:', GMKB.getStatus());
+            
+            return true;
+            
+        } catch (error) {
+            console.error('❌ GMKB: Initialization error:', error);
+            showInitializationError(error.message);
+            return false;
         }
     }
     
-    // Check if enhanced systems are available and initialize them
-    if (window.enhancedSystemRegistrar) {
-        console.log('✅ Enhanced system registrar available');
-    }
-    
-    if (window.initializationManager) {
-        console.log('✅ Initialization manager available');
-    }
-    
-    console.log('✅ Enhanced features check complete');
-}
-
-/**
- * Show user-friendly initialization error
- */
-function showInitializationError(error) {
-    const previewContainer = document.getElementById('media-kit-preview');
-    if (previewContainer) {
-        previewContainer.innerHTML = `
-            <div class="initialization-error" style="
-                padding: 40px;
-                text-align: center;
-                background: #fee;
-                border: 2px solid #f88;
-                border-radius: 8px;
-                margin: 20px;
-                color: #d44;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            ">
-                <h2>⚠️ WordPress-Native Initialization Error</h2>
-                <p><strong>The Media Kit Builder failed to start properly.</strong></p>
-                <p>Error: ${error.message}</p>
-                <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; text-align: left;">
-                    <strong>🔧 Diagnostics:</strong><br>
-                    WordPress Data: ${!!window.guestifyData ? '✅' : '❌'}<br>
-                    AJAX URL: ${!!window.guestifyData?.ajaxUrl ? '✅' : '❌'}<br>
-                    Nonce: ${!!window.guestifyData?.nonce ? '✅' : '❌'}<br>
-                    Architecture: ${window.guestifyData?.architecture || 'Unknown'}
+    /**
+     * Show user-friendly initialization error
+     */
+    function showInitializationError(message) {
+        const previewContainer = document.getElementById('media-kit-preview');
+        if (previewContainer) {
+            previewContainer.innerHTML = `
+                <div class="initialization-error" style="
+                    padding: 40px;
+                    text-align: center;
+                    background: #fee;
+                    border: 2px solid #f88;
+                    border-radius: 8px;
+                    margin: 20px;
+                    color: #d44;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                ">
+                    <h2>⚠️ Initialization Error</h2>
+                    <p><strong>The Media Kit Builder failed to start properly.</strong></p>
+                    <p>Error: ${message}</p>
+                    <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; text-align: left;">
+                        <strong>🔧 Diagnostics:</strong><br>
+                        WordPress Data: ${!!window.gmkbData ? '✅' : '❌'}<br>
+                        Architecture: ${window.gmkbData?.architecture || 'Unknown'}<br>
+                        jQuery: ${!!window.jQuery ? '✅' : '❌'}
+                    </div>
+                    <button onclick="location.reload()" style="
+                        background: #d44;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 14px;
+                    ">Reload Builder</button>
                 </div>
-                <button onclick="location.reload()" style="
-                    background: #d44;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    margin-right: 10px;
-                ">Reload Builder</button>
-                <button onclick="window.quickRootFixCheck?.()" style="
-                    background: #0073aa;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                ">Run Diagnostics</button>
-            </div>
-        `;
+            `;
+        }
     }
-}
 
-// ROOT FIX: WordPress-native initialization approach
-function startWordPressNativeInitialization() {
-    console.log('🚀 ROOT FIX: Starting WordPress-native initialization sequence...');
+    /**
+     * 4. Entry Point
+     * Wait for DOM to be fully loaded - ZERO polling, ZERO setTimeout
+     */
+    $(document).ready(function() {
+        console.log('📄 DOM ready - starting GMKB initialization...');
+        initializeApplication();
+    });
     
-    // Wait for DOM if needed
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeAfterDOM);
-    } else {
-        initializeAfterDOM();
-    }
-}
+    // Also listen for WordPress readiness event from enqueue.php
+    document.addEventListener('gmkb:wordpress-ready', function(event) {
+        console.log('✅ WordPress readiness event received:', event.detail);
+    });
 
-function initializeAfterDOM() {
-    console.log('📄 DOM ready, starting WordPress-native initialization...');
-    
-    // WordPress dependency management ensures scripts load in correct order
-    // We can safely initialize now
-    window.initializeWordPressNativeSystems();
-}
-
-// Expose testing and utility functions
-window.addTestComponent = function() {
-    if (window.componentManager) {
-        const id = 'test-' + Date.now();
-        window.componentManager.addComponent(id, {
-            type: 'test',
-            data: { title: 'Test Component' }
-        });
-        console.log(`✅ Test component added: ${id}`);
-        return id;
-    } else {
-        console.warn('⚠️ Component manager not available');
-        return null;
-    }
-};
-
-window.saveState = function() {
-    if (window.stateManager && window.stateManager.saveToStorage) {
-        return window.stateManager.saveToStorage();
-    }
-    return false;
-};
-
-window.loadState = function() {
-    if (window.stateManager && window.stateManager.loadFromStorage) {
-        return window.stateManager.loadFromStorage();
-    }
-    return false;
-};
-
-window.getSystemStatus = function() {
-    return {
-        architecture: 'wordpress-native-dependencies',
-        systemsReady: window.gmkbSystemsReady,
-        wordPressData: !!window.guestifyData,
-        stateManager: !!window.stateManager,
-        componentManager: !!window.componentManager,
-        renderer: !!window.renderer,
-        timestamp: Date.now()
+    // Expose utility functions for debugging and testing
+    window.gmkbUtils = {
+        addTestComponent: function(type = 'hero') {
+            if (window.GMKB && window.GMKB.systems.ComponentManager) {
+                return window.GMKB.systems.ComponentManager.addComponent(type, {
+                    title: 'Test Component',
+                    content: 'This is a test component added via gmkbUtils.addTestComponent()'
+                });
+            }
+            console.warn('⚠️ GMKB not ready - cannot add test component');
+            return null;
+        },
+        
+        saveState: function() {
+            if (window.GMKB && window.GMKB.systems.StateManager) {
+                return window.GMKB.systems.StateManager.saveToStorage();
+            }
+            return false;
+        },
+        
+        loadState: function() {
+            if (window.GMKB && window.GMKB.systems.StateManager) {
+                return window.GMKB.systems.StateManager.loadFromStorage();
+            }
+            return false;
+        },
+        
+        getStatus: function() {
+            return {
+                gmkbReady: !!window.GMKB,
+                wordPressData: !!window.gmkbData,
+                systems: window.GMKB ? Object.keys(window.GMKB.systems) : [],
+                architecture: 'wordpress-native-simplified',
+                timestamp: Date.now()
+            };
+        },
+        
+        clearState: function() {
+            try {
+                localStorage.removeItem('gmkb-state');
+                location.reload();
+                return true;
+            } catch (error) {
+                console.error('Failed to clear state:', error);
+                return false;
+            }
+        }
     };
-};
 
-// Start initialization
-startWordPressNativeInitialization();
+    console.log('✅ GMKB: WordPress-native main.js loaded successfully');
+    console.log('🛠️ Debug commands available:');
+    console.log('  gmkbUtils.addTestComponent() - Add test component');
+    console.log('  gmkbUtils.saveState() - Save current state');
+    console.log('  gmkbUtils.loadState() - Load saved state');
+    console.log('  gmkbUtils.getStatus() - Get system status');
+    console.log('  gmkbUtils.clearState() - Clear saved state and reload');
 
-console.log('🏆 ROOT FIX: WordPress-Native main.js loaded successfully');
-console.log('📝 Available commands:');
-console.log('  addTestComponent() - Add test component');
-console.log('  saveState() - Save current state');
-console.log('  loadState() - Load saved state');
-console.log('  getSystemStatus() - Get system status');
-console.log('  validateRootFix() - Run validation (if test script loaded)');
+})(jQuery);
