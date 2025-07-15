@@ -41,6 +41,16 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 add_action( 'wp_enqueue_scripts', 'gmkb_enqueue_assets' );
 
 function gmkb_enqueue_assets() {
+    // EMERGENCY DEBUG - Log every enqueue attempt
+    error_log( '🔍 GMKB ENQUEUE: Function called!' );
+    error_log( '📄 Current URL: ' . ( $_SERVER['REQUEST_URI'] ?? 'unknown' ) );
+    error_log( '🎯 Post ID param: ' . ( $_GET['post_id'] ?? 'none' ) );
+    error_log( '📍 Page detection result: ' . ( is_media_kit_builder_page() ? 'TRUE' : 'FALSE' ) );
+    error_log( '🎆 VANILLA JS: No jQuery dependencies' );
+    
+    // Force console output for debugging
+    echo '<script>console.log("\ud83d� GMKB ENQUEUE DEBUG: Function executed at " + new Date().toISOString());</script>';
+    
     // Simple, robust page detection
     if ( ! is_media_kit_builder_page() ) {
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -51,13 +61,13 @@ function gmkb_enqueue_assets() {
     }
 
     $plugin_url = GUESTIFY_PLUGIN_URL;
-    $version = '2.1.0-race-condition-fixed-' . time(); // Cache busting for development
+    $version = '2.1.0-vanilla-js-final-' . time(); // Cache busting for development
 
-    // Single script enqueue - WordPress handles dependency management
+    // VANILLA JS: Load main.js with no dependencies
     wp_enqueue_script(
         'gmkb-main-script',
         $plugin_url . 'js/main.js',
-        array( 'jquery' ), // Simple dependency - let WordPress manage it
+        array(), // NO DEPENDENCIES - Pure vanilla JavaScript following Gemini recommendations
         $version,
         true // Load in footer
     );
@@ -75,12 +85,13 @@ function gmkb_enqueue_assets() {
             'pluginUrl'     => $plugin_url,
             'siteUrl'       => home_url(),
             'pluginVersion' => GUESTIFY_VERSION,
-            'architecture'  => 'wordpress-native-simplified',
+            'architecture'  => 'vanilla-js-final',
             'timestamp'     => time(),
             'builderPage'   => true,
             'isBuilderPage' => true, // Added flag for JS initialization detection
             'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
-            'templateFixed' => true // Flag indicating template path issue is resolved
+            'templateFixed' => true, // Flag indicating template path issue is resolved
+            'vanillaJS'     => true // Flag indicating pure vanilla JavaScript implementation
         )
     );
 
@@ -107,28 +118,53 @@ function gmkb_enqueue_assets() {
  * Multiple strategies for maximum compatibility
  */
 function is_media_kit_builder_page() {
-    // Strategy 1: URL-based detection (most reliable)
+    // EMERGENCY DEBUG - Log all detection attempts  
     $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+    
+    error_log( '🎯 GMKB PAGE DETECTION:' );
+    error_log( '  URL: ' . $request_uri );
+    error_log( '  Contains guestify-media-kit: ' . ( strpos( $request_uri, 'guestify-media-kit' ) !== false ? 'YES' : 'NO' ) );
+    error_log( '  GET post_id: ' . ( isset( $_GET['post_id'] ) ? $_GET['post_id'] : 'none' ) );
+    
+    // Force console output for debugging
+    echo '<script>console.log("\ud83c� PAGE DETECTION: URL=' . esc_js($request_uri) . ', Contains guestify-media-kit=' . (strpos( $request_uri, 'guestify-media-kit' ) !== false ? 'YES' : 'NO') . '");</script>';
+    
+    // Strategy 1: URL-based detection (most reliable)
     if ( strpos( $request_uri, 'guestify-media-kit' ) !== false ) {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: URL detection SUCCESS' );
+        }
         return true;
     }
 
     // Strategy 2: WordPress page detection
     if ( is_page( 'guestify-media-kit' ) || is_page( 'media-kit' ) ) {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: WordPress page detection SUCCESS' );
+        }
         return true;
     }
 
     // Strategy 3: Post ID parameter detection
     if ( isset( $_GET['post_id'] ) && is_numeric( $_GET['post_id'] ) ) {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: Post ID detection SUCCESS' );
+        }
         return true;
     }
 
     // Strategy 4: Global flag (set by template takeover)
     global $gmkb_template_active;
     if ( $gmkb_template_active ) {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: Global flag detection SUCCESS' );
+        }
         return true;
     }
 
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( '❌ GMKB: All page detection strategies FAILED' );
+    }
     return false;
 }
 

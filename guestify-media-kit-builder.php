@@ -17,12 +17,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // === GEMINI FIX START ===
 // DEFINE CONSTANTS AT THE TOP LEVEL - BEFORE ANY INCLUDES
-define( 'GUESTIFY_VERSION', '2.1.0-race-condition-fixed' );
+define( 'GUESTIFY_VERSION', '2.1.0-vanilla-js-final' );
 define( 'GUESTIFY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GUESTIFY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // Define GMKB constants for compatibility
-define( 'GMKB_VERSION', '2.1.0-race-condition-fixed' );
+define( 'GMKB_VERSION', '2.1.0-vanilla-js-final' );
 define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -93,6 +93,12 @@ class Guestify_Media_Kit_Builder {
         add_action( 'wp_ajax_nopriv_guestify_render_component', array( $this, 'ajax_render_component' ) );
         add_action( 'wp_ajax_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
         add_action( 'wp_ajax_nopriv_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
+        
+        // MISSING: Add save/load media kit state handlers
+        add_action( 'wp_ajax_guestify_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
+        add_action( 'wp_ajax_nopriv_guestify_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
+        add_action( 'wp_ajax_guestify_load_media_kit', array( $this, 'ajax_load_media_kit' ) );
+        add_action( 'wp_ajax_nopriv_guestify_load_media_kit', array( $this, 'ajax_load_media_kit' ) );
     }
 
     /**
@@ -147,9 +153,25 @@ class Guestify_Media_Kit_Builder {
         // Simple post_id detection
         $post_id = $this->detect_mkcg_post_id();
         
+        // MISSING: Load existing media kit state from database
+        $saved_state = array();
+        if ( $post_id > 0 ) {
+            $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
+            if ( empty( $saved_state ) ) {
+                $saved_state = array(
+                    'components' => array(),
+                    'layout' => array(),
+                    'globalSettings' => array()
+                );
+            }
+        }
+        
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ GMKB: Simplified template takeover active');
             error_log('✅ GMKB: Post ID: ' . $post_id);
+            error_log('✅ CRITICAL FIX: Scripts manually enqueued in template takeover');
+            error_log('🎆 VANILLA JS: No jQuery dependencies');
+            error_log('📁 Plugin URL in takeover: ' . GUESTIFY_PLUGIN_URL);
         }
         
         ?>
@@ -211,6 +233,38 @@ class Guestify_Media_Kit_Builder {
             </style>
             
             <?php wp_head(); ?>
+            
+            <!-- CRITICAL FIX: Direct script output since wp_enqueue_script doesn't work in template takeover -->
+            <script id="gmkbData" type="text/javascript">
+            var gmkbData = <?php echo json_encode(array(
+                'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+                'restUrl'       => esc_url_raw( rest_url() ),
+                'nonce'         => wp_create_nonce( 'gmkb_nonce' ),
+                'restNonce'     => wp_create_nonce( 'wp_rest' ),
+                'postId'        => $post_id,
+                'pluginUrl'     => GUESTIFY_PLUGIN_URL,
+                'siteUrl'       => home_url(),
+                'pluginVersion' => GUESTIFY_VERSION,
+                'architecture'  => 'vanilla-js-final',
+                'timestamp'     => time(),
+                'builderPage'   => true,
+                'isBuilderPage' => true,
+                'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
+                'templateFixed' => true,
+                'vanillaJS'     => true,
+                'savedState'    => $saved_state  // MISSING: Pass existing state to JavaScript
+            )); ?>;
+            console.log('✅ WordPress Data: gmkbData loaded directly in template', gmkbData);
+            if (gmkbData.savedState && Object.keys(gmkbData.savedState.components || {}).length > 0) {
+                console.log('🔄 Existing components found:', Object.keys(gmkbData.savedState.components).length, 'components');
+            } else {
+                console.log('📝 No existing components - starting with empty state');
+            }
+            </script>
+            
+            <script src="<?php echo GUESTIFY_PLUGIN_URL . 'js/main.js?v=' . time(); ?>" type="text/javascript"></script>
+            
+            <link rel="stylesheet" href="<?php echo GUESTIFY_PLUGIN_URL . 'css/guestify-builder.css?v=' . time(); ?>" type="text/css" media="all" />
         </head>
         <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing gmkb-simplified" data-post-id="<?php echo esc_attr($post_id); ?>" data-template-version="simplified-wordpress-native">
             
@@ -377,6 +431,76 @@ class Guestify_Media_Kit_Builder {
         }
         
         wp_send_json_success( array( 'html' => $html ) );
+    }
+    
+    /**
+     * MISSING FUNCTIONALITY: Save media kit state to database
+     */
+    public function ajax_save_media_kit() {
+        // Verify nonce for security
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'gmkb_nonce' ) ) {
+            wp_send_json_error( 'Invalid nonce' );
+        }
+        
+        $post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
+        $state_data = isset( $_POST['state'] ) ? $_POST['state'] : '';
+        
+        if ( ! $post_id ) {
+            wp_send_json_error( 'Post ID is required' );
+        }
+        
+        if ( empty( $state_data ) ) {
+            wp_send_json_error( 'State data is required' );
+        }
+        
+        // Decode and validate JSON
+        $state = json_decode( stripslashes( $state_data ), true );
+        if ( json_last_error() !== JSON_ERROR_NONE ) {
+            wp_send_json_error( 'Invalid JSON data' );
+        }
+        
+        // Save to post meta
+        $success = update_post_meta( $post_id, 'gmkb_media_kit_state', $state );
+        
+        if ( $success !== false ) {
+            wp_send_json_success( array( 
+                'message' => 'Media kit saved successfully',
+                'timestamp' => time()
+            ) );
+        } else {
+            wp_send_json_error( 'Failed to save media kit' );
+        }
+    }
+    
+    /**
+     * MISSING FUNCTIONALITY: Load media kit state from database
+     */
+    public function ajax_load_media_kit() {
+        $post_id = isset( $_GET['post_id'] ) ? intval( $_GET['post_id'] ) : 0;
+        
+        if ( ! $post_id ) {
+            wp_send_json_error( 'Post ID is required' );
+        }
+        
+        // Load from post meta
+        $state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
+        
+        if ( empty( $state ) ) {
+            // Return empty state if nothing saved
+            wp_send_json_success( array(
+                'state' => array(
+                    'components' => array(),
+                    'layout' => array(),
+                    'globalSettings' => array()
+                ),
+                'message' => 'No saved state found'
+            ) );
+        } else {
+            wp_send_json_success( array(
+                'state' => $state,
+                'message' => 'Media kit loaded successfully'
+            ) );
+        }
     }
     
     /**

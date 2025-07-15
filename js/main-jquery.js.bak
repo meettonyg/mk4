@@ -1,31 +1,31 @@
 /**
- * @file main.js - WordPress-Native Media Kit Builder (VANILLA JS)
- * @description Pure vanilla JavaScript following Gemini's recommendations
+ * @file main.js - WordPress-Native Media Kit Builder
+ * @description Single, clean JavaScript bundle following Gemini's recommendations
  * @version 2.1.0-vanilla-js-final
  * 
  * ARCHITECTURE:
- * ✅ ZERO DEPENDENCIES - Pure vanilla JavaScript
  * ✅ Single initialization flow - NO competing systems
  * ✅ Browser's native CustomEvent system - NO custom event buses
- * ✅ Native DOMContentLoaded - NO jQuery dependencies
+ * ✅ $(document).ready() only - NO setTimeout anywhere
  * ✅ Object.freeze() namespace protection
  * ✅ WordPress wp_localize_script data integration
- * ✅ Clean, modern JavaScript approach
+ * ✅ Simple, clean, and protected scope
  */
 
 // IMMEDIATE DEBUG LOG - Should appear first
-console.log('%c🚀 GMKB main.js LOADING (VANILLA JS)...', 'font-weight: bold; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 3px;');
+console.log('%c🚀 GMKB main.js LOADING...', 'font-weight: bold; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 3px;');
 console.log('📜 Script URL:', document.currentScript?.src || 'unknown');
 console.log('📜 Load time:', new Date().toISOString());
 console.log('🔧 RACE CONDITION FIX: Template path resolved, clean architecture active');
-console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations');
+console.log('✅ NO INLINE SCRIPTS: All functionality properly externalized');
 
 // Use strict-mode, self-executing function to protect scope
 (function() {
     'use strict';
 
-    console.log('🚀 GMKB: Vanilla JS initialization starting...');
-    console.log('📆 WordPress data available:', !!window.gmkbData);
+    console.log('🚀 GMKB: WordPress-native initialization starting (NO JQUERY)...');
+    console.log('📊 WordPress data available:', !!window.gmkbData);
+    console.log('✅ VANILLA JS: Zero external dependencies');
 
     /**
      * 1. The Global Namespace
@@ -51,14 +51,15 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             return {
                 systems: Object.keys(this.systems),
                 wordPressData: !!window.gmkbData,
-                architecture: 'vanilla-js-final',
+                architecture: 'wordpress-native-simplified',
                 timestamp: Date.now()
             };
         }
     };
 
     /**
-     * 2. Core Systems - Pure Vanilla JS
+     * 2. Core Systems
+     * Simple objects or classes - NO complex initializers
      */
     const StateManager = {
         state: {
@@ -68,23 +69,15 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         init() {
-            console.log('📋 StateManager: Initialized (Vanilla JS)');
+            console.log('📋 StateManager: Initialized');
             
-            // MISSING: Load saved state from WordPress data first, then localStorage
-            if (window.gmkbData && window.gmkbData.savedState) {
-                const savedState = window.gmkbData.savedState;
-                this.state = { ...this.state, ...savedState };
-                console.log('🔄 StateManager: Loaded state from WordPress database', savedState);
-                
-                // If we have components, render them immediately
-                if (savedState.components && Object.keys(savedState.components).length > 0) {
-                    console.log('✅ StateManager: Found', Object.keys(savedState.components).length, 'existing components');
-                }
-            } else {
-                // Fallback to localStorage if no WordPress data
-                this.loadFromStorage();
-                console.log('📝 StateManager: No WordPress state found, trying localStorage');
+            // Load initial state from WordPress data if available
+            if (window.gmkbData && window.gmkbData.initialState) {
+                this.state = { ...this.state, ...window.gmkbData.initialState };
             }
+            
+            // Try to restore from localStorage as fallback
+            this.loadFromStorage();
         },
         
         getState() {
@@ -167,7 +160,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
 
     const ComponentManager = {
         init() {
-            console.log('🧩 ComponentManager: Initialized (Vanilla JS)');
+            console.log('🧩 ComponentManager: Initialized');
         },
         
         addComponent(type, data = {}) {
@@ -186,7 +179,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         removeComponent(id) {
-            // Remove from DOM - VANILLA JS
+            // Remove from DOM
             const element = document.getElementById(id);
             if (element) {
                 element.remove();
@@ -309,7 +302,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     <div class="component-content">
                         <p>Component: ${id}</p>
                         <p>Type: ${type}</p>
-                        <p><em>Vanilla JS mode</em></p>
+                        <p><em>WordPress-native simplified mode</em></p>
                     </div>
                 </div>
             `;
@@ -318,7 +311,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
 
     const Renderer = {
         init() {
-            console.log('🎨 Renderer: Initialized (Vanilla JS)');
+            console.log('🎨 Renderer: Initialized');
             
             // Listen for state changes and re-render
             GMKB.subscribe('gmkb:state-changed', (event) => {
@@ -356,27 +349,38 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
 
     const UIManager = {
         init() {
-            console.log('🎛️ UIManager: Initialized (Vanilla JS)');
+            console.log('🎛️ UIManager: Initialized');
             this.initializeButtons();
             this.initializeModals();
         },
         
         initializeButtons() {
-            // Save button - VANILLA JS event listeners
+            // Save button
             const saveBtn = document.getElementById('save-btn');
             if (saveBtn && !saveBtn.dataset.gmkbInitialized) {
                 saveBtn.addEventListener('click', () => {
                     const success = StateManager.saveToStorage();
                     console.log(success ? '💾 Save successful' : '❌ Save failed');
                     
-                    // Show user feedback with vanilla JS
+                    // Show user feedback - NO setTimeout, use event-driven approach
                     const originalText = saveBtn.textContent;
                     saveBtn.textContent = success ? 'Saved!' : 'Save Failed';
                     
-                    // Reset after 2 seconds
-                    setTimeout(() => {
+                    // Use transitionend event instead of setTimeout
+                    const resetText = () => {
                         saveBtn.textContent = originalText;
-                    }, 2000);
+                        saveBtn.removeEventListener('transitionend', resetText);
+                    };
+                    
+                    // Trigger a CSS transition and listen for its end
+                    saveBtn.style.transition = 'background-color 2s';
+                    saveBtn.style.backgroundColor = success ? '#10b981' : '#ef4444';
+                    saveBtn.addEventListener('transitionend', resetText);
+                    
+                    // Reset styles immediately to start transition
+                    requestAnimationFrame(() => {
+                        saveBtn.style.backgroundColor = '';
+                    });
                 });
                 saveBtn.dataset.gmkbInitialized = 'true';
             }
@@ -390,34 +394,31 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 addComponentBtn.dataset.gmkbInitialized = 'true';
             }
             
-            // First component button (in empty state)
-            const addFirstComponentBtn = document.getElementById('add-first-component');
-            if (addFirstComponentBtn && !addFirstComponentBtn.dataset.gmkbInitialized) {
-                addFirstComponentBtn.addEventListener('click', () => {
-                    this.showComponentLibrary();
+            // Undo/Redo buttons (basic functionality)
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+            
+            if (undoBtn && !undoBtn.dataset.gmkbInitialized) {
+                undoBtn.addEventListener('click', () => {
+                    console.log('↩️ Undo clicked (simplified mode)');
                 });
-                addFirstComponentBtn.dataset.gmkbInitialized = 'true';
+                undoBtn.dataset.gmkbInitialized = 'true';
             }
             
-            // Auto-generate button
-            const autoGenerateBtn = document.getElementById('auto-generate-btn');
-            if (autoGenerateBtn && !autoGenerateBtn.dataset.gmkbInitialized) {
-                autoGenerateBtn.addEventListener('click', () => {
-                    console.log('🎆 Auto-generate clicked (Vanilla JS mode)');
-                    // Add some demo components for testing
-                    ComponentManager.addComponent('hero', { title: 'Auto-Generated Hero', subtitle: 'Generated via Vanilla JS' });
-                    ComponentManager.addComponent('biography', { content: 'This is an auto-generated biography component.' });
+            if (redoBtn && !redoBtn.dataset.gmkbInitialized) {
+                redoBtn.addEventListener('click', () => {
+                    console.log('↪️ Redo clicked (simplified mode)');
                 });
-                autoGenerateBtn.dataset.gmkbInitialized = 'true';
+                redoBtn.dataset.gmkbInitialized = 'true';
             }
         },
         
         initializeModals() {
-            // Component library modal close functionality - VANILLA JS
+            // Component library modal close functionality
             const modal = document.getElementById('component-library-overlay');
             if (modal) {
                 // Close button
-                const closeBtn = modal.querySelector('.close-modal, .library__close, #close-library');
+                const closeBtn = modal.querySelector('.close-modal');
                 if (closeBtn) {
                     closeBtn.addEventListener('click', () => {
                         modal.style.display = 'none';
@@ -439,12 +440,12 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 });
             }
             
-            // Component selection handlers - VANILLA JS
+            // Component selection handlers
             const componentButtons = document.querySelectorAll('.component-item');
             componentButtons.forEach(button => {
                 if (!button.dataset.gmkbInitialized) {
                     button.addEventListener('click', () => {
-                        const componentType = button.dataset.componentType || button.getAttribute('data-component') || 'generic';
+                        const componentType = button.dataset.componentType || 'generic';
                         ComponentManager.addComponent(componentType);
                         
                         // Close modal
@@ -468,10 +469,10 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
     };
 
     /**
-     * 3. Main Application Logic - VANILLA JS
+     * 3. Main Application Logic
      */
     function initializeApplication() {
-        console.log('🚀 GMKB: Vanilla JS application initializing...');
+        console.log('🚀 GMKB: Application initializing...');
         
         // Validate WordPress data is available
         if (!window.gmkbData) {
@@ -485,7 +486,8 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             nonce: !!window.gmkbData.nonce,
             postId: window.gmkbData.postId,
             architecture: window.gmkbData.architecture,
-            vanillaJS: window.gmkbData.vanillaJS
+            isBuilderPage: window.gmkbData.isBuilderPage,
+            templateFixed: window.gmkbData.templateFixed
         });
 
         try {
@@ -510,15 +512,15 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // All systems are ready - announce it
             GMKB.dispatch('gmkb:ready', {
                 timestamp: Date.now(),
-                architecture: 'vanilla-js-final',
+                architecture: 'wordpress-native-simplified',
                 systems: Object.keys(GMKB.systems)
             });
             
-            // Update body class to indicate readiness - VANILLA JS
+            // Update body class to indicate readiness
             document.body.classList.add('gmkb-ready');
             document.body.classList.remove('gmkb-initializing');
             
-            console.log('🎉 GMKB: Vanilla JS application ready!');
+            console.log('🎉 GMKB: Application ready!');
             console.log('📊 Status:', GMKB.getStatus());
             
             return true;
@@ -553,9 +555,10 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; text-align: left;">
                         <strong>🔧 Diagnostics:</strong><br>
                         WordPress Data: ${!!window.gmkbData ? '✅' : '❌'}<br>
-                        Vanilla JS: ${window.gmkbData?.vanillaJS ? '✅' : '❌'}<br>
+                        Template Fixed: ${window.gmkbData?.templateFixed ? '✅' : '❌'}<br>
                         Architecture: ${window.gmkbData?.architecture || 'Unknown'}<br>
-                        Builder Page: ${window.gmkbData?.isBuilderPage ? '✅' : '❌'}
+                        Builder Page: ${window.gmkbData?.isBuilderPage ? '✅' : '❌'}<br>
+                        jQuery: ${!!window.jQuery ? '✅' : '❌'}
                     </div>
                     <button onclick="location.reload()" style="
                         background: #d44;
@@ -572,17 +575,17 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
     }
 
     /**
-     * 4. Entry Point - VANILLA JS
-     * Wait for DOM to be fully loaded - NO jQuery
+     * 4. Entry Point
+     * Wait for DOM to be fully loaded - ZERO polling, ZERO setTimeout, NO JQUERY
      */
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📄 DOM ready - starting GMKB vanilla JS initialization...');
+            console.log('📄 DOM ready - starting GMKB initialization (VANILLA JS)...');
             initializeApplication();
         });
     } else {
         // DOM already loaded
-        console.log('📄 DOM already ready - starting GMKB vanilla JS initialization...');
+        console.log('📄 DOM already ready - starting GMKB initialization immediately...');
         initializeApplication();
     }
     
@@ -596,8 +599,8 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         addTestComponent: function(type = 'hero') {
             if (window.GMKB && window.GMKB.systems.ComponentManager) {
                 return window.GMKB.systems.ComponentManager.addComponent(type, {
-                    title: 'Test Component (Vanilla JS)',
-                    content: 'This is a test component added via gmkbUtils.addTestComponent() using pure vanilla JavaScript'
+                    title: 'Test Component',
+                    content: 'This is a test component added via gmkbUtils.addTestComponent()'
                 });
             }
             console.warn('⚠️ GMKB not ready - cannot add test component');
@@ -623,7 +626,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 gmkbReady: !!window.GMKB,
                 wordPressData: !!window.gmkbData,
                 systems: window.GMKB ? Object.keys(window.GMKB.systems) : [],
-                architecture: 'vanilla-js-final',
+                architecture: 'wordpress-native-simplified',
                 timestamp: Date.now()
             };
         },
@@ -640,7 +643,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         }
     };
 
-    console.log('✅ GMKB: Vanilla JS main.js loaded successfully');
+    console.log('✅ GMKB: WordPress-native main.js loaded successfully');
     console.log('🛠️ Debug commands available:');
     console.log('  gmkbUtils.addTestComponent() - Add test component');
     console.log('  gmkbUtils.saveState() - Save current state');
@@ -648,5 +651,4 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
     console.log('  gmkbUtils.getStatus() - Get system status');
     console.log('  gmkbUtils.clearState() - Clear saved state and reload');
 
-})(); // End vanilla JS IIFE
-
+})(); // NO JQUERY - Pure vanilla JavaScript
