@@ -12,6 +12,11 @@
  * ✅ Simple, clean, and protected scope
  */
 
+// IMMEDIATE DEBUG LOG - Should appear first
+console.log('%c🚀 GMKB main.js LOADING...', 'font-weight: bold; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 3px;');
+console.log('📜 Script URL:', document.currentScript?.src || 'unknown');
+console.log('📜 Load time:', new Date().toISOString());
+
 // Use strict-mode, self-executing function to protect scope
 (function($) {
     'use strict';
@@ -354,11 +359,25 @@
                     const success = StateManager.saveToStorage();
                     console.log(success ? '💾 Save successful' : '❌ Save failed');
                     
-                    // Show user feedback
+                    // Show user feedback - NO setTimeout, use event-driven approach
+                    const originalText = saveBtn.textContent;
                     saveBtn.textContent = success ? 'Saved!' : 'Save Failed';
-                    setTimeout(() => {
-                        saveBtn.textContent = 'Save';
-                    }, 2000);
+                    
+                    // Use transitionend event instead of setTimeout
+                    const resetText = () => {
+                        saveBtn.textContent = originalText;
+                        saveBtn.removeEventListener('transitionend', resetText);
+                    };
+                    
+                    // Trigger a CSS transition and listen for its end
+                    saveBtn.style.transition = 'background-color 2s';
+                    saveBtn.style.backgroundColor = success ? '#10b981' : '#ef4444';
+                    saveBtn.addEventListener('transitionend', resetText);
+                    
+                    // Reset styles immediately to start transition
+                    requestAnimationFrame(() => {
+                        saveBtn.style.backgroundColor = '';
+                    });
                 });
                 saveBtn.dataset.gmkbInitialized = 'true';
             }

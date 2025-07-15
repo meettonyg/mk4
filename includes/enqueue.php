@@ -27,6 +27,10 @@ add_action( 'wp_enqueue_scripts', 'gmkb_enqueue_assets' );
 function gmkb_enqueue_assets() {
     // Simple, robust page detection
     if ( ! is_media_kit_builder_page() ) {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '❌ GMKB: Not a media kit builder page - skipping script enqueue' );
+            error_log( '📄 Current URL: ' . ( $_SERVER['REQUEST_URI'] ?? 'unknown' ) );
+        }
         return;
     }
 
@@ -75,6 +79,8 @@ function gmkb_enqueue_assets() {
         error_log( '✅ GMKB: WordPress-native assets enqueued successfully' );
         error_log( '📄 Page: ' . ( $_SERVER['REQUEST_URI'] ?? 'unknown' ) );
         error_log( '🎯 Post ID: ' . get_current_post_id_safe() );
+        error_log( '📜 Script handle: gmkb-main-script' );
+        error_log( '📜 Script URL: ' . $plugin_url . 'js/main.js' );
     }
 }
 

@@ -224,7 +224,7 @@ class Guestify_Media_Kit_Builder {
                 }
                 
                 .gmkb-initializing::after {
-                    content: 'Initializing Clean Enhanced Builder...';
+                    content: 'Loading WordPress-Native Builder...';
                     position: fixed;
                     top: 50%;
                     left: 50%;
