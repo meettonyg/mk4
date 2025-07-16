@@ -747,6 +747,9 @@ class DesignPanel {
 // ROOT FIX: Enhanced design panel instance with topics sync capabilities
 export const designPanel = new DesignPanel();
 
+// ROOT FIX: Expose design panel globally for component manager access
+window.designPanel = designPanel;
+
 // ROOT FIX: Expose enhanced design panel functions globally for debugging
 window.debugDesignPanel = function() {
     console.log('🔍 ROOT FIX: Design Panel Debug Information');

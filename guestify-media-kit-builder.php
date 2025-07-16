@@ -407,7 +407,13 @@ class Guestify_Media_Kit_Builder {
             return new WP_Error( 'invalid_component', 'Component slug is required', array( 'status' => 400 ) );
         }
         
-        $html = $this->component_loader->loadComponent( $component_slug, $props );
+        // ROOT FIX: Ensure post ID is passed to component
+                $enhanced_props = array_merge($props, [
+                    'post_id' => $post_id,
+                    'component_id' => $componentId ?? uniqid('component_')
+                ]);
+                
+                $html = $this->component_loader->loadComponent( $component_slug, $enhanced_props );
         
         if ( $html === false ) {
             return new WP_Error( 'component_not_found', 'Component not found', array( 'status' => 404 ) );
@@ -507,11 +513,18 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
+        // ROOT FIX: Ensure post ID is available for component rendering
+        $post_id = $this->detect_mkcg_post_id();
+        $enhanced_props = array_merge($props, [
+            'post_id' => $post_id,
+            'gmkb_context' => 'ajax_render'
+        ]);
+        
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: ajax_render_component - Rendering component: ' . $component_slug);
+            error_log('GMKB: ajax_render_component - Rendering component: ' . $component_slug . ' with post ID: ' . $post_id);
         }
         
-        $html = $this->component_loader->loadComponent( $component_slug, $props );
+        $html = $this->component_loader->loadComponent( $component_slug, $enhanced_props );
         
         if ( $html === false ) {
             if (defined('WP_DEBUG') && WP_DEBUG) {

@@ -503,7 +503,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Render component using server-side AJAX integration
+         * ROOT FIX: Enhanced component rendering with proper error handling and return values
          * @param {string} componentId - Component ID to render
          * @returns {Promise<boolean>} Success status
          */
@@ -517,7 +517,13 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     return false;
                 }
                 
-                console.log(`🎨 ComponentManager: Rendering component ${componentId} (${component.type})`);
+                console.log(`🎨 ComponentManager: Enhanced rendering for ${componentId} (${component.type})`);
+                
+                // Validate required data
+                if (!window.gmkbData?.ajaxUrl || !window.gmkbData?.nonce) {
+                    console.error(`❌ ComponentManager: Missing WordPress AJAX data for ${componentId}`);
+                    return this.renderComponentFallback(componentId);
+                }
                 
                 // Make AJAX call to render component server-side
                 const response = await fetch(window.gmkbData.ajaxUrl, {
@@ -537,6 +543,10 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     })
                 });
                 
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
                 if (data.success && data.data && data.data.html) {
@@ -546,18 +556,31 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     console.log(`✅ ComponentManager: Successfully rendered ${componentId} via server`);
                     return true;
                 } else {
-                    console.warn(`⚠️ ComponentManager: Server rendering failed for ${componentId}, trying fallback`);
-                    console.warn('Server response:', data);
+                    console.warn(`⚠️ ComponentManager: Server rendering failed for ${componentId}:`, data);
                     
                     // Fallback to client-side rendering
-                    return this.renderComponentFallback(componentId);
+                    const fallbackSuccess = this.renderComponentFallback(componentId);
+                    if (fallbackSuccess) {
+                        console.log(`✅ ComponentManager: Fallback rendering succeeded for ${componentId}`);
+                        return true;
+                    } else {
+                        console.error(`❌ ComponentManager: Both server and fallback rendering failed for ${componentId}`);
+                        return false;
+                    }
                 }
                 
             } catch (error) {
                 console.error(`❌ ComponentManager: Error rendering ${componentId}:`, error);
                 
                 // Fallback to client-side rendering on error
-                return this.renderComponentFallback(componentId);
+                const fallbackSuccess = this.renderComponentFallback(componentId);
+                if (fallbackSuccess) {
+                    console.log(`✅ ComponentManager: Fallback rendering succeeded after error for ${componentId}`);
+                    return true;
+                } else {
+                    console.error(`❌ ComponentManager: All rendering methods failed for ${componentId}`);
+                    return false;
+                }
             }
         },
         
@@ -797,7 +820,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Edit component (opens design panel)
+         * ROOT FIX: Edit component (loads component's own design panel in sidebar)
          * @param {string} componentId - Component ID to edit
          */
         async editComponent(componentId) {
@@ -812,7 +835,9 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             }
             
             try {
-                // Load design panel from server
+                // ROOT FIX: Load component's own design panel via AJAX
+                console.log(`📱 Loading design panel for component type: ${component.type}`);
+                
                 const response = await fetch(window.gmkbData.ajaxUrl, {
                     method: 'POST',
                     headers: {
@@ -821,122 +846,350 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     body: new URLSearchParams({
                         action: 'guestify_render_design_panel',
                         nonce: window.gmkbData.nonce,
-                        component: component.type
+                        component: component.type,
+                        component_id: componentId
                     })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success && data.data && data.data.html) {
-                    this.showDesignPanel(data.data.html, componentId);
+                    // ROOT FIX: Display in sidebar design panel
+                    this.displayInSidebarDesignPanel(data.data.html, componentId, component);
+                    console.log(`✅ ComponentManager: Loaded ${component.type} design panel in sidebar`);
                 } else {
-                    // Fallback design panel
-                    this.showDesignPanel(this.getGenericDesignPanel(component), componentId);
+                    console.warn(`⚠️ ComponentManager: No design panel found for ${component.type}, using generic`);
+                    this.displayGenericDesignPanel(component, componentId);
                 }
                 
             } catch (error) {
-                console.error('Error loading design panel:', error);
-                this.showDesignPanel(this.getGenericDesignPanel(component), componentId);
+                console.error('❌ ComponentManager: Error loading component design panel:', error);
+                this.displayGenericDesignPanel(component, componentId);
             }
         },
         
         /**
-         * ROOT FIX: Show design panel modal
-         * @param {string} html - Design panel HTML
-         * @param {string} componentId - Component ID being edited
-         */
-        showDesignPanel(html, componentId) {
-            // Create or get design panel modal
-            let modal = document.getElementById('design-panel-modal');
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'design-panel-modal';
-                modal.className = 'modal-overlay';
-                modal.innerHTML = `
-                    <div class="modal-content design-panel-modal">
-                        <div class="modal-header">
-                            <h3>Edit Component</h3>
-                            <button class="modal-close" data-action="close">×</button>
-                        </div>
-                        <div class="modal-body" id="design-panel-content">
-                            <!-- Design panel content goes here -->
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn btn--secondary" data-action="cancel">Cancel</button>
-                            <button class="btn btn--primary" data-action="save">Save Changes</button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-                
-                // Attach modal event listeners
-                modal.addEventListener('click', (e) => {
-                    const action = e.target.dataset.action;
-                    if (action === 'close' || action === 'cancel' || e.target === modal) {
-                        modal.style.display = 'none';
-                    } else if (action === 'save') {
-                        this.saveComponentChanges(componentId);
-                        modal.style.display = 'none';
-                    }
-                });
-            }
-            
-            // Insert design panel content
-            const contentContainer = modal.querySelector('#design-panel-content');
-            contentContainer.innerHTML = html;
-            
-            // Show modal
-            modal.style.display = 'flex';
-            
-            console.log(`✅ ComponentManager: Design panel opened for ${componentId}`);
-        },
-        
-        /**
-         * ROOT FIX: Get generic design panel HTML
-         * @param {Object} component - Component data
-         * @returns {string} Generic design panel HTML
-         */
-        getGenericDesignPanel(component) {
-            return `
-                <div class="design-panel-content">
-                    <h4>Edit ${component.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
-                    <p>This component supports inline editing. Click directly on text in the preview to edit it.</p>
-                    <div class="form-group">
-                        <label>Component Type:</label>
-                        <input type="text" value="${component.type}" readonly class="form-input" />
-                    </div>
-                    <div class="form-group">
-                        <label>Component ID:</label>
-                        <input type="text" value="${component.id}" readonly class="form-input" />
-                    </div>
-                </div>
-            `;
-        },
-        
-        /**
-         * ROOT FIX: Save component changes from design panel
+         * ROOT FIX: Display component design panel in sidebar
+         * @param {string} html - Design panel HTML from component
          * @param {string} componentId - Component ID
+         * @param {Object} component - Component data
          */
-        saveComponentChanges(componentId) {
-            console.log(`💾 ComponentManager: Saving changes for ${componentId}`);
+        displayInSidebarDesignPanel(html, componentId, component) {
+            // Get sidebar design panel element
+            const elementEditor = document.getElementById('element-editor');
+            if (!elementEditor) {
+                console.error('Sidebar element editor not found');
+                return;
+            }
             
-            // Get form data from design panel
-            const modal = document.getElementById('design-panel-modal');
-            if (!modal) return;
+            // Insert component's design panel HTML
+            elementEditor.innerHTML = html;
             
-            const formData = {};
-            const inputs = modal.querySelectorAll('input, textarea, select');
+            // Switch to design tab
+            this.switchToDesignTab();
+            
+            // Bind form controls to component
+            this.bindDesignPanelControls(elementEditor, componentId, component);
+            
+            // Store current component being edited
+            elementEditor.dataset.currentComponent = componentId;
+            
+            console.log(`✅ Component ${component.type} design panel displayed in sidebar`);
+        },
+        
+        /**
+         * ROOT FIX: Switch to design tab in sidebar
+         */
+        switchToDesignTab() {
+            // Remove active from all tabs
+            document.querySelectorAll('.sidebar__tab').forEach(tab => {
+                tab.classList.remove('sidebar__tab--active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('tab-content--active');
+            });
+            
+            // Activate design tab
+            const designTab = document.querySelector('[data-tab="design"]');
+            const designTabContent = document.getElementById('design-tab');
+            
+            if (designTab && designTabContent) {
+                designTab.classList.add('sidebar__tab--active');
+                designTabContent.classList.add('tab-content--active');
+                console.log('🎯 Switched to Design tab');
+            }
+        },
+        
+        /**
+         * ROOT FIX: Enhanced form control binding with proper component updates and re-rendering
+         * @param {HTMLElement} panel - Design panel element
+         * @param {string} componentId - Component ID
+         * @param {Object} component - Component data
+         */
+        bindDesignPanelControls(panel, componentId, component) {
+            const inputs = panel.querySelectorAll('[data-property], input, select, textarea');
+            
+            if (inputs.length === 0) {
+                console.log(`⚠️ No form controls found in design panel for ${component.type}`);
+                return;
+            }
             
             inputs.forEach(input => {
-                if (input.name) {
-                    formData[input.name] = input.value;
+                const property = input.dataset.property || input.name || input.id;
+                
+                if (property) {
+                    // ROOT FIX: Enhanced initial value setting with proper type handling
+                    const currentValue = component.data?.[property] || component.props?.[property];
+                    if (currentValue !== undefined && currentValue !== null) {
+                        if (input.type === 'checkbox') {
+                            input.checked = !!currentValue;
+                        } else if (input.type === 'color') {
+                            input.value = currentValue;
+                            // Also update any related text input
+                            const textInput = panel.querySelector(`[data-property="${property}_text"]`);
+                            if (textInput) textInput.value = currentValue;
+                        } else {
+                            input.value = currentValue;
+                        }
+                    }
+                    
+                    // ROOT FIX: Enhanced change listener with debouncing and error handling
+                    let updateTimeout;
+                    const updateComponent = async () => {
+                        try {
+                            // Clear any existing timeout for debouncing
+                            if (updateTimeout) {
+                                clearTimeout(updateTimeout);
+                            }
+                            
+                            // Debounce rapid changes
+                            updateTimeout = setTimeout(async () => {
+                                const newProps = { ...(component.data || component.props || {}) };
+                                
+                                // ROOT FIX: Proper value extraction based on input type
+                                if (input.type === 'checkbox') {
+                                    newProps[property] = input.checked;
+                                } else if (input.type === 'number') {
+                                    newProps[property] = parseFloat(input.value) || 0;
+                                } else if (input.type === 'color') {
+                                    newProps[property] = input.value;
+                                    // Also update related text input
+                                    const textInput = panel.querySelector(`[data-property="${property}_text"]`);
+                                    if (textInput) textInput.value = input.value;
+                                } else {
+                                    newProps[property] = input.value;
+                                }
+                                
+                                // ROOT FIX: Enhanced component update with re-rendering
+                                const success = await this.updateComponentWithRerender(componentId, { data: newProps });
+                                
+                                if (success) {
+                                    console.log(`✅ Updated ${component.type}.${property} = ${newProps[property]}`);
+                                    
+                                    // Visual feedback for successful update
+                                    this.showUpdateFeedback(input, 'success');
+                                } else {
+                                    console.warn(`⚠️ Failed to update ${component.type}.${property}`);
+                                    this.showUpdateFeedback(input, 'error');
+                                }
+                            }, 300); // 300ms debounce
+                            
+                        } catch (error) {
+                            console.error(`❌ Error updating ${component.type}.${property}:`, error);
+                            this.showUpdateFeedback(input, 'error');
+                        }
+                    };
+                    
+                    // ROOT FIX: Enhanced event listeners for different input types
+                    if (input.type === 'color') {
+                        input.addEventListener('input', updateComponent);
+                        input.addEventListener('change', updateComponent);
+                    } else if (input.type === 'range') {
+                        input.addEventListener('input', updateComponent);
+                    } else if (input.tagName === 'SELECT') {
+                        input.addEventListener('change', updateComponent);
+                    } else if (input.type === 'checkbox') {
+                        input.addEventListener('change', updateComponent);
+                    } else {
+                        input.addEventListener('input', updateComponent);
+                        input.addEventListener('blur', updateComponent);
+                    }
+                    
+                    // ROOT FIX: Color picker text input synchronization
+                    if (input.type === 'color') {
+                        const textInput = panel.querySelector(`[data-property="${property}_text"]`);
+                        if (textInput) {
+                            textInput.addEventListener('input', () => {
+                                const colorValue = textInput.value;
+                                if (/^#[0-9A-F]{6}$/i.test(colorValue)) {
+                                    input.value = colorValue;
+                                    updateComponent();
+                                }
+                            });
+                        }
+                    }
                 }
             });
             
-            // Update component in state
-            StateManager.updateComponent(componentId, { data: formData });
+            console.log(`🔗 Enhanced binding for ${inputs.length} form controls in ${component.type} design panel`);
+        },
+        
+        /**
+         * ROOT FIX: Display generic design panel for components without custom panels
+         * @param {Object} component - Component data
+         * @param {string} componentId - Component ID
+         */
+        displayGenericDesignPanel(component, componentId) {
+            const elementEditor = document.getElementById('element-editor');
+            if (!elementEditor) return;
             
-            console.log(`✅ ComponentManager: Saved changes for ${componentId}`);
+            const componentName = component.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            elementEditor.innerHTML = `
+                <div class="element-editor__title">${componentName} Settings</div>
+                <div class="element-editor__subtitle">Configure this component</div>
+                
+                <div class="form-section">
+                    <h4 class="form-section__title">Component Information</h4>
+                    <div class="form-group">
+                        <label class="form-label">Component Type</label>
+                        <input type="text" class="form-input" value="${component.type}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Component ID</label>
+                        <input type="text" class="form-input" value="${componentId}" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h4 class="form-section__title">Editing Options</h4>
+                    <div class="form-help-text">
+                        This component doesn't have custom design panel settings yet. 
+                        You can edit it directly in the preview area by clicking on the content.
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn--secondary" onclick="console.log('Direct editing: Click on component content in preview')">
+                            Direct Edit Instructions
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h4 class="form-section__title">Developer Info</h4>
+                    <div class="form-help-text">
+                        To add custom settings, create:<br>
+                        <code>components/${component.type}/design-panel.php</code>
+                    </div>
+                </div>
+            `;
+            
+            this.switchToDesignTab();
+            elementEditor.dataset.currentComponent = componentId;
+            
+            console.log(`🛠️ Generic design panel displayed for ${component.type}`);
+        },
+        
+        // ROOT FIX: Modal methods removed - using sidebar design panel instead
+        
+        // ROOT FIX: Design panel methods removed - delegated to sidebar design panel
+        
+        /**
+         * ROOT FIX: Update component (for design panel integration)
+         * @param {string} componentId - Component ID to update
+         * @param {Object} newProps - New properties to apply
+         */
+        updateComponent(componentId, newProps) {
+            console.log(`🔄 ComponentManager: Updating component ${componentId}`, newProps);
+            
+            const success = StateManager.updateComponent(componentId, newProps);
+            
+            if (success) {
+                // Re-render the component with new props
+                this.renderComponent(componentId);
+                console.log(`✅ ComponentManager: Component ${componentId} updated and re-rendered`);
+            } else {
+                console.error(`❌ ComponentManager: Failed to update component ${componentId}`);
+            }
+            
+            return success;
+        },
+        
+        /**
+         * ROOT FIX: Enhanced component update with proper re-rendering and error handling
+         * @param {string} componentId - Component ID to update
+         * @param {Object} newProps - New properties to apply
+         * @returns {Promise<boolean>} Success status
+         */
+        async updateComponentWithRerender(componentId, newProps) {
+            console.log(`🔄 ComponentManager: Enhanced update for ${componentId}`, newProps);
+            
+            try {
+                // Update component data in state
+                const success = StateManager.updateComponent(componentId, newProps);
+                
+                if (!success) {
+                    console.error(`❌ ComponentManager: State update failed for ${componentId}`);
+                    return false;
+                }
+                
+                // Re-render the component with new props via server
+                const renderSuccess = await this.renderComponent(componentId);
+                
+                if (renderSuccess) {
+                    console.log(`✅ ComponentManager: Enhanced update complete for ${componentId}`);
+                    
+                    // Trigger update event for other systems
+                    GMKB.dispatch('gmkb:component-design-updated', {
+                        componentId: componentId,
+                        newProps: newProps,
+                        timestamp: Date.now()
+                    });
+                    
+                    return true;
+                } else {
+                    console.error(`❌ ComponentManager: Re-render failed for ${componentId}`);
+                    return false;
+                }
+                
+            } catch (error) {
+                console.error(`❌ ComponentManager: Enhanced update error for ${componentId}:`, error);
+                return false;
+            }
+        },
+        
+        /**
+         * ROOT FIX: Show visual feedback for form input changes
+         * @param {HTMLElement} input - Form input element
+         * @param {string} type - Feedback type ('success', 'error', 'pending')
+         */
+        showUpdateFeedback(input, type) {
+            if (!input) return;
+            
+            // Remove any existing feedback classes
+            input.classList.remove('update-success', 'update-error', 'update-pending');
+            
+            // Add appropriate feedback class
+            switch (type) {
+                case 'success':
+                    input.classList.add('update-success');
+                    // Remove success class after animation
+                    setTimeout(() => {
+                        input.classList.remove('update-success');
+                    }, 1000);
+                    break;
+                    
+                case 'error':
+                    input.classList.add('update-error');
+                    // Remove error class after animation
+                    setTimeout(() => {
+                        input.classList.remove('update-error');
+                    }, 2000);
+                    break;
+                    
+                case 'pending':
+                    input.classList.add('update-pending');
+                    break;
+            }
         },
         
         /**
@@ -1359,6 +1612,14 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // 3. Initialize Renderer last
             Renderer.init();
 
+            // ROOT FIX: Expose component managers globally for component updates
+            window.enhancedComponentManager = ComponentManager;
+            window.componentManager = ComponentManager;
+            window.enhancedStateManager = StateManager;
+            window.stateManager = StateManager;
+            
+            console.log('✅ GMKB: Component managers exposed globally for component updates');
+            
             // Attach to global scope and protect it
             window.GMKB = GMKB;
             Object.freeze(window.GMKB);

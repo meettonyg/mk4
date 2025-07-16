@@ -878,3 +878,32 @@
     stroke-width: 1.5;
     flex-shrink: 0;
 }
+
+/* ROOT-LEVEL FIXES: Design Panel Form Feedback */
+.form-input.update-success,
+.form-select.update-success,
+.form-textarea.update-success {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    animation: successPulse 0.5s ease;
+}
+
+.form-input.update-error,
+.form-select.update-error,
+.form-textarea.update-error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+    animation: errorShake 0.5s ease;
+}
+
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+}

@@ -51,38 +51,18 @@ $topicColor = sanitize_hex_color($topicColor ?? '#4f46e5');
 $animation = sanitize_text_field($animation ?? 'none');
 $hoverEffect = sanitize_text_field($hoverEffect ?? 'scale');
 
-// ROOT FIX: ENHANCED POST_ID DETECTION with multiple fallback methods
+// ROOT FIX: SIMPLIFIED POST_ID DETECTION with reliable WordPress integration
 $current_post_id = 0;
 
-// PRIORITY 1: Props from ComponentLoader (MOST RELIABLE)
+// PRIORITY 1: ComponentLoader props (most reliable in builder context)
 if (isset($post_id) && is_numeric($post_id) && $post_id > 0) {
     $current_post_id = intval($post_id);
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log("GMKB Topics ROOT FIX: ✅ Post ID from ComponentLoader props: {$current_post_id}");
+        error_log("GMKB Topics ROOT FIX: ✅ Post ID from ComponentLoader: {$current_post_id}");
     }
 }
 
-// PRIORITY 2: URL parameters (?post_id=32372 or ?p=32372)
-if ($current_post_id === 0) {
-    if (isset($_GET['post_id']) && is_numeric($_GET['post_id']) && $_GET['post_id'] > 0) {
-        $current_post_id = intval($_GET['post_id']);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?post_id: {$current_post_id}");
-        }
-    } elseif (isset($_GET['p']) && is_numeric($_GET['p']) && $_GET['p'] > 0) {
-        $current_post_id = intval($_GET['p']);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?p: {$current_post_id}");
-        }
-    } elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id']) && $_GET['page_id'] > 0) {
-        $current_post_id = intval($_GET['page_id']);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?page_id: {$current_post_id}");
-        }
-    }
-}
-
-// PRIORITY 3: WordPress global context
+// PRIORITY 2: WordPress globals (reliable for post context)
 if ($current_post_id === 0) {
     global $post;
     if ($post && isset($post->ID) && $post->ID > 0) {
@@ -90,64 +70,30 @@ if ($current_post_id === 0) {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log("GMKB Topics ROOT FIX: ✅ Post ID from global $post: {$current_post_id}");
         }
-    } elseif (function_exists('get_the_ID')) {
-        $wp_post_id = get_the_ID();
-        if ($wp_post_id && $wp_post_id > 0) {
-            $current_post_id = $wp_post_id;
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("GMKB Topics ROOT FIX: ✅ Post ID from get_the_ID(): {$current_post_id}");
-            }
-        }
     }
 }
 
-// PRIORITY 4: Check for WordPress query vars
-if ($current_post_id === 0 && function_exists('get_query_var')) {
-    $queried_id = get_query_var('p') ?: get_query_var('page_id') ?: get_query_var('post_id');
-    if ($queried_id && is_numeric($queried_id) && $queried_id > 0) {
-        $current_post_id = intval($queried_id);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Post ID from query vars: {$current_post_id}");
-        }
-    }
-}
-
-// PRIORITY 5: Extract from current URL path (if in admin or preview)
+// PRIORITY 3: URL parameters (for builder context)
 if ($current_post_id === 0) {
-    $current_url = $_SERVER['REQUEST_URI'] ?? '';
-    if (preg_match('/[?&]post[_=](\d+)/', $current_url, $matches)) {
-        $current_post_id = intval($matches[1]);
+    if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+        $current_post_id = intval($_GET['post_id']);
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL regex: {$current_post_id}");
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?post_id: {$current_post_id}");
         }
-    } elseif (preg_match('/[?&]p=(\d+)/', $current_url, $matches)) {
-        $current_post_id = intval($matches[1]);
+    } elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
+        $current_post_id = intval($_GET['p']);
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL p= regex: {$current_post_id}");
-        }
-    }
-}
-
-// PRIORITY 6: Check if we're in WordPress admin with post editing
-if ($current_post_id === 0 && function_exists('get_current_screen')) {
-    $screen = get_current_screen();
-    if ($screen && $screen->post_type && isset($_GET['post']) && is_numeric($_GET['post'])) {
-        $current_post_id = intval($_GET['post']);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Post ID from admin screen: {$current_post_id}");
+            error_log("GMKB Topics ROOT FIX: ✅ Post ID from URL ?p: {$current_post_id}");
         }
     }
 }
 
-// FALLBACK: For testing, try a hardcoded known post ID (remove in production)
-if ($current_post_id === 0) {
-    // ROOT FIX: Temporary fallback to test with your known post ID
+// FALLBACK: Use known test post ID for development
+if ($current_post_id === 0 && defined('WP_DEBUG') && WP_DEBUG) {
     $test_post_id = 32372; // Your test post ID
     if (get_post($test_post_id)) {
         $current_post_id = $test_post_id;
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ✅ Using fallback test post ID: {$current_post_id}");
-        }
+        error_log("GMKB Topics ROOT FIX: ⚠️ Using test post ID: {$current_post_id}");
     }
 }
 
@@ -162,42 +108,19 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 $topicsList = [];
 $hasDynamicTopics = false;
 
-// ROOT FIX: SINGLE SOURCE OF TRUTH - Custom Post Fields ONLY
+// ROOT FIX: SIMPLIFIED DATA LOADING with priority hierarchy
 if ($current_post_id > 0) {
-    // PRIORITY 1: Check if topics data was passed via ComponentLoader props
+    $topics_found = 0;
+    
+    // PRIORITY 1: ComponentLoader props (for dynamic rendering)
     if (isset($topics) && is_array($topics) && !empty($topics)) {
         foreach ($topics as $index => $topic_value) {
-            if (!empty($topic_value) && is_string($topic_value)) {
+            if (!empty($topic_value) && is_string($topic_value) && strlen(trim($topic_value)) > 0) {
                 $topicsList[] = [
-                    'title' => sanitize_text_field($topic_value),
+                    'title' => sanitize_text_field(trim($topic_value)),
                     'description' => '',
-                    'source' => 'componentloader_props',
+                    'source' => 'props',
                     'meta_key' => "topic_" . ($index + 1)
-                ];
-                $hasDynamicTopics = true;
-            }
-        }
-        
-        if (defined('WP_DEBUG') && WP_DEBUG && $hasDynamicTopics) {
-            error_log("GMKB Topics ROOT FIX: ✅ Loaded " . count($topicsList) . " topics from ComponentLoader props");
-        }
-    }
-    
-    // PRIORITY 2: SINGLE SOURCE OF TRUTH - Custom Post Fields (topic_1, topic_2, etc.) ONLY
-    if (!$hasDynamicTopics) {
-        $topics_found = 0;
-        
-        // Load ONLY from custom post fields (topic_1, topic_2, etc.)
-        for ($i = 1; $i <= 5; $i++) {
-            $meta_key = "topic_{$i}";
-            $topic_value = get_post_meta($current_post_id, $meta_key, true);
-            
-            if (!empty($topic_value)) {
-                $topicsList[] = [
-                    'title' => sanitize_text_field($topic_value),
-                    'description' => '',
-                    'source' => 'custom_post_fields',
-                    'meta_key' => $meta_key
                 ];
                 $topics_found++;
                 $hasDynamicTopics = true;
@@ -205,9 +128,46 @@ if ($current_post_id > 0) {
         }
         
         if (defined('WP_DEBUG') && WP_DEBUG && $topics_found > 0) {
-            error_log("GMKB Topics ROOT FIX: ✅ Found {$topics_found} topics from custom post fields (topic_1, topic_2, etc.) for post {$current_post_id}");
-        } elseif (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("GMKB Topics ROOT FIX: ⚠️ No topics found in custom post fields for post {$current_post_id}");
+            error_log("GMKB Topics ROOT FIX: ✅ Loaded {$topics_found} topics from ComponentLoader props");
+        }
+    }
+    
+    // PRIORITY 2: Custom post meta fields (persistent storage)
+    if ($topics_found === 0) {
+        for ($i = 1; $i <= 10; $i++) { // Check up to 10 topics
+            $meta_key = "topic_{$i}";
+            $topic_value = get_post_meta($current_post_id, $meta_key, true);
+            
+            if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
+                $topicsList[] = [
+                    'title' => sanitize_text_field(trim($topic_value)),
+                    'description' => '',
+                    'source' => 'meta',
+                    'meta_key' => $meta_key
+                ];
+                $topics_found++;
+                $hasDynamicTopics = true;
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            if ($topics_found > 0) {
+                error_log("GMKB Topics ROOT FIX: ✅ Found {$topics_found} topics from post meta for post {$current_post_id}");
+            } else {
+                error_log("GMKB Topics ROOT FIX: ⚠️ No topics found in post meta for post {$current_post_id}");
+                
+                // Debug: List all meta keys for this post
+                $all_meta = get_post_meta($current_post_id);
+                $topic_meta = array_filter($all_meta, function($key) {
+                    return strpos($key, 'topic_') === 0;
+                }, ARRAY_FILTER_USE_KEY);
+                
+                if (!empty($topic_meta)) {
+                    error_log("GMKB Topics ROOT FIX: 🔍 Found topic-related meta: " . implode(', ', array_keys($topic_meta)));
+                } else {
+                    error_log("GMKB Topics ROOT FIX: 🔍 No topic-related meta found for post {$current_post_id}");
+                }
+            }
         }
     }
 }
