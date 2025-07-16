@@ -19,96 +19,8 @@
     z-index: 10;
 }
 
-/* Element controls container */
-.element-controls {
-    position: absolute;
-    top: -30px;
-    right: -2px;
-    display: flex;
-    gap: 4px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 4px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    z-index: 20;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-/* Control buttons */
-.control-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 0;
-}
-
-.control-btn:hover {
-    background: #f1f5f9;
-    color: #1e293b;
-    transform: scale(1.1);
-}
-
-.control-btn:active {
-    transform: scale(0.95);
-}
-
-/* Specific control button colors */
-.control-btn[title="Delete"]:hover {
-    background: #fee2e2;
-    color: #dc2626;
-}
-
-.control-btn[title="Duplicate"]:hover {
-    background: #ecfdf5;
-    color: #059669;
-}
-
-.control-btn[title="Move Up"]:hover,
-.control-btn[title="Move Down"]:hover {
-    background: #eff6ff;
-    color: #2563eb;
-}
-
-.control-btn svg {
-    width: 12px;
-    height: 12px;
-    stroke: currentColor;
-    fill: none;
-}
-
-/* Ensure controls are visible on hover */
-[data-component-id]:hover .element-controls {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* Hide controls by default, show on selection */
-[data-component-id].selected .element-controls {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* Ensure component has space for controls */
-[data-component-id] {
-    position: relative;
-    margin-top: 40px; /* Space for controls */
-}
-
-/* First component doesn't need top margin */
-[data-component-id]:first-child {
-    margin-top: 20px;
-}
+/* ROOT FIX: REMOVED OLD CONTROL SYSTEM - .element-controls, .control-btn */
+/* This eliminates the competing control system that caused duplicates */
 
 /* Click feedback for components */
 [data-component-id]:hover {
@@ -269,32 +181,57 @@
     50% { opacity: 0.5; }
 }
 
-/* ROOT FIX: Component Controls Styles */
+/* ROOT FIX: Enhanced Component Controls Styles */
 /* Component controls overlay - referenced in attachComponentHandlers() */
 .component-controls {
     position: absolute;
     top: 8px;
     right: 8px;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transform: translateY(-4px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 15;
     pointer-events: auto;
+}
+
+/* Enhanced visibility state */
+.component-controls--visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 /* Show controls on component hover */
 .media-kit-component:hover .component-controls {
     opacity: 1;
+    transform: translateY(0);
 }
 
-/* Component controls toolbar */
+/* Component controls toolbar - modern glass design */
 .component-controls__toolbar {
     display: flex;
-    gap: 4px;
-    background: rgba(0, 0, 0, 0.8);
-    border-radius: 6px;
+    align-items: center;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
     padding: 4px;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    .component-controls__toolbar {
+        background: rgba(30, 30, 30, 0.95);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 
+            0 4px 6px -1px rgba(0, 0, 0, 0.3),
+            0 2px 4px -1px rgba(0, 0, 0, 0.2),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    }
 }
 
 /* Individual component control buttons */
@@ -302,60 +239,206 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     background: transparent;
     border: none;
-    border-radius: 4px;
-    color: white;
+    border-radius: 6px;
+    color: #64748b;
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 14px;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0;
     padding: 0;
+    position: relative;
+    overflow: hidden;
 }
 
-.component-control:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
+.component-control:before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    border-radius: inherit;
+}
+
+.component-control:hover:before {
+    opacity: 0.08;
 }
 
 .component-control:active {
     transform: scale(0.95);
 }
 
-/* Specific control button colors */
-.component-control--edit:hover {
-    background: rgba(59, 130, 246, 0.8);
-    color: white;
+.component-control:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
 }
 
-.component-control--move:hover {
-    background: rgba(16, 185, 129, 0.8);
-    color: white;
+/* SVG icons styling */
+.component-control svg {
+    position: relative;
+    z-index: 1;
+    transition: all 0.15s ease;
+}
+
+/* Specific control button colors and hover states */
+.component-control--edit {
+    color: #3b82f6;
+}
+
+.component-control--edit:hover {
+    color: #2563eb;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.component-control--duplicate {
+    color: #10b981;
+}
+
+.component-control--duplicate:hover {
+    color: #059669;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.component-control--delete {
+    color: #ef4444;
 }
 
 .component-control--delete:hover {
-    background: rgba(239, 68, 68, 0.8);
-    color: white;
+    color: #dc2626;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Move controls group */
+.component-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 4px;
+    padding: 1px;
+}
+
+.component-control--move-up,
+.component-control--move-down {
+    width: 24px;
+    height: 20px;
+    color: #6366f1;
+    border-radius: 3px;
+}
+
+.component-control--move-up:hover,
+.component-control--move-down:hover {
+    color: #4f46e5;
+    background: rgba(99, 102, 241, 0.1);
 }
 
 /* Component wrapper - media-kit-component class */
 .media-kit-component {
     position: relative;
-    margin: 16px 0;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    margin: 20px 0;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid transparent;
+    background: white;
+    overflow: hidden;
 }
 
 .media-kit-component:hover {
-    border-color: rgba(14, 165, 233, 0.3);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+    border-color: rgba(14, 165, 233, 0.2);
+    box-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(14, 165, 233, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Component moved animation */
+.component-moved {
+    animation: componentMoved 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes componentMoved {
+    0% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 16px -4px rgba(14, 165, 233, 0.3);
+    }
+    100% {
+        transform: translateY(0);
+    }
 }
 
 /* Ensure components have proper spacing */
 .media-kit-component + .media-kit-component {
     margin-top: 24px;
+}
+
+/* First and last component specific spacing */
+.media-kit-component:first-child {
+    margin-top: 16px;
+}
+
+.media-kit-component:last-child {
+    margin-bottom: 16px;
+}
+
+/* Enhanced tooltips for controls */
+.component-control[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 1000;
+    animation: tooltipFadeIn 0.2s ease;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Focus states for accessibility */
+.component-control:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Loading state for controls */
+.component-control.loading {
+    pointer-events: none;
+}
+
+.component-control.loading svg {
+    animation: controlSpin 0.5s linear infinite;
+}
+
+@keyframes controlSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Modal styles for design panel */

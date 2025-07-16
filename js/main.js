@@ -643,19 +643,42 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
          * @param {string} componentId - Component ID
          */
         attachComponentHandlers(componentElement, componentId) {
-            // Add component controls overlay
+            // Add component controls overlay with improved design
             const controlsOverlay = document.createElement('div');
             controlsOverlay.className = 'component-controls';
             controlsOverlay.innerHTML = `
                 <div class="component-controls__toolbar">
                     <button class="component-control component-control--edit" data-action="edit" title="Edit Component">
-                        ✏️
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
                     </button>
-                    <button class="component-control component-control--move" data-action="move" title="Move Component">
-                        ↕️
+                    <div class="component-control-group">
+                        <button class="component-control component-control--move-up" data-action="move-up" title="Move Up">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="18,15 12,9 6,15"/>
+                            </svg>
+                        </button>
+                        <button class="component-control component-control--move-down" data-action="move-down" title="Move Down">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6,9 12,15 18,9"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="component-control component-control--duplicate" data-action="duplicate" title="Duplicate Component">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
                     </button>
                     <button class="component-control component-control--delete" data-action="delete" title="Delete Component">
-                        🗑️
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"/>
+                            <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                        </svg>
                     </button>
                 </div>
             `;
@@ -666,14 +689,31 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Attach event listeners
             controlsOverlay.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const action = e.target.dataset.action;
+                const action = e.target.closest('[data-action]')?.dataset.action;
+                
+                if (!action) return;
+                
+                // Disable button temporarily to prevent double-clicks
+                const button = e.target.closest('[data-action]');
+                if (button) {
+                    button.disabled = true;
+                    setTimeout(() => {
+                        button.disabled = false;
+                    }, 500);
+                }
                 
                 switch (action) {
                     case 'edit':
                         this.editComponent(componentId);
                         break;
-                    case 'move':
-                        this.moveComponent(componentId);
+                    case 'move-up':
+                        this.moveComponentUp(componentId);
+                        break;
+                    case 'move-down':
+                        this.moveComponentDown(componentId);
+                        break;
+                    case 'duplicate':
+                        this.duplicateComponent(componentId);
                         break;
                     case 'delete':
                         this.deleteComponent(componentId);
@@ -681,16 +721,16 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 }
             });
             
-            // Show controls on hover
+            // Show controls on hover with improved animations
             componentElement.addEventListener('mouseenter', () => {
-                controlsOverlay.style.opacity = '1';
+                controlsOverlay.classList.add('component-controls--visible');
             });
             
             componentElement.addEventListener('mouseleave', () => {
-                controlsOverlay.style.opacity = '0';
+                controlsOverlay.classList.remove('component-controls--visible');
             });
             
-            console.log(`🎛️ ComponentManager: Attached handlers to ${componentId}`);
+            console.log(`✅ ComponentManager: Enhanced handlers attached to ${componentId}`);
         },
         
         /**
@@ -900,39 +940,100 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Move component position
-         * @param {string} componentId - Component ID to move
+         * ROOT FIX: Move component up in layout
+         * @param {string} componentId - Component ID to move up
          */
-        moveComponent(componentId) {
-            console.log(`↕️ ComponentManager: Moving ${componentId}`);
+        moveComponentUp(componentId) {
+            const state = StateManager.getState();
+            const currentIndex = state.layout.indexOf(componentId);
             
-            // Simple implementation: ask user for direction
-            const direction = prompt('Move component up or down? (type "up" or "down")');
-            
-            if (direction === 'up' || direction === 'down') {
-                const state = StateManager.getState();
-                const currentIndex = state.layout.indexOf(componentId);
-                
-                if (currentIndex === -1) return;
-                
-                const newLayout = [...state.layout];
-                
-                if (direction === 'up' && currentIndex > 0) {
-                    // Swap with previous item
-                    [newLayout[currentIndex], newLayout[currentIndex - 1]] = 
-                    [newLayout[currentIndex - 1], newLayout[currentIndex]];
-                    
-                    StateManager.setState({ layout: newLayout });
-                    this.reorderComponentsInDOM();
-                } else if (direction === 'down' && currentIndex < newLayout.length - 1) {
-                    // Swap with next item
-                    [newLayout[currentIndex], newLayout[currentIndex + 1]] = 
-                    [newLayout[currentIndex + 1], newLayout[currentIndex]];
-                    
-                    StateManager.setState({ layout: newLayout });
-                    this.reorderComponentsInDOM();
-                }
+            if (currentIndex <= 0) {
+                console.log(`⚠️ ComponentManager: Cannot move ${componentId} up - already at top`);
+                return;
             }
+            
+            console.log(`⬆️ ComponentManager: Moving ${componentId} up`);
+            
+            const newLayout = [...state.layout];
+            // Swap with previous item
+            [newLayout[currentIndex], newLayout[currentIndex - 1]] = 
+            [newLayout[currentIndex - 1], newLayout[currentIndex]];
+            
+            StateManager.setState({ layout: newLayout });
+            this.reorderComponentsInDOM();
+            
+            // Visual feedback
+            const element = document.getElementById(componentId);
+            if (element) {
+                element.classList.add('component-moved');
+                setTimeout(() => {
+                    element.classList.remove('component-moved');
+                }, 300);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Move component down in layout
+         * @param {string} componentId - Component ID to move down
+         */
+        moveComponentDown(componentId) {
+            const state = StateManager.getState();
+            const currentIndex = state.layout.indexOf(componentId);
+            
+            if (currentIndex === -1 || currentIndex >= state.layout.length - 1) {
+                console.log(`⚠️ ComponentManager: Cannot move ${componentId} down - already at bottom`);
+                return;
+            }
+            
+            console.log(`⬇️ ComponentManager: Moving ${componentId} down`);
+            
+            const newLayout = [...state.layout];
+            // Swap with next item
+            [newLayout[currentIndex], newLayout[currentIndex + 1]] = 
+            [newLayout[currentIndex + 1], newLayout[currentIndex]];
+            
+            StateManager.setState({ layout: newLayout });
+            this.reorderComponentsInDOM();
+            
+            // Visual feedback
+            const element = document.getElementById(componentId);
+            if (element) {
+                element.classList.add('component-moved');
+                setTimeout(() => {
+                    element.classList.remove('component-moved');
+                }, 300);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Duplicate component
+         * @param {string} componentId - Component ID to duplicate
+         */
+        async duplicateComponent(componentId) {
+            console.log(`📋 ComponentManager: Duplicating ${componentId}`);
+            
+            const state = StateManager.getState();
+            const component = state.components[componentId];
+            
+            if (!component) {
+                console.error(`Component ${componentId} not found for duplication`);
+                return;
+            }
+            
+            // Create new component with duplicated data
+            const duplicatedComponent = {
+                ...component,
+                id: 'component-' + Date.now(),
+                data: { ...component.data }
+            };
+            
+            // Add to state
+            const newId = StateManager.addComponent(duplicatedComponent);
+            
+            // Render the duplicated component
+            await this.renderComponent(newId);
+            
+            console.log(`✅ ComponentManager: Duplicated ${componentId} as ${newId}`);
         },
         
         /**
