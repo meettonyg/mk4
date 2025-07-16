@@ -614,4 +614,13 @@
     console.log('✅ PHASE 3.1: End-to-End Validation System loaded');
     console.log('💡 Run validation with: runPhase3Validation()');
     
+    // Load post ID diagnostic helper
+    if (typeof window.quickPostIdFix === 'undefined') {
+        console.log('🔧 Loading post ID diagnostic helper...');
+        const script = document.createElement('script');
+        script.src = './post-id-fix-helper.js';
+        script.onload = () => console.log('✅ Post ID fix helper loaded');
+        document.head.appendChild(script);
+    }
+    
 })();

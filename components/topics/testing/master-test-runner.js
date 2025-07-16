@@ -394,5 +394,6 @@
     console.log('✅ Phase 3 Master Test Runner loaded');
     console.log('🎯 Run all tests with: runAllPhase3Tests()');
     console.log('📊 Get summary with: getPhase3Summary()');
+    console.log('🔍 For post ID issues, run: quickPostIdFix()');
     
 })();
