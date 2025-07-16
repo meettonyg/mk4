@@ -175,16 +175,38 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * Extract post ID from various sources
+     * PHASE 1.1 FIX: Enhanced post ID extraction from comprehensive sources
      */
     extractPostId() {
-        return (
-            new URLSearchParams(window.location.search).get('post_id') ||
-            new URLSearchParams(window.location.search).get('p') ||
-            window.guestifyData?.postId ||
-            window.guestifyMediaKit?.postId ||
-            document.querySelector('[data-post-id]')?.dataset.postId
-        );
+        // Priority 1: URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlPostId = urlParams.get('post_id') || urlParams.get('p');
+        
+        if (urlPostId && parseInt(urlPostId) > 0) {
+            console.log('🎯 Phase 1.1: Post ID from URL:', urlPostId);
+            return parseInt(urlPostId);
+        }
+        
+        // Priority 2: Global data objects
+        const globalPostId = window.gmkbData?.postId ||
+                           window.guestifyData?.postId ||
+                           window.guestifyMediaKit?.postId;
+        
+        if (globalPostId && parseInt(globalPostId) > 0) {
+            console.log('🎯 Phase 1.1: Post ID from global data:', globalPostId);
+            return parseInt(globalPostId);
+        }
+        
+        // Priority 3: DOM data attributes
+        const domPostId = document.querySelector('[data-post-id]')?.dataset.postId;
+        
+        if (domPostId && parseInt(domPostId) > 0) {
+            console.log('🎯 Phase 1.1: Post ID from DOM:', domPostId);
+            return parseInt(domPostId);
+        }
+        
+        console.warn('⚠️ Phase 1.1: No post ID found in any source');
+        return null;
     }
 
     /**

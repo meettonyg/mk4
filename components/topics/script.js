@@ -395,17 +395,18 @@
         }
         
         async performIntegratedSave(postId, topics) {
-            // PHASE 2.2 FIX: Use enhanced nonce detection and AJAX URL
+            // PHASE 1.1 FIX: Enhanced AJAX save with comprehensive post ID handling
             const ajaxUrl = this.getAjaxUrl();
             const nonce = this.getEnhancedNonce();
             
             const formData = new FormData();
             formData.append('action', 'save_custom_topics');
             formData.append('post_id', postId);
+            formData.append('media_kit_post_id', postId);  // PHASE 1.1 FIX: Add missing parameter
             formData.append('topics', JSON.stringify(topics));
             formData.append('nonce', nonce);
             formData.append('source', 'integrated-topics-manager');
-            formData.append('phase', '2.2');
+            formData.append('phase', '1.1');  // Updated phase
             
             const response = await fetch(ajaxUrl, {
                 method: 'POST',

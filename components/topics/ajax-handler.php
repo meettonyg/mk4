@@ -76,8 +76,14 @@ class GMKB_Topics_Ajax_Handler {
                 return;
             }
             
-            // PHASE 1.2 FIX: Extract data with minimal processing
-            $post_id = intval($_POST['post_id'] ?? 0);
+            // PHASE 1.1 FIX: Enhanced post ID extraction with multiple parameter support
+            $post_id = intval($_POST['post_id'] ?? $_POST['media_kit_post_id'] ?? 0);
+            
+            // PHASE 1.1 FIX: Debug logging for post ID detection
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("PHASE 1.1 AJAX Handler: post_id={$post_id}, POST_post_id=" . ($_POST['post_id'] ?? 'null') . ", POST_media_kit_post_id=" . ($_POST['media_kit_post_id'] ?? 'null'));
+            }
+            
             $topics_data = $_POST['topics'] ?? array();
             
             // PHASE 1.2 FIX: Simple JSON handling without complex validation
@@ -142,8 +148,19 @@ class GMKB_Topics_Ajax_Handler {
         );
         
         try {
-            // PHASE 1.2 FIX: Minimal validation for load requests
-            $post_id = intval($_POST['post_id'] ?? $_GET['post_id'] ?? 0);
+            // PHASE 1.1 FIX: Enhanced post ID extraction for load requests
+            $post_id = intval(
+                $_POST['post_id'] ?? 
+                $_POST['media_kit_post_id'] ?? 
+                $_GET['post_id'] ?? 
+                $_GET['media_kit_post_id'] ?? 
+                0
+            );
+            
+            // PHASE 1.1 FIX: Debug logging for load requests
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("PHASE 1.1 AJAX Load: post_id={$post_id}, GET_post_id=" . ($_GET['post_id'] ?? 'null') . ", POST_post_id=" . ($_POST['post_id'] ?? 'null') . ", POST_media_kit_post_id=" . ($_POST['media_kit_post_id'] ?? 'null'));
+            }
             
             if (!$post_id) {
                 $response['message'] = 'Invalid post ID';

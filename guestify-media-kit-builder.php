@@ -513,8 +513,24 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
-        // ROOT FIX: Ensure post ID is available for component rendering
-        $post_id = $this->detect_mkcg_post_id();
+        // PHASE 1.2 FIX: Enhanced post ID detection - use props first, then fallback
+        $post_id = 0;
+        
+        // Priority 1: From props (AJAX context)
+        if (isset($props['post_id']) && is_numeric($props['post_id']) && $props['post_id'] > 0) {
+            $post_id = intval($props['post_id']);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_render_component - Using post_id from props: ' . $post_id);
+            }
+        }
+        // Priority 2: From URL (fallback)
+        elseif ($fallback_post_id = $this->detect_mkcg_post_id()) {
+            $post_id = $fallback_post_id;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_render_component - Using post_id from URL fallback: ' . $post_id);
+            }
+        }
+        
         $enhanced_props = array_merge($props, [
             'post_id' => $post_id,
             'gmkb_context' => 'ajax_render'

@@ -17,23 +17,43 @@ if (!defined('ABSPATH')) {
 $componentId = esc_attr($componentId ?? uniqid('topics_'));
 $sectionTitle = sanitize_text_field($title ?? 'Speaking Topics');
 
-// PHASE 1.1 FIX: ROBUST POST ID DETECTION with comprehensive fallbacks
+// PHASE 1.2 FIX: ENHANCED POST ID DETECTION with ComponentLoader integration
 $current_post_id = 0;
+$post_id_source = 'none';
 
-// Priority 1: Component-provided post_id
+// Priority 1: From ComponentLoader extracted props (AJAX context)
 if (isset($post_id) && is_numeric($post_id) && $post_id > 0) {
     $current_post_id = intval($post_id);
-// Priority 2: URL parameters
+    $post_id_source = 'component-loader-props';
+// Priority 2: URL parameters (enhanced parsing)
 } elseif (!empty($_GET['post_id']) && is_numeric($_GET['post_id'])) {
     $current_post_id = intval($_GET['post_id']);
+    $post_id_source = 'url-get-post_id';
 } elseif (!empty($_GET['p']) && is_numeric($_GET['p'])) {
     $current_post_id = intval($_GET['p']);
+    $post_id_source = 'url-get-p';
+// Priority 2.5: Check $_REQUEST as fallback for URL parameters
+} elseif (!empty($_REQUEST['post_id']) && is_numeric($_REQUEST['post_id'])) {
+    $current_post_id = intval($_REQUEST['post_id']);
+    $post_id_source = 'request-post_id';
 // Priority 3: Global post object
 } elseif (isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
     $current_post_id = intval($GLOBALS['post']->ID);
+    $post_id_source = 'global-post';
 // Priority 4: WordPress get_the_ID() if in loop
 } elseif (function_exists('get_the_ID') && get_the_ID()) {
     $current_post_id = intval(get_the_ID());
+    $post_id_source = 'wp-get_the_id';
+}
+
+// PHASE 1.2 FIX: Enhanced debugging for post ID detection with ComponentLoader context
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log("PHASE 1.2 Topics POST ID DEBUG: Source='{$post_id_source}', ID={$current_post_id}");
+    error_log("PHASE 1.2 Available variables: post_id=" . (isset($post_id) ? $post_id : 'unset') . ", componentId=" . (isset($componentId) ? $componentId : 'unset'));
+    error_log("PHASE 1.2 URL params: GET_post_id=" . ($_GET['post_id'] ?? 'null') . ", REQUEST_post_id=" . ($_REQUEST['post_id'] ?? 'null'));
+    if (isset($props)) {
+        error_log("PHASE 1.2 Props available: " . print_r($props, true));
+    }
 }
 
 // PHASE 1.1 FIX: COMPREHENSIVE TOPIC LOADING with multiple fallback sources
@@ -105,11 +125,15 @@ if ($topicsFound) {
     $containerClass .= ' no-topics';
 }
 
-// PHASE 1.1 FIX: Comprehensive debugging with source tracking
+// PHASE 1.2 FIX: Comprehensive debugging with ComponentLoader integration tracking
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log("PHASE 1.1 Topics ROOT FIX: Post ID {$current_post_id}, Found " . count($topicsList) . " topics from source '{$loadingSource}'");
+    error_log("PHASE 1.2 Topics ROOT FIX: Post ID {$current_post_id} (source: {$post_id_source}), Found " . count($topicsList) . " topics from data source '{$loadingSource}'");
     if (!empty($topicsList)) {
-        error_log("PHASE 1.1 Topics: " . implode(', ', array_column($topicsList, 'title')));
+        error_log("PHASE 1.2 Topics: " . implode(', ', array_column($topicsList, 'title')));
+    }
+    if ($current_post_id === 0) {
+        error_log("PHASE 1.2 Topics WARNING: No post ID detected. ComponentLoader integration issue?");
+        error_log("PHASE 1.2 Debug context: URL params=" . print_r($_GET, true) . ", Available vars: post_id=" . (isset($post_id) ? $post_id : 'unset'));
     }
 }
 ?>
@@ -123,7 +147,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
      data-save-enabled="true"
      data-nonce="<?php echo wp_create_nonce('guestify_media_kit_builder'); ?>"
      data-loading-resolved="true"
-     data-phase="1.1-complete">
+     data-phase="1.2-complete">
 
     <!-- PHASE 1.1 FIX: Section Header -->
     <div class="topics-header">
@@ -139,7 +163,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
          data-has-topics="<?php echo $topicsFound ? 'true' : 'false'; ?>"
          data-loading-source="<?php echo esc_attr($loadingSource); ?>"
          data-loading-resolved="true"
-         data-phase="1.1-complete">
+         data-phase="1.2-complete">
         
         <?php if ($topicsFound && !empty($topicsList)): ?>
             <!-- PHASE 1.1 FIX: Display actual topics with enhanced metadata -->
@@ -181,9 +205,11 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                         <details style="font-size: 0.9em; color: #999; margin-top: 10px;">
                             <summary style="cursor: pointer;">Debug Info</summary>
                             <div style="margin-top: 5px; text-align: left;">
-                                <strong>Post ID:</strong> <?php echo esc_html($current_post_id); ?><br>
-                                <strong>Loading Source:</strong> <?php echo esc_html($loadingSource); ?><br>
-                                <strong>Resolution:</strong> Server-side complete (Phase 1.1)
+                                <strong>Post ID:</strong> <?php echo esc_html($current_post_id); ?> (<?php echo esc_html($post_id_source); ?>)<br>
+                                <strong>Data Source:</strong> <?php echo esc_html($loadingSource); ?><br>
+                                <strong>URL post_id:</strong> <?php echo esc_html($_GET['post_id'] ?? 'not set'); ?><br>
+                                <strong>ComponentLoader post_id:</strong> <?php echo esc_html(isset($post_id) ? $post_id : 'not passed'); ?><br>
+                                <strong>Resolution:</strong> Server-side complete (Phase 1.2)
                             </div>
                         </details>
                     <?php endif; ?>
