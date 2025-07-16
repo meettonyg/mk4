@@ -4,12 +4,7 @@
  */
 ?>
 <div class="cta-component editable-element" data-element="call-to-action" data-component="call-to-action" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="call-to-action">
-    <div class="element-controls">
-        <button class="control-btn" title="Move Up">↑</button>
-        <button class="control-btn" title="Move Down">↓</button>
-        <button class="control-btn" title="Duplicate">⧉</button>
-        <button class="control-btn" title="Delete">×</button>
-    </div>
+    <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
     <?php if (isset($title) || isset($description) || isset($buttonText) || isset($buttonUrl)): ?>
         <div class="cta-content">
             <?php if (isset($title)): ?>

@@ -4,12 +4,7 @@
  */
 ?>
 <div class="content-section biography-component editable-element" data-element="biography" data-component="biography" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="biography">
-    <div class="element-controls">
-        <button class="control-btn" title="Move Up">↑</button>
-        <button class="control-btn" title="Move Down">↓</button>
-        <button class="control-btn" title="Duplicate">⧉</button>
-        <button class="control-btn" title="Delete">×</button>
-    </div>
+    <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
     <h2 class="section-title"><?php echo isset($title) ? esc_html($title) : 'About Me'; ?></h2>
     <div class="biography-content">
         <?php if (isset($content) && !empty($content)): ?>

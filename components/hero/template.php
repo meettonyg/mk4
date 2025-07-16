@@ -8,12 +8,7 @@ $title = $title ?? $subtitle ?? 'Your Professional Title';
 $bio = $bio ?? $description ?? 'Briefly introduce yourself and your expertise.';
 ?>
 <div class="hero editable-element" data-element="hero" data-component="hero" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="hero">
-    <div class="element-controls">
-        <button class="control-btn" title="Move Up">↑</button>
-        <button class="control-btn" title="Move Down">↓</button>
-        <button class="control-btn" title="Duplicate">⧉</button>
-        <button class="control-btn" title="Delete">×</button>
-    </div>
+    <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
     <div class="hero__avatar">
         <?php if (isset($image) && !empty($image)): ?>
             <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($name); ?>">

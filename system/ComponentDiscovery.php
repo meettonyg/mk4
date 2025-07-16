@@ -211,4 +211,22 @@ class ComponentDiscovery {
     public function componentExists($componentType) {
         return isset($this->components[$componentType]) || isset($this->aliases[$componentType]);
     }
+    
+    /**
+     * Get debugging information about the discovery system
+     * 
+     * @return array Debug information
+     */
+    public function getDebugInfo() {
+        return array(
+            'components_dir' => $this->componentsDir,
+            'components_count' => count($this->components),
+            'categories_count' => count($this->categories),
+            'components_dir_exists' => is_dir($this->componentsDir),
+            'components_dir_readable' => is_readable($this->componentsDir),
+            'component_names' => array_keys($this->components),
+            'category_names' => array_keys($this->categories),
+            'aliases_count' => count($this->aliases)
+        );
+    }
 }

@@ -72,37 +72,51 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         init() {
             console.log('📋 StateManager: Initialized (Server-Integrated)');
             
-            // Load saved state from WordPress data first, then localStorage
-            if (window.gmkbData && window.gmkbData.savedState) {
-                const savedState = window.gmkbData.savedState;
-                this.state = { ...this.state, ...savedState };
-                console.log('🔄 StateManager: Loaded state from WordPress database', savedState);
+            // ROOT FIX: Check localStorage FIRST (where previous components are saved)
+            let hasLocalStorageData = false;
+            const localStorageLoaded = this.loadFromStorage();
+            
+            if (localStorageLoaded && Object.keys(this.state.components).length > 0) {
+                hasLocalStorageData = true;
+                console.log('🔄 StateManager: Loaded state from localStorage (PRIORITY)', {
+                    components: Object.keys(this.state.components).length,
+                    layout: this.state.layout.length
+                });
                 
-                // If we have components, they will be rendered by ComponentManager
+                // Dispatch event for saved components from localStorage
+                GMKB.dispatch('gmkb:saved-state-loaded', {
+                    componentCount: Object.keys(this.state.components).length,
+                    state: this.state,
+                    source: 'localStorage'
+                });
+            } else {
+                console.log('📝 StateManager: No components found in localStorage');
+            }
+            
+            // SECONDARY: Check WordPress database (only if localStorage was empty)
+            if (!hasLocalStorageData && window.gmkbData && window.gmkbData.savedState) {
+                const savedState = window.gmkbData.savedState;
+                
                 if (savedState.components && Object.keys(savedState.components).length > 0) {
-                    console.log('✅ StateManager: Found', Object.keys(savedState.components).length, 'existing components');
-                    // Dispatch event to trigger component loading after ComponentManager is ready
+                    this.state = { ...this.state, ...savedState };
+                    console.log('🔄 StateManager: Loaded state from WordPress database (FALLBACK)', savedState);
+                    
+                    // Dispatch event for saved components from WordPress
                     GMKB.dispatch('gmkb:saved-state-loaded', {
                         componentCount: Object.keys(savedState.components).length,
-                        state: savedState
-                    });
-                }
-            } else {
-                // Fallback to localStorage if no WordPress data
-                const loadedFromStorage = this.loadFromStorage();
-                console.log('📝 StateManager: No WordPress state found, trying localStorage');
-                
-                // ROOT FIX: Always check for saved components after loading
-                if (loadedFromStorage && Object.keys(this.state.components).length > 0) {
-                    console.log('✅ StateManager: Found', Object.keys(this.state.components).length, 'existing components from localStorage');
-                    GMKB.dispatch('gmkb:saved-state-loaded', {
-                        componentCount: Object.keys(this.state.components).length,
-                        state: this.state,
-                        source: 'localStorage'
+                        state: savedState,
+                        source: 'wordpress'
                     });
                 } else {
-                    console.log('📝 StateManager: No saved components found in localStorage');
+                    console.log('📝 StateManager: WordPress database state is empty');
                 }
+            }
+            
+            // Final check: if no components found anywhere
+            if (Object.keys(this.state.components).length === 0) {
+                console.log('📝 StateManager: No saved components found in any source (localStorage or WordPress)');
+            } else {
+                console.log('✅ StateManager: Successfully loaded', Object.keys(this.state.components).length, 'components');
             }
         },
         
@@ -253,31 +267,69 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 });
                 
                 const data = await response.json();
+                console.log('🔍 ComponentManager: Server response:', data);
                 
-                if (data.success && data.components) {
-                    this.availableComponents = data.components;
-                    console.log('✅ ComponentManager: Loaded', Object.keys(data.components).length, 'available components');
+                // Show debug information if available
+                if (data.debug || (data.data && data.data.debug)) {
+                    const debugInfo = data.debug || data.data.debug;
+                    console.log('🔍 ComponentManager: Debug info:', debugInfo);
                     
-                    // Populate component library modal
-                    this.populateComponentLibrary(data.components, data.categories || {});
-                    
-                    // Dispatch event that components are loaded
-                    GMKB.dispatch('gmkb:components-loaded', {
-                        components: data.components,
-                        categories: data.categories
-                    });
-                    
-                    // ROOT FIX: Dispatch available components ready event
-                    GMKB.dispatch('gmkb:available-components-ready', {
-                        components: data.components,
-                        count: Object.keys(data.components).length,
-                        timestamp: Date.now()
-                    });
-                } else {
-                    console.error('❌ ComponentManager: Failed to load components:', data);
+                    if (debugInfo.components_dir_exists === false) {
+                        console.error('❌ ComponentManager: Components directory does not exist:', debugInfo.components_dir);
+                    }
+                    if (debugInfo.components_dir_readable === false) {
+                        console.error('❌ ComponentManager: Components directory not readable:', debugInfo.components_dir);
+                    }
                 }
+                
+                // ROOT FIX: Handle both wp_send_json_success and direct return formats
+                let components, categories;
+                
+                if (data.success && data.data) {
+                    // wp_send_json_success format: {success: true, data: {components: ..., categories: ...}}
+                    components = data.data.components || {};
+                    categories = data.data.categories || {};
+                    console.log('✅ ComponentManager: Using wp_send_json_success format');
+                } else if (data.success && data.components) {
+                    // Direct return format: {success: true, components: ..., categories: ...}
+                    components = data.components || {};
+                    categories = data.categories || {};
+                    console.log('✅ ComponentManager: Using direct return format');
+                } else if (data.components) {
+                    // Legacy format: {components: ..., categories: ...}
+                    components = data.components || {};
+                    categories = data.categories || {};
+                    console.log('✅ ComponentManager: Using legacy format');
+                } else {
+                    throw new Error('Invalid response format: ' + JSON.stringify(data));
+                }
+                
+                this.availableComponents = components;
+                console.log('✅ ComponentManager: Loaded', Object.keys(components).length, 'available components');
+                console.log('📋 ComponentManager: Component types:', Object.keys(components));
+                
+                // Populate component library modal
+                this.populateComponentLibrary(components, categories);
+                
+                // Dispatch event that components are loaded
+                GMKB.dispatch('gmkb:components-loaded', {
+                    components: components,
+                    categories: categories
+                });
+                
+                // ROOT FIX: Dispatch available components ready event
+                GMKB.dispatch('gmkb:available-components-ready', {
+                    components: components,
+                    count: Object.keys(components).length,
+                    timestamp: Date.now()
+                });
+                
             } catch (error) {
                 console.error('❌ ComponentManager: Error loading components:', error);
+                console.error('❌ ComponentManager: Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
                 // Fallback to hardcoded components for development
                 this.loadFallbackComponents();
             }
@@ -286,17 +338,22 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         loadFallbackComponents() {
             console.log('🔄 ComponentManager: Loading fallback components...');
             this.availableComponents = {
-                'hero': { name: 'Hero Section', category: 'essential', icon: 'hero-icon.svg' },
-                'biography': { name: 'Biography', category: 'essential', icon: 'bio-icon.svg' },
-                'topics': { name: 'Speaking Topics', category: 'essential', icon: 'topics-icon.svg' },
-                'social': { name: 'Social Links', category: 'contact', icon: 'social-icon.svg' },
-                'call-to-action': { name: 'Call to Action', category: 'engagement', icon: 'cta-icon.svg' }
+                'hero': { name: 'Hero Section', category: 'essential', icon: 'hero-icon.svg', description: 'Add a compelling header with your name and expertise' },
+                'biography': { name: 'Biography', category: 'essential', icon: 'bio-icon.svg', description: 'Share your professional background and story' },
+                'topics': { name: 'Speaking Topics', category: 'essential', icon: 'topics-icon.svg', description: 'Showcase your areas of expertise' },
+                'social': { name: 'Social Links', category: 'contact', icon: 'social-icon.svg', description: 'Connect with your social media profiles' },
+                'call-to-action': { name: 'Call to Action', category: 'engagement', icon: 'cta-icon.svg', description: 'Encourage visitors to take action' }
             };
-            this.populateComponentLibrary(this.availableComponents, {
+            
+            const categories = {
                 'essential': Object.values(this.availableComponents).filter(c => c.category === 'essential'),
                 'contact': Object.values(this.availableComponents).filter(c => c.category === 'contact'),
                 'engagement': Object.values(this.availableComponents).filter(c => c.category === 'engagement')
-            });
+            };
+            
+            this.populateComponentLibrary(this.availableComponents, categories);
+            
+            console.log('⚠️ ComponentManager: Using fallback components:', Object.keys(this.availableComponents));
             
             // ROOT FIX: Dispatch available components ready event for fallback too
             GMKB.dispatch('gmkb:available-components-ready', {
@@ -417,405 +474,6 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             return success;
         },
         
-        async updateComponent(id, updates) {
-            const success = StateManager.updateComponent(id, updates);
-            
-            if (success) {
-                await this.renderComponent(id);
-                console.log(`🧩 ComponentManager: Updated component with ID: ${id}`);
-            }
-            
-            return success;
-        },
-        
-        async renderComponent(id) {
-            const component = StateManager.getState().components[id];
-            if (!component) {
-                console.warn(`🧩 ComponentManager: Cannot render - component ${id} not found`);
-                return false;
-            }
-            
-            try {
-                console.log(`🔄 ComponentManager: Server-rendering component ${id} (${component.type})...`);
-                
-                // Call server to render component
-                const response = await fetch(window.gmkbData.ajaxUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        action: 'guestify_render_component',
-                        nonce: window.gmkbData.nonce,
-                        component: component.type,
-                        props: JSON.stringify({
-                            ...component.data,
-                            post_id: window.gmkbData.postId
-                        })
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success && data.data && data.data.html) {
-                    // Server-side rendering successful
-                    this.insertRenderedComponent(id, data.data.html, component);
-                    console.log(`✅ ComponentManager: Server-rendered component ${id}`);
-                    return true;
-                } else {
-                    console.warn(`⚠️ ComponentManager: Server rendering failed for ${id}, using fallback`);
-                    this.renderComponentFallback(id);
-                    return false;
-                }
-            } catch (error) {
-                console.error(`❌ ComponentManager: Error rendering component ${id}:`, error);
-                this.renderComponentFallback(id);
-                return false;
-            }
-        },
-        
-        insertRenderedComponent(id, html, component) {
-            const previewContainer = document.getElementById('media-kit-preview');
-            if (!previewContainer) {
-                console.warn('🧩 ComponentManager: Preview container not found');
-                return false;
-            }
-            
-            // Hide empty state if this is the first component
-            const emptyState = document.getElementById('empty-state');
-            if (emptyState && Object.keys(StateManager.getState().components).length === 1) {
-                emptyState.style.display = 'none';
-            }
-            
-            // Create or update component element
-            let componentElement = document.getElementById(id);
-            if (!componentElement) {
-                componentElement = document.createElement('div');
-                componentElement.id = id;
-                componentElement.className = 'media-kit-component mk-component';
-                componentElement.setAttribute('data-component-type', component.type);
-                componentElement.setAttribute('data-component-id', id);
-                previewContainer.appendChild(componentElement);
-            }
-            
-            // Insert server-rendered HTML with component controls wrapper
-            componentElement.innerHTML = `
-                <div class="component-wrapper" data-component-id="${id}">
-                    <div class="component-controls">
-                        <button class="component-control-btn remove-component" onclick="window.GMKB.systems.ComponentManager.removeComponent('${id}')" title="Remove Component">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                        <button class="component-control-btn edit-component" onclick="window.GMKB.systems.ComponentManager.editComponent('${id}')" title="Edit Component">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="component-content">
-                        ${html}
-                    </div>
-                </div>
-            `;
-            
-            return true;
-        },
-        
-        renderComponentFallback(id) {
-            const component = StateManager.getState().components[id];
-            if (!component) return false;
-            
-            const { type, data } = component;
-            
-            // Simple fallback templates for development
-            const templates = {
-                hero: `
-                    <div class="component-hero fallback">
-                        <h1>${data.title || 'Your Name'}</h1>
-                        <p>${data.subtitle || 'Your Title/Expertise'}</p>
-                        <p class="fallback-notice">⚠️ Using fallback template - server rendering failed</p>
-                    </div>
-                `,
-                biography: `
-                    <div class="component-biography fallback">
-                        <h3>Biography</h3>
-                        <p>${data.content || 'Your professional biography...'}</p>
-                        <p class="fallback-notice">⚠️ Using fallback template - server rendering failed</p>
-                    </div>
-                `,
-                topics: `
-                    <div class="component-topics fallback">
-                        <h3>Speaking Topics</h3>
-                        <ul>
-                            ${(data.topics || ['Topic 1', 'Topic 2', 'Topic 3']).map(topic => `<li>${topic}</li>`).join('')}
-                        </ul>
-                        <p class="fallback-notice">⚠️ Using fallback template - server rendering failed</p>
-                    </div>
-                `
-            };
-            
-            const html = templates[type] || `
-                <div class="component-generic fallback">
-                    <h3>${type.charAt(0).toUpperCase() + type.slice(1)} Component</h3>
-                    <p>Component: ${id}</p>
-                    <p>Type: ${type}</p>
-                    <p class="fallback-notice">⚠️ Using fallback template - server rendering failed</p>
-                </div>
-            `;
-            
-            this.insertRenderedComponent(id, html, component);
-            console.log(`⚠️ ComponentManager: Used fallback template for ${id}`);
-            return true;
-        },
-        
-        async editComponent(id) {
-            // ROOT FIX: Enhanced debugging for edit component
-            console.log('🛠️ ComponentManager: EDIT BUTTON CLICKED for component:', id);
-            console.log('🛠️ ComponentManager: Current state components:', Object.keys(StateManager.getState().components));
-            
-            const component = StateManager.getState().components[id];
-            if (!component) {
-                console.warn(`🛠️ ComponentManager: Cannot edit - component ${id} not found`);
-                console.warn('🛠️ ComponentManager: Available components:', StateManager.getState().components);
-                return false;
-            }
-            
-            console.log('🛠️ ComponentManager: Found component:', component);
-            
-            try {
-                console.log(`🛠️ ComponentManager: Loading design panel for ${component.type} (${id})...`);
-                
-                // Switch to design tab
-                this.switchToDesignTab();
-                
-                // Show loading state in design panel
-                this.showDesignPanelLoading(component);
-                
-                console.log('🛠️ ComponentManager: Making AJAX request to load design panel...');
-                console.log('🛠️ ComponentManager: AJAX URL:', window.gmkbData.ajaxUrl);
-                console.log('🛠️ ComponentManager: Nonce:', window.gmkbData.nonce);
-                
-                // Load design panel from server
-                const response = await fetch(window.gmkbData.ajaxUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        action: 'guestify_render_design_panel',
-                        nonce: window.gmkbData.nonce,
-                        component: component.type,
-                        post_id: window.gmkbData.postId,
-                        component_id: id
-                    })
-                });
-                
-                console.log('🛠️ ComponentManager: AJAX response status:', response.status);
-                
-                const data = await response.json();
-                console.log('🛠️ ComponentManager: AJAX response data:', data);
-                
-                if (data.success && data.data && data.data.html) {
-                    // Load design panel content
-                    this.loadDesignPanelContent(data.data.html, component, id);
-                    console.log(`✅ ComponentManager: Design panel loaded for ${component.type}`);
-                    return true;
-                } else {
-                    console.warn(`⚠️ ComponentManager: Design panel not found for ${component.type}`);
-                    console.warn('🛠️ ComponentManager: Server response:', data);
-                    this.showDesignPanelError(component, data.data?.message || data.message || 'Design panel not available');
-                    return false;
-                }
-                
-            } catch (error) {
-                console.error(`❌ ComponentManager: Error loading design panel for ${id}:`, error);
-                this.showDesignPanelError(component, error.message);
-                return false;
-            }
-        },
-        
-        switchToDesignTab() {
-            // Find and activate design tab
-            const designTabButton = document.querySelector('.sidebar__tab[data-tab="design"]');
-            const designTabContent = document.getElementById('design-tab');
-            
-            if (designTabButton && designTabContent) {
-                // Remove active class from all tabs
-                document.querySelectorAll('.sidebar__tab').forEach(tab => {
-                    tab.classList.remove('sidebar__tab--active');
-                });
-                
-                // Hide all tab contents
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.style.display = 'none';
-                });
-                
-                // Activate design tab
-                designTabButton.classList.add('sidebar__tab--active');
-                designTabContent.style.display = 'block';
-                
-                console.log('🎛️ ComponentManager: Switched to design tab');
-            }
-        },
-        
-        showDesignPanelLoading(component) {
-            const elementEditor = document.getElementById('element-editor');
-            if (!elementEditor) return;
-            
-            elementEditor.innerHTML = `
-                <div class="element-editor__title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="loading-spinner">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M8 12l2 2 4-4"></path>
-                    </svg>
-                    Loading ${component.type.charAt(0).toUpperCase() + component.type.slice(1)} Editor
-                </div>
-                <div class="element-editor__subtitle">Please wait while we load the design panel...</div>
-                
-                <div class="form-section">
-                    <div class="loading-state">
-                        <div class="loading-progress">
-                            <div class="loading-progress-bar"></div>
-                        </div>
-                        <p class="loading-text">Loading component editor...</p>
-                    </div>
-                </div>
-                
-                <style>
-                .loading-spinner {
-                    animation: spin 1s linear infinite;
-                }
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                .loading-progress {
-                    width: 100%;
-                    height: 4px;
-                    background: #e5e7eb;
-                    border-radius: 2px;
-                    overflow: hidden;
-                    margin: 16px 0;
-                }
-                .loading-progress-bar {
-                    height: 100%;
-                    background: #3b82f6;
-                    border-radius: 2px;
-                    animation: loading-progress 2s ease-in-out infinite;
-                }
-                @keyframes loading-progress {
-                    0% { width: 0%; }
-                    50% { width: 60%; }
-                    100% { width: 100%; }
-                }
-                .loading-text {
-                    text-align: center;
-                    color: #6b7280;
-                    font-size: 14px;
-                    margin: 0;
-                }
-                </style>
-            `;
-        },
-        
-        loadDesignPanelContent(html, component, componentId) {
-            const elementEditor = document.getElementById('element-editor');
-            if (!elementEditor) return;
-            
-            // Load the design panel HTML
-            elementEditor.innerHTML = html;
-            
-            // Add component metadata to the design panel
-            elementEditor.dataset.componentId = componentId;
-            elementEditor.dataset.componentType = component.type;
-            
-            // Dispatch event for component-specific initialization
-            GMKB.dispatch('gmkb:design-panel-loaded', {
-                componentId: componentId,
-                componentType: component.type,
-                component: component,
-                panelElement: elementEditor
-            });
-            
-            console.log(`📋 ComponentManager: Design panel content loaded for ${component.type}`);
-            
-            // Initialize any JavaScript in the loaded panel
-            this.initializeDesignPanelScripts(elementEditor);
-        },
-        
-        showDesignPanelError(component, errorMessage) {
-            const elementEditor = document.getElementById('element-editor');
-            if (!elementEditor) return;
-            
-            elementEditor.innerHTML = `
-                <div class="element-editor__title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="15" y1="9" x2="9" y2="15"></line>
-                        <line x1="9" y1="9" x2="15" y2="15"></line>
-                    </svg>
-                    ${component.type.charAt(0).toUpperCase() + component.type.slice(1)} Editor Error
-                </div>
-                <div class="element-editor__subtitle">Unable to load the design panel</div>
-                
-                <div class="form-section">
-                    <div class="error-state">
-                        <p class="error-message">${errorMessage}</p>
-                        <div class="error-actions">
-                            <button class="btn btn--secondary btn--small" onclick="window.GMKB.systems.ComponentManager.editComponent('${component.id}')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-                                </svg>
-                                Retry
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <style>
-                .error-state {
-                    text-align: center;
-                    padding: 20px;
-                }
-                .error-message {
-                    color: #ef4444;
-                    margin-bottom: 16px;
-                    padding: 12px;
-                    background: #fef2f2;
-                    border: 1px solid #fecaca;
-                    border-radius: 6px;
-                }
-                .error-actions {
-                    display: flex;
-                    justify-content: center;
-                }
-                </style>
-            `;
-        },
-        
-        initializeDesignPanelScripts(panelElement) {
-            // Execute any script tags in the loaded design panel
-            const scripts = panelElement.querySelectorAll('script');
-            scripts.forEach(script => {
-                if (script.textContent.trim()) {
-                    try {
-                        // Create new script element to ensure execution
-                        const newScript = document.createElement('script');
-                        newScript.textContent = script.textContent;
-                        document.head.appendChild(newScript);
-                        document.head.removeChild(newScript);
-                    } catch (error) {
-                        console.warn('Error executing design panel script:', error);
-                    }
-                }
-            });
-            
-            console.log('🔧 ComponentManager: Design panel scripts initialized');
-        },
-        
         // Load saved components from state and render them
         async loadSavedComponents() {
             const state = StateManager.getState();
@@ -842,6 +500,470 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             }
             
             console.log(`✅ ComponentManager: Loaded ${componentIds.length} saved components`);
+        },
+        
+        /**
+         * ROOT FIX: Render component using server-side AJAX integration
+         * @param {string} componentId - Component ID to render
+         * @returns {Promise<boolean>} Success status
+         */
+        async renderComponent(componentId) {
+            try {
+                const state = StateManager.getState();
+                const component = state.components[componentId];
+                
+                if (!component) {
+                    console.error(`❌ ComponentManager: Component ${componentId} not found in state`);
+                    return false;
+                }
+                
+                console.log(`🎨 ComponentManager: Rendering component ${componentId} (${component.type})`);
+                
+                // Make AJAX call to render component server-side
+                const response = await fetch(window.gmkbData.ajaxUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'guestify_render_component',
+                        nonce: window.gmkbData.nonce,
+                        component: component.type,
+                        props: JSON.stringify({
+                            ...component.data,
+                            post_id: window.gmkbData.postId,
+                            component_id: componentId
+                        })
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.html) {
+                    // Insert rendered HTML into DOM
+                    this.insertComponentIntoDOM(componentId, data.data.html, component);
+                    
+                    console.log(`✅ ComponentManager: Successfully rendered ${componentId} via server`);
+                    return true;
+                } else {
+                    console.warn(`⚠️ ComponentManager: Server rendering failed for ${componentId}, trying fallback`);
+                    console.warn('Server response:', data);
+                    
+                    // Fallback to client-side rendering
+                    return this.renderComponentFallback(componentId);
+                }
+                
+            } catch (error) {
+                console.error(`❌ ComponentManager: Error rendering ${componentId}:`, error);
+                
+                // Fallback to client-side rendering on error
+                return this.renderComponentFallback(componentId);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Fallback component rendering (client-side)
+         * @param {string} componentId - Component ID to render
+         * @returns {boolean} Success status
+         */
+        renderComponentFallback(componentId) {
+            try {
+                const state = StateManager.getState();
+                const component = state.components[componentId];
+                
+                if (!component) {
+                    console.error(`❌ ComponentManager: Component ${componentId} not found for fallback`);
+                    return false;
+                }
+                
+                console.log(`🔧 ComponentManager: Using fallback rendering for ${componentId} (${component.type})`);
+                
+                // Generate basic HTML for the component type
+                const fallbackHtml = this.generateFallbackHTML(component);
+                
+                // Insert into DOM
+                this.insertComponentIntoDOM(componentId, fallbackHtml, component);
+                
+                console.log(`✅ ComponentManager: Fallback rendering complete for ${componentId}`);
+                return true;
+                
+            } catch (error) {
+                console.error(`❌ ComponentManager: Fallback rendering failed for ${componentId}:`, error);
+                return false;
+            }
+        },
+        
+        /**
+         * ROOT FIX: Insert rendered component HTML into the DOM
+         * @param {string} componentId - Component ID
+         * @param {string} html - Rendered HTML
+         * @param {Object} component - Component data
+         */
+        insertComponentIntoDOM(componentId, html, component) {
+            const previewContainer = document.getElementById('media-kit-preview');
+            if (!previewContainer) {
+                console.error('❌ ComponentManager: Preview container not found');
+                return;
+            }
+            
+            // Remove existing component if it exists
+            const existingElement = document.getElementById(componentId);
+            if (existingElement) {
+                existingElement.remove();
+            }
+            
+            // Create wrapper element
+            const componentElement = document.createElement('div');
+            componentElement.id = componentId;
+            componentElement.className = 'media-kit-component';
+            componentElement.setAttribute('data-component-type', component.type);
+            componentElement.setAttribute('data-component-id', componentId);
+            
+            // Insert the component HTML
+            componentElement.innerHTML = html;
+            
+            // Append to preview container
+            previewContainer.appendChild(componentElement);
+            
+            // Attach component interaction handlers
+            this.attachComponentHandlers(componentElement, componentId);
+            
+            // Hide empty state since we have components
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            
+            console.log(`✅ ComponentManager: Inserted ${componentId} into DOM`);
+        },
+        
+        /**
+         * ROOT FIX: Attach interaction handlers to component elements
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        attachComponentHandlers(componentElement, componentId) {
+            // Add component controls overlay
+            const controlsOverlay = document.createElement('div');
+            controlsOverlay.className = 'component-controls';
+            controlsOverlay.innerHTML = `
+                <div class="component-controls__toolbar">
+                    <button class="component-control component-control--edit" data-action="edit" title="Edit Component">
+                        ✏️
+                    </button>
+                    <button class="component-control component-control--move" data-action="move" title="Move Component">
+                        ↕️
+                    </button>
+                    <button class="component-control component-control--delete" data-action="delete" title="Delete Component">
+                        🗑️
+                    </button>
+                </div>
+            `;
+            
+            // Insert controls at the beginning of component
+            componentElement.insertBefore(controlsOverlay, componentElement.firstChild);
+            
+            // Attach event listeners
+            controlsOverlay.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = e.target.dataset.action;
+                
+                switch (action) {
+                    case 'edit':
+                        this.editComponent(componentId);
+                        break;
+                    case 'move':
+                        this.moveComponent(componentId);
+                        break;
+                    case 'delete':
+                        this.deleteComponent(componentId);
+                        break;
+                }
+            });
+            
+            // Show controls on hover
+            componentElement.addEventListener('mouseenter', () => {
+                controlsOverlay.style.opacity = '1';
+            });
+            
+            componentElement.addEventListener('mouseleave', () => {
+                controlsOverlay.style.opacity = '0';
+            });
+            
+            console.log(`🎛️ ComponentManager: Attached handlers to ${componentId}`);
+        },
+        
+        /**
+         * ROOT FIX: Generate fallback HTML for component types
+         * @param {Object} component - Component data
+         * @returns {string} Fallback HTML
+         */
+        generateFallbackHTML(component) {
+            const data = component.data || {};
+            const type = component.type;
+            
+            const fallbackTemplates = {
+                'hero': `
+                    <div class="hero-component">
+                        <h1 class="hero-title">${data.title || 'Your Name Here'}</h1>
+                        <p class="hero-subtitle">${data.subtitle || 'Professional Speaker & Expert'}</p>
+                        <p class="hero-description">${data.description || 'Add your professional description here.'}</p>
+                    </div>
+                `,
+                'biography': `
+                    <div class="biography-component">
+                        <h2>About Me</h2>
+                        <p>${data.bio || 'Share your professional background and expertise here.'}</p>
+                    </div>
+                `,
+                'topics': `
+                    <div class="topics-component">
+                        <h2>Speaking Topics</h2>
+                        <div class="topics-list">
+                            ${(data.topics || ['Topic 1', 'Topic 2', 'Topic 3']).map(topic => 
+                                `<div class="topic-item">
+                                    <h3>${topic}</h3>
+                                    <p>Description for ${topic}</p>
+                                </div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `,
+                'social': `
+                    <div class="social-component">
+                        <h2>Connect With Me</h2>
+                        <div class="social-links">
+                            <a href="#" class="social-link">🐦 Twitter</a>
+                            <a href="#" class="social-link">💼 LinkedIn</a>
+                            <a href="#" class="social-link">📸 Instagram</a>
+                        </div>
+                    </div>
+                `,
+                'call-to-action': `
+                    <div class="cta-component">
+                        <h2>${data.title || 'Ready to Book Me?'}</h2>
+                        <p>${data.description || 'Let\'s discuss how I can add value to your event.'}</p>
+                        <button class="cta-button">${data.buttonText || 'Contact Me'}</button>
+                    </div>
+                `
+            };
+            
+            return fallbackTemplates[type] || `
+                <div class="generic-component">
+                    <h2>${type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Component</h2>
+                    <p>This component is ready for customization.</p>
+                </div>
+            `;
+        },
+        
+        /**
+         * ROOT FIX: Edit component (opens design panel)
+         * @param {string} componentId - Component ID to edit
+         */
+        async editComponent(componentId) {
+            console.log(`✏️ ComponentManager: Opening editor for ${componentId}`);
+            
+            const state = StateManager.getState();
+            const component = state.components[componentId];
+            
+            if (!component) {
+                console.error(`Component ${componentId} not found`);
+                return;
+            }
+            
+            try {
+                // Load design panel from server
+                const response = await fetch(window.gmkbData.ajaxUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'guestify_render_design_panel',
+                        nonce: window.gmkbData.nonce,
+                        component: component.type
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.html) {
+                    this.showDesignPanel(data.data.html, componentId);
+                } else {
+                    // Fallback design panel
+                    this.showDesignPanel(this.getGenericDesignPanel(component), componentId);
+                }
+                
+            } catch (error) {
+                console.error('Error loading design panel:', error);
+                this.showDesignPanel(this.getGenericDesignPanel(component), componentId);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Show design panel modal
+         * @param {string} html - Design panel HTML
+         * @param {string} componentId - Component ID being edited
+         */
+        showDesignPanel(html, componentId) {
+            // Create or get design panel modal
+            let modal = document.getElementById('design-panel-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'design-panel-modal';
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content design-panel-modal">
+                        <div class="modal-header">
+                            <h3>Edit Component</h3>
+                            <button class="modal-close" data-action="close">×</button>
+                        </div>
+                        <div class="modal-body" id="design-panel-content">
+                            <!-- Design panel content goes here -->
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn--secondary" data-action="cancel">Cancel</button>
+                            <button class="btn btn--primary" data-action="save">Save Changes</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Attach modal event listeners
+                modal.addEventListener('click', (e) => {
+                    const action = e.target.dataset.action;
+                    if (action === 'close' || action === 'cancel' || e.target === modal) {
+                        modal.style.display = 'none';
+                    } else if (action === 'save') {
+                        this.saveComponentChanges(componentId);
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Insert design panel content
+            const contentContainer = modal.querySelector('#design-panel-content');
+            contentContainer.innerHTML = html;
+            
+            // Show modal
+            modal.style.display = 'flex';
+            
+            console.log(`✅ ComponentManager: Design panel opened for ${componentId}`);
+        },
+        
+        /**
+         * ROOT FIX: Get generic design panel HTML
+         * @param {Object} component - Component data
+         * @returns {string} Generic design panel HTML
+         */
+        getGenericDesignPanel(component) {
+            return `
+                <div class="design-panel-content">
+                    <h4>Edit ${component.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
+                    <p>This component supports inline editing. Click directly on text in the preview to edit it.</p>
+                    <div class="form-group">
+                        <label>Component Type:</label>
+                        <input type="text" value="${component.type}" readonly class="form-input" />
+                    </div>
+                    <div class="form-group">
+                        <label>Component ID:</label>
+                        <input type="text" value="${component.id}" readonly class="form-input" />
+                    </div>
+                </div>
+            `;
+        },
+        
+        /**
+         * ROOT FIX: Save component changes from design panel
+         * @param {string} componentId - Component ID
+         */
+        saveComponentChanges(componentId) {
+            console.log(`💾 ComponentManager: Saving changes for ${componentId}`);
+            
+            // Get form data from design panel
+            const modal = document.getElementById('design-panel-modal');
+            if (!modal) return;
+            
+            const formData = {};
+            const inputs = modal.querySelectorAll('input, textarea, select');
+            
+            inputs.forEach(input => {
+                if (input.name) {
+                    formData[input.name] = input.value;
+                }
+            });
+            
+            // Update component in state
+            StateManager.updateComponent(componentId, { data: formData });
+            
+            console.log(`✅ ComponentManager: Saved changes for ${componentId}`);
+        },
+        
+        /**
+         * ROOT FIX: Move component position
+         * @param {string} componentId - Component ID to move
+         */
+        moveComponent(componentId) {
+            console.log(`↕️ ComponentManager: Moving ${componentId}`);
+            
+            // Simple implementation: ask user for direction
+            const direction = prompt('Move component up or down? (type "up" or "down")');
+            
+            if (direction === 'up' || direction === 'down') {
+                const state = StateManager.getState();
+                const currentIndex = state.layout.indexOf(componentId);
+                
+                if (currentIndex === -1) return;
+                
+                const newLayout = [...state.layout];
+                
+                if (direction === 'up' && currentIndex > 0) {
+                    // Swap with previous item
+                    [newLayout[currentIndex], newLayout[currentIndex - 1]] = 
+                    [newLayout[currentIndex - 1], newLayout[currentIndex]];
+                    
+                    StateManager.setState({ layout: newLayout });
+                    this.reorderComponentsInDOM();
+                } else if (direction === 'down' && currentIndex < newLayout.length - 1) {
+                    // Swap with next item
+                    [newLayout[currentIndex], newLayout[currentIndex + 1]] = 
+                    [newLayout[currentIndex + 1], newLayout[currentIndex]];
+                    
+                    StateManager.setState({ layout: newLayout });
+                    this.reorderComponentsInDOM();
+                }
+            }
+        },
+        
+        /**
+         * ROOT FIX: Delete component
+         * @param {string} componentId - Component ID to delete
+         */
+        deleteComponent(componentId) {
+            if (confirm('Are you sure you want to delete this component?')) {
+                console.log(`🗑️ ComponentManager: Deleting ${componentId}`);
+                this.removeComponent(componentId);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Reorder components in DOM to match layout state
+         */
+        reorderComponentsInDOM() {
+            const state = StateManager.getState();
+            const previewContainer = document.getElementById('media-kit-preview');
+            
+            if (!previewContainer) return;
+            
+            // Reorder DOM elements to match layout order
+            state.layout.forEach((componentId, index) => {
+                const element = document.getElementById(componentId);
+                if (element) {
+                    previewContainer.appendChild(element);
+                }
+            });
+            
+            console.log('✅ ComponentManager: DOM reordered to match layout');
         }
     };
 
@@ -896,7 +1018,8 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             this.eventState = {
                 savedStateLoaded: false,
                 availableComponentsReady: false,
-                savedStateData: null
+                savedStateData: null,
+                hasSavedComponents: false // Track if we actually have saved components
             };
             
             // Listen for saved state loaded event
@@ -904,6 +1027,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 console.log('🔄 UIManager: Saved state loaded event received', event.detail);
                 this.eventState.savedStateLoaded = true;
                 this.eventState.savedStateData = event.detail;
+                this.eventState.hasSavedComponents = true; // We have components to load
                 this.checkReadyToLoadComponents();
             });
             
@@ -928,48 +1052,63 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         
         // ROOT FIX: Event-driven coordination - NO setTimeout polling
         async checkReadyToLoadComponents() {
-            // Only proceed if BOTH events have fired
-            if (this.eventState.savedStateLoaded && this.eventState.availableComponentsReady) {
-                console.log('🎯 UIManager: Both events ready - loading saved components');
-                
-                if (GMKB.systems.ComponentManager && GMKB.systems.ComponentManager.loadSavedComponents) {
-                    try {
-                        await GMKB.systems.ComponentManager.loadSavedComponents();
-                        console.log('✅ UIManager: Saved components loaded successfully');
-                    } catch (error) {
-                        console.error('❌ UIManager: Error loading saved components:', error);
+            console.log('🎯 UIManager: Checking readiness - savedState:', this.eventState.savedStateLoaded, 'availableComponents:', this.eventState.availableComponentsReady, 'hasSavedComponents:', this.eventState.hasSavedComponents);
+            
+            // If we have saved components, wait for both events
+            if (this.eventState.hasSavedComponents) {
+                if (this.eventState.savedStateLoaded && this.eventState.availableComponentsReady) {
+                    console.log('🎯 UIManager: Both events ready - loading saved components');
+                    
+                    if (GMKB.systems.ComponentManager && GMKB.systems.ComponentManager.loadSavedComponents) {
+                        try {
+                            await GMKB.systems.ComponentManager.loadSavedComponents();
+                            console.log('✅ UIManager: Saved components loaded successfully');
+                        } catch (error) {
+                            console.error('❌ UIManager: Error loading saved components:', error);
+                        }
                     }
+                    
+                    this.resetEventState();
                 }
-                
-                // Reset state for future use
-                this.eventState.savedStateLoaded = false;
-                this.eventState.availableComponentsReady = false;
-                this.eventState.savedStateData = null;
             } else {
-                console.log('⏳ UIManager: Waiting for both events - savedState:', this.eventState.savedStateLoaded, 'availableComponents:', this.eventState.availableComponentsReady);
+                // No saved components - just need available components to be ready to show empty state
+                if (this.eventState.availableComponentsReady) {
+                    console.log('🎯 UIManager: No saved components - ensuring empty state is visible');
+                    this.ensureEmptyStateVisible();
+                    this.resetEventState();
+                }
+            }
+        },
+        
+        resetEventState() {
+            // Reset state for future use
+            this.eventState.savedStateLoaded = false;
+            this.eventState.availableComponentsReady = false;
+            this.eventState.savedStateData = null;
+            this.eventState.hasSavedComponents = false;
+        },
+        
+        ensureEmptyStateVisible() {
+            const emptyState = document.getElementById('empty-state');
+            const previewContainer = document.getElementById('media-kit-preview');
+            
+            if (emptyState && previewContainer) {
+                // Make sure empty state is visible
+                emptyState.style.display = 'block';
+                
+                // Clear any existing components that shouldn't be there
+                const existingComponents = previewContainer.querySelectorAll('.media-kit-component');
+                if (existingComponents.length === 0) {
+                    console.log('✅ UIManager: Empty state properly displayed');
+                } else {
+                    console.log('⚠️ UIManager: Found unexpected components in empty state:', existingComponents.length);
+                }
+            } else {
+                console.warn('⚠️ UIManager: Empty state or preview container not found');
             }
         },
         
         initializeButtons() {
-            // Save button - VANILLA JS event listeners
-            const saveBtn = document.getElementById('save-btn');
-            if (saveBtn && !saveBtn.dataset.gmkbInitialized) {
-                saveBtn.addEventListener('click', () => {
-                    const success = StateManager.saveToStorage();
-                    console.log(success ? '💾 Save successful' : '❌ Save failed');
-                    
-                    // Show user feedback with vanilla JS
-                    const originalText = saveBtn.textContent;
-                    saveBtn.textContent = success ? 'Saved!' : 'Save Failed';
-                    
-                    // Reset after 2 seconds
-                    setTimeout(() => {
-                        saveBtn.textContent = originalText;
-                    }, 2000);
-                });
-                saveBtn.dataset.gmkbInitialized = 'true';
-            }
-            
             // Component library button
             const addComponentBtn = document.getElementById('add-component-btn');
             if (addComponentBtn && !addComponentBtn.dataset.gmkbInitialized) {
@@ -986,26 +1125,6 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     this.showComponentLibrary();
                 });
                 addFirstComponentBtn.dataset.gmkbInitialized = 'true';
-            }
-            
-            // Auto-generate button
-            const autoGenerateBtn = document.getElementById('auto-generate-btn');
-            if (autoGenerateBtn && !autoGenerateBtn.dataset.gmkbInitialized) {
-                autoGenerateBtn.addEventListener('click', async () => {
-                    console.log('🎆 Auto-generate clicked (Server-Integrated mode)');
-                    await this.handleAutoGenerate(autoGenerateBtn);
-                });
-                autoGenerateBtn.dataset.gmkbInitialized = 'true';
-            }
-            
-            // MKCG Auto-generate button in dashboard
-            const mkcgAutoGenerateBtn = document.getElementById('mkcg-auto-generate-dashboard');
-            if (mkcgAutoGenerateBtn && !mkcgAutoGenerateBtn.dataset.gmkbInitialized) {
-                mkcgAutoGenerateBtn.addEventListener('click', async () => {
-                    console.log('🎆 MKCG Auto-generate clicked');
-                    await this.handleAutoGenerate(mkcgAutoGenerateBtn);
-                });
-                mkcgAutoGenerateBtn.dataset.gmkbInitialized = 'true';
             }
         },
         
@@ -1093,77 +1212,6 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             });
             
             console.log('✅ UIManager: Updated', componentButtons.length, 'component selection handlers');
-        },
-        
-        async handleAutoGenerate(button) {
-            // Get post ID for MKCG data
-            const postId = window.gmkbData?.postId;
-            
-            if (!postId) {
-                console.warn('⚠️ UIManager: No post ID available for auto-generation');
-                alert('Auto-generation requires a post ID. Please ensure you\'re editing a specific post.');
-                return;
-            }
-            
-            // Show loading state
-            const originalText = button.textContent;
-            button.textContent = 'Generating...';
-            button.disabled = true;
-            
-            try {
-                console.log('🎆 UIManager: Starting auto-generation for post', postId);
-                
-                // Define components to auto-generate (in order)
-                const componentsToGenerate = [
-                    { type: 'hero', data: { auto_generated: true } },
-                    { type: 'biography', data: { auto_generated: true } },
-                    { type: 'topics', data: { auto_generated: true } },
-                    { type: 'social', data: { auto_generated: true } }
-                ];
-                
-                let successCount = 0;
-                
-                // Generate each component
-                for (const component of componentsToGenerate) {
-                    try {
-                        console.log(`🔄 UIManager: Generating ${component.type} component...`);
-                        
-                        await GMKB.systems.ComponentManager.addComponent(
-                            component.type, 
-                            { ...component.data, post_id: postId },
-                            false // Use server-side rendering
-                        );
-                        
-                        successCount++;
-                        
-                        // Small delay between components for better UX
-                        await new Promise(resolve => setTimeout(resolve, 300));
-                        
-                    } catch (error) {
-                        console.warn(`⚠️ UIManager: Failed to generate ${component.type}:`, error);
-                        // Continue with other components even if one fails
-                    }
-                }
-                
-                console.log(`✅ UIManager: Auto-generation complete. Generated ${successCount} components.`);
-                
-                // Show success message
-                button.textContent = `Generated ${successCount} components!`;
-                
-                // Reset button after delay
-                setTimeout(() => {
-                    button.textContent = originalText;
-                    button.disabled = false;
-                }, 2000);
-                
-            } catch (error) {
-                console.error('❌ UIManager: Auto-generation error:', error);
-                alert('Auto-generation failed. Please try adding components manually.');
-                
-                // Reset button
-                button.textContent = originalText;
-                button.disabled = false;
-            }
         }
     };
 

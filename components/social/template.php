@@ -11,12 +11,7 @@ $defaultLinks = [
 $socialLinks = $links ?? $defaultLinks;
 ?>
 <div class="social-links editable-element" data-element="social" data-component="social" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="social">
-    <div class="element-controls">
-        <button class="control-btn" title="Move Up">↑</button>
-        <button class="control-btn" title="Move Down">↓</button>
-        <button class="control-btn" title="Duplicate">⧉</button>
-        <button class="control-btn" title="Delete">×</button>
-    </div>
+    <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
     <?php foreach ($socialLinks as $link): ?>
         <a href="<?php echo esc_url($link['url']); ?>" class="social-link" title="<?php echo esc_attr($link['title']); ?>">
             <?php if ($link['icon'] === 'twitter' || $link['title'] === 'Twitter'): ?>

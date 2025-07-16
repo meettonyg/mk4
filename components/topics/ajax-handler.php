@@ -1613,25 +1613,61 @@ class GMKB_Topics_Ajax_Handler {
     /**
      * ROOT FIX: AJAX handler for saving to custom post fields (topic_1, topic_2, etc.)
      * This is the NEW save method that writes directly to custom post fields
+     * ENHANCED: Better request validation and error reporting
      */
     public function ajax_save_custom_topics() {
+        // ROOT FIX: Enhanced request debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB CUSTOM TOPICS SAVE: ========== REQUEST START ==========');
+            error_log('GMKB CUSTOM TOPICS SAVE: Request method: ' . ($_SERVER['REQUEST_METHOD'] ?? 'unknown'));
+            error_log('GMKB CUSTOM TOPICS SAVE: Content type: ' . ($_SERVER['CONTENT_TYPE'] ?? 'unknown'));
+            error_log('GMKB CUSTOM TOPICS SAVE: Request size: ' . strlen(file_get_contents('php://input')) . ' bytes');
+            error_log('GMKB CUSTOM TOPICS SAVE: POST data keys: ' . implode(', ', array_keys($_POST)));
+            error_log('GMKB CUSTOM TOPICS SAVE: Raw POST data: ' . print_r($_POST, true));
+        }
+        
         try {
-            // ROOT FIX: Ensure WordPress context is available
+            // ROOT FIX: Enhanced WordPress context validation
             if (!$this->ensure_wordpress_context()) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB CUSTOM TOPICS SAVE: WordPress context check failed');
+                }
                 wp_send_json_error(array(
                     'message' => 'WordPress context not available',
                     'code' => 'WORDPRESS_CONTEXT_ERROR',
-                    'debug' => 'WordPress core functions not properly loaded for custom topics save'
+                    'debug' => 'WordPress core functions not properly loaded for custom topics save',
+                    'timestamp' => time()
                 ));
                 return;
             }
             
-            // Verify nonce for security
-            if (!wp_verify_nonce($_POST['nonce'] ?? '', 'guestify_media_kit_builder')) {
+            // ROOT FIX: Enhanced nonce validation with better error reporting
+            $provided_nonce = $_POST['nonce'] ?? '';
+            if (empty($provided_nonce)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB CUSTOM TOPICS SAVE: No nonce provided in request');
+                }
+                wp_send_json_error(array(
+                    'message' => 'Security token missing',
+                    'code' => 'NONCE_MISSING',
+                    'debug' => 'No nonce parameter provided in request',
+                    'expected_nonce_action' => 'guestify_media_kit_builder'
+                ));
+                return;
+            }
+            
+            if (!wp_verify_nonce($provided_nonce, 'guestify_media_kit_builder')) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB CUSTOM TOPICS SAVE: Nonce verification failed');
+                    error_log('GMKB CUSTOM TOPICS SAVE: Provided nonce: ' . $provided_nonce);
+                    error_log('GMKB CUSTOM TOPICS SAVE: Expected action: guestify_media_kit_builder');
+                }
                 wp_send_json_error(array(
                     'message' => 'Security verification failed',
                     'code' => 'INVALID_NONCE',
-                    'debug' => 'Nonce verification failed for custom topics save: ' . ($_POST['nonce'] ?? 'missing')
+                    'debug' => 'Nonce verification failed for custom topics save',
+                    'provided_nonce' => substr($provided_nonce, 0, 10) . '...', // Partial nonce for debugging
+                    'expected_action' => 'guestify_media_kit_builder'
                 ));
                 return;
             }
@@ -1639,12 +1675,20 @@ class GMKB_Topics_Ajax_Handler {
             // ROOT FIX: Enhanced user capability checking
             $user_check = $this->validate_user_permissions();
             if (!$user_check['valid']) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB CUSTOM TOPICS SAVE: User permission validation failed: ' . print_r($user_check, true));
+                }
                 wp_send_json_error(array(
                     'message' => $user_check['message'],
                     'code' => $user_check['code'],
-                    'debug' => $user_check['debug'] ?? ''
+                    'debug' => $user_check['debug'] ?? '',
+                    'user_id' => get_current_user_id()
                 ));
                 return;
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB CUSTOM TOPICS SAVE: All validations passed, processing request...');
             }
             
             $this->process_custom_topics_save_request();
@@ -1656,19 +1700,29 @@ class GMKB_Topics_Ajax_Handler {
                 'message' => 'Internal server error during custom topics save',
                 'code' => 'SERVER_ERROR',
                 'timestamp' => current_time('mysql'),
-                'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 'unknown'
+                'user_id' => function_exists('get_current_user_id') ? get_current_user_id() : 'unknown',
+                'error_type' => get_class($e)
             );
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB CUSTOM TOPICS SAVE: Exception caught: ' . $e->getMessage());
+                error_log('GMKB CUSTOM TOPICS SAVE: Exception trace: ' . $e->getTraceAsString());
+                
                 $error_details['debug'] = array(
                     'exception_message' => $e->getMessage(),
                     'exception_file' => $e->getFile(),
                     'exception_line' => $e->getLine(),
-                    'request_data_keys' => array_keys($_POST)
+                    'request_data_keys' => array_keys($_POST),
+                    'php_version' => PHP_VERSION,
+                    'wordpress_version' => get_bloginfo('version')
                 );
             }
             
             wp_send_json_error($error_details);
+        } finally {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB CUSTOM TOPICS SAVE: ========== REQUEST END ==========');
+            }
         }
     }
     
@@ -1709,36 +1763,90 @@ class GMKB_Topics_Ajax_Handler {
             error_log('GMKB ROOT FIX: - client_timestamp: ' . $client_timestamp);
         }
         
-        // ROOT FIX: Handle JSON string input from JavaScript (THE MISSING PIECE!)
+        // ROOT FIX: Enhanced JSON handling with comprehensive error checking
         if (is_string($topics_data)) {
             // ROOT FIX: WordPress automatically adds slashes to POST data, so we need to strip them first
+            $original_data = $topics_data;
             $topics_data = stripslashes($topics_data);
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB ROOT FIX: After stripslashes: ' . $topics_data);
+                error_log('GMKB ROOT FIX: JSON processing:');
+                error_log('GMKB ROOT FIX: - Original length: ' . strlen($original_data));
+                error_log('GMKB ROOT FIX: - After stripslashes length: ' . strlen($topics_data));
+                error_log('GMKB ROOT FIX: - First 200 chars: ' . substr($topics_data, 0, 200));
             }
             
-            $decoded_topics = json_decode($topics_data, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded_topics)) {
-                $topics_data = $decoded_topics;
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('GMKB ROOT FIX: Successfully decoded JSON topics data: ' . print_r($topics_data, true));
-                }
-            } else {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('GMKB ROOT FIX: Failed to decode topics JSON: ' . $topics_data);
-                    error_log('GMKB ROOT FIX: JSON error: ' . json_last_error_msg());
-                    error_log('GMKB ROOT FIX: Raw JSON string length: ' . strlen($topics_data));
-                    error_log('GMKB ROOT FIX: First 100 chars: ' . substr($topics_data, 0, 100));
-                }
+            // ROOT FIX: Additional validation before JSON decode
+            if (empty($topics_data) || strlen($topics_data) < 2) {
                 wp_send_json_error(array(
-                    'message' => 'Invalid JSON format in topics data',
-                    'code' => 'JSON_DECODE_ERROR',
-                    'json_error' => json_last_error_msg(),
-                    'raw_data' => substr($topics_data, 0, 200) // First 200 chars for debugging
+                    'message' => 'Empty or invalid topics data',
+                    'code' => 'EMPTY_TOPICS_DATA',
+                    'debug' => 'Topics data is empty or too short after processing',
+                    'original_length' => strlen($original_data),
+                    'processed_length' => strlen($topics_data)
                 ));
                 return;
             }
+            
+            // Check if data looks like JSON
+            if (!in_array($topics_data[0], ['{', '['])) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: Data does not appear to be JSON: ' . substr($topics_data, 0, 50));
+                }
+                wp_send_json_error(array(
+                    'message' => 'Topics data is not in JSON format',
+                    'code' => 'INVALID_JSON_FORMAT',
+                    'debug' => 'Data does not start with { or [',
+                    'first_char' => $topics_data[0],
+                    'preview' => substr($topics_data, 0, 100)
+                ));
+                return;
+            }
+            
+            $decoded_topics = json_decode($topics_data, true);
+            $json_error = json_last_error();
+            
+            if ($json_error === JSON_ERROR_NONE && is_array($decoded_topics)) {
+                $topics_data = $decoded_topics;
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: Successfully decoded JSON topics data:');
+                    error_log('GMKB ROOT FIX: - Decoded keys: ' . implode(', ', array_keys($decoded_topics)));
+                    error_log('GMKB ROOT FIX: - Topic count: ' . count($decoded_topics));
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB ROOT FIX: JSON decode failed:');
+                    error_log('GMKB ROOT FIX: - JSON error code: ' . $json_error);
+                    error_log('GMKB ROOT FIX: - JSON error message: ' . json_last_error_msg());
+                    error_log('GMKB ROOT FIX: - Input data: ' . $topics_data);
+                    error_log('GMKB ROOT FIX: - Decoded result type: ' . gettype($decoded_topics));
+                }
+                wp_send_json_error(array(
+                    'message' => 'Failed to decode topics JSON data',
+                    'code' => 'JSON_DECODE_ERROR',
+                    'json_error' => json_last_error_msg(),
+                    'json_error_code' => $json_error,
+                    'data_length' => strlen($topics_data),
+                    'data_preview' => substr($topics_data, 0, 200), // First 200 chars for debugging
+                    'decoded_type' => gettype($decoded_topics)
+                ));
+                return;
+            }
+        } elseif (is_array($topics_data)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Topics data is already an array with ' . count($topics_data) . ' items');
+            }
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Unexpected topics data type: ' . gettype($topics_data));
+            }
+            wp_send_json_error(array(
+                'message' => 'Invalid topics data format',
+                'code' => 'INVALID_DATA_TYPE',
+                'debug' => 'Topics data must be JSON string or array',
+                'received_type' => gettype($topics_data)
+            ));
+            return;
         }
         
         if (defined('WP_DEBUG') && WP_DEBUG) {

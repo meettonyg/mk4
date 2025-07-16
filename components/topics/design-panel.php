@@ -817,6 +817,77 @@
     50% { opacity: 0.5; }
 }
 
+/* ROOT FIX: User notification styles */
+.topics-notification {
+    margin-bottom: 16px;
+    border-radius: 6px;
+    border: 1px solid;
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: slideInDown 0.3s ease;
+}
+
+.topics-notification--error {
+    border-color: #f87171;
+    background: #fef2f2;
+}
+
+.topics-notification--success {
+    border-color: #34d399;
+    background: #ecfdf5;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+.topics-notification--error .notification-content {
+    color: #dc2626;
+}
+
+.topics-notification--success .notification-content {
+    color: #059669;
+}
+
+.notification-message {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideInDown {
+    0% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .topics-editor-header {
@@ -917,19 +988,24 @@ class EnhancedTopicsDesignPanel {
     }
 
     extractPostId() {
-        // Multiple strategies to get post ID
+        // Multiple strategies to get post ID - ROOT FIX: Enhanced detection
         this.postId = (
             new URLSearchParams(window.location.search).get('post_id') ||
             new URLSearchParams(window.location.search).get('p') ||
+            window.gmkbData?.postId ||                    // ROOT FIX: Correct global variable
             window.guestifyData?.postId ||
             window.guestifyMediaKit?.postId ||
-            document.querySelector('[data-post-id]')?.dataset.postId
+            document.querySelector('[data-post-id]')?.dataset.postId ||
+            document.querySelector('.topics-component')?.dataset.postId ||  // From preview element
+            null
         );
         
         this.postId = this.postId ? parseInt(this.postId, 10) : null;
         
         if (!this.postId) {
             console.warn('⚠️ No post ID detected for topics editor');
+            console.log('🔍 URL params:', new URLSearchParams(window.location.search).toString());
+            console.log('🔍 gmkbData:', window.gmkbData);
         } else {
             console.log(`✅ Post ID detected: ${this.postId}`);
         }
@@ -937,14 +1013,23 @@ class EnhancedTopicsDesignPanel {
 
     extractNonce() {
         this.nonce = (
+            window.gmkbData?.nonce ||            // ROOT FIX: Correct global variable name
             window.guestifyData?.nonce ||
             window.guestifyMediaKit?.nonce ||
             document.querySelector('input[name="_wpnonce"]')?.value ||
+            document.querySelector('meta[name="gmkb-nonce"]')?.content ||
             ''
         );
         
         if (!this.nonce) {
             console.warn('⚠️ No nonce detected - save functionality may fail');
+            console.log('🔍 Available globals:', {
+                gmkbData: !!window.gmkbData,
+                guestifyData: !!window.guestifyData,
+                guestifyMediaKit: !!window.guestifyMediaKit
+            });
+        } else {
+            console.log('✅ Nonce extracted successfully');
         }
     }
 
@@ -1250,11 +1335,14 @@ class EnhancedTopicsDesignPanel {
 
     handleTopicInput(e, topic) {
         const newValue = e.target.value;
+        const topicEl = e.target.closest('.live-topic-item');  // ROOT FIX: Get the topic element
         const charCount = topicEl.querySelector('.topic-chars');
         const qualityElements = topicEl.querySelectorAll('.quality-fill, .quality-score, .quality-label');
         
         // Update character count
-        charCount.textContent = `${newValue.length}/100`;
+        if (charCount) {
+            charCount.textContent = `${newValue.length}/100`;
+        }
         
         // Update quality in real-time
         const quality = this.calculateTopicQuality(newValue);
@@ -1264,10 +1352,16 @@ class EnhancedTopicsDesignPanel {
         const qualityScore = topicEl.querySelector('.quality-score');
         const qualityLabel = topicEl.querySelector('.quality-label');
         
-        qualityFill.style.width = `${quality}%`;
-        qualityFill.className = `quality-fill ${qualityLevel}`;
-        qualityScore.textContent = `${quality}%`;
-        qualityLabel.textContent = qualityLevel.toUpperCase();
+        if (qualityFill) {
+            qualityFill.style.width = `${quality}%`;
+            qualityFill.className = `quality-fill ${qualityLevel}`;
+        }
+        if (qualityScore) {
+            qualityScore.textContent = `${quality}%`;
+        }
+        if (qualityLabel) {
+            qualityLabel.textContent = qualityLevel.toUpperCase();
+        }
         
         // Mark as unsaved
         this.markUnsaved();
@@ -1480,41 +1574,133 @@ class EnhancedTopicsDesignPanel {
     }
 
     async performSave(saveType = 'manual') {
+        // ROOT FIX: Enhanced save validation and error handling
         if (!this.postId || !this.nonce) {
-            console.error('Cannot save: Missing post ID or nonce');
-            return;
+            const errorMsg = `Cannot save: Missing ${!this.postId ? 'post ID' : 'nonce'}`;
+            console.error('❌ Save validation failed:', errorMsg);
+            this.setSaveStatus('error', errorMsg);
+            this.showUserError('Save failed: Missing required data. Please refresh the page.');
+            return false;
+        }
+        
+        if (window.gmkbData?.debugMode) {
+            console.log('💾 Starting save operation:', {
+                saveType: saveType,
+                postId: this.postId,
+                topicsCount: this.topics.length,
+                hasNonce: !!this.nonce
+            });
         }
         
         this.setSaveStatus('saving');
         
         try {
+            // ROOT FIX: Enhanced topics data preparation with validation
             const topicsData = {};
+            let validTopicsCount = 0;
             
             this.topics.forEach((topic, index) => {
-                if (topic.title && topic.title.trim()) {
+                if (topic.title && topic.title.trim() && topic.title.trim().length >= 3) {
                     topicsData[topic.id] = topic.title.trim();
+                    validTopicsCount++;
+                } else if (window.gmkbData?.debugMode) {
+                    console.log(`⚠️ Skipping invalid topic ${index + 1}: "${topic.title}" (too short)`);
                 }
             });
             
-            const response = await this.sendAjaxRequest({
+            if (window.gmkbData?.debugMode) {
+                console.log('💾 Topics data prepared:', {
+                    totalTopics: this.topics.length,
+                    validTopics: validTopicsCount,
+                    topicsData: topicsData
+                });
+            }
+            
+            // ROOT FIX: Enhanced AJAX request with better error details
+            const requestData = {
                 action: 'save_custom_topics',
                 post_id: this.postId,
-                topics: JSON.stringify(topicsData),
+                topics: topicsData, // Will be JSON.stringify'd by sendAjaxRequest
                 save_type: saveType,
                 client_timestamp: Math.floor(Date.now() / 1000),
                 nonce: this.nonce
-            });
+            };
+            
+            if (window.gmkbData?.debugMode) {
+                console.log('💾 Sending AJAX request:', requestData);
+            }
+            
+            const response = await this.sendAjaxRequest(requestData);
             
             if (response.success) {
                 this.setSaveStatus('saved');
-                console.log('✅ Topics saved successfully:', response.data);
+                
+                if (window.gmkbData?.debugMode) {
+                    console.log('✅ Topics saved successfully:', response.data);
+                }
+                
+                // Show user success feedback
+                this.showUserSuccess(`Saved ${validTopicsCount} topic${validTopicsCount !== 1 ? 's' : ''} successfully!`);
+                
+                return true;
             } else {
-                throw new Error(response.data?.message || 'Save failed');
+                // ROOT FIX: Enhanced error handling with specific error types
+                const errorMsg = response.data?.message || response.message || 'Save operation failed';
+                const errorCode = response.data?.code || 'UNKNOWN_ERROR';
+                
+                console.error('❌ Server returned error:', {
+                    message: errorMsg,
+                    code: errorCode,
+                    fullResponse: response
+                });
+                
+                // Show user-friendly error message based on error code
+                let userMessage = errorMsg;
+                switch (errorCode) {
+                    case 'NONCE_MISSING':
+                    case 'INVALID_NONCE':
+                        userMessage = 'Security verification failed. Please refresh the page and try again.';
+                        break;
+                    case 'INSUFFICIENT_PERMISSIONS':
+                        userMessage = 'You do not have permission to save topics. Please check your user role.';
+                        break;
+                    case 'INVALID_POST_ID':
+                    case 'POST_NOT_FOUND':
+                        userMessage = 'The post could not be found. Please refresh the page.';
+                        break;
+                    case 'JSON_DECODE_ERROR':
+                        userMessage = 'Data format error. Please try saving again.';
+                        break;
+                    case 'VALIDATION_FAILED':
+                        userMessage = 'Some topics contain invalid content. Please check your entries.';
+                        break;
+                }
+                
+                this.setSaveStatus('error', userMessage);
+                this.showUserError(userMessage);
+                
+                throw new Error(errorMsg);
             }
             
         } catch (error) {
-            console.error('❌ Save failed:', error);
-            this.setSaveStatus('error', error.message);
+            console.error('❌ Save failed with exception:', {
+                error: error.message,
+                stack: error.stack,
+                saveType: saveType,
+                postId: this.postId
+            });
+            
+            const errorMessage = error.message || 'An unexpected error occurred while saving';
+            this.setSaveStatus('error', errorMessage);
+            
+            // Show user-friendly error for network/connection issues
+            if (error.message.includes('HTTP') || error.message.includes('fetch')) {
+                this.showUserError('Connection error. Please check your internet connection and try again.');
+            } else {
+                this.showUserError(errorMessage);
+            }
+            
+            return false;
         }
     }
 
@@ -1548,26 +1734,310 @@ class EnhancedTopicsDesignPanel {
         }
     }
 
-    // Utility methods
-    async sendAjaxRequest(data) {
-        const url = window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
+    // ROOT FIX: Add missing methods that are being called
+    showAddTopicPrompt() {
+        const addTopicPrompt = document.getElementById('add-topic-prompt');
+        const addTopicForm = document.getElementById('add-topic-form');
         
-        const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            formData.append(key, value);
-        });
+        if (addTopicPrompt) addTopicPrompt.style.display = 'block';
+        if (addTopicForm) addTopicForm.style.display = 'none';
+    }
+
+    hideAddTopicPrompt() {
+        const addTopicPrompt = document.getElementById('add-topic-prompt');
+        if (addTopicPrompt) addTopicPrompt.style.display = 'none';
+    }
+
+    showQualityOverview() {
+        const qualityOverview = document.getElementById('topics-quality-overview');
+        if (qualityOverview && this.topics.length > 0) {
+            qualityOverview.style.display = 'block';
+        }
+    }
+
+    updateTopicsCounter() {
+        const countEl = document.getElementById('live-topic-count');
+        if (countEl) {
+            countEl.textContent = this.topics.length;
+        }
+    }
+
+    updateQualityOverview() {
+        if (this.topics.length === 0) return;
+
+        const avgQuality = Math.round(
+            this.topics.reduce((sum, topic) => sum + topic.quality, 0) / this.topics.length
+        );
         
-        const response = await fetch(url, {
-            method: 'POST',
-            body: formData,
-            credentials: 'same-origin'
-        });
+        const completion = Math.round((this.topics.length / 10) * 100); // Assuming 10 is max
+        const excellentCount = this.topics.filter(t => t.quality >= 80).length;
+
+        const avgQualityEl = document.getElementById('average-quality');
+        const completionEl = document.getElementById('completion-rate');
+        const excellenceEl = document.getElementById('excellence-count');
+
+        if (avgQualityEl) avgQualityEl.textContent = `${avgQuality}%`;
+        if (completionEl) completionEl.textContent = `${completion}%`;
+        if (excellenceEl) excellenceEl.textContent = excellentCount;
+    }
+
+    checkIntegrationStatus() {
+        const statusDot = document.getElementById('integration-status-dot');
+        const statusText = document.getElementById('integration-status-text');
         
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (this.postId && this.topics.length > 0) {
+            if (statusDot) statusDot.dataset.status = 'connected';
+            if (statusText) statusText.textContent = `Found ${this.topics.length} topics`;
+        } else {
+            if (statusDot) statusDot.dataset.status = 'disconnected';
+            if (statusText) statusText.textContent = 'No topics data found';
+        }
+    }
+
+    markUnsaved() {
+        this.setSaveStatus('unsaved');
+    }
+
+    addNewTopic() {
+        const input = document.getElementById('new-topic-input');
+        const newTitle = input?.value?.trim();
+        
+        if (!newTitle || newTitle.length < 3) {
+            alert('Please enter a topic with at least 3 characters.');
+            return;
+        }
+
+        const newTopic = {
+            id: `topic_${Date.now()}`,
+            index: this.topics.length,
+            title: newTitle,
+            description: '',
+            source: 'manual',
+            quality: this.calculateTopicQuality(newTitle),
+            isValid: true
+        };
+
+        this.topics.push(newTopic);
+        this.renderTopicsList();
+        this.updateTopicsCounter();
+        this.updateQualityOverview();
+        this.scheduleAutoSave();
+
+        // Clear form
+        if (input) input.value = '';
+        this.cancelAddTopic();
+
+        console.log(`➕ New topic added: "${newTitle}"`);
+    }
+
+    cancelAddTopic() {
+        const addTopicForm = document.getElementById('add-topic-form');
+        const addTopicPrompt = document.getElementById('add-topic-prompt');
+        const input = document.getElementById('new-topic-input');
+        
+        if (addTopicForm) addTopicForm.style.display = 'none';
+        if (this.topics.length === 0 && addTopicPrompt) {
+            addTopicPrompt.style.display = 'block';
+        }
+        if (input) input.value = '';
+    }
+
+    validateNewTopicInput(input) {
+        const charCounter = document.querySelector('.char-counter');
+        const qualityIndicator = document.getElementById('new-topic-quality');
+        
+        if (charCounter) {
+            charCounter.textContent = `${input.value.length}/100`;
         }
         
-        return response.json();
+        if (qualityIndicator) {
+            const quality = this.calculateTopicQuality(input.value);
+            const level = this.getQualityLevel(quality);
+            const qualitySpan = qualityIndicator.querySelector('span');
+            if (qualitySpan) {
+                qualitySpan.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+                qualitySpan.className = level;
+            }
+        }
+    }
+
+    handleTopicReorder(oldIndex, newIndex) {
+        if (oldIndex === newIndex) return;
+        
+        // Reorder topics array
+        const topic = this.topics.splice(oldIndex, 1)[0];
+        this.topics.splice(newIndex, 0, topic);
+        
+        // Update indices
+        this.topics.forEach((topic, index) => {
+            topic.index = index;
+        });
+        
+        // Update preview
+        this.updatePreviewOrder();
+        
+        // Save changes
+        this.scheduleAutoSave();
+        
+        console.log(`🔄 Topic reordered: ${oldIndex} → ${newIndex}`);
+    }
+
+    updatePreviewOrder() {
+        // Update the preview component to match new order
+        if (!this.previewElement) return;
+        
+        const topicsContainer = this.previewElement.querySelector('.topics-container');
+        if (!topicsContainer) return;
+        
+        // Reorder preview elements to match new order
+        const topicItems = Array.from(topicsContainer.querySelectorAll('.topic-item'));
+        
+        this.topics.forEach((topic, newIndex) => {
+            const topicElement = topicItems.find(el => {
+                const titleEl = el.querySelector('.topic-title');
+                return titleEl && titleEl.textContent.trim() === topic.title;
+            });
+            
+            if (topicElement) {
+                topicsContainer.appendChild(topicElement);
+            }
+        });
+    }
+
+    removePreviewTopic(topicId) {
+        if (!this.previewElement) return;
+        
+        const index = parseInt(topicId.split('_')[1]) - 1;
+        const previewTopicItem = this.previewElement.querySelector(`.topic-item:nth-child(${index + 1})`);
+        
+        if (previewTopicItem) {
+            previewTopicItem.remove();
+        }
+    }
+
+    updateSectionTitle(title) {
+        if (!this.previewElement) return;
+        
+        const titleElement = this.previewElement.querySelector('.section-title');
+        if (titleElement) {
+            titleElement.textContent = title;
+        }
+        
+        this.scheduleAutoSave();
+    }
+
+    updateSectionIntro(intro) {
+        if (!this.previewElement) return;
+        
+        const introElement = this.previewElement.querySelector('.topics-introduction');
+        if (introElement) {
+            introElement.textContent = intro;
+        }
+        
+        this.scheduleAutoSave();
+    }
+
+    updateDisplayStyle(style) {
+        if (!this.previewElement) return;
+        
+        const container = this.previewElement.querySelector('.topics-container');
+        if (container) {
+            container.setAttribute('data-layout', style);
+        }
+        
+        this.scheduleAutoSave();
+    }
+
+    updateColumns(columns) {
+        if (!this.previewElement) return;
+        
+        this.previewElement.style.setProperty('--columns', columns);
+        this.scheduleAutoSave();
+    }
+
+    async loadFromMKCG() {
+        console.log('🔄 Loading topics from MKCG...');
+        // Implementation for MKCG integration
+        alert('MKCG integration coming soon!');
+    }
+
+    async syncWithMKCG() {
+        console.log('🔄 Syncing with MKCG...');
+        // Implementation for MKCG sync
+        alert('MKCG sync coming soon!');
+    }
+
+    // ROOT FIX: Enhanced AJAX communication with proper error handling
+    async sendAjaxRequest(data) {
+        const url = window.gmkbData?.ajaxUrl || window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
+        
+        if (window.gmkbData?.debugMode) {
+            console.log('🌐 AJAX Request Debug:', {
+                url: url,
+                action: data.action,
+                dataKeys: Object.keys(data),
+                payloadSize: JSON.stringify(data).length
+            });
+        }
+        
+        // ROOT FIX: Use URLSearchParams instead of FormData for better WordPress compatibility
+        const requestBody = new URLSearchParams();
+        Object.entries(data).forEach(([key, value]) => {
+            if (typeof value === 'object' && value !== null) {
+                // Ensure proper JSON encoding for complex data
+                requestBody.append(key, JSON.stringify(value));
+            } else {
+                requestBody.append(key, String(value || ''));
+            }
+        });
+        
+        try {
+            const startTime = performance.now();
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: requestBody,
+                credentials: 'same-origin'
+            });
+            
+            const endTime = performance.now();
+            
+            if (window.gmkbData?.debugMode) {
+                console.log(`🌐 AJAX Response: ${response.status} (${Math.round(endTime - startTime)}ms)`);
+            }
+            
+            if (!response.ok) {
+                // Get response text for better error reporting
+                const errorText = await response.text();
+                console.error('❌ AJAX Error Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    responseText: errorText.substring(0, 500) // First 500 chars
+                });
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const responseData = await response.json();
+            
+            if (window.gmkbData?.debugMode) {
+                console.log('🌐 AJAX Response Data:', responseData);
+            }
+            
+            return responseData;
+            
+        } catch (error) {
+            console.error('❌ AJAX Request Failed:', {
+                error: error.message,
+                url: url,
+                action: data.action,
+                requestSize: requestBody.toString().length
+            });
+            throw error;
+        }
     }
 
     escapeHtml(text) {
@@ -1583,7 +2053,73 @@ class EnhancedTopicsDesignPanel {
 
     showError(message) {
         console.error('Topics Design Panel Error:', message);
-        // Could implement a toast notification system here
+        this.showUserError(message);
+    }
+    
+    // ROOT FIX: User feedback methods for better UX
+    showUserError(message) {
+        // Remove any existing notifications
+        this.removeNotifications();
+        
+        const notification = document.createElement('div');
+        notification.className = 'topics-notification topics-notification--error';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <span class="notification-message">${this.escapeHtml(message)}</span>
+                <button class="notification-close" aria-label="Close">&times;</button>
+            </div>
+        `;
+        
+        this.insertNotification(notification);
+    }
+    
+    showUserSuccess(message) {
+        // Remove any existing notifications
+        this.removeNotifications();
+        
+        const notification = document.createElement('div');
+        notification.className = 'topics-notification topics-notification--success';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span class="notification-message">${this.escapeHtml(message)}</span>
+                <button class="notification-close" aria-label="Close">&times;</button>
+            </div>
+        `;
+        
+        this.insertNotification(notification);
+        
+        // Auto-hide success notifications after 3 seconds
+        setTimeout(() => {
+            this.removeNotifications();
+        }, 3000);
+    }
+    
+    insertNotification(notification) {
+        const topicsEditor = document.getElementById('topics-live-editor');
+        if (topicsEditor) {
+            topicsEditor.insertBefore(notification, topicsEditor.firstChild);
+            
+            // Add close button functionality
+            const closeBtn = notification.querySelector('.notification-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    this.removeNotifications();
+                });
+            }
+        }
+    }
+    
+    removeNotifications() {
+        const notifications = document.querySelectorAll('.topics-notification');
+        notifications.forEach(notification => notification.remove());
     }
 }
 

@@ -36,6 +36,10 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
+
+// ROOT FIX: Load AJAX handlers for component functionality
+require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
+require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 // === GEMINI FIX END ===
 
 /**
@@ -60,7 +64,18 @@ class Guestify_Media_Kit_Builder {
         
         // Initialize component system
         $this->component_discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components');
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: ComponentDiscovery initialized with dir: ' . GUESTIFY_PLUGIN_DIR . 'components');
+        }
+        
         $this->component_discovery->scan();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $debug_info = $this->component_discovery->getDebugInfo();
+            error_log('✅ GMKB: ComponentDiscovery scan complete. Found ' . $debug_info['components_count'] . ' components');
+            error_log('📋 GMKB: Available components: ' . implode(', ', $debug_info['component_names']));
+        }
         $this->component_loader = new ComponentLoader(GUESTIFY_PLUGIN_DIR . 'components', $this->component_discovery);
         $this->design_panel = new DesignPanel(GUESTIFY_PLUGIN_DIR . 'components');
         
@@ -86,7 +101,7 @@ class Guestify_Media_Kit_Builder {
         // Register REST API endpoints
         add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
         
-        // Register AJAX handlers
+        // Register AJAX handlers with consistent nonce validation
         add_action( 'wp_ajax_guestify_get_components', array( $this, 'ajax_get_components' ) );
         add_action( 'wp_ajax_nopriv_guestify_get_components', array( $this, 'ajax_get_components' ) );
         add_action( 'wp_ajax_guestify_render_component', array( $this, 'ajax_render_component' ) );
@@ -94,7 +109,7 @@ class Guestify_Media_Kit_Builder {
         add_action( 'wp_ajax_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
         add_action( 'wp_ajax_nopriv_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
         
-        // MISSING: Add save/load media kit state handlers
+        // Media kit save/load handlers with consistent nonce validation
         add_action( 'wp_ajax_guestify_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
         add_action( 'wp_ajax_nopriv_guestify_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
         add_action( 'wp_ajax_guestify_load_media_kit', array( $this, 'ajax_load_media_kit' ) );
@@ -239,7 +254,7 @@ class Guestify_Media_Kit_Builder {
             var gmkbData = <?php echo json_encode(array(
                 'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
                 'restUrl'       => esc_url_raw( rest_url() ),
-                'nonce'         => wp_create_nonce( 'gmkb_nonce' ),
+                'nonce'         => wp_create_nonce( 'guestify_media_kit_builder' ), // ROOT FIX: Match AJAX handler expectation
                 'restNonce'     => wp_create_nonce( 'wp_rest' ),
                 'postId'        => $post_id,
                 'pluginUrl'     => GUESTIFY_PLUGIN_URL,
@@ -362,10 +377,21 @@ class Guestify_Media_Kit_Builder {
      * REST API: Get all components
      */
     public function rest_get_components() {
+        $components = $this->component_discovery->getComponents();
+        $categories = $this->component_discovery->getCategories();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: rest_get_components - Found ' . count($components) . ' components');
+            error_log('GMKB: Components: ' . print_r(array_keys($components), true));
+        }
+        
+        // Ensure we return proper format for AJAX
         return array(
             'success' => true,
-            'components' => $this->component_discovery->getComponents(),
-            'categories' => $this->component_discovery->getCategories()
+            'components' => $components,
+            'categories' => $categories,
+            'total' => count($components),
+            'timestamp' => time()
         );
     }
     
@@ -394,43 +420,161 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * AJAX handlers
+     * AJAX handlers with consistent nonce validation
      */
     public function ajax_get_components() {
-        wp_send_json( $this->rest_get_components() );
+        // Verify nonce for security
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'guestify_media_kit_builder')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_get_components - Nonce verification failed');
+                error_log('GMKB: Provided nonce: ' . ($_POST['nonce'] ?? 'missing'));
+            }
+            wp_send_json_error('Security verification failed');
+            return;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ajax_get_components - Processing request');
+        }
+        
+        try {
+            // Get components from discovery system
+            $components = $this->component_discovery->getComponents();
+            $categories = $this->component_discovery->getCategories();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_get_components - Raw components count: ' . count($components));
+                error_log('GMKB: ajax_get_components - Component keys: ' . implode(', ', array_keys($components)));
+                error_log('GMKB: ajax_get_components - Categories count: ' . count($categories));
+            }
+            
+            // Get debug information
+            $debug_info = $this->component_discovery->getDebugInfo();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_get_components - Debug info: ' . print_r($debug_info, true));
+            }
+            
+            // Prepare response
+            $result = array(
+                'success' => true,
+                'components' => $components,
+                'categories' => $categories,
+                'total' => count($components),
+                'timestamp' => time(),
+                'debug' => $debug_info
+            );
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_get_components - Returning response with ' . count($components) . ' components');
+            }
+            
+            wp_send_json_success($result);
+            
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_get_components - Exception: ' . $e->getMessage());
+                error_log('GMKB: ajax_get_components - Exception trace: ' . $e->getTraceAsString());
+            }
+            
+            wp_send_json_error(array(
+                'message' => 'Failed to load components',
+                'error' => defined('WP_DEBUG') && WP_DEBUG ? $e->getMessage() : 'Internal error',
+                'debug' => defined('WP_DEBUG') && WP_DEBUG ? array(
+                    'exception' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ) : null
+            ));
+        }
     }
     
     public function ajax_render_component() {
+        // Verify nonce for security
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'guestify_media_kit_builder')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_render_component - Nonce verification failed');
+            }
+            wp_send_json_error('Security verification failed');
+            return;
+        }
+        
         $component_slug = isset( $_POST['component'] ) ? sanitize_text_field( $_POST['component'] ) : '';
         $props = isset( $_POST['props'] ) ? json_decode( stripslashes( $_POST['props'] ), true ) : array();
         
         if ( empty( $component_slug ) ) {
             wp_send_json_error( 'Component slug is required' );
+            return;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ajax_render_component - Rendering component: ' . $component_slug);
         }
         
         $html = $this->component_loader->loadComponent( $component_slug, $props );
         
         if ( $html === false ) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_render_component - Component not found: ' . $component_slug);
+            }
             wp_send_json_error( 'Component not found' );
+            return;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ajax_render_component - Successfully rendered: ' . $component_slug);
         }
         
         wp_send_json_success( array( 'html' => $html ) );
     }
     
     public function ajax_render_design_panel() {
+        // Verify nonce for security
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'guestify_media_kit_builder')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_render_design_panel - Nonce verification failed');
+            }
+            wp_send_json_error('Security verification failed');
+            return;
+        }
+        
         $component_slug = isset( $_POST['component'] ) ? sanitize_text_field( $_POST['component'] ) : '';
         
         if ( empty( $component_slug ) ) {
             wp_send_json_error( 'Component slug is required' );
+            return;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ajax_render_design_panel - Loading design panel for: ' . $component_slug);
         }
         
         $html = $this->component_loader->loadDesignPanel( $component_slug );
         
         if ( $html === false ) {
-            wp_send_json_error( 'Design panel not found' );
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ajax_render_design_panel - Design panel not found for: ' . $component_slug);
+            }
+            
+            // Provide fallback generic design panel
+            $html = $this->get_generic_design_panel( $component_slug );
+            
+            wp_send_json_success( array( 
+                'html' => $html,
+                'fallback' => true,
+                'component' => $component_slug
+            ) );
+            return;
         }
         
-        wp_send_json_success( array( 'html' => $html ) );
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ajax_render_design_panel - Successfully loaded design panel for: ' . $component_slug);
+        }
+        
+        wp_send_json_success( array( 
+            'html' => $html,
+            'component' => $component_slug
+        ) );
     }
     
     /**
@@ -454,11 +598,11 @@ class Guestify_Media_Kit_Builder {
         }
         
         // Verify nonce for security
-        if (!wp_verify_nonce($nonce, 'gmkb_nonce')) {
+        if (!wp_verify_nonce($nonce, 'guestify_media_kit_builder')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('❌ GMKB: Nonce verification failed');
                 error_log('  Provided nonce: ' . $nonce);
-                error_log('  Expected action: gmkb_nonce');
+                error_log('  Expected action: guestify_media_kit_builder');
             }
             wp_send_json_error('Invalid nonce');
             return;
@@ -584,6 +728,38 @@ class Guestify_Media_Kit_Builder {
                 'components_count' => count($state['components'] ?? [])
             ));
         }
+    }
+    
+    /**
+     * Get generic design panel for components without custom panels
+     */
+    private function get_generic_design_panel($component_slug) {
+        $component_name = ucwords(str_replace(array('-', '_'), ' ', $component_slug));
+        
+        return '
+            <div class="element-editor__title">' . esc_html($component_name) . ' Settings</div>
+            <div class="element-editor__subtitle">Configure this component</div>
+            
+            <div class="form-section">
+                <h4 class="form-section__title">Basic Properties</h4>
+                <div class="form-group">
+                    <label class="form-label">Component Name</label>
+                    <input type="text" class="form-input" data-property="name" placeholder="Component name">
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h4 class="form-section__title">Actions</h4>
+                <div class="form-help-text">
+                    This component doesn\'t have custom settings. You can edit it directly in the preview area.
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn--secondary btn--small" onclick="console.log(\'Edit component directly in preview\')">
+                        Edit in Preview
+                    </button>
+                </div>
+            </div>
+        ';
     }
     
     /**
