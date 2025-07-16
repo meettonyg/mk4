@@ -1959,6 +1959,17 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             window.GMKB = GMKB;
             Object.freeze(window.GMKB);
             
+            // ROOT FIX: Load toolbar interactions after GMKB system is ready
+            try {
+                console.log('🔧 GMKB: Loading toolbar interactions...');
+                await import('./ui/toolbar-interactions.js');
+                console.log('✅ GMKB: Toolbar interactions loaded successfully');
+            } catch (error) {
+                console.warn('⚠️ GMKB: Could not load toolbar interactions module:', error);
+                // Fallback: Load as script tag
+                loadToolbarInteractionsFallback();
+            }
+            
             console.log('🔒 GMKB: Namespace protected with Object.freeze()');
 
             // PHASE 2.3 FIX: Simplified system ready announcement
@@ -2030,8 +2041,45 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 </div>
             `;
         }
+        }
+        
+        /**
+        * ROOT FIX: Fallback method to load toolbar interactions as script tag
+     */
+    function loadToolbarInteractionsFallback() {
+        console.log('🔄 GMKB: Using fallback script loading for toolbar interactions...');
+        
+        const pluginUrl = window.gmkbData?.pluginUrl || '';
+        if (!pluginUrl) {
+            console.error('❌ GMKB: Cannot load toolbar interactions - plugin URL not available');
+            return;
+        }
+        
+        const scriptUrl = pluginUrl + 'js/ui/toolbar-interactions.js';
+        
+        // Check if script already loaded
+        const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
+        if (existingScript) {
+            console.log('ℹ️ GMKB: Toolbar interactions script already loaded');
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = scriptUrl;
+        script.async = true;
+        
+        script.onload = () => {
+            console.log('✅ GMKB: Toolbar interactions loaded via fallback script tag');
+        };
+        
+        script.onerror = () => {
+            console.error('❌ GMKB: Failed to load toolbar interactions via fallback');
+        };
+        
+        document.head.appendChild(script);
     }
-
+    
     /**
      * 4. Entry Point - Server-Integrated VANILLA JS
      * Wait for DOM to be fully loaded - NO jQuery

@@ -55,11 +55,65 @@ class ToolbarInteractions {
         this.autoSaveInterval = 30000; // 30 seconds
         this.autoSaveTimer = null;
         
-        // Initialize when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
-        } else {
-            this.init();
+        // ROOT FIX: Event-driven initialization to prevent race conditions
+        this.waitForGMKBReady();
+    }
+    
+    /**
+     * ROOT FIX: Wait for GMKB system to be ready before initializing
+     */
+    waitForGMKBReady() {
+        console.log('🔧 TOOLBAR: Waiting for GMKB system to be ready...');
+        
+        // Multiple event strategies to ensure reliable initialization
+        const initializeWhenReady = () => {
+            // Check if GMKB system is available
+            if (typeof window.GMKB !== 'undefined' && window.GMKB.systems) {
+                console.log('✅ TOOLBAR: GMKB system ready, initializing toolbar...');
+                this.init();
+                return true;
+            }
+            return false;
+        };
+        
+        // Strategy 1: Listen for GMKB ready events
+        document.addEventListener('gmkb:ready', () => {
+            console.log('🎯 TOOLBAR: Received gmkb:ready event');
+            initializeWhenReady();
+        });
+        
+        document.addEventListener('gmkb:all-systems-ready', () => {
+            console.log('🎯 TOOLBAR: Received gmkb:all-systems-ready event');
+            initializeWhenReady();
+        });
+        
+        // Strategy 2: Fallback - DOM ready with delay
+        const fallbackInit = () => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    // Add delay to ensure template rendering is complete
+                    setTimeout(() => {
+                        if (!this.isInitialized) {
+                            console.log('⚠️ TOOLBAR: Using fallback DOM ready initialization');
+                            this.init();
+                        }
+                    }, 1000);
+                });
+            } else {
+                // DOM already ready, wait a bit for template
+                setTimeout(() => {
+                    if (!this.isInitialized) {
+                        console.log('⚠️ TOOLBAR: Using fallback immediate initialization');
+                        this.init();
+                    }
+                }, 500);
+            }
+        };
+        
+        // Strategy 3: Try immediate initialization if GMKB already ready
+        if (!initializeWhenReady()) {
+            // GMKB not ready yet, set up fallback
+            fallbackInit();
         }
     }
     
@@ -105,18 +159,42 @@ class ToolbarInteractions {
     }
     
     /**
-     * Get references to toolbar buttons
+     * ROOT FIX: Get references to toolbar buttons with graceful error handling
      */
     getButtonReferences() {
-        this.saveBtn = document.getElementById('save-btn');
-        this.exportBtn = document.getElementById('export-btn');
-        this.undoBtn = document.getElementById('undo-btn');
-        this.redoBtn = document.getElementById('redo-btn');
-        this.themeBtn = document.getElementById('global-theme-btn');
-        this.shareBtn = document.getElementById('share-btn');
-        this.statusIndicator = document.querySelector('.toolbar__status');
+        // ROOT FIX: Enhanced button detection with null safety
+        console.log('🔍 TOOLBAR: Looking for toolbar buttons...');
         
-        // Log button availability
+        const buttonIds = {
+            saveBtn: 'save-btn',
+            exportBtn: 'export-btn', 
+            undoBtn: 'undo-btn',
+            redoBtn: 'redo-btn',
+            themeBtn: 'global-theme-btn',
+            shareBtn: 'share-btn'
+        };
+        
+        // Safely get button references
+        Object.entries(buttonIds).forEach(([property, id]) => {
+            const element = document.getElementById(id);
+            this[property] = element;
+            
+            if (element) {
+                console.log(`✅ TOOLBAR: Found ${id} button`);
+            } else {
+                console.warn(`⚠️ TOOLBAR: Button not found: ${id}`);
+            }
+        });
+        
+        // Get status indicator with graceful fallback
+        this.statusIndicator = document.querySelector('.toolbar__status');
+        if (this.statusIndicator) {
+            console.log('✅ TOOLBAR: Found status indicator');
+        } else {
+            console.warn('⚠️ TOOLBAR: Status indicator not found');
+        }
+        
+        // Log button availability with enhanced diagnostics
         const buttonStatus = {
             save: !!this.saveBtn,
             export: !!this.exportBtn,
@@ -127,11 +205,26 @@ class ToolbarInteractions {
             status: !!this.statusIndicator
         };
         
+        const foundCount = Object.values(buttonStatus).filter(Boolean).length;
+        const totalCount = Object.keys(buttonStatus).length;
+        
+        console.log(`📊 TOOLBAR: Button detection complete: ${foundCount}/${totalCount} found`);
         this.logger.debug('TOOLBAR', 'Button references obtained', buttonStatus);
         
-        // Warn about missing critical buttons
+        // ROOT FIX: Enhanced missing button handling
         if (!this.saveBtn) {
-            this.logger.error('TOOLBAR', 'CRITICAL: Save button not found! Save functionality will not work.');
+            this.logger.error('TOOLBAR', 'CRITICAL: Save button (#save-btn) not found! Save functionality will not work.');
+            console.error('❌ TOOLBAR: Save button missing - check template rendering timing');
+        }
+        
+        // ROOT FIX: Provide helpful diagnostics if most buttons are missing
+        if (foundCount < totalCount / 2) {
+            console.group('🔍 TOOLBAR: Button Detection Diagnostics');
+            console.warn(`Only ${foundCount}/${totalCount} toolbar buttons found`);
+            console.log('DOM State:', document.readyState);
+            console.log('Toolbar container exists:', !!document.querySelector('.toolbar'));
+            console.log('Template loaded:', !!document.querySelector('.builder'));
+            console.groupEnd();
         }
         
         return buttonStatus;
