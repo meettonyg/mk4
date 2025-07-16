@@ -551,10 +551,16 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 const data = await response.json();
                 
                 if (data.success && data.data && data.data.html) {
-                    // Insert rendered HTML into DOM
-                    this.insertComponentIntoDOM(componentId, data.data.html, component);
+                    // ROOT FIX: Pass script data from AJAX response to DOM insertion
+                    const ajaxScripts = data.data.scripts || null;
+                    
+                    // Insert rendered HTML into DOM with script data
+                    this.insertComponentIntoDOM(componentId, data.data.html, component, ajaxScripts);
                     
                     console.log(`✅ ComponentManager: Successfully rendered ${componentId} via server`);
+                    if (ajaxScripts && ajaxScripts.length > 0) {
+                        console.log(`📜 ComponentManager: ${ajaxScripts.length} scripts included in AJAX response`);
+                    }
                     return true;
                 } else {
                     console.warn(`⚠️ ComponentManager: Server rendering failed for ${componentId}:`, data);
@@ -622,8 +628,9 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
          * @param {string} componentId - Component ID
          * @param {string} html - Rendered HTML
          * @param {Object} component - Component data
+         * @param {Array} ajaxScripts - Script data from AJAX response (optional)
          */
-        insertComponentIntoDOM(componentId, html, component) {
+        insertComponentIntoDOM(componentId, html, component, ajaxScripts = null) {
             const previewContainer = document.getElementById('media-kit-preview');
             if (!previewContainer) {
                 console.error('❌ ComponentManager: Preview container not found');
@@ -652,8 +659,14 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Attach component interaction handlers
             this.attachComponentHandlers(componentElement, componentId);
             
-            // ROOT FIX: Load component scripts after DOM insertion
-            this.loadComponentScripts(component.type, componentId);
+            // ROOT FIX: Load component scripts - prioritize AJAX scripts if available
+            if (ajaxScripts && ajaxScripts.length > 0) {
+                console.log(`📜 ComponentManager: Loading ${ajaxScripts.length} scripts from AJAX response for ${component.type}`);
+                this.loadComponentScriptsFromAjaxData(ajaxScripts, componentId);
+            } else {
+                // Fallback to original script loading method
+                this.loadComponentScripts(component.type, componentId);
+            }
             
             // ROOT FIX: Use proper empty state management instead of direct manipulation
             // Let the UIManager handle empty state visibility based on actual component count
@@ -1305,6 +1318,91 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 console.log(`🗑️ ComponentManager: Deleting ${componentId}`);
                 this.removeComponent(componentId);
             }
+        },
+        
+        /**
+         * ROOT FIX: Load component scripts from AJAX response data
+         * @param {Array} scriptsData - Script data from AJAX response
+         * @param {string} componentId - Component ID
+         */
+        async loadComponentScriptsFromAjaxData(scriptsData, componentId) {
+            console.log(`📜 ComponentManager: Loading scripts from AJAX data for component ${componentId}`);
+            
+            for (const scriptInfo of scriptsData) {
+                try {
+                    // Load the script using the provided data
+                    await this.loadScriptFromAjaxData(scriptInfo, componentId);
+                    console.log(`✅ ComponentManager: Loaded ${scriptInfo.component} ${scriptInfo.type} script from AJAX data`);
+                } catch (error) {
+                    console.warn(`⚠️ ComponentManager: Failed to load ${scriptInfo.component} ${scriptInfo.type} script:`, error);
+                }
+            }
+        },
+        
+        /**
+         * ROOT FIX: Load individual script from AJAX data
+         * @param {Object} scriptInfo - Script information from AJAX response
+         * @param {string} componentId - Component ID
+         */
+        async loadScriptFromAjaxData(scriptInfo, componentId) {
+            return new Promise((resolve, reject) => {
+                // Check if script already loaded
+                const existingScript = document.querySelector(`script[src="${scriptInfo.src}"]`);
+                if (existingScript) {
+                    console.log(`ℹ️ ComponentManager: Script already loaded: ${scriptInfo.src}`);
+                    resolve();
+                    return;
+                }
+                
+                // Expose component data globally before script loads
+                if (scriptInfo.localize_data) {
+                    window[scriptInfo.localize_data.object_name] = scriptInfo.localize_data.data;
+                    console.log(`🔗 ComponentManager: Exposed global data: ${scriptInfo.localize_data.object_name}`);
+                }
+                
+                // Add coordination script before component script loads
+                if (scriptInfo.coordination_script) {
+                    const coordinationScript = document.createElement('script');
+                    coordinationScript.textContent = scriptInfo.coordination_script;
+                    document.head.appendChild(coordinationScript);
+                    console.log(`🔗 ComponentManager: Added coordination script for ${scriptInfo.component} ${scriptInfo.type}`);
+                }
+                
+                // Create and load the actual component script
+                const script = document.createElement('script');
+                script.src = scriptInfo.src;
+                script.async = true;
+                script.type = 'text/javascript';
+                script.setAttribute('data-gmkb-component', scriptInfo.component);
+                script.setAttribute('data-gmkb-type', scriptInfo.type);
+                script.setAttribute('data-gmkb-component-id', componentId);
+                
+                script.onload = () => {
+                    console.log(`✅ ComponentManager: AJAX script loaded: ${scriptInfo.src}`);
+                    
+                    // Special handling for topics panel script
+                    if (scriptInfo.component === 'topics' && scriptInfo.type === 'panel') {
+                        // Give the script time to initialize
+                        setTimeout(() => {
+                            if (window.topicsDesignPanelManager) {
+                                console.log('🎨 ComponentManager: Topics design panel manager initialized from AJAX script');
+                            } else {
+                                console.warn('⚠️ ComponentManager: Topics design panel manager not found after AJAX script load');
+                            }
+                        }, 100);
+                    }
+                    
+                    resolve();
+                };
+                
+                script.onerror = () => {
+                    console.error(`❌ ComponentManager: Failed to load AJAX script: ${scriptInfo.src}`);
+                    reject(new Error(`Failed to load script: ${scriptInfo.src}`));
+                };
+                
+                document.head.appendChild(script);
+                console.log(`📜 ComponentManager: Loading AJAX script: ${scriptInfo.src}`);
+            });
         },
         
         /**

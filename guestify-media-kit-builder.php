@@ -550,11 +550,22 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
+        // ROOT FIX: Get component scripts from ComponentLoader (approved component-level approach)
+        $component_scripts = $this->component_loader->getComponentScriptsForAjax($component_slug, $post_id);
+        
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB: ajax_render_component - Successfully rendered: ' . $component_slug);
+            if (!empty($component_scripts)) {
+                error_log('GMKB: ajax_render_component - Including ' . count($component_scripts) . ' scripts in response');
+            }
         }
         
-        wp_send_json_success( array( 'html' => $html ) );
+        wp_send_json_success( array( 
+            'html' => $html,
+            'scripts' => $component_scripts,
+            'component' => $component_slug,
+            'post_id' => $post_id
+        ) );
     }
     
     public function ajax_render_design_panel() {

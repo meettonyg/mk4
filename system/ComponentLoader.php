@@ -647,6 +647,140 @@ class ComponentLoader {
     }
     
     /**
+     * ROOT FIX: Get component scripts for AJAX response (ComponentLoader-level implementation)
+     * This is the approved component-level solution for AJAX script loading
+     * 
+     * @param string $componentName Component name
+     * @param int $post_id Post ID for localized data
+     * @return array Array of script information for client-side loading
+     */
+    public function getComponentScriptsForAjax($componentName, $post_id = 0) {
+        $scripts = array();
+        $plugin_url = defined('GUESTIFY_PLUGIN_URL') ? GUESTIFY_PLUGIN_URL : '';
+        $version = defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : time();
+        
+        // Use the same post ID detection logic as the component loading
+        if ($post_id === 0) {
+            $post_id = $this->getPostIdFromContext();
+        }
+        
+        // Check for component scripts with enhanced dependency management
+        $script_files = array(
+            'panel-script.js' => 'panel',
+            'script.js' => 'main'
+        );
+        
+        foreach ($script_files as $filename => $type) {
+            $script_path = $this->componentsDir . '/' . $componentName . '/' . $filename;
+            $script_url = $plugin_url . 'components/' . $componentName . '/' . $filename;
+            
+            if (file_exists($script_path)) {
+                $handle = 'gmkb-' . $componentName . '-' . $type . '-script';
+                
+                // Create script data for client-side loading (matches wp_enqueue_script pattern)
+                $scripts[] = array(
+                    'handle' => $handle,
+                    'src' => $script_url,
+                    'deps' => array('gmkb-main-script'), // Main GMKB system dependency
+                    'ver' => $version,
+                    'in_footer' => true,
+                    'type' => $type,
+                    'component' => $componentName,
+                    'localize_data' => array(
+                        'object_name' => $componentName . 'ComponentData',
+                        'data' => array(
+                            'postId' => $post_id,
+                            'ajaxUrl' => admin_url('admin-ajax.php'),
+                            'restUrl' => esc_url_raw(rest_url()),
+                            'nonce' => wp_create_nonce('guestify_media_kit_builder'),
+                            'restNonce' => wp_create_nonce('wp_rest'),
+                            'component' => $componentName,
+                            'componentType' => $componentName,
+                            'pluginUrl' => $plugin_url,
+                            'siteUrl' => home_url(),
+                            'gmkbReady' => true,
+                            'architecture' => 'componentloader-ajax-load',
+                            'timestamp' => time(),
+                            'debugMode' => defined('WP_DEBUG') && WP_DEBUG
+                        )
+                    ),
+                    'coordination_script' => $this->generateComponentCoordinationScript($componentName, $type)
+                );
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("✅ ComponentLoader: Prepared {$componentName} {$type} script for AJAX loading: {$script_url}");
+                }
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("✅ ComponentLoader: Generated " . count($scripts) . " scripts for AJAX response: {$componentName}");
+        }
+        
+        return $scripts;
+    }
+    
+    /**
+     * ROOT FIX: Generate coordination script for component (ComponentLoader-level)
+     * 
+     * @param string $componentName Component name
+     * @param string $type Script type (main|panel)
+     * @return string Coordination script code
+     */
+    private function generateComponentCoordinationScript($componentName, $type) {
+        return "// ROOT FIX: ComponentLoader GMKB Coordination for {$componentName} {$type}
+(function() {
+    'use strict';
+    
+    console.log('🔗 ComponentLoader AJAX: {$componentName} {$type} script loading...');
+    
+    function initializeComponent() {
+        if (typeof window !== 'undefined' && window.GMKB && document.readyState !== 'loading') {
+            console.log('✅ ComponentLoader AJAX: {$componentName} {$type} - GMKB system ready');
+            
+            if (window.GMKB.dispatch) {
+                window.GMKB.dispatch('gmkb:component-script-ready', {
+                    component: '{$componentName}',
+                    type: '{$type}',
+                    loadMethod: 'componentloader-ajax',
+                    timestamp: Date.now()
+                });
+            }
+            
+            // Special handling for topics design panel manager
+            if (!window.topicsDesignPanelManager && '{$componentName}' === 'topics' && '{$type}' === 'panel') {
+                console.log('🎨 ComponentLoader AJAX: Topics design panel manager will initialize when script loads');
+            }
+            
+        } else {
+            console.log('⏳ ComponentLoader AJAX: {$componentName} {$type} - waiting for GMKB system...');
+            
+            // Listen for GMKB initialization complete event
+            document.addEventListener('gmkb:initialization-complete', function(e) {
+                console.log('✅ ComponentLoader AJAX: {$componentName} {$type} - initialization complete event received');
+                
+                if (window.GMKB && window.GMKB.dispatch) {
+                    window.GMKB.dispatch('gmkb:component-script-ready', {
+                        component: '{$componentName}',
+                        type: '{$type}',
+                        loadMethod: 'componentloader-ajax-event',
+                        timestamp: Date.now()
+                    });
+                }
+            });
+        }
+    }
+    
+    // Initialize coordination
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeComponent);
+    } else {
+        initializeComponent();
+    }
+})();";
+    }
+    
+    /**
      * ROOT FIX: Get enhanced component loading status
      * 
      * @return array Status information for debugging
