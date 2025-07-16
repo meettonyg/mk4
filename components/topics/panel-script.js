@@ -1,216 +1,340 @@
 /**
- * Topics Design Panel Script - PHASE 3 GMKB EVENT-DRIVEN Implementation
- * Full GMKB event bus integration for seamless cross-panel communication
+ * Topics Design Panel Script - ROOT FIX ENHANCED STANDARDIZED PATTERN
+ * Complete functionality for topics design panel with proper save/load/preview sync
+ * Works with design-panel.php DOM structure (no embedded JavaScript conflicts)
  * 
- * PHASE 3 GMKB FEATURES:
- * ✅ GMKB Event Bus Integration - Native pub/sub panel communication
- * ✅ Cross-Component Event Coordination - Design panel ↔ preview ↔ component manager
- * ✅ State Manager Event Synchronization - Real-time bidirectional sync
- * ✅ UI Event Broadcasting - Panel actions to all subscribers
- * ✅ Event-Driven Panel Lifecycle - No polling, pure event coordination
- * 
- * @version 3.0.0-gmkb-event-driven
+ * @version 2.0.0-root-fix-enhanced
  */
 
-// GMKB ARCHITECTURE: Ensure GMKB is available
-if (!window.GMKB) {
-    console.error('🚨 Topics Design Panel: GMKB event system not available!');
-    throw new Error('GMKB event system required for topics design panel');
-}
-
+// ROOT FIX: Enhanced standardized pattern with full functionality
 class TopicsDesignPanelManager {
     constructor() {
         this.isInitialized = false;
-        this.stateManager = null;
-        this.sortable = null;
+        this.topics = [];
+        this.postId = null;
+        this.nonce = null;
         this.saveTimeout = null;
-        this.qualityTimer = null;
+        this.previewElement = null;
+        this.autoSaveEnabled = true;
         
-        // GMKB ARCHITECTURE: Event system integration
-        this.eventBus = window.GMKB;
-        this.eventSubscriptions = new Map();
-        
-        // UI elements
-        this.elements = {
-            container: null,
-            topicsList: null,
-            loading: null,
-            addPrompt: null,
-            addForm: null,
-            newTopicInput: null,
-            saveStatus: null,
-            counter: null,
-            qualityOverview: null
-        };
+        // UI element references
+        this.elements = {};
         
         // Configuration
         this.config = {
             maxTopics: 10,
             autoSaveDelay: 2000,
-            qualityUpdateDelay: 500,
-            animationDuration: 300
+            qualityUpdateDelay: 500
         };
         
-        console.log('🎨 GMKB Topics Design Panel: Initializing...');
+        // Quality thresholds
+        this.qualityThresholds = {
+            excellent: 80,
+            good: 60,
+            fair: 40,
+            poor: 0
+        };
+        
+        console.log('🎨 Topics Design Panel: Initializing (ROOT FIX Enhanced Pattern)...');
         this.init();
     }
 
     async init() {
-        // Wait for DOM
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.initialize());
-        } else {
-            this.initialize();
-        }
+        // ROOT FIX: Debug initialization flow
+        console.log('🚀 Topics Design Panel: init() called - starting lazy initialization...');
+        
+        // ROOT FIX: Lazy initialization - don't initialize immediately
+        // Wait for design panel DOM to be available
+        this.waitForDesignPanel();
     }
 
-    async initialize() {
-        try {
-            // Find UI elements
-            this.findUIElements();
-            
-            // Connect to state manager
-            await this.connectToStateManager();
-            
-            // Setup event handlers
-            this.setupEventListeners();
-            this.setupGMKBStateListeners();
-            this.setupSortable();
-            this.setupCollapsibleSections();
-            
-            // Register with GMKB system
-            this.registerWithGMKB();
-            
-            // Load initial data
-            await this.loadInitialData();
-            
-            // Initialize UI state
-            this.updateUI();
-            
-            this.isInitialized = true;
-            console.log('✅ GMKB Topics Design Panel: Initialization complete');
-            
-            // GMKB ARCHITECTURE: Trigger ready event through event bus
-            this.eventBus.dispatch('topics:design-panel:ready', {
-                panel: this,
-                topicsCount: this.stateManager?.getTopics().length || 0,
-                timestamp: Date.now(),
-                source: 'design-panel'
+    /**
+     * ROOT FIX: Wait for design panel DOM to be rendered before initializing
+     */
+    waitForDesignPanel() {
+        // Check if design panel DOM is already available
+        if (this.checkDesignPanelDOM()) {
+            console.log('✅ Topics Design Panel: DOM already available, initializing immediately');
+            this.initialize();
+            return;
+        }
+
+        console.log('⏳ Topics Design Panel: Waiting for design panel DOM to be rendered...');
+        console.log('🔍 Topics Design Panel: Checking for elements:', [
+            'topics-live-editor',
+            'live-topics-container', 
+            'live-topics-list',
+            'topics-loading'
+        ]);
+        
+        // Debug: Log current state
+        const currentElements = [
+            'topics-live-editor',
+            'live-topics-container', 
+            'live-topics-list',
+            'topics-loading'
+        ].map(id => ({
+            id,
+            exists: !!document.getElementById(id)
+        }));
+        console.log('🔍 Topics Design Panel: Current element status:', currentElements);
+        
+        // Use MutationObserver to detect when design panel is added to DOM
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (mutation.type === 'childList') {
+                    for (const node of mutation.addedNodes) {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // Check if this contains our design panel elements
+                            if (node.id === 'topics-live-editor' || 
+                                node.querySelector && node.querySelector('#topics-live-editor')) {
+                                console.log('✅ Topics Design Panel: DOM detected, initializing...');
+                                observer.disconnect();
+                                // Small delay to ensure DOM is fully rendered
+                                setTimeout(() => this.initialize(), 50);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Watch for changes in the sidebar and main content areas
+        const watchTargets = [
+            document.getElementById('gmkb-sidebar'),
+            document.querySelector('.sidebar-content'),
+            document.querySelector('.element-editor'),
+            document.body
+        ].filter(el => el !== null);
+
+        watchTargets.forEach(target => {
+            observer.observe(target, {
+                childList: true,
+                subtree: true
             });
-            
-        } catch (error) {
-            console.error('❌ Topics Design Panel: Initialization failed:', error);
-            this.showError('Failed to initialize design panel: ' + error.message);
+        });
+
+        // Fallback: periodically check for design panel (max 30 seconds)
+        let checkCount = 0;
+        const fallbackCheck = setInterval(() => {
+            checkCount++;
+            if (this.checkDesignPanelDOM()) {
+                console.log('✅ Topics Design Panel: DOM found via fallback check, initializing...');
+                clearInterval(fallbackCheck);
+                observer.disconnect();
+                this.initialize();
+            } else if (checkCount >= 60) { // 30 seconds
+                console.warn('⚠️ Topics Design Panel: Timeout waiting for design panel DOM');
+                clearInterval(fallbackCheck);
+                observer.disconnect();
+            }
+        }, 500);
+    }
+
+    /**
+     * ROOT FIX: Public method to force initialization (can be called externally)
+     * This allows the main system to trigger initialization when design panel is shown
+     */
+    forceInitialize() {
+        if (this.isInitialized) {
+            console.log('ℹ️ Topics Design Panel: Already initialized, skipping');
+            return;
+        }
+        
+        console.log('🚀 Topics Design Panel: Force initialization requested');
+        
+        if (this.checkDesignPanelDOM()) {
+            this.initialize();
+        } else {
+            console.warn('⚠️ Topics Design Panel: Cannot force initialize - DOM not ready');
+            // Try to wait for DOM anyway
+            this.waitForDesignPanel();
         }
     }
 
     /**
-     * Find and cache UI elements
+     * ROOT FIX: Public method to check if manager is ready
+     */
+    isReady() {
+        return this.isInitialized && this.checkDesignPanelDOM();
+    }
+
+    /**
+     * ROOT FIX: Check if design panel DOM elements are available
+     */
+    checkDesignPanelDOM() {
+        const requiredElements = [
+            'topics-live-editor',
+            'live-topics-container', 
+            'live-topics-list',
+            'topics-loading'
+        ];
+        
+        const elementStatus = requiredElements.map(id => ({
+            id,
+            element: document.getElementById(id),
+            exists: !!document.getElementById(id)
+        }));
+        
+        const allExist = elementStatus.every(item => item.exists);
+        
+        if (window.gmkbData?.debugMode || !allExist) {
+            console.log('🔍 Topics Design Panel: DOM Check Results:', {
+                allExist,
+                elementStatus,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        return allExist;
+    }
+
+    async initialize() {
+        // ROOT FIX: Safety check - don't initialize if DOM isn't ready
+        if (!this.checkDesignPanelDOM()) {
+            console.warn('⚠️ Topics Design Panel: Initialize called but DOM not ready - aborting');
+            console.log('🔍 Topics Design Panel: Will wait for DOM instead...');
+            this.waitForDesignPanel();
+            return;
+        }
+        
+        try {
+            console.log('🔄 Topics Design Panel: Starting initialization...');
+            
+            // Step 1: Find UI elements
+            this.findUIElements();
+            
+            // Step 2: Extract essential data
+            this.extractPostId();
+            this.extractNonce();
+            this.findPreviewElement();
+            
+            // Step 3: Setup event listeners
+            this.setupEventListeners();
+            this.setupCollapsibleSections();
+            
+            // Step 4: Load existing topics
+            await this.loadExistingTopics();
+            
+            // Step 5: Initialize UI state
+            this.updateUI();
+            this.checkIntegrationStatus();
+            
+            // Step 6: Setup auto-save
+            this.setupAutoSave();
+            
+            this.isInitialized = true;
+            console.log('✅ Topics Design Panel: Initialization complete (ROOT FIX Enhanced)');
+            
+            // STANDARDIZED: Dispatch ready event
+            this.dispatchReadyEvent();
+            
+        } catch (error) {
+            console.error('❌ Topics Design Panel: Initialization failed:', error);
+            this.showUserError('Failed to initialize design panel: ' + error.message);
+        }
+    }
+
+    /**
+     * STANDARDIZED: Find and cache UI elements
      */
     findUIElements() {
-        this.elements = {
-            container: document.getElementById('live-topics-container'),
-            topicsList: document.getElementById('live-topics-list'),
-            loading: document.getElementById('topics-loading'),
-            addPrompt: document.getElementById('add-topic-prompt'),
-            addForm: document.getElementById('add-topic-form'),
-            newTopicInput: document.getElementById('new-topic-input'),
-            saveStatus: document.getElementById('topics-save-status'),
-            counter: document.getElementById('live-topic-count'),
-            qualityOverview: document.getElementById('topics-quality-overview'),
-            
-            // Add topic interface
-            addFirstBtn: document.getElementById('add-first-topic-btn'),
-            confirmAddBtn: document.getElementById('confirm-add-topic'),
-            cancelAddBtn: document.getElementById('cancel-add-topic'),
-            
-            // Settings
-            sectionTitleInput: document.getElementById('section-title-input'),
-            sectionIntroInput: document.getElementById('section-intro-input'),
-            displayStyleSelect: document.getElementById('display-style-select'),
-            columnsSelect: document.getElementById('columns-select'),
-            
-            // Integration
-            loadFromMkcgBtn: document.getElementById('load-from-mkcg'),
-            syncWithMkcgBtn: document.getElementById('sync-with-mkcg'),
-            integrationStatus: document.getElementById('integration-status-text')
+        const requiredElements = {
+            container: 'live-topics-container',
+            topicsList: 'live-topics-list', 
+            loading: 'topics-loading',
+            addPrompt: 'add-topic-prompt',
+            addForm: 'add-topic-form',
+            newTopicInput: 'new-topic-input',
+            addFirstBtn: 'add-first-topic-btn',
+            confirmAddBtn: 'confirm-add-topic',
+            cancelAddBtn: 'cancel-add-topic',
+            saveStatus: 'topics-save-status',
+            counter: 'live-topic-count'
         };
 
-        // Validate required elements
-        const required = ['container', 'topicsList', 'loading'];
-        const missing = required.filter(key => !this.elements[key]);
+        // STANDARDIZED: Find elements with error checking
+        for (const [key, elementId] of Object.entries(requiredElements)) {
+            this.elements[key] = document.getElementById(elementId);
+            if (!this.elements[key]) {
+                console.warn(`⚠️ Topics Design Panel: Element '${elementId}' not found`);
+            }
+        }
+
+        // STANDARDIZED: Validate critical elements exist
+        const critical = ['container', 'topicsList', 'loading'];
+        const missing = critical.filter(key => !this.elements[key]);
         
         if (missing.length > 0) {
             throw new Error(`Missing required UI elements: ${missing.join(', ')}`);
         }
 
-        console.log('🎯 Topics Design Panel: UI elements found and cached');
+        console.log('✅ Topics Design Panel: UI elements found and cached');
     }
 
     /**
-     * Connect to global state manager
-     */
-    async connectToStateManager() {
-        // Ensure state manager exists
-        if (!window.topicsStateManager) {
-            // Wait a bit for it to initialize
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            if (!window.topicsStateManager) {
-                // Create it if still missing
-                const { TopicsStateManager } = await import('./script.js');
-                window.topicsStateManager = new TopicsStateManager();
-            }
-        }
-        
-        this.stateManager = window.topicsStateManager;
-        
-        // Extract and set post ID if needed
-        const postId = this.extractPostId();
-        if (postId && !this.stateManager.postId) {
-            this.stateManager.setPostId(postId);
-        }
-        
-        console.log('🔗 Topics Design Panel: Connected to state manager');
-    }
-
-    /**
-     * PHASE 1.1 FIX: Enhanced post ID extraction from comprehensive sources
+     * ROOT FIX: Enhanced post ID extraction with comprehensive fallbacks
      */
     extractPostId() {
-        // Priority 1: URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlPostId = urlParams.get('post_id') || urlParams.get('p');
+        this.postId = (
+            new URLSearchParams(window.location.search).get('post_id') ||
+            new URLSearchParams(window.location.search).get('p') ||
+            new URLSearchParams(window.location.search).get('page_id') ||
+            new URLSearchParams(window.location.search).get('mkcg_post') ||
+            window.gmkbData?.postId ||
+            window.topicsComponentData?.postId ||
+            window.guestifyData?.postId ||
+            document.querySelector('[data-post-id]')?.dataset.postId ||
+            document.querySelector('.topics-component')?.dataset.postId ||
+            null
+        );
         
-        if (urlPostId && parseInt(urlPostId) > 0) {
-            console.log('🎯 Phase 1.1: Post ID from URL:', urlPostId);
-            return parseInt(urlPostId);
+        this.postId = this.postId ? parseInt(this.postId, 10) : null;
+        
+        if (this.postId) {
+            console.log(`✅ Topics Design Panel: Post ID detected: ${this.postId}`);
+        } else {
+            console.warn('⚠️ Topics Design Panel: No post ID detected');
+            console.log('🔍 URL params:', new URLSearchParams(window.location.search).toString());
+            console.log('🔍 Available globals:', {
+                gmkbData: !!window.gmkbData,
+                topicsComponentData: !!window.topicsComponentData,
+                guestifyData: !!window.guestifyData
+            });
         }
-        
-        // Priority 2: Global data objects
-        const globalPostId = window.gmkbData?.postId ||
-                           window.guestifyData?.postId ||
-                           window.guestifyMediaKit?.postId;
-        
-        if (globalPostId && parseInt(globalPostId) > 0) {
-            console.log('🎯 Phase 1.1: Post ID from global data:', globalPostId);
-            return parseInt(globalPostId);
-        }
-        
-        // Priority 3: DOM data attributes
-        const domPostId = document.querySelector('[data-post-id]')?.dataset.postId;
-        
-        if (domPostId && parseInt(domPostId) > 0) {
-            console.log('🎯 Phase 1.1: Post ID from DOM:', domPostId);
-            return parseInt(domPostId);
-        }
-        
-        console.warn('⚠️ Phase 1.1: No post ID found in any source');
-        return null;
     }
 
     /**
-     * Setup DOM event listeners
+     * ROOT FIX: Enhanced nonce extraction with debug info
+     */
+    extractNonce() {
+        this.nonce = (
+            window.gmkbData?.nonce ||
+            window.topicsComponentData?.nonce ||
+            window.guestifyData?.nonce ||
+            window.guestifyMediaKit?.nonce ||
+            document.querySelector('input[name="_wpnonce"]')?.value ||
+            document.querySelector('meta[name="gmkb-nonce"]')?.content ||
+            ''
+        );
+        
+        if (this.nonce) {
+            console.log('✅ Topics Design Panel: Nonce extracted successfully');
+        } else {
+            console.warn('⚠️ Topics Design Panel: No nonce detected - save functionality may fail');
+            console.log('🔍 Available nonce sources:', {
+                gmkbData: !!window.gmkbData?.nonce,
+                topicsComponentData: !!window.topicsComponentData?.nonce,
+                guestifyData: !!window.guestifyData?.nonce,
+                wpnonceInput: !!document.querySelector('input[name="_wpnonce"]'),
+                gmkbNonceMeta: !!document.querySelector('meta[name="gmkb-nonce"]')
+            });
+        }
+    }
+
+    /**
+     * ROOT FIX: Enhanced event listeners for full functionality
      */
     setupEventListeners() {
         // Add topic buttons
@@ -218,7 +342,7 @@ class TopicsDesignPanelManager {
         this.elements.confirmAddBtn?.addEventListener('click', () => this.addNewTopic());
         this.elements.cancelAddBtn?.addEventListener('click', () => this.hideAddTopicForm());
 
-        // New topic input
+        // New topic input with enhanced validation
         this.elements.newTopicInput?.addEventListener('input', (e) => this.validateNewTopicInput(e.target));
         this.elements.newTopicInput?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -227,324 +351,159 @@ class TopicsDesignPanelManager {
             }
         });
 
-        // Section settings
-        this.elements.sectionTitleInput?.addEventListener('input', (e) => this.updateSectionTitle(e.target.value));
-        this.elements.sectionIntroInput?.addEventListener('input', (e) => this.updateSectionIntro(e.target.value));
+        // Section settings listeners
+        const sectionTitleInput = document.getElementById('section-title-input');
+        const sectionIntroInput = document.getElementById('section-intro-input');
+        
+        sectionTitleInput?.addEventListener('input', (e) => this.updateSectionTitle(e.target.value));
+        sectionIntroInput?.addEventListener('input', (e) => this.updateSectionIntro(e.target.value));
 
-        // Display options
-        this.elements.displayStyleSelect?.addEventListener('change', (e) => this.updateDisplayStyle(e.target.value));
-        this.elements.columnsSelect?.addEventListener('change', (e) => this.updateColumns(e.target.value));
+        // Display options listeners
+        const displayStyleSelect = document.getElementById('display-style-select');
+        const columnsSelect = document.getElementById('columns-select');
+        
+        displayStyleSelect?.addEventListener('change', (e) => this.updateDisplayStyle(e.target.value));
+        columnsSelect?.addEventListener('change', (e) => this.updateColumns(e.target.value));
 
         // Integration actions
-        this.elements.loadFromMkcgBtn?.addEventListener('click', () => this.loadFromMKCG());
-        this.elements.syncWithMkcgBtn?.addEventListener('click', () => this.syncWithMKCG());
+        const loadFromMkcgBtn = document.getElementById('load-from-mkcg');
+        const syncWithMkcgBtn = document.getElementById('sync-with-mkcg');
+        
+        loadFromMkcgBtn?.addEventListener('click', () => this.loadFromMKCG());
+        syncWithMkcgBtn?.addEventListener('click', () => this.syncWithMKCG());
 
-        console.log('🔗 Topics Design Panel: Event listeners configured');
+        console.log('✅ Topics Design Panel: Enhanced event listeners configured');
     }
 
     /**
-     * GMKB ARCHITECTURE: Register design panel with GMKB system
+     * STANDARDIZED: Load existing topics from preview or server
      */
-    registerWithGMKB() {
-        // Register as a system component
-        if (this.eventBus.registerSystem) {
-            this.eventBus.registerSystem('TopicsDesignPanel', this);
-        }
+    async loadExistingTopics() {
+        if (!this.elements.loading) return;
         
-        console.log('✅ Topics Design Panel: Registered with GMKB system');
-    }
-    
-    /**
-     * GMKB ARCHITECTURE: Setup GMKB state event listeners
-     */
-    setupGMKBStateListeners() {
-        // Listen for topics changes
-        const topicsChangedSub = this.eventBus.subscribe('topics:topics-changed',
-            (e) => this.handleStateTopicsChanged(e),
-            { id: 'designPanel_topicsChanged', priority: 10 }
-        );
-        this.eventSubscriptions.set('topics:topics-changed', topicsChangedSub);
-        
-        // Listen for individual topic updates
-        const topicUpdateSub = this.eventBus.subscribe('topics:topic-updated',
-            (e) => this.handleStateTopicUpdated(e),
-            { id: 'designPanel_topicUpdated', priority: 10 }
-        );
-        this.eventSubscriptions.set('topics:topic-updated', topicUpdateSub);
-        
-        // Listen for topic additions
-        const topicAddedSub = this.eventBus.subscribe('topics:topic-added',
-            (e) => this.handleStateTopicAdded(e),
-            { id: 'designPanel_topicAdded', priority: 10 }
-        );
-        this.eventSubscriptions.set('topics:topic-added', topicAddedSub);
-        
-        // Listen for topic removals
-        const topicRemovedSub = this.eventBus.subscribe('topics:topic-removed',
-            (e) => this.handleStateTopicRemoved(e),
-            { id: 'designPanel_topicRemoved', priority: 10 }
-        );
-        this.eventSubscriptions.set('topics:topic-removed', topicRemovedSub);
-        
-        // Listen for topics reordered
-        const topicsReorderedSub = this.eventBus.subscribe('topics:topics-reordered',
-            (e) => this.handleStateTopicsReordered(e),
-            { id: 'designPanel_topicsReordered', priority: 10 }
-        );
-        this.eventSubscriptions.set('topics:topics-reordered', topicsReorderedSub);
-        
-        // Listen for save events
-        const saveSuccessSub = this.eventBus.subscribe('topics:save-success',
-            (e) => this.handleStateSaveSuccess(e),
-            { id: 'designPanel_saveSuccess', priority: 10 }
-        );
-        this.eventSubscriptions.set('topics:save-success', saveSuccessSub);
-        
-        const saveErrorSub = this.eventBus.subscribe('topics:save-error',
-            (e) => this.handleStateSaveError(e),
-            { id: 'designPanel_saveError', priority: 10 }
-        );
-        this.eventSubscriptions.set('topics:save-error', saveErrorSub);
-        
-        // GMKB ARCHITECTURE: Listen for design panel open requests
-        const openRequestSub = this.eventBus.subscribe('topics:design-panel:open-request',
-            (e) => this.handleDesignPanelOpenRequest(e),
-            { id: 'designPanel_openRequest', priority: 15 }
-        );
-        this.eventSubscriptions.set('topics:design-panel:open-request', openRequestSub);
-        
-        // Listen for component manager events
-        const componentEventSub = this.eventBus.subscribe('components:topics:counter-changed',
-            (e) => this.handleComponentCounterChanged(e),
-            { id: 'designPanel_counterChanged', priority: 5 }
-        );
-        this.eventSubscriptions.set('components:topics:counter-changed', componentEventSub);
-        
-        console.log('🔗 GMKB Topics Design Panel: Event subscriptions active');
-    }
-
-    /**
-     * Setup sortable drag-and-drop
-     */
-    setupSortable() {
-        if (!this.elements.topicsList || !window.Sortable) {
-            console.warn('⚠️ Sortable not available');
-            return;
-        }
-
-        this.sortable = Sortable.create(this.elements.topicsList, {
-            animation: 150,
-            ghostClass: 'topic-item-ghost',
-            chosenClass: 'topic-item-chosen',
-            dragClass: 'topic-item-drag',
-            handle: '.topic-drag-handle',
-            filter: '.topics-loading, .add-topic-interface',
-            preventOnFilter: false,
-            onStart: (evt) => {
-                evt.item.classList.add('is-dragging');
-                this.triggerEvent('topicDragStart', { index: evt.oldIndex });
-            },
-            onEnd: (evt) => {
-                evt.item.classList.remove('is-dragging');
-                
-                if (evt.oldIndex !== evt.newIndex) {
-                    this.handleTopicReorder(evt.oldIndex, evt.newIndex);
-                }
-                
-                this.triggerEvent('topicDragEnd', { 
-                    fromIndex: evt.oldIndex, 
-                    toIndex: evt.newIndex 
-                });
-            }
-        });
-
-        console.log('🎯 Topics Design Panel: Sortable drag-and-drop enabled');
-    }
-
-    /**
-     * Setup collapsible sections
-     */
-    setupCollapsibleSections() {
-        const toggles = document.querySelectorAll('.form-section__toggle');
-        
-        toggles.forEach(toggle => {
-            toggle.addEventListener('click', () => {
-                const section = toggle.closest('.form-section--collapsible');
-                const content = section?.querySelector('.form-section__content');
-                
-                if (content) {
-                    const isExpanded = content.style.display !== 'none';
-                    content.style.display = isExpanded ? 'none' : 'block';
-                    section.classList.toggle('expanded', !isExpanded);
-                }
-            });
-        });
-    }
-
-    /**
-     * Load initial data
-     */
-    async loadInitialData() {
-        if (!this.stateManager) return;
-
-        this.showLoading(true);
+        this.elements.loading.style.display = 'flex';
         
         try {
-            // Load topics if state is empty
-            if (this.stateManager.getTopics().length === 0) {
-                await this.stateManager.loadTopics('auto');
+            // Try to extract topics from preview first
+            this.extractTopicsFromPreview();
+            
+            // If no topics found and we have post ID, try server
+            if (this.topics.length === 0 && this.postId) {
+                await this.loadTopicsFromServer();
             }
             
-            // Render current state
-            this.renderTopicsList();
-            this.updateTopicsCounter();
-            this.updateQualityOverview();
-            this.checkIntegrationStatus();
-            
         } catch (error) {
-            console.error('Failed to load initial data:', error);
+            console.error('Error loading topics:', error);
             this.showError('Failed to load topics: ' + error.message);
         } finally {
-            this.showLoading(false);
+            this.elements.loading.style.display = 'none';
         }
     }
 
     /**
-     * GMKB ARCHITECTURE: Handle design panel open request
+     * STANDARDIZED: Extract topics from preview component
      */
-    handleDesignPanelOpenRequest(e) {
-        console.log('🎨 GMKB Design Panel: Open request received', e.data);
+    extractTopicsFromPreview() {
+        const previewElement = document.querySelector('.topics-component') || 
+                              document.querySelector('[data-component="topics"]');
         
-        // Show/focus the design panel
-        this.openPanel();
-        
-        // Sync with the requesting component's data
-        if (e.data.topics && e.data.topics.length > 0) {
-            this.renderTopicsList();
-        }
-        
-        // Emit acknowledgment
-        this.eventBus.dispatch('topics:design-panel:opened', {
-            componentId: e.data.componentId,
-            timestamp: Date.now(),
-            source: 'design-panel'
-        });
-    }
-    
-    /**
-     * GMKB ARCHITECTURE: Handle component counter changed event
-     */
-    handleComponentCounterChanged(e) {
-        console.log('🔢 GMKB Design Panel: Counter changed', e.data);
-        
-        // Update local counter display
-        this.updateTopicsCounter();
-        
-        // Emit acknowledgment
-        this.eventBus.dispatch('topics:design-panel:counter-ack', {
-            currentCount: this.stateManager?.getTopics().length || 0,
-            receivedCount: e.data.topicsCount,
-            timestamp: Date.now(),
-            source: 'design-panel'
-        });
-    }
-    
-    /**
-     * GMKB ARCHITECTURE: Handle state topics changed
-     */
-    handleStateTopicsChanged(e) {
-        if (e.data.source === 'designPanel') {
-            // Ignore changes originating from design panel
+        if (!previewElement) {
+            console.log('📋 Topics Design Panel: No preview element found');
             return;
         }
+
+        const topicItems = previewElement.querySelectorAll('.topic-item');
         
-        console.log('🔄 GMKB Design Panel: Syncing with state changes');
-        this.renderTopicsList();
-        this.updateTopicsCounter();
-        this.updateQualityOverview();
+        this.topics = Array.from(topicItems).map((item, index) => {
+            const titleEl = item.querySelector('.topic-title');
+            const title = titleEl ? titleEl.textContent.trim() : '';
+            
+            return {
+                id: `topic_${index + 1}`,
+                index: index,
+                title: title,
+                source: 'preview',
+                quality: this.calculateTopicQuality(title),
+                isValid: title.length >= 3
+            };
+        }).filter(topic => topic.title.length > 0);
+
+        console.log(`📊 Topics Design Panel: Extracted ${this.topics.length} topics from preview`);
     }
 
     /**
-     * GMKB ARCHITECTURE: Handle state topic updated
+     * STANDARDIZED: Load topics from server via AJAX
      */
-    handleStateTopicUpdated(e) {
-        if (e.data.source === 'designPanel') {
-            return;
+    async loadTopicsFromServer() {
+        if (!this.postId || !this.nonce) return;
+
+        try {
+            const response = await this.sendAjaxRequest({
+                action: 'load_stored_topics',
+                post_id: this.postId,
+                nonce: this.nonce
+            });
+
+            if (response.success && response.data.topics) {
+                const serverTopics = response.data.topics;
+                
+                Object.entries(serverTopics).forEach(([key, title], index) => {
+                    if (title && title.trim()) {
+                        this.topics.push({
+                            id: key,
+                            index: index,
+                            title: title.trim(),
+                            source: 'server',
+                            quality: this.calculateTopicQuality(title),
+                            isValid: title.length >= 3
+                        });
+                    }
+                });
+
+                console.log(`📊 Topics Design Panel: Loaded ${this.topics.length} topics from server`);
+            }
+        } catch (error) {
+            console.error('Failed to load topics from server:', error);
         }
-        
-        console.log(`📝 GMKB Design Panel: Updating topic ${e.data.topicId}`);
-        this.updateTopicInList(e.data.index, e.data.topic);
-    }
-    
-    /**
-     * GMKB ARCHITECTURE: Handle state topic added
-     */
-    handleStateTopicAdded(e) {
-        if (e.data.source === 'designPanel') {
-            return;
-        }
-        
-        console.log(`➕ GMKB Design Panel: Topic added, refreshing list`);
-        this.renderTopicsList();
-        this.updateTopicsCounter();
-        this.updateQualityOverview();
-    }
-    
-    /**
-     * GMKB ARCHITECTURE: Handle state topic removed
-     */
-    handleStateTopicRemoved(e) {
-        if (e.data.source === 'designPanel') {
-            return;
-        }
-        
-        console.log(`🗑️ GMKB Design Panel: Topic removed, refreshing list`);
-        this.renderTopicsList();
-        this.updateTopicsCounter();
-        this.updateQualityOverview();
-    }
-    
-    /**
-     * GMKB ARCHITECTURE: Handle state topics reordered
-     */
-    handleStateTopicsReordered(e) {
-        if (e.data.source === 'designPanel') {
-            return;
-        }
-        
-        console.log(`🔄 GMKB Design Panel: Topics reordered, refreshing list`);
-        this.renderTopicsList();
     }
 
     /**
-     * Render topics list
+     * STANDARDIZED: Update UI state
+     */
+    updateUI() {
+        this.renderTopicsList();
+        this.updateTopicsCounter();
+    }
+
+    /**
+     * ROOT FIX: Enhanced topics list rendering with quality indicators
      */
     renderTopicsList() {
         if (!this.elements.topicsList) return;
 
-        const topics = this.stateManager?.getTopics() || [];
-        
-        // Clear existing topics (but keep loading and add interface)
+        // Clear existing topics (keep loading element)
         const existingItems = this.elements.topicsList.querySelectorAll('.live-topic-item');
         existingItems.forEach(item => item.remove());
 
-        if (topics.length === 0) {
+        if (this.topics.length === 0) {
             this.showAddTopicPrompt();
+            this.hideQualityOverview();
             return;
         }
 
         // Render each topic
-        topics.forEach((topic, index) => {
+        this.topics.forEach((topic, index) => {
             const topicEl = this.createTopicElement(topic, index);
             this.elements.topicsList.insertBefore(topicEl, this.elements.loading);
         });
 
         this.hideAddTopicPrompt();
         this.showQualityOverview();
+        this.updateQualityOverview();
     }
 
     /**
-     * Create topic element for design panel
+     * ROOT FIX: Enhanced topic element with quality indicators and multiple actions
      */
     createTopicElement(topic, index) {
         const quality = this.getQualityLevel(topic.quality);
@@ -555,7 +514,7 @@ class TopicsDesignPanelManager {
         topicEl.dataset.index = index;
         
         topicEl.innerHTML = `
-            <div class="topic-drag-handle" title="Drag to reorder">
+            <div class="topic-drag-handle">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -572,7 +531,7 @@ class TopicsDesignPanelManager {
                 
                 <div class="topic-meta">
                     <div class="topic-quality">
-                        <span class="quality-label ${quality}">${quality.toUpperCase()}</span>
+                        <span class="quality-label">${quality.toUpperCase()}</span>
                         <div class="quality-bar">
                             <div class="quality-fill ${quality}" style="width: ${topic.quality}%"></div>
                         </div>
@@ -611,13 +570,13 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * Setup event listeners for topic element
+     * ROOT FIX: Enhanced topic element listeners with all actions
      */
     setupTopicElementListeners(topicEl, topic) {
         const input = topicEl.querySelector('.topic-input');
         const actionButtons = topicEl.querySelectorAll('.topic-action-btn');
 
-        // Input handling
+        // Input handling with real-time quality updates
         input?.addEventListener('input', (e) => this.handleTopicInput(e, topic));
         input?.addEventListener('blur', (e) => this.handleTopicBlur(e, topic));
         input?.addEventListener('keypress', (e) => {
@@ -626,7 +585,7 @@ class TopicsDesignPanelManager {
             }
         });
 
-        // Action buttons
+        // Action button handling
         actionButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -636,54 +595,308 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * Handle topic input changes
+     * ROOT FIX: Enhanced topic input handling with real-time quality updates
      */
     handleTopicInput(e, topic) {
         const newValue = e.target.value;
         const topicEl = e.target.closest('.live-topic-item');
+        const charCount = topicEl?.querySelector('.topic-chars');
         
         // Update character count
-        const charCount = topicEl?.querySelector('.topic-chars');
         if (charCount) {
             charCount.textContent = `${newValue.length}/100`;
         }
         
-        // Update quality in real-time with debouncing
-        if (this.qualityTimer) {
-            clearTimeout(this.qualityTimer);
-        }
+        // Update quality in real-time
+        const quality = this.calculateTopicQuality(newValue);
+        const qualityLevel = this.getQualityLevel(quality);
         
-        this.qualityTimer = setTimeout(() => {
-            this.updateTopicQualityDisplay(topicEl, newValue);
-        }, this.config.qualityUpdateDelay);
+        const qualityFill = topicEl?.querySelector('.quality-fill');
+        const qualityScore = topicEl?.querySelector('.quality-score');
+        const qualityLabel = topicEl?.querySelector('.quality-label');
+        
+        if (qualityFill) {
+            qualityFill.style.width = `${quality}%`;
+            qualityFill.className = `quality-fill ${qualityLevel}`;
+        }
+        if (qualityScore) {
+            qualityScore.textContent = `${quality}%`;
+        }
+        if (qualityLabel) {
+            qualityLabel.textContent = qualityLevel.toUpperCase();
+        }
         
         // Mark as unsaved
         this.setSaveStatus('unsaved');
+        
+        // Update preview in real-time
+        this.updatePreviewTopic(topic.id, newValue);
     }
 
     /**
-     * Handle topic blur (save changes)
+     * ROOT FIX: Enhanced topic blur handling with validation
      */
     handleTopicBlur(e, topic) {
         const newValue = e.target.value.trim();
         const originalValue = e.target.dataset.originalValue;
         
         if (newValue !== originalValue) {
-            // Update state manager (this will sync with preview)
-            this.stateManager.updateTopic(topic.id, { title: newValue }, 'designPanel');
+            // Update topic data
+            topic.title = newValue;
+            topic.quality = this.calculateTopicQuality(newValue);
+            topic.isValid = newValue.length >= 3;
             
             // Update original value
             e.target.dataset.originalValue = newValue;
             
+            // Update quality overview
+            this.updateQualityOverview();
+            
             // Schedule auto-save
             this.scheduleAutoSave();
             
-            console.log(`📝 Design Panel: Topic updated - "${originalValue}" → "${newValue}"`);
+            console.log(`📝 Topic updated: "${originalValue}" → "${newValue}"`);
         }
     }
 
     /**
-     * Handle topic actions
+     * STANDARDIZED: Show add topic form
+     */
+    showAddTopicForm() {
+        if (this.elements.addPrompt) this.elements.addPrompt.style.display = 'none';
+        if (this.elements.addForm) {
+            this.elements.addForm.style.display = 'block';
+            this.elements.newTopicInput?.focus();
+        }
+    }
+
+    /**
+     * STANDARDIZED: Hide add topic form
+     */
+    hideAddTopicForm() {
+        if (this.elements.addForm) this.elements.addForm.style.display = 'none';
+        if (this.topics.length === 0 && this.elements.addPrompt) {
+            this.elements.addPrompt.style.display = 'block';
+        }
+        if (this.elements.newTopicInput) this.elements.newTopicInput.value = '';
+    }
+
+    /**
+     * STANDARDIZED: Add new topic
+     */
+    addNewTopic() {
+        const newTitle = this.elements.newTopicInput?.value?.trim();
+        
+        if (!newTitle || newTitle.length < 3) {
+            alert('Please enter a topic with at least 3 characters.');
+            return;
+        }
+
+        const newTopic = {
+            id: `topic_${Date.now()}`,
+            index: this.topics.length,
+            title: newTitle,
+            source: 'manual',
+            quality: this.calculateTopicQuality(newTitle),
+            isValid: true
+        };
+
+        this.topics.push(newTopic);
+        this.renderTopicsList();
+        this.updateTopicsCounter();
+        this.scheduleAutoSave();
+
+        // Clear form
+        this.hideAddTopicForm();
+
+        console.log(`➕ New topic added: "${newTitle}"`);
+    }
+
+    /**
+     * ROOT FIX: Enhanced topic deletion with preview updates
+     */
+    deleteTopic(topic, topicEl) {
+        if (!confirm(`Delete topic "${topic.title}"?`)) return;
+        
+        // Remove from array
+        const index = this.topics.findIndex(t => t.id === topic.id);
+        if (index > -1) {
+            this.topics.splice(index, 1);
+        }
+        
+        // Remove from DOM
+        topicEl.remove();
+        
+        // Update preview
+        this.removePreviewTopic(topic.id);
+        
+        // Update UI
+        this.updateTopicsCounter();
+        this.updateQualityOverview();
+        
+        if (this.topics.length === 0) {
+            this.showAddTopicPrompt();
+            this.hideQualityOverview();
+        }
+        
+        // Save changes
+        this.scheduleAutoSave();
+        
+        console.log(`🗑️ Topic deleted: "${topic.title}"`);
+    }
+
+    // ROOT FIX: Enhanced utility methods with full functionality
+
+    /**
+     * Find preview element for live updates
+     */
+    findPreviewElement() {
+        this.previewElement = (
+            document.querySelector('.topics-component') ||
+            document.querySelector('[data-component="topics"]') ||
+            document.querySelector('.media-kit .content-section[data-element="topics"]')
+        );
+        
+        if (this.previewElement) {
+            console.log('✅ Preview element found:', this.previewElement);
+        } else {
+            console.warn('⚠️ Preview element not found - live updates may not work');
+        }
+    }
+
+    /**
+     * Setup collapsible sections
+     */
+    setupCollapsibleSections() {
+        const toggles = document.querySelectorAll('.form-section__toggle');
+        
+        toggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const section = toggle.closest('.form-section--collapsible');
+                const content = section?.querySelector('.form-section__content');
+                
+                if (content) {
+                    if (content.style.display === 'none') {
+                        content.style.display = 'block';
+                        section.classList.add('expanded');
+                    } else {
+                        content.style.display = 'none';
+                        section.classList.remove('expanded');
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Check integration status
+     */
+    checkIntegrationStatus() {
+        const statusDot = document.getElementById('integration-status-dot');
+        const statusText = document.getElementById('integration-status-text');
+        
+        if (this.postId && this.topics.length > 0) {
+            if (statusDot) statusDot.dataset.status = 'connected';
+            if (statusText) statusText.textContent = `Found ${this.topics.length} topics`;
+        } else {
+            if (statusDot) statusDot.dataset.status = 'disconnected';
+            if (statusText) statusText.textContent = 'No topics data found';
+        }
+    }
+
+    /**
+     * Setup auto-save functionality
+     */
+    setupAutoSave() {
+        this.autoSaveDelay = 2000; // 2 seconds
+        console.log('⚡ Auto-save enabled for topics design panel');
+    }
+
+    /**
+     * Get quality level from score
+     */
+    getQualityLevel(score) {
+        if (score >= this.qualityThresholds.excellent) return 'excellent';
+        if (score >= this.qualityThresholds.good) return 'good';
+        if (score >= this.qualityThresholds.fair) return 'fair';
+        return 'poor';
+    }
+
+    /**
+     * Enhanced topic quality calculation
+     */
+    calculateTopicQuality(title) {
+        if (!title || title.length < 3) return 0;
+        
+        let score = 0;
+        const length = title.length;
+        const wordCount = title.split(/\s+/).length;
+        
+        // Length scoring (optimal 20-60 characters)
+        if (length >= 20 && length <= 60) {
+            score += 40;
+        } else if (length >= 10 && length <= 80) {
+            score += 25;
+        } else if (length >= 3) {
+            score += 10;
+        }
+        
+        // Word count scoring (optimal 2-8 words)
+        if (wordCount >= 2 && wordCount <= 8) {
+            score += 30;
+        } else if (wordCount >= 1 && wordCount <= 12) {
+            score += 15;
+        }
+        
+        // Professional language indicators
+        if (/^[A-Z]/.test(title)) score += 10; // Starts with capital
+        if (!/\s{2,}/.test(title)) score += 10; // No double spaces
+        if (!/[!]{2,}/.test(title)) score += 10; // No excessive punctuation
+        
+        return Math.min(100, score);
+    }
+
+    /**
+     * Update preview topic in real-time
+     */
+    updatePreviewTopic(topicId, newTitle) {
+        if (!this.previewElement) return;
+        
+        const index = parseInt(topicId.split('_')[1]) - 1;
+        const previewTopicItem = this.previewElement.querySelector(`.topic-item:nth-child(${index + 1})`);
+        
+        if (previewTopicItem) {
+            const titleElement = previewTopicItem.querySelector('.topic-title');
+            if (titleElement) {
+                titleElement.textContent = newTitle;
+                
+                // Add visual feedback
+                titleElement.style.background = '#e6f3ff';
+                setTimeout(() => {
+                    titleElement.style.background = '';
+                }, 1000);
+            }
+        }
+        
+        console.log(`🔄 Preview updated for ${topicId}: "${newTitle}"`);
+    }
+
+    /**
+     * Remove topic from preview
+     */
+    removePreviewTopic(topicId) {
+        if (!this.previewElement) return;
+        
+        const index = parseInt(topicId.split('_')[1]) - 1;
+        const previewTopicItem = this.previewElement.querySelector(`.topic-item:nth-child(${index + 1})`);
+        
+        if (previewTopicItem) {
+            previewTopicItem.remove();
+        }
+    }
+
+    /**
+     * Handle topic actions (enhance, duplicate, delete)
      */
     handleTopicAction(action, topic, topicEl) {
         switch (action) {
@@ -707,13 +920,18 @@ class TopicsDesignPanelManager {
         
         if (suggestions.length > 0) {
             const message = `Quality Enhancement Suggestions for "${topic.title}":\n\n` +
-                           suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n') +
-                           '\n\nChoose an option:';
+                           suggestions.join('\n');
             
-            // Show enhancement dialog
-            this.showEnhancementDialog(topic, suggestions);
+            if (confirm(message + '\n\nWould you like to apply the first suggestion?')) {
+                const topicInput = document.querySelector(`input[data-topic-id="${topic.id}"]`);
+                if (topicInput) {
+                    topicInput.value = suggestions[0];
+                    topicInput.dispatchEvent(new Event('input'));
+                    topicInput.dispatchEvent(new Event('blur'));
+                }
+            }
         } else {
-            this.showMessage(`"${topic.title}" already has excellent quality!`, 'success');
+            alert(`"${topic.title}" already has excellent quality!`);
         }
     }
 
@@ -725,457 +943,97 @@ class TopicsDesignPanelManager {
         
         if (title.length < 20) {
             enhancements.push(`${title} Strategies and Best Practices`);
-            enhancements.push(`Advanced ${title} Techniques`);
         }
         
         if (!title.includes('and') && !title.includes('&')) {
             enhancements.push(`${title} and Implementation`);
-            enhancements.push(`${title} and Real-World Applications`);
         }
         
         if (title.charAt(0) !== title.charAt(0).toUpperCase()) {
             enhancements.push(title.charAt(0).toUpperCase() + title.slice(1));
         }
         
-        if (!/\b(strategy|strategies|techniques|methods|approaches|solutions)\b/i.test(title)) {
-            enhancements.push(`${title} Strategies`);
-            enhancements.push(`${title} Methodologies`);
-        }
-        
-        return enhancements.slice(0, 4);
-    }
-
-    /**
-     * Show enhancement dialog
-     */
-    showEnhancementDialog(topic, suggestions) {
-        const dialog = document.createElement('div');
-        dialog.className = 'enhancement-dialog-overlay';
-        dialog.innerHTML = `
-            <div class="enhancement-dialog">
-                <div class="dialog-header">
-                    <h3>Enhance Topic Quality</h3>
-                    <button class="dialog-close">&times;</button>
-                </div>
-                <div class="dialog-content">
-                    <p>Original: <strong>"${this.escapeHtml(topic.title)}"</strong></p>
-                    <p>Choose an enhancement:</p>
-                    <div class="enhancement-options">
-                        ${suggestions.map((suggestion, index) => `
-                            <button class="enhancement-option" data-index="${index}">
-                                <span class="option-number">${index + 1}</span>
-                                <span class="option-text">${this.escapeHtml(suggestion)}</span>
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>
-                <div class="dialog-actions">
-                    <button class="btn btn--secondary dialog-cancel">Cancel</button>
-                    <button class="btn btn--primary" id="apply-custom">Apply Custom</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(dialog);
-        
-        // Event listeners
-        const closeBtn = dialog.querySelector('.dialog-close');
-        const cancelBtn = dialog.querySelector('.dialog-cancel');
-        const optionBtns = dialog.querySelectorAll('.enhancement-option');
-        
-        const closeDialog = () => {
-            document.body.removeChild(dialog);
-        };
-        
-        closeBtn?.addEventListener('click', closeDialog);
-        cancelBtn?.addEventListener('click', closeDialog);
-        
-        optionBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const index = parseInt(btn.dataset.index);
-                const newTitle = suggestions[index];
-                
-                // Update topic
-                this.stateManager.updateTopic(topic.id, { title: newTitle }, 'designPanel');
-                
-                // Update input field
-                const topicInput = document.querySelector(`input[data-topic-id="${topic.id}"]`);
-                if (topicInput) {
-                    topicInput.value = newTitle;
-                    topicInput.dataset.originalValue = newTitle;
-                    topicInput.dispatchEvent(new Event('input'));
-                }
-                
-                this.showMessage(`Topic enhanced: "${newTitle}"`, 'success');
-                closeDialog();
-            });
-        });
-        
-        // Close on overlay click
-        dialog.addEventListener('click', (e) => {
-            if (e.target === dialog) {
-                closeDialog();
-            }
-        });
+        return enhancements.slice(0, 3);
     }
 
     /**
      * Duplicate topic
      */
     duplicateTopic(topic) {
-        const newTopic = this.stateManager.addTopic({
+        const newTopic = {
+            id: `topic_${Date.now()}`,
+            index: this.topics.length,
             title: `${topic.title} (Copy)`,
-            description: topic.description,
-            source: 'duplicated'
-        }, -1, 'designPanel');
+            source: 'duplicated',
+            quality: this.calculateTopicQuality(`${topic.title} (Copy)`),
+            isValid: true
+        };
         
-        this.scheduleAutoSave();
-        this.showMessage(`Topic duplicated: "${newTopic.title}"`, 'success');
-        
-        console.log(`📋 Design Panel: Topic duplicated - "${topic.title}"`);
-    }
-
-    /**
-     * Delete topic
-     */
-    deleteTopic(topic, topicEl) {
-        if (!confirm(`Delete topic "${topic.title}"?`)) return;
-        
-        // Remove from state
-        this.stateManager.removeTopic(topic.id, 'designPanel');
-        
-        // Remove from DOM with animation
-        topicEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        topicEl.style.opacity = '0';
-        topicEl.style.transform = 'translateX(-20px)';
-        
-        setTimeout(() => {
-            if (topicEl.parentNode) {
-                topicEl.parentNode.removeChild(topicEl);
-            }
-        }, 300);
-        
-        this.scheduleAutoSave();
-        this.showMessage(`Topic deleted: "${topic.title}"`, 'info');
-        
-        console.log(`🗑️ Design Panel: Topic deleted - "${topic.title}"`);
-    }
-
-    /**
-     * Handle topic reorder
-     */
-    handleTopicReorder(fromIndex, toIndex) {
-        if (fromIndex === toIndex) return;
-        
-        const success = this.stateManager.reorderTopics(fromIndex, toIndex, 'designPanel');
-        
-        if (success) {
-            this.scheduleAutoSave();
-            this.showMessage(`Topic moved from position ${fromIndex + 1} to ${toIndex + 1}`, 'info');
-            console.log(`🔄 Design Panel: Topic reordered from ${fromIndex} to ${toIndex}`);
-        }
-    }
-
-    /**
-     * Show add topic form
-     */
-    showAddTopicForm() {
-        if (this.elements.addPrompt) {
-            this.elements.addPrompt.style.display = 'none';
-        }
-        if (this.elements.addForm) {
-            this.elements.addForm.style.display = 'block';
-        }
-        if (this.elements.newTopicInput) {
-            this.elements.newTopicInput.focus();
-        }
-    }
-
-    /**
-     * Hide add topic form
-     */
-    hideAddTopicForm() {
-        if (this.elements.addForm) {
-            this.elements.addForm.style.display = 'none';
-        }
-        if (this.elements.addPrompt) {
-            this.elements.addPrompt.style.display = 'block';
-        }
-        if (this.elements.newTopicInput) {
-            this.elements.newTopicInput.value = '';
-        }
-    }
-
-    /**
-     * Add new topic
-     */
-    addNewTopic() {
-        const input = this.elements.newTopicInput;
-        const title = input?.value.trim();
-        
-        if (!title || title.length < 3) {
-            this.showMessage('Topic must be at least 3 characters long', 'error');
-            return;
-        }
-        
-        if (title.length > 100) {
-            this.showMessage('Topic cannot be longer than 100 characters', 'error');
-            return;
-        }
-        
-        // Check for duplicates
-        const existingTopics = this.stateManager.getTopics();
-        if (existingTopics.some(t => t.title.toLowerCase() === title.toLowerCase())) {
-            this.showMessage('Topic already exists', 'error');
-            return;
-        }
-        
-        // Add to state
-        const newTopic = this.stateManager.addTopic({
-            title: title,
-            description: '',
-            source: 'design_panel'
-        }, -1, 'designPanel');
-        
-        // Clear form
-        this.hideAddTopicForm();
-        
-        // Schedule save
+        this.topics.push(newTopic);
+        this.renderTopicsList();
+        this.updateTopicsCounter();
         this.scheduleAutoSave();
         
-        this.showMessage(`Topic added: "${newTopic.title}"`, 'success');
-        console.log(`➕ Design Panel: Topic added - "${newTopic.title}"`);
+        console.log(`📋 Topic duplicated: "${topic.title}"`);
     }
 
-    /**
-     * Validate new topic input
-     */
-    validateNewTopicInput(input) {
-        const title = input.value;
-        const charCounter = document.querySelector('.char-counter');
-        const qualityIndicator = document.querySelector('#new-topic-quality span');
-        
-        // Update character counter
-        if (charCounter) {
-            charCounter.textContent = `${title.length}/100`;
-        }
-        
-        // Update quality indicator
-        if (qualityIndicator && title.length > 0) {
-            const quality = this.stateManager?.calculateQuality(title) || 0;
-            const level = this.getQualityLevel(quality);
-            
-            qualityIndicator.textContent = level.charAt(0).toUpperCase() + level.slice(1);
-            qualityIndicator.className = level;
+    showAddTopicPrompt() {
+        if (this.elements.addPrompt) this.elements.addPrompt.style.display = 'block';
+    }
+
+    hideAddTopicPrompt() {
+        if (this.elements.addPrompt) this.elements.addPrompt.style.display = 'none';
+    }
+
+    showQualityOverview() {
+        const qualityOverview = document.getElementById('topics-quality-overview');
+        if (qualityOverview && this.topics.length > 0) {
+            qualityOverview.style.display = 'block';
         }
     }
 
-    /**
-     * Update topic quality display
-     */
-    updateTopicQualityDisplay(topicEl, title) {
-        const quality = this.stateManager?.calculateQuality(title) || 0;
-        const level = this.getQualityLevel(quality);
-        
-        const qualityFill = topicEl?.querySelector('.quality-fill');
-        const qualityScore = topicEl?.querySelector('.quality-score');
-        const qualityLabel = topicEl?.querySelector('.quality-label');
-        
-        if (qualityFill) {
-            qualityFill.style.width = `${quality}%`;
-            qualityFill.className = `quality-fill ${level}`;
-        }
-        
-        if (qualityScore) {
-            qualityScore.textContent = `${quality}%`;
-        }
-        
-        if (qualityLabel) {
-            qualityLabel.textContent = level.toUpperCase();
-            qualityLabel.className = `quality-label ${level}`;
+    hideQualityOverview() {
+        const qualityOverview = document.getElementById('topics-quality-overview');
+        if (qualityOverview) {
+            qualityOverview.style.display = 'none';
         }
     }
 
-    /**
-     * Get quality level from score
-     */
-    getQualityLevel(score) {
-        if (score >= 80) return 'excellent';
-        if (score >= 60) return 'good';
-        if (score >= 40) return 'fair';
-        return 'poor';
-    }
-
-    /**
-     * Update topics counter
-     */
     updateTopicsCounter() {
-        const topics = this.stateManager?.getTopics() || [];
         if (this.elements.counter) {
-            this.elements.counter.textContent = topics.length;
-        }
-        
-        // Update UI based on topic count
-        if (topics.length === 0) {
-            this.showAddTopicPrompt();
-        } else {
-            this.hideAddTopicPrompt();
-            this.showQualityOverview();
+            this.elements.counter.textContent = this.topics.length;
         }
     }
 
-    /**
-     * Update quality overview
-     */
     updateQualityOverview() {
-        const topics = this.stateManager?.getTopics() || [];
+        if (this.topics.length === 0) return;
+
+        const avgQuality = Math.round(
+            this.topics.reduce((sum, topic) => sum + topic.quality, 0) / this.topics.length
+        );
         
-        if (topics.length === 0) {
-            this.hideQualityOverview();
-            return;
-        }
-        
-        const stats = this.calculateQualityStats(topics);
-        
-        // Update quality stats
+        const completion = Math.round((this.topics.length / 10) * 100); // Assuming 10 is max
+        const excellentCount = this.topics.filter(t => t.quality >= 80).length;
+
         const avgQualityEl = document.getElementById('average-quality');
         const completionEl = document.getElementById('completion-rate');
         const excellenceEl = document.getElementById('excellence-count');
-        
-        if (avgQualityEl) avgQualityEl.textContent = `${stats.averageQuality}%`;
-        if (completionEl) completionEl.textContent = `${stats.completionRate}%`;
-        if (excellenceEl) excellenceEl.textContent = stats.excellentTopics;
-        
-        // Update recommendations
-        this.updateQualityRecommendations(stats);
-        
-        this.showQualityOverview();
+
+        if (avgQualityEl) avgQualityEl.textContent = `${avgQuality}%`;
+        if (completionEl) completionEl.textContent = `${completion}%`;
+        if (excellenceEl) excellenceEl.textContent = excellentCount;
     }
 
     /**
-     * Calculate quality statistics
-     */
-    calculateQualityStats(topics) {
-        const totalTopics = topics.length;
-        const maxTopics = this.config.maxTopics;
-        const validTopics = topics.filter(t => t.isValid);
-        const excellentTopics = topics.filter(t => t.quality >= 80);
-        
-        const averageQuality = totalTopics > 0 ? 
-            Math.round(topics.reduce((sum, t) => sum + t.quality, 0) / totalTopics) : 0;
-        
-        const completionRate = Math.round((totalTopics / maxTopics) * 100);
-        
-        return {
-            totalTopics,
-            validTopics: validTopics.length,
-            excellentTopics: excellentTopics.length,
-            averageQuality,
-            completionRate
-        };
-    }
-
-    /**
-     * Update quality recommendations
-     */
-    updateQualityRecommendations(stats) {
-        const recommendationsEl = document.getElementById('quality-recommendations');
-        if (!recommendationsEl) return;
-        
-        const recommendations = [];
-        
-        if (stats.totalTopics < 3) {
-            recommendations.push({
-                type: 'action',
-                icon: '➕',
-                text: 'Add more topics to showcase your expertise (aim for 3-5 topics)'
-            });
-        }
-        
-        if (stats.averageQuality < 60) {
-            recommendations.push({
-                type: 'quality',
-                icon: '✨',
-                text: 'Improve topic quality by adding more specific details'
-            });
-        }
-        
-        if (stats.excellentTopics === 0 && stats.totalTopics > 0) {
-            recommendations.push({
-                type: 'enhance',
-                icon: '🚀',
-                text: 'Use the enhance button to improve your topics automatically'
-            });
-        }
-        
-        if (recommendations.length === 0) {
-            recommendations.push({
-                type: 'success',
-                icon: '✅',
-                text: 'Great job! Your topics look professional and comprehensive'
-            });
-        }
-        
-        recommendationsEl.innerHTML = recommendations.map(rec => `
-            <div class="recommendation recommendation--${rec.type}">
-                <span class="recommendation-icon">${rec.icon}</span>
-                <span class="recommendation-text">${rec.text}</span>
-            </div>
-        `).join('');
-    }
-
-    /**
-     * Schedule auto-save
-     */
-    scheduleAutoSave() {
-        if (this.saveTimeout) {
-            clearTimeout(this.saveTimeout);
-        }
-        
-        this.setSaveStatus('unsaved');
-        
-        this.saveTimeout = setTimeout(() => {
-            if (this.stateManager?.hasPendingChanges()) {
-                this.performSave('auto');
-            }
-        }, this.config.autoSaveDelay);
-    }
-
-    /**
-     * Perform save operation
-     */
-    async performSave(saveType = 'manual') {
-        if (!this.stateManager) return;
-        
-        console.log(`💾 Design Panel: Starting ${saveType} save`);
-        this.setSaveStatus('saving');
-        
-        try {
-            const success = await this.stateManager.saveTopics(saveType);
-            
-            if (success) {
-                this.setSaveStatus('saved');
-                console.log('✅ Design Panel: Save successful');
-            } else {
-                this.setSaveStatus('error', 'Save failed');
-            }
-            
-        } catch (error) {
-            console.error('❌ Design Panel: Save failed:', error);
-            this.setSaveStatus('error', error.message);
-        }
-    }
-
-    /**
-     * Set save status
+     * Enhanced save status with visual feedback
      */
     setSaveStatus(status, message = '') {
-        const statusEl = this.elements.saveStatus;
-        if (!statusEl) return;
+        const statusEl = document.getElementById('topics-save-status');
+        const iconEl = statusEl?.querySelector('.save-icon');
+        const textEl = statusEl?.querySelector('.save-text');
+        const timestampEl = statusEl?.querySelector('.save-timestamp');
         
-        const iconEl = statusEl.querySelector('.save-icon');
-        const textEl = statusEl.querySelector('.save-text');
-        const timestampEl = statusEl.querySelector('.save-timestamp');
+        if (!statusEl) return;
         
         statusEl.dataset.status = status;
         
@@ -1199,194 +1057,207 @@ class TopicsDesignPanelManager {
         }
     }
 
-    /**
-     * GMKB ARCHITECTURE: Handle state save success
-     */
-    handleStateSaveSuccess(e) {
-        console.log('✅ GMKB Design Panel: State save successful');
-        const topicsSaved = e.data.response?.topics_saved || e.data.topicsCount || 0;
-        this.setSaveStatus('saved', `${topicsSaved} topics saved`);
+    scheduleAutoSave() {
+        if (!this.autoSaveEnabled) return;
+        
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        
+        this.setSaveStatus('unsaved');
+        
+        this.saveTimeout = setTimeout(() => {
+            this.performSave('auto');
+        }, this.config.autoSaveDelay);
     }
 
     /**
-     * GMKB ARCHITECTURE: Handle state save error
+     * Enhanced save functionality with comprehensive error handling
      */
-    handleStateSaveError(e) {
-        console.error('❌ GMKB Design Panel: State save error:', e.data.error);
-        this.setSaveStatus('error', 'Save failed');
+    async performSave(saveType = 'manual') {
+        if (!this.postId || !this.nonce) {
+            const errorMsg = `Cannot save: Missing ${!this.postId ? 'post ID' : 'nonce'}`;
+            console.error('❌ Save validation failed:', errorMsg);
+            this.setSaveStatus('error', errorMsg);
+            this.showUserError('Save failed: Missing required data. Please refresh the page.');
+            return false;
+        }
+        
+        console.log('💾 Starting save operation:', {
+            saveType: saveType,
+            postId: this.postId,
+            topicsCount: this.topics.length
+        });
+        
+        this.setSaveStatus('saving');
+        
+        try {
+            // Prepare topics data
+            const topicsData = {};
+            let validTopicsCount = 0;
+            
+            this.topics.forEach((topic) => {
+                if (topic.title && topic.title.trim() && topic.title.trim().length >= 3) {
+                    topicsData[topic.id] = topic.title.trim();
+                    validTopicsCount++;
+                }
+            });
+            
+            const requestData = {
+                action: 'save_custom_topics',
+                post_id: this.postId,
+                topics: topicsData,
+                save_type: saveType,
+                client_timestamp: Math.floor(Date.now() / 1000),
+                nonce: this.nonce
+            };
+            
+            const response = await this.sendAjaxRequest(requestData);
+            
+            if (response.success) {
+                this.setSaveStatus('saved');
+                console.log('✅ Topics saved successfully:', response.data);
+                this.showUserSuccess(`Saved ${validTopicsCount} topic${validTopicsCount !== 1 ? 's' : ''} successfully!`);
+                return true;
+            } else {
+                const errorMsg = response.data?.message || response.message || 'Save operation failed';
+                console.error('❌ Server returned error:', errorMsg);
+                this.setSaveStatus('error', errorMsg);
+                this.showUserError(errorMsg);
+                throw new Error(errorMsg);
+            }
+            
+        } catch (error) {
+            console.error('❌ Save failed with exception:', error);
+            const errorMessage = error.message || 'An unexpected error occurred while saving';
+            this.setSaveStatus('error', errorMessage);
+            this.showUserError(errorMessage);
+            return false;
+        }
     }
 
     /**
-     * GMKB ARCHITECTURE: Update preview settings
+     * Enhanced AJAX request with better error handling
+     */
+    async sendAjaxRequest(data) {
+        const url = window.gmkbData?.ajaxUrl || window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
+        
+        console.log('🌐 AJAX Request:', {
+            url: url,
+            action: data.action,
+            dataKeys: Object.keys(data)
+        });
+        
+        const requestBody = new URLSearchParams();
+        Object.entries(data).forEach(([key, value]) => {
+            if (typeof value === 'object' && value !== null) {
+                requestBody.append(key, JSON.stringify(value));
+            } else {
+                requestBody.append(key, String(value || ''));
+            }
+        });
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: requestBody,
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const responseData = await response.json();
+            console.log('🌐 AJAX Response:', responseData);
+            return responseData;
+            
+        } catch (error) {
+            console.error('❌ AJAX Request Failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Enhanced validation with quality feedback
+     */
+    validateNewTopicInput(input) {
+        const charCounter = document.querySelector('.char-counter');
+        const qualityIndicator = document.getElementById('new-topic-quality');
+        
+        if (charCounter) {
+            charCounter.textContent = `${input.value.length}/100`;
+        }
+        
+        if (qualityIndicator) {
+            const quality = this.calculateTopicQuality(input.value);
+            const level = this.getQualityLevel(quality);
+            const qualitySpan = qualityIndicator.querySelector('span');
+            if (qualitySpan) {
+                qualitySpan.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+                qualitySpan.className = level;
+            }
+        }
+    }
+
+    /**
+     * Section update methods
      */
     updateSectionTitle(title) {
-        // Use GMKB event bus for cross-component communication
-        this.eventBus.dispatch('topics:section:title-updated', {
-            title,
-            timestamp: Date.now(),
-            source: 'design-panel'
-        });
+        if (!this.previewElement) return;
+        
+        const titleElement = this.previewElement.querySelector('.section-title');
+        if (titleElement) {
+            titleElement.textContent = title;
+        }
+        
+        this.scheduleAutoSave();
     }
 
     updateSectionIntro(intro) {
-        this.eventBus.dispatch('topics:section:intro-updated', {
-            intro,
-            timestamp: Date.now(),
-            source: 'design-panel'
-        });
+        if (!this.previewElement) return;
+        
+        const introElement = this.previewElement.querySelector('.topics-introduction');
+        if (introElement) {
+            introElement.textContent = intro;
+        }
+        
+        this.scheduleAutoSave();
     }
 
     updateDisplayStyle(style) {
-        this.eventBus.dispatch('topics:display:style-updated', {
-            style,
-            timestamp: Date.now(),
-            source: 'design-panel'
-        });
+        if (!this.previewElement) return;
+        
+        const container = this.previewElement.querySelector('.topics-container');
+        if (container) {
+            container.setAttribute('data-layout', style);
+        }
+        
+        this.scheduleAutoSave();
     }
 
     updateColumns(columns) {
-        this.eventBus.dispatch('topics:display:columns-updated', {
-            columns,
-            timestamp: Date.now(),
-            source: 'design-panel'
-        });
+        if (!this.previewElement) return;
+        
+        this.previewElement.style.setProperty('--columns', columns);
+        this.scheduleAutoSave();
     }
 
     /**
-     * Integration functions
+     * Integration methods
      */
     async loadFromMKCG() {
-        this.showMessage('Loading topics from MKCG...', 'info');
-        
-        try {
-            // TODO: Implement MKCG integration
-            console.log('🔄 Loading from MKCG...');
-            
-        } catch (error) {
-            console.error('Failed to load from MKCG:', error);
-            this.showMessage('Failed to load from MKCG: ' + error.message, 'error');
-        }
+        console.log('🔄 Loading topics from MKCG...');
+        alert('MKCG integration coming soon!');
     }
 
     async syncWithMKCG() {
-        this.showMessage('Syncing with MKCG...', 'info');
-        
-        try {
-            // TODO: Implement MKCG sync
-            console.log('🔄 Syncing with MKCG...');
-            
-        } catch (error) {
-            console.error('Failed to sync with MKCG:', error);
-            this.showMessage('Failed to sync with MKCG: ' + error.message, 'error');
-        }
-    }
-
-    checkIntegrationStatus() {
-        // TODO: Check MKCG integration status
-        if (this.elements.integrationStatus) {
-            this.elements.integrationStatus.textContent = 'Ready for integration';
-        }
-    }
-
-    /**
-     * UI helper methods
-     */
-    showAddTopicPrompt() {
-        const addInterface = document.getElementById('add-topic-interface');
-        if (addInterface) {
-            addInterface.style.display = 'block';
-        }
-    }
-
-    hideAddTopicPrompt() {
-        const addInterface = document.getElementById('add-topic-interface');
-        if (addInterface) {
-            addInterface.style.display = 'none';
-        }
-    }
-
-    showQualityOverview() {
-        if (this.elements.qualityOverview) {
-            this.elements.qualityOverview.style.display = 'block';
-        }
-    }
-
-    hideQualityOverview() {
-        if (this.elements.qualityOverview) {
-            this.elements.qualityOverview.style.display = 'none';
-        }
-    }
-
-    showLoading(show) {
-        if (this.elements.loading) {
-            this.elements.loading.style.display = show ? 'flex' : 'none';
-        }
-    }
-
-    showMessage(message, type = 'info') {
-        console.log(`📢 Design Panel: ${message}`);
-        
-        // TODO: Implement proper toast/notification system
-        // For now, use temporary alert
-        if (type === 'error') {
-            console.error(message);
-        }
-    }
-
-    showError(message) {
-        this.showMessage(message, 'error');
-    }
-
-    updateUI() {
-        this.updateTopicsCounter();
-        this.updateQualityOverview();
-    }
-
-    /**
-     * GMKB ARCHITECTURE: Open panel method
-     */
-    openPanel() {
-        // Show the design panel (implementation depends on UI framework)
-        const panelElement = document.querySelector('.topics-design-panel, .design-panel[data-panel="topics"]');
-        if (panelElement) {
-            panelElement.style.display = 'block';
-            panelElement.classList.add('active');
-        }
-        
-        // Emit panel opened event
-        this.eventBus.dispatch('topics:design-panel:panel-opened', {
-            timestamp: Date.now(),
-            source: 'design-panel'
-        });
-    }
-    
-    /**
-     * GMKB ARCHITECTURE: Trigger GMKB event (replaces custom DOM events)
-     */
-    triggerEvent(eventName, data) {
-        // Convert legacy event names to GMKB event names
-        const gmkbEventName = this.convertToGMKBEventName(eventName);
-        
-        this.eventBus.dispatch(gmkbEventName, {
-            ...data,
-            timestamp: Date.now(),
-            source: 'design-panel'
-        });
-    }
-    
-    /**
-     * GMKB ARCHITECTURE: Convert legacy event names to GMKB format
-     */
-    convertToGMKBEventName(legacyEventName) {
-        const conversionMap = {
-            'topicsDesignPanelReady': 'topics:design-panel:ready',
-            'updateSectionTitle': 'topics:section:title-updated',
-            'updateSectionIntro': 'topics:section:intro-updated',
-            'updateDisplayStyle': 'topics:display:style-updated',
-            'updateColumns': 'topics:display:columns-updated'
-        };
-        
-        return conversionMap[legacyEventName] || `topics:design-panel:${legacyEventName.toLowerCase().replace(/([A-Z])/g, '-$1')}`;
+        console.log('🔄 Syncing with MKCG...');
+        alert('MKCG sync coming soon!');
     }
 
     escapeHtml(text) {
@@ -1396,79 +1267,160 @@ class TopicsDesignPanelManager {
     }
 
     /**
-     * GMKB ARCHITECTURE: Cleanup
+     * User feedback methods
      */
-    destroy() {
-        // Clear timeouts
-        if (this.saveTimeout) {
-            clearTimeout(this.saveTimeout);
-        }
-        if (this.qualityTimer) {
-            clearTimeout(this.qualityTimer);
-        }
+    showUserError(message) {
+        this.removeNotifications();
         
-        // Unsubscribe from GMKB events
-        this.eventSubscriptions.forEach((unsubscribe, eventName) => {
-            try {
-                unsubscribe();
-                console.log(`🧹 Design Panel: Unsubscribed from ${eventName}`);
-            } catch (error) {
-                console.error(`❌ Design Panel: Error unsubscribing from ${eventName}:`, error);
+        const notification = document.createElement('div');
+        notification.className = 'topics-notification topics-notification--error';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                <span class="notification-message">${this.escapeHtml(message)}</span>
+                <button class="notification-close" aria-label="Close">&times;</button>
+            </div>
+        `;
+        
+        this.insertNotification(notification);
+    }
+    
+    showUserSuccess(message) {
+        this.removeNotifications();
+        
+        const notification = document.createElement('div');
+        notification.className = 'topics-notification topics-notification--success';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span class="notification-message">${this.escapeHtml(message)}</span>
+                <button class="notification-close" aria-label="Close">&times;</button>
+            </div>
+        `;
+        
+        this.insertNotification(notification);
+        
+        setTimeout(() => {
+            this.removeNotifications();
+        }, 3000);
+    }
+    
+    insertNotification(notification) {
+        const topicsEditor = document.getElementById('topics-live-editor');
+        if (topicsEditor) {
+            topicsEditor.insertBefore(notification, topicsEditor.firstChild);
+            
+            const closeBtn = notification.querySelector('.notification-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    this.removeNotifications();
+                });
+            }
+        }
+    }
+    
+    removeNotifications() {
+        const notifications = document.querySelectorAll('.topics-notification');
+        notifications.forEach(notification => notification.remove());
+    }
+
+    dispatchReadyEvent() {
+        const event = new CustomEvent('topics:design-panel:ready', {
+            detail: {
+                panel: this,
+                postId: this.postId,
+                topicsCount: this.topics.length,
+                timestamp: Date.now()
             }
         });
+        window.dispatchEvent(event);
         
-        this.eventSubscriptions.clear();
-        
-        // Destroy sortable
-        if (this.sortable) {
-            this.sortable.destroy();
+        // Also dispatch for global GMKB coordination if available
+        if (window.GMKB && window.GMKB.dispatch) {
+            window.GMKB.dispatch('gmkb:component-ready', {
+                component: 'topics',
+                type: 'panel',
+                loadMethod: 'panel-script-lazy-initialized',
+                postId: this.postId,
+                topicsCount: this.topics.length,
+                timestamp: Date.now()
+            });
         }
         
-        // Notify about panel destruction
-        this.eventBus.dispatch('topics:design-panel:destroyed', {
-            timestamp: Date.now()
-        });
-        
-        console.log('🧹 GMKB Topics Design Panel: Cleaned up');
+        console.log('✅ Topics Design Panel: Ready event dispatched');
     }
 }
 
-// PHASE 3: GMKB initialization with event-driven architecture
-if (typeof window !== 'undefined') {
-    // Wait for GMKB to be ready before initializing
-    if (window.GMKB) {
-        // Initialize design panel when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                window.topicsDesignPanelManager = new TopicsDesignPanelManager();
-                
-                // Register with GMKB system
-                window.GMKB.registerSystem('TopicsDesignPanelManager', window.topicsDesignPanelManager);
-            });
-        } else {
-            window.topicsDesignPanelManager = new TopicsDesignPanelManager();
-            window.GMKB.registerSystem('TopicsDesignPanelManager', window.topicsDesignPanelManager);
-        }
-        
-        console.log('🎨 Topics Design Panel PHASE 3: GMKB event-driven architecture initialized');
-    } else {
-        // Wait for GMKB to be available
-        const checkGMKB = () => {
-            if (window.GMKB) {
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', () => {
-                        window.topicsDesignPanelManager = new TopicsDesignPanelManager();
-                        window.GMKB.registerSystem('TopicsDesignPanelManager', window.topicsDesignPanelManager);
-                    });
-                } else {
-                    window.topicsDesignPanelManager = new TopicsDesignPanelManager();
-                    window.GMKB.registerSystem('TopicsDesignPanelManager', window.topicsDesignPanelManager);
-                }
-                console.log('🎨 Topics Design Panel PHASE 3: GMKB event-driven architecture initialized (delayed)');
-            } else {
-                setTimeout(checkGMKB, 100);
-            }
-        };
-        checkGMKB();
+// ROOT FIX: Lazy initialization - script loads but waits for design panel DOM
+// Create the manager instance but don't initialize until DOM is ready
+if (!window.topicsDesignPanelManager) {
+    window.topicsDesignPanelManager = new TopicsDesignPanelManager();
+    
+    // Also register for GMKB events if the system supports it
+    if (window.GMKB && window.GMKB.dispatch) {
+        window.GMKB.dispatch('gmkb:component-script-ready', {
+            component: 'topics',
+            type: 'panel',
+            loadMethod: 'panel-script-lazy',
+            timestamp: Date.now()
+        });
     }
 }
+
+// ROOT FIX: Global function that can be called when design panel is rendered
+window.initializeTopicsDesignPanel = function() {
+    console.log('🚀 Global trigger: initializeTopicsDesignPanel called');
+    
+    if (window.topicsDesignPanelManager) {
+        if (window.topicsDesignPanelManager.isInitialized) {
+            console.log('ℹ️ Topics Design Panel: Already initialized');
+            return;
+        }
+        
+        console.log('🚀 Topics Design Panel: Triggering forced initialization from global call');
+        window.topicsDesignPanelManager.forceInitialize();
+    } else {
+        console.warn('⚠️ Topics Design Panel: Manager not found');
+    }
+};
+
+// ROOT FIX: Listen for design panel ready events
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for when the design panel might be added
+    const observer = new MutationObserver(function(mutations) {
+        for (const mutation of mutations) {
+            if (mutation.type === 'childList') {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        // Check if topics design panel was added
+                        if (node.id === 'topics-live-editor' || 
+                            (node.querySelector && node.querySelector('#topics-live-editor'))) {
+                            console.log('🔍 Global observer: Topics design panel detected in DOM');
+                            
+                            // Trigger initialization
+                            setTimeout(function() {
+                                if (window.initializeTopicsDesignPanel) {
+                                    window.initializeTopicsDesignPanel();
+                                }
+                            }, 100);
+                            
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Watch the whole document for design panel additions
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+});
