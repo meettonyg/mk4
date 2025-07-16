@@ -462,13 +462,13 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             if (success) {
                 console.log(`🧩 ComponentManager: Removed component with ID: ${id}`);
                 
-                // Show empty state if no components left
-                const state = StateManager.getState();
-                if (Object.keys(state.components).length === 0) {
-                    const emptyState = document.getElementById('empty-state');
-                    if (emptyState) {
-                        emptyState.style.display = 'block';
-                    }
+                // ROOT FIX: Use proper empty state management instead of direct manipulation
+                // Let the UIManager handle empty state visibility based on actual component count
+                if (window.GMKB?.systems?.UIManager?.ensureEmptyStateVisible) {
+                    // Defer to next tick to ensure DOM removal is processed
+                    setTimeout(() => {
+                        window.GMKB.systems.UIManager.ensureEmptyStateVisible(true);
+                    }, 10);
                 }
             }
             
@@ -652,10 +652,13 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Attach component interaction handlers
             this.attachComponentHandlers(componentElement, componentId);
             
-            // Hide empty state since we have components
-            const emptyState = document.getElementById('empty-state');
-            if (emptyState) {
-                emptyState.style.display = 'none';
+            // ROOT FIX: Use proper empty state management instead of direct manipulation
+            // Let the UIManager handle empty state visibility based on actual component count
+            if (window.GMKB?.systems?.UIManager?.ensureEmptyStateVisible) {
+                // Defer to next tick to ensure DOM is updated
+                setTimeout(() => {
+                    window.GMKB.systems.UIManager.ensureEmptyStateVisible(true);
+                }, 10);
             }
             
             console.log(`✅ ComponentManager: Inserted ${componentId} into DOM`);
@@ -1341,21 +1344,21 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 return;
             }
             
-            // Show empty state if no components
-            const emptyState = document.getElementById('empty-state');
-            if (Object.keys(state.components).length === 0) {
-                if (emptyState) {
-                    emptyState.style.display = 'block';
-                }
-            } else {
-                if (emptyState) {
-                    emptyState.style.display = 'none';
-                }
-                
+            // ROOT FIX: Use proper empty state management instead of direct manipulation
+            // Render components first, then let UIManager handle empty state
+            if (Object.keys(state.components).length > 0) {
                 // Render components in layout order
                 state.layout.forEach(componentId => {
                     ComponentManager.renderComponent(componentId);
                 });
+            }
+            
+            // ROOT FIX: Let UIManager handle empty state visibility based on actual component count
+            if (window.GMKB?.systems?.UIManager?.ensureEmptyStateVisible) {
+                // Defer to next tick to ensure DOM updates are processed
+                setTimeout(() => {
+                    window.GMKB.systems.UIManager.ensureEmptyStateVisible(true);
+                }, 20);
             }
         }
     };
@@ -1369,21 +1372,22 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         initializeEventListeners() {
-            // PHASE 2.1 FIX: Simplified event coordination state tracking
+            // ROOT FIX: Initialize tracking and rendering state
             this.eventState = {
                 coreSystemsReady: false,
                 componentsLoaded: false,
                 initializationComplete: false
             };
+            this.renderingInProgress = false;
             
-            // PHASE 2.1 FIX: Listen for core systems ready (simplified)
+            // ROOT FIX: Listen for core systems ready
             GMKB.subscribe('gmkb:core-systems-ready', (event) => {
                 console.log('✅ UIManager: Core systems ready', event.detail);
                 this.eventState.coreSystemsReady = true;
                 this.checkInitializationComplete();
             });
             
-            // PHASE 2.1 FIX: Listen for components loaded (simplified)
+            // ROOT FIX: Listen for components loaded
             GMKB.subscribe('gmkb:components-loaded', (event) => {
                 console.log('✅ UIManager: Components loaded', event.detail);
                 this.eventState.componentsLoaded = true;
@@ -1391,15 +1395,48 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 this.checkInitializationComplete();
             });
             
-            // PHASE 2.1 FIX: Removed duplicate event listener - handled above
+            // ROOT FIX: Listen for state changes to manage empty state
+            GMKB.subscribe('gmkb:state-changed', (event) => {
+                console.log('📊 UIManager: State changed, checking empty state');
+                // Use setTimeout to ensure DOM updates have processed
+                setTimeout(() => {
+                    this.ensureEmptyStateVisible(true);
+                }, 50);
+            });
+            
+            // ROOT FIX: Listen for component additions/removals
+            GMKB.subscribe('gmkb:component-added', (event) => {
+                console.log('➕ UIManager: Component added, hiding empty state');
+                this.ensureEmptyStateVisible(true);
+            });
+            
+            GMKB.subscribe('gmkb:component-removed', (event) => {
+                console.log('➖ UIManager: Component removed, checking empty state');
+                // Use setTimeout to ensure DOM removal has processed
+                setTimeout(() => {
+                    this.ensureEmptyStateVisible(true);
+                }, 50);
+            });
+            
+            // ROOT FIX: Listen for saved state loading
+            GMKB.subscribe('gmkb:saved-state-loaded', (event) => {
+                console.log('📋 UIManager: Saved state loaded with', event.detail.componentCount, 'components');
+                // Ensure empty state is managed after state loading
+                setTimeout(() => {
+                    this.ensureEmptyStateVisible(true);
+                }, 100);
+            });
             
             // Listen for components rendered event
             GMKB.subscribe('gmkb:components-rendered', (event) => {
                 console.log('✅ UIManager: Components rendered successfully', event.detail);
+                this.ensureEmptyStateVisible(true);
             });
         },
         
-        // PHASE 2.1 FIX: Simplified initialization completion check
+        /**
+         * ROOT FIX: Event-driven initialization completion with proper empty state coordination
+         */
         async checkInitializationComplete() {
             console.log('🎯 UIManager: Checking initialization - coreReady:', this.eventState.coreSystemsReady, 'componentsLoaded:', this.eventState.componentsLoaded);
             
@@ -1408,46 +1445,94 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     this.eventState.initializationComplete = true;
                     console.log('✅ UIManager: Initialization complete - triggering component load');
                     
-                    // PHASE 2.1 FIX: Dispatch unified ready event for all component scripts
+                    // ROOT FIX: Dispatch unified ready event for all component scripts
                     GMKB.dispatch('gmkb:initialization-complete', {
                         timestamp: Date.now(),
                         systemsReady: true,
                         componentsAvailable: true
                     });
                     
-                    // Load saved components if available
+                    // ROOT FIX: Load saved components FIRST, then check empty state
                     if (GMKB.systems.ComponentManager && GMKB.systems.ComponentManager.loadSavedComponents) {
                         try {
                             await GMKB.systems.ComponentManager.loadSavedComponents();
                             console.log('✅ UIManager: Saved components loaded');
+                            
+                            // ROOT FIX: Wait a tick for DOM updates, then check empty state
+                            setTimeout(() => {
+                                this.ensureEmptyStateVisible(true);
+                            }, 100);
+                            
                         } catch (error) {
                             console.error('❌ UIManager: Error loading saved components:', error);
+                            // Even on error, check empty state
+                            this.ensureEmptyStateVisible(true);
                         }
+                    } else {
+                        // No component manager, just check empty state
+                        this.ensureEmptyStateVisible(true);
                     }
-                    
-                    // Ensure proper empty state if no components
-                    this.ensureEmptyStateVisible();
                 }
             }
         },
         
-        ensureEmptyStateVisible() {
+        /**
+         * ROOT FIX: Conditionally show empty state only when NO components exist
+         * @param {boolean} forceCheck - Force recheck of component state
+         */
+        ensureEmptyStateVisible(forceCheck = false) {
             const emptyState = document.getElementById('empty-state');
             const previewContainer = document.getElementById('media-kit-preview');
             
-            if (emptyState && previewContainer) {
-                // Make sure empty state is visible
-                emptyState.style.display = 'block';
-                
-                // Clear any existing components that shouldn't be there
-                const existingComponents = previewContainer.querySelectorAll('.media-kit-component');
-                if (existingComponents.length === 0) {
-                    console.log('✅ UIManager: Empty state properly displayed');
-                } else {
-                    console.log('⚠️ UIManager: Found unexpected components in empty state:', existingComponents.length);
-                }
-            } else {
+            if (!emptyState || !previewContainer) {
                 console.warn('⚠️ UIManager: Empty state or preview container not found');
+                return;
+            }
+            
+            // ROOT FIX: Check BOTH state manager and DOM for components
+            const stateManager = GMKB.systems?.StateManager;
+            const stateComponentCount = stateManager ? Object.keys(stateManager.getState().components).length : 0;
+            const domComponents = previewContainer.querySelectorAll('.media-kit-component');
+            const domComponentCount = domComponents.length;
+            
+            // ROOT FIX: Only show empty state if NO components exist in either state or DOM
+            const shouldShowEmptyState = stateComponentCount === 0 && domComponentCount === 0;
+            
+            if (shouldShowEmptyState) {
+                emptyState.style.display = 'block';
+                console.log('✅ UIManager: Empty state properly displayed - no components found');
+                console.log('📊 UIManager: Component count - State:', stateComponentCount, 'DOM:', domComponentCount);
+            } else {
+                emptyState.style.display = 'none';
+                console.log('✅ UIManager: Empty state hidden - components exist');
+                console.log('📊 UIManager: Component count - State:', stateComponentCount, 'DOM:', domComponentCount);
+                
+                // ROOT FIX: If we have state components but no DOM components, trigger rendering
+                if (stateComponentCount > 0 && domComponentCount === 0 && !this.renderingInProgress) {
+                    console.log('🔄 UIManager: State components found but no DOM - triggering render');
+                    this.renderingInProgress = true;
+                    
+                    // Dispatch event for component loading to begin
+                    GMKB.dispatch('gmkb:state-components-need-rendering', {
+                        stateComponentCount: stateComponentCount,
+                        timestamp: Date.now()
+                    });
+                    
+                    // Load saved components if ComponentManager is available
+                    if (GMKB.systems?.ComponentManager?.loadSavedComponents) {
+                        GMKB.systems.ComponentManager.loadSavedComponents()
+                            .then(() => {
+                                this.renderingInProgress = false;
+                                console.log('✅ UIManager: Saved components rendered successfully');
+                            })
+                            .catch(error => {
+                                this.renderingInProgress = false;
+                                console.error('❌ UIManager: Error rendering saved components:', error);
+                            });
+                    } else {
+                        this.renderingInProgress = false;
+                    }
+                }
             }
         },
         
