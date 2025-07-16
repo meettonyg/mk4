@@ -20,6 +20,207 @@ class ComponentLoader {
         $this->componentsDir = $componentsDir;
         $this->discovery = $discovery;
     }
+    
+    /**
+     * ROOT LEVEL FIX: Enhanced auto-enqueue with proper GMKB dependency management
+     * 
+     * @param string $componentName Component name
+     */
+    private function enqueueComponentScript($componentName) {
+        // Prevent duplicate enqueuing
+        static $enqueuedScripts = array();
+        if (isset($enqueuedScripts[$componentName])) {
+            return;
+        }
+        
+        $plugin_url = defined('GUESTIFY_PLUGIN_URL') ? GUESTIFY_PLUGIN_URL : '';
+        $version = defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : time();
+        
+        // Check for component scripts with enhanced dependency management
+        $scripts = array(
+            'panel-script.js' => 'panel',
+            'script.js' => 'main'
+        );
+        
+        foreach ($scripts as $filename => $type) {
+            $script_path = $this->componentsDir . '/' . $componentName . '/' . $filename;
+            $script_url = $plugin_url . 'components/' . $componentName . '/' . $filename;
+            
+            if (file_exists($script_path)) {
+                $handle = 'gmkb-' . $componentName . '-' . $type . '-script';
+                
+                // ROOT FIX: Enhanced dependency chain ensures proper initialization order
+                wp_enqueue_script(
+                    $handle,
+                    $script_url,
+                    array('gmkb-main-script'), // Main GMKB system must be loaded first
+                    $version,
+                    true // Load in footer after main system
+                );
+                
+                // ROOT FIX: Enhanced component data with GMKB readiness detection
+                wp_localize_script(
+                    $handle,
+                    $componentName . 'ComponentData',
+                    array(
+                        'postId' => $this->getPostIdFromContext(),
+                        'ajaxUrl' => admin_url('admin-ajax.php'),
+                        'restUrl' => esc_url_raw(rest_url()),
+                        'nonce' => wp_create_nonce('guestify_media_kit_builder'),
+                        'restNonce' => wp_create_nonce('wp_rest'),
+                        'component' => $componentName,
+                        'componentType' => $componentName,
+                        'pluginUrl' => $plugin_url,
+                        'siteUrl' => home_url(),
+                        'gmkbReady' => true, // Flag for component scripts
+                        'architecture' => 'component-auto-load',
+                        'timestamp' => time(),
+                        'debugMode' => defined('WP_DEBUG') && WP_DEBUG
+                    )
+                );
+                
+                // ROOT FIX: Add GMKB initialization coordination script
+                $this->addGMKBCoordinationScript($handle, $componentName, $type);
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("✅ ROOT FIX: Auto-enqueued {$componentName} {$type} script with GMKB coordination: {$script_url}");
+                }
+            }
+        }
+        
+        $enqueuedScripts[$componentName] = true;
+    }
+    
+    /**
+     * ROOT FIX: Add GMKB coordination script to ensure proper initialization
+     * 
+     * @param string $handle Script handle
+     * @param string $componentName Component name  
+     * @param string $type Script type (main|panel)
+     */
+    private function addGMKBCoordinationScript($handle, $componentName, $type) {
+        // Add inline script to coordinate with GMKB system
+        $coordination_script = "
+        // ROOT FIX: GMKB Component Coordination for {$componentName} {$type}
+        (function() {
+            'use strict';
+            
+            console.log('🔗 GMKB Coordination: {$componentName} {$type} script loading...');
+            
+            // Wait for both DOM and GMKB system
+            function waitForGMKBAndInitialize() {
+                if (typeof window !== 'undefined' && window.GMKB && document.readyState !== 'loading') {
+                    console.log('✅ GMKB Coordination: {$componentName} {$type} - GMKB system ready');
+                    
+                    // Dispatch component script ready event
+                    if (window.GMKB.dispatch) {
+                        window.GMKB.dispatch('gmkb:component-script-ready', {
+                            component: '{$componentName}',
+                            type: '{$type}',
+                            timestamp: Date.now()
+                        });
+                    }
+                    
+                    // Ensure component managers are globally available
+                    if (!window.topicsDesignPanelManager && '{$componentName}' === 'topics' && '{$type}' === 'panel') {
+                        console.log('🎨 GMKB Coordination: Topics design panel manager will initialize when DOM ready');
+                    }
+                    
+                } else {
+                    console.log('⏳ GMKB Coordination: {$componentName} {$type} - waiting for GMKB system...');
+                    
+                    // Listen for GMKB ready event
+                    document.addEventListener('gmkb:initialization-complete', function(e) {
+                        console.log('✅ GMKB Coordination: {$componentName} {$type} - initialization complete event received');
+                        
+                        // Small delay to ensure all systems are ready
+                        setTimeout(function() {
+                            if (window.GMKB && window.GMKB.dispatch) {
+                                window.GMKB.dispatch('gmkb:component-script-ready', {
+                                    component: '{$componentName}',
+                                    type: '{$type}',
+                                    timestamp: Date.now(),
+                                    viaEvent: true
+                                });
+                            }
+                        }, 100);
+                    });
+                    
+                    // Fallback check every 500ms (max 10 times = 5 seconds)
+                    let checkCount = 0;
+                    const fallbackCheck = setInterval(function() {
+                        checkCount++;
+                        if (window.GMKB || checkCount >= 10) {
+                            clearInterval(fallbackCheck);
+                            if (window.GMKB) {
+                                console.log('✅ GMKB Coordination: {$componentName} {$type} - fallback check successful');
+                                if (window.GMKB.dispatch) {
+                                    window.GMKB.dispatch('gmkb:component-script-ready', {
+                                        component: '{$componentName}',
+                                        type: '{$type}',
+                                        timestamp: Date.now(),
+                                        viaFallback: true
+                                    });
+                                }
+                            } else {
+                                console.warn('⚠️ GMKB Coordination: {$componentName} {$type} - GMKB system not available after 5 seconds');
+                            }
+                        }
+                    }, 500);
+                }
+            }
+            
+            // Initialize coordination
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', waitForGMKBAndInitialize);
+            } else {
+                waitForGMKBAndInitialize();
+            }
+        })();
+        ";
+        
+        wp_add_inline_script($handle, $coordination_script, 'before');
+    }
+    
+    /**
+     * ROOT FIX: Enhanced post ID detection with comprehensive fallbacks
+     * 
+     * @return int Post ID
+     */
+    private function getPostIdFromContext() {
+        $post_id = 0;
+        
+        // Priority 1: URL parameters
+        if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+            $post_id = intval($_GET['post_id']);
+        }
+        elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
+            $post_id = intval($_GET['p']);
+        }
+        elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
+            $post_id = intval($_GET['page_id']);
+        }
+        
+        // Priority 2: WordPress context
+        if ($post_id === 0 && function_exists('get_the_ID') && get_the_ID()) {
+            $post_id = get_the_ID();
+        }
+        
+        // Priority 3: Global post object
+        if ($post_id === 0 && isset($GLOBALS['post']) && $GLOBALS['post']) {
+            $post_id = $GLOBALS['post']->ID;
+        }
+        
+        // Validate post exists
+        if ($post_id > 0) {
+            $post = get_post($post_id);
+            if (!$post || $post->post_status === 'trash') {
+                $post_id = 0;
+            }
+        }
+        
+        return $post_id;
+    }
 
     /**
      * Map old component names to new directory names
@@ -59,6 +260,9 @@ class ComponentLoader {
 
         // Add component to loaded components list for script and style loading
         $this->loadedComponents[$componentName] = $component;
+
+        // PHASE 1.3 FIX: Auto-load component scripts in footer
+        $this->enqueueComponentScript($componentName);
 
         // ROOT FIX: Enhance props with post data and MKCG integration
         $enhancedProps = $this->enhancePropsWithPostData($props, $componentName);

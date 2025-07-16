@@ -652,6 +652,9 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Attach component interaction handlers
             this.attachComponentHandlers(componentElement, componentId);
             
+            // ROOT FIX: Load component scripts after DOM insertion
+            this.loadComponentScripts(component.type, componentId);
+            
             // ROOT FIX: Use proper empty state management instead of direct manipulation
             // Let the UIManager handle empty state visibility based on actual component count
             if (window.GMKB?.systems?.UIManager?.ensureEmptyStateVisible) {
@@ -1302,6 +1305,159 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 console.log(`🗑️ ComponentManager: Deleting ${componentId}`);
                 this.removeComponent(componentId);
             }
+        },
+        
+        /**
+         * ROOT FIX: Load component scripts dynamically after component rendering
+         * @param {string} componentType - Component type (e.g., 'topics')
+         * @param {string} componentId - Component ID
+         */
+        async loadComponentScripts(componentType, componentId) {
+            console.log(`📜 ComponentManager: Loading scripts for ${componentType} component`);
+            
+            const postId = window.gmkbData?.postId || 0;
+            const pluginUrl = window.gmkbData?.pluginUrl || '';
+            
+            // Component data for localization
+            const componentData = {
+                postId: postId,
+                ajaxUrl: window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php',
+                restUrl: window.gmkbData?.restUrl || '/wp-json/',
+                nonce: window.gmkbData?.nonce || '',
+                restNonce: window.gmkbData?.restNonce || '',
+                component: componentType,
+                componentType: componentType,
+                componentId: componentId,
+                pluginUrl: pluginUrl,
+                siteUrl: window.gmkbData?.siteUrl || '',
+                gmkbReady: true,
+                architecture: 'client-side-dynamic-load',
+                timestamp: Date.now(),
+                debugMode: window.gmkbData?.debugMode || false
+            };
+            
+            // Define scripts to load
+            const scripts = [
+                { file: 'panel-script.js', type: 'panel' },
+                { file: 'script.js', type: 'main' }
+            ];
+            
+            for (const script of scripts) {
+                try {
+                    const scriptUrl = `${pluginUrl}components/${componentType}/${script.file}`;
+                    const scriptExists = await this.checkScriptExists(scriptUrl);
+                    
+                    if (scriptExists) {
+                        await this.loadScript(scriptUrl, componentType, script.type, componentData);
+                        console.log(`✅ ComponentManager: Loaded ${componentType} ${script.type} script`);
+                    } else {
+                        console.log(`ℹ️ ComponentManager: No ${script.file} found for ${componentType}`);
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ ComponentManager: Failed to load ${componentType} ${script.file}:`, error);
+                }
+            }
+        },
+        
+        /**
+         * ROOT FIX: Check if script exists before loading
+         * @param {string} url - Script URL to check
+         * @returns {Promise<boolean>} Whether script exists
+         */
+        async checkScriptExists(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                return response.ok;
+            } catch (error) {
+                return false;
+            }
+        },
+        
+        /**
+         * ROOT FIX: Dynamically load and execute component script
+         * @param {string} url - Script URL
+         * @param {string} componentType - Component type
+         * @param {string} scriptType - Script type (main|panel)
+         * @param {Object} componentData - Component data to expose
+         */
+        async loadScript(url, componentType, scriptType, componentData) {
+            return new Promise((resolve, reject) => {
+                // Check if script already loaded
+                const existingScript = document.querySelector(`script[src="${url}"]`);
+                if (existingScript) {
+                    console.log(`ℹ️ ComponentManager: Script already loaded: ${url}`);
+                    resolve();
+                    return;
+                }
+                
+                // Expose component data globally before script loads
+                const globalDataName = componentType + 'ComponentData';
+                window[globalDataName] = componentData;
+                
+                // Add GMKB coordination before script loads
+                const coordinationScript = document.createElement('script');
+                coordinationScript.textContent = `
+                    // ROOT FIX: GMKB Component Coordination for ${componentType} ${scriptType}
+                    (function() {
+                        'use strict';
+                        
+                        console.log('🔗 GMKB Dynamic Load: ${componentType} ${scriptType} script loading...');
+                        
+                        function initializeComponentScript() {
+                            if (typeof window !== 'undefined' && window.GMKB) {
+                                console.log('✅ GMKB Dynamic Load: ${componentType} ${scriptType} - GMKB system ready');
+                                
+                                // Dispatch component script ready event
+                                if (window.GMKB.dispatch) {
+                                    window.GMKB.dispatch('gmkb:component-script-ready', {
+                                        component: '${componentType}',
+                                        type: '${scriptType}',
+                                        dynamicLoad: true,
+                                        timestamp: Date.now()
+                                    });
+                                }
+                            } else {
+                                console.warn('⚠️ GMKB Dynamic Load: ${componentType} ${scriptType} - GMKB system not available');
+                            }
+                        }
+                        
+                        // Initialize immediately since GMKB should be ready
+                        initializeComponentScript();
+                    })();
+                `;
+                document.head.appendChild(coordinationScript);
+                
+                // Create and load the actual component script
+                const script = document.createElement('script');
+                script.src = url;
+                script.async = true;
+                script.type = 'text/javascript';
+                
+                script.onload = () => {
+                    console.log(`✅ ComponentManager: Dynamic script loaded: ${url}`);
+                    
+                    // Special handling for topics panel script
+                    if (componentType === 'topics' && scriptType === 'panel') {
+                        // Give the script time to initialize
+                        setTimeout(() => {
+                            if (window.topicsDesignPanelManager) {
+                                console.log('🎨 ComponentManager: Topics design panel manager initialized');
+                            } else {
+                                console.warn('⚠️ ComponentManager: Topics design panel manager not found after load');
+                            }
+                        }, 100);
+                    }
+                    
+                    resolve();
+                };
+                
+                script.onerror = () => {
+                    console.error(`❌ ComponentManager: Failed to load script: ${url}`);
+                    reject(new Error(`Failed to load script: ${url}`));
+                };
+                
+                document.head.appendChild(script);
+            });
         },
         
         /**
