@@ -70,7 +70,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         init() {
-            console.log('📋 StateManager: Initialized (Server-Integrated)');
+            console.log('📋 StateManager: Initialized (Phase 2.3 Simplified)');
             
             // ROOT FIX: Check localStorage FIRST (where previous components are saved)
             let hasLocalStorageData = false;
@@ -317,12 +317,13 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     categories: categories
                 });
                 
-                // ROOT FIX: Dispatch available components ready event
-                GMKB.dispatch('gmkb:available-components-ready', {
-                    components: components,
-                    count: Object.keys(components).length,
-                    timestamp: Date.now()
-                });
+                // PHASE 2.1 FIX: Components loaded event (replaces available-components-ready)
+                GMKB.dispatch('gmkb:components-loaded', {
+                components: components,
+                count: Object.keys(components).length,
+                timestamp: Date.now(),
+                    source: 'server'
+            });
                 
             } catch (error) {
                 console.error('❌ ComponentManager: Error loading components:', error);
@@ -355,8 +356,8 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             
             console.log('⚠️ ComponentManager: Using fallback components:', Object.keys(this.availableComponents));
             
-            // ROOT FIX: Dispatch available components ready event for fallback too
-            GMKB.dispatch('gmkb:available-components-ready', {
+            // PHASE 2.1 FIX: Dispatch components loaded event for fallback too
+            GMKB.dispatch('gmkb:components-loaded', {
                 components: this.availableComponents,
                 count: Object.keys(this.availableComponents).length,
                 source: 'fallback',
@@ -1368,35 +1369,29 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         initializeEventListeners() {
-            // ROOT FIX: Event-driven coordination state tracking
+            // PHASE 2.1 FIX: Simplified event coordination state tracking
             this.eventState = {
-                savedStateLoaded: false,
-                availableComponentsReady: false,
-                savedStateData: null,
-                hasSavedComponents: false // Track if we actually have saved components
+                coreSystemsReady: false,
+                componentsLoaded: false,
+                initializationComplete: false
             };
             
-            // Listen for saved state loaded event
-            GMKB.subscribe('gmkb:saved-state-loaded', (event) => {
-                console.log('🔄 UIManager: Saved state loaded event received', event.detail);
-                this.eventState.savedStateLoaded = true;
-                this.eventState.savedStateData = event.detail;
-                this.eventState.hasSavedComponents = true; // We have components to load
-                this.checkReadyToLoadComponents();
+            // PHASE 2.1 FIX: Listen for core systems ready (simplified)
+            GMKB.subscribe('gmkb:core-systems-ready', (event) => {
+                console.log('✅ UIManager: Core systems ready', event.detail);
+                this.eventState.coreSystemsReady = true;
+                this.checkInitializationComplete();
             });
             
-            // ROOT FIX: Listen for available components ready event
-            GMKB.subscribe('gmkb:available-components-ready', (event) => {
-                console.log('✅ UIManager: Available components ready event received', event.detail);
-                this.eventState.availableComponentsReady = true;
-                this.checkReadyToLoadComponents();
-            });
-            
-            // Listen for components loaded event to update UI state
+            // PHASE 2.1 FIX: Listen for components loaded (simplified)
             GMKB.subscribe('gmkb:components-loaded', (event) => {
-                console.log('✅ UIManager: Available components loaded', event.detail);
+                console.log('✅ UIManager: Components loaded', event.detail);
+                this.eventState.componentsLoaded = true;
                 this.updateComponentLibraryHandlers();
+                this.checkInitializationComplete();
             });
+            
+            // PHASE 2.1 FIX: Removed duplicate event listener - handled above
             
             // Listen for components rendered event
             GMKB.subscribe('gmkb:components-rendered', (event) => {
@@ -1404,42 +1399,36 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             });
         },
         
-        // ROOT FIX: Event-driven coordination - NO setTimeout polling
-        async checkReadyToLoadComponents() {
-            console.log('🎯 UIManager: Checking readiness - savedState:', this.eventState.savedStateLoaded, 'availableComponents:', this.eventState.availableComponentsReady, 'hasSavedComponents:', this.eventState.hasSavedComponents);
+        // PHASE 2.1 FIX: Simplified initialization completion check
+        async checkInitializationComplete() {
+            console.log('🎯 UIManager: Checking initialization - coreReady:', this.eventState.coreSystemsReady, 'componentsLoaded:', this.eventState.componentsLoaded);
             
-            // If we have saved components, wait for both events
-            if (this.eventState.hasSavedComponents) {
-                if (this.eventState.savedStateLoaded && this.eventState.availableComponentsReady) {
-                    console.log('🎯 UIManager: Both events ready - loading saved components');
+            if (this.eventState.coreSystemsReady && this.eventState.componentsLoaded) {
+                if (!this.eventState.initializationComplete) {
+                    this.eventState.initializationComplete = true;
+                    console.log('✅ UIManager: Initialization complete - triggering component load');
                     
+                    // PHASE 2.1 FIX: Dispatch unified ready event for all component scripts
+                    GMKB.dispatch('gmkb:initialization-complete', {
+                        timestamp: Date.now(),
+                        systemsReady: true,
+                        componentsAvailable: true
+                    });
+                    
+                    // Load saved components if available
                     if (GMKB.systems.ComponentManager && GMKB.systems.ComponentManager.loadSavedComponents) {
                         try {
                             await GMKB.systems.ComponentManager.loadSavedComponents();
-                            console.log('✅ UIManager: Saved components loaded successfully');
+                            console.log('✅ UIManager: Saved components loaded');
                         } catch (error) {
                             console.error('❌ UIManager: Error loading saved components:', error);
                         }
                     }
                     
-                    this.resetEventState();
-                }
-            } else {
-                // No saved components - just need available components to be ready to show empty state
-                if (this.eventState.availableComponentsReady) {
-                    console.log('🎯 UIManager: No saved components - ensuring empty state is visible');
+                    // Ensure proper empty state if no components
                     this.ensureEmptyStateVisible();
-                    this.resetEventState();
                 }
             }
-        },
-        
-        resetEventState() {
-            // Reset state for future use
-            this.eventState.savedStateLoaded = false;
-            this.eventState.availableComponentsReady = false;
-            this.eventState.savedStateData = null;
-            this.eventState.hasSavedComponents = false;
         },
         
         ensureEmptyStateVisible() {
@@ -1600,17 +1589,24 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Initialize each system in proper order
             console.log('🔄 GMKB: Initializing systems...');
             
-            // ROOT FIX: Initialize UIManager FIRST (sets up event listeners)
+            // PHASE 2.1 FIX: Simplified initialization sequence
+            console.log('🔄 GMKB: Step 1 - Initializing UIManager (event listeners)');
             UIManager.init();
             
-            // 1. Initialize StateManager second (will dispatch saved-state events to ready listeners)
+            console.log('🔄 GMKB: Step 2 - Initializing StateManager and Renderer');
             StateManager.init();
-            
-            // 2. Initialize ComponentManager (loads available components and handles saved state)
-            await ComponentManager.init();
-            
-            // 3. Initialize Renderer last
             Renderer.init();
+            
+            // PHASE 2.1 FIX: Dispatch core systems ready event
+            console.log('✅ GMKB: Core systems initialized - dispatching ready event');
+            GMKB.dispatch('gmkb:core-systems-ready', {
+                timestamp: Date.now(),
+                systems: ['StateManager', 'Renderer', 'UIManager'],
+                readyForComponents: true
+            });
+            
+            console.log('🔄 GMKB: Step 3 - Initializing ComponentManager (will load available components)');
+            await ComponentManager.init();
 
             // ROOT FIX: Expose component managers globally for component updates
             window.enhancedComponentManager = ComponentManager;
@@ -1626,13 +1622,17 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             
             console.log('🔒 GMKB: Namespace protected with Object.freeze()');
 
-            // All systems are ready - announce it
+            // PHASE 2.3 FIX: Simplified system ready announcement
             GMKB.dispatch('gmkb:ready', {
                 timestamp: Date.now(),
-                architecture: 'server-integrated-vanilla-js',
                 systems: Object.keys(GMKB.systems),
-                wordpressData: !!window.gmkbData,
                 postId: window.gmkbData?.postId || null
+            });
+            
+            // PHASE 2.3 FIX: Final initialization complete event for all remaining components
+            GMKB.dispatch('gmkb:all-systems-ready', {
+                timestamp: Date.now(),
+                allSystemsInitialized: true
             });
             
             // Update body class to indicate readiness - VANILLA JS
