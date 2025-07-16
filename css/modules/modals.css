@@ -1,7 +1,7 @@
-/* Modals Module */
+/* Modals Module - ROOT FIX for centering issues */
 
-/* Global Settings Modal */
-.modal {
+/* ROOT FIX: Modal overlay with proper flexbox centering */
+.modal, .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -13,15 +13,29 @@
     justify-content: center;
     z-index: 2000;
     padding: 20px;
+    
+    /* ROOT FIX: Ensure proper centering behavior */
+    width: 100vw;
+    height: 100vh;
 }
 
-.modal__content {
+/* ROOT FIX: Show modal with proper flex display */
+.modal.modal--open, .modal-overlay.modal--open {
+    display: flex !important;
+}
+
+.modal__content, .modal__content--centered {
     background: #2a2a2a;
     border-radius: 8px;
     width: 100%;
     max-width: 500px;
     max-height: 80vh;
     overflow-y: auto;
+    
+    /* ROOT FIX: Ensure modal content is properly centered */
+    margin: auto;
+    position: relative;
+    transform: translateY(0);
 }
 
 .modal__header {

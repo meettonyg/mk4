@@ -854,6 +854,14 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 return;
             }
             
+            // ROOT FIX: Dispatch component edit event BEFORE loading design panel
+            GMKB.dispatch('gmkb:component-edit-requested', {
+                componentId: componentId,
+                componentType: component.type,
+                component: component,
+                timestamp: Date.now()
+            });
+            
             try {
                 // ROOT FIX: Load component's own design panel via AJAX
                 console.log(`📱 Loading design panel for component type: ${component.type}`);
@@ -877,14 +885,39 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     // ROOT FIX: Display in sidebar design panel
                     this.displayInSidebarDesignPanel(data.data.html, componentId, component);
                     console.log(`✅ ComponentManager: Loaded ${component.type} design panel in sidebar`);
+                    
+                    // ROOT FIX: Dispatch design panel ready event AFTER panel is displayed
+                    GMKB.dispatch('gmkb:design-panel-ready', {
+                        componentId: componentId,
+                        component: component.type,
+                        panelType: 'custom',
+                        timestamp: Date.now()
+                    });
                 } else {
                     console.warn(`⚠️ ComponentManager: No design panel found for ${component.type}, using generic`);
                     this.displayGenericDesignPanel(component, componentId);
+                    
+                    // ROOT FIX: Dispatch event for generic panel too
+                    GMKB.dispatch('gmkb:design-panel-ready', {
+                        componentId: componentId,
+                        component: component.type,
+                        panelType: 'generic',
+                        timestamp: Date.now()
+                    });
                 }
                 
             } catch (error) {
                 console.error('❌ ComponentManager: Error loading component design panel:', error);
                 this.displayGenericDesignPanel(component, componentId);
+                
+                // ROOT FIX: Dispatch event for error case too
+                GMKB.dispatch('gmkb:design-panel-ready', {
+                    componentId: componentId,
+                    component: component.type,
+                    panelType: 'generic',
+                    error: error.message,
+                    timestamp: Date.now()
+                });
             }
         },
         
@@ -937,6 +970,14 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 designTab.classList.add('sidebar__tab--active');
                 designTabContent.classList.add('tab-content--active');
                 console.log('🎯 Switched to Design tab');
+                
+                // ROOT FIX: Dispatch sidebar tab change event for event-driven components
+                GMKB.dispatch('gmkb:sidebar-tab-changed', {
+                    tab: 'design',
+                    tabElement: designTab,
+                    contentElement: designTabContent,
+                    timestamp: Date.now()
+                });
             }
         },
         
@@ -1968,6 +2009,33 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 console.warn('⚠️ GMKB: Could not load toolbar interactions module:', error);
                 // Fallback: Load as script tag
                 loadToolbarInteractionsFallback();
+            }
+            
+            // ROOT FIX: Load tab system after GMKB system is ready
+            try {
+                console.log('📋 GMKB: Loading tab system...');
+                const { setupTabs } = await import('./ui/tabs.js');
+                setupTabs();
+                console.log('✅ GMKB: Tab system loaded successfully');
+            } catch (error) {
+                console.warn('⚠️ GMKB: Could not load tab system module:', error);
+            }
+            
+            // ROOT FIX: Load modal systems
+            try {
+                console.log('📺 GMKB: Loading modal systems...');
+                
+                // Load export system
+                const { setupExportSystem } = await import('./modals/export.js');
+                setupExportSystem();
+                
+                // Load global settings system  
+                const { globalSettings } = await import('./modals/global-settings.js');
+                await globalSettings.init();
+                
+                console.log('✅ GMKB: Modal systems loaded successfully');
+            } catch (error) {
+                console.warn('⚠️ GMKB: Could not load modal systems:', error);
             }
             
             console.log('🔒 GMKB: Namespace protected with Object.freeze()');

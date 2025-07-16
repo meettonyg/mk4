@@ -1,5 +1,6 @@
-<div class="modal" id="export-modal">
-    <div class="modal__content">
+<!-- ROOT FIX: Added modal overlay for proper centering and backdrop clicks -->
+<div class="modal-overlay" id="export-modal" style="display: none;">
+    <div class="modal__content modal__content--centered">
         <div class="modal__header">
             <div class="modal__title">Export Your Media Kit</div>
             <button class="modal__close" id="close-export-modal">&times;</button>

@@ -231,6 +231,59 @@ class ToolbarInteractions {
     }
     
     /**
+     * ROOT FIX: Setup modal close handlers for any modal
+     * @param {HTMLElement} modal - Modal element to setup close handlers for
+     */
+    setupModalCloseHandlers(modal) {
+        if (!modal || modal.hasAttribute('data-close-handlers-setup')) {
+            return; // Already setup or invalid modal
+        }
+        
+        console.log('🔧 TOOLBAR: Setting up close handlers for modal:', modal.id);
+        
+        // Mark as setup to prevent duplicates
+        modal.setAttribute('data-close-handlers-setup', 'true');
+        
+        // Close button handler
+        const closeBtn = modal.querySelector('.modal__close, .library__close, [data-close-modal]');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.hideModal(modal);
+            });
+        }
+        
+        // Backdrop click handler
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.hideModal(modal);
+            }
+        });
+        
+        // ESC key handler
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display === 'flex') {
+                this.hideModal(modal);
+            }
+        });
+        
+        console.log('✅ TOOLBAR: Close handlers setup complete for modal:', modal.id);
+    }
+    
+    /**
+     * ROOT FIX: Hide modal properly
+     * @param {HTMLElement} modal - Modal element to hide
+     */
+    hideModal(modal) {
+        if (!modal) return;
+        
+        modal.style.display = 'none';
+        modal.classList.remove('modal--open');
+        console.log('✅ TOOLBAR: Modal hidden:', modal.id);
+    }
+    
+    /**
      * Setup event listeners for all toolbar buttons
      */
     setupEventListeners() {
@@ -287,6 +340,9 @@ class ToolbarInteractions {
             });
             this.logger.debug('TOOLBAR', 'Share button click handler attached');
         }
+        
+        // ROOT FIX: Preview toggle handlers for device buttons
+        this.setupPreviewToggle();
         
         // Keyboard shortcuts
         this.setupKeyboardShortcuts();
@@ -582,18 +638,23 @@ class ToolbarInteractions {
     }
     
     /**
-     * Handle export button click
+     * Handle export button click - ROOT FIX
      */
     handleExportClick() {
         this.logger.info('TOOLBAR', 'Export button clicked');
         
         try {
-            // Check if export modal exists
+            // ROOT FIX: Use modal overlay with proper display method
             const exportModal = document.getElementById('export-modal');
             if (exportModal) {
-                // Show export modal
-                exportModal.style.display = 'block';
-                exportModal.classList.add('active');
+                // Show export modal with proper flex display for centering
+                exportModal.style.display = 'flex';
+                exportModal.classList.add('modal--open');
+                
+                console.log('✅ TOOLBAR: Export modal opened');
+                
+                // Setup close handlers if not already done
+                this.setupModalCloseHandlers(exportModal);
                 
                 // Emit event for export modal to initialize
                 eventBus.emit('toolbar:export-requested', {
@@ -601,6 +662,7 @@ class ToolbarInteractions {
                 });
                 
             } else {
+                console.error('❌ TOOLBAR: Export modal not found in DOM');
                 // Fallback: direct export using save service
                 const saveService = window.saveService;
                 if (saveService && saveService.exportState) {
@@ -666,18 +728,23 @@ class ToolbarInteractions {
     }
     
     /**
-     * Handle theme button click
+     * Handle theme button click - ROOT FIX
      */
     handleThemeClick() {
         this.logger.info('TOOLBAR', 'Theme button clicked');
         
         try {
-            // Check if global settings modal exists
+            // ROOT FIX: Use modal overlay with proper display method
             const themeModal = document.getElementById('global-settings-modal');
             if (themeModal) {
-                // Show theme modal
-                themeModal.style.display = 'block';
-                themeModal.classList.add('active');
+                // Show theme modal with proper flex display for centering
+                themeModal.style.display = 'flex';
+                themeModal.classList.add('modal--open');
+                
+                console.log('✅ TOOLBAR: Global settings modal opened');
+                
+                // Setup close handlers if not already done
+                this.setupModalCloseHandlers(themeModal);
                 
                 // Emit event for theme modal to initialize
                 eventBus.emit('toolbar:theme-requested', {
@@ -685,6 +752,7 @@ class ToolbarInteractions {
                 });
                 
             } else {
+                console.error('❌ TOOLBAR: Global settings modal not found in DOM');
                 showToast('Theme settings not available', 'warning');
             }
         } catch (error) {
@@ -807,6 +875,92 @@ class ToolbarInteractions {
         const input = dialog.querySelector('input');
         input.focus();
         input.select();
+    }
+    
+    /**
+     * ROOT FIX: Setup preview toggle functionality for device buttons
+     */
+    setupPreviewToggle() {
+        console.log('📱 TOOLBAR: Setting up preview toggle functionality');
+        
+        const previewButtons = document.querySelectorAll('.toolbar__preview-btn');
+        const previewContainer = document.getElementById('preview-container') || document.querySelector('.preview__container');
+        
+        if (previewButtons.length === 0) {
+            console.warn('⚠️ TOOLBAR: No preview buttons found');
+            return;
+        }
+        
+        if (!previewContainer) {
+            console.warn('⚠️ TOOLBAR: Preview container not found');
+            return;
+        }
+        
+        console.log(`🔍 TOOLBAR: Found ${previewButtons.length} preview buttons and preview container`);
+        
+        previewButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                const previewMode = button.dataset.preview;
+                
+                if (!previewMode) {
+                    console.warn('⚠️ TOOLBAR: Preview button missing data-preview attribute');
+                    return;
+                }
+                
+                console.log(`📱 TOOLBAR: Switching to ${previewMode} preview mode`);
+                
+                // Remove active class from all buttons
+                previewButtons.forEach(btn => {
+                    btn.classList.remove('toolbar__preview-btn--active');
+                });
+                
+                // Add active class to clicked button
+                button.classList.add('toolbar__preview-btn--active');
+                
+                // Remove all preview mode classes from container
+                previewContainer.classList.remove('preview--desktop', 'preview--tablet', 'preview--mobile');
+                
+                // Add the selected preview mode class
+                previewContainer.classList.add(`preview--${previewMode}`);
+                
+                // Update preview container data attribute for CSS targeting
+                previewContainer.setAttribute('data-preview-mode', previewMode);
+                
+                // Emit event for other systems
+                if (typeof eventBus !== 'undefined' && eventBus.emit) {
+                    eventBus.emit('toolbar:preview-changed', {
+                        mode: previewMode,
+                        timestamp: new Date()
+                    });
+                }
+                
+                // Visual feedback
+                this.showPreviewFeedback(previewMode);
+            });
+        });
+        
+        console.log('✅ TOOLBAR: Preview toggle setup complete');
+    }
+    
+    /**
+     * ROOT FIX: Show preview mode feedback
+     * @param {string} mode - Preview mode (desktop, tablet, mobile)
+     */
+    showPreviewFeedback(mode) {
+        const modeNames = {
+            desktop: 'Desktop View',
+            tablet: 'Tablet View', 
+            mobile: 'Mobile View'
+        };
+        
+        const modeName = modeNames[mode] || mode;
+        
+        // Show brief toast notification
+        showToast(`Switched to ${modeName}`, 'info', 2000);
+        
+        console.log(`✅ TOOLBAR: Preview mode changed to ${modeName}`);
     }
     
     /**
