@@ -96,7 +96,8 @@ class ToolbarInteractions {
                         if (!this.isInitialized) {
                             console.log('⚠️ TOOLBAR: Using fallback DOM ready initialization');
                             this.init();
-                        }
+                        
+            }
                     }, 1000);
                 });
             } else {
@@ -349,70 +350,45 @@ class ToolbarInteractions {
     }
     
     /**
-     * Handle save button click - ROOT FIX
+     * Handle save button click - ROOT FIX: Event-driven approach
      */
-    async handleSaveClick() {
+    handleSaveClick() {
         if (this.saveInProgress) {
             this.logger.warn('TOOLBAR', 'Save already in progress, ignoring click');
             return;
         }
         
         try {
-            this.logger.info('TOOLBAR', 'Save button clicked - starting save process');
+            this.logger.info('TOOLBAR', 'Save button clicked - dispatching save request event');
             
             // Set saving state
             this.setSavingState(true);
             
-            // ROOT FIX: Enhanced error checking with detailed diagnostics
-            
-            // Check 1: Enhanced state manager
-            const stateManager = window.enhancedStateManager;
-            if (!stateManager) {
-                throw new Error('Enhanced state manager not available. Please refresh the page and try again.');
+            // ROOT FIX: Check GMKB system availability
+            if (!window.GMKB || !window.GMKB.dispatch) {
+                throw new Error('GMKB system not available. Please refresh the page.');
             }
             
-            // Check 2: Get current state
-            const currentState = stateManager.getState();
-            if (!currentState) {
-                throw new Error('No state available to save. Try adding some components first.');
-            }
-            
-            this.logger.debug('TOOLBAR', 'Current state retrieved for saving', {
-                components: Object.keys(currentState.components || {}).length,
-                layout: (currentState.layout || []).length,
-                hasGlobalSettings: !!(currentState.globalSettings)
+            // ROOT FIX: Dispatch save request event with callbacks
+            window.GMKB.dispatch('gmkb:save-requested', {
+                source: 'toolbar',
+                timestamp: Date.now(),
+                
+                // Success callback
+                onComplete: (response) => {
+                    this.logger.info('TOOLBAR', 'Save completed successfully', response);
+                    this.handleSaveSuccess();
+                },
+                
+                // Error callback
+                onError: (errorResponse) => {
+                    this.logger.error('TOOLBAR', 'Save failed via event system', errorResponse);
+                    const error = new Error(errorResponse.error || 'Save failed');
+                    this.handleSaveError(error);
+                }
             });
             
-            // Check 3: Validate state has content
-            if (!currentState.components || Object.keys(currentState.components).length === 0) {
-                showToast('Add some components before saving', 'warning', 4000);
-                return; // Don't treat as error, just inform user
-            }
-            
-            // Check 4: Save service
-            const saveService = window.saveService;
-            if (!saveService) {
-                throw new Error('Save service not available. This might be a system initialization issue.');
-            }
-            
-            if (typeof saveService.saveState !== 'function') {
-                throw new Error('Save service is corrupted (missing saveState method). Please refresh the page.');
-            }
-            
-            // Check 5: AJAX configuration
-            if (!window.guestifyData || (!window.guestifyData.ajaxUrl && !window.guestifyData.ajax_url)) {
-                throw new Error('WordPress AJAX not configured. This is a server configuration issue.');
-            }
-            
-            // Perform the save
-            const saveResult = await this.performSave(currentState, saveService);
-            
-            if (saveResult) {
-                // Save successful
-                this.handleSaveSuccess();
-            } else {
-                throw new Error('Save operation returned false - this usually indicates a server-side issue or localStorage problem');
-            }
+            console.log('✅ TOOLBAR: Save request dispatched successfully');
             
         } catch (error) {
             this.logger.error('TOOLBAR', 'Save failed', error, {
@@ -421,50 +397,11 @@ class ToolbarInteractions {
                 stackTrace: error.stack?.split('\n').slice(0, 3)
             });
             this.handleSaveError(error);
-        } finally {
             this.setSavingState(false);
         }
     }
     
-    /**
-     * Perform the actual save operation with enhanced error handling
-     */
-    async performSave(state, saveService) {
-        return new Promise((resolve) => {
-            try {
-                this.logger.debug('TOOLBAR', 'Starting save operation', {
-                    stateComponents: Object.keys(state.components || {}).length,
-                    saveServiceType: saveService.constructor?.name || 'unknown'
-                });
-                
-                // Use existing save service
-                const result = saveService.saveState(state);
-                
-                // Handle both sync and async results
-                if (result && typeof result.then === 'function') {
-                    // Async result
-                    this.logger.debug('TOOLBAR', 'Save service returned promise, awaiting result');
-                    result.then((asyncResult) => {
-                        this.logger.debug('TOOLBAR', 'Async save result', { result: asyncResult });
-                        resolve(asyncResult);
-                    }).catch((asyncError) => {
-                        this.logger.error('TOOLBAR', 'Async save error', asyncError);
-                        resolve(false);
-                    });
-                } else {
-                    // Sync result
-                    this.logger.debug('TOOLBAR', 'Sync save result', { result });
-                    resolve(result);
-                }
-            } catch (error) {
-                this.logger.error('TOOLBAR', 'Save service error', error, {
-                    errorType: error.name,
-                    errorMessage: error.message
-                });
-                resolve(false);
-            }
-        });
-    }
+    // ROOT FIX: Removed performSave method - now using event-driven approach
     
     /**
      * Set saving state with visual feedback
@@ -514,6 +451,9 @@ class ToolbarInteractions {
     handleSaveSuccess() {
         this.lastSaveTime = new Date();
         
+        // Reset saving state
+        this.setSavingState(false);
+        
         this.logger.info('TOOLBAR', 'Save completed successfully', {
             timestamp: this.lastSaveTime.toISOString()
         });
@@ -540,6 +480,9 @@ class ToolbarInteractions {
      * Handle save error with enhanced diagnostics
      */
     handleSaveError(error) {
+        // Reset saving state
+        this.setSavingState(false);
+        
         this.logger.error('TOOLBAR', 'Save error occurred', error, {
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
@@ -553,18 +496,15 @@ class ToolbarInteractions {
         let userMessage = 'Save failed: ' + error.message;
         let suggestions = [];
         
-        if (error.message.includes('Enhanced state manager')) {
+        if (error.message.includes('GMKB system')) {
             suggestions.push('Try refreshing the page');
             suggestions.push('Check browser console for initialization errors');
-        } else if (error.message.includes('Save service')) {
-            suggestions.push('Try refreshing the page');
-            suggestions.push('Check if you are logged into WordPress');
-        } else if (error.message.includes('AJAX')) {
-            suggestions.push('Check your internet connection');
-            suggestions.push('Verify you are logged into WordPress');
         } else if (error.message.includes('localStorage')) {
             suggestions.push('Try in incognito/private browsing mode');
             suggestions.push('Clear browser storage and refresh');
+        } else if (error.message.includes('WordPress database')) {
+            suggestions.push('Check your internet connection');
+            suggestions.push('Verify you are logged into WordPress');
         }
         
         // Show error toast with suggestions
@@ -577,8 +517,7 @@ class ToolbarInteractions {
         // Show diagnostic suggestion in console
         console.group('💾 Save Error Diagnostics');
         console.error('Save failed:', error.message);
-        console.log('🔍 Run runSaveDiagnostics() in console for detailed analysis');
-        console.log('🔧 Run attemptSaveFixes() to try automatic fixes');
+        console.log('Check browser console for detailed error information');
         console.groupEnd();
         
         // Emit save error event
@@ -1030,8 +969,18 @@ class ToolbarInteractions {
         }
         
         try {
-            const stateManager = window.enhancedStateManager;
-            if (!stateManager) return;
+            // ROOT FIX: Use GMKB event system for auto-save too
+            if (!window.GMKB || !window.GMKB.dispatch) {
+                this.logger.warn('TOOLBAR', 'GMKB system not available for auto-save');
+                return;
+            }
+            
+            // Check if there's content to save by checking state
+            const stateManager = window.GMKB?.systems?.StateManager;
+            if (!stateManager) {
+                this.logger.debug('TOOLBAR', 'StateManager not available for auto-save check');
+                return;
+            }
             
             const currentState = stateManager.getState();
             if (!currentState || Object.keys(currentState.components || {}).length === 0) {
@@ -1044,11 +993,12 @@ class ToolbarInteractions {
             // Show subtle auto-save indicator
             this.updateStatusIndicator('saving', 'Auto-saving...');
             
-            const saveService = window.saveService;
-            if (saveService) {
-                const result = await this.performSave(currentState, saveService);
+            // Dispatch auto-save request
+            window.GMKB.dispatch('gmkb:save-requested', {
+                source: 'auto-save',
+                timestamp: Date.now(),
                 
-                if (result) {
+                onComplete: (response) => {
                     this.lastSaveTime = new Date();
                     this.updateStatusIndicator('saved', 'Auto-saved');
                     
@@ -1065,10 +1015,13 @@ class ToolbarInteractions {
                     setTimeout(() => {
                         this.updateStatusIndicator('ready', 'Ready');
                     }, 2000);
-                } else {
-                    throw new Error('Auto-save failed');
+                },
+                
+                onError: (errorResponse) => {
+                    this.logger.warn('TOOLBAR', 'Auto-save failed', errorResponse);
+                    this.updateStatusIndicator('ready', 'Ready');
                 }
-            }
+            });
             
         } catch (error) {
             this.logger.warn('TOOLBAR', 'Auto-save failed', error);

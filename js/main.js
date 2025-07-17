@@ -53,37 +53,20 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             try {
                 console.log('💾 StateManager: Processing save request from', source || 'unknown');
                 
-                // Save to localStorage first
-                const localSuccess = this.saveToStorage();
-                if (!localSuccess) {
-                    throw new Error('Failed to save to localStorage');
-                }
+                // Call saveToStorage with the event detail (which contains callbacks)
+                const success = await this.saveToStorage(detail);
                 
-                // Save to WordPress database
-                const wpSuccess = await this.saveToWordPress();
-                if (!wpSuccess) {
-                    throw new Error('Failed to save to WordPress database');
+                if (!success) {
+                    throw new Error('Save operation failed');
                 }
                 
                 console.log('✅ StateManager: Save request completed successfully');
-                
-                // Call success callback if provided
-                if (onComplete && typeof onComplete === 'function') {
-                    onComplete({
-                        success: true,
-                        source: 'StateManager',
-                        timestamp: Date.now(),
-                        savedToLocalStorage: localSuccess,
-                        savedToWordPress: wpSuccess
-                    });
-                }
-                
                 return true;
                 
             } catch (error) {
                 console.error('❌ StateManager: Save request failed:', error);
                 
-                // Call error callback if provided
+                // If saveToStorage didn't handle the error callback, handle it here
                 if (onError && typeof onError === 'function') {
                     onError({
                         success: false,
@@ -185,7 +168,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         
         setState(newState) {
             this.state = { ...this.state, ...newState };
-            this.saveToStorage();
+            this.saveToStorage(); // No callbacks needed for automatic saves
             GMKB.dispatch('gmkb:state-changed', { state: this.state });
         },
         
@@ -197,7 +180,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 this.state.layout.push(id);
             }
             
-            this.saveToStorage();
+            this.saveToStorage(); // No callbacks needed for automatic saves
             GMKB.dispatch('gmkb:component-added', { id, component: this.state.components[id] });
             GMKB.dispatch('gmkb:state-changed', { state: this.state });
             
@@ -209,7 +192,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 delete this.state.components[id];
                 this.state.layout = this.state.layout.filter(cid => cid !== id);
                 
-                this.saveToStorage();
+                this.saveToStorage(); // No callbacks needed for automatic saves
                 GMKB.dispatch('gmkb:component-removed', { id });
                 GMKB.dispatch('gmkb:state-changed', { state: this.state });
                 
@@ -222,7 +205,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             if (this.state.components[id]) {
                 this.state.components[id] = { ...this.state.components[id], ...updates };
                 
-                this.saveToStorage();
+                this.saveToStorage(); // No callbacks needed for automatic saves
                 GMKB.dispatch('gmkb:component-updated', { id, component: this.state.components[id] });
                 GMKB.dispatch('gmkb:state-changed', { state: this.state });
                 
@@ -231,16 +214,29 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             return false;
         },
         
-        saveToStorage() {
+        async saveToStorage(detail = {}) {
+            const { onComplete, onError } = detail; // Get callbacks from the event detail
             try {
                 localStorage.setItem('gmkb-state', JSON.stringify(this.state));
-                
-                // Also save to WordPress database if possible
-                this.saveToWordPress();
-                
-                return true;
+                console.log('💾 StateManager: Saved state to localStorage.');
+
+                // Wait for the WordPress save to complete
+                const wordpressSuccess = await this.saveToWordPress();
+
+                if (wordpressSuccess) {
+                    console.log('✅ StateManager: Save process completed successfully.');
+                    // Let the toolbar know it was successful
+                    if (onComplete) onComplete({ source: 'StateManager', status: 'success' });
+                    return true;
+                } else {
+                    // If WordPress save fails, trigger the error callback
+                    throw new Error('The state could not be saved to WordPress.');
+                }
+
             } catch (error) {
-                console.warn('💾 StateManager: Failed to save to localStorage:', error);
+                console.error('❌ StateManager: Failed to complete save process:', error);
+                // Let the toolbar know there was an error
+                if (onError) onError({ error: error.message });
                 return false;
             }
         },
@@ -298,59 +294,6 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             }
             console.log('💾 StateManager: No saved state found in localStorage');
             return false;
-        },
-        
-        /**
-         * ROOT FIX: Handle save request from toolbar or other components
-         * @param {Object} detail - Event detail containing callbacks and metadata
-         */
-        async handleSaveRequest(detail = {}) {
-            const { onComplete, onError, source } = detail;
-            
-            try {
-                console.log('💾 StateManager: Processing save request from', source || 'unknown');
-                
-                // Save to localStorage first
-                const localSuccess = this.saveToStorage();
-                if (!localSuccess) {
-                    throw new Error('Failed to save to localStorage');
-                }
-                
-                // Save to WordPress database
-                const wpSuccess = await this.saveToWordPress();
-                if (!wpSuccess) {
-                    throw new Error('Failed to save to WordPress database');
-                }
-                
-                console.log('✅ StateManager: Save request completed successfully');
-                
-                // Call success callback if provided
-                if (onComplete && typeof onComplete === 'function') {
-                    onComplete({
-                        success: true,
-                        source: 'StateManager',
-                        timestamp: Date.now(),
-                        savedToLocalStorage: localSuccess,
-                        savedToWordPress: wpSuccess
-                    });
-                }
-                
-                return true;
-                
-            } catch (error) {
-                console.error('❌ StateManager: Save request failed:', error);
-                
-                // Call error callback if provided
-                if (onError && typeof onError === 'function') {
-                    onError({
-                        success: false,
-                        error: error.message,
-                        timestamp: Date.now()
-                    });
-                }
-                
-                return false;
-            }
         }
     };
 
