@@ -1690,6 +1690,15 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 this.checkInitializationComplete();
             });
             
+            // Add this inside UIManager.initializeEventListeners
+            document.addEventListener('gmkb:modal-base-ready', (event) => {
+                console.log('✅ UIManager: Modal system is ready and has initialized itself.', event.detail);
+                
+                // Now that modals are ready, we can safely update any handlers
+                // that depend on them, like the component library buttons.
+                this.updateComponentLibraryHandlers();
+            }, { once: true });
+            
             // ROOT FIX: Listen for state changes to manage empty state
             GMKB.subscribe('gmkb:state-changed', (event) => {
                 console.log('📊 UIManager: State changed, checking empty state');
@@ -1727,6 +1736,15 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 console.log('✅ UIManager: Components rendered successfully', event.detail);
                 this.ensureEmptyStateVisible(true);
             });
+            
+            // ROOT FIX: Event listener for modal system ready
+            document.addEventListener('gmkb:modal-base-ready', (event) => {
+                console.log('✅ UIManager: Modal system is ready and has initialized itself.', event.detail);
+                
+                // Now that modals are ready, we can safely update any handlers
+                // that depend on them, like the component library buttons.
+                this.updateComponentLibraryHandlers();
+            }, { once: true });
         },
         
         /**
@@ -1852,43 +1870,29 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         initializeModals() {
-            // Component library modal close functionality - VANILLA JS
-            const modal = document.getElementById('component-library-overlay');
-            if (modal) {
-                // Close button
-                const closeBtn = modal.querySelector('.close-modal, .library__close, #close-library');
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', () => {
-                        modal.style.display = 'none';
-                    });
-                }
-                
-                // Backdrop click
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        modal.style.display = 'none';
-                    }
-                });
-                
-                // ESC key
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape' && modal.style.display === 'flex') {
-                        modal.style.display = 'none';
-                    }
-                });
-            }
+            // ROOT FIX: Simplified modal initialization - modal-base.js handles all setup
+            console.log('🎭 UIManager: Simplified modal initialization (event-driven)');
             
-            // Component selection will be handled by updateComponentLibraryHandlers
-            // after components are loaded from server
-            this.updateComponentLibraryHandlers();
+            // The modal-base.js system will handle:
+            // - Modal discovery and registration
+            // - Close button functionality 
+            // - ESC key handling
+            // - Backdrop click handling
+            
+            // We only need to handle component selection after modal system is ready
+            // This is done via event listener in initializeEventListeners()
+            console.log('✅ UIManager: Modal initialization delegated to modal-base.js');
         },
         
         showComponentLibrary() {
-            const modal = document.getElementById('component-library-overlay');
-            if (modal) {
-                modal.style.display = 'flex';
+            console.log('📚 UIManager: Opening component library modal...');
+
+            if (window.GMKB_Modals && typeof window.GMKB_Modals.show === 'function') {
+                window.GMKB_Modals.show('component-library-overlay');
             } else {
-                console.warn('🎛️ UIManager: Component library modal not found');
+                console.error('❌ UIManager: Modal system (GMKB_Modals.show) is not available.');
+                // Optional: Add a user-facing alert as a fallback
+                alert('Error: The component library could not be opened.');
             }
         },
         
