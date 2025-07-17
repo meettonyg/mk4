@@ -43,6 +43,59 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             console.debug(`📢 GMKB: Dispatched '${eventName}'`, detail);
         },
         
+        /**
+         * ROOT FIX: Handle save request from toolbar or other components
+         * @param {Object} detail - Event detail containing callbacks and metadata
+         */
+        async handleSaveRequest(detail = {}) {
+            const { onComplete, onError, source } = detail;
+            
+            try {
+                console.log('💾 StateManager: Processing save request from', source || 'unknown');
+                
+                // Save to localStorage first
+                const localSuccess = this.saveToStorage();
+                if (!localSuccess) {
+                    throw new Error('Failed to save to localStorage');
+                }
+                
+                // Save to WordPress database
+                const wpSuccess = await this.saveToWordPress();
+                if (!wpSuccess) {
+                    throw new Error('Failed to save to WordPress database');
+                }
+                
+                console.log('✅ StateManager: Save request completed successfully');
+                
+                // Call success callback if provided
+                if (onComplete && typeof onComplete === 'function') {
+                    onComplete({
+                        success: true,
+                        source: 'StateManager',
+                        timestamp: Date.now(),
+                        savedToLocalStorage: localSuccess,
+                        savedToWordPress: wpSuccess
+                    });
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ StateManager: Save request failed:', error);
+                
+                // Call error callback if provided
+                if (onError && typeof onError === 'function') {
+                    onError({
+                        success: false,
+                        error: error.message,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                return false;
+            }
+        },
+        
         subscribe(eventName, callback) {
             document.addEventListener(eventName, callback);
             console.debug(`📡 GMKB: Subscribed to '${eventName}'`);
@@ -71,6 +124,12 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         
         init() {
             console.log('📋 StateManager: Initialized (Phase 2.3 Simplified)');
+            
+            // ROOT FIX: Listen for save request from toolbar or any other component
+            GMKB.subscribe('gmkb:save-requested', (event) => {
+                console.log('💾 StateManager: Save request received from', event.detail.source || 'unknown');
+                this.handleSaveRequest(event.detail);
+            });
             
             // ROOT FIX: Check localStorage FIRST (where previous components are saved)
             let hasLocalStorageData = false;
@@ -239,6 +298,59 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             }
             console.log('💾 StateManager: No saved state found in localStorage');
             return false;
+        },
+        
+        /**
+         * ROOT FIX: Handle save request from toolbar or other components
+         * @param {Object} detail - Event detail containing callbacks and metadata
+         */
+        async handleSaveRequest(detail = {}) {
+            const { onComplete, onError, source } = detail;
+            
+            try {
+                console.log('💾 StateManager: Processing save request from', source || 'unknown');
+                
+                // Save to localStorage first
+                const localSuccess = this.saveToStorage();
+                if (!localSuccess) {
+                    throw new Error('Failed to save to localStorage');
+                }
+                
+                // Save to WordPress database
+                const wpSuccess = await this.saveToWordPress();
+                if (!wpSuccess) {
+                    throw new Error('Failed to save to WordPress database');
+                }
+                
+                console.log('✅ StateManager: Save request completed successfully');
+                
+                // Call success callback if provided
+                if (onComplete && typeof onComplete === 'function') {
+                    onComplete({
+                        success: true,
+                        source: 'StateManager',
+                        timestamp: Date.now(),
+                        savedToLocalStorage: localSuccess,
+                        savedToWordPress: wpSuccess
+                    });
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ StateManager: Save request failed:', error);
+                
+                // Call error callback if provided
+                if (onError && typeof onError === 'function') {
+                    onError({
+                        success: false,
+                        error: error.message,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                return false;
+            }
         }
     };
 
@@ -1420,19 +1532,6 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 
                 script.onload = () => {
                     console.log(`✅ ComponentManager: AJAX script loaded: ${scriptInfo.src}`);
-                    
-                    // Special handling for topics panel script
-                    if (scriptInfo.component === 'topics' && scriptInfo.type === 'panel') {
-                        // Give the script time to initialize
-                        setTimeout(() => {
-                            if (window.topicsDesignPanelManager) {
-                                console.log('🎨 ComponentManager: Topics design panel manager initialized from AJAX script');
-                            } else {
-                                console.warn('⚠️ ComponentManager: Topics design panel manager not found after AJAX script load');
-                            }
-                        }, 100);
-                    }
-                    
                     resolve();
                 };
                 
@@ -1574,19 +1673,6 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 
                 script.onload = () => {
                     console.log(`✅ ComponentManager: Dynamic script loaded: ${url}`);
-                    
-                    // Special handling for topics panel script
-                    if (componentType === 'topics' && scriptType === 'panel') {
-                        // Give the script time to initialize
-                        setTimeout(() => {
-                            if (window.topicsDesignPanelManager) {
-                                console.log('🎨 ComponentManager: Topics design panel manager initialized');
-                            } else {
-                                console.warn('⚠️ ComponentManager: Topics design panel manager not found after load');
-                            }
-                        }, 100);
-                    }
-                    
                     resolve();
                 };
                 
@@ -2004,16 +2090,16 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             window.GMKB = GMKB;
             Object.freeze(window.GMKB);
             
-            // ROOT FIX: Load toolbar interactions after GMKB system is ready
-            try {
-                console.log('🔧 GMKB: Loading toolbar interactions...');
-                await import('./ui/toolbar-interactions.js');
-                console.log('✅ GMKB: Toolbar interactions loaded successfully');
-            } catch (error) {
-                console.warn('⚠️ GMKB: Could not load toolbar interactions module:', error);
-                // Fallback: Load as script tag
-                loadToolbarInteractionsFallback();
-            }
+            // ROOT FIX: Load toolbar interactions once all systems are fully ready
+            document.addEventListener('gmkb:all-systems-ready', async () => {
+                try {
+                    console.log('🔧 GMKB: Loading toolbar interactions...');
+                    await import('./ui/toolbar-interactions.js');
+                    console.log('✅ GMKB: Toolbar interactions loaded successfully.');
+                } catch (error) {
+                    console.warn('⚠️ GMKB: Could not load toolbar interactions module:', error);
+                }
+            }, { once: true });
             
             // ROOT FIX: Load tab system after GMKB system is ready
             try {
@@ -2025,21 +2111,31 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 console.warn('⚠️ GMKB: Could not load tab system module:', error);
             }
             
-            // ROOT FIX: Load modal systems
+            // ROOT FIX: Load modal systems with proper error handling
             try {
                 console.log('📺 GMKB: Loading modal systems...');
                 
                 // Load export system
-                const { setupExportSystem } = await import('./modals/export.js');
-                setupExportSystem();
+                try {
+                    const { setupExportSystem } = await import('./modals/export.js');
+                    setupExportSystem();
+                    console.log('✅ GMKB: Export system loaded successfully');
+                } catch (exportError) {
+                    console.warn('⚠️ GMKB: Could not load export system:', exportError);
+                }
                 
-                // Load global settings system  
-                const { globalSettings } = await import('./modals/global-settings.js');
-                await globalSettings.init();
+                // Load global settings system (optional)
+                try {
+                    const { globalSettings } = await import('./modals/global-settings.js');
+                    await globalSettings.init();
+                    console.log('✅ GMKB: Global settings loaded successfully');
+                } catch (settingsError) {
+                    console.warn('⚠️ GMKB: Could not load global settings (this is optional):', settingsError);
+                }
                 
-                console.log('✅ GMKB: Modal systems loaded successfully');
+                console.log('✅ GMKB: Modal systems loading complete');
             } catch (error) {
-                console.warn('⚠️ GMKB: Could not load modal systems:', error);
+                console.warn('⚠️ GMKB: Error in modal systems loading:', error);
             }
             
             console.log('🔒 GMKB: Namespace protected with Object.freeze()');
@@ -2115,42 +2211,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         }
         }
         
-        /**
-        * ROOT FIX: Fallback method to load toolbar interactions as script tag
-     */
-    function loadToolbarInteractionsFallback() {
-        console.log('🔄 GMKB: Using fallback script loading for toolbar interactions...');
-        
-        const pluginUrl = window.gmkbData?.pluginUrl || '';
-        if (!pluginUrl) {
-            console.error('❌ GMKB: Cannot load toolbar interactions - plugin URL not available');
-            return;
-        }
-        
-        const scriptUrl = pluginUrl + 'js/ui/toolbar-interactions.js';
-        
-        // Check if script already loaded
-        const existingScript = document.querySelector(`script[src="${scriptUrl}"]`);
-        if (existingScript) {
-            console.log('ℹ️ GMKB: Toolbar interactions script already loaded');
-            return;
-        }
-        
-        const script = document.createElement('script');
-        script.type = 'module';
-        script.src = scriptUrl;
-        script.async = true;
-        
-        script.onload = () => {
-            console.log('✅ GMKB: Toolbar interactions loaded via fallback script tag');
-        };
-        
-        script.onerror = () => {
-            console.error('❌ GMKB: Failed to load toolbar interactions via fallback');
-        };
-        
-        document.head.appendChild(script);
-    }
+
     
     /**
      * 4. Entry Point - Server-Integrated VANILLA JS
