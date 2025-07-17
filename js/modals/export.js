@@ -1,106 +1,97 @@
 /**
- * Export modal functionality
+ * @file export.js - Manages the export modal functionality.
+ * @description This module handles the UI and logic for the "Export Media Kit" modal,
+ * including format selection and generating download links.
+ * @version 2.0.0
  */
 
-import { showModal, hideModal, setupModalClose } from './modal-base.js';
+// This is a self-executing anonymous function to avoid polluting the global scope.
+(function() {
+    'use strict';
 
-/**
- * Set up export system
- */
-export function setupExportSystem() {
-    const exportBtn = document.getElementById('export-btn');
-    setupModalClose('export-modal', 'close-export-modal');
-    
-    if (exportBtn) {
-        exportBtn.addEventListener('click', showExportModal);
+    let exportModalElement;
+
+    /**
+     * Initializes the export system.
+     * This should be called once the main application is ready.
+     */
+    function init() {
+        console.log('🔄 Initializing Export System...');
+        exportModalElement = document.getElementById('export-modal');
+
+        if (!exportModalElement) {
+            console.error('Export modal element (#export-modal) not found. Aborting initialization.');
+            return;
+        }
+
+        // Set up event listeners for the buttons within the modal.
+        setupEventListeners();
+
+        console.log('✅ Export System Initialized');
     }
 
-    const exportOptions = document.querySelectorAll('.export-option');
-    exportOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            const exportType = this.getAttribute('data-export');
-            handleExport(exportType);
+    /**
+     * Sets up all necessary event listeners for the export modal.
+     */
+    function setupEventListeners() {
+        // --- THIS IS THE ROOT FIX ---
+        // We no longer import `hideModal`. Instead, we use the global API.
+        // We find all close buttons and attach the correct API call to them.
+        const closeButtons = exportModalElement.querySelectorAll('.modal__close, [data-modal-close]');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.GMKB_Modals && typeof window.GMKB_Modals.hide === 'function') {
+                    window.GMKB_Modals.hide('export-modal');
+                }
+            });
         });
-    });
-}
 
-/**
- * Show the export modal
- */
-export function showExportModal() {
-    showModal('export-modal');
-}
+        const exportButton = exportModalElement.querySelector('#export-button');
+        if (exportButton) {
+            exportButton.addEventListener('click', handleExport);
+        }
 
-/**
- * Hide the export modal
- */
-export function hideExportModal() {
-    hideModal('export-modal');
-}
-
-/**
- * Handle export based on type
- * @param {string} type - The export type
- */
-function handleExport(type) {
-    switch(type) {
-        case 'pdf':
-            exportToPDF();
-            break;
-        case 'image':
-            exportToImage();
-            break;
-        case 'html':
-            exportToHTML();
-            break;
-        case 'embed':
-            generateEmbedCode();
-            break;
+        // Add any other listeners for format selection, etc.
+        const formatSelectors = exportModalElement.querySelectorAll('input[name="export-format"]');
+        formatSelectors.forEach(radio => {
+            radio.addEventListener('change', handleFormatChange);
+        });
     }
-    hideExportModal();
-}
 
-/**
- * Export to PDF
- */
-function exportToPDF() {
-    // Simulate PDF export
-    console.log('Exporting to PDF...');
-    alert('PDF export functionality would be implemented here using libraries like jsPDF or html2canvas + jsPDF');
-}
+    /**
+     * Handles the main export logic when the primary export button is clicked.
+     */
+    function handleExport() {
+        const selectedFormat = exportModalElement.querySelector('input[name="export-format"]:checked');
+        if (!selectedFormat) {
+            alert('Please select an export format.');
+            return;
+        }
 
-/**
- * Export to image
- */
-function exportToImage() {
-    // Simulate image export
-    console.log('Exporting to Image...');
-    alert('Image export functionality would be implemented here using html2canvas');
-}
+        const format = selectedFormat.value;
+        console.log(`🚀 Starting export for format: ${format}`);
+        // Add your specific export logic here (e.g., generate PDF, JSON, etc.)
+        alert(`Exporting as ${format}... (This is a placeholder)`);
 
-/**
- * Export to HTML
- */
-function exportToHTML() {
-    // Simulate HTML export
-    console.log('Generating shareable link...');
-    const shareableUrl = `https://guestify.com/share/${generateShareId()}`;
-    prompt('Your shareable link:', shareableUrl);
-}
+        // You might want to close the modal after export, or show a success message.
+        if (window.GMKB_Modals && typeof window.GMKB_Modals.hide === 'function') {
+            window.GMKB_Modals.hide('export-modal');
+        }
+    }
 
-/**
- * Generate embed code
- */
-function generateEmbedCode() {
-    // Simulate embed code generation
-    const embedCode = `<iframe src="https://guestify.com/embed/${generateShareId()}" width="100%" height="600" frameborder="0"></iframe>`;
-    prompt('Embed code for your website:', embedCode);
-}
+    /**
+     * Handles changes in the selected export format.
+     * @param {Event} e The change event.
+     */
+    function handleFormatChange(e) {
+        const selectedFormat = e.target.value;
+        console.log(`Format changed to: ${selectedFormat}`);
+        // You could update the UI or prepare data based on the selected format here.
+    }
 
-/**
- * Generate a random share ID
- * @returns {string} A random share ID
- */
-function generateShareId() {
-    return Math.random().toString(36).substr(2, 9);
-}
+    // --- Initialization ---
+    // Wait for the main GMKB application to be ready before initializing.
+    document.addEventListener('gmkb:ready', init, { once: true });
+
+})();
