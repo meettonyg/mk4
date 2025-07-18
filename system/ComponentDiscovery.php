@@ -131,6 +131,9 @@ class ComponentDiscovery {
             });
         }
         
+        // ROOT FIX: Ensure topics component is properly registered
+        $this->ensure_topics_component_registered();
+        
         // Save to cache for next time
         $this->saveToCache();
         
@@ -321,6 +324,80 @@ class ComponentDiscovery {
                 'cache_size' => $cached_data ? strlen(serialize($cached_data)) : 0
             ]
         );
+    }
+    
+    /**
+     * ROOT FIX: Ensure topics component is properly registered
+     * Force registration even if component.json is missing or invalid
+     */
+    public function ensure_topics_component_registered() {
+        $topics_dir = $this->componentsDir . '/topics';
+        
+        if (!is_dir($topics_dir)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: Topics component directory not found: {$topics_dir}");
+            }
+            return false;
+        }
+
+        // ROOT FIX: Force registration of topics component
+        $topics_config = array(
+            'name' => 'Speaking Topics',
+            'description' => 'Showcase your areas of expertise and speaking topics',
+            'category' => 'essential',
+            'icon' => 'topics-icon.svg',
+            'type' => 'topics',
+            'template' => $topics_dir . '/template.php',
+            'script' => $topics_dir . '/script.js',
+            'panel_script' => $topics_dir . '/panel-script.js',
+            'design_panel' => $topics_dir . '/design-panel.php',
+            'ajax_handler' => $topics_dir . '/ajax-handler.php',
+            'directory' => 'topics',
+            'order' => 3,
+            'isPremium' => false,
+            'dependencies' => array(),
+            'root_fix' => true,
+            'single_step_render' => true
+        );
+
+        // Verify all required files exist
+        $required_files = array('template', 'ajax_handler');
+        foreach ($required_files as $file_key) {
+            if (isset($topics_config[$file_key]) && !file_exists($topics_config[$file_key])) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB ROOT FIX: Required topics file missing: {$topics_config[$file_key]}");
+                }
+                return false;
+            }
+        }
+
+        // Force add to components array (overwrite if exists)
+        $this->components['topics'] = $topics_config;
+        
+        // Ensure essential category exists
+        if (!isset($this->categories['essential'])) {
+            $this->categories['essential'] = array();
+        }
+        
+        // Check if topics is already in essential category
+        $topics_in_category = false;
+        foreach ($this->categories['essential'] as $component) {
+            if (isset($component['directory']) && $component['directory'] === 'topics') {
+                $topics_in_category = true;
+                break;
+            }
+        }
+        
+        // Add to category if not already there
+        if (!$topics_in_category) {
+            $this->categories['essential'][] = $topics_config;
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB ROOT FIX: Topics component force-registered successfully');
+        }
+
+        return true;
     }
     
     /**

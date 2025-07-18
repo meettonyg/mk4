@@ -94,6 +94,9 @@ class Guestify_Media_Kit_Builder {
             add_action('admin_menu', array($this, 'add_admin_menu'));
         }
         
+        // ROOT FIX: Ensure topics AJAX handlers are registered
+        add_action('init', array($this, 'ensure_topics_ajax_handlers_registered'), 5);
+        
         // Log simplified initialization
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ GMKB: Simplified WordPress-native initialization complete');
@@ -118,6 +121,8 @@ class Guestify_Media_Kit_Builder {
         add_action( 'wp_ajax_nopriv_guestify_get_components', array( $this, 'ajax_get_components' ) );
         add_action( 'wp_ajax_guestify_render_component', array( $this, 'ajax_render_component' ) );
         add_action( 'wp_ajax_nopriv_guestify_render_component', array( $this, 'ajax_render_component' ) );
+        add_action( 'wp_ajax_guestify_render_component_enhanced', array( $this, 'ajax_render_component_enhanced' ) );
+        add_action( 'wp_ajax_nopriv_guestify_render_component_enhanced', array( $this, 'ajax_render_component_enhanced' ) );
         add_action( 'wp_ajax_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
         add_action( 'wp_ajax_nopriv_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
         
@@ -537,8 +542,46 @@ class Guestify_Media_Kit_Builder {
                 require_once $topics_ajax_handler_path;
                 if (class_exists('GMKB_Topics_Ajax_Handler')) {
                     $topics_handler = GMKB_Topics_Ajax_Handler::get_instance();
-                    $data_source_id = $props['dataSourceId'] ?? 0;
-                    $props['loaded_topics'] = $topics_handler->load_topics_direct($data_source_id);
+                    
+                    // CRITICAL FIX: Multiple data source ID detection strategies
+                    $data_source_id = 0;
+                    
+                    // Strategy 1: From props (various parameter names)
+                    $data_source_id = $props['post_id'] ?? $props['dataSourceId'] ?? $props['postId'] ?? $props['data_source_id'] ?? 0;
+                    
+                    // Strategy 2: From POST parameters if not in props
+                    if (!$data_source_id) {
+                        $data_source_id = intval($_POST['post_id'] ?? $_POST['media_kit_post_id'] ?? 0);
+                    }
+                    
+                    // Strategy 3: From URL parameters as fallback
+                    if (!$data_source_id) {
+                        $data_source_id = intval($_GET['post_id'] ?? $_GET['p'] ?? 0);
+                    }
+                    
+                    // Strategy 4: Auto-detect from current context
+                    if (!$data_source_id) {
+                        $data_source_id = $this->detect_mkcg_post_id();
+                    }
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ROOT FIX: Topics data source ID detection: {$data_source_id}");
+                        error_log("ROOT FIX: Props keys: " . implode(', ', array_keys($props)));
+                    }
+                    
+                    // Load topics data with the detected ID
+                    $loaded_topics = array();
+                    if ($data_source_id > 0) {
+                        $loaded_topics = $topics_handler->load_topics_direct($data_source_id);
+                        
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("ROOT FIX: Loaded " . count($loaded_topics) . " topics for post {$data_source_id}");
+                        }
+                    }
+                    
+                    $props['loaded_topics'] = $loaded_topics;
+                    $props['post_id'] = $data_source_id;
+                    $props['topics_data_source'] = 'single_step_render';
                 }
             }
         }
@@ -1167,6 +1210,157 @@ class Guestify_Media_Kit_Builder {
             </div>
         </div>
         <?php
+    }
+    
+    /**
+     * ROOT FIX: Ensure topics AJAX handlers are properly registered
+     * Addresses core issue where topics components fail to populate
+     */
+    public function ensure_topics_ajax_handlers_registered() {
+        // ROOT FIX: Force registration of topics AJAX handlers
+        if (class_exists('GMKB_Topics_Ajax_Handler')) {
+            $topics_handler = GMKB_Topics_Ajax_Handler::get_instance();
+            
+            // Verify handlers are registered
+            $registered_actions = array(
+                'wp_ajax_save_custom_topics',
+                'wp_ajax_nopriv_save_custom_topics', 
+                'wp_ajax_load_stored_topics',
+                'wp_ajax_nopriv_load_stored_topics'
+            );
+            
+            foreach ($registered_actions as $action) {
+                if (!has_action($action)) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("GMKB ROOT FIX: Re-registering missing AJAX action: {$action}");
+                    }
+                    
+                    // Force re-registration
+                    if (strpos($action, 'save') !== false) {
+                        add_action($action, array($topics_handler, 'ajax_save_topics'));
+                    } else {
+                        add_action($action, array($topics_handler, 'ajax_load_topics'));
+                    }
+                }
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB ROOT FIX: Topics AJAX handlers verification complete');
+            }
+        }
+    }
+    
+    /**
+     * ROOT FIX: Enhanced AJAX render component method
+     * Improved server-side component rendering with topics data pre-loading
+     */
+    public function ajax_render_component_enhanced() {
+        check_ajax_referer('gmkb_nonce', 'nonce');
+
+        $component_type = isset($_POST['component']) ? sanitize_text_field($_POST['component']) : '';
+        $props_json = isset($_POST['props']) ? stripslashes($_POST['props']) : '{}';
+        $props = json_decode($props_json, true);
+
+        if (empty($component_type)) {
+            wp_send_json_error('Component type not provided.');
+            return;
+        }
+
+        // ROOT FIX: Enhanced topics handling with single-step render
+        if ($component_type === 'topics') {
+            return $this->render_topics_component_enhanced($props);
+        }
+
+        // Handle other components with existing logic
+        $this->ajax_render_component();
+    }
+    
+    /**
+     * ROOT FIX: Enhanced topics component rendering
+     * Single-step render with pre-loaded data to eliminate loading states
+     */
+    private function render_topics_component_enhanced($props) {
+        // CRITICAL FIX: Multiple data source ID detection strategies (same as main method)
+        $data_source_id = 0;
+        
+        // Strategy 1: From props (various parameter names)
+        $data_source_id = $props['post_id'] ?? $props['dataSourceId'] ?? $props['postId'] ?? $props['data_source_id'] ?? 0;
+        
+        // Strategy 2: From POST parameters if not in props
+        if (!$data_source_id) {
+            $data_source_id = intval($_POST['post_id'] ?? $_POST['media_kit_post_id'] ?? 0);
+        }
+        
+        // Strategy 3: From URL parameters as fallback
+        if (!$data_source_id) {
+            $data_source_id = intval($_GET['post_id'] ?? $_GET['p'] ?? 0);
+        }
+        
+        // Strategy 4: Auto-detect from current context
+        if (!$data_source_id) {
+            $data_source_id = $this->detect_mkcg_post_id();
+        }
+        
+        if ($data_source_id <= 0) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('ROOT FIX: No valid post ID for topics data loading - tried all strategies');
+                error_log('ROOT FIX: Props available: ' . print_r(array_keys($props), true));
+            }
+            wp_send_json_error('No valid post ID for topics data loading');
+            return;
+        }
+
+        // ROOT FIX: Pre-load topics data using enhanced topics handler
+        $loaded_topics = array();
+        $topics_handler_path = GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
+        
+        if (file_exists($topics_handler_path)) {
+            require_once $topics_handler_path;
+            if (class_exists('GMKB_Topics_Ajax_Handler')) {
+                $topics_handler = GMKB_Topics_Ajax_Handler::get_instance();
+                $loaded_topics = $topics_handler->load_topics_direct($data_source_id);
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ROOT FIX: Enhanced method loaded " . count($loaded_topics) . " topics for post {$data_source_id}");
+                }
+            }
+        }
+
+        // ROOT FIX: Add loaded topics to props for single-step render
+        $enhanced_props = array_merge($props, array(
+            'loaded_topics' => $loaded_topics,
+            'post_id' => $data_source_id,
+            'component_id' => $props['component_id'] ?? uniqid('topics_'),
+            'single_step_render' => true,
+            'root_fix_active' => true,
+            'topics_data_source' => 'enhanced_single_step_render'
+        ));
+
+        // ROOT FIX: Render template with enhanced props
+        $template_path = GUESTIFY_PLUGIN_DIR . "components/topics/template.php";
+        if (file_exists($template_path)) {
+            ob_start();
+            
+            // Extract props as variables for template
+            extract($enhanced_props, EXTR_SKIP);
+            
+            include $template_path;
+            $html = ob_get_clean();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB ROOT FIX: Enhanced topics component rendered with " . count($loaded_topics) . " pre-loaded topics");
+            }
+            
+            wp_send_json_success(array(
+                'html' => $html,
+                'topics_count' => count($loaded_topics),
+                'single_step_render' => true,
+                'root_fix' => 'complete',
+                'data_source_id' => $data_source_id
+            ));
+        } else {
+            wp_send_json_error("Topics template file not found: {$template_path}");
+        }
     }
     
     /**

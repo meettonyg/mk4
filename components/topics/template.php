@@ -56,109 +56,20 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     }
 }
 
-// ROOT FIX: SINGLE-STEP RENDER - Use pre-loaded topics data from props
-$topicsList = [];
-$topicsFound = false;
-$loadingSource = 'none';
+// ROOT FIX: Use component-specific data service for 100% consistency with sidebar
+require_once(__DIR__ . '/class-topics-data-service.php');
 
-// Priority 1: Check for pre-loaded topics from single-step render
-if (isset($props['loaded_topics']) && is_array($props['loaded_topics'])) {
-    $loadedTopics = $props['loaded_topics'];
-    
-    // Handle both formats: array of objects with title/description OR indexed array
-    foreach ($loadedTopics as $index => $topic) {
-        if (is_array($topic) && isset($topic['title']) && !empty(trim($topic['title']))) {
-            $topicsList[] = [
-                'title' => sanitize_text_field(trim($topic['title'])),
-                'description' => sanitize_text_field(trim($topic['description'] ?? '')),
-                'index' => $index,
-                'meta_key' => "topic_" . ($index + 1),
-                'source' => 'single_step_render'
-            ];
-            $topicsFound = true;
-            $loadingSource = 'single_step_render';
-        } elseif (is_string($topic) && !empty(trim($topic))) {
-            $topicsList[] = [
-                'title' => sanitize_text_field(trim($topic)),
-                'description' => '',
-                'index' => $index,
-                'meta_key' => "topic_" . ($index + 1),
-                'source' => 'single_step_render'
-            ];
-            $topicsFound = true;
-            $loadingSource = 'single_step_render';
-        }
-    }
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log("ROOT FIX Topics Template: Using pre-loaded topics data, found " . count($topicsList) . " topics");
-    }
-}
+// Load topics using component-specific service (IDENTICAL to sidebar logic)
+$preview_data = Topics_Data_Service::get_preview_topics('template');
+$topicsList = $preview_data['topics'];
+$topicsFound = $preview_data['found'];
+$loadingSource = $preview_data['loading_source'];
 
-// Fallback: If no pre-loaded data, try direct database loading (for backwards compatibility)
-if (!$topicsFound && $current_post_id > 0) {
-    // Method 1: Try direct custom post fields (topic_1, topic_2, etc.)
-    for ($i = 1; $i <= 5; $i++) {
-        $topic_value = get_post_meta($current_post_id, "topic_{$i}", true);
-        if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
-            $topicsList[] = [
-                'title' => sanitize_text_field(trim($topic_value)),
-                'index' => $i - 1,
-                'meta_key' => "topic_{$i}",
-                'source' => 'custom_fields_fallback'
-            ];
-            $topicsFound = true;
-            $loadingSource = 'custom_fields_fallback';
-        }
-    }
-    
-    // Method 2: Fallback to MKCG meta fields if no custom fields found
-    if (!$topicsFound) {
-        for ($i = 1; $i <= 5; $i++) {
-            $topic_value = get_post_meta($current_post_id, "mkcg_topic_{$i}", true);
-            if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
-                $topicsList[] = [
-                    'title' => sanitize_text_field(trim($topic_value)),
-                    'index' => $i - 1,
-                    'meta_key' => "mkcg_topic_{$i}",
-                    'source' => 'mkcg_fields_fallback'
-                ];
-                $topicsFound = true;
-                $loadingSource = 'mkcg_fields_fallback';
-            }
-        }
-    }
-    
-    // Method 3: Check for JSON-stored topics as final fallback
-    if (!$topicsFound) {
-        $json_topics = get_post_meta($current_post_id, 'topics_data', true);
-        if (!empty($json_topics)) {
-            $decoded_topics = json_decode($json_topics, true);
-            if (is_array($decoded_topics)) {
-                foreach ($decoded_topics as $index => $topic_data) {
-                    if (!empty($topic_data['title'])) {
-                        $topicsList[] = [
-                            'title' => sanitize_text_field(trim($topic_data['title'])),
-                            'index' => $index,
-                            'meta_key' => 'topics_data',
-                            'source' => 'json_data_fallback'
-                        ];
-                        $topicsFound = true;
-                        $loadingSource = 'json_data_fallback';
-                    }
-                }
-            }
-        }
-    }
-}
+// Override post ID with unified service result for consistency
+$current_post_id = $preview_data['post_id'];
 
-// PHASE 1.1 FIX: Enhanced CSS classes and loading state indicators
-$containerClass = 'topics-component layout-grid columns-2';
-if ($topicsFound) {
-    $containerClass .= ' has-topics';
-} else {
-    $containerClass .= ' no-topics';
-}
+// PHASE 1.1 FIX: Enhanced CSS classes with unified service data
+$containerClass = 'topics-component layout-grid columns-2 ' . $preview_data['container_class'];
 
 // ROOT FIX: Comprehensive debugging for single-step render
 if (defined('WP_DEBUG') && WP_DEBUG) {
