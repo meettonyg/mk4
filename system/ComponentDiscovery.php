@@ -41,16 +41,38 @@ class ComponentDiscovery {
 
     /**
      * Scan components directory and load component data
+     * Uses WordPress transients for caching to improve performance
      * 
+     * @param bool $force_refresh Force a fresh scan, ignoring cache
      * @return array Components organized by category
      */
-    public function scan() {
+    public function scan($force_refresh = false) {
+        // Check cache first unless forced refresh
+        if (!$force_refresh) {
+            $cached_data = $this->loadFromCache();
+            if ($cached_data !== false) {
+                $this->components = $cached_data['components'];
+                $this->categories = $cached_data['categories'];
+                $this->aliases = $cached_data['aliases'];
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('ComponentDiscovery: Loaded ' . count($this->components) . ' components from cache');
+                }
+                
+                return $this->categories;
+            }
+        }
+        
         $this->components = [];
         $this->categories = [];
 
         // Check if components directory exists
         if (!is_dir($this->componentsDir)) {
             throw new Exception("Components directory does not exist: {$this->componentsDir}");
+        }
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ComponentDiscovery: Performing fresh filesystem scan...');
         }
 
         // Get all component directories
@@ -108,8 +130,70 @@ class ComponentDiscovery {
                 return $a['order'] - $b['order'];
             });
         }
+        
+        // Save to cache for next time
+        $this->saveToCache();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ComponentDiscovery: Fresh scan complete - found ' . count($this->components) . ' components, saved to cache');
+        }
 
         return $this->categories;
+    }
+    
+    /**
+     * Load component data from WordPress transients cache
+     * 
+     * @return array|false Cached data or false if not found/expired
+     */
+    private function loadFromCache() {
+        $cache_key = 'gmkb_component_discovery_' . md5($this->componentsDir);
+        $cached_data = get_transient($cache_key);
+        
+        if ($cached_data !== false && is_array($cached_data)) {
+            // Verify cache structure
+            if (isset($cached_data['components'], $cached_data['categories'], $cached_data['aliases'], $cached_data['timestamp'])) {
+                // Check if cache is not too old (24 hours max)
+                $cache_age = time() - $cached_data['timestamp'];
+                if ($cache_age < DAY_IN_SECONDS) {
+                    return $cached_data;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Save component data to WordPress transients cache
+     * Cache expires after 1 hour by default
+     */
+    private function saveToCache() {
+        $cache_key = 'gmkb_component_discovery_' . md5($this->componentsDir);
+        $cache_data = [
+            'components' => $this->components,
+            'categories' => $this->categories,
+            'aliases' => $this->aliases,
+            'timestamp' => time(),
+            'components_dir' => $this->componentsDir,
+            'total_components' => count($this->components)
+        ];
+        
+        // Cache for 1 hour (can be cleared manually via clearCache())
+        set_transient($cache_key, $cache_data, HOUR_IN_SECONDS);
+    }
+    
+    /**
+     * Clear the component discovery cache
+     * Call this when components are added/removed/modified
+     */
+    public function clearCache() {
+        $cache_key = 'gmkb_component_discovery_' . md5($this->componentsDir);
+        delete_transient($cache_key);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ComponentDiscovery: Cache cleared - next scan will be fresh');
+        }
     }
 
     /**
@@ -218,6 +302,9 @@ class ComponentDiscovery {
      * @return array Debug information
      */
     public function getDebugInfo() {
+        $cache_key = 'gmkb_component_discovery_' . md5($this->componentsDir);
+        $cached_data = get_transient($cache_key);
+        
         return array(
             'components_dir' => $this->componentsDir,
             'components_count' => count($this->components),
@@ -226,7 +313,48 @@ class ComponentDiscovery {
             'components_dir_readable' => is_readable($this->componentsDir),
             'component_names' => array_keys($this->components),
             'category_names' => array_keys($this->categories),
-            'aliases_count' => count($this->aliases)
+            'aliases_count' => count($this->aliases),
+            'cache_status' => [
+                'cache_key' => $cache_key,
+                'cache_exists' => $cached_data !== false,
+                'cache_age' => $cached_data ? (time() - $cached_data['timestamp']) : 0,
+                'cache_size' => $cached_data ? strlen(serialize($cached_data)) : 0
+            ]
         );
     }
+    
+    /**
+     * Force refresh components by clearing cache and rescanning
+     * 
+     * @return array Components organized by category
+     */
+    public function forceRefresh() {
+        $this->clearCache();
+        return $this->scan(true);
+    }
+}
+
+/**
+ * Helper function to clear component discovery cache
+ * Can be called from admin interfaces or development tools
+ */
+function gmkb_clear_component_cache() {
+    global $gmkb_component_discovery;
+    if ($gmkb_component_discovery && $gmkb_component_discovery instanceof ComponentDiscovery) {
+        $gmkb_component_discovery->clearCache();
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Helper function to force refresh component discovery
+ * Useful for development and when adding new components
+ */
+function gmkb_refresh_components() {
+    global $gmkb_component_discovery;
+    if ($gmkb_component_discovery && $gmkb_component_discovery instanceof ComponentDiscovery) {
+        return $gmkb_component_discovery->forceRefresh();
+    }
+    return false;
 }

@@ -135,68 +135,89 @@ class GMKB_Topics_Ajax_Handler {
     }
     
     /**
-     * PHASE 1.2 FIX: Primary AJAX load handler - simple and fast
+     * ROOT FIX: Enhanced AJAX load handler with comprehensive error handling
+     * ELIMINATES infinite loading by ensuring response is ALWAYS sent with proper structure
      */
     public function ajax_load_topics() {
         $start_time = microtime(true);
         
+        // ROOT FIX: Guaranteed response structure - no matter what happens, client gets proper JSON
         $response = array(
             'success' => false,
             'message' => '',
-            'data' => array(),
-            'phase' => '1.2-simplified'
+            'data' => array(
+                'topics' => array(),
+                'post_id' => 0,
+                'total_topics' => 0,
+                'has_data' => false,
+                'loading_complete' => true,
+                'error_code' => null
+            ),
+            'debug' => array(),
+            'phase' => 'root-fix-comprehensive'
         );
         
         try {
-            // PHASE 1.1 FIX: Enhanced post ID extraction for load requests
-            $post_id = intval(
-                $_POST['post_id'] ?? 
-                $_POST['media_kit_post_id'] ?? 
-                $_GET['post_id'] ?? 
-                $_GET['media_kit_post_id'] ?? 
-                0
-            );
+            // ROOT FIX: Enhanced post ID extraction with multiple fallback strategies
+            $post_id = $this->extract_post_id_comprehensive();
             
-            // PHASE 1.1 FIX: Debug logging for load requests
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("PHASE 1.1 AJAX Load: post_id={$post_id}, GET_post_id=" . ($_GET['post_id'] ?? 'null') . ", POST_post_id=" . ($_POST['post_id'] ?? 'null') . ", POST_media_kit_post_id=" . ($_POST['media_kit_post_id'] ?? 'null'));
+                error_log("ROOT FIX Topics Load: post_id={$post_id}, method=comprehensive_extraction");
             }
             
-            if (!$post_id) {
-                $response['message'] = 'Invalid post ID';
+            if (!$post_id || $post_id <= 0) {
+                $response['message'] = 'No valid post ID found';
+                $response['data']['error_code'] = 'INVALID_POST_ID';
+                $response['data']['loading_complete'] = true;
+                $response['debug']['post_id_sources'] = $this->get_post_id_debug_info();
                 wp_send_json($response);
                 return;
             }
             
-            // PHASE 1.2 FIX: Direct load from database without complex processing
-            $topics = $this->load_topics_direct($post_id);
+            // ROOT FIX: Enhanced topic loading with multiple data sources
+            $topics_result = $this->load_topics_comprehensive($post_id);
             $processing_time = round((microtime(true) - $start_time) * 1000, 2);
             
+            // ROOT FIX: Always mark as successful load, even if no topics found
             $response['success'] = true;
-            $response['message'] = 'Topics loaded successfully';
+            $response['message'] = $topics_result['message'];
             $response['data'] = array(
-                'topics' => $topics,
+                'topics' => $topics_result['topics'],
                 'post_id' => $post_id,
-                'total_topics' => count(array_filter($topics)),
+                'total_topics' => $topics_result['count'],
+                'has_data' => $topics_result['count'] > 0,
+                'loading_complete' => true,
+                'data_source' => $topics_result['source'],
                 'timestamp' => time(),
                 'server_time' => current_time('mysql'),
-                'method' => 'phase_1_2_direct',
+                'method' => 'comprehensive_load',
                 'processing_time' => $processing_time,
-                'data_format' => 'javascript_compatible'
+                'data_format' => 'javascript_compatible',
+                'quality_check' => $topics_result['quality']
             );
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("PHASE 1.2 Topics: Loaded " . count(array_filter($topics)) . " topics for post {$post_id} in {$processing_time}ms");
+                error_log("ROOT FIX Topics: Loaded {$topics_result['count']} topics from {$topics_result['source']} for post {$post_id} in {$processing_time}ms");
             }
             
         } catch (Exception $e) {
-            $response['message'] = 'Load error: ' . $e->getMessage();
+            // ROOT FIX: Comprehensive error handling - never leave client hanging
+            $response['message'] = 'Topics loading failed: ' . $e->getMessage();
+            $response['data']['error_code'] = 'LOAD_EXCEPTION';
+            $response['data']['loading_complete'] = true;
+            $response['debug']['exception'] = array(
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            );
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('PHASE 1.2 Topics Load Error: ' . $e->getMessage());
+                error_log('ROOT FIX Topics Load Exception: ' . $e->getMessage());
+                error_log('ROOT FIX Exception Context: ' . $e->getFile() . ':' . $e->getLine());
             }
         }
         
+        // ROOT FIX: Guaranteed JSON response - prevents client-side infinite loading
         wp_send_json($response);
     }
     
@@ -342,45 +363,344 @@ class GMKB_Topics_Ajax_Handler {
     }
     
     /**
-     * PHASE 1.2 FIX: Direct topic load - fast and simple
+     * ROOT FIX: Comprehensive post ID extraction with all possible sources
      */
-    private function load_topics_direct($post_id) {
-        $topics = array();
+    private function extract_post_id_comprehensive() {
+        $post_id = 0;
+        $sources = array();
         
-        try {
-            // PHASE 1.2 FIX: Load from multiple sources for maximum compatibility
-            for ($i = 1; $i <= 5; $i++) {
-                $topic_key = "topic_{$i}";
-                $topic_value = '';
-                
-                // PHASE 1.2 FIX: Try custom fields first, then MKCG fields
-                $topic_value = get_post_meta($post_id, $topic_key, true);
-                if (empty($topic_value)) {
-                    $topic_value = get_post_meta($post_id, "mkcg_{$topic_key}", true);
-                }
-                
-                $topics[$topic_key] = $topic_value ? sanitize_text_field($topic_value) : '';
-            }
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                $non_empty_topics = array_filter($topics);
-                error_log("PHASE 1.2 Topics Load: Found " . count($non_empty_topics) . " topics for post {$post_id}");
-                if (!empty($non_empty_topics)) {
-                    error_log("PHASE 1.2 Topics: " . implode(', ', $non_empty_topics));
-                }
-            }
-            
-        } catch (Exception $e) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("PHASE 1.2 Topics Load Error: " . $e->getMessage());
-            }
-            // Return empty topics array on error to prevent loading state issues
-            for ($i = 1; $i <= 5; $i++) {
-                $topics["topic_{$i}"] = '';
+        // Strategy 1: AJAX request parameters
+        if (!empty($_POST['post_id']) && is_numeric($_POST['post_id'])) {
+            $post_id = intval($_POST['post_id']);
+            $sources[] = 'POST[post_id]';
+        }
+        
+        if (!$post_id && !empty($_POST['media_kit_post_id']) && is_numeric($_POST['media_kit_post_id'])) {
+            $post_id = intval($_POST['media_kit_post_id']);
+            $sources[] = 'POST[media_kit_post_id]';
+        }
+        
+        // Strategy 2: GET parameters
+        if (!$post_id && !empty($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+            $post_id = intval($_GET['post_id']);
+            $sources[] = 'GET[post_id]';
+        }
+        
+        if (!$post_id && !empty($_GET['p']) && is_numeric($_GET['p'])) {
+            $post_id = intval($_GET['p']);
+            $sources[] = 'GET[p]';
+        }
+        
+        // Strategy 3: REQUEST fallback
+        if (!$post_id && !empty($_REQUEST['post_id']) && is_numeric($_REQUEST['post_id'])) {
+            $post_id = intval($_REQUEST['post_id']);
+            $sources[] = 'REQUEST[post_id]';
+        }
+        
+        // Strategy 4: HTTP referrer analysis
+        if (!$post_id && !empty($_SERVER['HTTP_REFERER'])) {
+            $referrer = $_SERVER['HTTP_REFERER'];
+            if (preg_match('/[?&]post_id=(\d+)/', $referrer, $matches)) {
+                $post_id = intval($matches[1]);
+                $sources[] = 'HTTP_REFERER';
             }
         }
         
-        return $topics;
+        // Validate post exists and is accessible
+        if ($post_id > 0) {
+            $post = get_post($post_id);
+            if (!$post || $post->post_status === 'trash') {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ROOT FIX: Invalid post ID {$post_id} - post does not exist or is trashed");
+                }
+                return 0;
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("ROOT FIX: Post ID {$post_id} extracted from sources: " . implode(', ', $sources));
+        }
+        
+        return $post_id;
+    }
+    
+    /**
+     * ROOT FIX: Comprehensive topic loading with multiple data sources and quality assessment
+     */
+    private function load_topics_comprehensive($post_id) {
+        $result = array(
+            'topics' => array(),
+            'count' => 0,
+            'source' => 'none',
+            'message' => '',
+            'quality' => 'unknown'
+        );
+        
+        try {
+            // Initialize empty topics structure
+            for ($i = 1; $i <= 5; $i++) {
+                $result['topics']["topic_{$i}"] = '';
+            }
+            
+            // Strategy 1: Direct custom fields (topic_1, topic_2, etc.)
+            $custom_topics = $this->load_from_custom_fields($post_id);
+            if ($custom_topics['count'] > 0) {
+                $result = array_merge($result, $custom_topics);
+                $result['source'] = 'custom_fields';
+                $result['message'] = "Loaded {$custom_topics['count']} topics from custom fields";
+                return $result;
+            }
+            
+            // Strategy 2: MKCG fields (mkcg_topic_1, etc.)
+            $mkcg_topics = $this->load_from_mkcg_fields($post_id);
+            if ($mkcg_topics['count'] > 0) {
+                $result = array_merge($result, $mkcg_topics);
+                $result['source'] = 'mkcg_fields';
+                $result['message'] = "Loaded {$mkcg_topics['count']} topics from MKCG fields";
+                return $result;
+            }
+            
+            // Strategy 3: JSON stored data
+            $json_topics = $this->load_from_json_data($post_id);
+            if ($json_topics['count'] > 0) {
+                $result = array_merge($result, $json_topics);
+                $result['source'] = 'json_data';
+                $result['message'] = "Loaded {$json_topics['count']} topics from JSON data";
+                return $result;
+            }
+            
+            // Strategy 4: WordPress post meta backup
+            $meta_topics = $this->load_from_post_meta_backup($post_id);
+            if ($meta_topics['count'] > 0) {
+                $result = array_merge($result, $meta_topics);
+                $result['source'] = 'post_meta_backup';
+                $result['message'] = "Loaded {$meta_topics['count']} topics from post meta backup";
+                return $result;
+            }
+            
+            // No topics found from any source
+            $result['message'] = 'No topics found in any data source';
+            $result['quality'] = 'empty';
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("ROOT FIX: No topics found for post {$post_id} in any data source");
+            }
+            
+        } catch (Exception $e) {
+            $result['message'] = 'Error loading topics: ' . $e->getMessage();
+            $result['quality'] = 'error';
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("ROOT FIX: Exception in comprehensive load: " . $e->getMessage());
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * ROOT FIX: Load from custom fields with quality assessment
+     */
+    private function load_from_custom_fields($post_id) {
+        $result = array('topics' => array(), 'count' => 0, 'quality' => 'empty');
+        
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_key = "topic_{$i}";
+            $topic_value = get_post_meta($post_id, $topic_key, true);
+            
+            if (!empty($topic_value) && is_string($topic_value)) {
+                $cleaned_value = sanitize_text_field(trim($topic_value));
+                if (strlen($cleaned_value) > 0) {
+                    $result['topics'][$topic_key] = $cleaned_value;
+                    $result['count']++;
+                }
+            }
+            
+            if (empty($result['topics'][$topic_key])) {
+                $result['topics'][$topic_key] = '';
+            }
+        }
+        
+        if ($result['count'] > 0) {
+            $result['quality'] = $this->assess_topics_quality($result['topics']);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * ROOT FIX: Load from MKCG fields with quality assessment
+     */
+    private function load_from_mkcg_fields($post_id) {
+        $result = array('topics' => array(), 'count' => 0, 'quality' => 'empty');
+        
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_key = "topic_{$i}";
+            $mkcg_key = "mkcg_{$topic_key}";
+            $topic_value = get_post_meta($post_id, $mkcg_key, true);
+            
+            if (!empty($topic_value) && is_string($topic_value)) {
+                $cleaned_value = sanitize_text_field(trim($topic_value));
+                if (strlen($cleaned_value) > 0) {
+                    $result['topics'][$topic_key] = $cleaned_value;
+                    $result['count']++;
+                }
+            }
+            
+            if (empty($result['topics'][$topic_key])) {
+                $result['topics'][$topic_key] = '';
+            }
+        }
+        
+        if ($result['count'] > 0) {
+            $result['quality'] = $this->assess_topics_quality($result['topics']);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * ROOT FIX: Load from JSON data with quality assessment
+     */
+    private function load_from_json_data($post_id) {
+        $result = array('topics' => array(), 'count' => 0, 'quality' => 'empty');
+        
+        $json_data = get_post_meta($post_id, 'topics_data', true);
+        if (!empty($json_data)) {
+            $decoded_data = json_decode($json_data, true);
+            if (is_array($decoded_data)) {
+                $topic_index = 1;
+                foreach ($decoded_data as $topic_data) {
+                    if ($topic_index > 5) break;
+                    
+                    $topic_key = "topic_{$topic_index}";
+                    if (!empty($topic_data['title']) && is_string($topic_data['title'])) {
+                        $cleaned_value = sanitize_text_field(trim($topic_data['title']));
+                        if (strlen($cleaned_value) > 0) {
+                            $result['topics'][$topic_key] = $cleaned_value;
+                            $result['count']++;
+                        }
+                    }
+                    
+                    if (empty($result['topics'][$topic_key])) {
+                        $result['topics'][$topic_key] = '';
+                    }
+                    
+                    $topic_index++;
+                }
+            }
+        }
+        
+        // Fill remaining empty slots
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_key = "topic_{$i}";
+            if (!isset($result['topics'][$topic_key])) {
+                $result['topics'][$topic_key] = '';
+            }
+        }
+        
+        if ($result['count'] > 0) {
+            $result['quality'] = $this->assess_topics_quality($result['topics']);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * ROOT FIX: Load from post meta backup with quality assessment
+     */
+    private function load_from_post_meta_backup($post_id) {
+        $result = array('topics' => array(), 'count' => 0, 'quality' => 'empty');
+        
+        $backup_data = get_post_meta($post_id, 'gmkb_topics_backup', true);
+        if (!empty($backup_data) && is_array($backup_data)) {
+            for ($i = 1; $i <= 5; $i++) {
+                $topic_key = "topic_{$i}";
+                if (!empty($backup_data[$topic_key]) && is_string($backup_data[$topic_key])) {
+                    $cleaned_value = sanitize_text_field(trim($backup_data[$topic_key]));
+                    if (strlen($cleaned_value) > 0) {
+                        $result['topics'][$topic_key] = $cleaned_value;
+                        $result['count']++;
+                    }
+                }
+                
+                if (empty($result['topics'][$topic_key])) {
+                    $result['topics'][$topic_key] = '';
+                }
+            }
+        }
+        
+        if ($result['count'] > 0) {
+            $result['quality'] = $this->assess_topics_quality($result['topics']);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * ROOT FIX: Assess quality of loaded topics
+     */
+    private function assess_topics_quality($topics) {
+        $non_empty = array_filter($topics, function($topic) {
+            return !empty($topic) && strlen(trim($topic)) > 0;
+        });
+        
+        $count = count($non_empty);
+        
+        if ($count === 0) return 'empty';
+        if ($count >= 4) return 'excellent';
+        if ($count >= 2) return 'good';
+        return 'fair';
+    }
+    
+    /**
+     * ROOT FIX: Get debug information for post ID extraction
+     */
+    private function get_post_id_debug_info() {
+        return array(
+            'POST_post_id' => $_POST['post_id'] ?? 'not_set',
+            'POST_media_kit_post_id' => $_POST['media_kit_post_id'] ?? 'not_set',
+            'GET_post_id' => $_GET['post_id'] ?? 'not_set',
+            'GET_p' => $_GET['p'] ?? 'not_set',
+            'REQUEST_post_id' => $_REQUEST['post_id'] ?? 'not_set',
+            'HTTP_REFERER' => $_SERVER['HTTP_REFERER'] ?? 'not_set',
+            'REQUEST_URI' => $_SERVER['REQUEST_URI'] ?? 'not_set'
+        );
+    }
+    
+    /**
+     * ROOT FIX: Direct topic loading for single-step render
+     * Used by main plugin AJAX handler to pre-load topic data
+     */
+    public function load_topics_direct($data_source_id = 0) {
+        if (empty($data_source_id)) {
+            return [];
+        }
+
+        // Tier 1: Try to get data from a dedicated custom field first.
+        $topics = get_post_meta($data_source_id, 'gmkb_topics_data', true);
+        if (!empty($topics) && is_array($topics)) {
+            return $topics;
+        }
+        
+        // Tier 2: Try custom fields (topic_1, topic_2, etc.)
+        $topics_array = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_value = get_post_meta($data_source_id, "topic_{$i}", true);
+            if (!empty($topic_value) && is_string($topic_value)) {
+                $topics_array[] = [
+                    'title' => sanitize_text_field(trim($topic_value)),
+                    'description' => ''
+                ];
+            }
+        }
+        
+        if (!empty($topics_array)) {
+            return $topics_array;
+        }
+        
+        // Add any other fallback tiers here if necessary (e.g., checking other meta keys).
+        return []; // Return empty array if no topics are found.
     }
     
     /**
@@ -415,9 +735,9 @@ class GMKB_Topics_Ajax_Handler {
     }
 }
 
-// PHASE 1.2 FIX: Initialize the handler immediately
+// ROOT FIX: Initialize the enhanced handler immediately
 GMKB_Topics_Ajax_Handler::get_instance();
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('PHASE 1.2 Topics AJAX Handler: Simplified, reliable handler initialized and ready');
+    error_log('ROOT FIX Topics AJAX Handler: Comprehensive, reliable handler initialized with enhanced error handling');
 }

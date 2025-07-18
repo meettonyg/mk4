@@ -65,6 +65,10 @@ class Guestify_Media_Kit_Builder {
         // Initialize component system
         $this->component_discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components');
         
+        // Make ComponentDiscovery available globally for cache management
+        global $gmkb_component_discovery;
+        $gmkb_component_discovery = $this->component_discovery;
+        
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ GMKB: ComponentDiscovery initialized with dir: ' . GUESTIFY_PLUGIN_DIR . 'components');
         }
@@ -75,12 +79,20 @@ class Guestify_Media_Kit_Builder {
             $debug_info = $this->component_discovery->getDebugInfo();
             error_log('✅ GMKB: ComponentDiscovery scan complete. Found ' . $debug_info['components_count'] . ' components');
             error_log('📋 GMKB: Available components: ' . implode(', ', $debug_info['component_names']));
+            if (isset($debug_info['cache_status']['cache_exists'])) {
+                error_log('🗄️ GMKB: Cache status - exists: ' . ($debug_info['cache_status']['cache_exists'] ? 'yes' : 'no') . ', age: ' . $debug_info['cache_status']['cache_age'] . 's');
+            }
         }
         $this->component_loader = new ComponentLoader(GUESTIFY_PLUGIN_DIR . 'components', $this->component_discovery);
         $this->design_panel = new DesignPanel(GUESTIFY_PLUGIN_DIR . 'components');
         
         // WordPress hooks only
         $this->init_hooks();
+        
+        // Add admin menu for cache management
+        if (is_admin()) {
+            add_action('admin_menu', array($this, 'add_admin_menu'));
+        }
         
         // Log simplified initialization
         if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -108,6 +120,10 @@ class Guestify_Media_Kit_Builder {
         add_action( 'wp_ajax_nopriv_guestify_render_component', array( $this, 'ajax_render_component' ) );
         add_action( 'wp_ajax_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
         add_action( 'wp_ajax_nopriv_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
+        
+        // Component cache management AJAX handlers
+        add_action( 'wp_ajax_gmkb_clear_component_cache', array( $this, 'ajax_clear_component_cache' ) );
+        add_action( 'wp_ajax_gmkb_refresh_components', array( $this, 'ajax_refresh_components' ) );
         
         // Media kit save/load handlers with consistent nonce validation
         add_action( 'wp_ajax_guestify_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
@@ -495,77 +511,92 @@ class Guestify_Media_Kit_Builder {
         }
     }
     
+    /**
+     * AJAX handler to render a single component server-side.
+     * --- THIS IS THE ROOT FIX ---
+     * This function is now responsible for fetching data for components like 'topics'
+     * before rendering, creating a more reliable "single-step render".
+     */
     public function ajax_render_component() {
-        // Verify nonce for security
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: ajax_render_component - Nonce verification failed');
-            }
-            wp_send_json_error('Security verification failed');
+        check_ajax_referer('gmkb_nonce', 'nonce');
+
+        $component_type = isset($_POST['component']) ? sanitize_text_field($_POST['component']) : '';
+        $props_json = isset($_POST['props']) ? stripslashes($_POST['props']) : '{}';
+        $props = json_decode($props_json, true);
+
+        if (empty($component_type)) {
+            wp_send_json_error('Component type not provided.');
             return;
         }
-        
-        $component_slug = isset( $_POST['component'] ) ? sanitize_text_field( $_POST['component'] ) : '';
-        $props = isset( $_POST['props'] ) ? json_decode( stripslashes( $_POST['props'] ), true ) : array();
-        
-        if ( empty( $component_slug ) ) {
-            wp_send_json_error( 'Component slug is required' );
-            return;
-        }
-        
-        // PHASE 1.2 FIX: Enhanced post ID detection - use props first, then fallback
-        $post_id = 0;
-        
-        // Priority 1: From props (AJAX context)
-        if (isset($props['post_id']) && is_numeric($props['post_id']) && $props['post_id'] > 0) {
-            $post_id = intval($props['post_id']);
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: ajax_render_component - Using post_id from props: ' . $post_id);
+
+        // --- ROOT FIX START: SINGLE-STEP RENDER LOGIC ---
+        // If the component is one that needs server data, pre-load it now.
+        $data_loading_components = ['topics']; // Add other component types here in the future
+
+        if (in_array($component_type, $data_loading_components)) {
+            $handler_path = GMKB_PLUGIN_DIR . "components/{$component_type}/ajax-handler.php";
+            if (file_exists($handler_path)) {
+                require_once $handler_path;
+
+                // For the 'topics' component
+                if ($component_type === 'topics' && class_exists('GMKB_Topics_Ajax_Handler')) {
+                    $topics_handler = GMKB_Topics_Ajax_Handler::get_instance();
+                    $data_source_id = $props['dataSourceId'] ?? 0;
+                    // Directly call the function and add the data to the props
+                    $props['loaded_topics'] = $topics_handler->load_topics_direct($data_source_id);
+                }
+
+                // Add 'else if' blocks here for other data-driven components in the future
             }
         }
-        // Priority 2: From URL (fallback)
-        elseif ($fallback_post_id = $this->detect_mkcg_post_id()) {
-            $post_id = $fallback_post_id;
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: ajax_render_component - Using post_id from URL fallback: ' . $post_id);
-            }
+        // --- ROOT FIX END ---
+
+        $template_path = GMKB_PLUGIN_DIR . "components/{$component_type}/template.php";
+        if (file_exists($template_path)) {
+            ob_start();
+            // The $props variable now contains pre-loaded data for the template.
+            include $template_path;
+            $html = ob_get_clean();
+
+            $scripts_data = $this->get_component_scripts($component_type, $props);
+
+            wp_send_json_success(['html' => $html, 'scripts' => $scripts_data]);
+        } else {
+            wp_send_json_error("Template file not found for component: {$component_type}");
+        }
+    }
+    
+    /**
+     * Get component scripts for AJAX response
+     * ROOT FIX: Support for component script loading in single-step render
+     */
+    private function get_component_scripts($component_type, $props) {
+        $scripts = array();
+        
+        // Check for component-specific scripts
+        $component_dir = GMKB_PLUGIN_DIR . "components/{$component_type}/";
+        
+        // Look for main script file
+        $main_script = $component_dir . 'script.js';
+        if (file_exists($main_script)) {
+            $scripts[] = array(
+                'src' => GMKB_PLUGIN_URL . "components/{$component_type}/script.js",
+                'type' => 'main',
+                'component' => $component_type
+            );
         }
         
-        $enhanced_props = array_merge($props, [
-            'post_id' => $post_id,
-            'gmkb_context' => 'ajax_render'
-        ]);
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: ajax_render_component - Rendering component: ' . $component_slug . ' with post ID: ' . $post_id);
+        // Look for panel script file
+        $panel_script = $component_dir . 'panel-script.js';
+        if (file_exists($panel_script)) {
+            $scripts[] = array(
+                'src' => GMKB_PLUGIN_URL . "components/{$component_type}/panel-script.js", 
+                'type' => 'panel',
+                'component' => $component_type
+            );
         }
         
-        $html = $this->component_loader->loadComponent( $component_slug, $enhanced_props );
-        
-        if ( $html === false ) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: ajax_render_component - Component not found: ' . $component_slug);
-            }
-            wp_send_json_error( 'Component not found' );
-            return;
-        }
-        
-        // ROOT FIX: Get component scripts from ComponentLoader (approved component-level approach)
-        $component_scripts = $this->component_loader->getComponentScriptsForAjax($component_slug, $post_id);
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: ajax_render_component - Successfully rendered: ' . $component_slug);
-            if (!empty($component_scripts)) {
-                error_log('GMKB: ajax_render_component - Including ' . count($component_scripts) . ' scripts in response');
-            }
-        }
-        
-        wp_send_json_success( array( 
-            'html' => $html,
-            'scripts' => $component_scripts,
-            'component' => $component_slug,
-            'post_id' => $post_id
-        ) );
+        return $scripts;
     }
     
     public function ajax_render_design_panel() {
@@ -998,6 +1029,154 @@ class Guestify_Media_Kit_Builder {
                 </div>
             </div>
         ';
+    }
+    
+    /**
+     * AJAX handler to clear component discovery cache
+     */
+    public function ajax_clear_component_cache() {
+        // Verify user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        // Verify nonce if provided
+        if (isset($_POST['nonce']) && !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+            wp_send_json_error('Security verification failed');
+            return;
+        }
+        
+        try {
+            $this->component_discovery->clearCache();
+            
+            wp_send_json_success(array(
+                'message' => 'Component cache cleared successfully',
+                'timestamp' => time()
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error('Failed to clear cache: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * AJAX handler to refresh component discovery
+     */
+    public function ajax_refresh_components() {
+        // Verify user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        // Verify nonce if provided
+        if (isset($_POST['nonce']) && !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+            wp_send_json_error('Security verification failed');
+            return;
+        }
+        
+        try {
+            $categories = $this->component_discovery->forceRefresh();
+            $components = $this->component_discovery->getComponents();
+            
+            wp_send_json_success(array(
+                'message' => 'Components refreshed successfully',
+                'components' => $components,
+                'categories' => $categories,
+                'total' => count($components),
+                'timestamp' => time()
+            ));
+        } catch (Exception $e) {
+            wp_send_json_error('Failed to refresh components: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Add admin menu for GMKB settings
+     */
+    public function add_admin_menu() {
+        add_options_page(
+            'GMKB Component Cache',
+            'GMKB Cache',
+            'manage_options',
+            'gmkb-cache',
+            array($this, 'admin_cache_page')
+        );
+    }
+    
+    /**
+     * Admin page for component cache management
+     */
+    public function admin_cache_page() {
+        if (isset($_POST['clear_cache'])) {
+            $this->component_discovery->clearCache();
+            echo '<div class="notice notice-success"><p>Component cache cleared successfully!</p></div>';
+        }
+        
+        if (isset($_POST['refresh_components'])) {
+            $this->component_discovery->forceRefresh();
+            echo '<div class="notice notice-success"><p>Components refreshed successfully!</p></div>';
+        }
+        
+        $debug_info = $this->component_discovery->getDebugInfo();
+        $cache_status = $debug_info['cache_status'];
+        
+        ?>
+        <div class="wrap">
+            <h1>GMKB Component Cache Management</h1>
+            
+            <div class="card">
+                <h2>Cache Status</h2>
+                <table class="form-table">
+                    <tr>
+                        <th>Cache Exists:</th>
+                        <td><?php echo $cache_status['cache_exists'] ? '✅ Yes' : '❌ No'; ?></td>
+                    </tr>
+                    <?php if ($cache_status['cache_exists']): ?>
+                    <tr>
+                        <th>Cache Age:</th>
+                        <td><?php echo human_time_diff(time() - $cache_status['cache_age']) . ' ago'; ?></td>
+                    </tr>
+                    <tr>
+                        <th>Cache Size:</th>
+                        <td><?php echo size_format($cache_status['cache_size']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <tr>
+                        <th>Components Found:</th>
+                        <td><?php echo $debug_info['components_count']; ?></td>
+                    </tr>
+                    <tr>
+                        <th>Categories:</th>
+                        <td><?php echo implode(', ', $debug_info['category_names']); ?></td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="card">
+                <h2>Cache Management</h2>
+                <form method="post">
+                    <?php wp_nonce_field('gmkb_cache_action'); ?>
+                    <p>
+                        <input type="submit" name="clear_cache" class="button button-secondary" value="Clear Cache" />
+                        <span class="description">Clear the component cache. Next page load will scan the filesystem.</span>
+                    </p>
+                    <p>
+                        <input type="submit" name="refresh_components" class="button button-primary" value="Refresh Components" />
+                        <span class="description">Force a fresh scan and update the cache immediately.</span>
+                    </p>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>Performance Information</h2>
+                <p><strong>Why caching matters:</strong> Without caching, the system scans the filesystem every time the builder loads. 
+                   With <?php echo $debug_info['components_count']; ?> components, this improves performance significantly.</p>
+                <p><strong>When to refresh:</strong> Use "Refresh Components" after adding, removing, or modifying component files.</p>
+                <p><strong>Cache duration:</strong> Cache expires automatically after 1 hour, or after 24 hours maximum.</p>
+            </div>
+        </div>
+        <?php
     }
     
     /**

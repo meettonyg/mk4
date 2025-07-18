@@ -56,12 +56,47 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     }
 }
 
-// PHASE 1.1 FIX: COMPREHENSIVE TOPIC LOADING with multiple fallback sources
+// ROOT FIX: SINGLE-STEP RENDER - Use pre-loaded topics data from props
 $topicsList = [];
 $topicsFound = false;
 $loadingSource = 'none';
 
-if ($current_post_id > 0) {
+// Priority 1: Check for pre-loaded topics from single-step render
+if (isset($props['loaded_topics']) && is_array($props['loaded_topics'])) {
+    $loadedTopics = $props['loaded_topics'];
+    
+    // Handle both formats: array of objects with title/description OR indexed array
+    foreach ($loadedTopics as $index => $topic) {
+        if (is_array($topic) && isset($topic['title']) && !empty(trim($topic['title']))) {
+            $topicsList[] = [
+                'title' => sanitize_text_field(trim($topic['title'])),
+                'description' => sanitize_text_field(trim($topic['description'] ?? '')),
+                'index' => $index,
+                'meta_key' => "topic_" . ($index + 1),
+                'source' => 'single_step_render'
+            ];
+            $topicsFound = true;
+            $loadingSource = 'single_step_render';
+        } elseif (is_string($topic) && !empty(trim($topic))) {
+            $topicsList[] = [
+                'title' => sanitize_text_field(trim($topic)),
+                'description' => '',
+                'index' => $index,
+                'meta_key' => "topic_" . ($index + 1),
+                'source' => 'single_step_render'
+            ];
+            $topicsFound = true;
+            $loadingSource = 'single_step_render';
+        }
+    }
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log("ROOT FIX Topics Template: Using pre-loaded topics data, found " . count($topicsList) . " topics");
+    }
+}
+
+// Fallback: If no pre-loaded data, try direct database loading (for backwards compatibility)
+if (!$topicsFound && $current_post_id > 0) {
     // Method 1: Try direct custom post fields (topic_1, topic_2, etc.)
     for ($i = 1; $i <= 5; $i++) {
         $topic_value = get_post_meta($current_post_id, "topic_{$i}", true);
@@ -70,10 +105,10 @@ if ($current_post_id > 0) {
                 'title' => sanitize_text_field(trim($topic_value)),
                 'index' => $i - 1,
                 'meta_key' => "topic_{$i}",
-                'source' => 'custom_fields'
+                'source' => 'custom_fields_fallback'
             ];
             $topicsFound = true;
-            $loadingSource = 'custom_fields';
+            $loadingSource = 'custom_fields_fallback';
         }
     }
     
@@ -86,10 +121,10 @@ if ($current_post_id > 0) {
                     'title' => sanitize_text_field(trim($topic_value)),
                     'index' => $i - 1,
                     'meta_key' => "mkcg_topic_{$i}",
-                    'source' => 'mkcg_fields'
+                    'source' => 'mkcg_fields_fallback'
                 ];
                 $topicsFound = true;
-                $loadingSource = 'mkcg_fields';
+                $loadingSource = 'mkcg_fields_fallback';
             }
         }
     }
@@ -106,10 +141,10 @@ if ($current_post_id > 0) {
                             'title' => sanitize_text_field(trim($topic_data['title'])),
                             'index' => $index,
                             'meta_key' => 'topics_data',
-                            'source' => 'json_data'
+                            'source' => 'json_data_fallback'
                         ];
                         $topicsFound = true;
-                        $loadingSource = 'json_data';
+                        $loadingSource = 'json_data_fallback';
                     }
                 }
             }
@@ -125,15 +160,20 @@ if ($topicsFound) {
     $containerClass .= ' no-topics';
 }
 
-// PHASE 1.2 FIX: Comprehensive debugging with ComponentLoader integration tracking
+// ROOT FIX: Comprehensive debugging for single-step render
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log("PHASE 1.2 Topics ROOT FIX: Post ID {$current_post_id} (source: {$post_id_source}), Found " . count($topicsList) . " topics from data source '{$loadingSource}'");
+    error_log("ROOT FIX Topics Template: Post ID {$current_post_id} (source: {$post_id_source}), Found " . count($topicsList) . " topics from data source '{$loadingSource}'");
     if (!empty($topicsList)) {
-        error_log("PHASE 1.2 Topics: " . implode(', ', array_column($topicsList, 'title')));
+        error_log("ROOT FIX Topics: " . implode(', ', array_column($topicsList, 'title')));
     }
     if ($current_post_id === 0) {
-        error_log("PHASE 1.2 Topics WARNING: No post ID detected. ComponentLoader integration issue?");
-        error_log("PHASE 1.2 Debug context: URL params=" . print_r($_GET, true) . ", Available vars: post_id=" . (isset($post_id) ? $post_id : 'unset'));
+        error_log("ROOT FIX Topics WARNING: No post ID detected. Single-step render issue?");
+        error_log("ROOT FIX Debug context: URL params=" . print_r($_GET, true) . ", Available vars: post_id=" . (isset($post_id) ? $post_id : 'unset'));
+    }
+    if (isset($props['loaded_topics'])) {
+        error_log("ROOT FIX Topics: Pre-loaded topics available in props: " . count($props['loaded_topics']) . " entries");
+    } else {
+        error_log("ROOT FIX Topics: No pre-loaded topics in props, using fallback loading");
     }
 }
 ?>
@@ -147,7 +187,9 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
      data-save-enabled="true"
      data-nonce="<?php echo wp_create_nonce('guestify_media_kit_builder'); ?>"
      data-loading-resolved="true"
-     data-phase="1.2-complete">
+     data-loading-source="<?php echo esc_attr($loadingSource); ?>"
+     data-single-step-render="true"
+     data-root-fix="complete">
 
     <!-- PHASE 1.1 FIX: Section Header -->
     <div class="topics-header">
@@ -173,12 +215,10 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                      data-meta-key="<?php echo esc_attr($topic['meta_key']); ?>"
                      data-source="<?php echo esc_attr($topic['source']); ?>">
                     <div class="topic-content">
-                        <div class="topic-title" 
-                             contenteditable="true" 
-                             data-setting="topic_<?php echo esc_attr($topic['index'] + 1); ?>"
-                             data-original-value="<?php echo esc_attr($topic['title']); ?>">
-                            <?php echo esc_html($topic['title']); ?>
-                        </div>
+                        <h3 class="topic-title"><?php echo esc_html($topic['title']); ?></h3>
+                        <?php if (!empty($topic['description'])): ?>
+                            <p class="topic-description"><?php echo esc_html($topic['description']); ?></p>
+                        <?php endif; ?>
                         <!-- PHASE 1.1 FIX: Add data source indicator for debugging -->
                         <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
                             <small class="debug-info" style="opacity: 0.6; font-size: 0.8em;">Source: <?php echo esc_html($topic['source']); ?></small>
@@ -194,12 +234,9 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                 <p style="margin-bottom: 15px;">Add topics to showcase your speaking expertise.</p>
                 
                 <?php if ($current_post_id > 0): ?>
-                    <div style="margin-bottom: 15px;">
-                        <button class="btn-add-topic" onclick="openTopicsDesignPanel()" 
-                                style="background: #0073aa; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
-                            Add Your First Topic
-                        </button>
-                    </div>
+                <div style="margin-bottom: 15px;">
+                <p style="margin-bottom: 15px;">No data source is linked. Please link a data source in the Content panel to automatically load topics.</p>
+                </div>
                     
                     <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
                         <details style="font-size: 0.9em; color: #999; margin-top: 10px;">
@@ -214,27 +251,29 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                         </details>
                     <?php endif; ?>
                 <?php else: ?>
-                    <p style="color: #d63384; font-size: 0.9em;">⚠️ No post ID available. Cannot load or save topics.</p>
+                    <p style="color: #d63384; font-size: 0.9em;">⚠️ No topics found in the linked data source. You can add topics by editing the source post.</p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>
     
-    <!-- PHASE 1.1 FIX: JavaScript fallback prevention -->
+    <!-- ROOT FIX: Single-step render - no loading prevention needed -->
     <script>
-    // IMMEDIATE fix: Ensure any "Loading..." messages are hidden
+    // ROOT FIX: Ensure topics display immediately without loading states
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.querySelector('[data-component-id="<?php echo $componentId; ?>"] .topics-container');
         if (container) {
-            // Remove any loading indicators that might be added by other scripts
+            // Remove any loading indicators that might be added by other scripts (defensive)
             const loadingElements = container.querySelectorAll('.loading-indicator, .loading-message, [data-loading="true"]');
             loadingElements.forEach(el => el.remove());
             
-            // Mark as resolved
+            // Mark as resolved via single-step render
             container.setAttribute('data-loading-resolved', 'true');
-            container.setAttribute('data-phase-1-1-complete', 'true');
+            container.setAttribute('data-single-step-render', 'true');
+            container.setAttribute('data-root-fix-complete', 'true');
             
-            console.log('✅ PHASE 1.1: Topics loading state resolved server-side for <?php echo $componentId; ?>');
+            console.log('✅ ROOT FIX: Topics rendered via single-step render for <?php echo $componentId; ?> - no loading state needed');
+            console.log('📊 ROOT FIX: Data source: <?php echo $loadingSource; ?>, Topics found: <?php echo count($topicsList); ?>');
         }
     });
     
@@ -255,9 +294,16 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     }
     </script>
     
-    <!-- PHASE 1.1 FIX: Inline styles to prevent loading state flicker -->
+    <!-- ROOT FIX: Styles for single-step render -->
     <style>
-    /* IMMEDIATE loading state prevention */
+    /* ROOT FIX: Ensure no loading states ever show */
+    .topics-component[data-single-step-render="true"] .loading-indicator,
+    .topics-component[data-single-step-render="true"] .loading-message,
+    .topics-component[data-single-step-render="true"] [data-loading="true"] {
+        display: none !important;
+    }
+    
+    /* Backwards compatibility */
     .topics-component[data-loading-resolved="true"] .loading-indicator,
     .topics-component[data-loading-resolved="true"] .loading-message,
     .topics-component[data-loading-resolved="true"] [data-loading="true"] {
