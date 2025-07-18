@@ -1088,7 +1088,8 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Attach interaction handlers to component elements
+         * ROOT FIX: Attach interaction handlers using ComponentControlsManager
+         * FIXED: Use dynamic control generation exclusively, no hardcoded HTML
          * @param {HTMLElement} componentElement - Component DOM element
          * @param {string} componentId - Component ID
          */
@@ -1102,100 +1103,99 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Mark as having handlers attached
             componentElement.setAttribute('data-handlers-attached', 'true');
             
-            // ROOT FIX: Remove any existing controls to prevent duplicates
-            const existingControls = componentElement.querySelector('.component-controls');
-            if (existingControls) {
-                existingControls.remove();
+            // ROOT FIX: Use ComponentControlsManager exclusively - NO HARDCODED HTML
+            if (window.componentControlsManager) {
+                const success = window.componentControlsManager.attachControls(componentElement, componentId);
+                if (success) {
+                    console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
+                    
+                    // ROOT FIX: Setup component action event listeners for this component
+                    this.setupComponentActionListeners(componentId);
+                    
+                    console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
+                } else {
+                    console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
+                    // Fallback to event-based attachment
+                    this.requestControlAttachment(componentElement, componentId);
+                }
+            } else {
+                console.warn(`⚠️ ComponentManager: ComponentControlsManager not available, waiting for load...`);
+                
+                // ROOT FIX: Wait for ComponentControlsManager to become available
+                const checkManager = () => {
+                    if (window.componentControlsManager) {
+                        console.log(`✅ ComponentManager: ComponentControlsManager now available for ${componentId}`);
+                        const success = window.componentControlsManager.attachControls(componentElement, componentId);
+                        if (success) {
+                            this.setupComponentActionListeners(componentId);
+                            console.log(`✅ ComponentManager: Delayed attachment successful for ${componentId}`);
+                        }
+                    } else {
+                        // Final fallback to event-based approach
+                        console.warn(`⚠️ ComponentManager: ComponentControlsManager still unavailable, using event fallback`);
+                        this.requestControlAttachment(componentElement, componentId);
+                    }
+                };
+                
+                // Check again after a brief delay to allow script loading
+                setTimeout(checkManager, 100);
             }
-            
-            // Add component controls overlay with improved design
-            const controlsOverlay = document.createElement('div');
-            controlsOverlay.className = 'component-controls';
-            controlsOverlay.innerHTML = `
-                <div class="component-controls__toolbar">
-                    <button class="component-control component-control--edit" data-action="edit" title="Edit Component">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                    </button>
-                    <div class="component-control-group">
-                        <button class="component-control component-control--move-up" data-action="move-up" title="Move Up">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="18,15 12,9 6,15"/>
-                            </svg>
-                        </button>
-                        <button class="component-control component-control--move-down" data-action="move-down" title="Move Down">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6,9 12,15 18,9"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <button class="component-control component-control--duplicate" data-action="duplicate" title="Duplicate Component">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                        </svg>
-                    </button>
-                    <button class="component-control component-control--delete" data-action="delete" title="Delete Component">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3,6 5,6 21,6"/>
-                            <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
-                            <line x1="10" y1="11" x2="10" y2="17"/>
-                            <line x1="14" y1="11" x2="14" y2="17"/>
-                        </svg>
-                    </button>
-                </div>
-            `;
-            
-            // Insert controls at the beginning of component
-            componentElement.insertBefore(controlsOverlay, componentElement.firstChild);
-            
-            // Attach event listeners
-            controlsOverlay.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const action = e.target.closest('[data-action]')?.dataset.action;
-                
-                if (!action) return;
-                
-                // Disable button temporarily to prevent double-clicks
-                const button = e.target.closest('[data-action]');
-                if (button) {
-                    button.disabled = true;
-                    setTimeout(() => {
-                        button.disabled = false;
-                    }, 500);
-                }
-                
-                switch (action) {
-                    case 'edit':
+        },
+        
+        /**
+         * ROOT FIX: Request control attachment via event system
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        requestControlAttachment(componentElement, componentId) {
+            GMKB.dispatch('gmkb:attach-controls-requested', {
+                componentElement,
+                componentId,
+                timestamp: Date.now(),
+                source: 'ComponentManager'
+            });
+        },
+        
+        /**
+         * ROOT FIX: Setup event listeners for component actions
+         * @param {string} componentId - Component ID
+         */
+        setupComponentActionListeners(componentId) {
+            // ROOT FIX: Listen for component action events specific to this component
+            const actionHandlers = {
+                'gmkb:component-edit-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
                         this.editComponent(componentId);
-                        break;
-                    case 'move-up':
+                    }
+                },
+                'gmkb:component-move-up-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
                         this.moveComponentUp(componentId);
-                        break;
-                    case 'move-down':
+                    }
+                },
+                'gmkb:component-move-down-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
                         this.moveComponentDown(componentId);
-                        break;
-                    case 'duplicate':
+                    }
+                },
+                'gmkb:component-duplicate-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
                         this.duplicateComponent(componentId);
-                        break;
-                    case 'delete':
+                    }
+                },
+                'gmkb:component-delete-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
                         this.deleteComponent(componentId);
-                        break;
+                    }
                 }
+            };
+            
+            // ROOT FIX: Subscribe to all action events
+            Object.entries(actionHandlers).forEach(([eventName, handler]) => {
+                GMKB.subscribe(eventName, handler);
             });
             
-            // Show controls on hover with improved animations
-            componentElement.addEventListener('mouseenter', () => {
-                controlsOverlay.classList.add('component-controls--visible');
-            });
-            
-            componentElement.addEventListener('mouseleave', () => {
-                controlsOverlay.classList.remove('component-controls--visible');
-            });
-            
-            console.log(`✅ ComponentManager: Enhanced handlers attached to ${componentId}`);
+            console.log(`✅ ComponentManager: Event-driven action listeners setup for ${componentId}`);
         },
         
         /**

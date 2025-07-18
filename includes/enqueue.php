@@ -104,6 +104,15 @@ function gmkb_enqueue_assets() {
         true // Load in footer
     );
     
+    // ROOT FIX: Load ComponentControlsManager for dynamic control generation
+    wp_enqueue_script(
+        'gmkb-component-controls-manager',
+        $plugin_url . 'js/core/component-controls-manager.js',
+        array('gmkb-main-script'), // DEPENDS on main script for GMKB namespace
+        $version,
+        true // Load in footer
+    );
+    
     // ROOT FIX: Load SortableJS library FIRST (from CDN for immediate availability)
     wp_enqueue_script(
         'sortablejs',
