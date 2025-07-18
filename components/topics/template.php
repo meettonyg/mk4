@@ -228,15 +228,12 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
             <?php endforeach; ?>
             
         <?php else: ?>
-            <!-- PHASE 1.1 FIX: Clear empty state - ZERO loading ambiguity -->
+            <!-- ROOT FIX: Clear empty state with no loading ambiguity -->
             <div class="no-topics-message" style="padding: 20px; text-align: center; color: #666; border: 1px dashed #ddd; border-radius: 8px;">
                 <div style="font-size: 1.1em; margin-bottom: 10px;">📝 <strong>No topics found</strong></div>
-                <p style="margin-bottom: 15px;">Add topics to showcase your speaking expertise.</p>
                 
                 <?php if ($current_post_id > 0): ?>
-                <div style="margin-bottom: 15px;">
-                <p style="margin-bottom: 15px;">No data source is linked. Please link a data source in the Content panel to automatically load topics.</p>
-                </div>
+                    <p style="margin-bottom: 15px;">No data source is linked. Please link a data source in the Content panel.</p>
                     
                     <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
                         <details style="font-size: 0.9em; color: #999; margin-top: 10px;">
@@ -244,14 +241,12 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                             <div style="margin-top: 5px; text-align: left;">
                                 <strong>Post ID:</strong> <?php echo esc_html($current_post_id); ?> (<?php echo esc_html($post_id_source); ?>)<br>
                                 <strong>Data Source:</strong> <?php echo esc_html($loadingSource); ?><br>
-                                <strong>URL post_id:</strong> <?php echo esc_html($_GET['post_id'] ?? 'not set'); ?><br>
-                                <strong>ComponentLoader post_id:</strong> <?php echo esc_html(isset($post_id) ? $post_id : 'not passed'); ?><br>
-                                <strong>Resolution:</strong> Server-side complete (Phase 1.2)
+                                <strong>Resolution:</strong> Single-step render complete
                             </div>
                         </details>
                     <?php endif; ?>
                 <?php else: ?>
-                    <p style="color: #d63384; font-size: 0.9em;">⚠️ No topics found in the linked data source. You can add topics by editing the source post.</p>
+                    <p style="color: #d63384; font-size: 0.9em;">⚠️ No topics found in the linked data source.</p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

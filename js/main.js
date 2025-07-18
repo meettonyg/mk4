@@ -43,41 +43,13 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             console.debug(`📢 GMKB: Dispatched '${eventName}'`, detail);
         },
         
-        /**
-         * ROOT FIX: Handle save request from toolbar or other components
-         * @param {Object} detail - Event detail containing callbacks and metadata
-         */
-        async handleSaveRequest(detail = {}) {
-            const { onComplete, onError, source } = detail;
-            
-            try {
-                console.log('💾 StateManager: Processing save request from', source || 'unknown');
-                
-                // Call saveToStorage with the event detail (which contains callbacks)
-                const success = await this.saveToStorage(detail);
-                
-                if (!success) {
-                    throw new Error('Save operation failed');
-                }
-                
-                console.log('✅ StateManager: Save request completed successfully');
-                return true;
-                
-            } catch (error) {
-                console.error('❌ StateManager: Save request failed:', error);
-                
-                // If saveToStorage didn't handle the error callback, handle it here
-                if (onError && typeof onError === 'function') {
-                    onError({
-                        success: false,
-                        error: error.message,
-                        timestamp: Date.now()
-                    });
-                }
-                
-                return false;
-            }
-        },
+
+        
+
+        
+
+        
+
         
         subscribe(eventName, callback) {
             document.addEventListener(eventName, callback);
@@ -109,10 +81,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             console.log('📋 StateManager: Initialized (Phase 2.3 Simplified)');
             
             // ROOT FIX: Listen for save request from toolbar or any other component
-            GMKB.subscribe('gmkb:save-requested', (event) => {
-                console.log('💾 StateManager: Save request received from', event.detail.source || 'unknown');
-                this.handleSaveRequest(event.detail);
-            });
+            GMKB.subscribe('gmkb:save-requested', this.handleSaveRequest.bind(this));
             
             // ROOT FIX: Check localStorage FIRST (where previous components are saved)
             let hasLocalStorageData = false;
@@ -294,6 +263,31 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             }
             console.log('💾 StateManager: No saved state found in localStorage');
             return false;
+        },
+        
+        /**
+         * Handles the save request event.
+         * @param {CustomEvent} event The event object.
+         */
+        async handleSaveRequest(event) {
+            const detail = event.detail || {};
+            console.log('💾 StateManager: Save request received.', detail);
+            
+            const { onComplete, onError } = detail;
+            try {
+                localStorage.setItem('gmkb-state', JSON.stringify(this.state));
+                const wordpressSuccess = await this.saveToWordPress();
+        
+                if (wordpressSuccess) {
+                    if (onComplete) onComplete({ source: 'StateManager', status: 'success' });
+                    return true;
+                } else {
+                    throw new Error('The state could not be saved to WordPress.');
+                }
+            } catch (error) {
+                if (onError) onError({ error: error.message });
+                return false;
+            }
         }
     };
 

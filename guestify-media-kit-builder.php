@@ -513,7 +513,7 @@ class Guestify_Media_Kit_Builder {
     
     /**
      * AJAX handler to render a single component server-side.
-     * --- THIS IS THE ROOT FIX ---
+     * --- ROOT FIX: SINGLE-STEP RENDER LOGIC ---
      * This function is now responsible for fetching data for components like 'topics'
      * before rendering, creating a more reliable "single-step render".
      */
@@ -529,37 +529,27 @@ class Guestify_Media_Kit_Builder {
             return;
         }
 
-        // --- ROOT FIX START: SINGLE-STEP RENDER LOGIC ---
-        // If the component is one that needs server data, pre-load it now.
-        $data_loading_components = ['topics']; // Add other component types here in the future
-
-        if (in_array($component_type, $data_loading_components)) {
-            $handler_path = GMKB_PLUGIN_DIR . "components/{$component_type}/ajax-handler.php";
-            if (file_exists($handler_path)) {
-                require_once $handler_path;
-
-                // For the 'topics' component
-                if ($component_type === 'topics' && class_exists('GMKB_Topics_Ajax_Handler')) {
+        // --- ROOT FIX: SINGLE-STEP RENDER LOGIC ---
+        // Pre-load data for components that need server-side data loading
+        if ($component_type === 'topics') {
+            $topics_ajax_handler_path = GMKB_PLUGIN_DIR . 'components/topics/ajax-handler.php';
+            if (file_exists($topics_ajax_handler_path)) {
+                require_once $topics_ajax_handler_path;
+                if (class_exists('GMKB_Topics_Ajax_Handler')) {
                     $topics_handler = GMKB_Topics_Ajax_Handler::get_instance();
                     $data_source_id = $props['dataSourceId'] ?? 0;
-                    // Directly call the function and add the data to the props
                     $props['loaded_topics'] = $topics_handler->load_topics_direct($data_source_id);
                 }
-
-                // Add 'else if' blocks here for other data-driven components in the future
             }
         }
-        // --- ROOT FIX END ---
+        // --- END SINGLE-STEP RENDER LOGIC ---
 
         $template_path = GMKB_PLUGIN_DIR . "components/{$component_type}/template.php";
         if (file_exists($template_path)) {
             ob_start();
-            // The $props variable now contains pre-loaded data for the template.
             include $template_path;
             $html = ob_get_clean();
-
             $scripts_data = $this->get_component_scripts($component_type, $props);
-
             wp_send_json_success(['html' => $html, 'scripts' => $scripts_data]);
         } else {
             wp_send_json_error("Template file not found for component: {$component_type}");
