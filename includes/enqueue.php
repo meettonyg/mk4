@@ -51,14 +51,28 @@ function gmkb_enqueue_assets() {
     // Force console output for debugging
     echo '<script>console.log("\ud83d� GMKB ENQUEUE DEBUG: Function executed at " + new Date().toISOString());</script>';
     
-    // Simple, robust page detection
-    if ( ! is_media_kit_builder_page() ) {
+    // ROOT FIX: Always enqueue on guestify-media-kit pages (override detection)
+    $should_enqueue = is_media_kit_builder_page();
+    
+    // EMERGENCY FIX: Force enqueue if URL contains guestify-media-kit
+    if ( ! $should_enqueue && isset( $_SERVER['REQUEST_URI'] ) ) {
+        $request_uri = $_SERVER['REQUEST_URI'];
+        if ( strpos( $request_uri, 'guestify-media-kit' ) !== false ) {
+            $should_enqueue = true;
+            error_log( '🔧 GMKB: Force enqueuing due to URL match: ' . $request_uri );
+        }
+    }
+    
+    if ( ! $should_enqueue ) {
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
             error_log( '❌ GMKB: Not a media kit builder page - skipping script enqueue' );
             error_log( '📄 Current URL: ' . ( $_SERVER['REQUEST_URI'] ?? 'unknown' ) );
         }
         return;
     }
+    
+    // LOG SUCCESSFUL DETECTION
+    error_log( '✅ GMKB: Enqueuing scripts for media kit builder page' );
 
     $plugin_url = GUESTIFY_PLUGIN_URL;
     $version = '2.1.0-vanilla-js-final-' . time(); // Cache busting for development
@@ -68,6 +82,24 @@ function gmkb_enqueue_assets() {
         'gmkb-main-script',
         $plugin_url . 'js/main.js',
         array(), // NO DEPENDENCIES - Pure vanilla JavaScript following Gemini recommendations
+        $version,
+        true // Load in footer
+    );
+    
+    // ROOT FIX: Load modal-base.js FIRST (self-initializing)
+    wp_enqueue_script(
+        'gmkb-modal-base',
+        $plugin_url . 'js/modals/modal-base.js',
+        array(), // NO DEPENDENCIES - Self-initializing modal system
+        $version,
+        true // Load in footer
+    );
+    
+    // ROOT FIX: Load component-library.js AFTER modal base (event-driven)
+    wp_enqueue_script(
+        'gmkb-component-library',
+        $plugin_url . 'js/modals/component-library.js',
+        array('gmkb-modal-base'), // DEPENDS on modal base for events
         $version,
         true // Load in footer
     );
@@ -211,7 +243,8 @@ function get_current_post_id_safe() {
 }
 
 /**
- * Add WordPress action hook for script readiness
+ * ROOT FIX: Force load modal and component library scripts
+ * Add WordPress action hook for script readiness with script injection
  * This provides event-driven coordination with WordPress
  */
 add_action( 'wp_footer', 'gmkb_add_readiness_events', 5 );
@@ -240,10 +273,69 @@ function gmkb_add_readiness_events() {
         console.log('✅ WordPress: Readiness events dispatched');
     });
     </script>
+    
+    <!-- ROOT FIX: Force load modal and component library scripts inline -->
+    <script id="gmkb-modal-base-inline" type="text/javascript">
+    <?php
+    // Load modal-base.js content inline
+    $modal_base_file = GUESTIFY_PLUGIN_DIR . 'js/modals/modal-base.js';
+    if ( file_exists( $modal_base_file ) ) {
+        echo file_get_contents( $modal_base_file );
+    } else {
+        echo 'console.error("❌ modal-base.js not found at: ' . $modal_base_file . '");';
+    }
+    ?>
+    </script>
+    
+    <script id="gmkb-component-library-inline" type="text/javascript">
+    <?php
+    // Load component-library.js content inline
+    $component_library_file = GUESTIFY_PLUGIN_DIR . 'js/modals/component-library.js';
+    if ( file_exists( $component_library_file ) ) {
+        echo file_get_contents( $component_library_file );
+    } else {
+        echo 'console.error("❌ component-library.js not found at: ' . $component_library_file . '");';
+    }
+    ?>
+    </script>
+    
+    <script id="gmkb-force-initialization" type="text/javascript">
+    // ROOT FIX: Force initialization after scripts are loaded
+    console.log('🔧 GMKB: Force initialization starting...');
+    
+    // Wait for DOM to be fully ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeScripts);
+    } else {
+        initializeScripts();
+    }
+    
+    function initializeScripts() {
+        console.log('🚀 GMKB: Initializing modal and component library systems...');
+        
+        // Give scripts a moment to execute
+        setTimeout(() => {
+            console.log('🔍 GMKB: Checking system availability...');
+            console.log('   GMKB_Modals:', !!window.GMKB_Modals);
+            console.log('   componentLibrarySystem:', !!window.componentLibrarySystem);
+            
+            if (window.GMKB_Modals && window.componentLibrarySystem) {
+                console.log('✅ GMKB: All systems ready!');
+            } else {
+                console.log('⚠️ GMKB: Systems not ready, checking in 1 second...');
+                setTimeout(() => {
+                    console.log('🔍 GMKB: Second check...');
+                    console.log('   GMKB_Modals:', !!window.GMKB_Modals);
+                    console.log('   componentLibrarySystem:', !!window.componentLibrarySystem);
+                }, 1000);
+            }
+        }, 100);
+    }
+    </script>
     <?php
 
     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( '✅ GMKB: WordPress readiness events added to footer' );
+        error_log( '✅ GMKB: WordPress readiness events and inline scripts added to footer' );
     }
 }
 
