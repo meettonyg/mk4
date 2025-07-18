@@ -43,6 +43,15 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 // ROOT FIX: Load AJAX handlers for component functionality
 require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
+
+// SCALABLE ARCHITECTURE: Include test suite in development
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    add_action('wp_footer', function() {
+        if (strpos($_SERVER['REQUEST_URI'] ?? '', 'guestify-media-kit') !== false) {
+            echo '<script src="' . GUESTIFY_PLUGIN_URL . 'test-scalable-architecture.js?v=' . time() . '"></script>';
+        }
+    }, 999);
+}
 // === GEMINI FIX END ===
 
 /**
@@ -652,22 +661,14 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
-        // ✅ SCALABLE ARCHITECTURE: Universal post ID injection for ALL components
+        // EVENT-DRIVEN: Validate post_id parameter (no global injection)
         $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
-        if ($post_id > 0) {
-            // Make post ID available through multiple methods for maximum compatibility
-            $_GET['post_id'] = $post_id;                     // URL method
-            $GLOBALS['gmkb_component_post_id'] = $post_id;     // Global method
-            if (!defined('GMKB_CURRENT_POST_ID')) {
-                define('GMKB_CURRENT_POST_ID', $post_id);     // Constant method
-            }
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("SCALABLE ARCHITECTURE: Universal post_id={$post_id} injection for component '{$component_slug}'");
-            }
-        } else {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("SCALABLE ARCHITECTURE: WARNING - No post_id provided for component '{$component_slug}'");
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            if ($post_id > 0) {
+                error_log("EVENT-DRIVEN: post_id={$post_id} parameter for component '{$component_slug}' - no global injection");
+            } else {
+                error_log("EVENT-DRIVEN: No post_id provided for component '{$component_slug}' - will show error state");
             }
         }
         

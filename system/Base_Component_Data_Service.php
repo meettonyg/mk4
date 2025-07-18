@@ -32,129 +32,86 @@ abstract class Base_Component_Data_Service {
     private static $data_cache = array();
     
     /**
-     * UNIFIED POST ID DETECTION - IDENTICAL FOR ALL COMPONENTS
+     * EVENT-DRIVEN: Validate explicit post ID parameter
      * 
-     * This is the single source of truth for post ID detection across
-     * all components, ensuring 100% consistency between preview and design panels
+     * Replaces detection polling with explicit parameter validation
+     * No global object sniffing or detection strategies
      * 
-     * @param string $context Context where detection is called (for debugging)
-     * @return array {
-     *     @type int    $post_id       Resolved post ID
-     *     @type string $source        Source of post ID detection
-     *     @type array  $debug         Debug information
-     * }
+     * @param int $post_id Explicit post ID parameter (required)
+     * @param string $context Context for debugging
+     * @return array Validation result
      */
-    protected static function detect_post_id($context = 'unknown') {
-        $cache_key = $context;
+    protected static function validate_explicit_post_id($post_id, $context = 'unknown') {
+        // EVENT-DRIVEN: No detection, only explicit validation
+        $current_post_id = intval($post_id);
         
-        // Return cached result if available
-        if (isset(self::$post_id_cache[$cache_key])) {
-            return self::$post_id_cache[$cache_key];
-        }
-        
-        // UNIVERSAL DETECTION STRATEGIES - PRIORITY ORDER
-        $methods = array(
-            // Priority 1: Global component context (set by AJAX handler)
-            'global_component_context' => $GLOBALS['gmkb_component_post_id'] ?? null,
-            
-            // Priority 2: WordPress constant (set by AJAX handler)
-            'wordpress_constant' => defined('GMKB_CURRENT_POST_ID') ? GMKB_CURRENT_POST_ID : null,
-            
-            // Priority 3: URL parameters (GET)
-            'url_post_id' => $_GET['post_id'] ?? null,
-            'url_p' => $_GET['p'] ?? null,
-            
-            // Priority 4: POST parameters (AJAX contexts)
-            'post_post_id' => $_POST['post_id'] ?? null,
-            'post_media_kit_id' => $_POST['media_kit_id'] ?? null,
-            
-            // Priority 5: REQUEST fallback
-            'request_post_id' => $_REQUEST['post_id'] ?? null,
-            
-            // Priority 6: WordPress context
-            'global_post' => (isset($GLOBALS['post']->ID) ? $GLOBALS['post']->ID : null),
-            'wp_get_the_id' => (function_exists('get_the_ID') ? get_the_ID() : null),
-            'wp_query' => (isset($GLOBALS['wp_query']->post->ID) ? $GLOBALS['wp_query']->post->ID : null),
-            
-            // Priority 7: JavaScript data fallback (if passed through)
-            'js_data' => $_POST['js_post_id'] ?? null
-        );
-        
-        // Find first valid post ID
-        $current_post_id = 0;
-        $post_id_source = 'none';
-        
-        foreach ($methods as $method => $value) {
-            if (!empty($value) && is_numeric($value) && $value > 0) {
-                $current_post_id = intval($value);
-                $post_id_source = $method;
-                break;
-            }
+        if ($current_post_id <= 0) {
+            return array(
+                'post_id' => 0,
+                'valid' => false,
+                'source' => 'explicit_parameter',
+                'context' => $context,
+                'error' => 'Invalid post ID parameter provided',
+                'timestamp' => current_time('mysql')
+            );
         }
         
         // Validate post exists and is accessible
-        if ($current_post_id > 0) {
-            $post = get_post($current_post_id);
-            if (!$post || $post->post_status === 'trash') {
-                $current_post_id = 0;
-                $post_id_source = 'invalid_post';
-            }
+        $post = get_post($current_post_id);
+        if (!$post || $post->post_status === 'trash') {
+            return array(
+                'post_id' => $current_post_id,
+                'valid' => false,
+                'source' => 'explicit_parameter',
+                'context' => $context,
+                'error' => 'Post not found or in trash',
+                'timestamp' => current_time('mysql')
+            );
         }
         
-        $result = array(
-            'post_id' => $current_post_id,
-            'source' => $post_id_source,
-            'context' => $context,
-            'timestamp' => current_time('mysql'),
-            'debug' => array(
-                'methods_checked' => $methods,
-                'cache_key' => $cache_key,
-                'component_type' => static::$component_type ?? 'unknown'
-            )
-        );
-        
-        // Cache result for performance
-        self::$post_id_cache[$cache_key] = $result;
-        
-        // Enhanced debugging for development
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("BASE SERVICE: Post ID detection for " . (static::$component_type ?? 'unknown') . " component");
-            error_log("  Context: {$context}");
-            error_log("  Result: Post ID {$current_post_id} from {$post_id_source}");
-            if ($current_post_id === 0) {
-                error_log("  WARNING: No post ID detected - all methods failed");
-            }
+            error_log("EVENT-DRIVEN BASE SERVICE: Post ID {$current_post_id} validated for " . (static::$component_type ?? 'unknown') . " component in context {$context}");
         }
         
-        return $result;
+        return array(
+            'post_id' => $current_post_id,
+            'valid' => true,
+            'source' => 'explicit_parameter',
+            'context' => $context,
+            'post_title' => $post->post_title,
+            'timestamp' => current_time('mysql')
+        );
     }
     
     /**
-     * ABSTRACT METHOD: Get unified component data
+     * EVENT-DRIVEN: Get unified component data with explicit post ID
      * Must be implemented by all child classes
      * 
+     * @param int $post_id Explicit post ID (required)
      * @param string $context Context where data is requested
      * @return array Standardized component data array
      */
-    abstract public static function get_unified_component_data($context = 'unknown');
+    abstract public static function get_unified_component_data($post_id, $context = 'unknown');
     
     /**
-     * ABSTRACT METHOD: Get component data for preview area
+     * EVENT-DRIVEN: Get component data for preview area with explicit post ID
      * Must be implemented by all child classes
      * 
+     * @param int $post_id Explicit post ID (required)
      * @param string $context Context identifier
      * @return array Preview-formatted data
      */
-    abstract public static function get_preview_data($context = 'preview');
+    abstract public static function get_preview_data($post_id, $context = 'preview');
     
     /**
-     * ABSTRACT METHOD: Get component data for sidebar/design panel
+     * EVENT-DRIVEN: Get component data for sidebar/design panel with explicit post ID
      * Must be implemented by all child classes
      * 
+     * @param int $post_id Explicit post ID (required)
      * @param string $context Context identifier  
      * @return array Sidebar-formatted data
      */
-    abstract public static function get_sidebar_data($context = 'sidebar');
+    abstract public static function get_sidebar_data($post_id, $context = 'sidebar');
     
     /**
      * UNIVERSAL: Save component data

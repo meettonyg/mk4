@@ -27,51 +27,52 @@ class Topics_Data_Service extends Base_Component_Data_Service {
     protected static $component_type = 'topics';
     
     /**
-     * SCALABLE: Get unified component data
+     * EVENT-DRIVEN: Get unified component data with explicit post ID
      * Implements base class abstract method for topics component
      * 
+     * @param int $post_id Explicit post ID (required)
      * @param string $context Context where data is requested
-     * @return array {
-     *     @type array  $topics        Array of topic objects
-     *     @type int    $post_id       Resolved post ID
-     *     @type string $post_id_source Source of post ID detection
-     *     @type string $data_source   Source of topics data
-     *     @type bool   $success       Whether data loading succeeded
-     *     @type string $message       Status message
-     *     @type string $context       Request context
-     *     @type array  $debug_info    Debug information
-     * }
+     * @return array Component data array
      */
-    public static function get_unified_component_data($context = 'unknown') {
-        // Use base class unified post ID detection
-        $post_id_result = self::detect_post_id($context);
-        $current_post_id = $post_id_result['post_id'];
-        $post_id_source = $post_id_result['source'];
+    public static function get_unified_component_data($post_id, $context = 'unknown') {
+        // EVENT-DRIVEN: Validate explicit post ID parameter
+        $validation = self::validate_explicit_post_id($post_id, $context);
+        
+        if (!$validation['valid']) {
+            return array(
+                'topics' => array(),
+                'post_id' => $validation['post_id'],
+                'success' => false,
+                'message' => $validation['error'],
+                'context' => $context,
+                'component_type' => self::$component_type,
+                'timestamp' => current_time('mysql'),
+                'event_driven' => true
+            );
+        }
+        
+        $current_post_id = $validation['post_id'];
         
         // Load topics data using component-specific logic
         $topics_result = self::load_topics_data($current_post_id);
         
-        // Comprehensive result using base class patterns
+        // EVENT-DRIVEN result
         $result = array(
             'topics' => $topics_result['topics'],
             'post_id' => $current_post_id,
-            'post_id_source' => $post_id_source,
+            'post_title' => $validation['post_title'],
             'data_source' => $topics_result['source'],
             'success' => $topics_result['success'],
             'message' => $topics_result['message'],
             'context' => $context,
             'component_type' => self::$component_type,
             'timestamp' => current_time('mysql'),
-            'debug_info' => array(
-                'post_id_methods' => $post_id_result['debug'],
-                'data_methods' => $topics_result['debug'],
-                'cache_stats' => self::get_cache_stats()
-            )
+            'event_driven' => true,
+            'debug_info' => $topics_result['debug']
         );
         
-        // Enhanced debugging for scalable architecture
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("SCALABLE TOPICS: Context [{$context}] Post ID {$current_post_id} ({$post_id_source}), " . 
+            error_log("EVENT-DRIVEN TOPICS: Context [{$context}] Post ID {$current_post_id} (explicit), " . 
                      count($result['topics']) . " topics from {$result['data_source']}");
         }
         
@@ -79,14 +80,15 @@ class Topics_Data_Service extends Base_Component_Data_Service {
     }
     
     /**
-     * SCALABLE: Get component data for preview area
+     * EVENT-DRIVEN: Get component data for preview area with explicit post ID
      * Implements base class abstract method
      * 
+     * @param int $post_id Explicit post ID (required)
      * @param string $context Context identifier
      * @return array Preview-formatted data
      */
-    public static function get_preview_data($context = 'preview') {
-        $data = self::get_unified_component_data($context);
+    public static function get_preview_data($post_id, $context = 'preview') {
+        $data = self::get_unified_component_data($post_id, $context);
         
         return array(
             'topics' => $data['topics'],
@@ -95,19 +97,21 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             'post_id' => $data['post_id'],
             'container_class' => $data['success'] ? 'has-topics' : 'no-topics',
             'component_type' => self::$component_type,
+            'event_driven' => true,
             'debug' => defined('WP_DEBUG') && WP_DEBUG ? $data['debug_info'] : null
         );
     }
     
     /**
-     * SCALABLE: Get component data for sidebar/design panel
+     * EVENT-DRIVEN: Get component data for sidebar/design panel with explicit post ID
      * Implements base class abstract method
      * 
+     * @param int $post_id Explicit post ID (required)
      * @param string $context Context identifier
      * @return array Sidebar-formatted data
      */
-    public static function get_sidebar_data($context = 'sidebar') {
-        $data = self::get_unified_component_data($context);
+    public static function get_sidebar_data($post_id, $context = 'sidebar') {
+        $data = self::get_unified_component_data($post_id, $context);
         
         return array(
             'topics' => $data['topics'],
@@ -116,6 +120,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             'post_id' => $data['post_id'],
             'message' => $data['message'],
             'component_type' => self::$component_type,
+            'event_driven' => true,
             'debug' => defined('WP_DEBUG') && WP_DEBUG ? $data['debug_info'] : null
         );
     }
@@ -352,20 +357,39 @@ class Topics_Data_Service extends Base_Component_Data_Service {
     }
     
     /**
-     * BACKWARD COMPATIBILITY: Legacy method support
-     * Maintains compatibility with existing code
+     * BACKWARD COMPATIBILITY: Legacy method support with auto-detection fallback
+     * Maintains compatibility with existing code but logs deprecation warnings
      */
     
     public static function get_unified_topics_data($context = 'unknown') {
-        return self::get_unified_component_data($context);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('DEPRECATED: get_unified_topics_data() called without explicit post_id. Use get_unified_component_data($post_id, $context) instead.');
+        }
+        
+        // Attempt to get post_id from various sources for backward compatibility
+        $post_id = $_POST['post_id'] ?? $_GET['post_id'] ?? get_the_ID() ?? 0;
+        
+        return self::get_unified_component_data($post_id, $context);
     }
     
     public static function get_sidebar_topics($context = 'sidebar') {
-        return self::get_sidebar_data($context);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('DEPRECATED: get_sidebar_topics() called without explicit post_id. Use get_sidebar_data($post_id, $context) instead.');
+        }
+        
+        $post_id = $_POST['post_id'] ?? $_GET['post_id'] ?? get_the_ID() ?? 0;
+        
+        return self::get_sidebar_data($post_id, $context);
     }
     
     public static function get_preview_topics($context = 'preview') {
-        return self::get_preview_data($context);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('DEPRECATED: get_preview_topics() called without explicit post_id. Use get_preview_data($post_id, $context) instead.');
+        }
+        
+        $post_id = $_POST['post_id'] ?? $_GET['post_id'] ?? get_the_ID() ?? 0;
+        
+        return self::get_preview_data($post_id, $context);
     }
 }
 

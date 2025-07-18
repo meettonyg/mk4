@@ -56,35 +56,77 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     }
 }
 
-// ROOT FIX: Use component-specific data service for 100% consistency with sidebar
-require_once(__DIR__ . '/class-topics-data-service.php');
+// SCALABLE ARCHITECTURE: Use scalable service for 100% consistency with sidebar
+if (!class_exists('Base_Component_Data_Service')) {
+    require_once(GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php');
+}
+if (!class_exists('Topics_Data_Service')) {
+    require_once(__DIR__ . '/class-topics-data-service.php');
+}
 
-// Load topics using component-specific service (IDENTICAL to sidebar logic)
-$preview_data = Topics_Data_Service::get_preview_topics('template');
-$topicsList = $preview_data['topics'];
-$topicsFound = $preview_data['found'];
-$loadingSource = $preview_data['loading_source'];
-
-// Override post ID with unified service result for consistency
-$current_post_id = $preview_data['post_id'];
+// EVENT-DRIVEN: Use props data when available (from AJAX single-step render)
+if (isset($props['loaded_topics']) && is_array($props['loaded_topics'])) {
+    // AJAX context - use pre-loaded data from props
+    $topicsList = array();
+    foreach ($props['loaded_topics'] as $index => $topic) {
+        $topicsList[] = array(
+            'title' => $topic['title'] ?? '',
+            'description' => $topic['description'] ?? '',
+            'index' => $index,
+            'meta_key' => 'ajax_preloaded',
+            'source' => 'ajax_single_step_render'
+        );
+    }
+    $topicsFound = !empty($topicsList);
+    $loadingSource = 'ajax_single_step_render';
+    $current_post_id = intval($props['post_id'] ?? $post_id ?? $current_post_id);
+    
+    $preview_data = array(
+        'topics' => $topicsList,
+        'found' => $topicsFound,
+        'loading_source' => $loadingSource,
+        'post_id' => $current_post_id,
+        'container_class' => $topicsFound ? 'has-topics' : 'no-topics',
+        'event_driven' => true
+    );
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log("EVENT-DRIVEN Template: Using AJAX pre-loaded data - Post ID {$current_post_id}, " . count($topicsList) . " topics from props");
+    }
+    
+} elseif ($current_post_id > 0) {
+    // Direct context - use service call
+    $preview_data = Topics_Data_Service::get_preview_data($current_post_id, 'template');
+    $topicsList = $preview_data['topics'];
+    $topicsFound = $preview_data['found'];
+    $loadingSource = $preview_data['loading_source'];
+} else {
+    // EVENT-DRIVEN: No valid post ID - provide empty result
+    $preview_data = array(
+        'topics' => array(),
+        'found' => false,
+        'loading_source' => 'no_post_id',
+        'post_id' => 0,
+        'container_class' => 'no-topics',
+        'event_driven' => true
+    );
+    $topicsList = array();
+    $topicsFound = false;
+    $loadingSource = 'no_post_id';
+}
 
 // PHASE 1.1 FIX: Enhanced CSS classes with unified service data
 $containerClass = 'topics-component layout-grid columns-2 ' . $preview_data['container_class'];
 
-// ROOT FIX: Comprehensive debugging for single-step render
+// EVENT-DRIVEN: Debugging for explicit post_id usage
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log("ROOT FIX Topics Template: Post ID {$current_post_id} (source: {$post_id_source}), Found " . count($topicsList) . " topics from data source '{$loadingSource}'");
+    error_log("EVENT-DRIVEN Topics Template: Post ID {$current_post_id} (source: {$post_id_source}), Found " . count($topicsList) . " topics from data source '{$loadingSource}'");
+    error_log("EVENT-DRIVEN: " . ($preview_data['event_driven'] ?? false ? 'SUCCESS' : 'FALLBACK MODE'));
     if (!empty($topicsList)) {
-        error_log("ROOT FIX Topics: " . implode(', ', array_column($topicsList, 'title')));
+        error_log("EVENT-DRIVEN Topics: " . implode(', ', array_column($topicsList, 'title')));
     }
     if ($current_post_id === 0) {
-        error_log("ROOT FIX Topics WARNING: No post ID detected. Single-step render issue?");
-        error_log("ROOT FIX Debug context: URL params=" . print_r($_GET, true) . ", Available vars: post_id=" . (isset($post_id) ? $post_id : 'unset'));
-    }
-    if (isset($props['loaded_topics'])) {
-        error_log("ROOT FIX Topics: Pre-loaded topics available in props: " . count($props['loaded_topics']) . " entries");
-    } else {
-        error_log("ROOT FIX Topics: No pre-loaded topics in props, using fallback loading");
+        error_log("EVENT-DRIVEN Topics: No valid post ID provided - showing empty state");
     }
 }
 ?>
