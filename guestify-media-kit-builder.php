@@ -254,7 +254,7 @@ class Guestify_Media_Kit_Builder {
             var gmkbData = <?php echo json_encode(array(
                 'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
                 'restUrl'       => esc_url_raw( rest_url() ),
-                'nonce'         => wp_create_nonce( 'guestify_media_kit_builder' ), // ROOT FIX: Match AJAX handler expectation
+                'nonce'         => wp_create_nonce( 'gmkb_nonce' ), // ROOT FIX: Match AJAX handler expectation
                 'restNonce'     => wp_create_nonce( 'wp_rest' ),
                 'postId'        => $post_id,
                 'pluginUrl'     => GUESTIFY_PLUGIN_URL,
@@ -430,7 +430,7 @@ class Guestify_Media_Kit_Builder {
      */
     public function ajax_get_components() {
         // Verify nonce for security
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'guestify_media_kit_builder')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('GMKB: ajax_get_components - Nonce verification failed');
                 error_log('GMKB: Provided nonce: ' . ($_POST['nonce'] ?? 'missing'));
@@ -497,7 +497,7 @@ class Guestify_Media_Kit_Builder {
     
     public function ajax_render_component() {
         // Verify nonce for security
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'guestify_media_kit_builder')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('GMKB: ajax_render_component - Nonce verification failed');
             }
@@ -570,7 +570,7 @@ class Guestify_Media_Kit_Builder {
     
     public function ajax_render_design_panel() {
         // Verify nonce for security
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'guestify_media_kit_builder')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('GMKB: ajax_render_design_panel - Nonce verification failed');
             }
@@ -618,13 +618,14 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * FIXED: Save media kit state to database with enhanced error handling
+     * ROOT FIX: Save media kit state to database with comprehensive error handling and diagnostics
      */
     public function ajax_save_media_kit() {
         // Enhanced error logging for debugging
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('🔄 GMKB: ajax_save_media_kit called');
-            error_log('📊 POST data: ' . print_r($_POST, true));
+            error_log('📊 POST data keys: ' . implode(', ', array_keys($_POST)));
+            error_log('📊 POST data sizes: nonce=' . strlen($_POST['nonce'] ?? '') . ', state=' . strlen($_POST['state'] ?? '') . ', post_id=' . ($_POST['post_id'] ?? 'missing'));
         }
         
         // Check if nonce exists
@@ -637,75 +638,272 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
-        // Verify nonce for security
-        if (!wp_verify_nonce($nonce, 'guestify_media_kit_builder')) {
+        // Verify nonce for security - ROOT FIX: Use correct action that matches JavaScript
+        if (!wp_verify_nonce($nonce, 'gmkb_nonce')) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('❌ GMKB: Nonce verification failed');
                 error_log('  Provided nonce: ' . $nonce);
-                error_log('  Expected action: guestify_media_kit_builder');
+                error_log('  Expected action: gmkb_nonce');
             }
             wp_send_json_error('Invalid nonce');
             return;
         }
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Nonce verification passed');
+        }
+        
         $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
         $state_data = isset($_POST['state']) ? $_POST['state'] : '';
         
-        if (!$post_id) {
+        // ROOT FIX: Enhanced post ID validation
+        if (!$post_id || $post_id <= 0) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: No post ID provided');
+                error_log('❌ GMKB: Invalid post ID provided: ' . var_export($post_id, true));
             }
-            wp_send_json_error('Post ID is required');
+            wp_send_json_error('Valid post ID is required');
             return;
         }
         
+        // ROOT FIX: Handle empty state data gracefully for auto-save
         if (empty($state_data)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: No state data provided');
+                error_log('ℹ️ GMKB: No state data provided - treating as valid empty save');
             }
-            wp_send_json_error('State data is required');
+            wp_send_json_success(array(
+                'message' => 'No state data to save',
+                'timestamp' => time(),
+                'post_id' => $post_id,
+                'components_count' => 0,
+                'empty_save' => true
+            ));
             return;
         }
         
-        // Decode and validate JSON
+        // ROOT FIX: Enhanced JSON validation with detailed error reporting
         $state = json_decode(stripslashes($state_data), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
+        $json_error = json_last_error();
+        if ($json_error !== JSON_ERROR_NONE) {
+            $json_error_msg = json_last_error_msg();
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: JSON decode error: ' . json_last_error_msg());
+                error_log('❌ GMKB: JSON decode error: ' . $json_error_msg);
+                error_log('❌ GMKB: JSON error code: ' . $json_error);
+                error_log('❌ GMKB: Raw state data length: ' . strlen($state_data));
+                error_log('❌ GMKB: First 200 chars of state data: ' . substr($state_data, 0, 200));
             }
-            wp_send_json_error('Invalid JSON data: ' . json_last_error_msg());
+            wp_send_json_error('Invalid JSON data: ' . $json_error_msg);
             return;
         }
         
-        // Validate post exists
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: JSON decoded successfully');
+            error_log('📊 GMKB: State structure keys: ' . implode(', ', array_keys($state)));
+        }
+        
+        // ROOT FIX: Enhanced post validation with detailed diagnostics
         $post = get_post($post_id);
         if (!$post) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('❌ GMKB: Post not found: ' . $post_id);
+                // Check if post exists in database
+                global $wpdb;
+                $post_exists = $wpdb->get_var($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE ID = %d", $post_id));
+                error_log('❌ GMKB: Database check - post exists: ' . ($post_exists ? 'YES' : 'NO'));
             }
-            wp_send_json_error('Post not found');
+            wp_send_json_error('Post not found (ID: ' . $post_id . ')');
             return;
         }
         
-        // Save to post meta
-        $success = update_post_meta($post_id, 'gmkb_media_kit_state', $state);
+        // ROOT FIX: Check post status and permissions
+        if ($post->post_status === 'trash') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Post is in trash: ' . $post_id);
+            }
+            wp_send_json_error('Cannot save to trashed post');
+            return;
+        }
         
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Post validation passed - ID: ' . $post_id . ', Title: ' . $post->post_title . ', Status: ' . $post->post_status);
+        }
+        
+        // ROOT FIX: Enhanced data structure validation
+        if (!is_array($state)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: State is not an array: ' . gettype($state));
+            }
+            wp_send_json_error('Invalid state data structure');
+            return;
+        }
+        
+        // ROOT FIX: Validate state structure
+        $required_keys = array('components', 'layout', 'globalSettings');
+        foreach ($required_keys as $key) {
+            if (!isset($state[$key])) {
+                $state[$key] = array(); // Provide defaults
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('⚠️ GMKB: Missing state key "' . $key . '" - providing default empty array');
+                }
+            }
+        }
+        
+        // ROOT FIX: Check data size before saving
+        $serialized_state = maybe_serialize($state);
+        $data_size = strlen($serialized_state);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('📊 GMKB: Serialized data size: ' . number_format($data_size) . ' bytes');
+            error_log('📊 GMKB: Components count: ' . count($state['components']));
+        }
+        
+        // ROOT FIX: Check WordPress meta value size limit (usually 64KB for most setups)
+        if ($data_size > 65536) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Data too large for meta storage: ' . number_format($data_size) . ' bytes');
+            }
+            wp_send_json_error('Data too large to save (' . number_format($data_size) . ' bytes)');
+            return;
+        }
+        
+        // ROOT FIX: Pre-save database connectivity test
+        global $wpdb;
+        $db_test = $wpdb->get_var("SELECT 1");
+        if ($db_test !== '1') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Database connectivity test failed');
+                error_log('❌ GMKB: WordPress database error: ' . $wpdb->last_error);
+            }
+            wp_send_json_error('Database connectivity issue');
+            return;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Pre-save validations passed - attempting meta update');
+        }
+        
+        // ROOT FIX: Enhanced save operation with detailed error reporting
+        $meta_key = 'gmkb_media_kit_state';
+        
+        // Check if meta already exists
+        $existing_meta = get_post_meta($post_id, $meta_key, true);
+        $is_update = !empty($existing_meta);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('📊 GMKB: Meta operation type: ' . ($is_update ? 'UPDATE' : 'CREATE'));
+            if ($is_update) {
+                $existing_size = strlen(maybe_serialize($existing_meta));
+                error_log('📊 GMKB: Existing meta size: ' . number_format($existing_size) . ' bytes');
+            }
+        }
+        
+        // Perform the save with enhanced error detection
+        $save_start_time = microtime(true);
+        $success = update_post_meta($post_id, $meta_key, $state);
+        $save_duration = microtime(true) - $save_start_time;
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⏱️ GMKB: Save operation took: ' . number_format($save_duration * 1000, 2) . 'ms');
+            error_log('📊 GMKB: update_post_meta() returned: ' . var_export($success, true));
+        }
+        
+        // ROOT FIX: Enhanced success/failure detection with WordPress behavior handling
         if ($success !== false) {
+            // Verify the save actually worked by reading back
+            $verification_data = get_post_meta($post_id, $meta_key, true);
+            $verification_success = !empty($verification_data) && is_array($verification_data);
+            
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Media kit saved successfully for post ' . $post_id);
-                error_log('📊 Components saved: ' . count($state['components'] ?? []));
+                error_log('✅ GMKB: Save verification: ' . ($verification_success ? 'PASSED' : 'FAILED'));
+                if ($verification_success) {
+                    error_log('✅ GMKB: Media kit saved successfully for post ' . $post_id);
+                    error_log('📊 GMKB: Components saved: ' . count($state['components'] ?? []));
+                    error_log('📊 GMKB: Verified components: ' . count($verification_data['components'] ?? []));
+                } else {
+                    error_log('❌ GMKB: Save verification failed - data not found after save');
+                }
             }
-            wp_send_json_success(array(
-                'message' => 'Media kit saved successfully',
-                'timestamp' => time(),
-                'post_id' => $post_id,
-                'components_count' => count($state['components'] ?? [])
-            ));
+            
+            if ($verification_success) {
+                wp_send_json_success(array(
+                    'message' => 'Media kit saved successfully',
+                    'timestamp' => time(),
+                    'post_id' => $post_id,
+                    'components_count' => count($state['components'] ?? []),
+                    'data_size' => $data_size,
+                    'save_duration_ms' => round($save_duration * 1000, 2),
+                    'operation_type' => $is_update ? 'update' : 'create'
+                ));
+            } else {
+                wp_send_json_error('Save completed but verification failed - data may be corrupted');
+            }
         } else {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: Failed to save media kit to post ' . $post_id);
+            // ROOT FIX: Handle WordPress "false" for identical data (not an error)
+            $wp_error = '';
+            if (!empty($wpdb->last_error)) {
+                $wp_error = $wpdb->last_error;
             }
-            wp_send_json_error('Failed to save media kit');
+            
+            // Check for common scenarios where WordPress returns false
+            $is_identical_data = false;
+            $has_meta_permissions = false;
+            
+            // Test post meta permissions
+            $test_meta = update_post_meta($post_id, 'gmkb_test_meta', 'test_value');
+            if ($test_meta !== false) {
+                $has_meta_permissions = true;
+                delete_post_meta($post_id, 'gmkb_test_meta'); // Clean up
+            }
+            
+            // Check if data is identical (WordPress optimization)
+            if ($is_update && $existing_meta === $state) {
+                $is_identical_data = true;
+            }
+            
+            // ROOT FIX: If data is identical and we have permissions, treat as success
+            if ($is_identical_data && $has_meta_permissions) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB: Data unchanged but this is success - WordPress optimization');
+                    error_log('✅ GMKB: Media kit state is current for post ' . $post_id);
+                }
+                
+                wp_send_json_success(array(
+                    'message' => 'Media kit is already up to date',
+                    'timestamp' => time(),
+                    'post_id' => $post_id,
+                    'components_count' => count($state['components'] ?? []),
+                    'data_size' => $data_size,
+                    'save_duration_ms' => round($save_duration * 1000, 2),
+                    'operation_type' => 'no_change',
+                    'wordpress_optimization' => true
+                ));
+                return;
+            }
+            
+            // Actual failure scenarios
+            $failure_reasons = array();
+            
+            if (!$has_meta_permissions) {
+                $failure_reasons[] = 'No permission to update post meta';
+            }
+            
+            if (!empty($wp_error)) {
+                $failure_reasons[] = 'Database error: ' . $wp_error;
+            }
+            
+            if (empty($failure_reasons)) {
+                $failure_reasons[] = 'Unknown WordPress update_post_meta failure';
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Actual save failure for post ' . $post_id);
+                error_log('❌ GMKB: WordPress database error: ' . $wp_error);
+                error_log('❌ GMKB: Failure analysis: ' . implode(', ', $failure_reasons));
+                error_log('❌ GMKB: Has meta permissions: ' . ($has_meta_permissions ? 'YES' : 'NO'));
+                error_log('❌ GMKB: Is identical data: ' . ($is_identical_data ? 'YES' : 'NO'));
+                error_log('❌ GMKB: Last WordPress query: ' . $wpdb->last_query);
+            }
+            
+            $error_message = 'Failed to save media kit: ' . implode(', ', $failure_reasons);
+            wp_send_json_error($error_message);
         }
     }
     

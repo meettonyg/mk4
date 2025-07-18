@@ -79,7 +79,7 @@ function gmkb_enqueue_assets() {
         array(
             'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
             'restUrl'       => esc_url_raw( rest_url() ),
-            'nonce'         => wp_create_nonce( 'guestify_media_kit_builder' ), // ROOT FIX: Match AJAX handler expectation
+            'nonce'         => wp_create_nonce( 'gmkb_nonce' ), // ROOT FIX: Standardized nonce action
             'restNonce'     => wp_create_nonce( 'wp_rest' ),
             'postId'        => get_current_post_id_safe(),
             'pluginUrl'     => $plugin_url,

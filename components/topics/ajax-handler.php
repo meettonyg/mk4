@@ -243,7 +243,7 @@ class GMKB_Topics_Ajax_Handler {
             return false;
         }
         
-        if (!wp_verify_nonce($nonce, 'guestify_media_kit_builder')) {
+        if (!wp_verify_nonce($nonce, 'gmkb_nonce')) {
             $response['message'] = 'Security verification failed';
             $response['debug']['nonce_issue'] = 'Nonce verification failed';
             return false;
