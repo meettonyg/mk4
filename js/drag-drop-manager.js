@@ -94,13 +94,13 @@
             // Watch for new components being added to library
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
-                    if (mutation.type === 'childList') {
-                        mutation.addedNodes.forEach((node) => {
-                            if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('component-card')) {
-                                this.makeComponentDraggable(node);
-                            }
-                        });
-                    }
+                if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE && (node.classList.contains('component-card') || node.classList.contains('component-item'))) {
+                this.makeComponentDraggable(node);
+                }
+                });
+                }
                 });
             });
 
@@ -112,12 +112,14 @@
          * Update drag handlers for all component library items
          */
         updateComponentLibraryDragHandlers() {
-            const componentItems = document.querySelectorAll('.component-card');
+            const componentItems = document.querySelectorAll('.component-card, .component-item');
             console.log(`🎯 DragDropManager: Adding drag handlers to ${componentItems.length} components`);
 
             componentItems.forEach(item => {
                 this.makeComponentDraggable(item);
             });
+            
+            console.log('✅ DragDropManager: Component library drag setup complete');
         },
 
         /**

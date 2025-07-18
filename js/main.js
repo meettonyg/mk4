@@ -433,8 +433,9 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Create component cards
             Object.entries(components).forEach(([key, component]) => {
                 const componentCard = document.createElement('div');
-                componentCard.className = 'component-item';
+                componentCard.className = 'component-item component-card';  // ROOT FIX: Add component-card class for drag detection
                 componentCard.setAttribute('data-component-type', key);
+                componentCard.setAttribute('data-component', key);  // ROOT FIX: Add data-component for drag-drop compatibility
                 componentCard.setAttribute('data-category', component.category || 'other');
                 
                 componentCard.innerHTML = `
@@ -455,10 +456,18 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     </div>
                 `;
                 
+                // ROOT FIX: Make component card draggable immediately
+                componentCard.draggable = true;
+                
                 componentGrid.appendChild(componentCard);
             });
             
             console.log('✅ ComponentManager: Populated component library with', Object.keys(components).length, 'components');
+            
+            // ROOT FIX: Set up drag handlers for newly populated components
+            if (window.DragDropManager && window.DragDropManager.updateComponentLibraryDragHandlers) {
+                window.DragDropManager.updateComponentLibraryDragHandlers();
+            }
         },
         
         getComponentIcon(componentType) {
@@ -1084,6 +1093,21 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
          * @param {string} componentId - Component ID
          */
         attachComponentHandlers(componentElement, componentId) {
+            // ROOT FIX: Check if handlers already attached to prevent duplicates
+            if (componentElement.hasAttribute('data-handlers-attached')) {
+                console.log(`ℹ️ ComponentManager: Handlers already attached to ${componentId}, skipping`);
+                return;
+            }
+            
+            // Mark as having handlers attached
+            componentElement.setAttribute('data-handlers-attached', 'true');
+            
+            // ROOT FIX: Remove any existing controls to prevent duplicates
+            const existingControls = componentElement.querySelector('.component-controls');
+            if (existingControls) {
+                existingControls.remove();
+            }
+            
             // Add component controls overlay with improved design
             const controlsOverlay = document.createElement('div');
             controlsOverlay.className = 'component-controls';
