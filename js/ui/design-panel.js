@@ -98,10 +98,11 @@ class DesignPanel {
                 </div>
             `;
 
-            // FIXED: Use WordPress AJAX endpoint instead of direct PHP file access
+            // SIMPLEST FIX: Use WordPress AJAX endpoint with post ID for unified context
             const formData = new FormData();
             formData.append('action', 'guestify_render_design_panel');
             formData.append('component', component.type);
+            formData.append('post_id', window.gmkbData.postId); // ✅ UNIFIED: Same context as template
             formData.append('nonce', window.guestifyData.nonce);
 
             const response = await fetch(window.guestifyData.ajaxUrl, {

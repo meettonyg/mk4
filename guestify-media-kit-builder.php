@@ -32,6 +32,9 @@ define( 'GMKB_WORDPRESS_COMPATIBLE', true );
 // NOW include files that need these constants
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 
+// SCALABLE ARCHITECTURE: Load base component service before specific components
+require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
+
 // Component system files
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';
@@ -647,6 +650,25 @@ class Guestify_Media_Kit_Builder {
         if ( empty( $component_slug ) ) {
             wp_send_json_error( 'Component slug is required' );
             return;
+        }
+        
+        // ✅ SCALABLE ARCHITECTURE: Universal post ID injection for ALL components
+        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+        if ($post_id > 0) {
+            // Make post ID available through multiple methods for maximum compatibility
+            $_GET['post_id'] = $post_id;                     // URL method
+            $GLOBALS['gmkb_component_post_id'] = $post_id;     // Global method
+            if (!defined('GMKB_CURRENT_POST_ID')) {
+                define('GMKB_CURRENT_POST_ID', $post_id);     // Constant method
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("SCALABLE ARCHITECTURE: Universal post_id={$post_id} injection for component '{$component_slug}'");
+            }
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("SCALABLE ARCHITECTURE: WARNING - No post_id provided for component '{$component_slug}'");
+            }
         }
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
