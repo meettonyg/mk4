@@ -97,7 +97,400 @@
     display: none !important;
 }
 
+/* Drag and Drop Interactions */
+.draggable-component {
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+.draggable-component:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.draggable-component.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    cursor: grabbing;
+}
+
+/* Preview Area Sorting */
+.sortable-component {
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+.sortable-component:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sortable-component.dragging-for-sort {
+    opacity: 0.3;
+    transform: scale(0.98);
+    cursor: grabbing;
+    z-index: 1000;
+}
+
+/* Sorting Drop Indicators */
+.sorting-drop-target.drop-above::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #10b981;
+    border-radius: 2px;
+    z-index: 100;
+}
+
+.sorting-drop-target.drop-below::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #10b981;
+    border-radius: 2px;
+    z-index: 100;
+}
+
+.sorting-drop-target {
+    position: relative;
+}
+
+/* Global Sorting State */
+body.sorting-components {
+    user-select: none;
+}
+
+body.sorting-components .component-controls {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+body.sorting-components .media-kit-component:not(.dragging-for-sort) {
+    transition: all 0.2s ease;
+}
+
+/* Reorder Success Animation */
+.reorder-success {
+    animation: reorderSuccess 1s ease;
+}
+
+@keyframes reorderSuccess {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* Drop Zone States */
+.drop-zone-visible {
+    display: flex !important;
+    animation: fadeInScale 0.3s ease;
+}
+
+.drag-over {
+    border-color: #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.1) !important;
+    transform: scale(1.02);
+}
+
+/* Preview Container Drop States */
+#media-kit-preview.drag-active {
+    position: relative;
+    min-height: 200px;
+}
+
+#media-kit-preview.drag-active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 3px dashed #3b82f6;
+    border-radius: 8px;
+    background: rgba(59, 130, 246, 0.05);
+    pointer-events: none;
+    z-index: 1;
+}
+
+#media-kit-preview.drag-over::before {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    animation: pulseGreen 1s ease infinite;
+}
+
+/* Global Drag State */
+body.dragging-component {
+    user-select: none;
+}
+
+body.dragging-component .component-item:not(.dragging) {
+    opacity: 0.6;
+}
+
+body.dragging-component .sidebar {
+    pointer-events: none;
+}
+
+/* Drop Feedback */
+.drop-loading-spinner {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+/* Enhanced Drop Zone Indicators */
+.drop-zone::after {
+    content: '+ Drop Component Here';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.drop-zone-visible::after {
+    opacity: 1;
+}
+
+.drop-zone.drag-over::after {
+    content: '↓ Release to Add Component';
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+/* Animations */
+@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulseGreen {
+    0%, 100% {
+        border-color: #10b981;
+        background: rgba(16, 185, 129, 0.1);
+    }
+    50% {
+        border-color: #059669;
+        background: rgba(16, 185, 129, 0.2);
+    }
+}
+
+/* Preview Area Sorting Styles */
+.sortable-component {
+    cursor: grab;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.sortable-component:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sortable-component.dragging-for-sort {
+    opacity: 0.6;
+    transform: scale(0.98);
+    cursor: grabbing;
+    z-index: 1000;
+}
+
+/* Sorting drop indicators */
+.sorting-drop-target.drop-above::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #10b981;
+    border-radius: 2px;
+    animation: pulseGreen 1s ease infinite;
+}
+
+.sorting-drop-target.drop-below::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #10b981;
+    border-radius: 2px;
+    animation: pulseGreen 1s ease infinite;
+}
+
+/* Drag placeholder for sorting */
+.drag-sort-placeholder {
+    border: 2px dashed #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.1) !important;
+    color: #3b82f6 !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: opacity 0.2s ease !important;
+}
+
+/* Global sorting state */
+body.sorting-components {
+    user-select: none;
+}
+
+body.sorting-components .component-controls {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+body.sorting-components .sidebar {
+    pointer-events: none;
+}
+
+body.sorting-components .toolbar {
+    pointer-events: none;
+}
+
+/* Reorder success animation */
+.reorder-success {
+    animation: reorderSuccess 1s ease;
+}
+
+@keyframes reorderSuccess {
+    0% {
+        background: rgba(16, 185, 129, 0.1);
+        border: 2px solid #10b981;
+    }
+    50% {
+        background: rgba(16, 185, 129, 0.2);
+        border: 2px solid #059669;
+    }
+    100% {
+        background: transparent;
+        border: 2px solid transparent;
+    }
+}
+
+/* Enhanced preview container states */
+#media-kit-preview.sorting-active {
+    background: rgba(59, 130, 246, 0.02);
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+}
+
+/* Preserve existing functionality - ensure move buttons still work */
+.component-control--move-up,
+.component-control--move-down {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.component-control--move-up:hover,
+.component-control--move-down:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+@keyframes pulseGreen {
+    0%, 100% {
+        background: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    50% {
+        background: #059669;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
+    }
+}
+
+/* ROOT FIX: Enhanced animations for sortable integration */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 0.6; }
     50% { opacity: 1; }
+}
+
+@keyframes sortableGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1);
+    }
+}
+
+@keyframes sortableBounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-4px);
+    }
+    60% {
+        transform: translateY(-2px);
+    }
+}
+
+/* Performance optimizations for sortable */
+.sortable-enabled .media-kit-component {
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.sorting-active .media-kit-component {
+    will-change: transform, opacity;
+}
+
+/* Responsive sortable behavior */
+@media (max-width: 768px) {
+    .sortable-enabled .media-kit-component:hover::after {
+        content: 'Drag to reorder';
+        font-size: 12px;
+        letter-spacing: normal;
+        padding: 8px 12px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(59, 130, 246, 0.9);
+        color: white;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+    
+    .sortable-ghost {
+        transform: scale(0.9);
+    }
+    
+    .sortable-chosen {
+        transform: scale(1.05);
+    }
 }

@@ -103,6 +103,44 @@ function gmkb_enqueue_assets() {
         $version,
         true // Load in footer
     );
+    
+    // ROOT FIX: Load SortableJS library FIRST (from CDN for immediate availability)
+    wp_enqueue_script(
+        'sortablejs',
+        'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js',
+        array(), // NO DEPENDENCIES - External library
+        '1.15.0',
+        true // Load in footer
+    );
+    
+    // ROOT FIX: Load drag-drop-manager.js for drag and drop functionality
+    wp_enqueue_script(
+        'gmkb-drag-drop-manager',
+        $plugin_url . 'js/drag-drop-manager.js',
+        array('gmkb-main-script', 'sortablejs'), // DEPENDS on main script AND SortableJS
+        $version,
+        true // Load in footer
+    );
+    
+    // ROOT FIX: Load sortable-integration.js for preview area sorting (NOW ACTIVE)
+    wp_enqueue_script(
+        'gmkb-sortable-integration',
+        $plugin_url . 'js/sortable-integration.js',
+        array('gmkb-drag-drop-manager', 'sortablejs'), // DEPENDS on both drag-drop-manager AND SortableJS
+        $version,
+        true // Load in footer
+    );
+    
+    // DEBUG: Load test file for drag and drop validation (in debug mode only)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        wp_enqueue_script(
+            'gmkb-test-drag-drop',
+            $plugin_url . 'js/test-drag-drop-functionality.js',
+            array('gmkb-drag-drop-manager'), // DEPENDS on drag-drop-manager
+            $version,
+            true // Load in footer
+        );
+    }
 
     // WordPress-native data passing - guaranteed to be available before script runs
     wp_localize_script(
@@ -123,7 +161,9 @@ function gmkb_enqueue_assets() {
             'isBuilderPage' => true, // Added flag for JS initialization detection
             'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
             'templateFixed' => true, // Flag indicating template path issue is resolved
-            'vanillaJS'     => true // Flag indicating pure vanilla JavaScript implementation
+            'vanillaJS'     => true, // Flag indicating pure vanilla JavaScript implementation
+            'sortableEnabled' => true, // Flag indicating SortableJS is loaded and preview sorting is active
+            'dragDropComplete' => true // Flag indicating full drag-and-drop system is operational
         )
     );
 
@@ -295,6 +335,18 @@ function gmkb_add_readiness_events() {
         echo file_get_contents( $component_library_file );
     } else {
         echo 'console.error("❌ component-library.js not found at: ' . $component_library_file . '");';
+    }
+    ?>
+    </script>
+    
+    <script id="gmkb-drag-drop-manager-inline" type="text/javascript">
+    <?php
+    // Load drag-drop-manager.js content inline
+    $drag_drop_manager_file = GUESTIFY_PLUGIN_DIR . 'js/drag-drop-manager.js';
+    if ( file_exists( $drag_drop_manager_file ) ) {
+        echo file_get_contents( $drag_drop_manager_file );
+    } else {
+        echo 'console.error("❌ drag-drop-manager.js not found at: ' . $drag_drop_manager_file . '");';
     }
     ?>
     </script>
