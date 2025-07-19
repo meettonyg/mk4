@@ -139,7 +139,7 @@
                 
                 // ROOT FIX: Prevent conflicts with component controls and other interactions
                 filter: '.component-controls, .drop-zone, #empty-state',
-                preventOnFilter: false,
+                preventOnFilter: true,
                 
                 // Delay to allow click events on component controls
                 delay: 100,

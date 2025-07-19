@@ -43,6 +43,90 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             console.debug(`📢 GMKB: Dispatched '${eventName}'`, detail);
         },
         
+        /**
+         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        attachControlsImmediately(componentElement, componentId) {
+            const success = window.componentControlsManager.attachControls(componentElement, componentId);
+            if (success) {
+                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
+                
+                // ROOT FIX: Setup component action event listeners for this component
+                this.setupComponentActionListeners(componentId);
+                
+                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
+            } else {
+                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
+                // Fallback to event-based attachment
+                this.requestControlAttachment(componentElement, componentId);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        attachControlsImmediately(componentElement, componentId) {
+            const success = window.componentControlsManager.attachControls(componentElement, componentId);
+            if (success) {
+                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
+                
+                // ROOT FIX: Setup component action event listeners for this component
+                this.setupComponentActionListeners(componentId);
+                
+                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
+            } else {
+                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
+                // Fallback to event-based attachment
+                this.requestControlAttachment(componentElement, componentId);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        attachControlsImmediately(componentElement, componentId) {
+            const success = window.componentControlsManager.attachControls(componentElement, componentId);
+            if (success) {
+                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
+                
+                // ROOT FIX: Setup component action event listeners for this component
+                this.setupComponentActionListeners(componentId);
+                
+                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
+            } else {
+                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
+                // Fallback to event-based attachment
+                this.requestControlAttachment(componentElement, componentId);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        attachControlsImmediately(componentElement, componentId) {
+            const success = window.componentControlsManager.attachControls(componentElement, componentId);
+            if (success) {
+                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
+                
+                // ROOT FIX: Setup component action event listeners for this component
+                this.setupComponentActionListeners(componentId);
+                
+                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
+            } else {
+                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
+                // Fallback to event-based attachment
+                this.requestControlAttachment(componentElement, componentId);
+            }
+        },
+        
 
         
 
@@ -578,10 +662,8 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 
                 console.log(`🎨 ComponentManager: Enhanced rendering for ${componentId} (${component.type})`);
                 
-                // ROOT FIX: Special handling for topics component with loading state management
-                if (component.type === 'topics') {
-                    return await this.renderTopicsWithLoadingManagement(componentId, component);
-                }
+                // ROOT FIX: Use generic enhanced loading for all components
+                // Component-specific fallbacks handled by components themselves
                 
                 // Validate required data for non-topics components
                 if (!window.gmkbData?.ajaxUrl || !window.gmkbData?.nonce) {
@@ -655,150 +737,48 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Enhanced topics component rendering with comprehensive loading state management
+         * ROOT FIX: Generic enhanced component rendering - ARCHITECTURAL COMPLIANCE
+         * Removed topics-specific code to follow scalable architecture principles
          */
-        async renderTopicsWithLoadingManagement(componentId, component) {
-            try {
-                console.log(`📚 ComponentManager: Topics rendering with enhanced loading management for ${componentId}`);
-                
-                // ROOT FIX: Create topics-specific loading overlay
-                this.createTopicsLoadingOverlay(componentId);
-                
-                // Validate WordPress AJAX data
-                if (!window.gmkbData?.ajaxUrl || !window.gmkbData?.nonce) {
-                    console.error(`❌ ComponentManager: Missing WordPress AJAX data for topics ${componentId}`);
-                    this.removeTopicsLoadingOverlay(componentId);
-                    return this.renderTopicsFallback(componentId, component);
-                }
-                
-                // ROOT FIX: Topics-specific AJAX call with timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-                
-                try {
-                    const response = await fetch(window.gmkbData.ajaxUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: new URLSearchParams({
-                            action: 'guestify_render_component',
-                            nonce: window.gmkbData.nonce,
-                            component: 'topics',
-                            props: JSON.stringify({
-                                ...component.data,
-                                post_id: window.gmkbData.postId,
-                                component_id: componentId,
-                                loading_management: true
-                            })
-                        }),
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    if (data.success && data.data && data.data.html) {
-                        // ROOT FIX: Enhanced DOM insertion for topics
-                        this.insertTopicsComponentIntoDOM(componentId, data.data.html, component, data.data.scripts);
-                        
-                        console.log(`✅ ComponentManager: Topics ${componentId} rendered successfully via server`);
-                        return true;
-                    } else {
-                        console.warn(`⚠️ ComponentManager: Topics server rendering failed for ${componentId}:`, data);
-                        this.removeTopicsLoadingOverlay(componentId);
-                        return this.renderTopicsFallback(componentId, component);
-                    }
-                    
-                } catch (fetchError) {
-                    clearTimeout(timeoutId);
-                    
-                    if (fetchError.name === 'AbortError') {
-                        console.warn(`⏰ ComponentManager: Topics rendering timeout for ${componentId}`);
-                    } else {
-                        console.error(`❌ ComponentManager: Topics fetch error for ${componentId}:`, fetchError);
-                    }
-                    
-                    this.removeTopicsLoadingOverlay(componentId);
-                    return this.renderTopicsFallback(componentId, component);
-                }
-                
-            } catch (error) {
-                console.error(`❌ ComponentManager: Topics rendering error for ${componentId}:`, error);
-                this.removeTopicsLoadingOverlay(componentId);
-                return this.renderTopicsFallback(componentId, component);
-            }
+        async renderComponentWithEnhancedLoading(componentId, component) {
+            // Generic enhanced rendering for all components
+            // Component-specific logic handled by individual components
+            return await this.renderComponent(componentId);
         },
         
         /**
-         * ROOT FIX: Create topics-specific loading overlay
+         * ROOT FIX: Generic loading overlay system - ARCHITECTURAL COMPLIANCE
+         * Removed component-specific overlays, using generic system
          */
-        createTopicsLoadingOverlay(componentId) {
+        createLoadingOverlay(componentId, componentType) {
             const previewContainer = document.getElementById('media-kit-preview');
             if (!previewContainer) return;
             
-            // Remove any existing overlay for this component
-            this.removeTopicsLoadingOverlay(componentId);
+            this.removeLoadingOverlay(componentId);
             
             const overlay = document.createElement('div');
-            overlay.id = `topics-loading-${componentId}`;
-            overlay.className = 'topics-loading-overlay';
+            overlay.id = `loading-${componentId}`;
+            overlay.className = 'component-loading-overlay';
             overlay.innerHTML = `
-                <div class="topics-loading-content">
-                    <div class="topics-loading-spinner">📚</div>
-                    <div class="topics-loading-title">Loading Topics Component</div>
-                    <div class="topics-loading-description">Retrieving your topics data...</div>
-                    <div class="topics-loading-progress">
-                        <div class="progress-bar"></div>
-                    </div>
+                <div class="loading-content">
+                    <div class="loading-spinner">⏳</div>
+                    <div class="loading-title">Loading ${componentType} Component</div>
+                    <div class="loading-description">Please wait...</div>
                 </div>
             `;
             
-            // Add CSS for the overlay
             overlay.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(255, 255, 255, 0.95);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 1000;
+                position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(255, 255, 255, 0.95); display: flex;
+                align-items: center; justify-content: center; z-index: 1000;
                 border-radius: 8px;
             `;
             
             previewContainer.appendChild(overlay);
-            
-            // Animate progress bar
-            const progressBar = overlay.querySelector('.progress-bar');
-            if (progressBar) {
-                progressBar.style.cssText = `
-                    width: 0%;
-                    height: 4px;
-                    background: #3b82f6;
-                    border-radius: 2px;
-                    transition: width 0.3s ease;
-                `;
-                
-                // Simulate progress
-                setTimeout(() => progressBar.style.width = '30%', 100);
-                setTimeout(() => progressBar.style.width = '60%', 1000);
-                setTimeout(() => progressBar.style.width = '90%', 3000);
-            }
         },
         
-        /**
-         * ROOT FIX: Remove topics loading overlay
-         */
-        removeTopicsLoadingOverlay(componentId) {
-            const overlay = document.getElementById(`topics-loading-${componentId}`);
+        removeLoadingOverlay(componentId) {
+            const overlay = document.getElementById(`loading-${componentId}`);
             if (overlay) {
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.remove(), 300);
@@ -806,197 +786,48 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Enhanced DOM insertion for topics components
+         * ROOT FIX: Generic component fallback system - ARCHITECTURAL COMPLIANCE
+         * Moved component-specific logic to individual components
          */
-        insertTopicsComponentIntoDOM(componentId, html, component, scripts = null) {
-            const previewContainer = document.getElementById('media-kit-preview');
-            if (!previewContainer) {
-                console.error('❌ ComponentManager: Preview container not found for topics');
-                return;
-            }
-            
-            // Remove loading overlay
-            this.removeTopicsLoadingOverlay(componentId);
-            
-            // Remove existing component if it exists
-            const existingElement = document.getElementById(componentId);
-            if (existingElement) {
-                existingElement.remove();
-            }
-            
-            // Create wrapper element
-            const componentElement = document.createElement('div');
-            componentElement.id = componentId;
-            componentElement.className = 'media-kit-component topics-component';
-            componentElement.setAttribute('data-component-type', 'topics');
-            componentElement.setAttribute('data-component-id', componentId);
-            componentElement.setAttribute('data-loading-complete', 'true');
-            
-            // Insert the component HTML
-            componentElement.innerHTML = html;
-            
-            // Append to preview container
-            previewContainer.appendChild(componentElement);
-            
-            // Attach component interaction handlers
-            this.attachComponentHandlers(componentElement, componentId);
-            
-            // ROOT FIX: Load component scripts with topics-specific handling
-            if (scripts && scripts.length > 0) {
-                console.log(`📜 ComponentManager: Loading ${scripts.length} topics scripts from AJAX response`);
-                this.loadTopicsScriptsFromAjaxData(scripts, componentId);
-            } else {
-                // Fallback to original script loading method
-                this.loadComponentScripts('topics', componentId);
-            }
-            
-            // ROOT FIX: Dispatch topics-specific completion event
-            GMKB.dispatch('gmkb:topics-component-rendered', {
-                componentId: componentId,
-                timestamp: Date.now(),
-                loadingComplete: true
+        async requestComponentFallback(componentId, component) {
+            // Dispatch event for component to handle its own fallback
+            GMKB.dispatch('gmkb:component-fallback-requested', {
+                componentId,
+                componentType: component.type,
+                component,
+                timestamp: Date.now()
             });
             
-            console.log(`✅ ComponentManager: Topics component ${componentId} inserted into DOM successfully`);
+            // Use generic fallback if component doesn't respond
+            setTimeout(() => {
+                const element = document.getElementById(componentId);
+                if (!element) {
+                    this.renderGenericFallback(componentId, component);
+                }
+            }, 1000);
         },
         
-        /**
-         * ROOT FIX: Topics fallback rendering
-         */
-        renderTopicsFallback(componentId, component) {
-            try {
-                console.log(`🔧 ComponentManager: Using topics fallback rendering for ${componentId}`);
-                
-                const fallbackHtml = this.generateTopicsFallbackHTML(component);
-                this.insertTopicsComponentIntoDOM(componentId, fallbackHtml, component);
-                
-                console.log(`✅ ComponentManager: Topics fallback rendering complete for ${componentId}`);
-                return true;
-                
-            } catch (error) {
-                console.error(`❌ ComponentManager: Topics fallback rendering failed for ${componentId}:`, error);
-                return false;
-            }
-        },
-        
-        /**
-         * ROOT FIX: Generate topics fallback HTML with loading state resolved
-         */
-        generateTopicsFallbackHTML(component) {
-            const data = component.data || {};
-            const topics = data.topics || ['Topic 1', 'Topic 2', 'Topic 3', 'Topic 4', 'Topic 5'];
-            
-            return `
-                <div class="content-section editable-element topics-component layout-grid columns-2 has-topics" 
-                     data-element="topics" 
-                     data-component="topics" 
-                     data-loading-resolved="true"
-                     data-fallback-rendered="true">
-                    
-                    <div class="topics-header">
-                        <h2 class="section-title" contenteditable="true" data-setting="title">
-                            ${data.title || 'Speaking Topics'}
-                        </h2>
-                    </div>
-                    
-                    <div class="topics-container" 
-                         data-has-topics="true"
-                         data-loading-source="fallback"
-                         data-loading-resolved="true">
-                        
-                        ${topics.map((topic, index) => `
-                            <div class="topic-item" data-topic-index="${index}">
-                                <div class="topic-content">
-                                    <div class="topic-title" 
-                                         contenteditable="true" 
-                                         data-setting="topic_${index + 1}">
-                                        ${topic}
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    <div class="fallback-notice" style="
-                        margin-top: 1rem;
-                        padding: 0.5rem;
-                        background: #fff3cd;
-                        border: 1px solid #ffeaa7;
-                        border-radius: 4px;
-                        font-size: 0.875rem;
-                        color: #856404;
-                    ">
-                        ⚠️ Fallback mode: Topics loaded from cache. Click to edit directly.
+        renderGenericFallback(componentId, component) {
+            const fallbackHtml = `
+                <div class="component-fallback" data-component="${component.type}">
+                    <div class="fallback-content">
+                        <h3>${component.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Component</h3>
+                        <p>Loading component...</p>
+                        <div class="fallback-notice">
+                            ⚠️ Fallback mode: Component will load shortly.
+                        </div>
                     </div>
                 </div>
             `;
-        },
-        
-        /**
-         * ROOT FIX: Load topics scripts from AJAX data
-         */
-        async loadTopicsScriptsFromAjaxData(scriptsData, componentId) {
-            console.log(`📜 ComponentManager: Loading topics scripts from AJAX data for ${componentId}`);
             
-            for (const scriptInfo of scriptsData) {
-                try {
-                    await this.loadTopicsScriptFromAjaxData(scriptInfo, componentId);
-                    console.log(`✅ ComponentManager: Loaded topics ${scriptInfo.component} ${scriptInfo.type} script`);
-                } catch (error) {
-                    console.warn(`⚠️ ComponentManager: Failed to load topics ${scriptInfo.component} ${scriptInfo.type} script:`, error);
-                }
-            }
+            this.insertComponentIntoDOM(componentId, fallbackHtml, component);
+            console.log(`🔧 ComponentManager: Generic fallback rendered for ${componentId}`);
         },
         
         /**
-         * ROOT FIX: Load individual topics script from AJAX data
+         * ROOT FIX: Generic script loading system - ARCHITECTURAL COMPLIANCE
+         * Removed component-specific script loading methods
          */
-        async loadTopicsScriptFromAjaxData(scriptInfo, componentId) {
-            return new Promise((resolve, reject) => {
-                // Check if script already loaded
-                const existingScript = document.querySelector(`script[src="${scriptInfo.src}"]`);
-                if (existingScript) {
-                    console.log(`ℹ️ ComponentManager: Topics script already loaded: ${scriptInfo.src}`);
-                    resolve();
-                    return;
-                }
-                
-                // Expose component data globally before script loads
-                if (scriptInfo.localize_data) {
-                    window[scriptInfo.localize_data.object_name] = scriptInfo.localize_data.data;
-                    console.log(`🔗 ComponentManager: Exposed topics global data: ${scriptInfo.localize_data.object_name}`);
-                }
-                
-                // Add coordination script before component script loads
-                if (scriptInfo.coordination_script) {
-                    const coordinationScript = document.createElement('script');
-                    coordinationScript.textContent = scriptInfo.coordination_script;
-                    document.head.appendChild(coordinationScript);
-                    console.log(`🔗 ComponentManager: Added topics coordination script`);
-                }
-                
-                // Create and load the actual component script
-                const script = document.createElement('script');
-                script.src = scriptInfo.src;
-                script.async = true;
-                script.type = 'text/javascript';
-                script.setAttribute('data-gmkb-component', 'topics');
-                script.setAttribute('data-gmkb-type', scriptInfo.type);
-                script.setAttribute('data-gmkb-component-id', componentId);
-                
-                script.onload = () => {
-                    console.log(`✅ ComponentManager: Topics AJAX script loaded: ${scriptInfo.src}`);
-                    resolve();
-                };
-                
-                script.onerror = () => {
-                    console.error(`❌ ComponentManager: Failed to load topics AJAX script: ${scriptInfo.src}`);
-                    reject(new Error(`Failed to load topics script: ${scriptInfo.src}`));
-                };
-                
-                document.head.appendChild(script);
-            });
-        },
         
         /**
          * ROOT FIX: Fallback component rendering (client-side)
@@ -1089,7 +920,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         
         /**
          * ROOT FIX: Attach interaction handlers using ComponentControlsManager
-         * FIXED: Use dynamic control generation exclusively, no hardcoded HTML
+         * EVENT-DRIVEN: Wait for ComponentControlsManager via events, no polling
          * @param {HTMLElement} componentElement - Component DOM element
          * @param {string} componentId - Component ID
          */
@@ -1103,42 +934,55 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Mark as having handlers attached
             componentElement.setAttribute('data-handlers-attached', 'true');
             
-            // ROOT FIX: Use ComponentControlsManager exclusively - NO HARDCODED HTML
+            // ROOT FIX: Event-driven ComponentControlsManager integration
             if (window.componentControlsManager) {
-                const success = window.componentControlsManager.attachControls(componentElement, componentId);
-                if (success) {
-                    console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
-                    
-                    // ROOT FIX: Setup component action event listeners for this component
-                    this.setupComponentActionListeners(componentId);
-                    
-                    console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
-                } else {
-                    console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
-                    // Fallback to event-based attachment
-                    this.requestControlAttachment(componentElement, componentId);
-                }
+                // ComponentControlsManager is ready - attach immediately
+                this.attachControlsImmediately(componentElement, componentId);
             } else {
-                console.warn(`⚠️ ComponentManager: ComponentControlsManager not available, waiting for load...`);
-                
-                // ROOT FIX: Wait for ComponentControlsManager to become available
-                const checkManager = () => {
+                // ROOT FIX: Listen for ComponentControlsManager ready event (NO POLLING)
+                const handleControlsManagerReady = () => {
                     if (window.componentControlsManager) {
-                        console.log(`✅ ComponentManager: ComponentControlsManager now available for ${componentId}`);
-                        const success = window.componentControlsManager.attachControls(componentElement, componentId);
-                        if (success) {
-                            this.setupComponentActionListeners(componentId);
-                            console.log(`✅ ComponentManager: Delayed attachment successful for ${componentId}`);
-                        }
-                    } else {
-                        // Final fallback to event-based approach
-                        console.warn(`⚠️ ComponentManager: ComponentControlsManager still unavailable, using event fallback`);
-                        this.requestControlAttachment(componentElement, componentId);
+                        console.log(`✅ ComponentManager: ComponentControlsManager ready for ${componentId}`);
+                        this.attachControlsImmediately(componentElement, componentId);
+                        // Remove listener after successful attachment
+                        document.removeEventListener('DOMContentLoaded', handleControlsManagerReady);
+                        document.removeEventListener('gmkb:component-controls-manager-ready', handleControlsManagerReady);
                     }
                 };
                 
-                // Check again after a brief delay to allow script loading
-                setTimeout(checkManager, 100);
+                // ROOT FIX: Multiple event listeners for different loading scenarios
+                document.addEventListener('gmkb:component-controls-manager-ready', handleControlsManagerReady);
+                document.addEventListener('DOMContentLoaded', handleControlsManagerReady);
+                
+                // ROOT FIX: Also check on next tick in case manager loads very quickly
+                Promise.resolve().then(() => {
+                    if (window.componentControlsManager) {
+                        handleControlsManagerReady();
+                    }
+                });
+                
+                console.log(`⏳ ComponentManager: Waiting for ComponentControlsManager via events for ${componentId}`);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        attachControlsImmediately(componentElement, componentId) {
+            const success = window.componentControlsManager.attachControls(componentElement, componentId);
+            if (success) {
+                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
+                
+                // ROOT FIX: Setup component action event listeners for this component
+                this.setupComponentActionListeners(componentId);
+                
+                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
+            } else {
+                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
+                // Fallback to event-based attachment
+                this.requestControlAttachment(componentElement, componentId);
             }
         },
         
@@ -1857,6 +1701,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         
         /**
          * ROOT FIX: Load component scripts dynamically after component rendering
+         * ARCHITECTURAL COMPLIANCE: Includes component-specific fallback scripts
          * @param {string} componentType - Component type (e.g., 'topics')
          * @param {string} componentId - Component ID
          */
@@ -1884,8 +1729,9 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 debugMode: window.gmkbData?.debugMode || false
             };
             
-            // Define scripts to load
+            // Define scripts to load - ARCHITECTURAL COMPLIANCE: Include fallback.js
             const scripts = [
+                { file: 'fallback.js', type: 'fallback' },  // Component-specific fallback
                 { file: 'panel-script.js', type: 'panel' },
                 { file: 'script.js', type: 'main' }
             ];

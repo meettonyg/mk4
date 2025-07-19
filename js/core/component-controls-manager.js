@@ -61,6 +61,15 @@
             this.isInitialized = true;
             
             structuredLogger.info('CONTROLS', 'ComponentControlsManager ready for dynamic control attachment');
+            
+            // ROOT FIX: Dispatch ready event for event-driven coordination (NO POLLING)
+            document.dispatchEvent(new CustomEvent('gmkb:component-controls-manager-ready', {
+                detail: {
+                    timestamp: Date.now(),
+                    manager: this,
+                    architecture: 'event-driven'
+                }
+            }));
         }
         
         /**

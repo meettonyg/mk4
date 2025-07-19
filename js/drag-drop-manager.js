@@ -58,7 +58,7 @@
                 window.GMKB.subscribe('gmkb:initialization-complete', (event) => {
                 console.log('🎯 DragDropManager: System initialized, setting up drop zones and preview sorting');
                 this.setupDropZones();
-                    this.setupPreviewSorting();
+                    // this.setupPreviewSorting();
             });
             } else {
                 // Fallback: Initialize after a delay if GMKB not ready
@@ -66,7 +66,7 @@
                 setTimeout(() => {
                     this.setupComponentLibraryDrag();
                     this.setupDropZones();
-                    this.setupPreviewSorting();
+                   //   this.setupPreviewSorting();
                 }, 2000);
             }
 
