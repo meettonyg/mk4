@@ -20,22 +20,11 @@ $topics_to_display = $has_topics ? $loaded_topics : []; // Show nothing if no to
      data-component-id="<?php echo esc_attr($componentId); ?>">
     
     <?php
-    // --- START OF DEFINITIVE FIX ---
-    // This method is more explicit. It goes up two directories from the current
-    // file's location to find the plugin's root directory.
-    $plugin_root_dir = dirname( __DIR__, 2 );
-    $controls_partial_path = $plugin_root_dir . '/partials/component-controls.php';
-
-    // We will leave a debug comment in the HTML source for verification.
-    echo "<!-- Controls Path Check: " . esc_html($controls_partial_path) . " -->\n";
-
-    if (file_exists($controls_partial_path)) {
-        include $controls_partial_path;
-    } else {
-        // This fallback message will appear if the path is still incorrect.
-        echo '<div style="color: red; border: 1px solid red; padding: 5px; margin: 5px;">Controls partial not found. Please check file path.</div>';
-    }
-    // --- END OF DEFINITIVE FIX ---
+    // ROOT FIX: Dynamic Controls Architecture
+    // ComponentControlsManager handles control creation and attachment dynamically
+    // No static HTML controls needed - JavaScript manages everything
+    echo "<!-- Dynamic Controls: ComponentControlsManager will attach controls via JavaScript -->\n";
+    // Static controls removed - using scalable dynamic architecture
     ?>
     
     <div class="topics-header">

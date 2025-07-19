@@ -312,6 +312,9 @@ class Guestify_Media_Kit_Builder {
             
             <script src="<?php echo GUESTIFY_PLUGIN_URL . 'js/main.js?v=' . time(); ?>" type="text/javascript"></script>
             
+            <!-- ROOT FIX: Manual enqueue ComponentControlsManager in template takeover -->
+            <script src="<?php echo GUESTIFY_PLUGIN_URL . 'js/core/component-controls-manager.js?v=' . time(); ?>" type="text/javascript"></script>
+            
             <link rel="stylesheet" href="<?php echo GUESTIFY_PLUGIN_URL . 'css/guestify-builder.css?v=' . time(); ?>" type="text/css" media="all" />
         </head>
         <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing gmkb-simplified" data-post-id="<?php echo esc_attr($post_id); ?>" data-template-version="simplified-wordpress-native">

@@ -39,6 +39,12 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 add_action( 'wp_enqueue_scripts', 'gmkb_enqueue_assets' );
 
 /**
+ * ROOT FIX: Enqueue ComponentControlsManager on admin pages too
+ * Ensures the script is available in all contexts where the builder loads
+ */
+add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets' );
+
+/**
  * Enqueues all necessary scripts and styles for the Media Kit Builder.
  *
  * ROOT CAUSE FIX: This function has been rewritten to establish a clear
@@ -97,16 +103,23 @@ function gmkb_enqueue_assets() {
         true
     );
     
-    // 4. Component Controls Manager (Depends on main script)
+    // 4. Component Controls Manager (Depends on main script) - ROOT FIX PRIORITY
     // CRITICAL FIX: This manager is responsible for showing the controls. It must
     // run after the main script has initialized the components.
-    wp_enqueue_script(
+    $controls_manager_enqueued = wp_enqueue_script(
         'gmkb-component-controls-manager',
         $plugin_url . 'js/core/component-controls-manager.js',
         array('gmkb-main-script'),
         $version,
         true
     );
+    
+    // ROOT FIX: Log ComponentControlsManager enqueue result
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( '🔧 GMKB: ComponentControlsManager enqueue result: ' . ( $controls_manager_enqueued ? 'SUCCESS' : 'FAILED' ) );
+        error_log( '🔧 GMKB: ComponentControlsManager URL: ' . $plugin_url . 'js/core/component-controls-manager.js' );
+        error_log( '🔧 GMKB: File exists check: ' . ( file_exists( GUESTIFY_PLUGIN_DIR . 'js/core/component-controls-manager.js' ) ? 'YES' : 'NO' ) );
+    }
     
     // 5. SortableJS Library (from CDN, no dependencies)
     wp_enqueue_script(

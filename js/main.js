@@ -43,101 +43,260 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             console.debug(`📢 GMKB: Dispatched '${eventName}'`, detail);
         },
         
-        /**
-         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
-         * @param {HTMLElement} componentElement - Component DOM element
-         * @param {string} componentId - Component ID
-         */
-        attachControlsImmediately(componentElement, componentId) {
-            const success = window.componentControlsManager.attachControls(componentElement, componentId);
-            if (success) {
-                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
-                
-                // ROOT FIX: Setup component action event listeners for this component
-                this.setupComponentActionListeners(componentId);
-                
-                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
-            } else {
-                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
-                // Fallback to event-based attachment
-                this.requestControlAttachment(componentElement, componentId);
-            }
-        },
-        
-        /**
-         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
-         * @param {HTMLElement} componentElement - Component DOM element
-         * @param {string} componentId - Component ID
-         */
-        attachControlsImmediately(componentElement, componentId) {
-            const success = window.componentControlsManager.attachControls(componentElement, componentId);
-            if (success) {
-                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
-                
-                // ROOT FIX: Setup component action event listeners for this component
-                this.setupComponentActionListeners(componentId);
-                
-                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
-            } else {
-                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
-                // Fallback to event-based attachment
-                this.requestControlAttachment(componentElement, componentId);
-            }
-        },
-        
-        /**
-         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
-         * @param {HTMLElement} componentElement - Component DOM element
-         * @param {string} componentId - Component ID
-         */
-        attachControlsImmediately(componentElement, componentId) {
-            const success = window.componentControlsManager.attachControls(componentElement, componentId);
-            if (success) {
-                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
-                
-                // ROOT FIX: Setup component action event listeners for this component
-                this.setupComponentActionListeners(componentId);
-                
-                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
-            } else {
-                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
-                // Fallback to event-based attachment
-                this.requestControlAttachment(componentElement, componentId);
-            }
-        },
-        
-        /**
-         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
-         * @param {HTMLElement} componentElement - Component DOM element
-         * @param {string} componentId - Component ID
-         */
-        attachControlsImmediately(componentElement, componentId) {
-            const success = window.componentControlsManager.attachControls(componentElement, componentId);
-            if (success) {
-                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
-                
-                // ROOT FIX: Setup component action event listeners for this component
-                this.setupComponentActionListeners(componentId);
-                
-                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
-            } else {
-                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
-                // Fallback to event-based attachment
-                this.requestControlAttachment(componentElement, componentId);
-            }
-        },
-        
-
-        
-
-        
-
-        
-
-        
         subscribe(eventName, callback) {
             document.addEventListener(eventName, callback);
             console.debug(`📡 GMKB: Subscribed to '${eventName}'`);
+        },
+        
+        /**
+         * ROOT FIX: Setup event listeners for component actions
+         * @param {string} componentId - Component ID
+         */
+        setupComponentActionListeners(componentId) {
+            // ROOT FIX: Listen for component action events specific to this component
+            const actionHandlers = {
+                'gmkb:component-edit-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
+                        console.log(`📋 Edit requested for ${componentId}`);
+                        // ROOT FIX: Actually handle edit action
+                        this.handleEditComponent(componentId);
+                    }
+                },
+                'gmkb:component-move-up-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
+                        console.log(`⬆️ Move up requested for ${componentId}`);
+                        // ROOT FIX: Actually handle move up action
+                        this.handleMoveComponent(componentId, 'up');
+                    }
+                },
+                'gmkb:component-move-down-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
+                        console.log(`⬇️ Move down requested for ${componentId}`);
+                        // ROOT FIX: Actually handle move down action
+                        this.handleMoveComponent(componentId, 'down');
+                    }
+                },
+                'gmkb:component-duplicate-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
+                        console.log(`📋 Duplicate requested for ${componentId}`);
+                        // ROOT FIX: Actually handle duplicate action
+                        this.handleDuplicateComponent(componentId);
+                    }
+                },
+                'gmkb:component-delete-requested': (event) => {
+                    if (event.detail.componentId === componentId) {
+                        console.log(`🗑️ Delete requested for ${componentId}`);
+                        // ROOT FIX: Actually handle delete action
+                        this.handleDeleteComponent(componentId);
+                    }
+                }
+            };
+            
+            // ROOT FIX: Subscribe to all action events
+            Object.entries(actionHandlers).forEach(([eventName, handler]) => {
+                this.subscribe(eventName, handler);
+            });
+            
+            console.log(`✅ GMKB: Event-driven action listeners setup for ${componentId}`);
+        },
+        
+        /**
+         * ROOT FIX: Handle edit component action
+         * @param {string} componentId - Component ID to edit
+         */
+        handleEditComponent(componentId) {
+            console.log(`🎨 Opening editor for component: ${componentId}`);
+            
+            // Find the component element
+            const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (!componentElement) {
+                console.error(`Component element not found: ${componentId}`);
+                return;
+            }
+            
+            // For now, make the component directly editable
+            const editableElements = componentElement.querySelectorAll('[contenteditable], input, textarea, select');
+            if (editableElements.length > 0) {
+                editableElements[0].focus();
+                console.log(`✅ Focused first editable element in ${componentId}`);
+            } else {
+                // Add a simple edit indicator
+                componentElement.style.outline = '2px solid #007cba';
+                setTimeout(() => {
+                    componentElement.style.outline = '';
+                }, 2000);
+                console.log(`✅ Highlighted component ${componentId} for editing`);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Handle move component action
+         * @param {string} componentId - Component ID to move
+         * @param {string} direction - 'up' or 'down'
+         */
+        handleMoveComponent(componentId, direction) {
+            console.log(`📦 Moving component ${componentId} ${direction}`);
+            
+            const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (!componentElement) {
+                console.error(`Component element not found: ${componentId}`);
+                return;
+            }
+            
+            const container = componentElement.closest('.media-kit, #media-kit-preview');
+            if (!container) {
+                console.error('Media kit container not found');
+                return;
+            }
+            
+            const allComponents = Array.from(container.querySelectorAll('[data-component-id]'));
+            const currentIndex = allComponents.indexOf(componentElement);
+            
+            if (direction === 'up' && currentIndex > 0) {
+                // Move up
+                const previousComponent = allComponents[currentIndex - 1];
+                container.insertBefore(componentElement, previousComponent);
+                console.log(`✅ Moved ${componentId} up`);
+            } else if (direction === 'down' && currentIndex < allComponents.length - 1) {
+                // Move down
+                const nextComponent = allComponents[currentIndex + 1];
+                container.insertBefore(componentElement, nextComponent.nextSibling);
+                console.log(`✅ Moved ${componentId} down`);
+            } else {
+                console.log(`⚠️ Cannot move ${componentId} ${direction} - already at ${direction === 'up' ? 'top' : 'bottom'}`);
+            }
+            
+            // Visual feedback
+            componentElement.style.transform = 'scale(1.02)';
+            componentElement.style.transition = 'transform 0.2s ease';
+            setTimeout(() => {
+                componentElement.style.transform = '';
+                componentElement.style.transition = '';
+            }, 200);
+        },
+        
+        /**
+         * ROOT FIX: Handle duplicate component action
+         * @param {string} componentId - Component ID to duplicate
+         */
+        handleDuplicateComponent(componentId) {
+            console.log(`📄 Duplicating component: ${componentId}`);
+            
+            const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (!componentElement) {
+                console.error(`Component element not found: ${componentId}`);
+                return;
+            }
+            
+            // Create a copy
+            const duplicatedElement = componentElement.cloneNode(true);
+            
+            // Generate new ID
+            const newId = componentId + '-copy-' + Date.now();
+            duplicatedElement.setAttribute('data-component-id', newId);
+            
+            // Update any existing IDs in the duplicated content
+            const elementsWithId = duplicatedElement.querySelectorAll('[id]');
+            elementsWithId.forEach(el => {
+                el.id = el.id + '-copy-' + Date.now();
+            });
+            
+            // Insert after the original
+            componentElement.parentNode.insertBefore(duplicatedElement, componentElement.nextSibling);
+            
+            // Visual feedback
+            duplicatedElement.style.opacity = '0.5';
+            duplicatedElement.style.transform = 'scale(0.95)';
+            duplicatedElement.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                duplicatedElement.style.opacity = '1';
+                duplicatedElement.style.transform = 'scale(1)';
+                
+                // Attach controls to the new component
+                if (window.componentControlsManager) {
+                    window.componentControlsManager.attachControls(duplicatedElement, newId);
+                }
+            }, 100);
+            
+            console.log(`✅ Duplicated ${componentId} as ${newId}`);
+        },
+        
+        /**
+         * ROOT FIX: Handle delete component action
+         * @param {string} componentId - Component ID to delete
+         */
+        handleDeleteComponent(componentId) {
+            console.log(`🗑️ Deleting component: ${componentId}`);
+            
+            // Confirm deletion
+            if (!confirm(`Are you sure you want to delete this component?`)) {
+                console.log('Delete cancelled by user');
+                return;
+            }
+            
+            const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (!componentElement) {
+                console.error(`Component element not found: ${componentId}`);
+                return;
+            }
+            
+            // Visual feedback before deletion
+            componentElement.style.opacity = '0.5';
+            componentElement.style.transform = 'scale(0.9)';
+            componentElement.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                componentElement.remove();
+                console.log(`✅ Deleted component ${componentId}`);
+                
+                // Check if we need to show empty state
+                const container = document.querySelector('.media-kit, #media-kit-preview');
+                const remainingComponents = container?.querySelectorAll('[data-component-id]');
+                
+                if (!remainingComponents || remainingComponents.length === 0) {
+                    const emptyState = document.getElementById('empty-state');
+                    if (emptyState) {
+                        emptyState.style.display = 'block';
+                        console.log('✅ Showing empty state - no components remaining');
+                    }
+                }
+            }, 300);
+        },
+        
+        /**
+         * ROOT FIX: Request control attachment via event system
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        requestControlAttachment(componentElement, componentId) {
+            this.dispatch('gmkb:attach-controls-requested', {
+                componentElement,
+                componentId,
+                timestamp: Date.now(),
+                source: 'GMKB'
+            });
+        },
+        
+        /**
+         * ROOT FIX: Attach controls immediately when ComponentControlsManager is available
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        attachControlsImmediately(componentElement, componentId) {
+            const success = window.componentControlsManager.attachControls(componentElement, componentId);
+            if (success) {
+                console.log(`✅ GMKB: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
+                
+                // ROOT FIX: Setup component action event listeners for this component
+                this.setupComponentActionListeners(componentId);
+                
+                console.log(`✅ GMKB: Root-level fix complete for ${componentId} - no hardcoded HTML`);
+            } else {
+                console.warn(`⚠️ GMKB: Failed to attach dynamic controls to ${componentId}`);
+                // Fallback to event-based attachment
+                this.requestControlAttachment(componentElement, componentId);
+            }
         },
         
         // Simple debugging helper
@@ -894,7 +1053,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Append to preview container
             previewContainer.appendChild(componentElement);
             
-            // Attach component interaction handlers
+            // ROOT FIX: Attach component interaction handlers immediately
             this.attachComponentHandlers(componentElement, componentId);
             
             // ROOT FIX: Load component scripts - prioritize AJAX scripts if available
@@ -915,7 +1074,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 }, 10);
             }
             
-            console.log(`✅ ComponentManager: Inserted ${componentId} into DOM`);
+            console.log(`✅ ComponentManager: Inserted ${componentId} into DOM with dynamic controls`);
         },
         
         /**
@@ -934,16 +1093,29 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             // Mark as having handlers attached
             componentElement.setAttribute('data-handlers-attached', 'true');
             
+            // ROOT FIX: Find the actual component element to attach controls to
+            let targetElement = componentElement;
+            
+            // If this is a wrapper, find the actual component inside
+            const actualComponent = componentElement.querySelector('.topics-component, .hero-component, .biography-component, .social-component, .editable-element');
+            if (actualComponent) {
+                targetElement = actualComponent;
+                console.log(`🎯 ComponentManager: Found actual component element for controls: ${targetElement.className}`);
+            }
+            
+            // Use the actual component's data-component-id if available
+            let targetComponentId = targetElement.getAttribute('data-component-id') || componentId;
+            
             // ROOT FIX: Event-driven ComponentControlsManager integration
             if (window.componentControlsManager) {
                 // ComponentControlsManager is ready - attach immediately
-                this.attachControlsImmediately(componentElement, componentId);
+                GMKB.attachControlsImmediately(targetElement, targetComponentId);
             } else {
                 // ROOT FIX: Listen for ComponentControlsManager ready event (NO POLLING)
                 const handleControlsManagerReady = () => {
                     if (window.componentControlsManager) {
-                        console.log(`✅ ComponentManager: ComponentControlsManager ready for ${componentId}`);
-                        this.attachControlsImmediately(componentElement, componentId);
+                        console.log(`✅ ComponentManager: ComponentControlsManager ready for ${targetComponentId}`);
+                        GMKB.attachControlsImmediately(targetElement, targetComponentId);
                         // Remove listener after successful attachment
                         document.removeEventListener('DOMContentLoaded', handleControlsManagerReady);
                         document.removeEventListener('gmkb:component-controls-manager-ready', handleControlsManagerReady);
@@ -961,7 +1133,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     }
                 });
                 
-                console.log(`⏳ ComponentManager: Waiting for ComponentControlsManager via events for ${componentId}`);
+                console.log(`⏳ ComponentManager: Waiting for ComponentControlsManager via events for ${targetComponentId}`);
             }
         },
         
