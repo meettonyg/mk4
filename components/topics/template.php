@@ -9,7 +9,10 @@
 $props = $props ?? [];
 $loaded_topics = $props['loaded_topics'] ?? [];
 $post_id = $props['post_id'] ?? 0;
-$componentId = $props['componentId'] ?? 'topics-' . uniqid();
+
+// ROOT FIX: Use consistent ID format that matches JavaScript state management
+// JavaScript generates 'component-{timestamp}', PHP should use the same format
+$componentId = $props['component_id'] ?? $props['componentId'] ?? 'component-' . round(microtime(true) * 1000);
 $title = $props['title'] ?? 'Speaking Topics';
 
 $has_topics = !empty($loaded_topics);

@@ -443,11 +443,11 @@ class Guestify_Media_Kit_Builder {
             return new WP_Error( 'invalid_component', 'Component slug is required', array( 'status' => 400 ) );
         }
         
-        // ROOT FIX: Ensure post ID is passed to component
-                $enhanced_props = array_merge($props, [
-                    'post_id' => $post_id,
-                    'component_id' => $componentId ?? uniqid('component_')
-                ]);
+        // ROOT FIX: Ensure post ID and consistent component ID are passed
+        $enhanced_props = array_merge($props, [
+        'post_id' => $post_id,
+        'component_id' => $componentId ?? 'component-' . round(microtime(true) * 1000)
+        ]);
                 
                 $html = $this->component_loader->loadComponent( $component_slug, $enhanced_props );
         
@@ -596,6 +596,7 @@ class Guestify_Media_Kit_Builder {
                     
                     $props['loaded_topics'] = $loaded_topics;
                     $props['post_id'] = $data_source_id;
+                    $props['component_id'] = $props['component_id'] ?? 'component-' . round(microtime(true) * 1000);
                     $props['topics_data_source'] = 'single_step_render';
                 }
             }
@@ -1352,11 +1353,11 @@ class Guestify_Media_Kit_Builder {
             }
         }
 
-        // ROOT FIX: Add loaded topics to props for single-step render
+        // ROOT FIX: Add loaded topics to props for single-step render with consistent ID
         $enhanced_props = array_merge($props, array(
             'loaded_topics' => $loaded_topics,
             'post_id' => $data_source_id,
-            'component_id' => $props['component_id'] ?? uniqid('topics_'),
+            'component_id' => $props['component_id'] ?? 'component-' . round(microtime(true) * 1000),
             'single_step_render' => true,
             'root_fix_active' => true,
             'topics_data_source' => 'enhanced_single_step_render'

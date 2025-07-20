@@ -159,6 +159,33 @@ function gmkb_enqueue_assets() {
             $version,
             true
         );
+        
+        // ROOT FIX: Add Component ID Mapping test script
+        wp_enqueue_script(
+            'gmkb-test-component-id-mapping',
+            $plugin_url . 'test-component-id-mapping-fix.js',
+            array('gmkb-main-script'), // Only depends on main script
+            $version,
+            true
+        );
+        
+        // ROOT FIX: Add Component Controls Visibility debug script
+        wp_enqueue_script(
+            'gmkb-debug-controls-visibility',
+            $plugin_url . 'debug-component-controls-visibility.js',
+            array('gmkb-component-controls-manager'), // Depends on controls manager
+            $version,
+            true
+        );
+        
+        // ROOT FIX: Add Controls Preservation test script
+        wp_enqueue_script(
+            'gmkb-test-controls-preservation',
+            $plugin_url . 'test-controls-preservation.js',
+            array('gmkb-component-controls-manager'), // Depends on controls manager
+            $version,
+            true
+        );
     }
 
     // WordPress-native data passing - guaranteed to be available before script runs

@@ -36,6 +36,9 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
     const GMKB = {
         systems: {},
         
+        // ROOT FIX: Global action listeners flag
+        globalActionListenersSetup: false,
+        
         // Use the browser's native event system - reliable and debuggable
         dispatch(eventName, detail) {
             const event = new CustomEvent(eventName, { detail });
@@ -49,56 +52,137 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Setup event listeners for component actions
-         * @param {string} componentId - Component ID
+         * ROOT FIX: Initialize global action listeners immediately on load
+         * Call this once during system initialization
          */
-        setupComponentActionListeners(componentId) {
-            // ROOT FIX: Listen for component action events specific to this component
-            const actionHandlers = {
+        initializeGlobalActionListeners() {
+            // Prevent duplicate initialization
+            if (this.globalActionListenersSetup) {
+                console.log('ℹ️ GMKB: Global action listeners already initialized');
+                return;
+            }
+            
+            console.log('🚀 GMKB: Initializing global component action listeners...');
+            
+            // Global event handlers for ALL components
+            const globalHandlers = {
                 'gmkb:component-edit-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        console.log(`📋 Edit requested for ${componentId}`);
-                        // ROOT FIX: Actually handle edit action
-                        this.handleEditComponent(componentId);
-                    }
+                    const componentId = event.detail.componentId;
+                    console.log(`📋 GLOBAL: Edit requested for ${componentId}`);
+                    this.handleEditComponent(componentId);
                 },
+                
                 'gmkb:component-move-up-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        console.log(`⬆️ Move up requested for ${componentId}`);
-                        // ROOT FIX: Actually handle move up action
-                        this.handleMoveComponent(componentId, 'up');
-                    }
+                    const componentId = event.detail.componentId;
+                    console.log(`⬆️ GLOBAL: Move up requested for ${componentId}`);
+                    this.handleMoveComponent(componentId, 'up');
                 },
+                
                 'gmkb:component-move-down-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        console.log(`⬇️ Move down requested for ${componentId}`);
-                        // ROOT FIX: Actually handle move down action
-                        this.handleMoveComponent(componentId, 'down');
-                    }
+                    const componentId = event.detail.componentId;
+                    console.log(`⬇️ GLOBAL: Move down requested for ${componentId}`);
+                    this.handleMoveComponent(componentId, 'down');
                 },
+                
                 'gmkb:component-duplicate-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        console.log(`📋 Duplicate requested for ${componentId}`);
-                        // ROOT FIX: Actually handle duplicate action
-                        this.handleDuplicateComponent(componentId);
-                    }
+                    const componentId = event.detail.componentId;
+                    console.log(`📋 GLOBAL: Duplicate requested for ${componentId}`);
+                    this.handleDuplicateComponentEnhanced(componentId);
                 },
+                
                 'gmkb:component-delete-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        console.log(`🗑️ Delete requested for ${componentId}`);
-                        // ROOT FIX: Actually handle delete action
-                        this.handleDeleteComponent(componentId);
-                    }
+                    const componentId = event.detail.componentId;
+                    console.log(`🗑️ GLOBAL: Delete requested for ${componentId}`);
+                    this.handleDeleteComponent(componentId);
                 }
             };
+
+    /**
+     * ROOT FIX: Simple UI coordination system to replace complex UIManager
+     * This ensures proper initialization order and prevents re-rendering
+     */
+    const UICoordinator = {
+        initialized: false,
+        
+        init() {
+            if (this.initialized) {
+                console.log('ℹ️ UICoordinator: Already initialized, skipping duplicate call');
+                return;
+            }
             
-            // ROOT FIX: Subscribe to all action events
-            Object.entries(actionHandlers).forEach(([eventName, handler]) => {
+            console.log('%c🎯 UICoordinator: ROOT FIX - Single initialization start', 'font-weight: bold; color: #2563eb; background: #eff6ff; padding: 4px 8px; border-radius: 4px;');
+            
+            try {
+                // Mark as initialized FIRST to prevent duplicate calls
+                this.initialized = true;
+                
+                // Step 1: Initialize core systems without rendering
+                console.log('📋 UICoordinator: Initializing StateManager...');
+                StateManager.init();
+                
+                console.log('🧩 UICoordinator: Initializing ComponentManager (library only)...');
+                ComponentManager.init(); // This will ONLY load library, no rendering
+                
+                console.log('📋 UICoordinator: Checking for saved components...');
+                const state = StateManager.getState();
+                const componentCount = Object.keys(state.components).length;
+                console.log(`📋 UICoordinator: Found ${componentCount} saved components`);
+                
+                // Step 2: Load and render saved components ONCE
+                if (componentCount > 0) {
+                    console.log('🎯 UICoordinator: Loading saved components...');
+                    this.loadSavedComponentsOnce();
+                } else {
+                    console.log('📝 UICoordinator: No saved components to load');
+                }
+                
+                console.log('%c✅ UICoordinator: ROOT FIX - Single initialization complete', 'font-weight: bold; color: #10b981; background: #f0fdf4; padding: 4px 8px; border-radius: 4px;');
+            } catch (error) {
+                console.error('%c❌ UICoordinator: Initialization failed:', 'font-weight: bold; color: #ef4444; background: #fef2f2; padding: 4px 8px; border-radius: 4px;', error);
+                // Reset flag if failed
+                this.initialized = false;
+            }
+        },
+        
+        async loadSavedComponentsOnce() {
+            console.log('%c🎯 UICoordinator: Loading saved components with single-render guarantee', 'font-weight: bold; color: #7c3aed; background: #f3e8ff; padding: 4px 8px; border-radius: 4px;');
+            
+            try {
+                // Wait a moment for StateManager to fully initialize
+                console.log('⏱️ UICoordinator: Waiting for systems to stabilize...');
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                // Check state again
+                const state = StateManager.getState();
+                const componentCount = Object.keys(state.components).length;
+                console.log(`📋 UICoordinator: Ready to load ${componentCount} saved components`);
+                
+                if (componentCount > 0) {
+                    // Load saved components EXACTLY ONCE
+                    console.log('🎨 UICoordinator: Calling ComponentManager.loadSavedComponents()...');
+                    await ComponentManager.loadSavedComponents();
+                    console.log('✅ UICoordinator: ComponentManager.loadSavedComponents() completed');
+                } else {
+                    console.log('📝 UICoordinator: No components to load');
+                }
+                
+                console.log('%c✅ UICoordinator: Saved components loaded - no re-renders', 'font-weight: bold; color: #10b981; background: #f0fdf4; padding: 4px 8px; border-radius: 4px;');
+            } catch (error) {
+                console.error('%c❌ UICoordinator: Error loading saved components:', 'font-weight: bold; color: #ef4444; background: #fef2f2; padding: 4px 8px; border-radius: 4px;', error);
+            }
+        }
+    };
+            
+            // Subscribe to all events globally
+            Object.entries(globalHandlers).forEach(([eventName, handler]) => {
                 this.subscribe(eventName, handler);
             });
             
-            console.log(`✅ GMKB: Event-driven action listeners setup for ${componentId}`);
+            this.globalActionListenersSetup = true;
+            console.log('✅ GMKB: Global component action listeners initialized successfully');
         },
+        
+
         
         /**
          * ROOT FIX: Handle edit component action
@@ -176,17 +260,45 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Handle duplicate component action
+         * ROOT FIX: Enhanced duplicate handler with state management
          * @param {string} componentId - Component ID to duplicate
          */
-        handleDuplicateComponent(componentId) {
-            console.log(`📄 Duplicating component: ${componentId}`);
+        handleDuplicateComponentEnhanced(componentId) {
+            console.log(`📄 GLOBAL: Duplicating component: ${componentId}`);
             
             const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
             if (!componentElement) {
                 console.error(`Component element not found: ${componentId}`);
                 return;
             }
+            
+            // Get component from state for proper duplication
+            const state = window.GMKB?.systems?.StateManager?.getState?.() || StateManager.getState();
+            const component = state.components?.[componentId];
+            
+            if (component) {
+                // Use ComponentManager's duplicate method if available
+                if (window.GMKB?.systems?.ComponentManager?.duplicateComponent) {
+                    window.GMKB.systems.ComponentManager.duplicateComponent(componentId);
+                } else if (ComponentManager?.duplicateComponent) {
+                    ComponentManager.duplicateComponent(componentId);
+                } else {
+                    // Fallback to DOM-only duplication
+                    this.fallbackDuplicateComponent(componentElement, componentId);
+                }
+            } else {
+                // Fallback to DOM-only duplication
+                this.fallbackDuplicateComponent(componentElement, componentId);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Fallback duplicate method for DOM-only scenarios
+         * @param {HTMLElement} componentElement - Component DOM element
+         * @param {string} componentId - Component ID
+         */
+        fallbackDuplicateComponent(componentElement, componentId) {
+            console.log(`🔧 GLOBAL: Using fallback duplication for ${componentId}`);
             
             // Create a copy
             const duplicatedElement = componentElement.cloneNode(true);
@@ -217,9 +329,18 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 if (window.componentControlsManager) {
                     window.componentControlsManager.attachControls(duplicatedElement, newId);
                 }
+                
+                console.log(`✅ GLOBAL: Fallback duplication complete: ${componentId} → ${newId}`);
             }, 100);
-            
-            console.log(`✅ Duplicated ${componentId} as ${newId}`);
+        },
+        
+        /**
+         * ROOT FIX: Handle duplicate component action (LEGACY SUPPORT)
+         * @param {string} componentId - Component ID to duplicate
+         */
+        handleDuplicateComponent(componentId) {
+            // ROOT FIX: Delegate to enhanced handler
+            this.handleDuplicateComponentEnhanced(componentId);
         },
         
         /**
@@ -288,9 +409,6 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             if (success) {
                 console.log(`✅ GMKB: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
                 
-                // ROOT FIX: Setup component action event listeners for this component
-                this.setupComponentActionListeners(componentId);
-                
                 console.log(`✅ GMKB: Root-level fix complete for ${componentId} - no hardcoded HTML`);
             } else {
                 console.warn(`⚠️ GMKB: Failed to attach dynamic controls to ${componentId}`);
@@ -337,12 +455,9 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     layout: this.state.layout.length
                 });
                 
-                // Dispatch event for saved components from localStorage
-                GMKB.dispatch('gmkb:saved-state-loaded', {
-                    componentCount: Object.keys(this.state.components).length,
-                    state: this.state,
-                    source: 'localStorage'
-                });
+                // ROOT FIX: REMOVED - this event was causing re-renders
+                // OLD CODE: GMKB.dispatch('gmkb:saved-state-loaded', { ... });
+                console.log('✅ StateManager: State loaded but NO events dispatched to prevent re-renders');
             } else {
                 console.log('📝 StateManager: No components found in localStorage');
             }
@@ -355,12 +470,9 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                     this.state = { ...this.state, ...savedState };
                     console.log('🔄 StateManager: Loaded state from WordPress database (FALLBACK)', savedState);
                     
-                    // Dispatch event for saved components from WordPress
-                    GMKB.dispatch('gmkb:saved-state-loaded', {
-                        componentCount: Object.keys(savedState.components).length,
-                        state: savedState,
-                        source: 'wordpress'
-                    });
+                    // ROOT FIX: REMOVED - this event was causing re-renders
+                    // OLD CODE: GMKB.dispatch('gmkb:saved-state-loaded', { ... });
+                    console.log('✅ StateManager: WordPress state loaded but NO events dispatched to prevent re-renders');
                 } else {
                     console.log('📝 StateManager: WordPress database state is empty');
                 }
@@ -537,12 +649,134 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
     const ComponentManager = {
         availableComponents: {},
         
+        // ROOT FIX: Global action listeners flag
+        globalActionListenersSetup: false,
+        
         init() {
             console.log('🧩 ComponentManager: Initialized (Server-Integrated)');
-            // Load available components from server on initialization
-            this.loadAvailableComponents();
+            
+            // ROOT FIX: Setup global action listeners ONCE during initialization
+            this.initializeGlobalActionListeners();
+            
+            // ROOT FIX: Load available components for library ONLY (no rendering triggers)
+            this.loadAvailableComponentsForLibrary();
         },
         
+        /**
+         * ROOT FIX: Initialize global action listeners for ComponentManager
+         */
+        initializeGlobalActionListeners() {
+            if (this.globalActionListenersSetup) {
+                console.log('ℹ️ ComponentManager: Global action listeners already setup');
+                return;
+            }
+            
+            console.log('🚀 ComponentManager: Setting up global action listeners...');
+            
+            const globalHandlers = {
+                'gmkb:component-edit-requested': (event) => {
+                    const componentId = event.detail.componentId;
+                    console.log(`🎨 ComponentManager: Edit requested for ${componentId}`);
+                    this.editComponent(componentId);
+                },
+                
+                'gmkb:component-move-up-requested': (event) => {
+                    const componentId = event.detail.componentId;
+                    console.log(`⬆️ ComponentManager: Move up requested for ${componentId}`);
+                    this.moveComponentUp(componentId);
+                },
+                
+                'gmkb:component-move-down-requested': (event) => {
+                    const componentId = event.detail.componentId;
+                    console.log(`⬇️ ComponentManager: Move down requested for ${componentId}`);
+                    this.moveComponentDown(componentId);
+                },
+                
+                'gmkb:component-duplicate-requested': (event) => {
+                    const componentId = event.detail.componentId;
+                    console.log(`📋 ComponentManager: Duplicate requested for ${componentId}`);
+                    this.duplicateComponent(componentId);
+                },
+                
+                'gmkb:component-delete-requested': (event) => {
+                    const componentId = event.detail.componentId;
+                    console.log(`🗑️ ComponentManager: Delete requested for ${componentId}`);
+                    this.deleteComponent(componentId);
+                }
+            };
+            
+            // Subscribe to all events globally using GMKB
+            Object.entries(globalHandlers).forEach(([eventName, handler]) => {
+                if (window.GMKB && window.GMKB.subscribe) {
+                    window.GMKB.subscribe(eventName, handler);
+                } else {
+                    document.addEventListener(eventName, handler);
+                }
+            });
+            
+            this.globalActionListenersSetup = true;
+            console.log('✅ ComponentManager: Global action listeners setup complete');
+        },
+        
+        /**
+         * ROOT FIX: Load available components for library only - no rendering triggers
+         * This method ONLY populates the component library and does NOT trigger any component rendering
+         */
+        async loadAvailableComponentsForLibrary() {
+            try {
+                console.log('🔄 ComponentManager: Loading available components for library ONLY (no renders)...');
+                
+                const response = await fetch(window.gmkbData.ajaxUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'guestify_get_components',
+                        nonce: window.gmkbData.nonce
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('🔍 ComponentManager: Server response for library:', data);
+                
+                // ROOT FIX: Handle both wp_send_json_success and direct return formats
+                let components, categories;
+                
+                if (data.success && data.data) {
+                    components = data.data.components || {};
+                    categories = data.data.categories || {};
+                    console.log('✅ ComponentManager: Using wp_send_json_success format');
+                } else if (data.success && data.components) {
+                    components = data.components || {};
+                    categories = data.categories || {};
+                    console.log('✅ ComponentManager: Using direct return format');
+                } else if (data.components) {
+                    components = data.components || {};
+                    categories = data.categories || {};
+                    console.log('✅ ComponentManager: Using legacy format');
+                } else {
+                    throw new Error('Invalid response format: ' + JSON.stringify(data));
+                }
+                
+                this.availableComponents = components;
+                console.log('✅ ComponentManager: Loaded', Object.keys(components).length, 'available components for library');
+                console.log('📋 ComponentManager: Component types:', Object.keys(components));
+                
+                // ROOT FIX: ONLY populate component library - NO rendering events
+                this.populateComponentLibraryOnly(components, categories);
+                
+                console.log('✅ ComponentManager: Library population complete - NO component renders triggered');
+                
+            } catch (error) {
+                console.error('❌ ComponentManager: Error loading components for library:', error);
+                this.loadFallbackComponentsForLibrary();
+            }
+        },
+        
+        /**
+         * LEGACY METHOD: Keep for backwards compatibility but rename to avoid confusion
+         */
         async loadAvailableComponents() {
             try {
                 console.log('🔄 ComponentManager: Loading available components from server...');
@@ -603,19 +837,11 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 // Populate component library modal
                 this.populateComponentLibrary(components, categories);
                 
-                // Dispatch event that components are loaded
-                GMKB.dispatch('gmkb:components-loaded', {
-                    components: components,
-                    categories: categories
-                });
+                // ROOT FIX: REMOVED - these events were causing re-renders
+                // OLD CODE: Dispatch events that triggered component re-renders
+                // GMKB.dispatch('gmkb:components-loaded', { ... });
                 
-                // PHASE 2.1 FIX: Components loaded event (replaces available-components-ready)
-                GMKB.dispatch('gmkb:components-loaded', {
-                components: components,
-                count: Object.keys(components).length,
-                timestamp: Date.now(),
-                    source: 'server'
-            });
+                console.log('⚠️ ComponentManager: Legacy loadAvailableComponents() called - use loadAvailableComponentsForLibrary() instead');
                 
             } catch (error) {
                 console.error('❌ ComponentManager: Error loading components:', error);
@@ -628,6 +854,33 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             }
         },
         
+        /**
+         * ROOT FIX: Load fallback components for library only - no rendering triggers
+         */
+        loadFallbackComponentsForLibrary() {
+            console.log('🔄 ComponentManager: Loading fallback components for library only...');
+            this.availableComponents = {
+                'hero': { name: 'Hero Section', category: 'essential', icon: 'hero-icon.svg', description: 'Add a compelling header with your name and expertise' },
+                'biography': { name: 'Biography', category: 'essential', icon: 'bio-icon.svg', description: 'Share your professional background and story' },
+                'topics': { name: 'Speaking Topics', category: 'essential', icon: 'topics-icon.svg', description: 'Showcase your areas of expertise' },
+                'social': { name: 'Social Links', category: 'contact', icon: 'social-icon.svg', description: 'Connect with your social media profiles' },
+                'call-to-action': { name: 'Call to Action', category: 'engagement', icon: 'cta-icon.svg', description: 'Encourage visitors to take action' }
+            };
+            
+            const categories = {
+                'essential': Object.values(this.availableComponents).filter(c => c.category === 'essential'),
+                'contact': Object.values(this.availableComponents).filter(c => c.category === 'contact'),
+                'engagement': Object.values(this.availableComponents).filter(c => c.category === 'engagement')
+            };
+            
+            this.populateComponentLibraryOnly(this.availableComponents, categories);
+            
+            console.log('⚠️ ComponentManager: Using fallback components for library only:', Object.keys(this.availableComponents));
+        },
+        
+        /**
+         * LEGACY METHOD: Keep for backwards compatibility
+         */
         loadFallbackComponents() {
             console.log('🔄 ComponentManager: Loading fallback components...');
             this.availableComponents = {
@@ -648,15 +901,75 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             
             console.log('⚠️ ComponentManager: Using fallback components:', Object.keys(this.availableComponents));
             
-            // PHASE 2.1 FIX: Dispatch components loaded event for fallback too
-            GMKB.dispatch('gmkb:components-loaded', {
-                components: this.availableComponents,
-                count: Object.keys(this.availableComponents).length,
-                source: 'fallback',
-                timestamp: Date.now()
-            });
+            // ROOT FIX: REMOVED - these events were causing re-renders
+                console.log('⚠️ ComponentManager: Legacy loadFallbackComponents() called');
         },
         
+        /**
+         * ROOT FIX: Populate component library without triggering any rendering events
+         * This method ONLY updates the component library DOM - NO component rendering
+         */
+        populateComponentLibraryOnly(components, categories) {
+            const componentGrid = document.getElementById('component-grid');
+            if (!componentGrid) {
+                console.warn('🧩 ComponentManager: Component grid not found - library not populated');
+                return;
+            }
+            
+            console.log('📋 ComponentManager: Populating component library ONLY (no renders)...');
+            
+            // Hide loading state
+            const loadingState = document.getElementById('component-grid-loading');
+            if (loadingState) {
+                loadingState.style.display = 'none';
+            }
+            
+            // Clear existing content
+            componentGrid.innerHTML = '';
+            
+            // Create component cards
+            Object.entries(components).forEach(([key, component]) => {
+                const componentCard = document.createElement('div');
+                componentCard.className = 'component-item component-card';
+                componentCard.setAttribute('data-component-type', key);
+                componentCard.setAttribute('data-component', key);
+                componentCard.setAttribute('data-category', component.category || 'other');
+                
+                componentCard.innerHTML = `
+                    <div class="component-item__preview">
+                        <div class="component-preview-icon">
+                            ${this.getComponentIcon(key)}
+                        </div>
+                    </div>
+                    <div class="component-item__info">
+                        <h4 class="component-item__name">${component.name || key}</h4>
+                        <p class="component-item__description">${component.description || 'No description available'}</p>
+                        ${component.isPremium ? '<span class="premium-badge">Pro</span>' : ''}
+                    </div>
+                    <div class="component-item__actions">
+                        <button class="btn btn--small btn--primary add-component-btn" data-component="${key}">
+                            Add Component
+                        </button>
+                    </div>
+                `;
+                
+                // Make component card draggable
+                componentCard.draggable = true;
+                
+                componentGrid.appendChild(componentCard);
+            });
+            
+            console.log('✅ ComponentManager: Library populated with', Object.keys(components).length, 'components - NO rendering triggered');
+            
+            // Set up drag handlers for newly populated components
+            if (window.DragDropManager && window.DragDropManager.updateComponentLibraryDragHandlers) {
+                window.DragDropManager.updateComponentLibraryDragHandlers();
+            }
+        },
+        
+        /**
+         * LEGACY METHOD: Keep for backwards compatibility but avoid using
+         */
         populateComponentLibrary(components, categories) {
             const componentGrid = document.getElementById('component-grid');
             if (!componentGrid) {
@@ -711,6 +1024,8 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             if (window.DragDropManager && window.DragDropManager.updateComponentLibraryDragHandlers) {
                 window.DragDropManager.updateComponentLibraryDragHandlers();
             }
+            
+            console.log('⚠️ ComponentManager: Legacy populateComponentLibrary() called - may trigger re-renders');
         },
         
         getComponentIcon(componentType) {
@@ -763,20 +1078,26 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             if (success) {
                 console.log(`🧩 ComponentManager: Removed component with ID: ${id}`);
                 
-                // ROOT FIX: Use proper empty state management instead of direct manipulation
-                // Let the UIManager handle empty state visibility based on actual component count
-                if (window.GMKB?.systems?.UIManager?.ensureEmptyStateVisible) {
-                    // Defer to next tick to ensure DOM removal is processed
-                    setTimeout(() => {
-                        window.GMKB.systems.UIManager.ensureEmptyStateVisible(true);
-                    }, 10);
+                // ROOT FIX: Simplified empty state management (no UIManager dependency)
+                const previewContainerForRemoval = document.getElementById('media-kit-preview');
+                const remainingComponentsAfterRemoval = previewContainerForRemoval?.querySelectorAll('[data-component-id]');
+                
+                if (!remainingComponentsAfterRemoval || remainingComponentsAfterRemoval.length === 0) {
+                    const emptyStateElement = document.getElementById('empty-state');
+                    if (emptyStateElement) {
+                        emptyStateElement.style.display = 'block';
+                        console.log('✅ ComponentManager: Showing empty state - no components remaining');
+                    }
                 }
             }
             
             return success;
         },
         
-        // Load saved components from state and render them
+        /**
+         * ROOT FIX: Load saved components with single-render guarantee
+         * This method ensures each component is rendered EXACTLY ONCE
+         */
         async loadSavedComponents() {
             const state = StateManager.getState();
             const componentIds = Object.keys(state.components);
@@ -786,7 +1107,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 return;
             }
             
-            console.log(`🔄 ComponentManager: Loading ${componentIds.length} saved components...`);
+            console.log(`🔄 ComponentManager: ROOT FIX - Single-render loading of ${componentIds.length} saved components...`);
             
             // Hide empty state
             const emptyState = document.getElementById('empty-state');
@@ -794,14 +1115,24 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 emptyState.style.display = 'none';
             }
             
-            // Render each component in layout order
+            // ROOT FIX: Track rendered components to prevent duplicate renders
+            const renderedComponents = new Set();
+            
+            // Render each component in layout order - ONCE ONLY
             for (const componentId of state.layout) {
-                if (state.components[componentId]) {
+                if (state.components[componentId] && !renderedComponents.has(componentId)) {
+                    console.log(`🎨 ComponentManager: Single-rendering component ${componentId}`);
                     await this.renderComponent(componentId);
+                    renderedComponents.add(componentId);
+                    
+                    // Small delay to prevent race conditions
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                } else if (renderedComponents.has(componentId)) {
+                    console.log(`⚠️ ComponentManager: Skipping duplicate render of ${componentId}`);
                 }
             }
             
-            console.log(`✅ ComponentManager: Loaded ${componentIds.length} saved components`);
+            console.log(`✅ ComponentManager: ROOT FIX - Successfully single-rendered ${renderedComponents.size} components`);
         },
         
         /**
@@ -1034,9 +1365,10 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 return;
             }
             
-            // Remove existing component if it exists
+            // ROOT FIX: Remove existing element if present (no controls preservation needed)
             const existingElement = document.getElementById(componentId);
             if (existingElement) {
+                console.log(`🔄 ComponentManager: Removing existing element ${componentId} for clean re-render`);
                 existingElement.remove();
             }
             
@@ -1049,6 +1381,15 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             
             // Insert the component HTML
             componentElement.innerHTML = html;
+            
+            // ROOT FIX: Update the data-component-id of inner elements to match state ID
+            const innerComponentElement = componentElement.querySelector('[data-component-id]');
+            if (innerComponentElement && innerComponentElement.getAttribute('data-component-id') !== componentId) {
+                console.log(`🔧 ComponentManager: Updating inner component ID from ${innerComponentElement.getAttribute('data-component-id')} to ${componentId}`);
+                innerComponentElement.setAttribute('data-component-id', componentId);
+            }
+            
+            // ROOT FIX: No controls preservation needed - controls will attach naturally
             
             // Append to preview container
             previewContainer.appendChild(componentElement);
@@ -1065,13 +1406,22 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 this.loadComponentScripts(component.type, componentId);
             }
             
-            // ROOT FIX: Use proper empty state management instead of direct manipulation
-            // Let the UIManager handle empty state visibility based on actual component count
-            if (window.GMKB?.systems?.UIManager?.ensureEmptyStateVisible) {
-                // Defer to next tick to ensure DOM is updated
-                setTimeout(() => {
-                    window.GMKB.systems.UIManager.ensureEmptyStateVisible(true);
-                }, 10);
+            // ROOT FIX: Simplified empty state management (no UIManager dependency)
+            const previewContainerForInsertion = document.getElementById('media-kit-preview');
+            const remainingComponentsAfterInsertion = previewContainerForInsertion?.querySelectorAll('[data-component-id]');
+            
+            if (!remainingComponentsAfterInsertion || remainingComponentsAfterInsertion.length === 0) {
+                const emptyStateElementAfterInsertion = document.getElementById('empty-state');
+                if (emptyStateElementAfterInsertion) {
+                    emptyStateElementAfterInsertion.style.display = 'block';
+                    console.log('✅ ComponentManager: Showing empty state after component insertion');
+                }
+            } else {
+                const emptyStateElementAfterInsertion = document.getElementById('empty-state');
+                if (emptyStateElementAfterInsertion) {
+                    emptyStateElementAfterInsertion.style.display = 'none';
+                    console.log('✅ ComponentManager: Hiding empty state - components present');
+                }
             }
             
             console.log(`✅ ComponentManager: Inserted ${componentId} into DOM with dynamic controls`);
@@ -1143,18 +1493,27 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
          * @param {string} componentId - Component ID
          */
         attachControlsImmediately(componentElement, componentId) {
-            const success = window.componentControlsManager.attachControls(componentElement, componentId);
+            // ROOT FIX: Find the actual target element for control attachment
+            let targetElement = componentElement;
+            let targetComponentId = componentId;
+            
+            // If componentElement is a wrapper, find the actual component inside
+            const innerComponent = componentElement.querySelector('[data-component-id]');
+            if (innerComponent) {
+                targetElement = innerComponent;
+                // Use the wrapper's ID (state ID) for control events, but attach to inner element
+                targetComponentId = componentId; // Keep using the state ID for events
+                console.log(`🎯 ComponentManager: Using inner element for controls, state ID: ${targetComponentId}`);
+            }
+            
+            const success = window.componentControlsManager.attachControls(targetElement, targetComponentId);
             if (success) {
-                console.log(`✅ ComponentManager: Dynamic controls attached to ${componentId} via ComponentControlsManager`);
-                
-                // ROOT FIX: Setup component action event listeners for this component
-                this.setupComponentActionListeners(componentId);
-                
-                console.log(`✅ ComponentManager: Root-level fix complete for ${componentId} - no hardcoded HTML`);
+                console.log(`✅ ComponentManager: Dynamic controls attached to ${targetComponentId} via ComponentControlsManager`);
+                console.log(`✅ ComponentManager: Root-level fix complete for ${targetComponentId} - no hardcoded HTML`);
             } else {
-                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${componentId}`);
+                console.warn(`⚠️ ComponentManager: Failed to attach dynamic controls to ${targetComponentId}`);
                 // Fallback to event-based attachment
-                this.requestControlAttachment(componentElement, componentId);
+                this.requestControlAttachment(targetElement, targetComponentId);
             }
         },
         
@@ -1172,47 +1531,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             });
         },
         
-        /**
-         * ROOT FIX: Setup event listeners for component actions
-         * @param {string} componentId - Component ID
-         */
-        setupComponentActionListeners(componentId) {
-            // ROOT FIX: Listen for component action events specific to this component
-            const actionHandlers = {
-                'gmkb:component-edit-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        this.editComponent(componentId);
-                    }
-                },
-                'gmkb:component-move-up-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        this.moveComponentUp(componentId);
-                    }
-                },
-                'gmkb:component-move-down-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        this.moveComponentDown(componentId);
-                    }
-                },
-                'gmkb:component-duplicate-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        this.duplicateComponent(componentId);
-                    }
-                },
-                'gmkb:component-delete-requested': (event) => {
-                    if (event.detail.componentId === componentId) {
-                        this.deleteComponent(componentId);
-                    }
-                }
-            };
-            
-            // ROOT FIX: Subscribe to all action events
-            Object.entries(actionHandlers).forEach(([eventName, handler]) => {
-                GMKB.subscribe(eventName, handler);
-            });
-            
-            console.log(`✅ ComponentManager: Event-driven action listeners setup for ${componentId}`);
-        },
+
         
         /**
          * ROOT FIX: Generate fallback HTML for component types
@@ -1278,23 +1597,86 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Edit component (loads component's own design panel in sidebar)
+         * ROOT FIX: Edit component with enhanced ID resolution (loads component's own design panel in sidebar)
          * @param {string} componentId - Component ID to edit
          */
         async editComponent(componentId) {
             console.log(`✏️ ComponentManager: Opening editor for ${componentId}`);
             
             const state = StateManager.getState();
-            const component = state.components[componentId];
+            let component = state.components[componentId];
+            let foundId = componentId;
+            
+            // ROOT FIX: Enhanced ID resolution with improved mapping strategies
+            if (!component) {
+                console.warn(`⚠️ Component ${componentId} not found in state, using enhanced ID resolution...`);
+                
+                const stateComponentIds = Object.keys(state.components);
+                console.log('🔍 Available component IDs in state:', stateComponentIds);
+                
+                // Strategy 1: Direct DOM element lookup to find the actual component ID
+                const domElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                if (domElement) {
+                    // Check if DOM element has a wrapper with the state ID
+                    const wrapper = domElement.closest('[id^="component-"]');
+                    if (wrapper && wrapper.id && state.components[wrapper.id]) {
+                        foundId = wrapper.id;
+                        component = state.components[foundId];
+                        console.log(`✅ Found component via DOM wrapper mapping: ${foundId}`);
+                    }
+                }
+                
+                // Strategy 2: Check if any state ID contains our DOM ID or vice versa
+                if (!component) {
+                    foundId = stateComponentIds.find(stateId => 
+                        stateId.includes(componentId) || componentId.includes(stateId)
+                    );
+                    
+                    if (foundId) {
+                        component = state.components[foundId];
+                        console.log(`✅ Found component by partial match for editing: ${foundId}`);
+                    }
+                }
+                
+                // Strategy 3: Use single component if only one exists
+                if (!component && stateComponentIds.length === 1) {
+                    foundId = stateComponentIds[0];
+                    component = state.components[foundId];
+                    console.log(`✅ Using single component for editing: ${foundId}`);
+                }
+                
+                // Strategy 4: Find by component type if we can determine it from DOM
+                if (!component && domElement) {
+                    const componentType = domElement.className.match(/(\w+)-component/)?.[1];
+                    if (componentType) {
+                        foundId = stateComponentIds.find(stateId => 
+                            state.components[stateId]?.type === componentType
+                        );
+                        if (foundId) {
+                            component = state.components[foundId];
+                            console.log(`✅ Found component by type matching: ${foundId} (${componentType})`);
+                        }
+                    }
+                }
+            }
             
             if (!component) {
-                console.error(`Component ${componentId} not found`);
+                console.error(`❌ Component ${componentId} not found for editing`);
+                console.log('🗑️ Available components:', Object.keys(state.components));
+                
+                // ROOT FIX: Show a generic message in sidebar for unknown components
+                this.displayGenericDesignPanel({
+                    type: 'unknown',
+                    id: componentId
+                }, componentId);
                 return;
             }
             
+            console.log(`✅ Component found for editing: ${foundId}`, component);
+            
             // ROOT FIX: Dispatch component edit event BEFORE loading design panel
             GMKB.dispatch('gmkb:component-edit-requested', {
-                componentId: componentId,
+                componentId: foundId, // Use the actual found ID
                 componentType: component.type,
                 component: component,
                 timestamp: Date.now()
@@ -1313,7 +1695,7 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                         action: 'guestify_render_design_panel',
                         nonce: window.gmkbData.nonce,
                         component: component.type,
-                        component_id: componentId
+                        component_id: foundId // Use the actual found ID
                     })
                 });
                 
@@ -1321,23 +1703,23 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 
                 if (data.success && data.data && data.data.html) {
                     // ROOT FIX: Display in sidebar design panel
-                    this.displayInSidebarDesignPanel(data.data.html, componentId, component);
+                    this.displayInSidebarDesignPanel(data.data.html, foundId, component);
                     console.log(`✅ ComponentManager: Loaded ${component.type} design panel in sidebar`);
                     
                     // ROOT FIX: Dispatch design panel ready event AFTER panel is displayed
                     GMKB.dispatch('gmkb:design-panel-ready', {
-                        componentId: componentId,
+                        componentId: foundId,
                         component: component.type,
                         panelType: 'custom',
                         timestamp: Date.now()
                     });
                 } else {
                     console.warn(`⚠️ ComponentManager: No design panel found for ${component.type}, using generic`);
-                    this.displayGenericDesignPanel(component, componentId);
+                    this.displayGenericDesignPanel(component, foundId);
                     
                     // ROOT FIX: Dispatch event for generic panel too
                     GMKB.dispatch('gmkb:design-panel-ready', {
-                        componentId: componentId,
+                        componentId: foundId,
                         component: component.type,
                         panelType: 'generic',
                         timestamp: Date.now()
@@ -1346,11 +1728,11 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 
             } catch (error) {
                 console.error('❌ ComponentManager: Error loading component design panel:', error);
-                this.displayGenericDesignPanel(component, componentId);
+                this.displayGenericDesignPanel(component, foundId);
                 
                 // ROOT FIX: Dispatch event for error case too
                 GMKB.dispatch('gmkb:design-panel-ready', {
-                    componentId: componentId,
+                    componentId: foundId,
                     component: component.type,
                     panelType: 'generic',
                     error: error.message,
@@ -1542,6 +1924,50 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
             const elementEditor = document.getElementById('element-editor');
             if (!elementEditor) return;
             
+            // ROOT FIX: Handle unknown components
+            if (component.type === 'unknown') {
+                elementEditor.innerHTML = `
+                    <div class="element-editor__title">Component Not Found</div>
+                    <div class="element-editor__subtitle">Unable to load component editor</div>
+                    
+                    <div class="form-section">
+                        <h4 class="form-section__title">Component Information</h4>
+                        <div class="form-group">
+                            <label class="form-label">Requested Component ID</label>
+                            <input type="text" class="form-input" value="${componentId}" readonly>
+                        </div>
+                        <div class="form-help-text">
+                            This component was not found in the saved state. This may happen if:
+                            <ul>
+                                <li>The component was recently added but not saved</li>
+                                <li>There's a mismatch between DOM and state component IDs</li>
+                                <li>The component state data is corrupted</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4 class="form-section__title">Troubleshooting</h4>
+                        <div class="form-group">
+                            <button type="button" class="btn btn--secondary" onclick="console.log('Available components:', Object.keys(window.GMKB?.systems?.StateManager?.getState?.()?.components || {}))">
+                                Log Available Components
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn--secondary" onclick="location.reload()">
+                                Reload Page
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                this.switchToDesignTab();
+                elementEditor.dataset.currentComponent = componentId;
+                
+                console.log(`⚠️ Unknown component editor displayed for ${componentId}`);
+                return;
+            }
+            
             const componentName = component.type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
             
             elementEditor.innerHTML = `
@@ -1692,110 +2118,502 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
         },
         
         /**
-         * ROOT FIX: Move component up in layout
+         * ROOT FIX: Enhanced move component up with DOM structure debugging
          * @param {string} componentId - Component ID to move up
          */
         moveComponentUp(componentId) {
-            const state = StateManager.getState();
-            const currentIndex = state.layout.indexOf(componentId);
-            
-            if (currentIndex <= 0) {
-                console.log(`⚠️ ComponentManager: Cannot move ${componentId} up - already at top`);
-                return;
-            }
-            
             console.log(`⬆️ ComponentManager: Moving ${componentId} up`);
             
-            const newLayout = [...state.layout];
-            // Swap with previous item
-            [newLayout[currentIndex], newLayout[currentIndex - 1]] = 
-            [newLayout[currentIndex - 1], newLayout[currentIndex]];
-            
-            StateManager.setState({ layout: newLayout });
-            this.reorderComponentsInDOM();
-            
-            // Visual feedback
-            const element = document.getElementById(componentId);
-            if (element) {
-                element.classList.add('component-moved');
+            try {
+                // ROOT FIX: Work with actual DOM order instead of state layout
+                const previewContainer = document.getElementById('media-kit-preview');
+                if (!previewContainer) {
+                    console.error('❌ Preview container not found');
+                    return;
+                }
+                
+                // ROOT FIX: First, let's debug the actual DOM structure
+                console.log('🔍 DEBUG: Preview container HTML structure:', previewContainer.innerHTML.substring(0, 500));
+                console.log('🔍 DEBUG: All children of preview container:', Array.from(previewContainer.children).map(child => ({
+                    tagName: child.tagName,
+                    className: child.className,
+                    id: child.id,
+                    hasDataComponentId: child.hasAttribute('data-component-id'),
+                    dataComponentId: child.getAttribute('data-component-id')
+                })));
+                
+                // Get the component element using more flexible search
+                let componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                if (!componentElement) {
+                    console.error(`❌ Component element not found: ${componentId}`);
+                    return;
+                }
+                
+                console.log('🔍 DEBUG: Found component element:', {
+                    tagName: componentElement.tagName,
+                    className: componentElement.className,
+                    id: componentElement.id,
+                    parent: componentElement.parentElement?.tagName + '.' + componentElement.parentElement?.className
+                });
+                
+                // ROOT FIX: Find the actual moveable parent element (the wrapper in preview container)
+                let moveableElement = componentElement;
+                
+                // If the component is nested, find its parent that's a direct child of preview container
+                while (moveableElement && moveableElement.parentElement !== previewContainer) {
+                    moveableElement = moveableElement.parentElement;
+                    if (!moveableElement || moveableElement === document.body) {
+                        console.error(`❌ Component ${componentId} is not inside preview container`);
+                        return;
+                    }
+                }
+                
+                console.log('🔍 DEBUG: Moveable element found:', {
+                    tagName: moveableElement.tagName,
+                    className: moveableElement.className,
+                    id: moveableElement.id,
+                    isDirectChild: moveableElement.parentElement === previewContainer
+                });
+                
+                // Get all moveable components (direct children of preview container that contain data-component-id)
+                const allMoveableComponents = Array.from(previewContainer.children).filter(child => 
+                    child.querySelector('[data-component-id]') || child.hasAttribute('data-component-id')
+                );
+                const currentIndex = allMoveableComponents.indexOf(moveableElement);
+                
+                console.log(`📊 Current position: ${currentIndex + 1} of ${allMoveableComponents.length}`);
+                console.log('🔍 DEBUG: All moveable components:', allMoveableComponents.map(el => ({
+                    tagName: el.tagName,
+                    className: el.className,
+                    id: el.id,
+                    hasNestedComponent: !!el.querySelector('[data-component-id]'),
+                    nestedComponentId: el.querySelector('[data-component-id]')?.getAttribute('data-component-id')
+                })));
+                
+                if (currentIndex === -1) {
+                    console.error(`❌ Component ${componentId} not found in moveable elements`);
+                    return;
+                }
+                
+                if (currentIndex <= 0) {
+                    console.log(`⚠️ ComponentManager: Cannot move ${componentId} up - already at top`);
+                    return;
+                }
+                
+                // Get the previous component
+                const previousComponent = allMoveableComponents[currentIndex - 1];
+                
+                // Move in DOM - insert current moveable element before the previous one
+                previewContainer.insertBefore(moveableElement, previousComponent);
+                
+                console.log(`✅ ComponentManager: Moved ${componentId} up in DOM`);
+                
+                // ROOT FIX: Update state layout to match new DOM order
+                this.syncStateLayoutWithDOM();
+                
+                // Visual feedback
+                moveableElement.style.transform = 'scale(1.02)';
+                moveableElement.style.transition = 'transform 0.2s ease';
+                moveableElement.style.background = 'rgba(37, 99, 235, 0.1)';
+                
                 setTimeout(() => {
-                    element.classList.remove('component-moved');
+                    moveableElement.style.transform = '';
+                    moveableElement.style.transition = '';
+                    moveableElement.style.background = '';
                 }, 300);
+                
+            } catch (error) {
+                console.error(`❌ ComponentManager: Error moving ${componentId} up:`, error);
             }
         },
         
         /**
-         * ROOT FIX: Move component down in layout
+         * ROOT FIX: Enhanced move component down with DOM structure debugging
          * @param {string} componentId - Component ID to move down
          */
         moveComponentDown(componentId) {
-            const state = StateManager.getState();
-            const currentIndex = state.layout.indexOf(componentId);
-            
-            if (currentIndex === -1 || currentIndex >= state.layout.length - 1) {
-                console.log(`⚠️ ComponentManager: Cannot move ${componentId} down - already at bottom`);
-                return;
-            }
-            
             console.log(`⬇️ ComponentManager: Moving ${componentId} down`);
             
-            const newLayout = [...state.layout];
-            // Swap with next item
-            [newLayout[currentIndex], newLayout[currentIndex + 1]] = 
-            [newLayout[currentIndex + 1], newLayout[currentIndex]];
-            
-            StateManager.setState({ layout: newLayout });
-            this.reorderComponentsInDOM();
-            
-            // Visual feedback
-            const element = document.getElementById(componentId);
-            if (element) {
-                element.classList.add('component-moved');
+            try {
+                // ROOT FIX: Work with actual DOM order instead of state layout
+                const previewContainer = document.getElementById('media-kit-preview');
+                if (!previewContainer) {
+                    console.error('❌ Preview container not found');
+                    return;
+                }
+                
+                // ROOT FIX: First, let's debug the actual DOM structure
+                console.log('🔍 DEBUG: Preview container HTML structure:', previewContainer.innerHTML.substring(0, 500));
+                console.log('🔍 DEBUG: All children of preview container:', Array.from(previewContainer.children).map(child => ({
+                    tagName: child.tagName,
+                    className: child.className,
+                    id: child.id,
+                    hasDataComponentId: child.hasAttribute('data-component-id'),
+                    dataComponentId: child.getAttribute('data-component-id')
+                })));
+                
+                // Get the component element using more flexible search
+                let componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                if (!componentElement) {
+                    console.error(`❌ Component element not found: ${componentId}`);
+                    return;
+                }
+                
+                console.log('🔍 DEBUG: Found component element:', {
+                    tagName: componentElement.tagName,
+                    className: componentElement.className,
+                    id: componentElement.id,
+                    parent: componentElement.parentElement?.tagName + '.' + componentElement.parentElement?.className
+                });
+                
+                // ROOT FIX: Find the actual moveable parent element (the wrapper in preview container)
+                let moveableElement = componentElement;
+                
+                // If the component is nested, find its parent that's a direct child of preview container
+                while (moveableElement && moveableElement.parentElement !== previewContainer) {
+                    moveableElement = moveableElement.parentElement;
+                    if (!moveableElement || moveableElement === document.body) {
+                        console.error(`❌ Component ${componentId} is not inside preview container`);
+                        return;
+                    }
+                }
+                
+                console.log('🔍 DEBUG: Moveable element found:', {
+                    tagName: moveableElement.tagName,
+                    className: moveableElement.className,
+                    id: moveableElement.id,
+                    isDirectChild: moveableElement.parentElement === previewContainer
+                });
+                
+                // Get all moveable components (direct children of preview container that contain data-component-id)
+                const allMoveableComponents = Array.from(previewContainer.children).filter(child => 
+                    child.querySelector('[data-component-id]') || child.hasAttribute('data-component-id')
+                );
+                const currentIndex = allMoveableComponents.indexOf(moveableElement);
+                
+                console.log(`📊 Current position: ${currentIndex + 1} of ${allMoveableComponents.length}`);
+                console.log('🔍 DEBUG: All moveable components:', allMoveableComponents.map(el => ({
+                    tagName: el.tagName,
+                    className: el.className,
+                    id: el.id,
+                    hasNestedComponent: !!el.querySelector('[data-component-id]'),
+                    nestedComponentId: el.querySelector('[data-component-id]')?.getAttribute('data-component-id')
+                })));
+                
+                if (currentIndex === -1) {
+                    console.error(`❌ Component ${componentId} not found in moveable elements`);
+                    return;
+                }
+                
+                if (currentIndex >= allMoveableComponents.length - 1) {
+                    console.log(`⚠️ ComponentManager: Cannot move ${componentId} down - already at bottom`);
+                    return;
+                }
+                
+                // Get the next component
+                const nextComponent = allMoveableComponents[currentIndex + 1];
+                
+                // ROOT FIX: Safe DOM manipulation - handle edge cases properly
+                if (nextComponent.nextSibling) {
+                    // Insert before the element after nextComponent
+                    previewContainer.insertBefore(moveableElement, nextComponent.nextSibling);
+                } else {
+                    // nextComponent is the last element, so append to end
+                    previewContainer.appendChild(moveableElement);
+                }
+                
+                console.log(`✅ ComponentManager: Moved ${componentId} down in DOM`);
+                
+                // ROOT FIX: Update state layout to match new DOM order
+                this.syncStateLayoutWithDOM();
+                
+                // Visual feedback
+                moveableElement.style.transform = 'scale(1.02)';
+                moveableElement.style.transition = 'transform 0.2s ease';
+                moveableElement.style.background = 'rgba(37, 99, 235, 0.1)';
+                
                 setTimeout(() => {
-                    element.classList.remove('component-moved');
+                    moveableElement.style.transform = '';
+                    moveableElement.style.transition = '';
+                    moveableElement.style.background = '';
                 }, 300);
+                
+            } catch (error) {
+                console.error(`❌ ComponentManager: Error moving ${componentId} down:`, error);
             }
         },
         
         /**
-         * ROOT FIX: Duplicate component
+         * ROOT FIX: Synchronize state layout with actual DOM order
+         * This ensures the state layout array matches the visual component order
+         */
+        syncStateLayoutWithDOM() {
+            try {
+                const previewContainer = document.getElementById('media-kit-preview');
+                if (!previewContainer) {
+                    console.warn('⚠️ ComponentManager: Preview container not found for layout sync');
+                    return;
+                }
+                
+                // ROOT FIX: Get current DOM order from moveable elements (direct children that contain components)
+                const domComponents = Array.from(previewContainer.children)
+                    .map(child => {
+                        // Check if child itself has data-component-id
+                        if (child.hasAttribute('data-component-id')) {
+                            return child.getAttribute('data-component-id');
+                        }
+                        // Otherwise, look for nested component with data-component-id
+                        const nestedComponent = child.querySelector('[data-component-id]');
+                        return nestedComponent ? nestedComponent.getAttribute('data-component-id') : null;
+                    })
+                    .filter(id => id); // Filter out null/empty IDs
+                
+                console.log('🔄 Syncing state layout with DOM order:', domComponents);
+                
+                // Get current state
+                const state = StateManager.getState();
+                
+                // Filter to only include components that exist in both DOM and state
+                const validComponents = domComponents.filter(id => {
+                    // Check for exact match or partial match in state
+                    const exactMatch = state.components[id];
+                    if (exactMatch) return true;
+                    
+                    // Check for partial matches (in case of ID mismatches)
+                    const stateIds = Object.keys(state.components);
+                    const partialMatch = stateIds.find(stateId => 
+                        stateId.includes(id) || id.includes(stateId)
+                    );
+                    
+                    return !!partialMatch;
+                });
+                
+                console.log('✅ New layout order:', validComponents);
+                
+                // Update state layout to match DOM order
+                const updatedState = {
+                    ...state,
+                    layout: validComponents
+                };
+                
+                // Save updated state
+                StateManager.setState(updatedState);
+                
+                console.log('✅ ComponentManager: State layout synchronized with DOM order');
+                
+            } catch (error) {
+                console.error('❌ ComponentManager: Error syncing state layout with DOM:', error);
+            }
+        },
+        
+        /**
+         * ROOT FIX: Enhanced duplicate component with ID resolution and debugging
          * @param {string} componentId - Component ID to duplicate
          */
         async duplicateComponent(componentId) {
             console.log(`📋 ComponentManager: Duplicating ${componentId}`);
             
-            const state = StateManager.getState();
-            const component = state.components[componentId];
-            
-            if (!component) {
-                console.error(`Component ${componentId} not found for duplication`);
-                return;
+            try {
+                const state = StateManager.getState();
+                let component = state.components[componentId];
+                
+                // ROOT FIX: If component not found by exact ID, try to find by partial match
+                if (!component) {
+                    console.warn(`⚠️ Component ${componentId} not found, searching by partial match...`);
+                    
+                    // Try to find component by checking if the provided ID contains any state component ID
+                    // or if any state component ID contains the provided ID
+                    const stateComponentIds = Object.keys(state.components);
+                    console.log('🔍 Available component IDs in state:', stateComponentIds);
+                    
+                    let foundId = null;
+                    
+                    // Strategy 1: Look for exact match first
+                    if (state.components[componentId]) {
+                        foundId = componentId;
+                    }
+                    // Strategy 2: Check if any state ID contains our DOM ID
+                    else {
+                        foundId = stateComponentIds.find(stateId => 
+                            stateId.includes(componentId) || componentId.includes(stateId)
+                        );
+                    }
+                    
+                    if (foundId) {
+                        component = state.components[foundId];
+                        console.log(`✅ Found component by partial match: ${foundId}`);
+                    } else {
+                        // Strategy 3: Try to use the first component if only one exists
+                        if (stateComponentIds.length === 1) {
+                            foundId = stateComponentIds[0];
+                            component = state.components[foundId];
+                            console.log(`✅ Using single component: ${foundId}`);
+                        }
+                    }
+                }
+                
+                if (!component) {
+                    console.error(`❌ Component ${componentId} not found for duplication`);
+                    console.log('🗑️ Available components:', Object.keys(state.components));
+                    
+                    // ROOT FIX: Fallback to DOM-only duplication
+                    const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                    if (componentElement && window.GMKB?.fallbackDuplicateComponent) {
+                        console.log('🔧 Falling back to DOM-only duplication');
+                        window.GMKB.fallbackDuplicateComponent(componentElement, componentId);
+                        return;
+                    } else {
+                        console.error('❌ No fallback available - duplication failed');
+                        return;
+                    }
+                }
+                
+                console.log('✅ Component found, proceeding with duplication:', component);
+                
+                // Create new component with duplicated data
+                const duplicatedComponent = {
+                    ...component,
+                    id: 'component-' + Date.now(),
+                    data: { ...component.data }
+                };
+                
+                console.log('🔄 Creating duplicated component:', duplicatedComponent);
+                
+                // Add to state
+                const newId = StateManager.addComponent(duplicatedComponent);
+                
+                console.log('✅ Added to state with ID:', newId);
+                
+                // Render the duplicated component
+                await this.renderComponent(newId);
+                
+                console.log(`✅ ComponentManager: Successfully duplicated ${componentId} as ${newId}`);
+                return newId;
+                
+            } catch (error) {
+                console.error(`❌ ComponentManager: Error duplicating ${componentId}:`, error);
+                
+                // Fallback to DOM-only duplication
+                const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                if (componentElement && window.GMKB?.fallbackDuplicateComponent) {
+                    console.log('🔧 Error fallback: Using DOM-only duplication');
+                    window.GMKB.fallbackDuplicateComponent(componentElement, componentId);
+                } else {
+                    console.error('❌ Error and no fallback available');
+                }
             }
-            
-            // Create new component with duplicated data
-            const duplicatedComponent = {
-                ...component,
-                id: 'component-' + Date.now(),
-                data: { ...component.data }
-            };
-            
-            // Add to state
-            const newId = StateManager.addComponent(duplicatedComponent);
-            
-            // Render the duplicated component
-            await this.renderComponent(newId);
-            
-            console.log(`✅ ComponentManager: Duplicated ${componentId} as ${newId}`);
         },
         
         /**
-         * ROOT FIX: Delete component
+         * ROOT FIX: Enhanced delete component with ID resolution
          * @param {string} componentId - Component ID to delete
          */
         deleteComponent(componentId) {
-            if (confirm('Are you sure you want to delete this component?')) {
-                console.log(`🗑️ ComponentManager: Deleting ${componentId}`);
-                this.removeComponent(componentId);
+            console.log(`🗑️ ComponentManager: Deleting ${componentId}`);
+            
+            // ROOT FIX: Add confirmation dialog
+            if (!confirm('Are you sure you want to delete this component?')) {
+                console.log('❌ Delete cancelled by user');
+                return;
+            }
+            
+            try {
+                const state = StateManager.getState();
+                let component = state.components[componentId];
+                let foundId = componentId;
+                
+                // ROOT FIX: If component not found by exact ID, try to find by partial match
+                if (!component) {
+                    console.warn(`⚠️ Component ${componentId} not found in state, searching by partial match...`);
+                    
+                    const stateComponentIds = Object.keys(state.components);
+                    console.log('🔍 Available component IDs in state:', stateComponentIds);
+                    
+                    // Strategy 1: Check if any state ID contains our DOM ID or vice versa
+                    foundId = stateComponentIds.find(stateId => 
+                        stateId.includes(componentId) || componentId.includes(stateId)
+                    );
+                    
+                    if (foundId) {
+                        component = state.components[foundId];
+                        console.log(`✅ Found component by partial match for deletion: ${foundId}`);
+                    } else if (stateComponentIds.length === 1) {
+                        // Strategy 2: Use single component if only one exists
+                        foundId = stateComponentIds[0];
+                        component = state.components[foundId];
+                        console.log(`✅ Using single component for deletion: ${foundId}`);
+                    }
+                }
+                
+                if (!component) {
+                    console.error(`❌ Component ${componentId} not found for deletion`);
+                    console.log('🗑️ Available components:', Object.keys(state.components));
+                    
+                    // ROOT FIX: Try DOM-only deletion as fallback
+                    const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                    if (componentElement) {
+                        console.log('🔧 Falling back to DOM-only deletion');
+                        
+                        // Visual feedback before removal
+                        componentElement.style.opacity = '0.5';
+                        componentElement.style.transform = 'scale(0.9)';
+                        componentElement.style.transition = 'all 0.3s ease';
+                        
+                        setTimeout(() => {
+                            componentElement.remove();
+                            console.log(`✅ DOM-only deletion complete for ${componentId}`);
+                        }, 300);
+                        
+                        return;
+                    } else {
+                        console.error('❌ No component element found in DOM either');
+                        return;
+                    }
+                }
+                
+                console.log(`✅ Component found, proceeding with deletion: ${foundId}`);
+                
+                // Remove from DOM first
+                const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+                if (componentElement) {
+                    console.log('🗑️ Removing component from DOM:', componentId);
+                    
+                    // Visual feedback before removal
+                    componentElement.style.opacity = '0.5';
+                    componentElement.style.transform = 'scale(0.9)';
+                    componentElement.style.transition = 'all 0.3s ease';
+                    
+                    setTimeout(() => {
+                        componentElement.remove();
+                        console.log(`✅ Component removed from DOM: ${componentId}`);
+                    }, 300);
+                } else {
+                    console.warn(`⚠️ Component element not found in DOM: ${componentId}`);
+                }
+                
+                // Remove from state using the found ID
+                const success = StateManager.removeComponent(foundId);
+                
+                if (success) {
+                    console.log(`✅ ComponentManager: Successfully deleted component ${componentId} (state ID: ${foundId})`);
+                    
+                    // Check if we need to show empty state
+                    setTimeout(() => {
+                        const remainingComponents = document.querySelectorAll('[data-component-id]');
+                        if (remainingComponents.length === 0) {
+                            const emptyState = document.getElementById('empty-state');
+                            if (emptyState) {
+                                emptyState.style.display = 'block';
+                                console.log('✅ Showing empty state - no components remaining');
+                            }
+                        }
+                    }, 500);
+                } else {
+                    console.error(`❌ Failed to remove component from state: ${foundId}`);
+                }
+                
+            } catch (error) {
+                console.error(`❌ ComponentManager: Error deleting ${componentId}:`, error);
             }
         },
         
@@ -1989,7 +2807,86 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                         
                         // Initialize immediately since GMKB should be ready
                         initializeComponentScript();
-                    })();
+                        /**
+     * ROOT FIX: Global Systems Registration
+     * Make systems available globally for debugging and legacy compatibility
+     */
+    window.GMKB = GMKB;
+    window.StateManager = StateManager;
+    window.ComponentManager = ComponentManager;
+    window.UICoordinator = UICoordinator;
+    
+    // Attach systems to GMKB namespace
+    GMKB.systems.StateManager = StateManager;
+    GMKB.systems.ComponentManager = ComponentManager;
+    GMKB.systems.UICoordinator = UICoordinator;
+    
+    console.log('✅ GMKB: Systems registered globally');
+    
+    /**
+     * ROOT FIX: Single Initialization Point
+     * This replaces the complex UIManager with a simple coordinated initialization
+     */
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 GMKB: ROOT FIX - DOM ready, starting coordinated initialization');
+            UICoordinator.init();
+        });
+    } else {
+        console.log('🚀 GMKB: ROOT FIX - DOM already ready, starting coordinated initialization');
+        UICoordinator.init();
+    }
+    
+    console.log('✅ GMKB: ROOT FIX initialization setup complete - single render guaranteed');
+
+    /**
+     * ROOT FIX: Global Systems Registration and Coordinated Initialization
+     */
+    
+    // Make systems available globally
+    window.GMKB = GMKB;
+    window.StateManager = StateManager;
+    window.ComponentManager = ComponentManager;
+    window.UICoordinator = UICoordinator;
+    
+    // Attach systems to GMKB namespace
+    GMKB.systems.StateManager = StateManager;
+    GMKB.systems.ComponentManager = ComponentManager;
+    GMKB.systems.UICoordinator = UICoordinator;
+    
+    /**
+     * ROOT FIX: Coordinated Single Initialization
+     */
+    function initializeGMKBSystems() {
+        console.log('%c🚀 GMKB: ROOT FIX - Starting coordinated single initialization', 'font-weight: bold; color: #10b981; background: #f0fdf4; padding: 4px 8px; border-radius: 4px;');
+        
+        try {
+            // Initialize global action listeners first
+            console.log('🎯 GMKB: Initializing global action listeners...');
+            GMKB.initializeGlobalActionListeners();
+            
+            // Initialize core systems with coordinated approach
+            console.log('🎯 GMKB: Starting UICoordinator initialization...');
+            UICoordinator.init();
+            
+            console.log('%c✅ GMKB: ROOT FIX - Initialization complete - single render guaranteed', 'font-weight: bold; color: #10b981; background: #f0fdf4; padding: 4px 8px; border-radius: 4px;');
+        } catch (error) {
+            console.error('%c❌ GMKB: ROOT FIX - Initialization failed:', 'font-weight: bold; color: #ef4444; background: #fef2f2; padding: 4px 8px; border-radius: 4px;', error);
+        }
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeGMKBSystems);
+    } else {
+        initializeGMKBSystems();
+    }
+    
+    // ROOT FIX: Also run immediately to override any competing initialization
+    console.log('%c🚀 GMKB: ROOT FIX - Running immediately to override competing systems', 'font-weight: bold; color: #ef4444; background: #fef2f2; padding: 4px 8px; border-radius: 4px;');
+    setTimeout(initializeGMKBSystems, 100); // Run after current call stack
+
+})();
                 `;
                 document.head.appendChild(coordinationScript);
                 
@@ -2011,6 +2908,69 @@ console.log('✅ VANILLA JS: Zero dependencies, following Gemini recommendations
                 
                 document.head.appendChild(script);
             });
+        },
+        
+        /**
+         * ROOT FIX: Sync state layout with actual DOM order
+         * This ensures state stays consistent with visual component order
+         */
+        syncStateLayoutWithDOM() {
+            try {
+                const previewContainer = document.getElementById('media-kit-preview');
+                if (!previewContainer) {
+                    console.warn('⚠️ Cannot sync layout - preview container not found');
+                    return;
+                }
+                
+                // Get all components in current DOM order
+                const domComponents = Array.from(previewContainer.querySelectorAll('[data-component-id]'));
+                const domOrder = domComponents.map(el => el.getAttribute('data-component-id'));
+                
+                console.log('🔄 Syncing state layout with DOM order:', domOrder);
+                
+                // Get current state
+                const state = StateManager.getState();
+                const stateComponentIds = Object.keys(state.components);
+                
+                // Create new layout based on DOM order, but only include components that exist in state
+                const newLayout = [];
+                
+                // First, add components that are in DOM and exist in state
+                domOrder.forEach(domId => {
+                    // Try to find matching state component ID
+                    let stateId = domId;
+                    
+                    // If exact match doesn't exist, try partial matching
+                    if (!state.components[domId]) {
+                        const matchingStateId = stateComponentIds.find(stateId => 
+                            stateId.includes(domId) || domId.includes(stateId)
+                        );
+                        if (matchingStateId) {
+                            stateId = matchingStateId;
+                        }
+                    }
+                    
+                    // Add to new layout if component exists in state
+                    if (state.components[stateId]) {
+                        newLayout.push(stateId);
+                    }
+                });
+                
+                // Add any remaining state components that weren't in DOM
+                stateComponentIds.forEach(stateId => {
+                    if (!newLayout.includes(stateId)) {
+                        newLayout.push(stateId);
+                    }
+                });
+                
+                console.log('✅ New layout order:', newLayout);
+                
+                // Update state with new layout
+                StateManager.setState({ layout: newLayout });
+                
+            } catch (error) {
+                console.error('❌ Error syncing state layout with DOM:', error);
+            }
         },
         
         /**

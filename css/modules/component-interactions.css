@@ -188,6 +188,7 @@
     top: 8px;
     right: 8px;
     opacity: 0;
+    visibility: hidden;
     transform: translateY(-4px);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 15;
@@ -197,29 +198,49 @@
 /* Enhanced visibility state */
 .component-controls--visible {
     opacity: 1;
+    visibility: visible;
     transform: translateY(0);
 }
 
 /* Show controls on component hover */
-.media-kit-component:hover .component-controls {
-    opacity: 1;
+.media-kit-component:hover .component-controls,
+[data-component-id]:hover .component-controls {
+    opacity: 1 !important;
+    visibility: visible !important;
     transform: translateY(0);
 }
 
+/* ROOT FIX: Dynamic Controls Manager CSS */
+/* Support for ComponentControlsManager dynamic controls */
+.component-controls--dynamic {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* Show dynamic controls on hover */
+[data-component-id]:hover .component-controls--dynamic {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: all !important;
+}
+
 /* Component controls toolbar - modern glass design */
-.component-controls__toolbar {
+.component-controls__toolbar,
+.component-controls__toolbar--dynamic {
     display: flex;
     align-items: center;
-    gap: 2px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 8px;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    border-radius: 6px;
     padding: 4px;
-    box-shadow: 
-        0 4px 6px -1px rgba(0, 0, 0, 0.1),
-        0 2px 4px -1px rgba(0, 0, 0, 0.06),
-        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Dark theme support */
@@ -253,6 +274,55 @@
     overflow: hidden;
 }
 
+/* ROOT FIX: Support for ComponentControlsManager button classes */
+.component-control,
+.component-control--edit,
+.component-control--move-up,
+.component-control--move-down, 
+.component-control--duplicate,
+.component-control--delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.component-control:hover,
+.component-control--edit:hover,
+.component-control--move-up:hover,
+.component-control--move-down:hover,
+.component-control--duplicate:hover,
+.component-control--delete:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.component-control:active {
+    transform: scale(0.95);
+}
+
+/* Move group specific styling */
+.component-control-group,
+.component-control-group--move {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.component-control-group .component-control,
+.component-control-group--move .component-control {
+    width: 20px;
+    height: 20px;
+}
+
 .component-control:before {
     content: '';
     position: absolute;
@@ -282,6 +352,35 @@
     position: relative;
     z-index: 1;
     transition: all 0.15s ease;
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+}
+
+/* ROOT FIX: Ensure ComponentControlsManager SVG icons are visible */
+.component-control svg,
+.component-control--edit svg,
+.component-control--move-up svg,
+.component-control--move-down svg,
+.component-control--duplicate svg,
+.component-control--delete svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    color: inherit;
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Smaller icons for move controls */
+.component-control-group svg,
+.component-control-group--move svg {
+    width: 12px;
+    height: 12px;
 }
 
 /* Specific control button colors and hover states */
