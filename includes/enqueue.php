@@ -412,8 +412,22 @@ function gmkb_enqueue_assets() {
         */
     }
 
+    // ROOT FIX: Get component data for JavaScript
+    $components_data = array();
+    $categories_data = array();
+    
+    // Get the plugin instance to access component discovery
+    $plugin_instance = Guestify_Media_Kit_Builder::get_instance();
+    if ($plugin_instance) {
+        $component_discovery = $plugin_instance->get_component_discovery();
+        if ($component_discovery) {
+            $components_data = $component_discovery->getComponents();
+            $categories_data = $component_discovery->getCategories();
+        }
+    }
+    
     // WordPress-native data passing - guaranteed to be available before script runs
-    // ROOT FIX: Updated to reflect simplified script architecture
+    // ROOT FIX: Updated to include component data and reflect simplified script architecture
     wp_localize_script(
         'gmkb-main-script',
         'gmkbData',
@@ -433,7 +447,32 @@ function gmkb_enqueue_assets() {
             'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
             'scriptsLoaded' => 'simplified-fixed',
             'moduleSupport' => false,
-            'es6Converted'  => true
+            'es6Converted'  => true,
+            // ROOT FIX: Include component data to prevent fallback to hardcoded data
+            'components'    => $components_data,
+            'categories'    => $categories_data,
+            'totalComponents' => count($components_data)
+        )
+    );
+    
+    // ROOT FIX: Also create guestifyData alias for compatibility
+    wp_localize_script(
+        'gmkb-main-script',
+        'guestifyData',
+        array(
+            'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+            'restUrl'       => esc_url_raw( rest_url() ),
+            'nonce'         => wp_create_nonce( 'gmkb_nonce' ),
+            'restNonce'     => wp_create_nonce( 'wp_rest' ),
+            'postId'        => get_current_post_id_safe(),
+            'pluginUrl'     => $plugin_url,
+            'siteUrl'       => home_url(),
+            'pluginVersion' => defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : 'unknown',
+            'components'    => $components_data,
+            'categories'    => $categories_data,
+            'totalComponents' => count($components_data),
+            'timestamp'     => time(),
+            'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG
         )
     );
 

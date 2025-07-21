@@ -507,8 +507,8 @@ function showErrorState() {
 }
 
 /**
- * Gets components data from guestifyData or provides fallback
- * Enhanced to ensure premium property exists on all components and guarantee premium components
+ * Gets components data from guestifyData or provides empty state
+ * ROOT FIX: Removed hardcoded fallback - system must be fully dynamic and scalable
  */
 function getComponentsData() {
     let components = [];
@@ -519,72 +519,34 @@ function getComponentsData() {
             count: window.guestifyData.components.length
         });
         
-        // Enhance guestifyData components with premium property if missing
-        components = window.guestifyData.components.map(component => {
-            // Determine if component should be premium based on type or name
-            const premiumTypes = ['video-intro', 'image-gallery', 'testimonials', 'podcast-player', 'contact-form', 'calendar'];
-            const isPremium = component.premium === true || 
-                            premiumTypes.includes(component.type) || 
-                            premiumTypes.includes(component.name);
-            
-            return {
-                ...component,
-                premium: isPremium
-            };
+        components = window.guestifyData.components;
+    }
+    // Try gmkbData as backup
+    else if (window.gmkbData?.components && Array.isArray(window.gmkbData.components)) {
+        structuredLogger.info('MODAL', 'Using components from gmkbData', {
+            count: window.gmkbData.components.length
         });
-    } else {
-        // Use fallback components if guestifyData is not available
-        structuredLogger.warn('MODAL', 'guestifyData not available, using fallback components');
-        components = getFallbackComponents();
+        
+        components = window.gmkbData.components;
+    }
+    // No hardcoded fallback - load from server if no data
+    else {
+        structuredLogger.warn('MODAL', 'No component data available in globals - will load from server');
+        
+        // Trigger server load instead of using hardcoded data
+        loadComponentsFromServer();
+        
+        // Return empty array while loading
+        return [];
     }
     
-    // Ensure we always have at least some premium components
-    const premiumCount = components.filter(c => c.premium).length;
-    if (premiumCount === 0) {
-        structuredLogger.info('MODAL', 'No premium components detected, adding guaranteed premium components');
-        
-        // Add guaranteed premium components
-        const guaranteedPremium = [
-            {
-                type: 'video-intro',
-                name: 'video-intro',
-                title: 'Video Introduction',
-                description: 'Embedded video player for introductions',
-                category: 'media',
-                icon: 'fa-play',
-                premium: true
-            },
-            {
-                type: 'testimonials',
-                name: 'testimonials',
-                title: 'Testimonials',
-                description: 'Client testimonials and reviews',
-                category: 'social',
-                icon: 'fa-quote-left',
-                premium: true
-            },
-            {
-                type: 'image-gallery',
-                name: 'image-gallery',
-                title: 'Image Gallery',
-                description: 'Professional photo gallery with lightbox',
-                category: 'media',
-                icon: 'fa-images',
-                premium: true
-            },
-            {
-                type: 'podcast-player',
-                name: 'podcast-player',
-                title: 'Podcast Player',
-                description: 'Embedded podcast player',
-                category: 'media',
-                icon: 'fa-headphones',
-                premium: true
-            }
-        ];
-        
-        components = [...components, ...guaranteedPremium];
-    }
+    // Ensure premium property exists on all components
+    components = components.map(component => {
+        return {
+            ...component,
+            premium: component.premium || component.isPremium || false
+        };
+    });
     
     structuredLogger.info('MODAL', 'Final component data prepared', {
         total: components.length,
@@ -596,105 +558,55 @@ function getComponentsData() {
 }
 
 /**
- * Provides fallback components when guestifyData is not available
- * Enhanced with proper premium markings and better component variety
+ * Load components from server via AJAX when no data is available
+ * ROOT FIX: Scalable solution - always load from server instead of hardcoded fallbacks
  */
-function getFallbackComponents() {
-    return [
-        // Free Components
-        {
-            type: 'hero',
-            name: 'hero',
-            title: 'Hero Section',
-            description: 'Profile section with name, title and bio',
-            category: 'hero',
-            icon: 'fa-user',
-            premium: false
-        },
-        {
-            type: 'biography',
-            name: 'biography',
-            title: 'Biography',
-            description: 'Full-width text biography section',
-            category: 'biography',
-            icon: 'file-text.svg',
-            premium: false
-        },
-        {
-            type: 'topics',
-            name: 'topics',
-            title: 'Topics',
-            description: 'Grid layout for speaking topics',
-            category: 'topics',
-            icon: 'list.svg',
-            premium: false
-        },
-        {
-            type: 'social',
-            name: 'social',
-            title: 'Social Links',
-            description: 'Social media icon links',
-            category: 'social',
-            icon: 'linkedin.svg',
-            premium: false
-        },
-        {
-            type: 'stats',
-            name: 'stats',
-            title: 'Statistics',
-            description: 'Display key metrics and numbers',
-            category: 'stats',
-            icon: 'fa-chart-bar',
-            premium: false
-        },
-        {
-            type: 'logo-grid',
-            name: 'logo-grid',
-            title: 'Logo Grid',
-            description: 'Showcase client and partner logos',
-            category: 'media',
-            icon: 'fa-th',
-            premium: false
-        },
+async function loadComponentsFromServer() {
+    try {
+        structuredLogger.info('MODAL', 'Loading components from server via AJAX');
         
-        // Premium Components
-        {
-            type: 'video-intro',
-            name: 'video-intro',
-            title: 'Video Introduction',
-            description: 'Embedded video player for introductions',
-            category: 'media',
-            icon: 'fa-play',
-            premium: true
-        },
-        {
-            type: 'image-gallery',
-            name: 'image-gallery',
-            title: 'Image Gallery',
-            description: 'Professional photo gallery with lightbox',
-            category: 'media',
-            icon: 'fa-images',
-            premium: true
-        },
-        {
-            type: 'testimonials',
-            name: 'testimonials',
-            title: 'Testimonials',
-            description: 'Client testimonials and reviews',
-            category: 'social',
-            icon: 'message-square.svg',
-            premium: true
-        },
-        {
-            type: 'podcast-player',
-            name: 'podcast-player',
-            title: 'Podcast Player',
-            description: 'Embedded podcast player',
-            category: 'media',
-            icon: 'headphones.svg',
-            premium: true
+        // Show loading state
+        showLoadingState();
+        
+        const response = await fetch(window.gmkbData?.ajaxUrl || window.guestifyData?.ajaxUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                action: 'guestify_get_components',
+                nonce: window.gmkbData?.nonce || window.guestifyData?.nonce
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.data.components) {
+            // Store loaded components globally
+            if (window.guestifyData) {
+                window.guestifyData.components = data.data.components;
+                window.guestifyData.categories = data.data.categories;
+            }
+            if (window.gmkbData) {
+                window.gmkbData.components = data.data.components;
+                window.gmkbData.categories = data.data.categories;
+            }
+            
+            structuredLogger.info('MODAL', 'Components loaded from server successfully', {
+                count: data.data.components.length
+            });
+            
+            // Re-populate the grid with loaded data
+            populateComponentGrid();
+            
+        } else {
+            throw new Error(data.message || 'Failed to load components from server');
         }
-    ];
+        
+    } catch (error) {
+        structuredLogger.error('MODAL', 'Failed to load components from server', error);
+        showErrorState();
+    }
 }
 
 /**

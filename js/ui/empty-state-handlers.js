@@ -13,12 +13,15 @@
 // ROOT FIX: Use global objects instead of ES6 imports
 // structuredLogger and autoGenerationService will be available globally
 
-// Create fallback logger if needed
-const structuredLogger = window.structuredLogger || {
-    info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
-    warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
-    error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
-};
+// Use existing logger or create fallback (avoid duplicate declaration)
+let structuredLogger;
+if (typeof structuredLogger === 'undefined') {
+    structuredLogger = window.structuredLogger || window.logger || {
+        info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+        warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+        error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
+    };
+}
 
 class EmptyStateHandlers {
     constructor() {
