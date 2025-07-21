@@ -13,15 +13,15 @@
 // ROOT FIX: Use global objects instead of ES6 imports
 // structuredLogger and autoGenerationService will be available globally
 
-// Use existing logger or create fallback (avoid duplicate declaration)
-let structuredLogger;
-if (typeof structuredLogger === 'undefined') {
-    structuredLogger = window.structuredLogger || window.logger || {
-        info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
-        warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
-        error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
-    };
-}
+// ROOT FIX: Use global logger that's already created by structured-logger.js
+// NO LOCAL DECLARATION - use the existing global to prevent conflicts
+
+// Create a reference to avoid window.structuredLogger everywhere
+const logger = window.structuredLogger || {
+    info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+    warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+    error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
+};
 
 class EmptyStateHandlers {
     constructor() {
@@ -37,7 +37,7 @@ class EmptyStateHandlers {
         // Track interaction events for analytics
         this.interactions = [];
         
-        structuredLogger.info('EMPTY_STATE', 'Empty state handlers initialized');
+        logger.info('EMPTY_STATE', 'Empty state handlers initialized');
     }
     
     /**
@@ -45,12 +45,12 @@ class EmptyStateHandlers {
      */
     init() {
         if (this.isInitialized) {
-            structuredLogger.warn('EMPTY_STATE', 'Already initialized, skipping');
+            logger.warn('EMPTY_STATE', 'Already initialized, skipping');
             return;
         }
         
         try {
-            structuredLogger.info('EMPTY_STATE', 'Setting up empty state button handlers');
+            logger.info('EMPTY_STATE', 'Setting up empty state button handlers');
             
             // Auto-generation buttons
             this.setupAutoGenerationButtons();
@@ -71,10 +71,10 @@ class EmptyStateHandlers {
             this.setupStateTransitionHandlers();
             
             this.isInitialized = true;
-            structuredLogger.info('EMPTY_STATE', 'Empty state handlers setup complete');
+            logger.info('EMPTY_STATE', 'Empty state handlers setup complete');
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Failed to initialize empty state handlers', error);
+            logger.error('EMPTY_STATE', 'Failed to initialize empty state handlers', error);
         }
     }
     

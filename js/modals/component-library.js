@@ -559,9 +559,19 @@ function getComponentsData() {
 
 /**
  * Load components from server via AJAX when no data is available
- * ROOT FIX: Scalable solution - always load from server instead of hardcoded fallbacks
+ * ROOT FIX: Scalable solution with anti-infinite-loop protection
  */
+let isLoadingComponents = false; // Guard against infinite loops
+
 async function loadComponentsFromServer() {
+    // ROOT FIX: Prevent infinite recursion
+    if (isLoadingComponents) {
+        structuredLogger.warn('MODAL', 'Already loading components - skipping duplicate request');
+        return;
+    }
+    
+    isLoadingComponents = true;
+    
     try {
         structuredLogger.info('MODAL', 'Loading components from server via AJAX');
         
@@ -596,8 +606,9 @@ async function loadComponentsFromServer() {
                 count: data.data.components.length
             });
             
-            // Re-populate the grid with loaded data
-            populateComponentGrid();
+            // ROOT FIX: Clear grid and populate with loaded data (no recursive call)
+            clearGridAndPopulate(data.data.components);
+            hideLoadingState();
             
         } else {
             throw new Error(data.message || 'Failed to load components from server');
@@ -606,6 +617,8 @@ async function loadComponentsFromServer() {
     } catch (error) {
         structuredLogger.error('MODAL', 'Failed to load components from server', error);
         showErrorState();
+    } finally {
+        isLoadingComponents = false; // Always reset the guard
     }
 }
 
