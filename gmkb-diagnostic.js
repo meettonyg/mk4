@@ -15,15 +15,15 @@ function checkGlobalSystems() {
         globalObjects: {}
     };
     
-    // Check core global objects
+    // Check core global objects - UPDATED FOR ENHANCED ARCHITECTURE
     const expectedGlobals = [
-        'GMKB',
-        'StateManager', 
-        'ComponentManager',
-        'UICoordinator',
+        'enhancedStateManager',
+        'enhancedComponentManager', 
         'structuredLogger',
-        'GMKBHelpers',
-        'enhancedErrorHandler'
+        'EnhancedStateManager',
+        'EnhancedComponentManager',
+        'gmkbData',
+        'guestifyData'
     ];
     
     expectedGlobals.forEach(globalName => {
@@ -121,22 +121,137 @@ function displayDiagnostics() {
     return results;
 }
 
+// ROOT FIX: Enhanced system diagnostics for current architecture
+function checkEnhancedSystems() {
+    const enhancedDiagnostics = {
+        timestamp: new Date().toISOString(),
+        enhancedSystems: {},
+        functionality: {},
+        architecture: 'enhanced-wordpress-global'
+    };
+    
+    // Check enhanced state manager
+    if (window.enhancedStateManager) {
+        enhancedDiagnostics.enhancedSystems.stateManager = {
+            available: true,
+            initialized: window.enhancedStateManager.isInitialized || false,
+            hasSubscribers: window.enhancedStateManager.subscribers?.length > 0,
+            componentCount: Object.keys(window.enhancedStateManager.getState()?.components || {}).length
+        };
+    } else {
+        enhancedDiagnostics.enhancedSystems.stateManager = { available: false };
+    }
+    
+    // Check enhanced component manager
+    if (window.enhancedComponentManager) {
+        enhancedDiagnostics.enhancedSystems.componentManager = {
+            available: true,
+            initialized: window.enhancedComponentManager.isInitialized || false,
+            ready: window.enhancedComponentManager.isReady ? window.enhancedComponentManager.isReady() : false,
+            componentCount: window.enhancedComponentManager.components?.size || 0
+        };
+    } else {
+        enhancedDiagnostics.enhancedSystems.componentManager = { available: false };
+    }
+    
+    // Check structured logger
+    if (window.structuredLogger) {
+        enhancedDiagnostics.enhancedSystems.logger = {
+            available: true,
+            hasInfoMethod: typeof window.structuredLogger.info === 'function',
+            hasErrorMethod: typeof window.structuredLogger.error === 'function'
+        };
+    } else {
+        enhancedDiagnostics.enhancedSystems.logger = { available: false };
+    }
+    
+    return enhancedDiagnostics;
+}
+
+// ROOT FIX: Display enhanced diagnostics
+function displayEnhancedDiagnostics() {
+    const results = checkEnhancedSystems();
+    
+    console.group('%c🚀 ENHANCED SYSTEM DIAGNOSTICS', 'font-size: 16px; font-weight: bold; color: #10b981;');
+    console.log('Architecture:', results.architecture);
+    console.log('Timestamp:', results.timestamp);
+    
+    // Enhanced State Manager
+    const stateEmoji = results.enhancedSystems.stateManager.available ? '✅' : '❌';
+    console.log(`${stateEmoji} Enhanced State Manager:`, results.enhancedSystems.stateManager.available ? 'Available' : 'Missing');
+    if (results.enhancedSystems.stateManager.available) {
+        console.log(`  - Initialized: ${results.enhancedSystems.stateManager.initialized ? '✅' : '❌'}`);
+        console.log(`  - Has Subscribers: ${results.enhancedSystems.stateManager.hasSubscribers ? '✅' : '❌'}`);
+        console.log(`  - Components: ${results.enhancedSystems.stateManager.componentCount}`);
+    }
+    
+    // Enhanced Component Manager
+    const compEmoji = results.enhancedSystems.componentManager.available ? '✅' : '❌';
+    console.log(`${compEmoji} Enhanced Component Manager:`, results.enhancedSystems.componentManager.available ? 'Available' : 'Missing');
+    if (results.enhancedSystems.componentManager.available) {
+        console.log(`  - Initialized: ${results.enhancedSystems.componentManager.initialized ? '✅' : '❌'}`);
+        console.log(`  - Ready: ${results.enhancedSystems.componentManager.ready ? '✅' : '❌'}`);
+        console.log(`  - Components: ${results.enhancedSystems.componentManager.componentCount}`);
+    }
+    
+    // Structured Logger
+    const logEmoji = results.enhancedSystems.logger.available ? '✅' : '❌';
+    console.log(`${logEmoji} Structured Logger:`, results.enhancedSystems.logger.available ? 'Available' : 'Missing');
+    if (results.enhancedSystems.logger.available) {
+        console.log(`  - Info Method: ${results.enhancedSystems.logger.hasInfoMethod ? '✅' : '❌'}`);
+        console.log(`  - Error Method: ${results.enhancedSystems.logger.hasErrorMethod ? '✅' : '❌'}`);
+    }
+    
+    // Overall Health
+    const totalSystems = Object.keys(results.enhancedSystems).length;
+    const availableSystems = Object.values(results.enhancedSystems).filter(s => s.available).length;
+    const healthPercentage = Math.round((availableSystems / totalSystems) * 100);
+    
+    console.log(`\n📊 Enhanced System Health: ${healthPercentage}% (${availableSystems}/${totalSystems} systems available)`);
+    
+    if (healthPercentage >= 80) {
+        console.log('%c🎉 ENHANCED SYSTEM STATUS: HEALTHY', 'color: #10b981; font-weight: bold;');
+    } else if (healthPercentage >= 60) {
+        console.log('%c⚠️ ENHANCED SYSTEM STATUS: DEGRADED', 'color: #f59e0b; font-weight: bold;');
+    } else {
+        console.log('%c❌ ENHANCED SYSTEM STATUS: CRITICAL', 'color: #ef4444; font-weight: bold;');
+    }
+    
+    console.groupEnd();
+    
+    // Make results available globally
+    window.gmkbEnhancedDiagnostics = results;
+    
+    return results;
+}
+
 // ROOT FIX: Initialize diagnostics
 function initializeDiagnostics() {
     console.log('🔍 GMKB Diagnostic: Starting system check...');
     
     // Wait a moment for scripts to load
     setTimeout(() => {
-        const results = displayDiagnostics();
+        const legacyResults = displayDiagnostics();
+        const enhancedResults = displayEnhancedDiagnostics();
         
-        // Check for critical issues
-        const criticalIssues = results.errors.filter(error => 
-            error.includes('GMKB') || 
-            error.includes('StateManager') || 
-            error.includes('ComponentManager')
+        // Check for critical issues - UPDATED FOR ENHANCED ARCHITECTURE
+        const criticalIssues = legacyResults.errors.filter(error => 
+            error.includes('enhancedStateManager') || 
+            error.includes('enhancedComponentManager') || 
+            error.includes('structuredLogger')
         );
         
-        if (criticalIssues.length > 0) {
+        // Show summary based on enhanced systems
+        const enhancedHealth = Object.values(enhancedResults.enhancedSystems).filter(s => s.available).length;
+        const totalEnhanced = Object.keys(enhancedResults.enhancedSystems).length;
+        const enhancedPercentage = Math.round((enhancedHealth / totalEnhanced) * 100);
+        
+        console.group('%c📋 SYSTEM SUMMARY', 'font-size: 14px; font-weight: bold; color: #6366f1;');
+        console.log(`Enhanced Systems: ${enhancedPercentage}% (${enhancedHealth}/${totalEnhanced})`);
+        
+        if (enhancedPercentage >= 80) {
+            console.log('%c✅ OVERALL STATUS: ENHANCED SYSTEMS OPERATIONAL', 'color: #10b981; font-weight: bold;');
+        } else if (criticalIssues.length > 0) {
             console.error('🚨 CRITICAL ISSUES DETECTED:');
             criticalIssues.forEach(issue => console.error(`  - ${issue}`));
             
@@ -146,8 +261,11 @@ function initializeDiagnostics() {
             console.log('2. Verify all script files are loading correctly');
             console.log('3. Check WordPress enqueue configuration');
             console.log('4. Ensure proper dependency order in enqueue.php');
+            console.log('5. Use gmkbDiagnostic.enhanced() for detailed enhanced system diagnostics');
             console.groupEnd();
         }
+        
+        console.groupEnd();
         
     }, 1000);
 }
@@ -163,7 +281,13 @@ if (document.readyState === 'loading') {
 window.gmkbDiagnostic = {
     check: checkGlobalSystems,
     display: displayDiagnostics,
-    run: initializeDiagnostics
+    run: initializeDiagnostics,
+    enhanced: displayEnhancedDiagnostics,
+    checkEnhanced: checkEnhancedSystems,
+    runBoth: () => {
+        displayDiagnostics();
+        displayEnhancedDiagnostics();
+    }
 };
 
 console.log('✅ GMKB Diagnostic Tool loaded. Use gmkbDiagnostic.run() to check system health.');
