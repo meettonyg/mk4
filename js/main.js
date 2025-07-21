@@ -22,6 +22,42 @@ function initializeWhenReady() {
         setTimeout(initializeWhenReady, 100);
         return;
     }
+
+/**
+ * ROOT FIX: Fallback initialization when enhanced systems fail
+ */
+function initializeFallbackSystems() {
+    console.log('🛟️ GMKB: Starting fallback initialization');
+    
+    try {
+        // Basic UI initialization without enhanced systems
+        if (window.setupTabs && typeof window.setupTabs === 'function') {
+            window.setupTabs();
+            console.log('✅ GMKB: Fallback - Tabs initialized');
+        }
+        
+        if (window.setupModals && typeof window.setupModals === 'function') {
+            window.setupModals();
+            console.log('✅ GMKB: Fallback - Modals initialized');
+        }
+        
+        // Initialize empty state handlers with basic mode
+        if (window.emptyStateHandlers) {
+            try {
+                window.emptyStateHandlers.init();
+                console.log('✅ GMKB: Fallback - Empty state handlers initialized');
+            } catch (e) {
+                console.log('⚠️ GMKB: Fallback - Empty state handlers failed:', e.message);
+            }
+        }
+        
+        console.log('✅ GMKB: Fallback initialization completed successfully');
+        
+    } catch (error) {
+        console.error('❌ GMKB: Fallback initialization also failed:', error);
+        console.log('🛟️ GMKB: Basic mode - only core WordPress functionality available');
+    }
+}
     
     // Initialize structured logger first
     if (window.structuredLogger) {
@@ -29,38 +65,42 @@ function initializeWhenReady() {
     }
     
     try {
-        // Initialize core systems in proper order
-        initializeCoreSystemsSequence();
-        
-        // Initialize UI components
-        initializeUIComponents();
-        
-        // Initialize modals and overlays
-        initializeModalsAndOverlays();
-        
-        // Initialize empty state handlers
-        initializeEmptyStateSystem();
-        
-        // Emit application ready event
-        if (window.eventBus) {
-            window.eventBus.emit('gmkb:application-ready', {
-                timestamp: Date.now(),
-                initializationComplete: true
-            });
-        }
-        
-        console.log('✅ GMKB: Enhanced application initialization completed successfully.');
-        
-        if (window.structuredLogger) {
-            window.structuredLogger.logInitComplete('main-initialization', performance.now());
-        }
-        
-    } catch (error) {
-        console.error('❌ GMKB: Initialization failed:', error);
-        if (window.structuredLogger) {
-            window.structuredLogger.logInitError('main-initialization', error);
-        }
+    // Initialize core systems in proper order
+    initializeCoreSystemsSequence();
+    
+    // Initialize UI components
+    initializeUIComponents();
+    
+    // Initialize modals and overlays
+    initializeModalsAndOverlays();
+    
+    // Initialize empty state handlers
+    initializeEmptyStateSystem();
+    
+    // Emit application ready event
+    if (window.eventBus) {
+    window.eventBus.emit('gmkb:application-ready', {
+    timestamp: Date.now(),
+    initializationComplete: true
+    });
     }
+    
+    console.log('✅ GMKB: Enhanced application initialization completed successfully.');
+    
+    if (window.structuredLogger) {
+    window.structuredLogger.logInitComplete('main-initialization', performance.now());
+    }
+    
+    } catch (error) {
+    console.error('❌ GMKB: Initialization failed:', error);
+    if (window.structuredLogger) {
+    window.structuredLogger.logInitError('main-initialization', error);
+    }
+        
+            // ROOT FIX: Try fallback initialization instead of complete failure
+            console.log('🔄 GMKB: Attempting fallback initialization...');
+            initializeFallbackSystems();
+        }
 }
 
 /**
@@ -72,14 +112,30 @@ function checkCoreDependencies() {
         'structuredLogger': window.structuredLogger
     };
     
+    const optional = {
+        'enhancedStateManager': window.enhancedStateManager,
+        'enhancedComponentManager': window.enhancedComponentManager,
+        'enhancedComponentRenderer': window.enhancedComponentRenderer
+    };
+    
     const missing = [];
     Object.entries(required).forEach(([name, value]) => {
         if (!value) missing.push(name);
     });
     
+    const availableOptional = [];
+    Object.entries(optional).forEach(([name, value]) => {
+        if (value) availableOptional.push(name);
+    });
+    
+    if (availableOptional.length > 0) {
+        console.log('📎 GMKB: Optional enhanced systems available:', availableOptional.join(', '));
+    }
+    
     return {
         ready: missing.length === 0,
-        missing
+        missing,
+        availableOptional
     };
 }
 
@@ -91,20 +147,48 @@ function initializeCoreSystemsSequence() {
     
     // 1. Initialize state management
     if (window.enhancedStateManager) {
-        window.enhancedStateManager.initialize();
-        console.log('✅ GMKB: Enhanced state manager initialized');
+        // ROOT FIX: Check if initializeAfterSystems method exists instead of initialize
+        if (typeof window.enhancedStateManager.initializeAfterSystems === 'function') {
+            window.enhancedStateManager.initializeAfterSystems();
+            console.log('✅ GMKB: Enhanced state manager initialized via initializeAfterSystems');
+        } else if (typeof window.enhancedStateManager.initialize === 'function') {
+            window.enhancedStateManager.initialize();
+            console.log('✅ GMKB: Enhanced state manager initialized via initialize');
+        } else {
+            console.log('⚠️ GMKB: Enhanced state manager available but no initialization method found');
+        }
+    } else {
+        console.log('⚠️ GMKB: Enhanced state manager not available');
     }
     
     // 2. Initialize component management
     if (window.enhancedComponentManager) {
-        window.enhancedComponentManager.initialize();
-        console.log('✅ GMKB: Enhanced component manager initialized');
+        if (typeof window.enhancedComponentManager.initialize === 'function') {
+            window.enhancedComponentManager.initialize();
+            console.log('✅ GMKB: Enhanced component manager initialized');
+        } else if (typeof window.enhancedComponentManager.init === 'function') {
+            window.enhancedComponentManager.init();
+            console.log('✅ GMKB: Enhanced component manager initialized via init');
+        } else {
+            console.log('⚠️ GMKB: Enhanced component manager available but no initialization method found');
+        }
+    } else {
+        console.log('⚠️ GMKB: Enhanced component manager not available');
     }
     
     // 3. Initialize component renderer
     if (window.enhancedComponentRenderer) {
-        window.enhancedComponentRenderer.initialize();
-        console.log('✅ GMKB: Enhanced component renderer initialized');
+        if (typeof window.enhancedComponentRenderer.initialize === 'function') {
+            window.enhancedComponentRenderer.initialize();
+            console.log('✅ GMKB: Enhanced component renderer initialized');
+        } else if (typeof window.enhancedComponentRenderer.init === 'function') {
+            window.enhancedComponentRenderer.init();
+            console.log('✅ GMKB: Enhanced component renderer initialized via init');
+        } else {
+            console.log('⚠️ GMKB: Enhanced component renderer available but no initialization method found');
+        }
+    } else {
+        console.log('⚠️ GMKB: Enhanced component renderer not available');
     }
 }
 
