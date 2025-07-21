@@ -413,7 +413,7 @@ function gmkb_enqueue_assets() {
     }
 
     // WordPress-native data passing - guaranteed to be available before script runs
-    // ROOT FIX: Updated to reflect comprehensive script architecture
+    // ROOT FIX: Updated to reflect simplified script architecture
     wp_localize_script(
         'gmkb-main-script',
         'gmkbData',
@@ -426,17 +426,14 @@ function gmkb_enqueue_assets() {
             'pluginUrl'     => $plugin_url,
             'siteUrl'       => home_url(),
             'pluginVersion' => defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : 'unknown',
-            'architecture'  => 'modular-es6-comprehensive',
+            'architecture'  => 'wordpress-global-namespace',
             'timestamp'     => time(),
             'builderPage'   => true,
             'isBuilderPage' => true,
             'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
-            'scriptsLoaded' => 'comprehensive-dependencies',
-            'moduleSupport' => true,
-            'dragDropComplete' => true,
-            'modalSystemReady' => true,
-            'servicesEnabled' => true,
-            'uiComponentsLoaded' => true
+            'scriptsLoaded' => 'simplified-fixed',
+            'moduleSupport' => false,
+            'es6Converted'  => true
         )
     );
 

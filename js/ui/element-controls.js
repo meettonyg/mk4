@@ -3,15 +3,13 @@
  * Enhanced to use centralized component manager
  */
 
-import { markUnsaved } from '../services/save-service.js';
-import { selectElement } from './element-editor.js';
-// **FIX**: Import enhanced component manager instead of legacy
-import { enhancedComponentManager } from '../core/enhanced-component-manager.js';
+// ROOT FIX: Use global objects instead of ES6 imports
+// markUnsaved, selectElement, and enhancedComponentManager will be available globally
 
 /**
  * Setup event listeners for element control buttons
  */
-export function setupElementControls() {
+function setupElementControls() {
     // Use event delegation on the preview container
     const previewArea = document.getElementById('media-kit-preview');
     if (previewArea) {
@@ -46,21 +44,45 @@ function handleControlButtonClick(e) {
 
     switch (action) {
         case 'Move Up':
-            enhancedComponentManager.moveComponent(componentId, 'up');
+            if (window.enhancedComponentManager) {
+                window.enhancedComponentManager.moveComponent(componentId, 'up');
+            }
             break;
         case 'Move Down':
-            enhancedComponentManager.moveComponent(componentId, 'down');
+            if (window.enhancedComponentManager) {
+                window.enhancedComponentManager.moveComponent(componentId, 'down');
+            }
             break;
         case 'Duplicate':
-            enhancedComponentManager.duplicateComponent(componentId);
+            if (window.enhancedComponentManager) {
+                window.enhancedComponentManager.duplicateComponent(componentId);
+            }
             break;
         case 'Delete':
-            enhancedComponentManager.removeComponent(componentId);
+            if (window.enhancedComponentManager) {
+                window.enhancedComponentManager.removeComponent(componentId);
+            }
             break;
     }
     
     // Mark as unsaved after any action
-    markUnsaved();
+    if (window.markUnsaved) {
+        window.markUnsaved();
+    }
 }
 
+// ROOT FIX: Expose functions globally
+window.elementControls = {
+    setup: setupElementControls,
+    handleClick: handleControlButtonClick
+};
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupElementControls);
+} else {
+    setupElementControls();
+}
+
+console.log('✅ Element Controls: Global namespace setup complete');
 

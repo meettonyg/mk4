@@ -10,8 +10,15 @@
  * - Selective generation workflows
  */
 
-import { structuredLogger } from '../utils/structured-logger.js';
-import { autoGenerationService } from '../services/auto-generation-service.js';
+// ROOT FIX: Use global objects instead of ES6 imports
+// structuredLogger and autoGenerationService will be available globally
+
+// Create fallback logger if needed
+const logger = window.structuredLogger || {
+    info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+    warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+    error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
+};
 
 class EmptyStateHandlers {
     constructor() {
@@ -27,7 +34,7 @@ class EmptyStateHandlers {
         // Track interaction events for analytics
         this.interactions = [];
         
-        structuredLogger.info('EMPTY_STATE', 'Empty state handlers initialized');
+        logger.info('EMPTY_STATE', 'Empty state handlers initialized');
     }
     
     /**
@@ -40,7 +47,7 @@ class EmptyStateHandlers {
         }
         
         try {
-            structuredLogger.info('EMPTY_STATE', 'Setting up empty state button handlers');
+            logger.info('EMPTY_STATE', 'Setting up empty state button handlers');
             
             // Auto-generation buttons
             this.setupAutoGenerationButtons();
@@ -61,10 +68,10 @@ class EmptyStateHandlers {
             this.setupStateTransitionHandlers();
             
             this.isInitialized = true;
-            structuredLogger.info('EMPTY_STATE', 'Empty state handlers setup complete');
+            logger.info('EMPTY_STATE', 'Empty state handlers setup complete');
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Failed to initialize empty state handlers', error);
+            logger.error('EMPTY_STATE', 'Failed to initialize empty state handlers', error);
         }
     }
     
@@ -80,7 +87,7 @@ class EmptyStateHandlers {
                 this.handleAutoGeneration(e.target);
             });
             this.activeButtons.add('auto-generate-btn');
-            structuredLogger.info('EMPTY_STATE', 'Auto-generate button handler attached');
+            logger.info('EMPTY_STATE', 'Auto-generate button handler attached');
         }
         
         // Auto-generate all button (alternative ID)
@@ -113,7 +120,7 @@ class EmptyStateHandlers {
             this.activeButtons.add('force-generate-btn');
         }
         
-        structuredLogger.info('EMPTY_STATE', 'Auto-generation buttons setup complete', {
+        logger.info('EMPTY_STATE', 'Auto-generation buttons setup complete', {
             buttonsFound: this.activeButtons.size
         });
     }
@@ -152,7 +159,7 @@ class EmptyStateHandlers {
             this.activeButtons.add('connect-data-btn');
         }
         
-        structuredLogger.info('EMPTY_STATE', 'Manual addition buttons setup complete');
+        logger.info('EMPTY_STATE', 'Manual addition buttons setup complete');
     }
     
     /**
@@ -196,7 +203,7 @@ class EmptyStateHandlers {
             });
         });
         
-        structuredLogger.info('EMPTY_STATE', 'Dashboard buttons setup complete', {
+        logger.info('EMPTY_STATE', 'Dashboard buttons setup complete', {
             componentBadges: componentBadges.length
         });
     }
@@ -223,7 +230,7 @@ class EmptyStateHandlers {
             });
         });
         
-        structuredLogger.info('EMPTY_STATE', 'Component library triggers setup complete');
+        logger.info('EMPTY_STATE', 'Component library triggers setup complete');
     }
     
     /**
@@ -257,7 +264,7 @@ class EmptyStateHandlers {
             });
         }
         
-        structuredLogger.info('EMPTY_STATE', 'Quality workflow buttons setup complete');
+        logger.info('EMPTY_STATE', 'Quality workflow buttons setup complete');
     }
     
     /**
@@ -281,7 +288,7 @@ class EmptyStateHandlers {
             this.handleComponentRemoved(e.detail);
         });
         
-        structuredLogger.info('EMPTY_STATE', 'State transition handlers setup complete');
+        logger.info('EMPTY_STATE', 'State transition handlers setup complete');
     }
     
     /**
@@ -305,10 +312,15 @@ class EmptyStateHandlers {
                 throw new Error('No post ID available for MKCG data generation');
             }
             
-            structuredLogger.info('EMPTY_STATE', 'Starting auto-generation', { postId, options });
+            logger.info('EMPTY_STATE', 'Starting auto-generation', { postId, options });
             
             // Perform auto-generation
-            const result = await autoGenerationService.autoGenerateFromMKCG(options.forceGeneration || false, {
+            const autoGenService = window.autoGenerationService;
+            if (!autoGenService) {
+                throw new Error('Auto-generation service not available');
+            }
+            
+            const result = await autoGenService.autoGenerateFromMKCG(options.forceGeneration || false, {
                 maxComponents: options.maxComponents || 5,
                 minQualityScore: options.minQualityScore || 30
             });
@@ -329,7 +341,7 @@ class EmptyStateHandlers {
             }
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Auto-generation failed', error);
+            logger.error('EMPTY_STATE', 'Auto-generation failed', error);
             this.showGenerationError(error.message);
             this.trackInteraction('auto_generation_error', { error: error.message });
         } finally {
@@ -350,7 +362,7 @@ class EmptyStateHandlers {
             this.showComponentSelectionModal();
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Selective generation failed', error);
+            logger.error('EMPTY_STATE', 'Selective generation failed', error);
             this.showError('Failed to open component selection');
         }
     }
@@ -377,14 +389,14 @@ class EmptyStateHandlers {
                     setTimeout(() => searchInput.focus(), 100);
                 }
                 
-                structuredLogger.info('EMPTY_STATE', 'Component library opened for manual addition');
+                logger.info('EMPTY_STATE', 'Component library opened for manual addition');
             } else {
                 // Fallback: try to add a default component
                 this.addDefaultComponent();
             }
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Manual component addition failed', error);
+            logger.error('EMPTY_STATE', 'Manual component addition failed', error);
             this.showError('Failed to open component library');
         }
     }
@@ -402,7 +414,7 @@ class EmptyStateHandlers {
             this.showDataConnectionWorkflow();
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Connect data failed', error);
+            logger.error('EMPTY_STATE', 'Connect data failed', error);
             this.showError('Failed to start data connection workflow');
         }
     }
@@ -427,10 +439,10 @@ class EmptyStateHandlers {
             }
             
             this.trackInteraction('dashboard_toggle', { visible: !isVisible });
-            structuredLogger.info('EMPTY_STATE', 'Dashboard toggled', { visible: !isVisible });
+            logger.info('EMPTY_STATE', 'Dashboard toggled', { visible: !isVisible });
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Dashboard toggle failed', error);
+            logger.error('EMPTY_STATE', 'Dashboard toggle failed', error);
         }
     }
     
@@ -487,7 +499,7 @@ class EmptyStateHandlers {
             }
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Dashboard refresh failed', error);
+            logger.error('EMPTY_STATE', 'Dashboard refresh failed', error);
             this.showError('Failed to refresh MKCG data');
             this.trackInteraction('dashboard_refresh_failed', { error: error.message });
         } finally {
@@ -520,7 +532,7 @@ class EmptyStateHandlers {
             this.updateComponentBadgeSelection();
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Component badge click failed', error);
+            logger.error('EMPTY_STATE', 'Component badge click failed', error);
         }
     }
     
@@ -543,10 +555,10 @@ class EmptyStateHandlers {
                 }
                 
                 this.trackInteraction('component_library_opened');
-                structuredLogger.info('EMPTY_STATE', 'Component library opened');
+                logger.info('EMPTY_STATE', 'Component library opened');
             }
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Failed to open component library', error);
+            logger.error('EMPTY_STATE', 'Failed to open component library', error);
         }
     }
     
@@ -563,10 +575,10 @@ class EmptyStateHandlers {
                 templateLibrary.classList.add('show');
                 
                 this.trackInteraction('template_library_opened');
-                structuredLogger.info('EMPTY_STATE', 'Template library opened');
+                logger.info('EMPTY_STATE', 'Template library opened');
             }
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Failed to open template library', error);
+            logger.error('EMPTY_STATE', 'Failed to open template library', error);
         }
     }
     
@@ -586,10 +598,10 @@ class EmptyStateHandlers {
                 this.transitionToState('empty');
             }
             
-            structuredLogger.info('EMPTY_STATE', 'State change handled', { componentCount });
+            logger.info('EMPTY_STATE', 'State change handled', { componentCount });
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'State change handling failed', error);
+            logger.error('EMPTY_STATE', 'State change handling failed', error);
         }
     }
     
@@ -607,10 +619,10 @@ class EmptyStateHandlers {
             this.showSuccess(`${detail.componentType || 'Component'} added successfully`);
             
             this.trackInteraction('component_added_via_empty_state', detail);
-            structuredLogger.info('EMPTY_STATE', 'Component added', detail);
+            logger.info('EMPTY_STATE', 'Component added', detail);
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Component addition handling failed', error);
+            logger.error('EMPTY_STATE', 'Component addition handling failed', error);
         }
     }
     
@@ -632,10 +644,10 @@ class EmptyStateHandlers {
             }
             
             this.trackInteraction('component_removed_to_empty_state', detail);
-            structuredLogger.info('EMPTY_STATE', 'Component removed', detail);
+            logger.info('EMPTY_STATE', 'Component removed', detail);
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Component removal handling failed', error);
+            logger.error('EMPTY_STATE', 'Component removal handling failed', error);
         }
     }
     
@@ -673,10 +685,10 @@ class EmptyStateHandlers {
                     break;
             }
             
-            structuredLogger.info('EMPTY_STATE', 'State transition', { targetState, message });
+            logger.info('EMPTY_STATE', 'State transition', { targetState, message });
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'State transition failed', error);
+            logger.error('EMPTY_STATE', 'State transition failed', error);
         }
     }
     
@@ -703,7 +715,7 @@ class EmptyStateHandlers {
                 delete button.dataset.originalText;
             }
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Button loading state failed', error);
+            logger.error('EMPTY_STATE', 'Button loading state failed', error);
         }
     }
     
@@ -743,7 +755,7 @@ class EmptyStateHandlers {
             }
             
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Show generation success failed', error);
+            logger.error('EMPTY_STATE', 'Show generation success failed', error);
         }
     }
     
@@ -757,7 +769,7 @@ class EmptyStateHandlers {
             this.showError(`Auto-generation failed: ${error}`);
             this.transitionToState('empty');
         } catch (e) {
-            structuredLogger.error('EMPTY_STATE', 'Show generation error failed', e);
+            logger.error('EMPTY_STATE', 'Show generation error failed', e);
         }
     }
     
@@ -829,7 +841,7 @@ class EmptyStateHandlers {
                 throw new Error('Enhanced component manager not available');
             }
         } catch (error) {
-            structuredLogger.error('EMPTY_STATE', 'Add default component failed', error);
+            logger.error('EMPTY_STATE', 'Add default component failed', error);
             this.showError('Failed to add default component');
         }
     }
@@ -855,7 +867,7 @@ class EmptyStateHandlers {
             this.interactions.shift();
         }
         
-        structuredLogger.info('EMPTY_STATE', 'Interaction tracked', interaction);
+        logger.info('EMPTY_STATE', 'Interaction tracked', interaction);
     }
     
     /**
@@ -910,7 +922,7 @@ class EmptyStateHandlers {
         this.isInitialized = false;
         this.activeButtons.clear();
         this.interactions = [];
-        structuredLogger.info('EMPTY_STATE', 'Empty state handlers reset');
+        logger.info('EMPTY_STATE', 'Empty state handlers reset');
     }
     
     /**
@@ -923,15 +935,26 @@ class EmptyStateHandlers {
             isInitialized: this.isInitialized,
             activeButtons: Array.from(this.activeButtons),
             interactionCount: this.interactions.length,
-            autoGenerationStatus: autoGenerationService.getStatus()
+            autoGenerationStatus: window.autoGenerationService ? window.autoGenerationService.getStatus() : 'not_available'
         };
     }
 }
 
 // Create and export singleton instance
-export const emptyStateHandlers = new EmptyStateHandlers();
+// ROOT FIX: Create singleton instance and expose globally
+const emptyStateHandlers = new EmptyStateHandlers();
 
-// Global exposure for debugging
+// Global exposure for debugging and access
 window.emptyStateHandlers = emptyStateHandlers;
 
-structuredLogger.info('EMPTY_STATE', 'Empty state handlers module loaded');
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        emptyStateHandlers.init();
+    });
+} else {
+    // DOM is already ready
+    emptyStateHandlers.init();
+}
+
+logger.info('EMPTY_STATE', 'Empty state handlers module loaded');

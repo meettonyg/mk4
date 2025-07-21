@@ -2,19 +2,11 @@
  * @file keyboard-service.js
  * @description This service handles global keyboard shortcuts for the application,
  * such as undo, redo, and deleting components.
- *
- * This version has been updated to use the new enhanced state and component managers,
- * resolving module import errors and aligning it with the new architecture.
+ * ROOT FIX: Converted from ES6 modules to WordPress global namespace
  */
 
-import {
-    enhancedComponentManager
-} from '../core/enhanced-component-manager.js';
-import {
-    designPanel
-} from '../ui/design-panel.js';
-// Note: History service might need similar updates if used. For now, we focus on the delete functionality.
-// import { history } from './history-service.js';
+// ROOT FIX: Remove ES6 imports - use global namespace
+// Dependencies will be available globally via WordPress enqueue system
 
 class KeyboardService {
     constructor() {
@@ -26,7 +18,7 @@ class KeyboardService {
      */
     init() {
         document.addEventListener('keydown', this.boundHandleKeyDown);
-        console.log('Keyboard service initialized.');
+        console.log('✅ Keyboard service initialized.');
     }
 
     /**
@@ -46,17 +38,27 @@ class KeyboardService {
             this.deleteSelectedElement();
         }
 
-        // Placeholder for Undo/Redo functionality
-        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        // Undo/Redo functionality using global services
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
             e.preventDefault();
-            console.log('Undo action triggered (history service not fully integrated).');
-            // if (history) history.undo();
+            if (window.historyService && window.historyService.undo) {
+                window.historyService.undo();
+            } else if (window.undo) {
+                window.undo();
+            } else {
+                console.log('Undo service not available');
+            }
         }
 
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Z') {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'Z' || e.key === 'z')) {
             e.preventDefault();
-            console.log('Redo action triggered (history service not fully integrated).');
-            // if (history) history.redo();
+            if (window.historyService && window.historyService.redo) {
+                window.historyService.redo();
+            } else if (window.redo) {
+                window.redo();
+            } else {
+                console.log('Redo service not available');
+            }
         }
     }
 
@@ -65,12 +67,42 @@ class KeyboardService {
      * It gets the component ID from the design panel and uses the component manager to remove it.
      */
     deleteSelectedElement() {
-        const componentIdToDelete = designPanel.currentComponentId;
+        // Try to get current component ID from design panel
+        const designPanel = window.designPanel;
+        let componentIdToDelete = null;
+        
+        if (designPanel && designPanel.currentComponentId) {
+            componentIdToDelete = designPanel.currentComponentId;
+        } else {
+            // Fallback: look for selected element with data attributes
+            const selectedElement = document.querySelector('[data-component-id].selected') || 
+                                  document.querySelector('.component.selected[data-component-id]') ||
+                                  document.querySelector('.mk-component.selected[data-component-id]');
+            
+            if (selectedElement) {
+                componentIdToDelete = selectedElement.dataset.componentId;
+            }
+        }
+        
         if (componentIdToDelete) {
-            console.log(`Deleting selected element: ${componentIdToDelete}`);
-            enhancedComponentManager.removeComponent(componentIdToDelete);
-            // Hide the design panel since the component it was editing is now gone.
-            designPanel.hide();
+            console.log(`🗑️ Deleting selected element: ${componentIdToDelete}`);
+            
+            // Try enhanced component manager first
+            if (window.enhancedComponentManager && window.enhancedComponentManager.removeComponent) {
+                window.enhancedComponentManager.removeComponent(componentIdToDelete);
+            } else if (window.componentManager && window.componentManager.removeComponent) {
+                window.componentManager.removeComponent(componentIdToDelete);
+            } else {
+                console.warn('No component manager available for deletion');
+                return;
+            }
+            
+            // Hide the design panel since the component it was editing is now gone
+            if (designPanel && designPanel.hide) {
+                designPanel.hide();
+            }
+        } else {
+            console.log('No component selected for deletion');
         }
     }
 
@@ -79,8 +111,23 @@ class KeyboardService {
      */
     destroy() {
         document.removeEventListener('keydown', this.boundHandleKeyDown);
-        console.log('Keyboard service destroyed.');
+        console.log('⚠️ Keyboard service destroyed.');
     }
 }
 
-export const keyboardService = new KeyboardService();
+// Create and expose globally
+const keyboardService = new KeyboardService();
+
+// ROOT FIX: Expose globally
+window.keyboardService = keyboardService;
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        keyboardService.init();
+    });
+} else {
+    keyboardService.init();
+}
+
+console.log('✅ Keyboard Service: Global namespace setup complete');

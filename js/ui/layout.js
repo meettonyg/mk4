@@ -6,16 +6,15 @@
  * GEMINI FIX: Updated to use globally available enhancedComponentManager instead of importing
  * from outdated path. This aligns with the new architecture where systems are registered globally.
  */
-import {
-    state
-} from '../state.js';
+// ROOT FIX: Use global state object instead of ES6 import
+// state will be available globally
 
 let dragCounter = 0;
 
 /**
  * Initializes layout-related functionality, including drag-and-drop listeners.
  */
-export function initializeLayout() {
+function initializeLayout() {
     const previewContainer = document.getElementById('media-kit-preview');
     const layoutTab = document.getElementById('layout-tab');
     const componentTab = document.getElementById('components-tab');
@@ -82,10 +81,27 @@ export function initializeLayout() {
  * Updates the visibility of the "empty state" message.
  * This is shown when there are no components in the media kit.
  */
-export function updateEmptyState() {
+function updateEmptyState() {
     const emptyStateContainer = document.getElementById('empty-state');
     if (!emptyStateContainer) return;
 
-    const hasComponents = state.layout && state.layout.length > 0;
+    // ROOT FIX: Use global state
+    const globalState = window.state || (window.enhancedStateManager ? window.enhancedStateManager.getState() : {});
+    const hasComponents = globalState.layout && globalState.layout.length > 0;
     emptyStateContainer.style.display = hasComponents ? 'none' : 'flex';
 }
+
+// ROOT FIX: Expose functions globally
+window.layoutManager = {
+    initialize: initializeLayout,
+    updateEmptyState: updateEmptyState
+};
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeLayout);
+} else {
+    initializeLayout();
+}
+
+console.log('✅ Layout Manager: Global namespace setup complete');

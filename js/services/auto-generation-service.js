@@ -2,19 +2,24 @@
  * Auto-Generation Service
  * 
  * ROOT FIX: Provides MKCG data-driven automatic component generation
- * This service handles:
- * - Quality-based component generation
- * - MKCG data processing and validation
- * - Selective component creation based on data availability
- * - State transitions between empty states and populated builder
+ * ROOT FIX: Converted from ES6 modules to WordPress global namespace
  */
 
-import { structuredLogger } from '../utils/structured-logger.js';
+// ROOT FIX: Remove ES6 imports - use global namespace
+// Dependencies will be available globally via WordPress enqueue system
 
 class AutoGenerationService {
     constructor() {
         this.isGenerating = false;
         this.generationResults = [];
+        
+        // Initialize logging
+        this.logger = window.structuredLogger || {
+            info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+            warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+            error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || ''),
+            debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || '')
+        };
         this.qualityThresholds = {
             minimum: 20,
             good: 50,
@@ -55,7 +60,7 @@ class AutoGenerationService {
             }
         };
         
-        structuredLogger.info('AUTO_GEN', 'Auto-generation service initialized', {
+        this.logger.info('AUTO_GEN', 'Auto-generation service initialized', {
             componentMappings: Object.keys(this.componentMappings).length,
             qualityThresholds: this.qualityThresholds
         });
@@ -70,7 +75,7 @@ class AutoGenerationService {
      */
     async autoGenerateFromMKCG(forceGeneration = false, options = {}) {
         if (this.isGenerating) {
-            structuredLogger.warn('AUTO_GEN', 'Auto-generation already in progress');
+            this.logger.warn('AUTO_GEN', 'Auto-generation already in progress');
             return { success: false, message: 'Generation already in progress' };
         }
         
@@ -78,7 +83,7 @@ class AutoGenerationService {
         this.generationResults = [];
         
         try {
-            structuredLogger.info('AUTO_GEN', 'Starting auto-generation from MKCG data', {
+            this.logger.info('AUTO_GEN', 'Starting auto-generation from MKCG data', {
                 forceGeneration,
                 options
             });
@@ -91,7 +96,7 @@ class AutoGenerationService {
             
             // Analyze data quality
             const qualityAnalysis = this.analyzeMKCGDataQuality(mkcgData);
-            structuredLogger.info('AUTO_GEN', 'MKCG data quality analysis', qualityAnalysis);
+            this.logger.info('AUTO_GEN', 'MKCG data quality analysis', qualityAnalysis);
             
             // Check if quality meets threshold
             if (!forceGeneration && qualityAnalysis.overallScore < this.qualityThresholds.minimum) {
@@ -100,7 +105,7 @@ class AutoGenerationService {
             
             // Generate components based on available data
             const componentsToGenerate = this.determineComponentsToGenerate(qualityAnalysis, options);
-            structuredLogger.info('AUTO_GEN', 'Components selected for generation', {
+            this.logger.info('AUTO_GEN', 'Components selected for generation', {
                 components: componentsToGenerate,
                 count: componentsToGenerate.length
             });
@@ -119,7 +124,7 @@ class AutoGenerationService {
                             status: 'success',
                             data: result.data
                         });
-                        structuredLogger.info('AUTO_GEN', `Component generated successfully: ${componentType}`);
+                        this.logger.info('AUTO_GEN', `Component generated successfully: ${componentType}`);
                     } else {
                         errorCount++;
                         this.generationResults.push({
@@ -127,7 +132,7 @@ class AutoGenerationService {
                             status: 'error',
                             error: result.error
                         });
-                        structuredLogger.warn('AUTO_GEN', `Component generation failed: ${componentType}`, result.error);
+                        this.logger.warn('AUTO_GEN', `Component generation failed: ${componentType}`, result.error);
                     }
                 } catch (error) {
                     errorCount++;
@@ -584,10 +589,10 @@ class AutoGenerationService {
     }
 }
 
-// Create and export singleton instance
-export const autoGenerationService = new AutoGenerationService();
+// Create and expose globally
+const autoGenerationService = new AutoGenerationService();
 
-// Global exposure for debugging
+// ROOT FIX: Expose globally
 window.autoGenerationService = autoGenerationService;
 
-structuredLogger.info('AUTO_GEN', 'Auto-generation service module loaded');
+console.log('✅ Auto-Generation Service: Global namespace setup complete');

@@ -4,9 +4,8 @@
  * FIXED: Now uses WordPress AJAX endpoints instead of direct PHP file access.
  */
 
-import {
-    debounce
-} from '../utils/helpers.js';
+// ROOT FIX: Use global debounce function from helpers.js
+// debounce will be available globally
 
 // ROOT FIX: Enhanced debounce for immediate use in design panel
 const quickDebounce = (func, wait = 100) => {
@@ -300,7 +299,7 @@ class DesignPanel {
             
             if (topicsChanged) {
                 console.log('🔄 ROOT FIX: Preview topics changed, syncing design panel...');
-                debounce(() => {
+                (window.debounce || quickDebounce)(() => {
                     this.syncTopicsCounterWithPreview();
                 }, 300)();
             }
@@ -575,7 +574,7 @@ class DesignPanel {
         const inputs = this.panel.querySelectorAll('[data-property]');
         console.log(`🔗 ROOT FIX: Binding ${inputs.length} controls to component properties:`, props);
         
-        const debouncedUpdate = debounce((id, newProps) => {
+        const debouncedUpdate = (window.debounce || quickDebounce)((id, newProps) => {
             if (window.enhancedComponentManager && typeof window.enhancedComponentManager.updateComponent === 'function') {
                 window.enhancedComponentManager.updateComponent(id, newProps);
                 console.log(`🔄 ROOT FIX: Updated via enhanced manager: ${id}`);
@@ -746,7 +745,8 @@ class DesignPanel {
 }
 
 // ROOT FIX: Enhanced design panel instance with topics sync capabilities
-export const designPanel = new DesignPanel();
+// ROOT FIX: Create design panel instance and expose globally
+const designPanel = new DesignPanel();
 
 // ROOT FIX: Expose design panel globally for component manager access
 window.designPanel = designPanel;

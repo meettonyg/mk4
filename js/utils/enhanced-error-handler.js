@@ -10,7 +10,7 @@
 // ROOT FIX: Access global objects instead of ES6 imports
 // errorBoundary and structuredLogger will be available globally
 
-export class EnhancedErrorHandler {
+class EnhancedErrorHandler {
     constructor() {
         // CRITICAL FIX: Ensure required methods are immediately available for system registrar validation
         this.handleError = this.handleError.bind(this);

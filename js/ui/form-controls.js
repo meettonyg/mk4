@@ -1,14 +1,15 @@
 /**
  * Form controls and design panel functionality
+ * ROOT FIX: Converted from ES6 modules to WordPress global namespace
  */
 
-import { markUnsaved } from '../services/save-service.js';
-import { isValidColor } from '../utils/helpers.js';
+// ROOT FIX: Remove ES6 imports - use global namespace
+// Dependencies will be available globally via WordPress enqueue system
 
 /**
  * Set up form updates
  */
-export function setupFormUpdates() {
+function setupFormUpdates() {
     setupColorInputs();
     setupLiveEditing();
 }
@@ -27,7 +28,8 @@ function setupColorInputs() {
 
         if (textInput) {
             textInput.addEventListener('input', function() {
-                if (isValidColor(this.value)) {
+                const isValid = window.isValidColor ? window.isValidColor(this.value) : /^#[0-9A-F]{6}$/i.test(this.value);
+                if (isValid) {
                     input.value = this.value;
                 }
             });
@@ -50,7 +52,7 @@ function setupLiveEditing() {
         nameInput.addEventListener('input', function() {
             const preview = document.getElementById('preview-name');
             if (preview) preview.textContent = this.value;
-            markUnsaved();
+            if (window.markUnsaved) window.markUnsaved();
         });
     }
 
@@ -58,7 +60,7 @@ function setupLiveEditing() {
         titleInput.addEventListener('input', function() {
             const preview = document.getElementById('preview-title');
             if (preview) preview.textContent = this.value;
-            markUnsaved();
+            if (window.markUnsaved) window.markUnsaved();
         });
     }
 
@@ -66,7 +68,7 @@ function setupLiveEditing() {
         bioInput.addEventListener('input', function() {
             const preview = document.getElementById('preview-bio');
             if (preview) preview.textContent = this.value;
-            markUnsaved();
+            if (window.markUnsaved) window.markUnsaved();
         });
     }
 
@@ -77,7 +79,7 @@ function setupLiveEditing() {
                 heroSection.style.background = `linear-gradient(135deg, ${this.value} 0%, ${adjustBrightness(this.value, -10)} 100%)`;
             }
             document.getElementById('hero-bg-text').value = this.value;
-            markUnsaved();
+            if (window.markUnsaved) window.markUnsaved();
         });
     }
 
@@ -86,7 +88,7 @@ function setupLiveEditing() {
             const heroName = document.querySelector('.hero-name');
             if (heroName) heroName.style.color = this.value;
             document.getElementById('hero-text-text').value = this.value;
-            markUnsaved();
+            if (window.markUnsaved) window.markUnsaved();
         });
     }
 }
@@ -107,3 +109,20 @@ function adjustBrightness(color, percent) {
         (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
         (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
 }
+
+// ROOT FIX: Expose functions globally
+window.formControls = {
+    setup: setupFormUpdates,
+    setupColorInputs: setupColorInputs,
+    setupLiveEditing: setupLiveEditing,
+    adjustBrightness: adjustBrightness
+};
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFormUpdates);
+} else {
+    setupFormUpdates();
+}
+
+console.log('✅ Form Controls: Global namespace setup complete');

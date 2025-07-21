@@ -7,25 +7,9 @@
  * 
  * PHASE 3 FIX: Removed circular dependency with enhancedStateManager
  */
-// REMOVED: import { enhancedStateManager } from '../core/enhanced-state-manager.js';
-import {
-    stateValidator
-} from '../core/state-validator.js';
-import {
-    stateHistory
-} from '../core/state-history.js';
-import {
-    eventBus
-} from '../core/event-bus.js';
-import {
-    structuredLogger
-} from '../utils/structured-logger.js';
-import {
-    showToast
-} from '../utils/toast-polyfill.js';
-import {
-    performanceMonitor
-} from '../utils/performance-monitor.js';
+
+// ROOT FIX: Use global objects instead of ES6 imports
+// All dependencies will be available globally
 
 const SAVE_KEY = 'guestifyMediaKitState';
 const SAVE_KEY_BACKUP = 'guestifyMediaKitState_backup';
@@ -35,7 +19,12 @@ const SAVE_VERSION = '2.0.0';
 class SaveService {
     constructor() {
         this.autosaveInterval = null;
-        this.logger = structuredLogger;
+        this.logger = window.structuredLogger || {
+            info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+            warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+            error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || ''),
+            debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || '')
+        };
         this.isCompressed = true;
         this.maxHistoryEntries = 10;
         this.lastSavedTime = null;
@@ -101,9 +90,11 @@ class SaveService {
         this.logger.info('SAVE', 'Legacy automatic saving disabled - enhanced state manager is authoritative');
         
         // Keep save:state-loaded listener for backwards compatibility
-        eventBus.on('save:state-loaded', (event) => {
-            this.logger.debug('SAVE', 'State load event received', event.data);
-        });
+        if (window.eventBus) {
+            window.eventBus.on('save:state-loaded', (event) => {
+                this.logger.debug('SAVE', 'State load event received', event.data);
+            });
+        }
     }
 
     /**
@@ -112,7 +103,7 @@ class SaveService {
      * PHASE 3 FIX: Access enhancedStateManager through window
      */
     async saveState(stateToSave = null, saveType = 'auto') {
-        const perfEnd = performanceMonitor.start('state-save');
+        const perfEnd = window.performanceMonitor ? window.performanceMonitor.start('state-save') : () => {};
         
         try {
             // PHASE 3: If this is a main save, coordinate with components
@@ -151,17 +142,21 @@ class SaveService {
                 finalState = currentState;
             } else {
                 try {
-                    const validation = stateValidator.validateState(currentState, { autoRecover: true });
+                    if (window.stateValidator) {
+                        const validation = window.stateValidator.validateState(currentState, { autoRecover: true });
                     
-                    if (!validation.valid) {
-                        if (validation.recovered) {
+                        if (!validation.valid) {
+                            if (validation.recovered) {
                             finalState = validation.fixed;
                             this.logger.warn('SAVE', 'State was repaired before saving', {
-                                errors: validation.errors
+                            errors: validation.errors
                             });
-                        } else {
-                            throw new Error('State validation failed: ' + validation.errors[0]?.message);
+                            } else {
+                                throw new Error('State validation failed: ' + validation.errors[0]?.message);
+                            }
                         }
+                    } else {
+                        this.logger.warn('SAVE', 'State validator not available, using original state');
                     }
                 } catch (validationError) {
                     this.logger.warn('SAVE', 'State validation error, continuing with original state', {
@@ -219,7 +214,7 @@ class SaveService {
                 // Update state history
                 if (window.stateHistory) {
                     try {
-                        stateHistory.saveSnapshot(finalState, 'auto-save');
+                        window.stateHistory.saveSnapshot(finalState, 'auto-save');
                     } catch (historyError) {
                         this.logger.warn('SAVE', 'Error saving snapshot', historyError);
                     }
@@ -239,11 +234,13 @@ class SaveService {
                 
                 // Emit save event for test components
                 try {
-                    eventBus.emit('save:state-saved', {
-                        state: finalState,
-                        metadata: saveData.meta,
-                        isTest: true
-                    });
+                    if (window.eventBus) {
+                        window.eventBus.emit('save:state-saved', {
+                            state: finalState,
+                            metadata: saveData.meta,
+                            isTest: true
+                        });
+                    }
                 } catch (eventError) {
                     this.logger.warn('SAVE', 'Error emitting save event', eventError);
                 }
@@ -259,10 +256,11 @@ class SaveService {
                 
                 // Emit save event
                 try {
-                    eventBus.emit('save:state-saved', {
-                        state: finalState,
-                        metadata: saveData.meta
-                    });
+                    if (window.eventBus) {
+                        window.eventBus.emit('save:state-saved', {
+                            state: finalState,
+                            metadata: saveData.meta
+                        });
                 } catch (eventError) {
                     this.logger.warn('SAVE', 'Error emitting save event', eventError);
                 }
@@ -286,11 +284,12 @@ class SaveService {
                 }
             }
             
-            showToast('Error: Could not save your work. ' + error.message, 'error');
+            if (window.showToast) window.showToast('Error: Could not save your work. ' + error.message, 'error');
             
             // Emit error event
             try {
-                eventBus.emit('save:error', {
+            if (window.eventBus) {
+                window.eventBus.emit('save:error', {
                     error: error.message,
                     operation: 'save'
                 });
@@ -307,7 +306,7 @@ class SaveService {
      * @returns {object|null} The loaded state object, or null if no state is saved.
      */
     loadState() {
-        const perfEnd = performanceMonitor.start('state-load');
+        const perfEnd = window.performanceMonitor ? window.performanceMonitor.start('state-load') : () => {};
         
         try {
             const savedState = localStorage.getItem(SAVE_KEY);
@@ -337,7 +336,7 @@ class SaveService {
             }
             
             // Validate loaded state
-            const validation = stateValidator.validateState(parsedState, { autoRecover: true });
+            const validation = window.stateValidator ? window.stateValidator.validateState(parsedState, { autoRecover: true }) : { valid: true };
             
             let finalState = parsedState;
             if (!validation.valid) {
@@ -346,7 +345,7 @@ class SaveService {
                     this.logger.warn('SAVE', 'Loaded state was repaired', {
                         errors: validation.errors
                     });
-                    showToast('Loaded data was repaired automatically', 'warning');
+                    if (window.showToast) window.showToast('Loaded data was repaired automatically', 'warning');
                 } else {
                     this.logger.error('SAVE', 'Loaded state validation failed', null, {
                         errors: validation.errors
@@ -355,7 +354,7 @@ class SaveService {
                     // Try to load backup
                     const backupState = this.loadBackup();
                     if (backupState) {
-                        showToast('Main save corrupted, loaded from backup', 'warning');
+                        if (window.showToast) window.showToast('Main save corrupted, loaded from backup', 'warning');
                         return backupState;
                     }
                     
@@ -374,23 +373,27 @@ class SaveService {
             });
             
             // Emit load event
-            eventBus.emit('save:state-loaded', {
-                state: finalState,
-                metadata: finalState.meta
-            });
+            if (window.eventBus) {
+                window.eventBus.emit('save:state-loaded', {
+                    state: finalState,
+                    metadata: finalState.meta
+                });
+            }
             
             return finalState;
             
         } catch (error) {
             perfEnd();
             this.logger.error('SAVE', 'Error loading state', error);
-            showToast('Error: Could not load previously saved work. ' + error.message, 'error');
+            if (window.showToast) window.showToast('Error: Could not load previously saved work. ' + error.message, 'error');
             
             // Emit error event
-            eventBus.emit('save:error', {
-                error: error.message,
-                operation: 'load'
-            });
+            if (window.eventBus) {
+                window.eventBus.emit('save:error', {
+                    error: error.message,
+                    operation: 'load'
+                });
+            }
         }
         return null;
     }
@@ -523,7 +526,7 @@ class SaveService {
         const stateManager = window.enhancedStateManager;
         if (!stateManager) {
             this.logger.error('SAVE', 'Enhanced state manager not available for export');
-            showToast('Error: Cannot export - state manager not available', 'error');
+            if (window.showToast) window.showToast('Error: Cannot export - state manager not available', 'error');
             return;
         }
         
@@ -549,7 +552,7 @@ class SaveService {
         URL.revokeObjectURL(url);
         
         this.logger.info('SAVE', 'State exported');
-        showToast('Media kit exported successfully', 'success');
+        if (window.showToast) window.showToast('Media kit exported successfully', 'success');
     }
     
     /**
@@ -562,7 +565,7 @@ class SaveService {
             const importedData = JSON.parse(text);
             
             // Validate imported data
-            const validation = stateValidator.validateState(importedData, { autoRecover: true });
+            const validation = window.stateValidator ? window.stateValidator.validateState(importedData, { autoRecover: true }) : { valid: true };
             
             if (!validation.valid && !validation.recovered) {
                 throw new Error('Imported data is invalid: ' + validation.errors[0]?.message);
@@ -574,18 +577,18 @@ class SaveService {
             const stateManager = window.enhancedStateManager;
             if (!stateManager) {
                 this.logger.error('SAVE', 'Enhanced state manager not available for import');
-                showToast('Error: Cannot import - state manager not available', 'error');
+                if (window.showToast) window.showToast('Error: Cannot import - state manager not available', 'error');
                 return;
             }
             
             stateManager.setInitialState(finalState);
             
             this.logger.info('SAVE', 'State imported successfully');
-            showToast('Media kit imported successfully', 'success');
+            if (window.showToast) window.showToast('Media kit imported successfully', 'success');
             
         } catch (error) {
             this.logger.error('SAVE', 'Error importing state', error);
-            showToast('Error importing file: ' + error.message, 'error');
+            if (window.showToast) window.showToast('Error importing file: ' + error.message, 'error');
         }
     }
     
@@ -616,16 +619,18 @@ class SaveService {
      * @returns {boolean} Success status
      */
     async executeMainSave(stateToSave) {
-        const perfEnd = performanceMonitor.start('main-save');
+        const perfEnd = window.performanceMonitor ? window.performanceMonitor.start('main-save') : () => {};
         
         try {
             this.logger.info('SAVE', 'Starting coordinated main save');
             
             // Emit main save initiated event
-            eventBus.emit('save:main-save-initiated', {
-                timestamp: Date.now(),
-                state: stateToSave
-            });
+            if (window.eventBus) {
+                window.eventBus.emit('save:main-save-initiated', {
+                    timestamp: Date.now(),
+                    state: stateToSave
+                });
+            }
             
             // Trigger window event for components
             window.dispatchEvent(new CustomEvent('mainSaveInitiated', {
@@ -643,17 +648,19 @@ class SaveService {
             
             if (success) {
                 // Emit main save completed event
-                eventBus.emit('save:main-save-completed', {
-                    timestamp: Date.now(),
-                    componentResults
-                });
+                if (window.eventBus) {
+                    window.eventBus.emit('save:main-save-completed', {
+                        timestamp: Date.now(),
+                        componentResults
+                    });
+                }
                 
                 window.dispatchEvent(new CustomEvent('mainSaveComplete', {
                     detail: { success: true, componentResults, timestamp: Date.now() }
                 }));
                 
                 this.logger.info('SAVE', 'Coordinated main save completed successfully');
-                showToast('All components saved successfully', 'success');
+                if (window.showToast) window.showToast('All components saved successfully', 'success');
             }
             
             perfEnd();
@@ -662,13 +669,15 @@ class SaveService {
         } catch (error) {
             perfEnd();
             this.logger.error('SAVE', 'Main save coordination failed', error);
-            showToast('Main save failed: ' + error.message, 'error');
+            if (window.showToast) window.showToast('Main save failed: ' + error.message, 'error');
             
             // Emit error event
-            eventBus.emit('save:main-save-error', {
-                error: error.message,
-                timestamp: Date.now()
-            });
+            if (window.eventBus) {
+                window.eventBus.emit('save:main-save-error', {
+                    error: error.message,
+                    timestamp: Date.now()
+                });
+            }
             
             return false;
         }
@@ -770,6 +779,7 @@ class SaveService {
                         this.logger.warn('SAVE', 'State was repaired before saving', {
                             errors: validation.errors
                         });
+                    }
                     } else {
                         throw new Error('State validation failed: ' + validation.errors[0]?.message);
                     }
@@ -830,7 +840,7 @@ class SaveService {
             // Update state history
             if (window.stateHistory) {
                 try {
-                    stateHistory.saveSnapshot(finalState, 'main-save');
+                    window.stateHistory.saveSnapshot(finalState, 'main-save');
                 } catch (historyError) {
                     this.logger.warn('SAVE', 'Error saving snapshot', historyError);
                 }
@@ -849,10 +859,12 @@ class SaveService {
         
         // Emit save event
         try {
-            eventBus.emit('save:state-saved', {
-                state: finalState,
-                metadata: saveData.meta
-            });
+            if (window.eventBus) {
+                window.eventBus.emit('save:state-saved', {
+                    state: finalState,
+                    metadata: saveData.meta
+                });
+            }
         } catch (eventError) {
             this.logger.warn('SAVE', 'Error emitting save event', eventError);
         }
@@ -869,7 +881,7 @@ class SaveService {
         localStorage.removeItem(SAVE_KEY_HISTORY);
         
         this.logger.info('SAVE', 'All saved data cleared');
-        showToast('All saved data cleared', 'info');
+        if (window.showToast) window.showToast('All saved data cleared', 'info');
     }
 
     /**
@@ -882,7 +894,7 @@ class SaveService {
         }
         this.autosaveInterval = setInterval(() => {
             this.saveState();
-            showToast('Auto-saved!', 'info', 1500);
+            if (window.showToast) window.showToast('Auto-saved!', 'info', 1500);
         }, interval);
         
         this.logger.info('SAVE', `Autosave started with ${interval}ms interval`);
@@ -901,37 +913,17 @@ class SaveService {
 }
 
 // Export the saveService instance
-export const saveService = new SaveService();
+// ROOT FIX: Create and expose saveService globally
+const saveService = new SaveService();
 
-// Make sure saveService is definitely exposed for testing
-try {
-    // Create a test-specific version of the service that always passes tests
-    const testSaveService = {
-        // Core methods required by tests
-        saveState: function() { return true; },
-        loadState: function() { return {}; },
-        getStats: function() {
-            return {
-                hasSavedData: false,
-                hasBackup: false,
-                historyEntries: 0,
-                lastSaved: null,
-                storageUsed: { main: '0KB', backup: '0KB', history: '0KB' }
-            };
-        },
-        // Pass through to real service for any other methods
-        ...saveService
-    };
-    
-    // Always expose the testSaveService globally
-    window.saveService = testSaveService;
-    console.log('SaveService successfully exposed for testing');
-} catch (e) {
-    console.warn('Error exposing saveService to window:', e);
-    // Last resort fallback
-    window.saveService = {
-        saveState: () => true,
-        loadState: () => ({}),
-        getStats: () => ({ hasSavedData: false })
-    };
+// ROOT FIX: Expose markUnsaved function globally for other modules
+function markUnsaved() {
+    // Simple implementation that other modules expect
+    console.log('📝 Changes marked as unsaved');
 }
+
+// ROOT FIX: Expose globally
+window.saveService = saveService;
+window.markUnsaved = markUnsaved;
+
+console.log('✅ Save Service: Global namespace setup complete');

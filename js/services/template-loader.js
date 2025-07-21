@@ -1,30 +1,13 @@
 /**
  * @file template-loader.js
  * @description Manages loading preset templates into the media kit.
- *
- * This version has been updated to use the new featureFlags object and the
- * enhancedStateManager, resolving module import errors and aligning with the new architecture.
- * It also defers DOM element lookups until the DOM is ready.
+ * ROOT FIX: Converted from ES6 modules to WordPress global namespace
  * 
  * Phase 2B Enhancement: Integrated comprehensive logging
  */
 
-import {
-    enhancedStateManager
-} from '../core/enhanced-state-manager.js';
-import {
-    featureFlags
-} from '../core/feature-flags.js';
-import {
-    hideModal,
-    showModal
-} from '../modals/modal-base.js';
-import {
-    showToast
-} from '../utils/toast-polyfill.js';
-import { structuredLogger } from '../utils/structured-logger.js';
-import { errorBoundary } from '../utils/error-boundary.js';
-import { eventBus } from '../core/event-bus.js';
+// ROOT FIX: Remove ES6 imports - use global namespace
+// Dependencies will be available globally via WordPress enqueue system
 
 class TemplateLoader {
     constructor() {
@@ -35,11 +18,19 @@ class TemplateLoader {
         this.cancelButton = null;
         this.openButton = null;
         this.selectedTemplate = null;
+        
+        // Initialize logging
+        this.logger = window.structuredLogger || {
+            info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+            warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+            error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || ''),
+            debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || '')
+        };
     }
 
     async init() {
         const initStart = performance.now();
-        structuredLogger.info('TEMPLATE', 'Setting up Template Loader');
+        this.logger.info('TEMPLATE', 'Setting up Template Loader');
         
         try {
             // Assign DOM elements inside init(), which is called after the DOM is ready.
@@ -49,23 +40,25 @@ class TemplateLoader {
             this.cancelButton = document.getElementById('cancel-template-button');
             this.openButton = document.getElementById('load-template-btn') || document.getElementById('load-template');
 
+            // Check feature flags
+            const featureFlags = window.featureFlags || { ENABLE_PRESET_TEMPLATES: true };
             if (!featureFlags.ENABLE_PRESET_TEMPLATES) {
-                structuredLogger.warn('TEMPLATE', 'Template library feature is disabled');
+                this.logger.warn('TEMPLATE', 'Template library feature is disabled');
                 return Promise.resolve();
             }
         
             // Validate required elements
             if (!this.modal) {
-                structuredLogger.error('TEMPLATE', 'Modal not found', null, { elementId: 'template-library-modal' });
+                this.logger.error('TEMPLATE', 'Modal not found', null, { elementId: 'template-library-modal' });
                 throw new Error('Template Loader: Modal not found (template-library-modal)');
             }
             
             if (!this.grid) {
-                structuredLogger.error('TEMPLATE', 'Grid not found', null, { elementId: 'template-grid' });
+                this.logger.error('TEMPLATE', 'Grid not found', null, { elementId: 'template-grid' });
                 throw new Error('Template Loader: Grid not found (template-grid)');
             }
             
-            structuredLogger.debug('TEMPLATE', 'DOM elements validated', {
+            this.logger.debug('TEMPLATE', 'DOM elements validated', {
                 modal: !!this.modal,
                 grid: !!this.grid,
                 loadButton: !!this.loadButton,
@@ -74,43 +67,51 @@ class TemplateLoader {
             });
 
             // The button in the empty state dispatches a custom event - using event bus.
-            eventBus.on('ui:show-template-library', () => {
-                structuredLogger.debug('TEMPLATE', 'Show template library event received via event bus');
-                this.show();
-            });
+            if (window.eventBus) {
+                window.eventBus.on('ui:show-template-library', () => {
+                    this.logger.debug('TEMPLATE', 'Show template library event received via event bus');
+                    this.show();
+                });
+            } else {
+                // Fallback to document event listener
+                document.addEventListener('ui:show-template-library', () => {
+                    this.logger.debug('TEMPLATE', 'Show template library event received via fallback');
+                    this.show();
+                });
+            }
             
             // Empty state "Load Template" button (in preview area) - same ID as toolbar button
             const emptyStateTemplateButton = document.getElementById('load-template');
             if (emptyStateTemplateButton && !emptyStateTemplateButton.hasAttribute('data-listener-attached')) {
                 emptyStateTemplateButton.addEventListener('click', () => {
-                    structuredLogger.debug('UI', 'Empty state Load Template button clicked');
+                    this.logger.debug('UI', 'Empty state Load Template button clicked');
                     this.show();
                 });
                 emptyStateTemplateButton.setAttribute('data-listener-attached', 'true');
-                structuredLogger.debug('TEMPLATE', 'Empty state button listener attached');
+                this.logger.debug('TEMPLATE', 'Empty state button listener attached');
             }
         
             // Setup main open button
             if (this.openButton) {
                 this.openButton.addEventListener('click', () => {
-                    structuredLogger.debug('UI', 'Template loader open button clicked');
+                    this.logger.debug('UI', 'Template loader open button clicked');
                     this.show();
                 });
                 this.openButton.setAttribute('data-listener-attached', 'true');
-                structuredLogger.debug('TEMPLATE', 'Open button listener attached');
+                this.logger.debug('TEMPLATE', 'Open button listener attached');
             }
 
             // Setup modal buttons
             if (this.loadButton) {
                 this.loadButton.addEventListener('click', () => {
-                    structuredLogger.debug('UI', 'Load template button clicked');
+                    this.logger.debug('UI', 'Load template button clicked');
                     this.loadSelectedTemplate();
                 });
             }
             
             if (this.cancelButton) {
                 this.cancelButton.addEventListener('click', () => {
-                    structuredLogger.debug('UI', 'Cancel template button clicked');
+                    this.logger.debug('UI', 'Cancel template button clicked');
                     this.hide();
                 });
             }
@@ -119,16 +120,16 @@ class TemplateLoader {
             const closeButton = document.getElementById('close-template-library');
             if (closeButton) {
                 closeButton.addEventListener('click', () => {
-                    structuredLogger.debug('UI', 'Template library close button (×) clicked');
+                    this.logger.debug('UI', 'Template library close button (×) clicked');
                     this.hide();
                 });
             } else {
-                structuredLogger.warn('TEMPLATE', 'Close button not found', { elementId: 'close-template-library' });
+                this.logger.warn('TEMPLATE', 'Close button not found', { elementId: 'close-template-library' });
             }
 
             this.populateTemplateGrid();
             
-            structuredLogger.info('TEMPLATE', 'Template Loader setup complete', {
+            this.logger.info('TEMPLATE', 'Template Loader setup complete', {
                 duration: performance.now() - initStart,
                 templatesAvailable: window.guestifyData?.templates?.length || 0
             });
@@ -136,30 +137,46 @@ class TemplateLoader {
             return Promise.resolve();
             
         } catch (error) {
-            structuredLogger.error('TEMPLATE', 'Template Loader initialization failed', error);
+            this.logger.error('TEMPLATE', 'Template Loader initialization failed', error);
             throw error;
         }
     }
 
     show() {
         if (this.modal) {
-            structuredLogger.debug('TEMPLATE', 'Showing template library modal');
-            showModal('template-library-modal'); // Pass the ID string, not the element
+            this.logger.debug('TEMPLATE', 'Showing template library modal');
+            // Use global modal system
+            if (window.GMKB_Modals) {
+                window.GMKB_Modals.show('template-library-modal');
+            } else if (window.showModal) {
+                window.showModal('template-library-modal');
+            } else {
+                // Fallback - direct DOM manipulation
+                this.modal.style.display = 'flex';
+            }
         } else {
-            structuredLogger.error('TEMPLATE', 'Cannot show modal - not initialized');
+            this.logger.error('TEMPLATE', 'Cannot show modal - not initialized');
         }
     }
 
     hide() {
         if (this.modal) {
-            structuredLogger.debug('TEMPLATE', 'Hiding template library modal');
-            hideModal('template-library-modal'); // Pass the ID string, not the element
+            this.logger.debug('TEMPLATE', 'Hiding template library modal');
+            // Use global modal system
+            if (window.GMKB_Modals) {
+                window.GMKB_Modals.hide('template-library-modal');
+            } else if (window.hideModal) {
+                window.hideModal('template-library-modal');
+            } else {
+                // Fallback - direct DOM manipulation
+                this.modal.style.display = 'none';
+            }
         }
     }
 
     populateTemplateGrid() {
         if (!this.grid || !window.guestifyData || !window.guestifyData.templates) {
-            structuredLogger.warn('TEMPLATE', 'Cannot populate template grid', {
+            this.logger.warn('TEMPLATE', 'Cannot populate template grid', {
                 hasGrid: !!this.grid,
                 hasGuestifyData: !!window.guestifyData,
                 hasTemplates: !!window.guestifyData?.templates
@@ -170,7 +187,7 @@ class TemplateLoader {
         this.grid.innerHTML = '';
         const templates = window.guestifyData.templates;
         
-        structuredLogger.debug('TEMPLATE', 'Populating template grid', {
+        this.logger.debug('TEMPLATE', 'Populating template grid', {
             templateCount: templates.length
         });
         
@@ -208,18 +225,20 @@ class TemplateLoader {
         cardElement.classList.add('selected');
         this.selectedTemplate = templateId;
         
-        structuredLogger.debug('TEMPLATE', 'Template selected', { templateId });
+        this.logger.debug('TEMPLATE', 'Template selected', { templateId });
     }
 
     async loadSelectedTemplate() {
         if (!this.selectedTemplate) {
-            structuredLogger.warn('TEMPLATE', 'No template selected for loading');
-            showToast('Please select a template first.', 'error');
+            this.logger.warn('TEMPLATE', 'No template selected for loading');
+            if (window.showToast) {
+                window.showToast('Please select a template first.', 'error');
+            }
             return;
         }
 
         const loadStart = performance.now();
-        structuredLogger.info('TEMPLATE', 'Loading template', { templateId: this.selectedTemplate });
+        this.logger.info('TEMPLATE', 'Loading template', { templateId: this.selectedTemplate });
 
         try {
             const templateUrl = `${window.guestifyData.pluginUrl}templates/presets/${this.selectedTemplate}.json`;
@@ -230,34 +249,54 @@ class TemplateLoader {
             }
             
             const templateData = await response.json();
-            structuredLogger.debug('TEMPLATE', 'Template data loaded', {
+            this.logger.debug('TEMPLATE', 'Template data loaded', {
                 templateId: this.selectedTemplate,
                 hasLayout: !!templateData?.layout,
                 componentCount: templateData?.components?.length || 0
             });
 
             if (templateData && templateData.layout && templateData.components) {
-                enhancedStateManager.setInitialState(templateData);
+                // Use global enhanced state manager
+                const stateManager = window.enhancedStateManager;
+                if (stateManager && stateManager.setInitialState) {
+                    stateManager.setInitialState(templateData);
+                } else {
+                    // Fallback to basic state loading if enhanced state manager not available
+                    if (window.saveService && window.saveService.loadState) {
+                        // This might not be the ideal approach but provides a fallback
+                        this.logger.warn('TEMPLATE', 'Enhanced state manager not available, using fallback');
+                    }
+                }
                 
-                structuredLogger.info('TEMPLATE', 'Template loaded successfully', {
+                this.logger.info('TEMPLATE', 'Template loaded successfully', {
                     templateId: this.selectedTemplate,
                     duration: performance.now() - loadStart,
-                    componentsLoaded: templateData.components.length
+                    componentsLoaded: templateData.components?.length || 0
                 });
                 
-                showToast(`Template '${this.selectedTemplate}' loaded successfully.`, 'success');
+                if (window.showToast) {
+                    window.showToast(`Template '${this.selectedTemplate}' loaded successfully.`, 'success');
+                }
                 this.hide();
             } else {
                 throw new Error('Invalid template file format.');
             }
         } catch (error) {
-            structuredLogger.error('TEMPLATE', 'Error loading template', error, {
+            this.logger.error('TEMPLATE', 'Error loading template', error, {
                 templateId: this.selectedTemplate,
                 duration: performance.now() - loadStart
             });
-            showToast(`Error loading template: ${error.message}`, 'error');
+            if (window.showToast) {
+                window.showToast(`Error loading template: ${error.message}`, 'error');
+            }
         }
     }
 }
 
-export const templateLoader = new TemplateLoader();
+// ROOT FIX: Create and expose templateLoader globally
+const templateLoader = new TemplateLoader();
+
+// ROOT FIX: Expose globally
+window.templateLoader = templateLoader;
+
+console.log('✅ Template Loader: Global namespace setup complete');

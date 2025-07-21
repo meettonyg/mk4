@@ -1,12 +1,13 @@
 /**
  * Enhanced History Service
  * Manages undo/redo functionality using the centralized state manager
- * GEMINI FIX: Updated to use enhanced state history system as primary
+ * ROOT FIX: Converted from ES6 modules to WordPress global namespace
  */
 
-import { stateManager } from './state-manager.js';
+// ROOT FIX: Remove ES6 imports - use global namespace
+// Dependencies will be available globally via WordPress enqueue system
 
-export class HistoryService {
+class HistoryService {
     constructor() {
         this.isInitialized = false;
         this.logger = window.structuredLogger || console;
@@ -49,9 +50,12 @@ export class HistoryService {
             });
         } else {
             // Fallback to legacy state manager
-            stateManager.subscribeGlobal(() => {
-                this.updateUI();
-            });
+            const stateManager = window.stateManager;
+            if (stateManager) {
+                stateManager.subscribeGlobal(() => {
+                    this.updateUI();
+                });
+            }
         }
         
         this.isInitialized = true;
@@ -81,6 +85,9 @@ export class HistoryService {
         }
         
         // Fallback to legacy state manager
+        const stateManager = window.stateManager;
+        if (!stateManager) return false;
+        
         const success = stateManager.undo();
         
         if (success) {
@@ -118,6 +125,9 @@ export class HistoryService {
         }
         
         // Fallback to legacy state manager
+        const stateManager = window.stateManager;
+        if (!stateManager) return false;
+        
         const success = stateManager.redo();
         
         
@@ -211,6 +221,9 @@ export class HistoryService {
         }
         
         // Fallback to legacy state manager
+        const stateManager = window.stateManager;
+        if (!stateManager) return false;
+        
         return stateManager.historyIndex < stateManager.history.length - 1;
     }
 
@@ -280,6 +293,17 @@ export class HistoryService {
      * @returns {Object} History stats
      */
     getStats() {
+        const stateManager = window.stateManager;
+        if (!stateManager) {
+            return {
+                totalStates: 0,
+                currentIndex: 0,
+                canUndo: false,
+                canRedo: false,
+                maxHistorySize: 0
+            };
+        }
+        
         const history = stateManager.history;
         return {
             totalStates: history.length,
@@ -296,6 +320,9 @@ export class HistoryService {
      * Clear all history
      */
     clear() {
+        const stateManager = window.stateManager;
+        if (!stateManager) return;
+        
         stateManager.history = [];
         stateManager.historyIndex = -1;
         this.updateUI();
@@ -303,16 +330,21 @@ export class HistoryService {
 }
 
 // Create singleton instance
-export const historyService = new HistoryService();
+const historyService = new HistoryService();
 
 // Legacy function exports for backward compatibility - only keeping essential ones
-export function undo() {
+function undo() {
     return historyService.undo();
 }
 
-export function redo() {
+function redo() {
     return historyService.redo();
 }
+
+// ROOT FIX: Expose globally
+window.historyService = historyService;
+window.undo = undo;
+window.redo = redo;
 
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
@@ -322,3 +354,5 @@ if (document.readyState === 'loading') {
 } else {
     historyService.init();
 }
+
+console.log('✅ History Service: Global namespace setup complete');

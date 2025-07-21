@@ -3,19 +3,21 @@
  * Shows available templates for selection
  */
 
-import { showModal, hideModal, setupModalClose } from './modal-base.js';
-import { templateLoader } from '../services/template-loader.js';
+// ROOT FIX: Use global objects instead of ES6 imports
+// Modal functions and templateLoader will be available globally
 
 /**
  * Set up template library modal
  */
-export function setupTemplateLibrary() {
+function setupTemplateLibrary() {
     // Create modal HTML if it doesn't exist
     if (!document.getElementById('template-library-modal')) {
         createTemplateModal();
     }
     
-    setupModalClose('template-library-modal', 'close-template-library');
+    if (window.GMKB_Modals && window.GMKB_Modals.setupModalClose) {
+        window.GMKB_Modals.setupModalClose('template-library-modal', 'close-template-library');
+    }
     
     // Listen for show event
     document.addEventListener('show-template-library', () => {
@@ -68,7 +70,9 @@ function showTemplateLibrary() {
     if (modal) {
         console.log('Template modal found, showing...');
         populateTemplates();
-        showModal('template-library-modal');
+        if (window.GMKB_Modals && window.GMKB_Modals.show) {
+            window.GMKB_Modals.show('template-library-modal');
+        }
     } else {
         console.error('Template library modal not found!');
     }
@@ -77,8 +81,10 @@ function showTemplateLibrary() {
 /**
  * Hide template library
  */
-export function hideTemplateLibrary() {
-    hideModal('template-library-modal');
+function hideTemplateLibrary() {
+    if (window.GMKB_Modals && window.GMKB_Modals.hide) {
+        window.GMKB_Modals.hide('template-library-modal');
+    }
 }
 
 /**
@@ -88,7 +94,7 @@ function populateTemplates() {
     const grid = document.getElementById('template-grid');
     if (!grid) return;
     
-    const templates = templateLoader.getTemplates();
+    const templates = window.templateLoader ? window.templateLoader.getTemplates() : [];
     
     grid.innerHTML = templates.map(template => `
         <div class="template-card" data-template-id="${template.id}">
@@ -155,7 +161,11 @@ async function selectTemplate(templateId) {
     
     try {
         // Load the template
-        await templateLoader.loadTemplate(templateId);
+        if (window.templateLoader) {
+            await window.templateLoader.loadTemplate(templateId);
+        } else {
+            throw new Error('Template loader not available');
+        }
         
         // Close modal on success
         hideTemplateLibrary();
@@ -290,6 +300,13 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ROOT FIX: Expose functions globally
+window.templateLibrary = {
+    setup: setupTemplateLibrary,
+    show: showTemplateLibrary,
+    hide: hideTemplateLibrary
+};
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
