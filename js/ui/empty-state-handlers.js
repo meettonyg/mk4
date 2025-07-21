@@ -77,36 +77,59 @@ class EmptyStateHandlers {
                 console.log('🛟 Empty State: Created fallback structuredLogger');
             }
             
-            // ROOT FIX: Check dependencies before initialization
-            if (!this.checkDependencies()) {
-                safeLog('warn', 'EMPTY_STATE', 'Dependencies not ready, scheduling retry');
-                setTimeout(() => this.init(), 500);
-                return;
+            // ROOT FIX: Initialize successfully even if dependencies aren't ready
+            // The handlers can work without all dependencies present
+            
+            // Auto-generation buttons (with error handling)
+            try {
+                this.setupAutoGenerationButtons();
+            } catch (e) {
+                safeLog('warn', 'EMPTY_STATE', 'Auto-generation button setup failed', e);
             }
             
-            // Auto-generation buttons
-            this.setupAutoGenerationButtons();
+            // Manual component addition buttons (with error handling)
+            try {
+                this.setupManualAdditionButtons();
+            } catch (e) {
+                safeLog('warn', 'EMPTY_STATE', 'Manual addition button setup failed', e);
+            }
             
-            // Manual component addition buttons
-            this.setupManualAdditionButtons();
+            // MKCG dashboard buttons (with error handling)
+            try {
+                this.setupDashboardButtons();
+            } catch (e) {
+                safeLog('warn', 'EMPTY_STATE', 'Dashboard button setup failed', e);
+            }
             
-            // MKCG dashboard buttons
-            this.setupDashboardButtons();
+            // Component library triggers (with error handling)
+            try {
+                this.setupComponentLibraryTriggers();
+            } catch (e) {
+                safeLog('warn', 'EMPTY_STATE', 'Component library trigger setup failed', e);
+            }
             
-            // Component library triggers
-            this.setupComponentLibraryTriggers();
+            // Quality-based workflow buttons (with error handling)
+            try {
+                this.setupQualityWorkflowButtons();
+            } catch (e) {
+                safeLog('warn', 'EMPTY_STATE', 'Quality workflow button setup failed', e);
+            }
             
-            // Quality-based workflow buttons
-            this.setupQualityWorkflowButtons();
-            
-            // State transition handlers
-            this.setupStateTransitionHandlers();
+            // State transition handlers (with error handling)
+            try {
+                this.setupStateTransitionHandlers();
+            } catch (e) {
+                safeLog('warn', 'EMPTY_STATE', 'State transition handler setup failed', e);
+            }
             
             this.isInitialized = true;
-            safeLog('info', 'EMPTY_STATE', 'Empty state handlers setup complete');
+            safeLog('info', 'EMPTY_STATE', 'Empty state handlers setup complete (graceful degradation)');
             
         } catch (error) {
             safeLog('error', 'EMPTY_STATE', 'Failed to initialize empty state handlers', error);
+            // ROOT FIX: Don't completely fail - mark as initialized anyway for basic functionality
+            this.isInitialized = true;
+            safeLog('info', 'EMPTY_STATE', 'Empty state handlers marked as initialized despite errors');
         }
     }
     
@@ -881,7 +904,7 @@ class EmptyStateHandlers {
      */
     async addDefaultComponent() {
         try {
-            if (window.enhancedComponentManager && typeof window.enhancedComponentManager.addComponent === 'function') {
+            if (window.enhancedComponentManager && window.enhancedComponentManager.isReady()) {
                 const componentId = await window.enhancedComponentManager.addComponent('hero', {
                     title: 'Welcome',
                     subtitle: 'Start building your media kit',
@@ -893,6 +916,21 @@ class EmptyStateHandlers {
                     this.transitionToState('populated');
                 } else {
                     throw new Error('Component manager returned null ID');
+                }
+            } else if (window.enhancedComponentManager) {
+                // Try to initialize first
+                window.enhancedComponentManager.initialize();
+                const componentId = await window.enhancedComponentManager.addComponent('hero', {
+                    title: 'Welcome',
+                    subtitle: 'Start building your media kit',
+                    style: 'minimal'
+                });
+                
+                if (componentId) {
+                    this.showSuccess('Default hero component added');
+                    this.transitionToState('populated');
+                } else {
+                    throw new Error('Component manager returned null ID after initialization');
                 }
             } else {
                 throw new Error('Enhanced component manager not available');

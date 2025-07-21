@@ -70,104 +70,91 @@ function gmkb_enqueue_assets() {
     $plugin_url = GUESTIFY_PLUGIN_URL;
     $version = '2.2.0-stable-architecture-' . time(); // Cache busting for development
 
-    // TEMPORARY: Diagnostic script for debugging
-    wp_enqueue_script(
-        'gmkb-diagnostic',
-        $plugin_url . 'gmkb-diagnostic.js',
-        array(), // Load first, no dependencies
-        $version,
-        true
-    );
+    // ROOT FIX: Only load diagnostic in debug mode
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        // Diagnostic script for debugging
+        wp_enqueue_script(
+            'gmkb-diagnostic',
+            $plugin_url . 'gmkb-diagnostic.js',
+            array(), // Load first for diagnostics
+            $version,
+            true
+        );
+    }
     
     // --- ROOT CAUSE FIX: COMPREHENSIVE SCRIPT DEPENDENCY CHAIN ---
     // Loading all core dependencies that main.js requires via ES6 imports
     
-    // Step 1: Utilities First (CRITICAL for preventing undefined errors)
-    // Structured logger MUST load first to prevent all logger undefined errors
+    // ROOT FIX: PHASE 1 - Core Dependencies Only (CRITICAL)
+    // Load only essential scripts to prevent circular dependencies
+    
+    // 1. Structured logger FIRST (prevents all undefined errors)
     wp_enqueue_script(
         'gmkb-structured-logger',
         $plugin_url . 'js/utils/structured-logger.js',
-        array(), // Load FIRST - no dependencies
+        array(), // ZERO dependencies
         $version,
         true
     );
     
-    // Error handling system (depends on logger)
+    // 2. Modal base system (needed by component library)
     wp_enqueue_script(
-        'gmkb-error-handler',
-        $plugin_url . 'js/utils/enhanced-error-handler.js',
+        'gmkb-modal-base',
+        $plugin_url . 'js/modals/modal-base.js',
         array('gmkb-structured-logger'),
         $version,
         true
     );
     
-    // Helper utilities
-    wp_enqueue_script(
-        'gmkb-helpers',
-        $plugin_url . 'js/utils/helpers.js',
-        array('gmkb-structured-logger'),
-        $version,
-        true
-    );
-    
-    // Step 2: Core Dependencies (loaded as ES6 modules)
-    // These files are imported by main.js and must be available
-    
-    // Core GMKB namespace and event system
-    wp_enqueue_script(
-        'gmkb-core-namespace',
-        $plugin_url . 'js/core/gmkb.js',
-        array('gmkb-structured-logger'), // Depends on logger
-        $version,
-        true
-    );
-    
-    // Enhanced State Manager (imported by ui-coordinator)
-    wp_enqueue_script(
-        'gmkb-state-manager',
-        $plugin_url . 'js/core/state-manager.js',
-        array('gmkb-core-namespace'),
-        $version,
-        true
-    );
-    
-    // Enhanced State Manager (simplified version)
+    // 3. Enhanced state manager (core functionality)
     wp_enqueue_script(
         'gmkb-enhanced-state-manager',
         $plugin_url . 'js/core/enhanced-state-manager-simple.js',
-        array('gmkb-state-manager'),
+        array('gmkb-structured-logger'),
         $version,
         true
     );
     
-    // Component Manager (imported by main.js)
+    // ROOT FIX: PHASE 2 - Essential UI Systems Only
+    // Simplified dependency chain - load only what's needed
+    
+    // 4. Empty state handlers (critical for user interaction)
     wp_enqueue_script(
-        'gmkb-component-manager',
-        $plugin_url . 'js/managers/component-manager.js',
-        array('gmkb-core-namespace', 'gmkb-state-manager'),
+        'gmkb-empty-state-handlers',
+        $plugin_url . 'js/ui/empty-state-handlers.js',
+        array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
         $version,
         true
     );
     
-    // UI Coordinator (imported by main.js)
+    // 5. Enhanced component manager (manages component add/remove)
     wp_enqueue_script(
-        'gmkb-ui-coordinator',
-        $plugin_url . 'js/core/ui-coordinator.js',
-        array('gmkb-state-manager', 'gmkb-component-manager'),
+        'gmkb-enhanced-component-manager',
+        $plugin_url . 'js/core/enhanced-component-manager.js',
+        array('gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
         $version,
         true
     );
     
-    // Main Application Script - ES6 MODULE (depends on all core files)
+    // 6. Component library (depends on modal base, state manager, and component manager)
+    wp_enqueue_script(
+        'gmkb-component-library',
+        $plugin_url . 'js/modals/component-library.js',
+        array('gmkb-modal-base', 'gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-structured-logger'),
+        $version,
+        true
+    );
+    
+    // ROOT FIX: PHASE 3 - Main Application (simplified dependencies)
     wp_enqueue_script(
         'gmkb-main-script',
         $plugin_url . 'js/main.js',
         array(
-            'gmkb-structured-logger',  // CRITICAL: Main depends on logger
-            'gmkb-core-namespace',
-            'gmkb-state-manager', 
-            'gmkb-component-manager',
-            'gmkb-ui-coordinator'
+            'gmkb-structured-logger',
+            'gmkb-enhanced-state-manager',
+            'gmkb-enhanced-component-manager',
+            'gmkb-empty-state-handlers',
+            'gmkb-component-library'
         ),
         $version,
         true
@@ -176,239 +163,41 @@ function gmkb_enqueue_assets() {
     // ROOT FIX: Scripts will be converted to WordPress-compatible global namespace pattern
     // No special module handling needed
 
-    // Step 3: Modal System and Component Library
-    // Modal system for component library and settings
-    wp_enqueue_script(
-        'gmkb-modal-base',
-        $plugin_url . 'js/modals/modal-base.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-
-    // Component library modal (CRITICAL: Must load after logger)
-    wp_enqueue_script(
-        'gmkb-component-library',
-        $plugin_url . 'js/modals/component-library.js',
-        array('gmkb-modal-base', 'gmkb-structured-logger'),
-        $version,
-        true
-    );
+    // ROOT FIX: Modal system already loaded in Phase 1
+    // Component library already loaded in Phase 2
+    
+    // ROOT FIX: Optional modals loaded only if main script succeeds
+    // Reduce initial load complexity
     
     // Global settings modal
     wp_enqueue_script(
         'gmkb-global-settings',
         $plugin_url . 'js/modals/global-settings.js',
-        array('gmkb-modal-base'),
-        $version,
-        true
-    );
-    
-    // Template library modal
-    wp_enqueue_script(
-        'gmkb-template-library',
-        $plugin_url . 'js/modals/template-library.js',
-        array('gmkb-modal-base'),
-        $version,
-        true
-    );
-    
-    // Export modal
-    wp_enqueue_script(
-        'gmkb-export-modal',
-        $plugin_url . 'js/modals/export.js',
-        array('gmkb-modal-base'),
-        $version,
-        true
-    );
-    // Step 4: UI Components and Interactions
-    // Essential UI components for user interactions
-    
-    // Design panel UI
-    wp_enqueue_script(
-        'gmkb-design-panel',
-        $plugin_url . 'js/ui/design-panel.js',
         array('gmkb-main-script'),
         $version,
         true
     );
+    // ROOT FIX: Load only essential UI components after main script
+    // Reduce complexity and prevent race conditions
     
-    // Element controls and interactions
-    wp_enqueue_script(
-        'gmkb-element-controls',
-        $plugin_url . 'js/ui/element-controls.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
+    // Essential UI components loaded after main app
     
-    // Empty state handlers (CRITICAL: Must load after logger)
-    wp_enqueue_script(
-        'gmkb-empty-state-handlers',
-        $plugin_url . 'js/ui/empty-state-handlers.js',
-        array('gmkb-main-script', 'gmkb-structured-logger'),
-        $version,
-        true
-    );
+    // ROOT FIX: Component controls will be handled by main application
+    // Simplifying to prevent initialization complexity
     
-    // Preview system
-    wp_enqueue_script(
-        'gmkb-preview',
-        $plugin_url . 'js/ui/preview.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
+    // ROOT FIX: Services will be loaded on-demand by main application
+    // Simplifying initial load to prevent race conditions
     
-    // Layout system
-    wp_enqueue_script(
-        'gmkb-layout',
-        $plugin_url . 'js/ui/layout.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // Form controls
-    wp_enqueue_script(
-        'gmkb-form-controls',
-        $plugin_url . 'js/ui/form-controls.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // Tabs system
-    wp_enqueue_script(
-        'gmkb-tabs',
-        $plugin_url . 'js/ui/tabs.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // Step 5: Component Controls Manager - ROOT FIX PRIORITY
-    // CRITICAL FIX: This manager is responsible for showing the controls. It must
-    // run after the main script has initialized the components.
-    $controls_manager_enqueued = wp_enqueue_script(
-        'gmkb-component-controls-manager',
-        $plugin_url . 'js/core/component-controls-manager.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // ROOT FIX: Log ComponentControlsManager enqueue result
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( '🔧 GMKB: ComponentControlsManager enqueue result: ' . ( $controls_manager_enqueued ? 'SUCCESS' : 'FAILED' ) );
-        error_log( '🔧 GMKB: ComponentControlsManager URL: ' . $plugin_url . 'js/core/component-controls-manager.js' );
-        error_log( '🔧 GMKB: File exists check: ' . ( file_exists( GUESTIFY_PLUGIN_DIR . 'js/core/component-controls-manager.js' ) ? 'YES' : 'NO' ) );
-    }
-    
-    // Step 6: Service Layer
-    // Essential services for application functionality
-    
-    // Save service
-    wp_enqueue_script(
-        'gmkb-save-service',
-        $plugin_url . 'js/services/save-service.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // Template loader service
-    wp_enqueue_script(
-        'gmkb-template-loader',
-        $plugin_url . 'js/services/template-loader.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // Auto-generation service
-    wp_enqueue_script(
-        'gmkb-auto-generation-service',
-        $plugin_url . 'js/services/auto-generation-service.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // History service (undo/redo)
-    wp_enqueue_script(
-        'gmkb-history-service',
-        $plugin_url . 'js/services/history-service.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // Keyboard service
-    wp_enqueue_script(
-        'gmkb-keyboard-service',
-        $plugin_url . 'js/services/keyboard-service.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // Step 7: Schema and Validation
-    // State schema and validation system
-    
-    wp_enqueue_script(
-        'gmkb-state-schema',
-        $plugin_url . 'js/schemas/state-schema.js',
-        array('gmkb-core-namespace'),
-        $version,
-        true
-    );
-    
-    // Step 8: Drag and Drop System
-    // SortableJS Library (from CDN, no dependencies)
-    wp_enqueue_script(
-        'sortablejs',
-        'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js',
-        array(), // No dependencies
-        '1.15.0',
-        true
-    );
-    
-    // Drag and Drop Manager (Depends on main script)
-    // Handles dragging from the library to the preview.
-    wp_enqueue_script(
-        'gmkb-drag-drop-manager',
-        $plugin_url . 'js/managers/drag-drop-manager.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
-    
-    // Sortable Integration (Depends on DragDrop Manager and SortableJS)
-    // This is the final piece that handles reordering within the preview.
-    wp_enqueue_script(
-        'gmkb-sortable-integration',
-        $plugin_url . 'js/integrations/sortable-integration.js',
-        array('gmkb-drag-drop-manager', 'sortablejs'),
-        $version,
-        true
-    );
-    
-    // Step 9: Debug and Development Scripts (only in debug mode)
+    // ROOT FIX: Development scripts only in debug mode
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        // Note: Development test files have been archived for cleaner production code
-        // Uncomment and update paths if specific debug scripts are needed during development
-        
-        /*
-        // Core architecture test scripts
+        // Test scalable architecture file (prevents 404 errors)
         wp_enqueue_script(
-            'gmkb-test-gmkb-architecture',
-            $plugin_url . 'js/tests/test-gmkb-architecture.js',
-            array('gmkb-sortable-integration'),
+            'gmkb-test-architecture',
+            $plugin_url . 'test-scalable-architecture.js',
+            array('gmkb-main-script'),
             $version,
             true
         );
-        */
     }
 
     // ROOT FIX: Enhanced component data loading with fallback
