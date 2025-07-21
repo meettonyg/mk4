@@ -147,10 +147,10 @@ class SaveService {
                     
                         if (!validation.valid) {
                             if (validation.recovered) {
-                            finalState = validation.fixed;
-                            this.logger.warn('SAVE', 'State was repaired before saving', {
-                            errors: validation.errors
-                            });
+                                finalState = validation.fixed;
+                                this.logger.warn('SAVE', 'State was repaired before saving', {
+                                    errors: validation.errors
+                                });
                             } else {
                                 throw new Error('State validation failed: ' + validation.errors[0]?.message);
                             }
@@ -261,6 +261,7 @@ class SaveService {
                             state: finalState,
                             metadata: saveData.meta
                         });
+                    }
                 } catch (eventError) {
                     this.logger.warn('SAVE', 'Error emitting save event', eventError);
                 }
@@ -288,11 +289,12 @@ class SaveService {
             
             // Emit error event
             try {
-            if (window.eventBus) {
-                window.eventBus.emit('save:error', {
-                    error: error.message,
-                    operation: 'save'
-                });
+                if (window.eventBus) {
+                    window.eventBus.emit('save:error', {
+                        error: error.message,
+                        operation: 'save'
+                    });
+                }
             } catch (eventError) {
                 this.logger.warn('SAVE', 'Error emitting error event', eventError);
             }
@@ -779,7 +781,6 @@ class SaveService {
                         this.logger.warn('SAVE', 'State was repaired before saving', {
                             errors: validation.errors
                         });
-                    }
                     } else {
                         throw new Error('State validation failed: ' + validation.errors[0]?.message);
                     }

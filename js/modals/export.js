@@ -32,18 +32,25 @@ function init() {
  * Sets up all necessary event listeners for the export modal.
  */
 function setupEventListeners() {
-    // --- THIS IS THE ROOT FIX ---
+    // ROOT FIX: Add defensive programming for missing DOM elements
+    if (!exportModalElement) {
+        console.warn('Export modal element not available - skipping event listener setup');
+        return;
+    }
+    
     // We no longer import `hideModal`. Instead, we use the global API.
     // We find all close buttons and attach the correct API call to them.
     const closeButtons = exportModalElement.querySelectorAll('.modal__close, [data-modal-close]');
-    closeButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (window.GMKB_Modals && typeof window.GMKB_Modals.hide === 'function') {
-                window.GMKB_Modals.hide('export-modal');
-            }
+    if (closeButtons && closeButtons.length > 0) {
+        closeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.GMKB_Modals && typeof window.GMKB_Modals.hide === 'function') {
+                    window.GMKB_Modals.hide('export-modal');
+                }
+            });
         });
-    });
+    }
 
     const exportButton = exportModalElement.querySelector('#export-button');
     if (exportButton) {
@@ -52,15 +59,23 @@ function setupEventListeners() {
 
     // Add any other listeners for format selection, etc.
     const formatSelectors = exportModalElement.querySelectorAll('input[name="export-format"]');
-    formatSelectors.forEach(radio => {
-        radio.addEventListener('change', handleFormatChange);
-    });
+    if (formatSelectors && formatSelectors.length > 0) {
+        formatSelectors.forEach(radio => {
+            radio.addEventListener('change', handleFormatChange);
+        });
+    }
 }
 
 /**
  * Handles the main export logic when the primary export button is clicked.
  */
 function handleExport() {
+    // ROOT FIX: Add defensive programming
+    if (!exportModalElement) {
+        console.warn('Export modal element not available');
+        return;
+    }
+    
     const selectedFormat = exportModalElement.querySelector('input[name="export-format"]:checked');
     if (!selectedFormat) {
         alert('Please select an export format.');

@@ -206,6 +206,9 @@ class HistoryService {
         }
         
         // Fallback to legacy state manager
+        const stateManager = window.stateManager;
+        if (!stateManager) return false;
+        
         return stateManager.historyIndex > 0;
     }
 
@@ -293,6 +296,18 @@ class HistoryService {
      * @returns {Object} History stats
      */
     getStats() {
+        // Try enhanced state history first
+        if (window.stateHistory) {
+            return {
+                totalStates: window.stateHistory.getHistoryLength(),
+                currentIndex: window.stateHistory.getCurrentIndex(),
+                canUndo: window.stateHistory.canUndo(),
+                canRedo: window.stateHistory.canRedo(),
+                maxHistorySize: window.stateHistory.getMaxSize()
+            };
+        }
+        
+        // Fallback to legacy state manager
         const stateManager = window.stateManager;
         if (!stateManager) {
             return {
@@ -320,6 +335,14 @@ class HistoryService {
      * Clear all history
      */
     clear() {
+        // Try enhanced state history first
+        if (window.stateHistory && typeof window.stateHistory.clear === 'function') {
+            window.stateHistory.clear();
+            this.updateUI();
+            return;
+        }
+        
+        // Fallback to legacy state manager
         const stateManager = window.stateManager;
         if (!stateManager) return;
         

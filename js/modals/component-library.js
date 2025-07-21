@@ -13,12 +13,12 @@
 // Use global APIs that are guaranteed to be available after events
 
 // Global variables for logging and utilities
-let structuredLogger, errorBoundary, eventBus;
+let logger, errorBoundary, eventBus;
 
 // Initialize logging fallbacks
 function initializeUtilities() {
     // Structured logger fallback
-    structuredLogger = window.structuredLogger || {
+    logger = window.structuredLogger || {
         info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
         debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || ''),
         warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
@@ -49,7 +49,7 @@ let componentLibraryModal, componentGrid, addComponentButton, cancelComponentBut
  */
 async function setupComponentLibrary() {
     const setupStart = performance.now();
-    structuredLogger.info('MODAL', 'Setting up Component Library with validation');
+    logger.info('MODAL', 'Setting up Component Library with validation');
     
     try {
         // Validate elements exist before proceeding
@@ -75,7 +75,7 @@ async function setupComponentLibrary() {
             hideComponentLibraryModal
         };
         
-        structuredLogger.info('MODAL', 'Component Library setup complete', {
+        logger.info('MODAL', 'Component Library setup complete', {
             duration: performance.now() - setupStart,
             elementsFound: {
                 modal: !!componentLibraryModal,
@@ -88,7 +88,7 @@ async function setupComponentLibrary() {
         });
         
     } catch (error) {
-        structuredLogger.error('MODAL', 'Component Library setup failed', error);
+        logger.error('MODAL', 'Component Library setup failed', error);
         throw error;
     }
 }
