@@ -21,35 +21,31 @@ function initializeWhenReady() {
         createFallbackLogger();
     }
     
-    if (!window.enhancedStateManager) {
-        console.warn('⚠️ GMKB: Enhanced state manager not available');
-        return;
-    }
-    
-    if (!window.enhancedComponentManager) {
-        console.warn('⚠️ GMKB: Enhanced component manager not available');
-        return;
-    }
-    
-    if (!window.GMKB_Modals) {
-        console.warn('⚠️ GMKB: Modal system not available');
-        return;
-    }
-    
     try {
         // ROOT FIX: Initialize only essential systems
         window.structuredLogger.info('MAIN', 'Starting simplified application initialization');
         
         // 1. Initialize state manager
-        if (window.enhancedStateManager.initializeAfterSystems) {
-            window.enhancedStateManager.initializeAfterSystems();
+        if (window.enhancedStateManager) {
+            window.structuredLogger.info('STATE', 'Initializing Enhanced State Manager...');
+            if (window.enhancedStateManager.initializeAfterSystems) {
+                window.enhancedStateManager.initializeAfterSystems();
+            }
             window.structuredLogger.info('MAIN', 'State manager initialized');
+        } else {
+            window.structuredLogger.warn('MAIN', 'Enhanced state manager not available');
         }
         
         // 2. Initialize component manager
-        if (window.enhancedComponentManager.initialize) {
-            window.enhancedComponentManager.initialize();
+        if (window.enhancedComponentManager) {
+            if (window.enhancedComponentManager.isInitialized) {
+                window.structuredLogger.warn('COMPONENT', 'Component manager already initialized');
+            } else if (window.enhancedComponentManager.initialize) {
+                window.enhancedComponentManager.initialize();
+            }
             window.structuredLogger.info('MAIN', 'Component manager initialized');
+        } else {
+            window.structuredLogger.warn('MAIN', 'Enhanced component manager not available');
         }
         
         // 3. Initialize empty state handlers (already loaded)
@@ -61,7 +57,13 @@ function initializeWhenReady() {
         // 4. Set up basic event listeners
         setupBasicEventListeners();
         
-        // 5. Emit application ready event
+        // 5. Initialize UI components (tabs, modals, etc.)
+        setupCoreUI();
+        
+        // 6. Hide loading state and show the builder
+        hideLoadingState();
+        
+        // 7. Emit application ready event
         document.dispatchEvent(new CustomEvent('gmkb:application-ready', {
             detail: {
                 timestamp: Date.now(),
@@ -83,6 +85,60 @@ function initializeWhenReady() {
 }
 
 /**
+ * ROOT FIX: Hide loading state and show the builder interface
+ */
+function hideLoadingState() {
+    try {
+        // Hide various loading states that might be showing
+        const loadingStates = [
+            document.getElementById('loading-state'),
+            document.getElementById('state-loading-enhanced'),
+            document.querySelector('.loading-state'),
+            document.querySelector('.gmkb-loading'),
+            document.querySelector('[data-loading]')
+        ];
+        
+        loadingStates.forEach(element => {
+            if (element) {
+                element.style.display = 'none';
+                element.classList.remove('show', 'active');
+            }
+        });
+        
+        // Show the main builder interface
+        const builderElements = [
+            document.getElementById('media-kit-builder'),
+            document.getElementById('media-kit-preview'),
+            document.querySelector('.media-kit-builder'),
+            document.querySelector('.gmkb-builder')
+        ];
+        
+        builderElements.forEach(element => {
+            if (element) {
+                element.style.display = 'block';
+                element.classList.add('ready');
+            }
+        });
+        
+        // Update any loading text
+        const loadingTexts = document.querySelectorAll('[data-loading-text]');
+        loadingTexts.forEach(element => {
+            const readyText = element.dataset.readyText || 'Media Kit Builder';
+            element.textContent = readyText;
+        });
+        
+        // Remove loading classes from body
+        document.body.classList.remove('gmkb-loading', 'loading');
+        document.body.classList.add('gmkb-ready');
+        
+        window.structuredLogger.info('MAIN', 'Loading state hidden, builder interface shown');
+        
+    } catch (error) {
+        window.structuredLogger.error('MAIN', 'Failed to hide loading state', error);
+    }
+}
+
+/**
  * ROOT FIX: Create fallback logger if not available
  */
 function createFallbackLogger() {
@@ -93,6 +149,155 @@ function createFallbackLogger() {
         error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
     };
     console.log('🛟 MAIN: Created fallback structured logger');
+}
+
+/**
+ * ROOT FIX: Setup core UI components (tabs, modals, etc.)
+ */
+function setupCoreUI() {
+    try {
+        // Initialize tabs if they exist
+        setupTabs();
+        
+        // Initialize modals if they exist
+        setupModals();
+        
+        // Initialize component library
+        setupComponentLibrary();
+        
+        // Initialize layout handlers
+        setupLayoutHandlers();
+        
+        window.structuredLogger.info('MAIN', 'Core UI setup complete');
+        
+    } catch (error) {
+        window.structuredLogger.error('MAIN', 'Core UI setup failed', error);
+    }
+}
+
+/**
+ * ROOT FIX: Setup tab functionality
+ */
+function setupTabs() {
+    const tabButtons = document.querySelectorAll('.media-kit-tabs .tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    
+    if (tabButtons.length === 0) {
+        window.structuredLogger.debug('MAIN', 'No tabs found to initialize');
+        return;
+    }
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const targetPanel = button.dataset.tab;
+            if (!targetPanel) return;
+            
+            // Remove active class from all buttons and panels
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanels.forEach(panel => panel.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding panel
+            button.classList.add('active');
+            const panel = document.getElementById(targetPanel);
+            if (panel) {
+                panel.classList.add('active');
+            }
+        });
+    });
+    
+    window.structuredLogger.info('MAIN', 'Tabs initialized', { count: tabButtons.length });
+}
+
+/**
+ * ROOT FIX: Setup modal functionality
+ */
+function setupModals() {
+    // Initialize modal triggers
+    const modalTriggers = document.querySelectorAll('[data-modal]');
+    
+    modalTriggers.forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const modalId = trigger.dataset.modal;
+            const modal = document.getElementById(modalId);
+            
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.add('show');
+                
+                // Add close functionality
+                const closeBtn = modal.querySelector('.modal-close, .close-modal');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        modal.style.display = 'none';
+                        modal.classList.remove('show');
+                    });
+                }
+                
+                // Close on backdrop click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                        modal.classList.remove('show');
+                    }
+                });
+            }
+        });
+    });
+    
+    window.structuredLogger.info('MAIN', 'Modals initialized', { count: modalTriggers.length });
+}
+
+/**
+ * ROOT FIX: Setup component library functionality
+ */
+function setupComponentLibrary() {
+    // Ensure component data is available globally
+    if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
+        const data = window.gmkbData || window.guestifyData;
+        window.gmkbComponentsData = data.components || [];
+        window.structuredLogger.info('MAIN', 'Component data made globally available', { count: window.gmkbComponentsData.length });
+    }
+    
+    // Initialize component library modal if it exists
+    const componentLibrary = document.getElementById('component-library-overlay');
+    if (componentLibrary && window.componentLibrarySystem) {
+        if (typeof window.componentLibrarySystem.initialize === 'function') {
+            window.componentLibrarySystem.initialize();
+            window.structuredLogger.info('MAIN', 'Component library system initialized');
+        }
+    }
+}
+
+/**
+ * ROOT FIX: Setup layout and drag-drop handlers
+ */
+function setupLayoutHandlers() {
+    // Basic layout handling - can be expanded later
+    const previewContainer = document.getElementById('media-kit-preview');
+    if (previewContainer) {
+        // Add basic drop zone functionality
+        previewContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            previewContainer.classList.add('drag-over');
+        });
+        
+        previewContainer.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            previewContainer.classList.remove('drag-over');
+        });
+        
+        previewContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            previewContainer.classList.remove('drag-over');
+            // Drop handling would go here
+        });
+        
+        window.structuredLogger.info('MAIN', 'Layout handlers initialized');
+    }
 }
 
 /**
@@ -110,10 +315,24 @@ function setupBasicEventListeners() {
     const addComponentBtn = document.getElementById('add-component-btn');
     if (addComponentBtn) {
         addComponentBtn.addEventListener('click', () => {
+            // ROOT FIX: Try multiple ways to open component library
             if (window.componentLibrarySystem && window.componentLibrarySystem.show) {
                 window.componentLibrarySystem.show();
-            } else if (window.GMKB_Modals) {
-                window.GMKB_Modals.show('component-library-overlay');
+            } else {
+                // Fallback: directly show the modal
+                const modal = document.getElementById('component-library-overlay');
+                if (modal) {
+                    modal.style.display = 'block';
+                    modal.classList.add('show');
+                    
+                    // Ensure component data is available
+                    if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
+                        const data = window.gmkbData || window.guestifyData;
+                        window.gmkbComponentsData = data.components || [];
+                    }
+                } else {
+                    window.structuredLogger.warn('MAIN', 'Component library modal not found');
+                }
             }
         });
         window.structuredLogger.info('MAIN', 'Add component button listener attached');
@@ -195,22 +414,59 @@ function initializeMinimalFallback() {
     }
 }
 
-// ROOT FIX: Simplified DOM ready handler
+// ROOT FIX: Simplified DOM ready handler with initialization guard
+let isInitializing = false;
+let isInitialized = false;
+
+function safeInitialization() {
+    // Prevent duplicate initialization
+    if (isInitializing || isInitialized) {
+        console.log('🚷 GMKB: Initialization already in progress or completed, skipping...');
+        return;
+    }
+    
+    isInitializing = true;
+    
+    try {
+        initializeWhenReady();
+        isInitialized = true;
+    } catch (error) {
+        console.error('❌ GMKB: Safe initialization failed:', error);
+    } finally {
+        isInitializing = false;
+    }
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeWhenReady);
+    document.addEventListener('DOMContentLoaded', safeInitialization);
 } else {
     // DOM is already ready
-    initializeWhenReady();
+    safeInitialization();
 }
 
 // ROOT FIX: Expose minimal global API for testing
 window.gmkbApp = {
-    initialize: initializeWhenReady,
+    initialize: safeInitialization,
+    forceReinitialize: () => {
+        isInitialized = false;
+        isInitializing = false;
+        console.log('🔄 GMKB: Force reinitializing...');
+        safeInitialization();
+    },
     save: handleSaveClick,
     getState: () => window.enhancedStateManager?.getState(),
     addComponent: (type, props) => window.enhancedComponentManager?.addComponent(type, props),
     removeComponent: (id) => window.enhancedComponentManager?.removeComponent(id),
-    isReady: () => !!(window.structuredLogger && window.enhancedStateManager && window.enhancedComponentManager && window.GMKB_Modals)
+    isReady: () => !!(window.structuredLogger && window.enhancedStateManager && window.enhancedComponentManager),
+    isInitialized: () => isInitialized,
+    isInitializing: () => isInitializing,
+    hideLoading: hideLoadingState,
+    setupUI: setupCoreUI,
+    debug: {
+        state: () => window.enhancedStateManager?.debug(),
+        components: () => window.enhancedComponentManager?.getStatus(),
+        empty: () => window.emptyStateHandlers?.getStatus()
+    }
 };
 
 console.log('✅ GMKB: Simplified main application loaded and ready');

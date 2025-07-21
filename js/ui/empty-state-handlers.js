@@ -351,24 +351,38 @@ class EmptyStateHandlers {
      * ROOT FIX: Setup state transition handlers for dynamic empty state changes
      */
     setupStateTransitionHandlers() {
-        // Listen for state manager changes
-        if (window.enhancedStateManager) {
-            window.enhancedStateManager.subscribe((state) => {
-                this.handleStateChange(state);
+        try {
+            // Listen for state manager changes
+            if (window.enhancedStateManager) {
+                // ROOT FIX: Use correct method name - subscribeGlobal not subscribe
+                if (typeof window.enhancedStateManager.subscribeGlobal === 'function') {
+                    window.enhancedStateManager.subscribeGlobal((state) => {
+                        this.handleStateChange(state);
+                    });
+                    structuredLogger.info('EMPTY_STATE', 'State manager subscription established');
+                } else {
+                    structuredLogger.warn('EMPTY_STATE', 'State manager subscribeGlobal method not available');
+                }
+            } else {
+                structuredLogger.warn('EMPTY_STATE', 'Enhanced state manager not available for subscription');
+            }
+            
+            // Listen for component additions
+            document.addEventListener('componentAdded', (e) => {
+                this.handleComponentAdded(e.detail);
             });
+            
+            // Listen for component removals
+            document.addEventListener('componentRemoved', (e) => {
+                this.handleComponentRemoved(e.detail);
+            });
+            
+            structuredLogger.info('EMPTY_STATE', 'State transition handlers setup complete');
+            
+        } catch (error) {
+            structuredLogger.error('EMPTY_STATE', 'State transition handler setup failed', error);
+            // Don't fail completely - the empty state can still work without state transitions
         }
-        
-        // Listen for component additions
-        document.addEventListener('componentAdded', (e) => {
-            this.handleComponentAdded(e.detail);
-        });
-        
-        // Listen for component removals
-        document.addEventListener('componentRemoved', (e) => {
-            this.handleComponentRemoved(e.detail);
-        });
-        
-        structuredLogger.info('EMPTY_STATE', 'State transition handlers setup complete');
     }
     
     /**
