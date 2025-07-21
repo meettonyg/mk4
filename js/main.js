@@ -1,35 +1,54 @@
 /**
- * @file main.js - Media Kit Builder (Refactored Entry Point)
- * @description Initializes and coordinates all core application modules.
+ * @file main.js - Media Kit Builder (WordPress-Compatible Entry Point)
+ * @description Initializes and coordinates all core application modules using global objects.
  */
-import { UICoordinator } from './core/ui-coordinator.js';
-import { GMKB } from './core/gmkb.js';
-import { StateManager } from './core/state-manager.js';
-import { ComponentManager } from './managers/component-manager.js';
 
 // IMMEDIATE DEBUG LOG - Should appear first
-console.log('%c🚀 GMKB main.js LOADING (REFACTORED)...', 'font-weight: bold; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 3px;');
+console.log('%c🚀 GMKB main.js LOADING (WORDPRESS COMPATIBLE)...', 'font-weight: bold; color: #2563eb; background: #eff6ff; padding: 2px 6px; border-radius: 3px;');
 console.log('📜 Script URL:', document.currentScript?.src || 'unknown');
 console.log('📜 Load time:', new Date().toISOString());
-console.log('🔧 ARCHITECTURE: Modular ES6 structure with clean separation of concerns');
-console.log('✅ REFACTORED: Clean entry point with module imports');
+console.log('🔧 ARCHITECTURE: WordPress-compatible global namespace structure');
+console.log('✅ ROOT FIX: Using global objects instead of ES6 imports');
 
-// Make systems available on the window for debugging and legacy compatibility
-window.GMKB = GMKB;
-window.StateManager = StateManager;
-window.ComponentManager = ComponentManager;
-window.UICoordinator = UICoordinator;
-
-// Attach systems to GMKB namespace
-GMKB.systems.StateManager = StateManager;
-GMKB.systems.ComponentManager = ComponentManager;
-GMKB.systems.UICoordinator = UICoordinator;
+// Wait for dependencies to be loaded via WordPress enqueue system
+function initializeWhenReady() {
+    // Check if all required global objects are available
+    if (typeof window.GMKB !== 'undefined' && 
+        typeof window.UICoordinator !== 'undefined' &&
+        typeof window.StateManager !== 'undefined' &&
+        typeof window.ComponentManager !== 'undefined') {
+        
+        console.log('✅ GMKB: All dependencies loaded, initializing...');
+        
+        // Attach systems to GMKB namespace for organization
+        window.GMKB.systems = window.GMKB.systems || {};
+        window.GMKB.systems.StateManager = window.StateManager;
+        window.GMKB.systems.ComponentManager = window.ComponentManager;
+        window.GMKB.systems.UICoordinator = window.UICoordinator;
+        
+        // Initialize the UI Coordinator
+        if (typeof window.UICoordinator.init === 'function') {
+            window.UICoordinator.init();
+            console.log('✅ GMKB: Application initialized successfully.');
+        } else {
+            console.error('❌ GMKB: UICoordinator.init is not a function');
+        }
+        
+    } else {
+        console.log('⏳ GMKB: Waiting for dependencies to load...');
+        console.log('  GMKB:', typeof window.GMKB);
+        console.log('  UICoordinator:', typeof window.UICoordinator);
+        console.log('  StateManager:', typeof window.StateManager);
+        console.log('  ComponentManager:', typeof window.ComponentManager);
+        
+        // Retry after a short delay
+        setTimeout(initializeWhenReady, 100);
+    }
+}
 
 // Initialize when the DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', UICoordinator.init);
+    document.addEventListener('DOMContentLoaded', initializeWhenReady);
 } else {
-    UICoordinator.init();
+    initializeWhenReady();
 }
-
-console.log('✅ GMKB: Refactored application initialized successfully.');

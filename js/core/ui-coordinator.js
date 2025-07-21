@@ -4,8 +4,8 @@
  * This ensures proper initialization order and prevents re-rendering
  */
 
-import { StateManager } from './state-manager.js';
-import { ComponentManager } from '../managers/component-manager.js';
+// ROOT FIX: Access global objects instead of ES6 imports
+// StateManager and ComponentManager will be available globally
 
 const UICoordinator = {
     initialized: false,
@@ -24,13 +24,23 @@ const UICoordinator = {
             
             // Step 1: Initialize core systems without rendering
             console.log('📋 UICoordinator: Initializing StateManager...');
-            StateManager.init();
+            if (window.StateManager) {
+                window.StateManager.init();
+            } else {
+                console.error('❌ UICoordinator: StateManager not available globally');
+                return;
+            }
             
             console.log('🧩 UICoordinator: Initializing ComponentManager (library only)...');
-            ComponentManager.init(); // This will ONLY load library, no rendering
+            if (window.ComponentManager) {
+                window.ComponentManager.init(); // This will ONLY load library, no rendering
+            } else {
+                console.error('❌ UICoordinator: ComponentManager not available globally');
+                return;
+            }
             
             console.log('📋 UICoordinator: Checking for saved components...');
-            const state = StateManager.getState();
+            const state = window.StateManager ? window.StateManager.getState() : { components: {} };
             const componentCount = Object.keys(state.components).length;
             console.log(`📋 UICoordinator: Found ${componentCount} saved components`);
             
@@ -59,14 +69,18 @@ const UICoordinator = {
             await new Promise(resolve => setTimeout(resolve, 50));
             
             // Check state again
-            const state = StateManager.getState();
+            const state = window.StateManager ? window.StateManager.getState() : { components: {} };
             const componentCount = Object.keys(state.components).length;
             console.log(`📋 UICoordinator: Ready to load ${componentCount} saved components`);
             
             if (componentCount > 0) {
                 // Load saved components EXACTLY ONCE
                 console.log('🎨 UICoordinator: Calling ComponentManager.loadSavedComponents()...');
-                await ComponentManager.loadSavedComponents();
+                if (window.ComponentManager) {
+                    await window.ComponentManager.loadSavedComponents();
+                } else {
+                    console.error('❌ UICoordinator: ComponentManager not available for loading saved components');
+                }
                 console.log('✅ UICoordinator: ComponentManager.loadSavedComponents() completed');
             } else {
                 console.log('📝 UICoordinator: No components to load');
@@ -79,4 +93,7 @@ const UICoordinator = {
     }
 };
 
-export { UICoordinator };
+// ROOT FIX: Make UICoordinator available globally instead of using ES6 export
+window.UICoordinator = UICoordinator;
+
+console.log('✅ UICoordinator: Available globally and ready');

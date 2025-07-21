@@ -3,7 +3,8 @@
  * @description Centralized state management for the Media Kit Builder
  */
 
-import { GMKB } from './gmkb.js';
+// ROOT FIX: Access GMKB from global scope instead of ES6 import
+// GMKB will be available via window.GMKB after gmkb.js loads
 
 const StateManager = {
     state: {
@@ -16,7 +17,10 @@ const StateManager = {
         console.log('📋 StateManager: Initialized (Phase 2.3 Simplified)');
         
         // ROOT FIX: Listen for save request from toolbar or any other component
-        GMKB.subscribe('gmkb:save-requested', this.handleSaveRequest.bind(this));
+        // ROOT FIX: Access GMKB from global scope
+        if (typeof window.GMKB !== 'undefined') {
+            window.GMKB.subscribe('gmkb:save-requested', this.handleSaveRequest.bind(this));
+        }
         
         // ROOT FIX: Check localStorage FIRST (where previous components are saved)
         let hasLocalStorageData = false;
@@ -67,7 +71,9 @@ const StateManager = {
     setState(newState) {
         this.state = { ...this.state, ...newState };
         this.saveToStorage(); // No callbacks needed for automatic saves
-        GMKB.dispatch('gmkb:state-changed', { state: this.state });
+        if (window.GMKB) {
+            window.GMKB.dispatch('gmkb:state-changed', { state: this.state });
+        }
     },
     
     addComponent(component) {
@@ -79,8 +85,10 @@ const StateManager = {
         }
         
         this.saveToStorage(); // No callbacks needed for automatic saves
-        GMKB.dispatch('gmkb:component-added', { id, component: this.state.components[id] });
-        GMKB.dispatch('gmkb:state-changed', { state: this.state });
+        if (window.GMKB) {
+            window.GMKB.dispatch('gmkb:component-added', { id, component: this.state.components[id] });
+            window.GMKB.dispatch('gmkb:state-changed', { state: this.state });
+        }
         
         return id;
     },
@@ -91,8 +99,10 @@ const StateManager = {
             this.state.layout = this.state.layout.filter(cid => cid !== id);
             
             this.saveToStorage(); // No callbacks needed for automatic saves
-            GMKB.dispatch('gmkb:component-removed', { id });
-            GMKB.dispatch('gmkb:state-changed', { state: this.state });
+            if (window.GMKB) {
+                window.GMKB.dispatch('gmkb:component-removed', { id });
+                window.GMKB.dispatch('gmkb:state-changed', { state: this.state });
+            }
             
             return true;
         }
@@ -104,8 +114,10 @@ const StateManager = {
             this.state.components[id] = { ...this.state.components[id], ...updates };
             
             this.saveToStorage(); // No callbacks needed for automatic saves
-            GMKB.dispatch('gmkb:component-updated', { id, component: this.state.components[id] });
-            GMKB.dispatch('gmkb:state-changed', { state: this.state });
+            if (window.GMKB) {
+                window.GMKB.dispatch('gmkb:component-updated', { id, component: this.state.components[id] });
+                window.GMKB.dispatch('gmkb:state-changed', { state: this.state });
+            }
             
             return true;
         }
@@ -220,4 +232,7 @@ const StateManager = {
     }
 };
 
-export { StateManager };
+// ROOT FIX: Make StateManager available globally instead of using ES6 export
+window.StateManager = StateManager;
+
+console.log('✅ StateManager: Available globally and ready');

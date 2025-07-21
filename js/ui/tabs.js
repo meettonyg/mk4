@@ -5,7 +5,7 @@
 /**
  * ROOT FIX: Enhanced tab switching functionality with better initialization
  */
-export function setupTabs() {
+function setupTabs() {
     console.log('📋 TABS: Setting up enhanced tab functionality...');
     
     // Wait for DOM to be ready
@@ -175,3 +175,15 @@ function logAvailableTabContents() {
     
     console.groupEnd();
 }
+
+// ROOT FIX: Make tabs system available globally instead of ES6 export
+window.setupTabs = setupTabs;
+window.GMKBTabs = {
+    setupTabs,
+    setupTabEventHandlers,
+    activateTab,
+    findTabContent,
+    logAvailableTabContents
+};
+
+console.log('✅ Tabs System: Available globally and ready');

@@ -103,10 +103,10 @@ function gmkb_enqueue_assets() {
         true
     );
     
-    // Enhanced State Manager (additional state features)
+    // Enhanced State Manager (simplified version)
     wp_enqueue_script(
         'gmkb-enhanced-state-manager',
-        $plugin_url . 'js/core/enhanced-state-manager.js',
+        $plugin_url . 'js/core/enhanced-state-manager-simple.js',
         array('gmkb-state-manager'),
         $version,
         true
@@ -144,21 +144,8 @@ function gmkb_enqueue_assets() {
         true
     );
     
-    // ROOT FIX: Add type="module" attribute for ES6 import/export support to all core modules
-    add_filter( 'script_loader_tag', function( $tag, $handle, $src ) {
-        $module_handles = array(
-            'gmkb-core-namespace',
-            'gmkb-state-manager',
-            'gmkb-component-manager', 
-            'gmkb-ui-coordinator',
-            'gmkb-main-script'
-        );
-        
-        if ( in_array( $handle, $module_handles ) ) {
-            return '<script type="module" src="' . esc_url( $src ) . '" id="' . $handle . '-js"></script>' . "\n";
-        }
-        return $tag;
-    }, 10, 3 );
+    // ROOT FIX: Scripts will be converted to WordPress-compatible global namespace pattern
+    // No special module handling needed
 
     // Step 2: Essential Utility and Service Files
     // Core utilities that other modules depend on

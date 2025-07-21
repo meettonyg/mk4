@@ -88,10 +88,18 @@ function handleFormatChange(e) {
     // You could update the UI or prepare data based on the selected format here.
 }
 
-// Export the setup function for use in main.js
-export function setupExportSystem() {
-    init();
-}
+// ROOT FIX: Make export system available globally instead of ES6 export
+window.GMKBExportSystem = {
+    init,
+    setupEventListeners,
+    handleExport,
+    handleFormatChange
+};
+
+// Legacy compatibility
+window.setupExportSystem = init;
+
+console.log('✅ Export System: Available globally and ready');
 
 // --- Initialization ---
 // Wait for the main GMKB application to be ready before initializing.

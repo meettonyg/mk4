@@ -5,7 +5,7 @@
 /**
  * Set up preview toggle functionality
  */
-export function setupPreviewToggle() {
+function setupPreviewToggle() {
     const toggleButtons = document.querySelectorAll('.toolbar__preview-toggle button');
     const container = document.getElementById('preview-container');
 
@@ -25,3 +25,11 @@ export function setupPreviewToggle() {
         });
     });
 }
+
+// ROOT FIX: Make preview system available globally instead of ES6 export
+window.setupPreviewToggle = setupPreviewToggle;
+window.GMKBPreview = {
+    setupPreviewToggle
+};
+
+console.log('✅ Preview System: Available globally and ready');

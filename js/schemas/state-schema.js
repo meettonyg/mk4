@@ -3,7 +3,7 @@
  * Defines the structure and validation rules for the Media Kit Builder state
  */
 
-export const stateSchema = {
+const stateSchema = {
     $schema: "http://json-schema.org/draft-07/schema#",
     type: "object",
     required: ["layout", "components", "globalSettings"],
@@ -135,7 +135,7 @@ export const stateSchema = {
 /**
  * Transaction schemas for different state operations
  */
-export const transactionSchemas = {
+const transactionSchemas = {
     ADD_COMPONENT: {
         type: "object",
         required: ["type", "payload"],
@@ -229,7 +229,7 @@ export const transactionSchemas = {
 /**
  * Migration schemas for version upgrades
  */
-export const migrationSchemas = {
+const migrationSchemas = {
     "1.0.0_to_2.0.0": {
         description: "Migrate from legacy state structure to enhanced structure",
         transform: (oldState) => {
@@ -246,7 +246,7 @@ export const migrationSchemas = {
 /**
  * Validation constraints
  */
-export const validationConstraints = {
+const validationConstraints = {
     maxComponents: 100,
     maxLayoutDepth: 10,
     maxComponentIdLength: 100,
@@ -259,7 +259,7 @@ export const validationConstraints = {
 /**
  * Default state structure
  */
-export const defaultState = {
+const defaultState = {
     layout: [],
     components: {},
     globalSettings: {
@@ -281,3 +281,21 @@ export const defaultState = {
     },
     version: "2.0.0"
 };
+
+// ROOT FIX: Make schemas available globally instead of ES6 exports
+window.stateSchema = stateSchema;
+window.transactionSchemas = transactionSchemas;
+window.migrationSchemas = migrationSchemas;
+window.validationConstraints = validationConstraints;
+window.defaultState = defaultState;
+
+// Combined schemas object for easier access
+window.GMKBSchemas = {
+    stateSchema,
+    transactionSchemas,
+    migrationSchemas,
+    validationConstraints,
+    defaultState
+};
+
+console.log('✅ State Schema: Available globally and ready');

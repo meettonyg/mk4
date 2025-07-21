@@ -133,4 +133,9 @@ class GlobalSettings {
     }
 }
 
-export const globalSettings = new GlobalSettings();
+// ROOT FIX: Make global settings available globally instead of ES6 export
+const globalSettings = new GlobalSettings();
+window.globalSettings = globalSettings;
+window.GMKBGlobalSettings = globalSettings;
+
+console.log('✅ Global Settings: Available globally and ready');

@@ -323,4 +323,7 @@ const GMKB = {
     }
 };
 
-export { GMKB };
+// ROOT FIX: Make GMKB available globally instead of using ES6 export
+window.GMKB = GMKB;
+
+console.log('✅ GMKB Core: Global namespace established and ready');

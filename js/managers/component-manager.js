@@ -3,8 +3,8 @@
  * @description Handles component rendering, editing, and lifecycle management
  */
 
-import { GMKB } from '../core/gmkb.js';
-import { StateManager } from '../core/state-manager.js';
+// ROOT FIX: Access global objects instead of ES6 imports
+// GMKB and StateManager will be available globally
 
 const ComponentManager = {
     availableComponents: {},
@@ -67,7 +67,9 @@ const ComponentManager = {
         
         // Subscribe to all events globally using GMKB
         Object.entries(globalHandlers).forEach(([eventName, handler]) => {
-            GMKB.subscribe(eventName, handler);
+            if (window.GMKB) {
+                window.GMKB.subscribe(eventName, handler);
+            }
         });
         
         this.globalActionListenersSetup = true;
@@ -239,7 +241,12 @@ const ComponentManager = {
             timestamp: Date.now()
         };
         
-        const id = StateManager.addComponent(component);
+        const id = window.StateManager ? window.StateManager.addComponent(component) : null;
+        
+        if (!id) {
+            console.error('❌ ComponentManager: StateManager not available');
+            return null;
+        }
         
         // If skipServerRender is true, use fallback rendering (for backwards compatibility)
         if (skipServerRender) {
@@ -261,7 +268,7 @@ const ComponentManager = {
         }
         
         // Remove from state
-        const success = StateManager.removeComponent(id);
+        const success = window.StateManager ? window.StateManager.removeComponent(id) : false;
         
         if (success) {
             console.log(`🧩 ComponentManager: Removed component with ID: ${id}`);
@@ -287,7 +294,7 @@ const ComponentManager = {
      * This method ensures each component is rendered EXACTLY ONCE
      */
     async loadSavedComponents() {
-        const state = StateManager.getState();
+        const state = window.StateManager ? window.StateManager.getState() : { components: {}, layout: [] };
         const componentIds = Object.keys(state.components);
         
         if (componentIds.length === 0) {
@@ -330,7 +337,7 @@ const ComponentManager = {
      */
     async renderComponent(componentId) {
         try {
-            const state = StateManager.getState();
+            const state = window.StateManager ? window.StateManager.getState() : { components: {}, layout: [] };
             const component = state.components[componentId];
             
             if (!component) {
@@ -538,13 +545,17 @@ const ComponentManager = {
         // ROOT FIX: Event-driven ComponentControlsManager integration
         if (window.componentControlsManager) {
             // ComponentControlsManager is ready - attach immediately
-            GMKB.attachControlsImmediately(targetElement, targetComponentId);
+            if (window.GMKB) {
+                window.GMKB.attachControlsImmediately(targetElement, targetComponentId);
+            }
         } else {
             // ROOT FIX: Listen for ComponentControlsManager ready event (NO POLLING)
             const handleControlsManagerReady = () => {
                 if (window.componentControlsManager) {
                     console.log(`✅ ComponentManager: ComponentControlsManager ready for ${targetComponentId}`);
-                    GMKB.attachControlsImmediately(targetElement, targetComponentId);
+                    if (window.GMKB) {
+                        window.GMKB.attachControlsImmediately(targetElement, targetComponentId);
+                    }
                     // Remove listener after successful attachment
                     document.removeEventListener('DOMContentLoaded', handleControlsManagerReady);
                     document.removeEventListener('gmkb:component-controls-manager-ready', handleControlsManagerReady);
@@ -666,4 +677,7 @@ const ComponentManager = {
     }
 };
 
-export { ComponentManager };
+// ROOT FIX: Make ComponentManager available globally instead of using ES6 export
+window.ComponentManager = ComponentManager;
+
+console.log('✅ ComponentManager: Available globally and ready');

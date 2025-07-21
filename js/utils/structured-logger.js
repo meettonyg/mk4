@@ -524,4 +524,7 @@ class StructuredLogger {
 const structuredLogger = new StructuredLogger();
 
 // Export for module usage
-export { structuredLogger };
+// ROOT FIX: Make structuredLogger available globally instead of using ES6 export
+window.structuredLogger = structuredLogger;
+
+console.log('✅ StructuredLogger: Available globally and ready');

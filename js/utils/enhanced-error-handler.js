@@ -7,8 +7,8 @@
  * @version 2.3.0-task4
  */
 
-import { errorBoundary } from './error-boundary.js';
-import { structuredLogger } from './structured-logger.js';
+// ROOT FIX: Access global objects instead of ES6 imports
+// errorBoundary and structuredLogger will be available globally
 
 export class EnhancedErrorHandler {
     constructor() {
@@ -16,7 +16,7 @@ export class EnhancedErrorHandler {
         this.handleError = this.handleError.bind(this);
         this.displayError = this.displayError.bind(this);
         
-        this.logger = structuredLogger;
+        this.logger = window.structuredLogger || console;
         
         // Validate methods are available for system registrar
         if (typeof this.handleError === 'function' && typeof this.displayError === 'function') {
@@ -446,10 +446,10 @@ export class EnhancedErrorHandler {
      */
     setupGlobalErrorHandling() {
         // Integrate with existing error boundary
-        if (errorBoundary) {
-            const originalHandleError = errorBoundary.handleError.bind(errorBoundary);
+        if (window.errorBoundary) {
+            const originalHandleError = window.errorBoundary.handleError.bind(window.errorBoundary);
             
-            errorBoundary.handleError = async (module, error, context = {}) => {
+            window.errorBoundary.handleError = async (module, error, context = {}) => {
                 // First, let the original error boundary handle it
                 const result = await originalHandleError(module, error, context);
                 
@@ -1089,11 +1089,12 @@ ${error.stack ? error.stack.substring(0, 500) + (error.stack.length > 500 ? '...
 }
 
 // Create singleton instance
-export const enhancedErrorHandler = new EnhancedErrorHandler();
+// ROOT FIX: Create and expose globally instead of ES6 export
+window.enhancedErrorHandler = new EnhancedErrorHandler();
 
 // Global exposure for error panel interactions
 if (typeof window !== 'undefined') {
-    window.enhancedErrorHandler = enhancedErrorHandler;
+    // Enhanced error handler is already assigned above
     
     // CRITICAL FIX: Expose global functions that template expects
     window.setupGlobalErrorListeners = function() {
