@@ -575,19 +575,43 @@ async function loadComponentsFromServer() {
     try {
         structuredLogger.info('MODAL', 'Loading components from server via AJAX');
         
+        // ROOT FIX: Debug AJAX configuration
+        const ajaxUrl = window.gmkbData?.ajaxUrl || window.guestifyData?.ajaxUrl;
+        const nonce = window.gmkbData?.nonce || window.guestifyData?.nonce;
+        
+        structuredLogger.info('MODAL', 'AJAX configuration', {
+            ajaxUrl,
+            hasNonce: !!nonce,
+            gmkbDataAvailable: !!window.gmkbData,
+            guestifyDataAvailable: !!window.guestifyData
+        });
+        
+        if (!ajaxUrl) {
+            throw new Error('No AJAX URL available - neither gmkbData nor guestifyData is properly loaded');
+        }
+        
+        if (!nonce) {
+            throw new Error('No nonce available - security validation will fail');
+        }
+        
         // Show loading state
         showLoadingState();
         
-        const response = await fetch(window.gmkbData?.ajaxUrl || window.guestifyData?.ajaxUrl, {
+        const response = await fetch(ajaxUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
                 action: 'guestify_get_components',
-                nonce: window.gmkbData?.nonce || window.guestifyData?.nonce
+                nonce: nonce
             })
         });
+        
+        // ROOT FIX: Add detailed response debugging
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
         const data = await response.json();
         
