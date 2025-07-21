@@ -54,6 +54,13 @@ class EmptyStateHandlers {
         try {
             safeLog('info', 'EMPTY_STATE', 'Setting up empty state button handlers');
             
+            // ROOT FIX: Check dependencies before initialization
+            if (!this.checkDependencies()) {
+                safeLog('warn', 'EMPTY_STATE', 'Dependencies not ready, scheduling retry');
+                setTimeout(() => this.init(), 500);
+                return;
+            }
+            
             // Auto-generation buttons
             this.setupAutoGenerationButtons();
             
@@ -78,6 +85,28 @@ class EmptyStateHandlers {
         } catch (error) {
             safeLog('error', 'EMPTY_STATE', 'Failed to initialize empty state handlers', error);
         }
+    }
+    
+    /**
+     * ROOT FIX: Check if required dependencies are available
+     */
+    checkDependencies() {
+        const dependencies = {
+            guestifyData: window.guestifyData || window.gmkbData,
+            structuredLogger: window.structuredLogger
+        };
+        
+        const missing = [];
+        Object.entries(dependencies).forEach(([name, value]) => {
+            if (!value) missing.push(name);
+        });
+        
+        if (missing.length > 0) {
+            safeLog('debug', 'EMPTY_STATE', 'Missing dependencies', { missing });
+            return false;
+        }
+        
+        return true;
     }
     
     /**

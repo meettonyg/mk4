@@ -412,7 +412,7 @@ function gmkb_enqueue_assets() {
         */
     }
 
-    // ROOT FIX: Get component data for JavaScript
+    // ROOT FIX: Enhanced component data loading with fallback
     $components_data = array();
     $categories_data = array();
     
@@ -424,6 +424,55 @@ function gmkb_enqueue_assets() {
             $components_data = $component_discovery->getComponents();
             $categories_data = $component_discovery->getCategories();
         }
+    }
+    
+    // ROOT FIX: Ensure we have valid component data even if discovery fails
+    if (empty($components_data)) {
+        // Provide essential fallback components to prevent empty state errors
+        $components_data = array(
+            array(
+                'type' => 'hero',
+                'name' => 'Hero Section',
+                'title' => 'Hero Section',
+                'description' => 'A prominent header section with title and subtitle',
+                'category' => 'essential',
+                'premium' => false,
+                'icon' => 'fa-star'
+            ),
+            array(
+                'type' => 'biography',
+                'name' => 'Biography',
+                'title' => 'Biography',
+                'description' => 'Professional biography section',
+                'category' => 'essential',
+                'premium' => false,
+                'icon' => 'fa-user'
+            ),
+            array(
+                'type' => 'contact',
+                'name' => 'Contact',
+                'title' => 'Contact Information',
+                'description' => 'Contact details and social links',
+                'category' => 'essential',
+                'premium' => false,
+                'icon' => 'fa-envelope'
+            )
+        );
+        
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '⚠️ GMKB: Component discovery failed, using fallback components' );
+        }
+    }
+    
+    // ROOT FIX: Ensure categories exist
+    if (empty($categories_data)) {
+        $categories_data = array(
+            array(
+                'slug' => 'essential',
+                'name' => 'Essential',
+                'description' => 'Core components for every media kit'
+            )
+        );
     }
     
     // WordPress-native data passing - guaranteed to be available before script runs

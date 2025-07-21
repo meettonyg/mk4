@@ -11,33 +11,100 @@ console.log('📜 Load time:', new Date().toISOString());
 console.log('🔧 ARCHITECTURE: Enhanced WordPress-compatible global namespace with proper initialization');
 console.log('✅ ROOT FIX: Using Global Object Manager for coordinated system initialization');
 
-// ROOT FIX: Enhanced initialization with Global Object Manager
+// ROOT FIX: Enhanced initialization with proper dependency checking
 function initializeWhenReady() {
-    // Check if Global Object Manager is available
-    if (typeof window.globalObjectManager !== 'undefined') {
-        console.log('✅ GMKB: Global Object Manager available, using enhanced initialization');
+    console.log('🚀 GMKB: Starting enhanced initialization sequence');
+    
+    // ROOT FIX: Check for core dependencies first
+    const coreReady = checkCoreDependencies();
+    if (!coreReady.ready) {
+        console.log('⏳ GMKB: Waiting for core dependencies:', coreReady.missing);
+        setTimeout(initializeWhenReady, 100);
+        return;
+    }
+    
+    // Initialize structured logger first
+    if (window.structuredLogger) {
+        window.structuredLogger.logInitStart('main-initialization');
+    }
+    
+    try {
+        // Initialize core systems in proper order
+        initializeCoreSystemsSequence();
         
-        // Use Global Object Manager for proper initialization
-        window.globalObjectManager.onReady(() => {
-            console.log('✅ GMKB: All global objects ready, starting application');
-            
-            // Initialize UI components
-            initializeUIComponents();
-            
-            // Emit application ready event
-            if (window.eventBus) {
-                window.eventBus.emit('gmkb:application-ready', {
-                    timestamp: Date.now(),
-                    systems: window.globalObjectManager.getStatus()
-                });
-            }
-            
-            console.log('✅ GMKB: Enhanced application initialization completed successfully.');
-        });
+        // Initialize UI components
+        initializeUIComponents();
         
-    } else {
-        console.log('⚠️ GMKB: Global Object Manager not available, falling back to legacy initialization');
-        legacyInitialization();
+        // Initialize modals and overlays
+        initializeModalsAndOverlays();
+        
+        // Initialize empty state handlers
+        initializeEmptyStateSystem();
+        
+        // Emit application ready event
+        if (window.eventBus) {
+            window.eventBus.emit('gmkb:application-ready', {
+                timestamp: Date.now(),
+                initializationComplete: true
+            });
+        }
+        
+        console.log('✅ GMKB: Enhanced application initialization completed successfully.');
+        
+        if (window.structuredLogger) {
+            window.structuredLogger.logInitComplete('main-initialization', performance.now());
+        }
+        
+    } catch (error) {
+        console.error('❌ GMKB: Initialization failed:', error);
+        if (window.structuredLogger) {
+            window.structuredLogger.logInitError('main-initialization', error);
+        }
+    }
+}
+
+/**
+ * ROOT FIX: Check for core dependencies
+ */
+function checkCoreDependencies() {
+    const required = {
+        'guestifyData': window.guestifyData || window.gmkbData,
+        'structuredLogger': window.structuredLogger
+    };
+    
+    const missing = [];
+    Object.entries(required).forEach(([name, value]) => {
+        if (!value) missing.push(name);
+    });
+    
+    return {
+        ready: missing.length === 0,
+        missing
+    };
+}
+
+/**
+ * ROOT FIX: Initialize core systems in proper sequence
+ */
+function initializeCoreSystemsSequence() {
+    console.log('🔧 GMKB: Initializing core systems sequence');
+    
+    // 1. Initialize state management
+    if (window.enhancedStateManager) {
+        window.enhancedStateManager.initialize();
+        console.log('✅ GMKB: Enhanced state manager initialized');
+    }
+    
+    // 2. Initialize component management
+    if (window.enhancedComponentManager) {
+        window.enhancedComponentManager.initialize();
+        console.log('✅ GMKB: Enhanced component manager initialized');
+    }
+    
+    // 3. Initialize component renderer
+    if (window.enhancedComponentRenderer) {
+        window.enhancedComponentRenderer.initialize();
+        console.log('✅ GMKB: Enhanced component renderer initialized');
     }
 }
 
@@ -45,33 +112,102 @@ function initializeWhenReady() {
  * ROOT FIX: Enhanced UI component initialization
  */
 function initializeUIComponents() {
+    console.log('🎨 GMKB: Initializing UI components');
+    
     try {
         // Initialize tabs if available
         if (window.setupTabs && typeof window.setupTabs === 'function') {
             window.setupTabs();
             console.log('✅ GMKB: Tabs initialized');
+        } else {
+            console.log('⚠️ GMKB: Tabs setup function not available');
         }
         
-        // Initialize modals if available
+        // Initialize layout system
+        if (window.setupLayout && typeof window.setupLayout === 'function') {
+            window.setupLayout();
+            console.log('✅ GMKB: Layout system initialized');
+        }
+        
+        // Initialize preview system
+        if (window.setupPreview && typeof window.setupPreview === 'function') {
+            window.setupPreview();
+            console.log('✅ GMKB: Preview system initialized');
+        }
+        
+        // Initialize element controls
+        if (window.setupElementControls && typeof window.setupElementControls === 'function') {
+            window.setupElementControls();
+            console.log('✅ GMKB: Element controls initialized');
+        }
+        
+    } catch (error) {
+        console.error('❌ GMKB: Error initializing UI components', error);
+        if (window.structuredLogger) {
+            window.structuredLogger.error('UI', 'UI component initialization failed', error);
+        }
+    }
+}
+
+/**
+ * ROOT FIX: Initialize modals and overlays
+ */
+function initializeModalsAndOverlays() {
+    console.log('📋 GMKB: Initializing modals and overlays');
+    
+    try {
+        // Initialize modal base system
         if (window.setupModals && typeof window.setupModals === 'function') {
             window.setupModals();
-            console.log('✅ GMKB: Modals initialized');
+            console.log('✅ GMKB: Modal base system initialized');
         }
         
-        // Initialize component library if available
+        // Initialize component library
         if (window.setupComponentLibrary && typeof window.setupComponentLibrary === 'function') {
             window.setupComponentLibrary();
             console.log('✅ GMKB: Component library initialized');
         }
         
-        // Initialize export system if available
+        // Initialize export system
         if (window.setupExportSystem && typeof window.setupExportSystem === 'function') {
             window.setupExportSystem();
             console.log('✅ GMKB: Export system initialized');
         }
         
+        // Initialize global settings
+        if (window.setupGlobalSettings && typeof window.setupGlobalSettings === 'function') {
+            window.setupGlobalSettings();
+            console.log('✅ GMKB: Global settings initialized');
+        }
+        
     } catch (error) {
-        console.error('❌ GMKB: Error initializing UI components', error);
+        console.error('❌ GMKB: Error initializing modals', error);
+        if (window.structuredLogger) {
+            window.structuredLogger.error('MODAL', 'Modal initialization failed', error);
+        }
+    }
+}
+
+/**
+ * ROOT FIX: Initialize empty state system
+ */
+function initializeEmptyStateSystem() {
+    console.log('🔄 GMKB: Initializing empty state system');
+    
+    try {
+        // Initialize empty state handlers
+        if (window.emptyStateHandlers && typeof window.emptyStateHandlers.init === 'function') {
+            window.emptyStateHandlers.init();
+            console.log('✅ GMKB: Empty state handlers initialized');
+        } else {
+            console.log('⚠️ GMKB: Empty state handlers not available');
+        }
+        
+    } catch (error) {
+        console.error('❌ GMKB: Error initializing empty state system', error);
+        if (window.structuredLogger) {
+            window.structuredLogger.error('EMPTY_STATE', 'Empty state initialization failed', error);
+        }
     }
 }
 
