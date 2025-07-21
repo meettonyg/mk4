@@ -68,10 +68,19 @@ function gmkb_enqueue_assets() {
     error_log( '✅ GMKB: Enqueuing scripts for media kit builder page with STABLE ARCHITECTURE' );
 
     $plugin_url = GUESTIFY_PLUGIN_URL;
-    $version = '2.2.0-stable-architecture-' . time(); // Cache busting for development
+    $version = '2.2.0-stable-architecture-FIXED-' . time(); // Cache busting for development
 
     // ROOT FIX: Only load diagnostic in debug mode
     if (defined('WP_DEBUG') && WP_DEBUG) {
+        // Emergency duplicate main.js fix
+        wp_enqueue_script(
+            'gmkb-debug-duplicate-main',
+            $plugin_url . 'debug-duplicate-main.js',
+            array(), // Load immediately for emergency fixes
+            $version,
+            true
+        );
+        
         // Diagnostic script for debugging
         wp_enqueue_script(
             'gmkb-diagnostic',

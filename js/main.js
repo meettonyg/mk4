@@ -11,6 +11,47 @@ console.log('📜 Load time:', new Date().toISOString());
 console.log('🔧 ARCHITECTURE: Simplified WordPress-compatible initialization');
 console.log('✅ ROOT FIX: Event-driven initialization with minimal dependencies');
 
+// ROOT FIX: IMMEDIATE component data exposure to prevent "No component data in globals"
+if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
+    const data = window.gmkbData || window.guestifyData;
+    if (data && data.components) {
+        window.gmkbComponentsData = data.components;
+        console.log('✅ GMKB: Component data exposed immediately', { count: data.components.length });
+    }
+} else if (!window.gmkbComponentsData) {
+    // Create minimal fallback immediately
+    window.gmkbComponentsData = [
+        {
+            type: 'hero',
+            name: 'Hero Section',
+            title: 'Hero Section',
+            description: 'A prominent header section with title and subtitle',
+            category: 'essential',
+            premium: false,
+            icon: 'fa-star'
+        },
+        {
+            type: 'biography',
+            name: 'Biography',
+            title: 'Biography',
+            description: 'Professional biography section',
+            category: 'essential',
+            premium: false,
+            icon: 'fa-user'
+        },
+        {
+            type: 'contact',
+            name: 'Contact',
+            title: 'Contact Information',
+            description: 'Contact details and social links',
+            category: 'essential',
+            premium: false,
+            icon: 'fa-envelope'
+        }
+    ];
+    console.log('🛡️ GMKB: Component data fallback created immediately');
+}
+
 // ROOT FIX: Simplified initialization with essential systems only
 function initializeWhenReady() {
     console.log('🚀 GMKB: Starting simplified initialization sequence');
@@ -414,6 +455,10 @@ function initializeMinimalFallback() {
     }
 }
 
+// ROOT FIX: Wrap initialization in IIFE to prevent global conflicts
+(function() {
+'use strict';
+
 // ROOT FIX: Simplified DOM ready handler with initialization guard
 let isInitializing = false;
 let isInitialized = false;
@@ -468,5 +513,7 @@ window.gmkbApp = {
         empty: () => window.emptyStateHandlers?.getStatus()
     }
 };
+
+})(); // End IIFE
 
 console.log('✅ GMKB: Simplified main application loaded and ready');
