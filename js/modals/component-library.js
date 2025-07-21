@@ -9,21 +9,38 @@
  * ✅ ROOT CAUSE FIX - Fixes initialization timing not syntax
  */
 
+// ROOT FIX: Immediate logger safety check
+if (!window.structuredLogger) {
+    window.structuredLogger = {
+        info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+        debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || ''),
+        warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+        error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
+    };
+    console.log('🛟 Component Library: Emergency logger created immediately');
+}
+
 // ROOT FIX: Remove all problematic ES6 imports
 // Use global APIs that are guaranteed to be available after events
 
 // Global variables for logging and utilities
 let logger, errorBoundary, eventBus;
 
-// Initialize logging fallbacks
+// ROOT FIX: Initialize logging fallbacks with enhanced safety
 function initializeUtilities() {
-    // Structured logger fallback
+    // ROOT FIX: Enhanced structured logger fallback with safety checks
     logger = window.structuredLogger || {
         info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
         debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || ''),
         warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
         error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
     };
+    
+    // ROOT FIX: Ensure structuredLogger is available globally as fallback
+    if (!window.structuredLogger) {
+        window.structuredLogger = logger;
+        console.log('🛟 Component Library: Created fallback structuredLogger');
+    }
     
     // Error boundary fallback
     errorBoundary = window.errorBoundary || {
@@ -49,6 +66,12 @@ let componentLibraryModal, componentGrid, addComponentButton, cancelComponentBut
  */
 async function setupComponentLibrary() {
     const setupStart = performance.now();
+    
+    // ROOT FIX: Ensure logger is available before using it
+    if (!logger) {
+        initializeUtilities();
+    }
+    
     logger.info('MODAL', 'Setting up Component Library with validation');
     
     try {
@@ -110,7 +133,7 @@ async function validateAndAssignElements() {
     const checkInterval = 100;
     const startTime = Date.now();
     
-    structuredLogger.debug('MODAL', 'Validating Component Library elements with timeout', { 
+    logger.debug('MODAL', 'Validating Component Library elements with timeout', { 
         required: Object.keys(requiredElements),
         timeout: maxWaitTime
     });
@@ -134,7 +157,7 @@ async function validateAndAssignElements() {
         }
         
         if (missingElements.length === 0) {
-            structuredLogger.debug('MODAL', 'All Component Library elements validated successfully', {
+            logger.debug('MODAL', 'All Component Library elements validated successfully', {
                 duration: Date.now() - startTime
             });
             return;
@@ -142,7 +165,7 @@ async function validateAndAssignElements() {
         
         // Log progress every second
         if ((Date.now() - startTime) % 1000 < checkInterval) {
-            structuredLogger.debug('MODAL', 'Still waiting for elements', {
+            logger.debug('MODAL', 'Still waiting for elements', {
                 missing: missingElements,
                 elapsed: Date.now() - startTime
             });
@@ -160,7 +183,7 @@ async function validateAndAssignElements() {
     }
     
     if (finalMissing.length > 0) {
-        structuredLogger.error('MODAL', 'Component Library: Required elements not found after timeout', null, {
+        logger.error('MODAL', 'Component Library: Required elements not found after timeout', null, {
             missing: finalMissing,
             timeout: maxWaitTime,
             found: Object.keys(requiredElements).filter(id => !finalMissing.includes(id))
@@ -189,13 +212,13 @@ function markButtonListenersAttached() {
         if (button) {
             button.setAttribute('data-listener-attached', 'true');
             markedCount++;
-            structuredLogger.debug('MODAL', `Marked listener attached: ${buttonId}`);
+            logger.debug('MODAL', `Marked listener attached: ${buttonId}`);
         } else {
-            structuredLogger.warn('MODAL', `Button not found for marking: ${buttonId}`);
+            logger.warn('MODAL', `Button not found for marking: ${buttonId}`);
         }
     });
     
-    structuredLogger.info('MODAL', 'Button listeners marked as attached', {
+    logger.info('MODAL', 'Button listeners marked as attached', {
         marked: markedCount,
         total: buttons.length,
         buttons: buttons
@@ -212,7 +235,7 @@ function setupEventListeners() {
     const openComponentLibraryButton = document.getElementById('add-component');
     if (openComponentLibraryButton) {
         openComponentLibraryButton.addEventListener('click', () => {
-            structuredLogger.debug('UI', 'Component Library button clicked (add-component)');
+            logger.debug('UI', 'Component Library button clicked (add-component)');
             showComponentLibraryModal();
         });
         openComponentLibraryButton.setAttribute('data-listener-attached', 'true');
@@ -223,26 +246,26 @@ function setupEventListeners() {
     const sidebarAddComponentButton = document.getElementById('add-component-btn');
     if (sidebarAddComponentButton) {
         sidebarAddComponentButton.addEventListener('click', () => {
-            structuredLogger.debug('UI', 'Sidebar Add Component button clicked');
+            logger.debug('UI', 'Sidebar Add Component button clicked');
             showComponentLibraryModal();
         });
         // Mark button as having listener attached for validation
         sidebarAddComponentButton.setAttribute('data-listener-attached', 'true');
         listenersAttached++;
     } else {
-        structuredLogger.warn('UI', 'Sidebar Add Component button not found', { elementId: 'add-component-btn' });
+        logger.warn('UI', 'Sidebar Add Component button not found', { elementId: 'add-component-btn' });
     }
 
     // Empty state button event - using event bus with fallback
     if (eventBus && eventBus.on) {
         eventBus.on('ui:show-component-library', () => {
-            structuredLogger.debug('UI', 'Component library requested via event bus');
+            logger.debug('UI', 'Component library requested via event bus');
             showComponentLibraryModal();
         });
     } else {
         // Fallback: listen for custom event directly
         document.addEventListener('ui:show-component-library', () => {
-            structuredLogger.debug('UI', 'Component library requested via fallback event');
+            logger.debug('UI', 'Component library requested via fallback event');
             showComponentLibraryModal();
         });
     }
@@ -251,15 +274,15 @@ function setupEventListeners() {
     const addFirstComponentButton = document.getElementById('add-first-component');
     if (addFirstComponentButton) {
         addFirstComponentButton.addEventListener('click', () => {
-            structuredLogger.debug('UI', 'Empty state Add Component button clicked');
+            logger.debug('UI', 'Empty state Add Component button clicked');
             showComponentLibraryModal();
         });
         // Mark button as having listener attached for validation
         addFirstComponentButton.setAttribute('data-listener-attached', 'true');
-        structuredLogger.debug('UI', 'Empty state Add Component button listener attached');
+        logger.debug('UI', 'Empty state Add Component button listener attached');
         listenersAttached++;
     } else {
-        structuredLogger.debug('UI', 'Empty state Add Component button not found (likely hidden)', { elementId: 'add-first-component' });
+        logger.debug('UI', 'Empty state Add Component button not found (likely hidden)', { elementId: 'add-first-component' });
     }
     
     // CRITICAL FIX: Enhanced UX button integration
@@ -279,27 +302,27 @@ function setupEventListeners() {
         const button = document.getElementById(buttonId);
         if (button) {
             button.addEventListener('click', () => {
-                structuredLogger.debug('UI', `Enhanced empty state button clicked: ${buttonId}`);
+                logger.debug('UI', `Enhanced empty state button clicked: ${buttonId}`);
                 // For manual/connect buttons, show component library
                 if (buttonId.includes('manual') || buttonId.includes('connect')) {
                     showComponentLibraryModal();
                 } else {
                     // For auto-generate buttons, show component library for now
                     // TODO: Implement actual auto-generation logic
-                    structuredLogger.info('UI', `Auto-generation requested: ${buttonId}`);
+                    logger.info('UI', `Auto-generation requested: ${buttonId}`);
                     showComponentLibraryModal();
                 }
             });
             button.setAttribute('data-listener-attached', 'true');
             listenersAttached++;
-            structuredLogger.debug('UI', `Enhanced button ${buttonId} connected to component library`);
+            logger.debug('UI', `Enhanced button ${buttonId} connected to component library`);
         }
     });
 
     // Cancel button
     if (cancelComponentButton) {
         cancelComponentButton.addEventListener('click', () => {
-            structuredLogger.debug('UI', 'Component Library cancel button clicked');
+            logger.debug('UI', 'Component Library cancel button clicked');
             hideComponentLibraryModal();
             clearSelection();
         });
@@ -310,7 +333,7 @@ function setupEventListeners() {
     const closeComponentLibraryButton = document.getElementById('close-library');
     if (closeComponentLibraryButton) {
         closeComponentLibraryButton.addEventListener('click', () => {
-            structuredLogger.debug('UI', 'Component library close button (×) clicked');
+            logger.debug('UI', 'Component library close button (×) clicked');
             hideComponentLibraryModal();
             clearSelection();
         });
@@ -322,7 +345,7 @@ function setupEventListeners() {
         addComponentButton.addEventListener('click', async () => {
             const selectedComponents = getSelectedComponents();
             if (selectedComponents.length === 0) {
-                structuredLogger.warn('UI', 'No components selected for addition');
+                logger.warn('UI', 'No components selected for addition');
                 return;
             }
             
@@ -331,7 +354,7 @@ function setupEventListeners() {
             addComponentButton.textContent = 'Adding...';
             
             try {
-                structuredLogger.info('UI', 'Adding components', { components: selectedComponents });
+                logger.info('UI', 'Adding components', { components: selectedComponents });
                 
                 for (const componentType of selectedComponents) {
                     // ROOT CAUSE FIXED: Use enhanced component manager with comprehensive logging
@@ -346,22 +369,22 @@ function setupEventListeners() {
                     if (window.enhancedComponentManager && typeof window.enhancedComponentManager.addComponent === 'function') {
                         console.log(`✅ Using enhanced component manager for ${componentType}`);
                         await window.enhancedComponentManager.addComponent(componentType, {});
-                        structuredLogger.debug('UI', `Component added via enhanced manager: ${componentType}`);
+                        logger.debug('UI', `Component added via enhanced manager: ${componentType}`);
                     } else if (window.componentManager && typeof window.componentManager.addComponent === 'function') {
                         console.log(`🛠️ Using legacy component manager for ${componentType}`);
                         await window.componentManager.addComponent(componentType, {});
-                        structuredLogger.debug('UI', `Component added via legacy manager: ${componentType}`);
+                        logger.debug('UI', `Component added via legacy manager: ${componentType}`);
                     } else {
                         const errorMsg = 'No component manager available';
                         console.error('❌', errorMsg);
-                        structuredLogger.error('UI', errorMsg);
+                        logger.error('UI', errorMsg);
                         throw new Error(errorMsg);
                     }
                 }
                 
-                structuredLogger.info('UI', 'All components added successfully', { count: selectedComponents.length });
+                logger.info('UI', 'All components added successfully', { count: selectedComponents.length });
             } catch (error) {
-                structuredLogger.error('UI', 'Failed to add components', error);
+                logger.error('UI', 'Failed to add components', error);
             } finally {
                 // Re-enable button
                 addComponentButton.disabled = false;
@@ -391,7 +414,7 @@ function setupEventListeners() {
     categoryItems.forEach(item => {
         item.addEventListener('click', (e) => {
             const category = e.target.dataset.category;
-            structuredLogger.debug('UI', 'Category item clicked', { category });
+            logger.debug('UI', 'Category item clicked', { category });
             filterByCategory(category);
             // Update active state
             document.querySelectorAll('.category-item').forEach(i => i.classList.remove('category-item--active'));
@@ -400,7 +423,7 @@ function setupEventListeners() {
         listenersAttached++;
     });
     
-    structuredLogger.debug('MODAL', 'Component Library event listeners setup complete', {
+    logger.debug('MODAL', 'Component Library event listeners setup complete', {
         listenersAttached,
         buttons: {
             mainButton: !!openComponentLibraryButton,
@@ -420,12 +443,12 @@ function setupEventListeners() {
  */
 function populateComponentGrid() {
     if (!componentGrid) {
-        structuredLogger.error('MODAL', 'Component grid element not available');
+        logger.error('MODAL', 'Component grid element not available');
         return;
     }
     
     const populateStart = performance.now();
-    structuredLogger.info('MODAL', 'Starting unified component population');
+    logger.info('MODAL', 'Starting unified component population');
     
     // Show loading state first
     showLoadingState();
@@ -442,13 +465,13 @@ function populateComponentGrid() {
             // Hide loading state after population
             hideLoadingState();
             
-            structuredLogger.info('MODAL', 'Component grid population complete', {
+            logger.info('MODAL', 'Component grid population complete', {
                 count: components.length,
                 duration: performance.now() - populateStart,
                 source: 'unified system'
             });
         } catch (error) {
-            structuredLogger.error('MODAL', 'Component population failed', error);
+            logger.error('MODAL', 'Component population failed', error);
             hideLoadingState();
             showErrorState();
         }
@@ -515,7 +538,7 @@ function getComponentsData() {
     
     // Try to get from guestifyData first
     if (window.guestifyData?.components && Array.isArray(window.guestifyData.components)) {
-        structuredLogger.info('MODAL', 'Using components from guestifyData', {
+        logger.info('MODAL', 'Using components from guestifyData', {
             count: window.guestifyData.components.length
         });
         
@@ -523,7 +546,7 @@ function getComponentsData() {
     }
     // Try gmkbData as backup
     else if (window.gmkbData?.components && Array.isArray(window.gmkbData.components)) {
-        structuredLogger.info('MODAL', 'Using components from gmkbData', {
+        logger.info('MODAL', 'Using components from gmkbData', {
             count: window.gmkbData.components.length
         });
         
@@ -531,7 +554,7 @@ function getComponentsData() {
     }
     // No hardcoded fallback - load from server if no data
     else {
-        structuredLogger.warn('MODAL', 'No component data available in globals - will load from server');
+        logger.warn('MODAL', 'No component data available in globals - will load from server');
         
         // Trigger server load instead of using hardcoded data
         loadComponentsFromServer();
@@ -548,7 +571,7 @@ function getComponentsData() {
         };
     });
     
-    structuredLogger.info('MODAL', 'Final component data prepared', {
+    logger.info('MODAL', 'Final component data prepared', {
         total: components.length,
         premium: components.filter(c => c.premium).length,
         free: components.filter(c => !c.premium).length
@@ -566,20 +589,20 @@ let isLoadingComponents = false; // Guard against infinite loops
 async function loadComponentsFromServer() {
     // ROOT FIX: Prevent infinite recursion
     if (isLoadingComponents) {
-        structuredLogger.warn('MODAL', 'Already loading components - skipping duplicate request');
+        logger.warn('MODAL', 'Already loading components - skipping duplicate request');
         return;
     }
     
     isLoadingComponents = true;
     
     try {
-        structuredLogger.info('MODAL', 'Loading components from server via AJAX');
+        logger.info('MODAL', 'Loading components from server via AJAX');
         
         // ROOT FIX: Debug AJAX configuration
         const ajaxUrl = window.gmkbData?.ajaxUrl || window.guestifyData?.ajaxUrl;
         const nonce = window.gmkbData?.nonce || window.guestifyData?.nonce;
         
-        structuredLogger.info('MODAL', 'AJAX configuration', {
+        logger.info('MODAL', 'AJAX configuration', {
             ajaxUrl,
             hasNonce: !!nonce,
             gmkbDataAvailable: !!window.gmkbData,
@@ -626,7 +649,7 @@ async function loadComponentsFromServer() {
                 window.gmkbData.categories = data.data.categories;
             }
             
-            structuredLogger.info('MODAL', 'Components loaded from server successfully', {
+            logger.info('MODAL', 'Components loaded from server successfully', {
                 count: data.data.components.length
             });
             
@@ -639,7 +662,7 @@ async function loadComponentsFromServer() {
         }
         
     } catch (error) {
-        structuredLogger.error('MODAL', 'Failed to load components from server', error);
+        logger.error('MODAL', 'Failed to load components from server', error);
         showErrorState();
     } finally {
         isLoadingComponents = false; // Always reset the guard
@@ -662,7 +685,7 @@ function clearGridAndPopulate(components) {
         }
     }
     elementsToRemove.forEach(element => {
-        structuredLogger.debug('MODAL', 'Removing existing element', {
+        logger.debug('MODAL', 'Removing existing element', {
             className: element.className,
             dataComponent: element.dataset?.component,
             dataSource: element.dataset?.source || 'unknown'
@@ -671,13 +694,13 @@ function clearGridAndPopulate(components) {
     });
     
     // Ensure we start with a completely clean grid
-    structuredLogger.info('MODAL', 'Grid cleared, starting fresh population');
+    logger.info('MODAL', 'Grid cleared, starting fresh population');
     
     // Group components by premium status
     const freeComponents = components.filter(c => !c.premium);
     const premiumComponents = components.filter(c => c.premium);
     
-    structuredLogger.debug('MODAL', 'Component categorization', {
+    logger.debug('MODAL', 'Component categorization', {
         freeCount: freeComponents.length,
         premiumCount: premiumComponents.length,
         total: components.length
@@ -695,7 +718,7 @@ function clearGridAndPopulate(components) {
         componentGrid.appendChild(card);
     });
     
-    structuredLogger.info('MODAL', 'Component grid populated with components only (no headers)', {
+    logger.info('MODAL', 'Component grid populated with components only (no headers)', {
         freeComponents: freeComponents.length,
         premiumComponents: premiumComponents.length,
         total: components.length,
@@ -762,7 +785,7 @@ function createComponentCard(component, isPremium = false) {
         const isCurrentlySelected = card.classList.contains('selected');
         card.classList.toggle('selected', !isCurrentlySelected);
         
-        structuredLogger.debug('MODAL', `Component ${!isCurrentlySelected ? 'selected' : 'deselected'}`, {
+        logger.debug('MODAL', `Component ${!isCurrentlySelected ? 'selected' : 'deselected'}`, {
             component: componentId,
             isPremium,
             category: component.category,
@@ -1009,7 +1032,7 @@ function getSelectedComponents() {
             selected.push(componentType);
         }
     });
-    structuredLogger.debug('MODAL', 'Components selected', { selected, method: 'card-class' });
+    logger.debug('MODAL', 'Components selected', { selected, method: 'card-class' });
     return selected;
 }
 
@@ -1021,7 +1044,7 @@ function clearSelection() {
     selectedCards.forEach(card => {
         card.classList.remove('selected');
     });
-    structuredLogger.debug('MODAL', 'Selection cleared', { clearedCount: selectedCards.length });
+    logger.debug('MODAL', 'Selection cleared', { clearedCount: selectedCards.length });
 }
 
 /**
@@ -1030,17 +1053,17 @@ function clearSelection() {
  */
 function showComponentLibraryModal() {
     if (!window.GMKB_Modals) {
-        structuredLogger.error('MODAL', 'GMKB_Modals not available - modal system not ready');
+        logger.error('MODAL', 'GMKB_Modals not available - modal system not ready');
         console.error('❌ Component Library: Modal system not initialized');
         return;
     }
     
     if (componentLibraryModal) {
-        structuredLogger.debug('MODAL', 'Showing Component Library modal via GMKB_Modals');
+        logger.debug('MODAL', 'Showing Component Library modal via GMKB_Modals');
         window.GMKB_Modals.show('component-library-overlay');
         console.log('✅ Component Library: Modal shown successfully');
     } else {
-        structuredLogger.error('MODAL', 'Component library modal element not found');
+        logger.error('MODAL', 'Component library modal element not found');
         console.error('❌ Component Library: Modal element not available');
     }
 }
@@ -1051,12 +1074,12 @@ function showComponentLibraryModal() {
  */
 function hideComponentLibraryModal() {
     if (!window.GMKB_Modals) {
-        structuredLogger.error('MODAL', 'GMKB_Modals not available - modal system not ready');
+        logger.error('MODAL', 'GMKB_Modals not available - modal system not ready');
         return;
     }
     
     if (componentLibraryModal) {
-        structuredLogger.debug('MODAL', 'Hiding Component Library modal via GMKB_Modals');
+        logger.debug('MODAL', 'Hiding Component Library modal via GMKB_Modals');
         window.GMKB_Modals.hide('component-library-overlay');
         console.log('✅ Component Library: Modal hidden successfully');
     }
@@ -1153,7 +1176,7 @@ window.componentLibrarySystem = {
     getStatus: () => ({
         modalElementFound: !!componentLibraryModal,
         modalSystemReady: !!window.GMKB_Modals,
-        utilitiesReady: !!structuredLogger,
+        utilitiesReady: !!logger,
         timestamp: Date.now()
     })
 };

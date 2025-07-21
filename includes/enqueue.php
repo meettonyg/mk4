@@ -82,14 +82,42 @@ function gmkb_enqueue_assets() {
     // --- ROOT CAUSE FIX: COMPREHENSIVE SCRIPT DEPENDENCY CHAIN ---
     // Loading all core dependencies that main.js requires via ES6 imports
     
-    // Step 1: Core Dependencies (loaded as ES6 modules)
+    // Step 1: Utilities First (CRITICAL for preventing undefined errors)
+    // Structured logger MUST load first to prevent all logger undefined errors
+    wp_enqueue_script(
+        'gmkb-structured-logger',
+        $plugin_url . 'js/utils/structured-logger.js',
+        array(), // Load FIRST - no dependencies
+        $version,
+        true
+    );
+    
+    // Error handling system (depends on logger)
+    wp_enqueue_script(
+        'gmkb-error-handler',
+        $plugin_url . 'js/utils/enhanced-error-handler.js',
+        array('gmkb-structured-logger'),
+        $version,
+        true
+    );
+    
+    // Helper utilities
+    wp_enqueue_script(
+        'gmkb-helpers',
+        $plugin_url . 'js/utils/helpers.js',
+        array('gmkb-structured-logger'),
+        $version,
+        true
+    );
+    
+    // Step 2: Core Dependencies (loaded as ES6 modules)
     // These files are imported by main.js and must be available
     
     // Core GMKB namespace and event system
     wp_enqueue_script(
         'gmkb-core-namespace',
         $plugin_url . 'js/core/gmkb.js',
-        array(), // No dependencies
+        array('gmkb-structured-logger'), // Depends on logger
         $version,
         true
     );
@@ -135,6 +163,7 @@ function gmkb_enqueue_assets() {
         'gmkb-main-script',
         $plugin_url . 'js/main.js',
         array(
+            'gmkb-structured-logger',  // CRITICAL: Main depends on logger
             'gmkb-core-namespace',
             'gmkb-state-manager', 
             'gmkb-component-manager',
@@ -147,36 +176,6 @@ function gmkb_enqueue_assets() {
     // ROOT FIX: Scripts will be converted to WordPress-compatible global namespace pattern
     // No special module handling needed
 
-    // Step 2: Essential Utility and Service Files
-    // Core utilities that other modules depend on
-    
-    // Error handling system
-    wp_enqueue_script(
-        'gmkb-error-handler',
-        $plugin_url . 'js/utils/enhanced-error-handler.js',
-        array('gmkb-core-namespace'),
-        $version,
-        true
-    );
-    
-    // Structured logger
-    wp_enqueue_script(
-        'gmkb-structured-logger',
-        $plugin_url . 'js/utils/structured-logger.js',
-        array('gmkb-core-namespace'),
-        $version,
-        true
-    );
-    
-    // Helper utilities
-    wp_enqueue_script(
-        'gmkb-helpers',
-        $plugin_url . 'js/utils/helpers.js',
-        array('gmkb-core-namespace'),
-        $version,
-        true
-    );
-    
     // Step 3: Modal System and Component Library
     // Modal system for component library and settings
     wp_enqueue_script(
@@ -187,11 +186,11 @@ function gmkb_enqueue_assets() {
         true
     );
 
-    // Component library modal
+    // Component library modal (CRITICAL: Must load after logger)
     wp_enqueue_script(
         'gmkb-component-library',
         $plugin_url . 'js/modals/component-library.js',
-        array('gmkb-modal-base'),
+        array('gmkb-modal-base', 'gmkb-structured-logger'),
         $version,
         true
     );
@@ -243,11 +242,11 @@ function gmkb_enqueue_assets() {
         true
     );
     
-    // Empty state handlers
+    // Empty state handlers (CRITICAL: Must load after logger)
     wp_enqueue_script(
         'gmkb-empty-state-handlers',
         $plugin_url . 'js/ui/empty-state-handlers.js',
-        array('gmkb-main-script'),
+        array('gmkb-main-script', 'gmkb-structured-logger'),
         $version,
         true
     );

@@ -1,7 +1,7 @@
 /**
  * @file main.js - Media Kit Builder (WordPress-Compatible Entry Point)
  * @description Initializes and coordinates all core application modules using global objects.
- * ROOT FIX: Enhanced with Global Object Manager for proper initialization sequence
+ * ROOT FIX: Enhanced with proper initialization sequence and fallback handling
  */
 
 // IMMEDIATE DEBUG LOG - Should appear first
@@ -9,7 +9,7 @@ console.log('%c🚀 GMKB main.js LOADING (ENHANCED WORDPRESS COMPATIBLE)...', 'f
 console.log('📜 Script URL:', document.currentScript?.src || 'unknown');
 console.log('📜 Load time:', new Date().toISOString());
 console.log('🔧 ARCHITECTURE: Enhanced WordPress-compatible global namespace with proper initialization');
-console.log('✅ ROOT FIX: Using Global Object Manager for coordinated system initialization');
+console.log('✅ ROOT FIX: Using enhanced initialization sequence with fallback handling');
 
 // ROOT FIX: Enhanced initialization with proper dependency checking
 function initializeWhenReady() {
@@ -22,42 +22,6 @@ function initializeWhenReady() {
         setTimeout(initializeWhenReady, 100);
         return;
     }
-
-/**
- * ROOT FIX: Fallback initialization when enhanced systems fail
- */
-function initializeFallbackSystems() {
-    console.log('🛟️ GMKB: Starting fallback initialization');
-    
-    try {
-        // Basic UI initialization without enhanced systems
-        if (window.setupTabs && typeof window.setupTabs === 'function') {
-            window.setupTabs();
-            console.log('✅ GMKB: Fallback - Tabs initialized');
-        }
-        
-        if (window.setupModals && typeof window.setupModals === 'function') {
-            window.setupModals();
-            console.log('✅ GMKB: Fallback - Modals initialized');
-        }
-        
-        // Initialize empty state handlers with basic mode
-        if (window.emptyStateHandlers) {
-            try {
-                window.emptyStateHandlers.init();
-                console.log('✅ GMKB: Fallback - Empty state handlers initialized');
-            } catch (e) {
-                console.log('⚠️ GMKB: Fallback - Empty state handlers failed:', e.message);
-            }
-        }
-        
-        console.log('✅ GMKB: Fallback initialization completed successfully');
-        
-    } catch (error) {
-        console.error('❌ GMKB: Fallback initialization also failed:', error);
-        console.log('🛟️ GMKB: Basic mode - only core WordPress functionality available');
-    }
-}
     
     // Initialize structured logger first
     if (window.structuredLogger) {
@@ -65,42 +29,42 @@ function initializeFallbackSystems() {
     }
     
     try {
-    // Initialize core systems in proper order
-    initializeCoreSystemsSequence();
-    
-    // Initialize UI components
-    initializeUIComponents();
-    
-    // Initialize modals and overlays
-    initializeModalsAndOverlays();
-    
-    // Initialize empty state handlers
-    initializeEmptyStateSystem();
-    
-    // Emit application ready event
-    if (window.eventBus) {
-    window.eventBus.emit('gmkb:application-ready', {
-    timestamp: Date.now(),
-    initializationComplete: true
-    });
-    }
-    
-    console.log('✅ GMKB: Enhanced application initialization completed successfully.');
-    
-    if (window.structuredLogger) {
-    window.structuredLogger.logInitComplete('main-initialization', performance.now());
-    }
-    
-    } catch (error) {
-    console.error('❌ GMKB: Initialization failed:', error);
-    if (window.structuredLogger) {
-    window.structuredLogger.logInitError('main-initialization', error);
-    }
+        // Initialize core systems in proper order
+        initializeCoreSystemsSequence();
         
-            // ROOT FIX: Try fallback initialization instead of complete failure
-            console.log('🔄 GMKB: Attempting fallback initialization...');
-            initializeFallbackSystems();
+        // Initialize UI components
+        initializeUIComponents();
+        
+        // Initialize modals and overlays
+        initializeModalsAndOverlays();
+        
+        // Initialize empty state handlers
+        initializeEmptyStateSystem();
+        
+        // Emit application ready event
+        if (window.eventBus) {
+            window.eventBus.emit('gmkb:application-ready', {
+                timestamp: Date.now(),
+                initializationComplete: true
+            });
         }
+        
+        console.log('✅ GMKB: Enhanced application initialization completed successfully.');
+        
+        if (window.structuredLogger) {
+            window.structuredLogger.logInitComplete('main-initialization', performance.now());
+        }
+        
+    } catch (error) {
+        console.error('❌ GMKB: Initialization failed:', error);
+        if (window.structuredLogger) {
+            window.structuredLogger.logInitError('main-initialization', error);
+        }
+        
+        // ROOT FIX: Try fallback initialization instead of complete failure
+        console.log('🔄 GMKB: Attempting fallback initialization...');
+        initializeFallbackSystems();
+    }
 }
 
 /**
@@ -296,6 +260,52 @@ function initializeEmptyStateSystem() {
 }
 
 /**
+ * ROOT FIX: Fallback initialization when enhanced systems fail
+ */
+function initializeFallbackSystems() {
+    console.log('🛟 GMKB: Starting fallback initialization');
+    
+    try {
+        // Basic UI initialization without enhanced systems
+        if (window.setupTabs && typeof window.setupTabs === 'function') {
+            window.setupTabs();
+            console.log('✅ GMKB: Fallback - Tabs initialized');
+        }
+        
+        if (window.setupModals && typeof window.setupModals === 'function') {
+            window.setupModals();
+            console.log('✅ GMKB: Fallback - Modals initialized');
+        }
+        
+        // Initialize empty state handlers with basic mode
+        if (window.emptyStateHandlers) {
+            try {
+                window.emptyStateHandlers.init();
+                console.log('✅ GMKB: Fallback - Empty state handlers initialized');
+            } catch (e) {
+                console.log('⚠️ GMKB: Fallback - Empty state handlers failed:', e.message);
+            }
+        }
+        
+        // Try to initialize component library in basic mode
+        if (window.setupComponentLibrary && typeof window.setupComponentLibrary === 'function') {
+            try {
+                window.setupComponentLibrary();
+                console.log('✅ GMKB: Fallback - Component library initialized');
+            } catch (e) {
+                console.log('⚠️ GMKB: Fallback - Component library failed:', e.message);
+            }
+        }
+        
+        console.log('✅ GMKB: Fallback initialization completed successfully');
+        
+    } catch (error) {
+        console.error('❌ GMKB: Fallback initialization also failed:', error);
+        console.log('🛟 GMKB: Basic mode - only core WordPress functionality available');
+    }
+}
+
+/**
  * ROOT FIX: Legacy initialization fallback
  */
 function legacyInitialization() {
@@ -333,9 +343,39 @@ function legacyInitialization() {
     }
 }
 
-// ROOT FIX: Enhanced DOM ready handler
+// ROOT FIX: Ensure basic logger exists before any initialization
+function ensureBasicLogger() {
+    if (!window.structuredLogger) {
+        window.structuredLogger = {
+            info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+            debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || ''),
+            warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+            error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || ''),
+            logInitStart: (step) => {
+                const startTime = performance.now();
+                console.log(`[INIT] Starting: ${step}`);
+                return startTime;
+            },
+            logInitComplete: (step, startTime) => {
+                const duration = performance.now() - startTime;
+                console.log(`[INIT] ✅ Completed: ${step} (${duration.toFixed(2)}ms)`);
+                return duration;
+            },
+            logInitError: (step, error) => {
+                console.error(`[INIT] ❌ Failed: ${step}`, error);
+            }
+        };
+        console.log('🛟 Main: Created fallback structuredLogger before initialization');
+    }
+}
+
+// ROOT FIX: Enhanced DOM ready handler with logger safety
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeWhenReady);
+    document.addEventListener('DOMContentLoaded', () => {
+        ensureBasicLogger();
+        initializeWhenReady();
+    });
 } else {
+    ensureBasicLogger();
     initializeWhenReady();
 }

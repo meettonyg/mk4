@@ -10,6 +10,17 @@
  * - Selective generation workflows
  */
 
+// ROOT FIX: Emergency logger safety check at module start
+if (!window.structuredLogger) {
+    window.structuredLogger = {
+        info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+        debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || ''),
+        warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+        error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
+    };
+    console.log('🛟 Empty State: Emergency logger created immediately');
+}
+
 // ROOT FIX: Use global objects instead of ES6 imports
 // structuredLogger and autoGenerationService will be available globally
 
@@ -53,6 +64,18 @@ class EmptyStateHandlers {
         
         try {
             safeLog('info', 'EMPTY_STATE', 'Setting up empty state button handlers');
+            
+            // ROOT FIX: Ensure structuredLogger exists before checking dependencies
+            if (!window.structuredLogger) {
+                // Create basic logger if not available
+                window.structuredLogger = {
+                    info: (category, message, data) => console.log(`[${category}] ${message}`, data || ''),
+                    debug: (category, message, data) => console.debug(`[${category}] ${message}`, data || ''),
+                    warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
+                    error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
+                };
+                console.log('🛟 Empty State: Created fallback structuredLogger');
+            }
             
             // ROOT FIX: Check dependencies before initialization
             if (!this.checkDependencies()) {
