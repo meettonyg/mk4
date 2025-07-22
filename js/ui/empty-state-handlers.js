@@ -58,7 +58,10 @@ class EmptyStateHandlers {
      */
     init() {
         if (this.isInitialized) {
-            safeLog('warn', 'EMPTY_STATE', 'Already initialized, skipping');
+            // ROOT FIX: Reduce noise - only log if in debug mode
+            if (window.gmkbData && window.gmkbData.debugMode) {
+                safeLog('debug', 'EMPTY_STATE', 'Already initialized, skipping');
+            }
             return;
         }
         

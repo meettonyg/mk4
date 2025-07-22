@@ -80,11 +80,14 @@ function initializeWhenReady() {
         // 2. Initialize component manager
         if (window.enhancedComponentManager) {
             if (window.enhancedComponentManager.isInitialized) {
-                window.structuredLogger.warn('COMPONENT', 'Component manager already initialized');
+                // ROOT FIX: Reduce noise - only log in debug mode
+                if (window.gmkbData && window.gmkbData.debugMode) {
+                    window.structuredLogger.debug('COMPONENT', 'Component manager already initialized, skipping');
+                }
             } else if (window.enhancedComponentManager.initialize) {
                 window.enhancedComponentManager.initialize();
+                window.structuredLogger.info('MAIN', 'Component manager initialized');
             }
-            window.structuredLogger.info('MAIN', 'Component manager initialized');
         } else {
             window.structuredLogger.warn('MAIN', 'Enhanced component manager not available');
         }
@@ -464,9 +467,12 @@ let isInitializing = false;
 let isInitialized = false;
 
 function safeInitialization() {
-    // Prevent duplicate initialization
+    // ROOT FIX: Prevent duplicate initialization with better logging
     if (isInitializing || isInitialized) {
-        console.log('🚷 GMKB: Initialization already in progress or completed, skipping...');
+        // Only log in debug mode to reduce console noise
+        if (window.gmkbData && window.gmkbData.debugMode) {
+            console.debug('🚷 GMKB: Initialization already in progress or completed, skipping...');
+        }
         return;
     }
     

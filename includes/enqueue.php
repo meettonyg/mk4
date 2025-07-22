@@ -53,8 +53,10 @@ add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets' );
  * The conflicting inline scripts previously loaded in the footer have been removed.
  */
 function gmkb_enqueue_assets() {
-    // Force console output for debugging
-    echo '<script>console.log("\ud83d� GMKB ENQUEUE DEBUG: Function executed at " + new Date().toISOString());</script>';
+    // ROOT FIX: Only output debug info if in debug mode
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        echo '<script>console.log("🔧 GMKB ENQUEUE DEBUG: Function executed at " + new Date().toISOString());</script>';
+    }
     
     // Use the existing reliable page detection
     if ( ! is_media_kit_builder_page() ) {
@@ -70,104 +72,104 @@ function gmkb_enqueue_assets() {
     $plugin_url = GUESTIFY_PLUGIN_URL;
     $version = '2.2.0-stable-architecture-FIXED-' . time(); // Cache busting for development
 
-    // ROOT FIX: Only load diagnostic in debug mode
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        // Emergency duplicate main.js fix
-        wp_enqueue_script(
-            'gmkb-debug-duplicate-main',
-            $plugin_url . 'debug-duplicate-main.js',
-            array(), // Load immediately for emergency fixes
-            $version,
-            true
-        );
-        
-        // Diagnostic script for debugging
-        wp_enqueue_script(
-            'gmkb-diagnostic',
-            $plugin_url . 'gmkb-diagnostic.js',
-            array(), // Load first for diagnostics
-            $version,
-            true
-        );
-    }
+    // ROOT FIX: Diagnostic scripts only loaded manually when needed
+    // debug-duplicate-main.js is available for manual debugging but not auto-loaded
+    // Use: console command 'runEmergencyFixes()' if needed
     
     // --- ROOT CAUSE FIX: COMPREHENSIVE SCRIPT DEPENDENCY CHAIN ---
     // Loading all core dependencies that main.js requires via ES6 imports
     
     // ROOT FIX: PHASE 1 - Core Dependencies Only (CRITICAL)
-    // Load only essential scripts to prevent circular dependencies
+    // Load only essential scripts to prevent circular dependencies with duplicate checks
     
-    // 1. Structured logger FIRST (prevents all undefined errors)
-    wp_enqueue_script(
-        'gmkb-structured-logger',
-        $plugin_url . 'js/utils/structured-logger.js',
-        array(), // ZERO dependencies
-        $version,
-        true
-    );
+    // ROOT FIX: COMPREHENSIVE DUPLICATE PREVENTION FOR ALL SCRIPTS
+    // Prevents infinite initialization loops by ensuring each script loads only once
     
-    // 2. Modal base system (needed by component library)
-    wp_enqueue_script(
-        'gmkb-modal-base',
-        $plugin_url . 'js/modals/modal-base.js',
-        array('gmkb-structured-logger'),
-        $version,
-        true
-    );
+    // 1. Structured logger FIRST (prevents all undefined errors) - with duplicate prevention
+    if (!wp_script_is('gmkb-structured-logger', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-structured-logger',
+            $plugin_url . 'js/utils/structured-logger.js',
+            array(), // ZERO dependencies
+            $version,
+            true
+        );
+    }
     
-    // 3. Enhanced state manager (core functionality)
-    wp_enqueue_script(
-        'gmkb-enhanced-state-manager',
-        $plugin_url . 'js/core/enhanced-state-manager-simple.js',
-        array('gmkb-structured-logger'),
-        $version,
-        true
-    );
+    // 2. Modal base system (needed by component library) - ROOT FIX: Added duplicate prevention
+    if (!wp_script_is('gmkb-modal-base', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-modal-base',
+            $plugin_url . 'js/modals/modal-base.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 3. Enhanced state manager (core functionality) - ROOT FIX: Added duplicate prevention
+    if (!wp_script_is('gmkb-enhanced-state-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-enhanced-state-manager',
+            $plugin_url . 'js/core/enhanced-state-manager-simple.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
     
     // ROOT FIX: PHASE 2 - Essential UI Systems Only
     // Simplified dependency chain - load only what's needed
     
-    // 4. Empty state handlers (critical for user interaction)
-    wp_enqueue_script(
-        'gmkb-empty-state-handlers',
-        $plugin_url . 'js/ui/empty-state-handlers.js',
-        array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
-        $version,
-        true
-    );
-    
-    // 5. Enhanced component manager (manages component add/remove)
-    wp_enqueue_script(
-        'gmkb-enhanced-component-manager',
-        $plugin_url . 'js/core/enhanced-component-manager.js',
-        array('gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
-        $version,
-        true
-    );
-    
-    // 6. Component library (depends on modal base, state manager, and component manager)
-    wp_enqueue_script(
-        'gmkb-component-library',
-        $plugin_url . 'js/modals/component-library.js',
-        array('gmkb-modal-base', 'gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-structured-logger'),
-        $version,
-        true
-    );
-    
-    // ROOT FIX: PHASE 3 - Main Application (simplified dependencies)
-    wp_enqueue_script(
-        'gmkb-main-script',
-        $plugin_url . 'js/main.js',
-        array(
-            'gmkb-structured-logger',
-            'gmkb-enhanced-state-manager',
-            'gmkb-enhanced-component-manager',
+    // 4. Empty state handlers (critical for user interaction) - ROOT FIX: Added duplicate prevention
+    if (!wp_script_is('gmkb-empty-state-handlers', 'enqueued')) {
+        wp_enqueue_script(
             'gmkb-empty-state-handlers',
-            'gmkb-component-library'
-        ),
-        $version,
-        true
-    );
+            $plugin_url . 'js/ui/empty-state-handlers.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // 5. Enhanced component manager (manages component add/remove) - ROOT FIX: Added duplicate prevention
+    if (!wp_script_is('gmkb-enhanced-component-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-enhanced-component-manager',
+            $plugin_url . 'js/core/enhanced-component-manager.js',
+            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 6. Component library (depends on modal base, state manager, and component manager) - ROOT FIX: Added duplicate prevention
+    if (!wp_script_is('gmkb-component-library', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-library',
+            $plugin_url . 'js/modals/component-library.js',
+            array('gmkb-modal-base', 'gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // ROOT FIX: PHASE 3 - Main Application (simplified dependencies) - ROOT FIX: Added duplicate prevention
+    if (!wp_script_is('gmkb-main-script', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-main-script',
+            $plugin_url . 'js/main.js',
+            array(
+                'gmkb-structured-logger',
+                'gmkb-enhanced-state-manager',
+                'gmkb-enhanced-component-manager',
+                'gmkb-empty-state-handlers',
+                'gmkb-component-library'
+            ),
+            $version,
+            true
+        );
+    }
     
     // ROOT FIX: Scripts will be converted to WordPress-compatible global namespace pattern
     // No special module handling needed
@@ -178,14 +180,16 @@ function gmkb_enqueue_assets() {
     // ROOT FIX: Optional modals loaded only if main script succeeds
     // Reduce initial load complexity
     
-    // Global settings modal
-    wp_enqueue_script(
-        'gmkb-global-settings',
-        $plugin_url . 'js/modals/global-settings.js',
-        array('gmkb-main-script'),
-        $version,
-        true
-    );
+    // Global settings modal - ROOT FIX: Added duplicate prevention
+    if (!wp_script_is('gmkb-global-settings', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-global-settings',
+            $plugin_url . 'js/modals/global-settings.js',
+            array('gmkb-main-script'),
+            $version,
+            true
+        );
+    }
     // ROOT FIX: Load only essential UI components after main script
     // Reduce complexity and prevent race conditions
     
@@ -199,14 +203,16 @@ function gmkb_enqueue_assets() {
     
     // ROOT FIX: Development scripts only in debug mode
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        // Test scalable architecture file (prevents 404 errors)
-        wp_enqueue_script(
-            'gmkb-test-architecture',
-            $plugin_url . 'test-scalable-architecture.js',
-            array('gmkb-main-script'),
-            $version,
-            true
-        );
+        // Test scalable architecture file (prevents 404 errors) - ROOT FIX: Added duplicate prevention
+        if (!wp_script_is('gmkb-test-architecture', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-test-architecture',
+                $plugin_url . 'test-scalable-architecture.js',
+                array('gmkb-main-script'),
+                $version,
+                true
+            );
+        }
     }
 
     // ROOT FIX: Enhanced component data loading with fallback
@@ -352,8 +358,10 @@ function gmkb_enqueue_assets() {
 function is_media_kit_builder_page() {
     $request_uri = $_SERVER['REQUEST_URI'] ?? '';
     
-    // Force console output for debugging
-    echo '<script>console.log("\ud83c� PAGE DETECTION: URL=' . esc_js($request_uri) . ', Contains guestify-media-kit=' . (strpos( $request_uri, 'guestify-media-kit' ) !== false ? 'YES' : 'NO') . '");</script>';
+    // ROOT FIX: Only output debug info if in debug mode
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        echo '<script>console.log("🎯 PAGE DETECTION: URL=' . esc_js($request_uri) . ', Contains guestify-media-kit=' . (strpos( $request_uri, 'guestify-media-kit' ) !== false ? 'YES' : 'NO') . '");</script>';
+    }
     
     // Strategy 1: URL-based detection (most reliable)
     if ( strpos( $request_uri, 'guestify-media-kit' ) !== false ) {

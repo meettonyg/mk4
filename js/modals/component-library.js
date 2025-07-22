@@ -1294,9 +1294,19 @@ function hideComponentLibraryModal() {
 /**
  * ROOT FIX: Initialize component library when modal system is ready
  * NO POLLING, NO SETTIMEOUT - Pure event-driven coordination
+ * CRITICAL: Added setup guards to prevent multiple setup attempts
  */
+let isSetupComplete = false;
+let isSetupInProgress = false;
+
 function initializeComponentLibrarySystem() {
     console.log('🚀 Component Library: Starting event-driven initialization');
+    
+    // ROOT FIX: Prevent multiple setup attempts within same initialization
+    if (isSetupComplete) {
+        console.log('✅ Component Library: Setup already complete, skipping');
+        return;
+    }
     
     // Initialize utilities first
     initializeUtilities();
@@ -1304,6 +1314,14 @@ function initializeComponentLibrarySystem() {
     // ROOT FIX: Wait for modal system ready event
     document.addEventListener('gmkb:modal-base-ready', async (event) => {
         console.log('✅ Component Library: Modal system ready event received', event.detail);
+        
+        // ROOT FIX: Prevent duplicate setup attempts
+        if (isSetupComplete || isSetupInProgress) {
+            console.log('🚷 Component Library: Setup already in progress or complete, skipping event handler');
+            return;
+        }
+        
+        isSetupInProgress = true;
         
         try {
             // Verify modal system is actually available
@@ -1319,6 +1337,7 @@ function initializeComponentLibrarySystem() {
             // Setup component library now that modals are ready
             await setupComponentLibrary();
             
+            isSetupComplete = true;
             console.log('✅ Component Library: Successfully initialized after modal system ready');
             
             // Dispatch our own ready event
@@ -1332,6 +1351,7 @@ function initializeComponentLibrarySystem() {
             
         } catch (error) {
             console.error('❌ Component Library: Setup failed after modal ready event:', error);
+            isSetupInProgress = false; // Reset on failure
         }
     }, { once: true }); // Only listen once
     
@@ -1339,14 +1359,21 @@ function initializeComponentLibrarySystem() {
     if (window.GMKB_Modals) {
         console.log('🔄 Component Library: Modal system already ready, initializing immediately');
         
-        setTimeout(async () => {
-            try {
-                await setupComponentLibrary();
-                console.log('✅ Component Library: Fallback initialization successful');
-            } catch (error) {
-                console.error('❌ Component Library: Fallback initialization failed:', error);
-            }
-        }, 100); // Small delay to ensure DOM is ready
+        // ROOT FIX: Prevent duplicate setup attempts in fallback
+        if (!isSetupComplete && !isSetupInProgress) {
+            isSetupInProgress = true;
+            
+            setTimeout(async () => {
+                try {
+                    await setupComponentLibrary();
+                    isSetupComplete = true;
+                    console.log('✅ Component Library: Fallback initialization successful');
+                } catch (error) {
+                    console.error('❌ Component Library: Fallback initialization failed:', error);
+                    isSetupInProgress = false; // Reset on failure
+                }
+            }, 100); // Small delay to ensure DOM is ready
+        }
     }
     
     console.log('🔍 Component Library: Event listeners registered, waiting for modal system...');
@@ -1356,31 +1383,76 @@ function initializeComponentLibrarySystem() {
 // AUTO-INITIALIZATION
 // ===================================================================
 
+// ROOT FIX: CRITICAL INITIALIZATION GUARD - Prevents infinite initialization loops
+// This was the main cause of the infinite loop issue
+let isComponentLibraryInitialized = false;
+let isComponentLibraryInitializing = false;
+
 /**
- * ROOT FIX: Auto-initialize when DOM is ready
+ * ROOT FIX: Guarded auto-initialization - prevents multiple initialization attempts
+ * This fixes the infinite loop by ensuring initialization only happens once
+ */
+function guardedInitialization() {
+    // ROOT FIX: Prevent duplicate initialization attempts
+    if (isComponentLibraryInitialized || isComponentLibraryInitializing) {
+        console.log('🚷 Component Library: Already initialized or initializing, skipping duplicate attempt');
+        return;
+    }
+    
+    isComponentLibraryInitializing = true;
+    
+    try {
+        initializeComponentLibrarySystem();
+        isComponentLibraryInitialized = true;
+        console.log('✅ Component Library: Initialization completed successfully');
+    } catch (error) {
+        console.error('❌ Component Library: Initialization failed:', error);
+        isComponentLibraryInitializing = false; // Reset on failure to allow retry
+    }
+}
+
+/**
+ * ROOT FIX: Safe DOM ready handler with initialization guard
  * Uses native DOMContentLoaded for maximum reliability
  */
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeComponentLibrarySystem);
+    document.addEventListener('DOMContentLoaded', guardedInitialization, { once: true });
     console.log('🕰️ Component Library: Waiting for DOMContentLoaded...');
 } else {
     // DOM is already ready
-    console.log('📝 Component Library: DOM already ready, initializing immediately');
-    initializeComponentLibrarySystem();
+    console.log('📝 Component Library: DOM already ready, initializing with guard');
+    guardedInitialization();
 }
 
 // ROOT FIX: Expose global API for testing and integration
 window.componentLibrarySystem = {
-    initialize: initializeComponentLibrarySystem,
+    initialize: guardedInitialization, // Use guarded version
     show: showComponentLibraryModal,
     hide: hideComponentLibraryModal,
-    isReady: () => !!componentLibraryModal && !!window.GMKB_Modals,
+    isReady: () => !!componentLibraryModal && !!window.GMKB_Modals && isSetupComplete,
+    isInitialized: () => isComponentLibraryInitialized,
+    isSetupComplete: () => isSetupComplete,
+    forceReinitialize: () => {
+        // ROOT FIX: Allow manual reset for debugging
+        isComponentLibraryInitialized = false;
+        isComponentLibraryInitializing = false;
+        isSetupComplete = false;
+        isSetupInProgress = false;
+        console.log('🔄 Component Library: Forced reinitialization - all guards reset');
+        guardedInitialization();
+    },
     getStatus: () => ({
         modalElementFound: !!componentLibraryModal,
         modalSystemReady: !!window.GMKB_Modals,
         utilitiesReady: !!logger,
+        isInitialized: isComponentLibraryInitialized,
+        isInitializing: isComponentLibraryInitializing,
+        isSetupComplete: isSetupComplete,
+        isSetupInProgress: isSetupInProgress,
         timestamp: Date.now()
     })
 };
 
 console.log('✅ Component Library: Event-driven system loaded and ready for initialization');
+console.log('🛡️ Component Library: INFINITE LOOP FIX APPLIED - Multiple initialization guards active');
+console.log('🔧 Component Library: Debug API available via window.componentLibrarySystem.getStatus()');
