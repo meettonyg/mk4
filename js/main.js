@@ -53,7 +53,7 @@ if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
 }
 
 // ROOT FIX: Simplified initialization with essential systems only
-function initializeWhenReady() {
+async function initializeWhenReady() {
     console.log('🚀 GMKB: Starting simplified initialization sequence');
     
     // ROOT FIX: Ensure essential dependencies are available
@@ -66,18 +66,26 @@ function initializeWhenReady() {
         // ROOT FIX: Initialize only essential systems
         window.structuredLogger.info('MAIN', 'Starting simplified application initialization');
         
-        // 1. Initialize state manager
+        // 1. Initialize state manager and WAIT for it to complete
         if (window.enhancedStateManager) {
             window.structuredLogger.info('STATE', 'Initializing Enhanced State Manager...');
             if (window.enhancedStateManager.initializeAfterSystems) {
-                window.enhancedStateManager.initializeAfterSystems();
+                await window.enhancedStateManager.initializeAfterSystems();
             }
             window.structuredLogger.info('MAIN', 'State manager initialized');
         } else {
             window.structuredLogger.warn('MAIN', 'Enhanced state manager not available');
         }
         
-        // 2. Initialize component manager
+        // 2. Initialize component renderer AFTER state manager completes
+        if (window.enhancedComponentRenderer) {
+            window.enhancedComponentRenderer.init();
+            window.structuredLogger.info('MAIN', 'Component renderer initialized - will display saved components');
+        } else {
+            window.structuredLogger.error('MAIN', 'Enhanced component renderer not available - saved components will not display');
+        }
+        
+        // 3. Initialize component manager
         if (window.enhancedComponentManager) {
             if (window.enhancedComponentManager.isInitialized) {
                 // ROOT FIX: Reduce noise - only log in debug mode
@@ -92,22 +100,22 @@ function initializeWhenReady() {
             window.structuredLogger.warn('MAIN', 'Enhanced component manager not available');
         }
         
-        // 3. Initialize empty state handlers (already loaded)
+        // 4. Initialize empty state handlers (already loaded)
         if (window.emptyStateHandlers && window.emptyStateHandlers.init) {
             window.emptyStateHandlers.init();
             window.structuredLogger.info('MAIN', 'Empty state handlers initialized');
         }
         
-        // 4. Set up basic event listeners
+        // 5. Set up basic event listeners
         setupBasicEventListeners();
         
-        // 5. Initialize UI components (tabs, modals, etc.)
+        // 6. Initialize UI components (tabs, modals, etc.)
         setupCoreUI();
         
-        // 6. Hide loading state and show the builder
+        // 7. Hide loading state and show the builder
         hideLoadingState();
         
-        // 7. Emit application ready event
+        // 8. Emit application ready event
         document.dispatchEvent(new CustomEvent('gmkb:application-ready', {
             detail: {
                 timestamp: Date.now(),
@@ -200,10 +208,33 @@ function createFallbackLogger() {
  */
 function setupCoreUI() {
     try {
-        // Initialize tabs if they exist
-        setupTabs();
+        // Initialize tabs using the tabs.js module
+        if (window.setupTabs) {
+            window.setupTabs();
+            window.structuredLogger.info('MAIN', 'Tabs system initialized');
+        } else {
+            setupTabs(); // fallback to local implementation
+        }
         
-        // Initialize modals if they exist
+        // Initialize preview toggle functionality
+        if (window.setupPreviewToggle) {
+            window.setupPreviewToggle();
+            window.structuredLogger.info('MAIN', 'Preview toggle initialized');
+        }
+        
+        // Initialize form controls
+        if (window.formControls) {
+            window.formControls.setup();
+            window.structuredLogger.info('MAIN', 'Form controls initialized');
+        }
+        
+        // Initialize element controls
+        if (window.elementControls) {
+            window.elementControls.setup();
+            window.structuredLogger.info('MAIN', 'Element controls initialized');
+        }
+        
+        // Initialize modals
         setupModals();
         
         // Initialize component library
@@ -466,7 +497,7 @@ function initializeMinimalFallback() {
 let isInitializing = false;
 let isInitialized = false;
 
-function safeInitialization() {
+async function safeInitialization() {
     // ROOT FIX: Prevent duplicate initialization with better logging
     if (isInitializing || isInitialized) {
         // Only log in debug mode to reduce console noise
@@ -479,7 +510,7 @@ function safeInitialization() {
     isInitializing = true;
     
     try {
-        initializeWhenReady();
+        await initializeWhenReady();
         isInitialized = true;
     } catch (error) {
         console.error('❌ GMKB: Safe initialization failed:', error);
@@ -498,11 +529,11 @@ if (document.readyState === 'loading') {
 // ROOT FIX: Expose minimal global API for testing
 window.gmkbApp = {
     initialize: safeInitialization,
-    forceReinitialize: () => {
+    forceReinitialize: async () => {
         isInitialized = false;
         isInitializing = false;
         console.log('🔄 GMKB: Force reinitializing...');
-        safeInitialization();
+        await safeInitialization();
     },
     save: handleSaveClick,
     getState: () => window.enhancedStateManager?.getState(),

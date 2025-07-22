@@ -262,6 +262,27 @@ class EnhancedComponentRenderer {
             });
 
             this.updateEmptyState(initialState);
+            
+            // ROOT FIX: Trigger initial render of saved components
+            const componentCount = Object.keys(initialState.components || {}).length;
+            if (componentCount > 0) {
+                this.logger.info('RENDER', `Triggering initial render for ${componentCount} saved components`);
+                
+                // Force a render of all saved components
+                setTimeout(() => {
+                    this.render().then(success => {
+                        if (success) {
+                            this.logger.info('RENDER', 'Initial render of saved components completed successfully');
+                        } else {
+                            this.logger.error('RENDER', 'Initial render of saved components failed');
+                        }
+                    }).catch(error => {
+                        this.logger.error('RENDER', 'Initial render error:', error);
+                    });
+                }, 100); // Small delay to ensure all systems are ready
+            } else {
+                this.logger.debug('RENDER', 'No saved components to render initially');
+            }
         }
 
         this.setupEmptyStateListeners();
@@ -296,43 +317,145 @@ class EnhancedComponentRenderer {
             moved: new Set()
         };
 
-        if (!oldState) {
-            Object.keys(newState.components).forEach(id => changes.added.add(id));
-            return changes;
-        }
-
-        const oldKeys = new Set(Object.keys(oldState.components));
-        const newKeys = new Set(Object.keys(newState.components));
-
-        newKeys.forEach(key => {
-            if (!oldKeys.has(key)) {
-                changes.added.add(key);
+        // ROOT FIX: CRITICAL null safety with comprehensive validation
+        try {
+            // Validate and normalize oldState
+            const safeOldState = this.validateAndNormalizeState(oldState);
+            const safeNewState = this.validateAndNormalizeState(newState);
+            
+            // If both states are empty, no changes
+            if (!safeOldState.hasComponents && !safeNewState.hasComponents) {
+                this.logger.debug('RENDER', 'diffState: Both states empty, no changes');
+                return changes;
             }
-        });
-
-        oldKeys.forEach(key => {
-            if (!newKeys.has(key)) {
-                changes.removed.add(key);
+            
+            // If no old state, all components in new state are additions
+            if (!safeOldState.hasComponents && safeNewState.hasComponents) {
+                safeNewState.componentKeys.forEach(id => changes.added.add(id));
+                this.logger.debug('RENDER', `diffState: No old state, ${changes.added.size} additions`);
+                return changes;
             }
-        });
-
-        newKeys.forEach(key => {
-            if (oldKeys.has(key) && JSON.stringify(oldState.components[key]) !== JSON.stringify(newState.components[key])) {
-                changes.updated.add(key);
+            
+            // If no new state, all components in old state are removals
+            if (safeOldState.hasComponents && !safeNewState.hasComponents) {
+                safeOldState.componentKeys.forEach(id => changes.removed.add(id));
+                this.logger.debug('RENDER', `diffState: No new state, ${changes.removed.size} removals`);
+                return changes;
             }
-        });
+            
+            // Both states have components, perform detailed diff
+            const oldKeys = new Set(safeOldState.componentKeys);
+            const newKeys = new Set(safeNewState.componentKeys);
 
-        const oldLayout = oldState.layout || [];
-        const newLayout = newState.layout || enhancedStateManager.getLayout();
-
-        if (JSON.stringify(oldLayout) !== JSON.stringify(newLayout)) {
-            newLayout.forEach(id => {
-                if (!changes.added.has(id) && !changes.removed.has(id)) {
-                    changes.moved.add(id);
+            // Find additions
+            newKeys.forEach(key => {
+                if (!oldKeys.has(key)) {
+                    changes.added.add(key);
                 }
             });
+
+            // Find removals
+            oldKeys.forEach(key => {
+                if (!newKeys.has(key)) {
+                    changes.removed.add(key);
+                }
+            });
+
+            // Find updates (components that exist in both but have changed)
+            newKeys.forEach(key => {
+                if (oldKeys.has(key)) {
+                    try {
+                        const oldComponent = safeOldState.components[key];
+                        const newComponent = safeNewState.components[key];
+                        
+                        if (oldComponent && newComponent && 
+                            JSON.stringify(oldComponent) !== JSON.stringify(newComponent)) {
+                            changes.updated.add(key);
+                        }
+                    } catch (error) {
+                        this.logger.warn('RENDER', `Error comparing component ${key}:`, error);
+                        // Treat as update if comparison fails
+                        changes.updated.add(key);
+                    }
+                }
+            });
+
+            // ROOT FIX: Enhanced layout comparison with comprehensive validation
+            const oldLayout = this.validateAndNormalizeLayout(safeOldState.layout);
+            const newLayout = this.validateAndNormalizeLayout(safeNewState.layout);
+
+            if (JSON.stringify(oldLayout) !== JSON.stringify(newLayout)) {
+                newLayout.forEach(id => {
+                    // Only mark as moved if it's not an addition or removal
+                    if (!changes.added.has(id) && !changes.removed.has(id)) {
+                        changes.moved.add(id);
+                    }
+                });
+            }
+            
+            this.logger.debug('RENDER', 'diffState completed:', {
+                added: changes.added.size,
+                removed: changes.removed.size,
+                updated: changes.updated.size,
+                moved: changes.moved.size
+            });
+            
+            return changes;
+            
+        } catch (error) {
+            this.logger.error('RENDER', 'Critical error in diffState:', error);
+            // Return empty changes to prevent cascading failures
+            return {
+                added: new Set(),
+                removed: new Set(),
+                updated: new Set(),
+                moved: new Set()
+            };
         }
-        return changes;
+    }
+    
+    /**
+     * ROOT FIX: Validate and normalize state object to prevent undefined errors
+     */
+    validateAndNormalizeState(state) {
+        if (!state || typeof state !== 'object') {
+            return {
+                hasComponents: false,
+                components: {},
+                componentKeys: [],
+                layout: []
+            };
+        }
+        
+        const components = state.components && typeof state.components === 'object' ? state.components : {};
+        const componentKeys = Object.keys(components);
+        const layout = Array.isArray(state.layout) ? state.layout : [];
+        
+        return {
+            hasComponents: componentKeys.length > 0,
+            components,
+            componentKeys,
+            layout
+        };
+    }
+    
+    /**
+     * ROOT FIX: Validate and normalize layout array
+     */
+    validateAndNormalizeLayout(layout) {
+        if (!Array.isArray(layout)) {
+            // Try to get layout from state manager as fallback
+            try {
+                const fallbackLayout = enhancedStateManager.getLayout ? enhancedStateManager.getLayout() : [];
+                return Array.isArray(fallbackLayout) ? fallbackLayout : [];
+            } catch (error) {
+                this.logger.warn('RENDER', 'Failed to get fallback layout:', error);
+                return [];
+            }
+        }
+        
+        // Filter out any non-string values from layout
+        return layout.filter(item => typeof item === 'string' && item.length > 0);
     }
 
     /**
@@ -431,6 +554,8 @@ class EnhancedComponentRenderer {
             count: componentIds.size
         });
         
+        this.logger.debug('RENDER', `Starting renderNewComponents for ${componentIds.size} components`);
+        
         const fragment = document.createDocumentFragment();
         const renderPromises = Array.from(componentIds).map(id => {
             const componentState = newState.components[id];
@@ -438,30 +563,63 @@ class EnhancedComponentRenderer {
                 this.logger.error('RENDER', `State for new component ${id} not found!`);
                 return null;
             }
+            
+            this.logger.debug('RENDER', `Rendering component ${id} of type ${componentState.type}`);
+            
             // FIX: Use the new dynamicComponentLoader instance
             return this.renderComponentWithLoader(id, componentState.type, componentState.props || componentState.data);
         });
 
         const renderedComponents = await Promise.all(renderPromises);
+        
+        this.logger.debug('RENDER', `Render promises completed:`, {
+            totalPromises: renderPromises.length,
+            successfulRenders: renderedComponents.filter(comp => comp && comp.element).length,
+            failedRenders: renderedComponents.filter(comp => !comp || !comp.element).length
+        });
+        
+        let addedToFragment = 0;
+        
         renderedComponents.forEach(comp => {
-            if (comp) {
+            if (comp && comp.element) {
                 fragment.appendChild(comp.element);
                 this.componentCache.set(comp.id, comp.element);
+                addedToFragment++;
                 
                 // Register with UI registry
                 const componentState = newState.components[comp.id];
                 this.registerComponentWithUIRegistry(comp.id, comp.element, componentState);
+                
+                this.logger.debug('RENDER', `Added component ${comp.id} to fragment`);
+            } else {
+                this.logger.warn('RENDER', `Component render failed or returned no element:`, comp);
             }
         });
-
+        
+        this.logger.debug('RENDER', `Fragment created with ${addedToFragment} components, appending to preview container`);
+        
+        // ROOT FIX: Verify preview container exists before appending
+        if (!this.previewContainer) {
+            this.logger.error('RENDER', 'Preview container not found! Cannot append components.');
+            return;
+        }
+        
         this.previewContainer.appendChild(fragment);
+        
+        // ROOT FIX: Verify components were actually added to DOM
+        const finalChildrenCount = this.previewContainer.children.length;
+        this.logger.debug('RENDER', `After appendChild: preview container has ${finalChildrenCount} children`);
+        
+        if (finalChildrenCount === 0 && componentIds.size > 0) {
+            this.logger.error('RENDER', 'DOM insertion failed - no children in preview container after appendChild');
+        }
 
         const state = enhancedStateManager.getState();
         this.reorderComponents(state.layout);
         
         perfEnd();
         
-        this.logger.debug('RENDER', `Rendered ${componentIds.size} new components`);
+        this.logger.debug('RENDER', `Rendered ${componentIds.size} new components, ${addedToFragment} added to DOM`);
     }
     
     /**
@@ -560,18 +718,16 @@ class EnhancedComponentRenderer {
     }
 
     reorderComponents(layout) {
-        if (!Array.isArray(layout)) {
-            console.error('Renderer Error: reorderComponents called with invalid layout:', layout);
-            const state = enhancedStateManager.getState();
-            layout = state.layout || [];
-            if (!Array.isArray(layout) || layout.length === 0) {
-                console.warn('Unable to determine component layout');
-                return;
-            }
+        // ROOT FIX: Enhanced layout validation
+        const validatedLayout = this.validateAndNormalizeLayout(layout);
+        
+        if (validatedLayout.length === 0) {
+            this.logger.debug('RENDER', 'reorderComponents: No layout to apply');
+            return;
         }
 
         const perfEnd = performanceMonitor.start('reorder-components', {
-            count: layout.length
+            count: validatedLayout.length
         });
 
         const elementMap = new Map();
@@ -579,7 +735,7 @@ class EnhancedComponentRenderer {
             elementMap.set(child.id, child);
         });
 
-        layout.forEach((componentId, index) => {
+        validatedLayout.forEach((componentId, index) => {
             const element = elementMap.get(componentId);
             if (element) {
                 const expectedPosition = this.previewContainer.children[index];
@@ -594,6 +750,7 @@ class EnhancedComponentRenderer {
 
     /**
      * Renders a component using the dynamic component loader.
+     * ROOT FIX: Enhanced with comprehensive debugging and error handling
      * @param {string} id - The unique ID of the component instance.
      * @param {string} type - The component type.
      * @param {object} props - The properties for the component.
@@ -601,23 +758,64 @@ class EnhancedComponentRenderer {
      */
     async renderComponentWithLoader(id, type, props) {
         try {
+            this.logger.debug('RENDER', `renderComponentWithLoader called:`, { id, type, propsKeys: Object.keys(props || {}) });
+            
+            // ROOT FIX: Verify dynamicComponentLoader is available
+            if (!window.dynamicComponentLoader) {
+                throw new Error('dynamicComponentLoader not available globally');
+            }
+            
             // FIX: Correctly call the method on the imported loader instance
-            const element = await dynamicComponentLoader.renderComponent({
+            const element = await window.dynamicComponentLoader.renderComponent({
                 type,
                 id,
                 props
             });
-            if (!element) throw new Error('Template produced no element');
+            
+            if (!element) {
+                throw new Error('Template produced no element');
+            }
+            
+            this.logger.debug('RENDER', `Successfully rendered component ${id}:`, {
+                elementTagName: element.tagName,
+                elementId: element.id,
+                hasContent: element.innerHTML.length > 0
+            });
+            
             return {
                 id,
                 element
             };
         } catch (error) {
-            console.error(`Error rendering component ${id} (${type}):`, error);
+            this.logger.error('RENDER', `Error rendering component ${id} (${type}):`, error);
+            
+            // ROOT FIX: Create a more informative error element
             const errorElement = document.createElement('div');
             errorElement.id = id;
             errorElement.className = 'component-error';
-            errorElement.textContent = `Error rendering ${type}.`;
+            errorElement.innerHTML = `
+                <div style="
+                    border: 2px solid #ff6b6b;
+                    background: #ffe0e0;
+                    padding: 15px;
+                    margin: 10px 0;
+                    border-radius: 8px;
+                    text-align: center;
+                ">
+                    <h4 style="margin: 0 0 10px 0; color: #d63031;">Error rendering ${type}</h4>
+                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">${error.message}</p>
+                    <button onclick="console.log('Component error details:', ${JSON.stringify({ id, type, error: error.message })})" style="
+                        padding: 5px 10px;
+                        background: #d63031;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                    ">Debug Info</button>
+                </div>
+            `;
+            
             return {
                 id,
                 element: errorElement
@@ -744,7 +942,7 @@ class EnhancedComponentRenderer {
     
     /**
      * Manual render method - forces a complete re-render of all components
-     * ROOT FIX: Updated to use rendering queue for coordinated manual renders
+     * ROOT FIX: Enhanced with debugging and fallback for DOM insertion issues
      */
     async render() {
         if (!this.initialized) {
@@ -763,40 +961,87 @@ class EnhancedComponentRenderer {
                 return true;
             }
             
-            // ROOT FIX: Use queue for manual render to prevent race conditions
-            if (this.renderingMode === 'queue') {
-                // Enter initial state mode for batch rendering
-                renderingQueueManager.enterInitialStateMode();
+            // ROOT FIX: Enhanced debugging for DOM insertion
+            this.logger.debug('RENDER', 'Preview container before clear:', {
+                innerHTML: this.previewContainer.innerHTML.length,
+                childrenCount: this.previewContainer.children.length
+            });
+            
+            // Clear existing components
+            this.previewContainer.innerHTML = '';
+            this.componentCache.clear();
+            
+            this.logger.debug('RENDER', 'Preview container after clear:', {
+                innerHTML: this.previewContainer.innerHTML.length,
+                childrenCount: this.previewContainer.children.length
+            });
+            
+            // ROOT FIX: Try queue-based rendering first, then fallback to direct rendering
+            let renderSuccess = false;
+            
+            if (this.renderingMode === 'queue' && window.renderingQueueManager) {
+                this.logger.info('RENDER', 'Attempting queue-based rendering');
                 
                 try {
-                    // Clear existing components
-                    this.previewContainer.innerHTML = '';
-                    this.componentCache.clear();
+                    // Enter initial state mode for batch rendering
+                    renderingQueueManager.enterInitialStateMode();
                     
                     // Queue all components for rendering
                     const componentIds = new Set(Object.keys(state.components));
                     await this.queueComponentAdditions(componentIds, state);
                     
-                    // Update empty state
-                    this.updateEmptyState(state);
+                    // Check if components were actually added to DOM
+                    const finalChildrenCount = this.previewContainer.children.length;
+                    this.logger.debug('RENDER', `Queue rendering result: ${finalChildrenCount} children in DOM`);
                     
+                    if (finalChildrenCount > 0) {
+                        renderSuccess = true;
+                        this.logger.info('RENDER', 'Queue-based rendering successful');
+                    } else {
+                        this.logger.warn('RENDER', 'Queue-based rendering completed but no DOM elements created');
+                    }
+                    
+                } catch (queueError) {
+                    this.logger.error('RENDER', 'Queue-based rendering failed:', queueError);
                 } finally {
                     // Exit initial state mode
                     renderingQueueManager.exitInitialStateMode();
                 }
-            } else {
-                // Fallback to direct rendering
-                this.previewContainer.innerHTML = '';
-                this.componentCache.clear();
-                
-                const componentIds = Object.keys(state.components);
-                await this.renderNewComponents(new Set(componentIds), state);
-                
-                this.updateEmptyState(state);
             }
             
-            this.logger.info('RENDER', `Manual render complete: ${componentCount} components rendered`);
-            return true;
+            // ROOT FIX: Fallback to direct rendering if queue failed or unavailable
+            if (!renderSuccess) {
+                this.logger.info('RENDER', 'Falling back to direct rendering');
+                
+                try {
+                    const componentIds = Object.keys(state.components);
+                    await this.renderNewComponents(new Set(componentIds), state);
+                    
+                    const finalChildrenCount = this.previewContainer.children.length;
+                    this.logger.debug('RENDER', `Direct rendering result: ${finalChildrenCount} children in DOM`);
+                    
+                    if (finalChildrenCount > 0) {
+                        renderSuccess = true;
+                        this.logger.info('RENDER', 'Direct rendering successful');
+                    } else {
+                        this.logger.error('RENDER', 'Direct rendering failed - no DOM elements created');
+                        
+                        // ROOT FIX: Ultimate fallback - create placeholder elements
+                        this.logger.warn('RENDER', 'Creating placeholder elements as last resort');
+                        await this.createPlaceholderComponents(state.components);
+                        renderSuccess = true;
+                    }
+                    
+                } catch (directError) {
+                    this.logger.error('RENDER', 'Direct rendering failed:', directError);
+                }
+            }
+            
+            // Update empty state
+            this.updateEmptyState(state);
+            
+            this.logger.info('RENDER', `Manual render complete: ${componentCount} components rendered, success: ${renderSuccess}`);
+            return renderSuccess;
             
         } catch (error) {
             this.logger.error('RENDER', 'Manual render failed', error);
@@ -1073,6 +1318,51 @@ class EnhancedComponentRenderer {
             queueStats: statistics,
             batchResults: results
         });
+    }
+    
+    /**
+     * ROOT FIX: Ultimate fallback - create placeholder components if rendering fails
+     */
+    async createPlaceholderComponents(components) {
+        this.logger.warn('RENDER', 'Creating placeholder components as fallback');
+        
+        for (const [componentId, componentData] of Object.entries(components)) {
+            try {
+                const placeholderElement = document.createElement('div');
+                placeholderElement.id = componentId;
+                placeholderElement.className = `component-placeholder ${componentData.type}-component`;
+                placeholderElement.innerHTML = `
+                    <div style="
+                        border: 2px dashed #ccc;
+                        padding: 20px;
+                        margin: 10px 0;
+                        text-align: center;
+                        background: #f9f9f9;
+                        border-radius: 8px;
+                    ">
+                        <h3 style="margin: 0 0 10px 0; color: #666;">${componentData.type} Component</h3>
+                        <p style="margin: 0; color: #999; font-size: 14px;">Placeholder - Template loading failed</p>
+                        <button onclick="window.location.reload()" style="
+                            margin-top: 10px;
+                            padding: 5px 10px;
+                            background: #007cba;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Reload Builder</button>
+                    </div>
+                `;
+                
+                this.previewContainer.appendChild(placeholderElement);
+                this.componentCache.set(componentId, placeholderElement);
+                
+                this.logger.debug('RENDER', `Created placeholder for ${componentData.type} component`);
+                
+            } catch (error) {
+                this.logger.error('RENDER', `Failed to create placeholder for ${componentId}:`, error);
+            }
+        }
     }
     
     /**

@@ -44,14 +44,8 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 
-// SCALABLE ARCHITECTURE: Include test suite in development
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    add_action('wp_footer', function() {
-        if (strpos($_SERVER['REQUEST_URI'] ?? '', 'guestify-media-kit') !== false) {
-            echo '<script src="' . GUESTIFY_PLUGIN_URL . 'test-scalable-architecture.js?v=' . time() . '"></script>';
-        }
-    }, 999);
-}
+// SCALABLE ARCHITECTURE: Test suite only loaded on demand via validation script
+// ROOT FIX: Removed automatic test script loading to prevent conflicts with enqueue.php
 // === GEMINI FIX END ===
 
 /**
@@ -282,38 +276,9 @@ class Guestify_Media_Kit_Builder {
             
             <?php wp_head(); ?>
             
-            <!-- CRITICAL FIX: Direct script output since wp_enqueue_script doesn't work in template takeover -->
-            <script id="gmkbData" type="text/javascript">
-            var gmkbData = <?php echo json_encode(array(
-                'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
-                'restUrl'       => esc_url_raw( rest_url() ),
-                'nonce'         => wp_create_nonce( 'gmkb_nonce' ), // ROOT FIX: Match AJAX handler expectation
-                'restNonce'     => wp_create_nonce( 'wp_rest' ),
-                'postId'        => $post_id,
-                'pluginUrl'     => GUESTIFY_PLUGIN_URL,
-                'siteUrl'       => home_url(),
-                'pluginVersion' => GUESTIFY_VERSION,
-                'architecture'  => 'vanilla-js-final',
-                'timestamp'     => time(),
-                'builderPage'   => true,
-                'isBuilderPage' => true,
-                'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
-                'templateFixed' => true,
-                'vanillaJS'     => true,
-                'savedState'    => $saved_state  // MISSING: Pass existing state to JavaScript
-            )); ?>;
-            console.log('✅ WordPress Data: gmkbData loaded directly in template', gmkbData);
-            if (gmkbData.savedState && Object.keys(gmkbData.savedState.components || {}).length > 0) {
-                console.log('🔄 Existing components found:', Object.keys(gmkbData.savedState.components).length, 'components');
-            } else {
-                console.log('📝 No existing components - starting with empty state');
-            }
-            </script>
-            
-            <script src="<?php echo GUESTIFY_PLUGIN_URL . 'js/main.js?v=' . time(); ?>" type="text/javascript"></script>
-            
-            <!-- ROOT FIX: Manual enqueue ComponentControlsManager in template takeover -->
-            <script src="<?php echo GUESTIFY_PLUGIN_URL . 'js/core/component-controls-manager.js?v=' . time(); ?>" type="text/javascript"></script>
+            <!-- ROOT FIX: WordPress handles ALL script loading via enqueue.php -->
+            <!-- All JS files load via wp_enqueue_script dependency chain -->
+            <!-- gmkbData loaded via wp_localize_script for consistency -->
             
             <link rel="stylesheet" href="<?php echo GUESTIFY_PLUGIN_URL . 'css/guestify-builder.css?v=' . time(); ?>" type="text/css" media="all" />
         </head>

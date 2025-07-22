@@ -1,25 +1,43 @@
 /**
  * @file dynamic-component-loader.js
- * @description Manages the dynamic fetching, caching, and rendering of component templates.
- * This file is a critical part of the component system, ensuring that components are loaded
- * efficiently and that their templates are cached to improve performance.
+ * @description ROOT FIX: WordPress-Compatible Dynamic Component Loader
+ * Converted from ES6 modules to WordPress-compatible global object pattern
+ * Manages the dynamic fetching, caching, and rendering of component templates.
  *
- * Phase 2C Enhancement: Now uses shared template cache and batch preloading
- * to eliminate race conditions and improve performance.
+ * ROOT FIX: Eliminates ES6 import dependencies that fail in WordPress loading
  */
 
-import {
-    getPluginRoot
-} from '../utils/helpers.js';
-import {
-    performanceMonitor
-} from '../utils/performance-monitor.js';
-import {
-    templateCache
-} from '../utils/template-cache.js';
-import {
-    structuredLogger
-} from '../utils/structured-logger.js';
+// ROOT FIX: WordPress-compatible IIFE wrapper
+(function() {
+    'use strict';
+    
+    // ROOT FIX: Use global objects instead of ES6 imports
+    const getPluginRoot = () => {
+        if (window.GMKBHelpers && window.GMKBHelpers.getPluginRoot) {
+            return window.GMKBHelpers.getPluginRoot();
+        }
+        // Fallback to guestifyData if available
+        return window.guestifyData?.pluginUrl || window.gmkbData?.pluginUrl || '';
+    };
+    
+    const performanceMonitor = window.performanceMonitor || {
+        start: () => () => {}
+    };
+    
+    const templateCache = window.templateCache || window.mkTemplateCache || {
+        get: () => null,
+        set: () => {},
+        has: () => false,
+        getStats: () => ({ hits: 0, misses: 0 }),
+        getHitRate: () => 0
+    };
+    
+    const structuredLogger = window.structuredLogger || {
+        info: console.log,
+        warn: console.warn,
+        error: console.error,
+        debug: console.debug
+    };
 
 /**
  * A class to manage the dynamic loading and rendering of components.
@@ -106,7 +124,8 @@ class DynamicComponentLoader {
     }
 
     /**
-     * Gets a component template, from cache if available, otherwise from the server.
+     * Gets a component template via simplified event-driven system
+     * ROOT FIX: Self-contained event coordination - NO external dependencies
      * @param {string} type - The component type.
      * @returns {Promise<string>} A promise that resolves to the component's HTML template.
      */
@@ -138,17 +157,13 @@ class DynamicComponentLoader {
             return this.pending.get(pendingType);
         }
 
-        // Need to fetch from server (fallback for templates not in batch)
-        structuredLogger.info('LOADER', 'Template not in cache, fetching individually', { 
+        // ROOT FIX: Simple event-driven WordPress AJAX - NO timeouts, NO external event bus
+        structuredLogger.info('LOADER', 'Requesting template via WordPress AJAX', { 
             originalType, 
             resolvedType 
         });
         
-        const perfEnd = performanceMonitor.start('fetch-template-individual', { 
-            originalType, 
-            resolvedType 
-        });
-        const promise = this.fetchTemplate(originalType, resolvedType);
+        const promise = this.fetchViaWordPressAjax(originalType, resolvedType);
         this.pending.set(originalType, promise);
         this.pending.set(resolvedType, promise);
 
@@ -160,7 +175,7 @@ class DynamicComponentLoader {
             templateCache.set(originalType, template, {
                 name: originalType,
                 actualType: resolvedType,
-                category: 'dynamic',
+                category: 'wordpress-ajax',
                 fetchedAt: new Date().toISOString()
             });
             
@@ -168,26 +183,89 @@ class DynamicComponentLoader {
                 templateCache.set(resolvedType, template, {
                     name: resolvedType,
                     aliasFor: originalType,
-                    category: 'dynamic',
+                    category: 'wordpress-ajax',
                     fetchedAt: new Date().toISOString()
                 });
             }
             
-            structuredLogger.info('LOADER', 'Template fetched and cached', {
+            structuredLogger.info('LOADER', 'Template received via WordPress AJAX and cached', {
                 originalType,
-                resolvedType,
-                duration: performanceMonitor.getMetric('fetch-template-individual')?.duration || 0
+                resolvedType
             });
             
             return template;
         } catch (error) {
             this.requestStats.failures++;
-            throw error;
+            structuredLogger.error('LOADER', 'WordPress AJAX template request failed', {
+                originalType,
+                resolvedType,
+                error: error.message
+            });
+            
+            // ROOT FIX: Only use fallback after WordPress AJAX fails
+            structuredLogger.warn('LOADER', 'Using fallback template after WordPress AJAX failure', { originalType });
+            return this.getFallbackTemplate(originalType);
         } finally {
             this.pending.delete(originalType);
             this.pending.delete(resolvedType);
-            perfEnd();
         }
+    }
+    
+    /**
+     * ROOT FIX: Simple WordPress AJAX fetch - event-driven via native fetch promises
+     * NO setTimeout coordination, NO external event bus - pure Promise coordination
+     */
+    async fetchViaWordPressAjax(originalType, resolvedType) {
+        // ROOT FIX: Use WordPress AJAX directly - native Promise is event-driven
+        const ajaxUrl = window.guestifyData?.ajaxUrl || window.gmkbData?.ajaxUrl;
+        const nonce = window.guestifyData?.nonce || window.gmkbData?.nonce;
+        
+        if (!ajaxUrl || !nonce) {
+            throw new Error('WordPress AJAX URL or nonce not available');
+        }
+        
+        structuredLogger.debug('LOADER', 'Fetching via WordPress AJAX', {
+            ajaxUrl,
+            componentType: originalType,
+            hasNonce: !!nonce
+        });
+        
+        // ROOT FIX: Native fetch Promise is event-driven - no timeout coordination needed
+        const response = await fetch(ajaxUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                action: 'guestify_render_component',
+                component: originalType,
+                nonce: nonce,
+                props: JSON.stringify({})
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`WordPress AJAX HTTP error: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.data || 'WordPress AJAX returned error response');
+        }
+        
+        const template = data.data.html || data.data;
+        
+        if (!template || typeof template !== 'string') {
+            throw new Error('WordPress AJAX returned invalid template data');
+        }
+        
+        structuredLogger.debug('LOADER', 'WordPress AJAX successful', {
+            originalType,
+            templateLength: template.length
+        });
+        
+        return template;
     }
 
     /**
@@ -287,207 +365,6 @@ class DynamicComponentLoader {
     }
 
     /**
-     * CRITICAL FIX: Enhanced template fetching with circuit breaker and immediate fallbacks
-     * ROOT FIX: Now emits coordination events to prevent race conditions
-     * @param {string} originalType - The originally requested component type.
-     * @param {string} resolvedType - The resolved component type (after alias resolution).
-     * @returns {Promise<string>} A promise that resolves to the template string.
-     */
-    async fetchTemplate(originalType, resolvedType = null) {
-        // Use resolved type if provided, otherwise resolve the original type
-        const actualType = resolvedType || this.resolveComponentType(originalType);
-        const typeToFetch = actualType;
-        
-        // ROOT FIX: Emit coordination event for startup coordination manager
-        const operationId = `template_${originalType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        try {
-            if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                window.eventBus.emit('template:fetch-start', {
-                    componentType: originalType,
-                    resolvedType: actualType,
-                    operationId
-                });
-            }
-        } catch (e) {
-            // Event bus not ready yet, continue without coordination
-            structuredLogger.debug('LOADER', 'Event bus not available for template fetch start', { originalType });
-        }
-        // CRITICAL FIX: Check circuit breaker first
-        if (!this.checkCircuitBreaker()) {
-            structuredLogger.warn('LOADER', 'Circuit breaker OPEN, using fallback', { 
-                originalType, 
-                actualType 
-            });
-            
-            // ROOT FIX: Emit error event for coordination
-            try {
-                if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                    window.eventBus.emit('template:fetch-error', {
-                        componentType: originalType,
-                        resolvedType: actualType,
-                        operationId,
-                        success: false,
-                        error: 'Circuit breaker open'
-                    });
-                }
-            } catch (e) {
-                // Event bus not ready yet
-            }
-            
-            return this.getFallbackTemplate(originalType);
-        }
-        
-        // CRITICAL FIX: For stress test components, use fallback immediately
-        if (originalType.startsWith('stress-test-') || originalType.startsWith('test-')) {
-            structuredLogger.info('LOADER', 'Test component detected, using fallback immediately', { 
-                originalType, 
-                actualType 
-            });
-            
-            // ROOT FIX: Emit completion event for coordination
-            try {
-                if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                    window.eventBus.emit('template:fetch-complete', {
-                        componentType: originalType,
-                        resolvedType: actualType,
-                        operationId,
-                        success: true,
-                        fallback: true
-                    });
-                }
-            } catch (e) {
-                // Event bus not ready yet
-            }
-            
-            return this.getFallbackTemplate(originalType);
-        }
-        
-        // CRITICAL FIX: Reduced retries and much faster timeouts
-        const maxRetries = 2; // Reduced from 3 to 2
-        let lastError;
-        
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000); // Reduced to 1 second
-                
-                // Try REST API endpoint first (use original type - API handles alias resolution)
-                const siteUrl = window.guestifyData?.siteUrl || window.location.origin;
-                const restUrl = `${siteUrl}/wp-json/guestify/v1/templates/${originalType}`;
-                let response = await fetch(restUrl, {
-                    signal: controller.signal,
-                    headers: {
-                        'Accept': 'text/html, application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                
-                clearTimeout(timeoutId);
-                
-                // If REST API fails, try direct PHP file using actual type (backward compatibility)
-                if (!response.ok && response.status === 404) {
-                    const directUrl = `${this.pluginUrl}components/${actualType}/template.php`;
-                    response = await fetch(directUrl);
-                }
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch template for ${originalType} (resolved to ${actualType}): ${response.statusText}`);
-                }
-                
-                // Success - reset circuit breaker failure count
-                if (this.circuitBreaker.state === 'HALF_OPEN') {
-                    this.circuitBreaker.state = 'CLOSED';
-                    this.circuitBreaker.failureCount = 0;
-                    structuredLogger.info('LOADER', 'Circuit breaker reset to CLOSED after successful fetch');
-                }
-                
-                // Handle JSON response from REST API
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    const data = await response.json();
-                    const template = data.html || data.template;
-                    
-                    // ROOT FIX: Emit success event for coordination
-                    try {
-                        if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                            window.eventBus.emit('template:fetch-complete', {
-                                componentType: originalType,
-                                resolvedType: actualType,
-                                operationId,
-                                success: true
-                            });
-                        }
-                    } catch (e) {
-                        // Event bus not ready yet
-                    }
-                    
-                    return template;
-                }
-                
-                // Handle direct HTML response
-                const template = await response.text();
-                
-                // ROOT FIX: Emit success event for coordination
-                try {
-                    if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                        window.eventBus.emit('template:fetch-complete', {
-                            componentType: originalType,
-                            resolvedType: actualType,
-                            operationId,
-                            success: true
-                        });
-                    }
-                } catch (e) {
-                    // Event bus not ready yet
-                }
-                
-                return template;
-                
-            } catch (error) {
-                lastError = error;
-                
-                if (attempt < maxRetries - 1) {
-                    // CRITICAL FIX: Much faster retry delays (milliseconds, not seconds)
-                    const delay = 100 + (attempt * 50); // 100ms, 150ms instead of 1s, 2s, 4s
-                    structuredLogger.warn('LOADER', `Fetch attempt ${attempt + 1} failed, retrying...`, {
-                        originalType,
-                        actualType,
-                        error: error.message,
-                        delay
-                    });
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
-            }
-        }
-        
-        // CRITICAL FIX: Record failure and return fallback instead of throwing
-        this.recordFailure();
-        structuredLogger.warn('LOADER', `All fetch attempts failed, using fallback template`, { 
-            originalType, 
-            actualType,
-            error: lastError?.message,
-            circuitBreakerState: this.circuitBreaker.state
-        });
-        
-        // ROOT FIX: Emit error event for coordination
-        try {
-            if (window.eventBus && typeof window.eventBus.emit === 'function') {
-                window.eventBus.emit('template:fetch-error', {
-                    componentType: originalType,
-                    resolvedType: actualType,
-                    operationId,
-                    success: false,
-                    error: lastError?.message || 'Unknown fetch error'
-                });
-            }
-        } catch (e) {
-            // Event bus not ready yet
-        }
-        
-        return this.getFallbackTemplate(originalType);
-    }
-
-    /**
      * Creates an HTML element from a template string.
      * @param {string} template - The HTML template string.
      * @param {string} id - The unique ID to assign to the element.
@@ -553,9 +430,17 @@ class DynamicComponentLoader {
             });
         });
         
-        await Promise.all(promises);
     }
 }
 
-// Export singleton instance
-export const dynamicComponentLoader = new DynamicComponentLoader();
+// ROOT FIX: Create and expose dynamic component loader globally
+const dynamicComponentLoader = new DynamicComponentLoader();
+
+// ROOT FIX: WordPress-compatible global exposure
+window.dynamicComponentLoader = dynamicComponentLoader;
+window.DynamicComponentLoader = DynamicComponentLoader;
+
+console.log('✅ ROOT FIX: Simplified Dynamic Component Loader exposed globally (WordPress-compatible)');
+console.log('✅ ROOT FIX: Event-driven via native Promises - NO external dependencies');
+
+})(); // ROOT FIX: Close IIFE wrapper

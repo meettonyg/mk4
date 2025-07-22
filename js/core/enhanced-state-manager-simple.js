@@ -52,17 +52,32 @@
 
         /**
          * Initialize after all systems are ready
+         * ROOT FIX: Load WordPress data first, then localStorage as fallback
          */
         async initializeAfterSystems() {
             this.logger.info('STATE', 'Initializing Enhanced State Manager...');
             
             try {
-                // Load saved state
-                const savedState = this.loadStateFromStorage();
+                // ROOT FIX: Priority 1 - Load WordPress saved state
+                let savedState = this.loadStateFromWordPress();
+                
+                // ROOT FIX: Priority 2 - Fallback to localStorage if no WordPress data
+                if (!savedState || Object.keys(savedState.components || {}).length === 0) {
+                    savedState = this.loadStateFromStorage();
+                    this.logger.info('STATE', 'No WordPress state, using localStorage fallback');
+                }
                 
                 if (savedState && Object.keys(savedState.components || {}).length > 0) {
-                    this.logger.info('STATE', 'Loading saved state with components:', Object.keys(savedState.components).length);
-                    this.state = savedState;
+                    this.logger.info('STATE', 'Loaded state from localStorage', {
+                        components: Object.keys(savedState.components).length
+                    });
+                    this.logger.info('STATE', 'Loading saved state with components:');
+                    Object.keys(savedState.components).forEach(id => {
+                        const comp = savedState.components[id];
+                        this.logger.debug('STATE', `  - ${id}: ${comp.type}`);
+                    });
+                    
+                    this.state = this.validateAndNormalizeState(savedState);
                     this.notifySubscribers();
                 } else {
                     this.logger.info('STATE', 'No saved state found - starting with empty state');
@@ -358,6 +373,44 @@
         }
 
         /**
+         * ROOT FIX: Load state from WordPress data (priority source)
+         */
+        loadStateFromWordPress() {
+            try {
+                // Check for WordPress data in gmkbData.savedState
+                if (window.gmkbData && window.gmkbData.savedState) {
+                    const wpState = window.gmkbData.savedState;
+                    
+                    if (wpState && Object.keys(wpState.components || {}).length > 0) {
+                        this.logger.info('STATE', 'Loaded state from WordPress', {
+                            components: Object.keys(wpState.components).length
+                        });
+                        return wpState;
+                    }
+                }
+                
+                // Check for WordPress data in guestifyData.savedState (fallback)
+                if (window.guestifyData && window.guestifyData.savedState) {
+                    const wpState = window.guestifyData.savedState;
+                    
+                    if (wpState && Object.keys(wpState.components || {}).length > 0) {
+                        this.logger.info('STATE', 'Loaded state from WordPress (guestifyData)', {
+                            components: Object.keys(wpState.components).length
+                        });
+                        return wpState;
+                    }
+                }
+                
+                this.logger.debug('STATE', 'No WordPress saved state available');
+                return null;
+                
+            } catch (error) {
+                this.logger.error('STATE', 'Error loading from WordPress data', error);
+                return null;
+            }
+        }
+        
+        /**
          * Load state from storage
          */
         loadStateFromStorage() {
@@ -386,6 +439,114 @@
             } catch (error) {
                 this.logger.error('STATE', 'Error saving to localStorage', error);
             }
+        }
+        
+        /**
+         * ROOT FIX: Enhanced state validation with recovery and detailed diagnostics
+         */
+        validateAndNormalizeState(state) {
+            if (!state || typeof state !== 'object') {
+                return {
+                    layout: [],
+                    components: {},
+                    globalSettings: {},
+                    version: this.SAVE_VERSION
+                };
+            }
+            
+            const normalized = {
+                layout: Array.isArray(state.layout) ? state.layout : [],
+                components: state.components && typeof state.components === 'object' ? state.components : {},
+                globalSettings: state.globalSettings && typeof state.globalSettings === 'object' ? state.globalSettings : {},
+                version: state.version || this.SAVE_VERSION
+            };
+            
+            // Ensure all components in layout exist in components object
+            normalized.layout = normalized.layout.filter(id => normalized.components[id]);
+            
+            // Enhanced component validation with recovery
+            const validComponents = {};
+            const recoveredCount = { fixed: 0, removed: 0 };
+            
+            Object.keys(normalized.components).forEach(id => {
+                const component = normalized.components[id];
+                
+                // Check for missing required properties
+                const missingProps = [];
+                if (!component.type) missingProps.push('type');
+                if (!component.id) missingProps.push('id');
+                
+                if (missingProps.length > 0) {
+                    // Attempt recovery
+                    let recovered = false;
+                    
+                    // Try to infer type from component ID
+                    if (!component.type && id) {
+                        if (id.includes('topics-') || id.includes('topic-')) {
+                            component.type = 'topics';
+                            missingProps.splice(missingProps.indexOf('type'), 1);
+                            recovered = true;
+                            this.logger.info('STATE', `Recovered component type 'topics' for ${id}`);
+                        } else if (id.includes('hero-') || id.includes('header-')) {
+                            component.type = 'hero';
+                            missingProps.splice(missingProps.indexOf('type'), 1);
+                            recovered = true;
+                            this.logger.info('STATE', `Recovered component type 'hero' for ${id}`);
+                        } else if (id.includes('bio-') || id.includes('biography-')) {
+                            component.type = 'biography';
+                            missingProps.splice(missingProps.indexOf('type'), 1);
+                            recovered = true;
+                            this.logger.info('STATE', `Recovered component type 'biography' for ${id}`);
+                        }
+                    }
+                    
+                    // Set missing ID if not present
+                    if (!component.id) {
+                        component.id = id;
+                        missingProps.splice(missingProps.indexOf('id'), 1);
+                        recovered = true;
+                        this.logger.info('STATE', `Recovered component id '${id}'`);
+                    }
+                    
+                    // If still missing critical properties, remove component
+                    if (missingProps.length > 0) {
+                        this.logger.warn('STATE', `Removing invalid component ${id} - missing: ${missingProps.join(', ')}`, {
+                            componentData: component,
+                            missingProperties: missingProps
+                        });
+                        normalized.layout = normalized.layout.filter(layoutId => layoutId !== id);
+                        recoveredCount.removed++;
+                        return; // Skip adding to validComponents
+                    }
+                    
+                    if (recovered) {
+                        recoveredCount.fixed++;
+                    }
+                }
+                
+                // Add valid/recovered component
+                validComponents[id] = component;
+            });
+            
+            // Update normalized components with valid ones
+            normalized.components = validComponents;
+            
+            // Log recovery results
+            if (recoveredCount.fixed > 0 || recoveredCount.removed > 0) {
+                this.logger.info('STATE', 'Component validation and recovery complete', {
+                    totalComponents: Object.keys(normalized.components).length,
+                    recovered: recoveredCount.fixed,
+                    removed: recoveredCount.removed,
+                    layoutComponents: normalized.layout.length
+                });
+            }
+            
+            this.logger.debug('STATE', 'State normalized', {
+                componentsCount: Object.keys(normalized.components).length,
+                layoutCount: normalized.layout.length
+            });
+            
+            return normalized;
         }
 
         /**

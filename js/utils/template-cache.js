@@ -1,6 +1,7 @@
 /**
  * @file template-cache.js
  * @description Application-wide template cache with version management
+ * ROOT FIX: Converted from ES6 imports to WordPress-compatible format
  * 
  * Provides a shared cache for component templates to eliminate duplicate
  * fetches and improve performance. Supports cache invalidation via ETags.
@@ -8,7 +9,17 @@
  * @since 2.2.0
  */
 
-import { structuredLogger } from './structured-logger.js';
+// ROOT FIX: WordPress-compatible IIFE wrapper instead of ES6 imports
+(function() {
+    'use strict';
+    
+    // ROOT FIX: Use fallback if structured logger not available
+    const structuredLogger = window.structuredLogger || {
+        info: console.log,
+        warn: console.warn,
+        error: console.error,
+        debug: console.debug
+    };
 
 class TemplateCache {
     constructor() {
@@ -242,5 +253,13 @@ class TemplateCache {
     }
 }
 
-// Export singleton instance
-export const templateCache = new TemplateCache();
+// ROOT FIX: Create and expose template cache globally instead of ES6 export
+const templateCache = new TemplateCache();
+
+// ROOT FIX: WordPress-compatible global exposure
+window.templateCache = templateCache;
+window.TemplateCache = TemplateCache;
+
+console.log('✅ Template Cache: Available globally and ready (WordPress-compatible)');
+
+})(); // ROOT FIX: Close IIFE wrapper
