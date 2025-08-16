@@ -71,3 +71,43 @@ window.GMKBHelpers = {
 };
 
 console.log('✅ GMKBHelpers: Available globally and ready');
+
+/**
+ * ROOT FIX: Global component property update function
+ * Used by dynamic component loader to update component properties
+ * @param {HTMLElement} element - The component element
+ * @param {Object} props - The properties to apply
+ */
+window.updateComponentProps = function(element, props) {
+    if (!element || !props || typeof props !== 'object') {
+        return;
+    }
+    
+    try {
+        // Update data attributes for component properties
+        Object.keys(props).forEach(key => {
+            if (key && props[key] !== undefined) {
+                element.setAttribute(`data-${key}`, String(props[key]));
+            }
+        });
+        
+        // Update component ID if provided
+        if (props.id) {
+            element.id = props.id;
+            element.setAttribute('data-component-id', props.id);
+        }
+        
+        // Update component type if provided
+        if (props.type) {
+            element.setAttribute('data-component-type', props.type);
+        }
+        
+        // Store props on element for later reference
+        element._componentProps = props;
+        
+    } catch (error) {
+        console.warn('Failed to update component props:', error);
+    }
+};
+
+console.log('✅ updateComponentProps: Available globally and ready');

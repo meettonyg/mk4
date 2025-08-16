@@ -4,12 +4,29 @@
  * Part of Phase 3: Enhanced State Integration
  * 
  * PHASE 3 FIX: Removed circular dependency with enhancedStateManager
+ * ROOT FIX: WordPress-compatible IIFE wrapper
  */
 
-// REMOVED: import { enhancedStateManager } from './enhanced-state-manager.js';
-import { eventBus } from './event-bus.js';
-import { structuredLogger } from '../utils/structured-logger.js';
-import { performanceMonitor } from '../utils/performance-monitor.js';
+// ROOT FIX: WordPress-compatible IIFE wrapper
+(function() {
+    'use strict';
+    
+    // ROOT FIX: Use global objects instead of ES6 imports
+    const eventBus = window.eventBus || {
+        on: () => {},
+        emit: () => {}
+    };
+    
+    const structuredLogger = window.structuredLogger || {
+        info: console.log,
+        warn: console.warn,
+        error: console.error,
+        debug: console.debug
+    };
+    
+    const performanceMonitor = window.performanceMonitor || {
+        start: () => () => {}
+    };
 
 class UIRegistry {
     constructor() {
@@ -488,13 +505,18 @@ class UIRegistry {
     }
 }
 
-// Create singleton instance
-export const uiRegistry = new UIRegistry();
+// ROOT FIX: Create singleton instance
+const uiRegistry = new UIRegistry();
 
-// Expose globally for debugging
+// ROOT FIX: WordPress-compatible global exposure
 window.uiRegistry = uiRegistry;
+window.UIRegistry = UIRegistry;
 
-// Export convenience methods
-export const registerUI = uiRegistry.register.bind(uiRegistry);
-export const unregisterUI = uiRegistry.unregister.bind(uiRegistry);
-export const forceUIUpdate = uiRegistry.forceUpdate.bind(uiRegistry);
+// ROOT FIX: Export convenience methods as global functions
+window.registerUI = uiRegistry.register.bind(uiRegistry);
+window.unregisterUI = uiRegistry.unregister.bind(uiRegistry);
+window.forceUIUpdate = uiRegistry.forceUpdate.bind(uiRegistry);
+
+console.log('✅ ROOT FIX: UI Registry exposed globally (WordPress-compatible)');
+
+})(); // ROOT FIX: Close IIFE wrapper

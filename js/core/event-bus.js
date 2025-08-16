@@ -2,10 +2,24 @@
  * Centralized Event Bus
  * Manages all application events to prevent race conditions and ensure proper event coordination
  * Addresses RACE 5: DOM Ready vs Event Listener Setup
+ * ROOT FIX: WordPress-compatible IIFE wrapper
  */
 
-import { structuredLogger } from '../utils/structured-logger.js';
-import { performanceMonitor } from '../utils/performance-monitor.js';
+// ROOT FIX: WordPress-compatible IIFE wrapper
+(function() {
+    'use strict';
+    
+    // ROOT FIX: Use global objects instead of ES6 imports
+    const structuredLogger = window.structuredLogger || {
+        info: console.log,
+        warn: console.warn,
+        error: console.error,
+        debug: console.debug
+    };
+    
+    const performanceMonitor = window.performanceMonitor || {
+        start: () => () => {}
+    };
 
 class EventBus {
     constructor() {
@@ -501,8 +515,8 @@ class EventBus {
     }
 }
 
-// Create singleton instance
-export const eventBus = new EventBus();
+// ROOT FIX: Create singleton instance
+const eventBus = new EventBus();
 
 // Setup global event mappings for backward compatibility
 const globalEventMappings = {
@@ -521,11 +535,16 @@ Object.entries(globalEventMappings).forEach(([oldEvent, newEvent]) => {
     });
 });
 
-// Expose globally for debugging and migration
+// ROOT FIX: WordPress-compatible global exposure
 window.eventBus = eventBus;
+window.EventBus = EventBus;
 
-// Export convenience methods
-export const on = eventBus.on.bind(eventBus);
-export const off = eventBus.off.bind(eventBus);
-export const emit = eventBus.emit.bind(eventBus);
-export const once = eventBus.once.bind(eventBus);
+// ROOT FIX: Export convenience methods as global functions
+window.gmkbEventOn = eventBus.on.bind(eventBus);
+window.gmkbEventOff = eventBus.off.bind(eventBus);
+window.gmkbEventEmit = eventBus.emit.bind(eventBus);
+window.gmkbEventOnce = eventBus.once.bind(eventBus);
+
+console.log('✅ ROOT FIX: Event Bus exposed globally (WordPress-compatible)');
+
+})(); // ROOT FIX: Close IIFE wrapper

@@ -1,7 +1,12 @@
 /**
  * Performance Monitoring Module
  * Tracks and reports on key operations with minimal overhead
+ * ROOT FIX: WordPress-compatible IIFE wrapper
  */
+
+// ROOT FIX: WordPress-compatible IIFE wrapper
+(function() {
+    'use strict';
 
 class PerformanceMonitor {
     constructor() {
@@ -496,10 +501,10 @@ class PerformanceMonitor {
     }
 }
 
-// Create singleton instance and expose globally
+// ROOT FIX: Create singleton instance and expose globally
 const performanceMonitor = new PerformanceMonitor();
 
-// Expose on window for easy access
+// ROOT FIX: Expose on window for easy access
 window.mkPerf = {
     track: performanceMonitor.track.bind(performanceMonitor),
     start: performanceMonitor.start.bind(performanceMonitor),
@@ -512,5 +517,10 @@ window.mkPerf = {
     getMetrics: performanceMonitor.getMetrics.bind(performanceMonitor)
 };
 
-// Export for module usage
-export { performanceMonitor };
+// ROOT FIX: WordPress-compatible global exposure
+window.performanceMonitor = performanceMonitor;
+window.PerformanceMonitor = PerformanceMonitor;
+
+console.log('✅ ROOT FIX: Performance Monitor exposed globally (WordPress-compatible)');
+
+})(); // ROOT FIX: Close IIFE wrapper

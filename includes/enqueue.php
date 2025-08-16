@@ -96,6 +96,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // Export modal - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-export-modal', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-export-modal',
+            $plugin_url . 'js/modals/export.js',
+            array('gmkb-main-script'),
+            $version,
+            true
+        );
+    }
+    
     // 2. Modal base system (needed by component library) - ROOT FIX: Added duplicate prevention
     if (!wp_script_is('gmkb-modal-base', 'enqueued')) {
         wp_enqueue_script(
@@ -143,7 +154,95 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 6. Component library (depends on modal base, state manager, and component manager) - ROOT FIX: Added duplicate prevention
+    // 6. Event bus (handles global events) - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-event-bus', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-event-bus',
+            $plugin_url . 'js/core/event-bus.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 7. UI registry (manages UI component updates) - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-ui-registry', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-ui-registry',
+            $plugin_url . 'js/core/ui-registry.js',
+            array('gmkb-structured-logger', 'gmkb-event-bus'),
+            $version,
+            true
+        );
+    }
+    
+    // 8. Utility helpers (common helper functions) - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-helpers', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-helpers',
+            $plugin_url . 'js/utils/helpers.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 9. Template cache (caches component templates) - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-template-cache', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-template-cache',
+            $plugin_url . 'js/utils/template-cache.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 10. Performance monitor (for debugging) - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-performance-monitor', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-performance-monitor',
+            $plugin_url . 'js/utils/performance-monitor.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 11. Dynamic component loader (loads component templates) - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-dynamic-component-loader', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-dynamic-component-loader',
+            $plugin_url . 'js/components/dynamic-component-loader.js',
+            array('gmkb-structured-logger', 'gmkb-event-bus', 'gmkb-helpers', 'gmkb-template-cache', 'gmkb-performance-monitor'),
+            $version,
+            true
+        );
+    }
+    
+    // 12. Component controls manager (manages component controls) - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-component-controls-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-controls-manager',
+            $plugin_url . 'js/core/component-controls-manager.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 13. Enhanced component renderer (CRITICAL: renders components on screen) - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-enhanced-component-renderer', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-enhanced-component-renderer',
+            $plugin_url . 'js/core/enhanced-component-renderer.js',
+            array('gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-dynamic-component-loader', 'gmkb-component-controls-manager', 'gmkb-event-bus', 'gmkb-ui-registry', 'gmkb-helpers', 'gmkb-template-cache', 'gmkb-performance-monitor', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 14. Component library (depends on modal base, state manager, and component manager) - ROOT FIX: Added duplicate prevention
     if (!wp_script_is('gmkb-component-library', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-component-library',
@@ -163,6 +262,14 @@ function gmkb_enqueue_assets() {
                 'gmkb-structured-logger',
                 'gmkb-enhanced-state-manager',
                 'gmkb-enhanced-component-manager',
+                'gmkb-event-bus',
+                'gmkb-ui-registry',
+                'gmkb-helpers',
+                'gmkb-template-cache',
+                'gmkb-performance-monitor',
+                'gmkb-dynamic-component-loader',
+                'gmkb-component-controls-manager',
+                'gmkb-enhanced-component-renderer',
                 'gmkb-empty-state-handlers',
                 'gmkb-component-library'
             ),
@@ -179,6 +286,17 @@ function gmkb_enqueue_assets() {
     
     // ROOT FIX: Optional modals loaded only if main script succeeds
     // Reduce initial load complexity
+    
+    // Template library modal - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-template-library', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-template-library',
+            $plugin_url . 'js/modals/template-library.js',
+            array('gmkb-main-script'),
+            $version,
+            true
+        );
+    }
     
     // Global settings modal - ROOT FIX: Added duplicate prevention
     if (!wp_script_is('gmkb-global-settings', 'enqueued')) {
