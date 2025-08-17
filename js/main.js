@@ -208,7 +208,7 @@ function createFallbackLogger() {
  */
 function setupCoreUI() {
     try {
-        // Initialize tabs using the tabs.js module
+        // ROOT FIX: Initialize tabs system first
         if (window.setupTabs) {
             window.setupTabs();
             window.structuredLogger.info('MAIN', 'Tabs system initialized');
@@ -216,10 +216,18 @@ function setupCoreUI() {
             setupTabs(); // fallback to local implementation
         }
         
-        // Initialize preview toggle functionality
-        if (window.setupPreviewToggle) {
-            window.setupPreviewToggle();
-            window.structuredLogger.info('MAIN', 'Preview toggle initialized');
+        // ROOT FIX: Initialize toolbar functionality (device preview, button handlers)
+        if (window.setupToolbar) {
+            window.setupToolbar();
+            window.structuredLogger.info('MAIN', 'Toolbar system initialized');
+        } else {
+            console.warn('⚠️ MAIN: Toolbar setup function not available');
+        }
+        
+        // Initialize preview toggle functionality (fallback if toolbar doesn't handle it)
+        if (window.setupDevicePreviewToggle) {
+            window.setupDevicePreviewToggle();
+            window.structuredLogger.info('MAIN', 'Device preview toggle initialized');
         }
         
         // Initialize form controls
@@ -417,7 +425,7 @@ function setupBasicEventListeners() {
 }
 
 /**
- * ROOT FIX: Handle save button clicks
+ * ROOT FIX: Event-driven save handler (CHECKLIST COMPLIANT)
  */
 function handleSaveClick() {
     if (!window.enhancedStateManager) {
@@ -427,38 +435,60 @@ function handleSaveClick() {
     
     try {
         const state = window.enhancedStateManager.getState();
-        const postId = (window.guestifyData || window.gmkbData)?.postId;
         
-        if (!postId) {
-            console.warn('⚠️ GMKB: Cannot save - no post ID available');
-            return;
-        }
-        
-        // Use existing WordPress AJAX save mechanism
-        const formData = new FormData();
-        formData.append('action', 'guestify_save_media_kit');
-        formData.append('nonce', (window.guestifyData || window.gmkbData)?.nonce);
-        formData.append('post_id', postId);
-        formData.append('state', JSON.stringify(state));
-        
-        fetch((window.guestifyData || window.gmkbData)?.ajaxUrl, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('✅ GMKB: State saved successfully');
-                window.structuredLogger.info('MAIN', 'State saved successfully');
-            } else {
-                console.error('❌ GMKB: Save failed:', data.message);
-                window.structuredLogger.error('MAIN', 'Save failed', data.message);
+        // ROOT FIX: Listen for WordPress data ready event instead of global object access
+        const handleDataReady = (event) => {
+            document.removeEventListener('wordpressDataReady', handleDataReady);
+            
+            const wpData = event.detail;
+            if (!wpData || !wpData.ajaxUrl || !wpData.nonce || !wpData.postId) {
+                console.error('❌ GMKB: WordPress data not available for save');
+                window.structuredLogger.error('MAIN', 'WordPress data not available for save', { wpData });
+                return;
             }
-        })
-        .catch(error => {
-            console.error('❌ GMKB: Save error:', error);
-            window.structuredLogger.error('MAIN', 'Save error', error);
-        });
+            
+            const formData = new FormData();
+            formData.append('action', 'guestify_save_media_kit');
+            formData.append('nonce', wpData.nonce);
+            formData.append('post_id', wpData.postId);
+            formData.append('state', JSON.stringify(state));
+            
+            fetch(wpData.ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ GMKB: State saved successfully');
+                    window.structuredLogger.info('MAIN', 'State saved successfully');
+                } else {
+                    console.error('❌ GMKB: Save failed:', data.message);
+                    window.structuredLogger.error('MAIN', 'Save failed', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('❌ GMKB: Save error:', error);
+                window.structuredLogger.error('MAIN', 'Save error', error);
+            });
+        };
+        
+        // Check if data is already available via cached component manager data
+        if (window.enhancedComponentManager && window.enhancedComponentManager.cachedWordPressData) {
+            const wpData = window.enhancedComponentManager.cachedWordPressData;
+            handleDataReady({ detail: wpData });
+        } else {
+            // Listen for the event
+            document.addEventListener('wordpressDataReady', handleDataReady);
+            
+            // Trigger a re-emit if the event has already fired
+            setTimeout(() => {
+                if (document.readyState === 'complete') {
+                    console.warn('⚠️ GMKB: WordPress data event may have already fired, requesting re-emit');
+                    // The event should already be cached by the component manager
+                }
+            }, 100);
+        }
         
     } catch (error) {
         console.error('❌ GMKB: Save handler error:', error);

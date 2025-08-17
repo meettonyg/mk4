@@ -20,6 +20,7 @@
             this.components = new Map();
             this.isInitialized = false;
             this.componentCounter = 0;
+            this.cachedWordPressData = null; // ROOT FIX: Cache for event-driven data
             
             logger.info('COMPONENT', 'Enhanced Component Manager created');
         }
@@ -156,7 +157,7 @@
         }
 
         /**
-         * ROOT FIX: Render component on server via AJAX
+         * ROOT FIX: Event-driven component rendering (CHECKLIST COMPLIANT)
          * @param {string} componentType - Component type
          * @param {Object} props - Component props
          * @param {string} componentId - Component ID
@@ -164,13 +165,13 @@
          */
         async renderComponentOnServer(componentType, props, componentId) {
             try {
-                // ROOT FIX: Wait for WordPress data to be available
-                const data = await this.waitForWordPressData();
-                const ajaxUrl = data.ajaxUrl;
-                const nonce = data.nonce;
+                // ROOT FIX: Use event-driven data access - NO global object sniffing
+                const wpData = await this.waitForWordPressDataEvent();
+                const ajaxUrl = wpData.ajaxUrl;
+                const nonce = wpData.nonce;
 
                 if (!ajaxUrl || !nonce) {
-                    throw new Error('AJAX URL or nonce not available after waiting');
+                    throw new Error('AJAX URL or nonce not available from event data');
                 }
 
                 const formData = new FormData();
@@ -178,19 +179,24 @@
                 formData.append('nonce', nonce);
                 formData.append('component', componentType);
                 formData.append('props', JSON.stringify({ ...props, component_id: componentId }));
+                
+                // ROOT FIX: Add post_id parameter that PHP handlers expect
+                if (wpData.postId) {
+                    formData.append('post_id', wpData.postId);
+                }
 
                 const response = await fetch(ajaxUrl, {
                     method: 'POST',
                     body: formData
                 });
 
-                const data = await response.json();
+                const responseData = await response.json();
 
-                if (data.success && data.data && data.data.html) {
+                if (responseData.success && responseData.data && responseData.data.html) {
                     logger.debug('COMPONENT', `Server render successful: ${componentType}`);
-                    return data.data.html;
+                    return responseData.data.html;
                 } else {
-                    throw new Error(data.data?.message || 'Server render failed');
+                    throw new Error(responseData.data?.message || 'Server render failed');
                 }
 
             } catch (error) {
@@ -409,41 +415,53 @@
         }
 
         /**
-         * ROOT FIX: Wait for WordPress localized data to be available
-         * @returns {Promise<Object>} WordPress data object
+         * ROOT FIX: Event-driven WordPress data access (CHECKLIST COMPLIANT)
+         * Listens for wordpressDataReady event instead of checking global objects
+         * @returns {Promise<Object>} WordPress data object from event
          */
-        async waitForWordPressData() {
-            const maxAttempts = 50; // 5 seconds max wait
-            const delay = 100; // 100ms between attempts
-            
-            for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                // Check for data in multiple possible locations
-                const data = window.guestifyData || window.gmkbData || window.MKCG;
-                
-                if (data && data.ajaxUrl && data.nonce) {
-                    logger.debug('COMPONENT', `WordPress data found on attempt ${attempt + 1}`, { 
-                        source: window.guestifyData ? 'guestifyData' : window.gmkbData ? 'gmkbData' : 'MKCG',
-                        hasAjaxUrl: !!data.ajaxUrl,
-                        hasNonce: !!data.nonce
-                    });
-                    return data;
+        async waitForWordPressDataEvent() {
+            return new Promise((resolve, reject) => {
+                // Check if we already have cached data from a previous event
+                if (this.cachedWordPressData) {
+                    logger.debug('COMPONENT', 'Using cached WordPress data from previous event');
+                    resolve(this.cachedWordPressData);
+                    return;
                 }
                 
-                // Wait before next attempt
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-            
-            // Last resort: check if data exists but is incomplete
-            const partialData = window.guestifyData || window.gmkbData || window.MKCG;
-            if (partialData) {
-                logger.warn('COMPONENT', 'Partial WordPress data found', {
-                    hasAjaxUrl: !!partialData.ajaxUrl,
-                    hasNonce: !!partialData.nonce,
-                    availableKeys: Object.keys(partialData)
-                });
-            }
-            
-            throw new Error('WordPress data not available after waiting');
+                const timeout = setTimeout(() => {
+                    logger.error('COMPONENT', 'WordPress data ready event timeout after 10 seconds');
+                    reject(new Error('WordPress data ready event timeout'));
+                }, 10000);
+                
+                // ROOT FIX: Listen for the WordPress data ready event
+                const handleDataReady = (event) => {
+                    clearTimeout(timeout);
+                    document.removeEventListener('wordpressDataReady', handleDataReady);
+                    
+                    const eventData = event.detail;
+                    
+                    if (eventData && eventData.ajaxUrl && eventData.nonce) {
+                        // Cache the data for future use
+                        this.cachedWordPressData = eventData;
+                        
+                        logger.debug('COMPONENT', 'WordPress data received via event', {
+                            hasAjaxUrl: !!eventData.ajaxUrl,
+                            hasNonce: !!eventData.nonce,
+                            hasPostId: !!eventData.postId,
+                            postId: eventData.postId
+                        });
+                        
+                        resolve(eventData);
+                    } else {
+                        logger.error('COMPONENT', 'Invalid WordPress data in event', eventData);
+                        reject(new Error('Invalid WordPress data in event'));
+                    }
+                };
+                
+                document.addEventListener('wordpressDataReady', handleDataReady);
+                
+                logger.debug('COMPONENT', 'Listening for WordPress data ready event...');
+            });
         }
 
         /**

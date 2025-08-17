@@ -71,6 +71,93 @@ function gmkb_enqueue_assets() {
 
     $plugin_url = GUESTIFY_PLUGIN_URL;
     $version = '2.2.0-stable-architecture-FIXED-' . time(); // Cache busting for development
+    
+    // ROOT FIX: Get component data early for wp_data array
+    $components_data = array();
+    $categories_data = array();
+    
+    // Get the plugin instance to access component discovery
+    $plugin_instance = Guestify_Media_Kit_Builder::get_instance();
+    if ($plugin_instance) {
+        $component_discovery = $plugin_instance->get_component_discovery();
+        if ($component_discovery) {
+            $components_data = $component_discovery->getComponents();
+            $categories_data = $component_discovery->getCategories();
+        }
+    }
+    
+    // ROOT FIX: Ensure we have valid component data even if discovery fails
+    if (empty($components_data)) {
+        // Provide essential fallback components to prevent empty state errors
+        $components_data = array(
+            array(
+                'type' => 'hero',
+                'name' => 'Hero Section',
+                'title' => 'Hero Section',
+                'description' => 'A prominent header section with title and subtitle',
+                'category' => 'essential',
+                'premium' => false,
+                'icon' => 'fa-star'
+            ),
+            array(
+                'type' => 'biography',
+                'name' => 'Biography',
+                'title' => 'Biography',
+                'description' => 'Professional biography section',
+                'category' => 'essential',
+                'premium' => false,
+                'icon' => 'fa-user'
+            ),
+            array(
+                'type' => 'contact',
+                'name' => 'Contact',
+                'title' => 'Contact Information',
+                'description' => 'Contact details and social links',
+                'category' => 'essential',
+                'premium' => false,
+                'icon' => 'fa-envelope'
+            )
+        );
+        
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '⚠️ GMKB: Component discovery failed, using fallback components' );
+        }
+    }
+    
+    // ROOT FIX: Ensure categories exist
+    if (empty($categories_data)) {
+        $categories_data = array(
+            array(
+                'slug' => 'essential',
+                'name' => 'Essential',
+                'description' => 'Core components for every media kit'
+            )
+        );
+    }
+    
+    // ROOT FIX: Create WordPress data array early so it can be used by multiple scripts
+    $wp_data = array(
+        'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+        'restUrl'       => esc_url_raw( rest_url() ),
+        'nonce'         => wp_create_nonce( 'gmkb_nonce' ),
+        'restNonce'     => wp_create_nonce( 'wp_rest' ),
+        'postId'        => get_current_post_id_safe(),
+        'pluginUrl'     => $plugin_url,
+        'siteUrl'       => home_url(),
+        'pluginVersion' => defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : 'unknown',
+        'architecture'  => 'wordpress-global-namespace',
+        'timestamp'     => time(),
+        'builderPage'   => true,
+        'isBuilderPage' => true,
+        'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
+        'scriptsLoaded' => 'simplified-fixed',
+        'moduleSupport' => false,
+        'es6Converted'  => true,
+        // ROOT FIX: Include component data to prevent fallback to hardcoded data
+        'components'    => $components_data,
+        'categories'    => $categories_data,
+        'totalComponents' => count($components_data)
+    );
 
     // ROOT FIX: Diagnostic scripts only loaded manually when needed
     // debug-duplicate-main.js is available for manual debugging but not auto-loaded
@@ -91,17 +178,6 @@ function gmkb_enqueue_assets() {
             'gmkb-structured-logger',
             $plugin_url . 'js/utils/structured-logger.js',
             array(), // ZERO dependencies
-            $version,
-            true
-        );
-    }
-    
-    // Export modal - ROOT FIX: Added missing script
-    if (!wp_script_is('gmkb-export-modal', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-export-modal',
-            $plugin_url . 'js/modals/export.js',
-            array('gmkb-main-script'),
             $version,
             true
         );
@@ -231,6 +307,29 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT FIX: MISSING UI SCRIPTS - Adding essential UI functionality for tabs, modals, and toolbar
+    // 12a. Tabs system (handles sidebar tab switching) - CRITICAL MISSING SCRIPT
+    if (!wp_script_is('gmkb-tabs', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-tabs',
+            $plugin_url . 'js/ui/tabs.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 12b. Toolbar interactions (device preview toggle, toolbar buttons)
+    if (!wp_script_is('gmkb-toolbar', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-toolbar',
+            $plugin_url . 'js/ui/toolbar.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 13. Enhanced component renderer (CRITICAL: renders components on screen) - ROOT FIX: Added missing script
     if (!wp_script_is('gmkb-enhanced-component-renderer', 'enqueued')) {
         wp_enqueue_script(
@@ -271,21 +370,14 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-controls-manager',
                 'gmkb-enhanced-component-renderer',
                 'gmkb-empty-state-handlers',
-                'gmkb-component-library'
+                'gmkb-component-library',
+                'gmkb-tabs',
+                'gmkb-toolbar'
             ),
             $version,
             true
         );
     }
-    
-    // ROOT FIX: Scripts will be converted to WordPress-compatible global namespace pattern
-    // No special module handling needed
-
-    // ROOT FIX: Modal system already loaded in Phase 1
-    // Component library already loaded in Phase 2
-    
-    // ROOT FIX: Optional modals loaded only if main script succeeds
-    // Reduce initial load complexity
     
     // Template library modal - ROOT FIX: Added missing script
     if (!wp_script_is('gmkb-template-library', 'enqueued')) {
@@ -308,16 +400,17 @@ function gmkb_enqueue_assets() {
             true
         );
     }
-    // ROOT FIX: Load only essential UI components after main script
-    // Reduce complexity and prevent race conditions
     
-    // Essential UI components loaded after main app
-    
-    // ROOT FIX: Component controls will be handled by main application
-    // Simplifying to prevent initialization complexity
-    
-    // ROOT FIX: Services will be loaded on-demand by main application
-    // Simplifying initial load to prevent race conditions
+    // Export modal - ROOT FIX: Added missing script
+    if (!wp_script_is('gmkb-export-modal', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-export-modal',
+            $plugin_url . 'js/modals/export.js',
+            array('gmkb-main-script'),
+            $version,
+            true
+        );
+    }
     
     // ROOT FIX: Development scripts only in debug mode
     if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -333,118 +426,51 @@ function gmkb_enqueue_assets() {
         }
     }
 
-    // ROOT FIX: Enhanced component data loading with fallback
-    $components_data = array();
-    $categories_data = array();
+    wp_localize_script( 'gmkb-main-script', 'gmkbData', $wp_data );
     
-    // Get the plugin instance to access component discovery
-    $plugin_instance = Guestify_Media_Kit_Builder::get_instance();
-    if ($plugin_instance) {
-        $component_discovery = $plugin_instance->get_component_discovery();
-        if ($component_discovery) {
-            $components_data = $component_discovery->getComponents();
-            $categories_data = $component_discovery->getCategories();
-        }
+    // ROOT FIX: Add debug output to verify data is being set correctly
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        echo '<script>console.log("MKCG: AJAX URL set to:", "' . esc_js($wp_data['ajaxUrl']) . '");</script>';
+        echo '<script>console.log("MKCG: Nonce set:", "' . esc_js(substr($wp_data['nonce'], 0, 10) . '...'). '");</script>';
+        echo '<script>console.log("MKCG: Post ID set to:", "' . esc_js($wp_data['postId']) . '");</script>';
     }
     
-    // ROOT FIX: Ensure we have valid component data even if discovery fails
-    if (empty($components_data)) {
-        // Provide essential fallback components to prevent empty state errors
-        $components_data = array(
-            array(
-                'type' => 'hero',
-                'name' => 'Hero Section',
-                'title' => 'Hero Section',
-                'description' => 'A prominent header section with title and subtitle',
-                'category' => 'essential',
-                'premium' => false,
-                'icon' => 'fa-star'
-            ),
-            array(
-                'type' => 'biography',
-                'name' => 'Biography',
-                'title' => 'Biography',
-                'description' => 'Professional biography section',
-                'category' => 'essential',
-                'premium' => false,
-                'icon' => 'fa-user'
-            ),
-            array(
-                'type' => 'contact',
-                'name' => 'Contact',
-                'title' => 'Contact Information',
-                'description' => 'Contact details and social links',
-                'category' => 'essential',
-                'premium' => false,
-                'icon' => 'fa-envelope'
-            )
-        );
-        
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '⚠️ GMKB: Component discovery failed, using fallback components' );
-        }
+    // ROOT FIX: Also create guestifyData alias for compatibility (using same data)
+    wp_localize_script( 'gmkb-main-script', 'guestifyData', $wp_data );
+    
+    // ROOT FIX: Also create MKCG object for additional compatibility
+    wp_localize_script( 'gmkb-main-script', 'MKCG', $wp_data );
+    
+    // ROOT FIX: Event-driven data ready notification (CHECKLIST COMPLIANT)
+    echo '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Emit WordPress data ready event with data payload
+            const wordPressDataReadyEvent = new CustomEvent("wordpressDataReady", {
+                detail: {
+                    ajaxUrl: "' . esc_js($wp_data['ajaxUrl']) . '",
+                    nonce: "' . esc_js($wp_data['nonce']) . '",
+                    postId: "' . esc_js($wp_data['postId']) . '",
+                    pluginUrl: "' . esc_js($wp_data['pluginUrl']) . '",
+                    components: ' . json_encode($wp_data['components']) . ',
+                    categories: ' . json_encode($wp_data['categories']) . ',
+                    debugMode: ' . ($wp_data['debugMode'] ? 'true' : 'false') . '
+                }
+            });
+            document.dispatchEvent(wordPressDataReadyEvent);
+            
+            if (' . ($wp_data['debugMode'] ? 'true' : 'false') . ') {
+                console.log("✅ ROOT FIX: WordPress data ready event dispatched", wordPressDataReadyEvent.detail);
+            }
+        });
+    </script>';
+    
+    // ROOT FIX: Add immediate debug output to browser console to verify data is available
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        echo '<script>console.log("DEBUG: gmkbData available?", typeof window.gmkbData !== "undefined");</script>';
+        echo '<script>console.log("DEBUG: guestifyData available?", typeof window.guestifyData !== "undefined");</script>';
+        echo '<script>console.log("DEBUG: MKCG available?", typeof window.MKCG !== "undefined");</script>';
+        echo '<script>console.log("DEBUG: All window keys with data:", Object.keys(window).filter(k => k.includes("Data") || k.includes("data")));</script>';
     }
-    
-    // ROOT FIX: Ensure categories exist
-    if (empty($categories_data)) {
-        $categories_data = array(
-            array(
-                'slug' => 'essential',
-                'name' => 'Essential',
-                'description' => 'Core components for every media kit'
-            )
-        );
-    }
-    
-    // WordPress-native data passing - guaranteed to be available before script runs
-    // ROOT FIX: Updated to include component data and reflect simplified script architecture
-    wp_localize_script(
-        'gmkb-main-script',
-        'gmkbData',
-        array(
-            'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
-            'restUrl'       => esc_url_raw( rest_url() ),
-            'nonce'         => wp_create_nonce( 'gmkb_nonce' ),
-            'restNonce'     => wp_create_nonce( 'wp_rest' ),
-            'postId'        => get_current_post_id_safe(),
-            'pluginUrl'     => $plugin_url,
-            'siteUrl'       => home_url(),
-            'pluginVersion' => defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : 'unknown',
-            'architecture'  => 'wordpress-global-namespace',
-            'timestamp'     => time(),
-            'builderPage'   => true,
-            'isBuilderPage' => true,
-            'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG,
-            'scriptsLoaded' => 'simplified-fixed',
-            'moduleSupport' => false,
-            'es6Converted'  => true,
-            // ROOT FIX: Include component data to prevent fallback to hardcoded data
-            'components'    => $components_data,
-            'categories'    => $categories_data,
-            'totalComponents' => count($components_data)
-        )
-    );
-    
-    // ROOT FIX: Also create guestifyData alias for compatibility
-    wp_localize_script(
-        'gmkb-main-script',
-        'guestifyData',
-        array(
-            'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
-            'restUrl'       => esc_url_raw( rest_url() ),
-            'nonce'         => wp_create_nonce( 'gmkb_nonce' ),
-            'restNonce'     => wp_create_nonce( 'wp_rest' ),
-            'postId'        => get_current_post_id_safe(),
-            'pluginUrl'     => $plugin_url,
-            'siteUrl'       => home_url(),
-            'pluginVersion' => defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : 'unknown',
-            'components'    => $components_data,
-            'categories'    => $categories_data,
-            'totalComponents' => count($components_data),
-            'timestamp'     => time(),
-            'debugMode'     => defined( 'WP_DEBUG' ) && WP_DEBUG
-        )
-    );
 
     // Enqueue CSS
     wp_enqueue_style(
@@ -529,6 +555,12 @@ function get_current_post_id_safe() {
         if ( ! $post || $post->post_status === 'trash' ) {
             $post_id = 0;
         }
+    }
+    
+    // ROOT FIX: Add debugging for post ID detection
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( 'GMKB: Post ID detection - Final ID: ' . $post_id );
+        error_log( 'GMKB: Available GET params: ' . print_r( $_GET, true ) );
     }
 
     return $post_id;
