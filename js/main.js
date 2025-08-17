@@ -179,8 +179,8 @@ function hideLoadingState() {
             element.textContent = readyText;
         });
         
-        // Remove loading classes from body
-        document.body.classList.remove('gmkb-loading', 'loading');
+        // ROOT FIX: Remove any remaining loading classes and ensure ready state
+        document.body.classList.remove('gmkb-loading', 'loading', 'gmkb-initializing');
         document.body.classList.add('gmkb-ready');
         
         window.structuredLogger.info('MAIN', 'Loading state hidden, builder interface shown');

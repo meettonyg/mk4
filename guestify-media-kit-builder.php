@@ -250,25 +250,7 @@ class Guestify_Media_Kit_Builder {
                     font-weight: bold;
                 }
                 
-                .gmkb-initializing {
-                    position: relative;
-                }
-                
-                .gmkb-initializing::after {
-                    content: 'Loading WordPress-Native Builder...';
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: rgba(0, 0, 0, 0.9);
-                    color: #10b981;
-                    padding: 20px 30px;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: bold;
-                    z-index: 10003;
-                    border: 2px solid #10b981;
-                }
+                /* ROOT FIX: Removed loading overlay CSS - no more race conditions */
                 
                 #wpadminbar { display: none !important; }
                 html { margin-top: 0 !important; }
@@ -282,7 +264,7 @@ class Guestify_Media_Kit_Builder {
             
             <link rel="stylesheet" href="<?php echo GUESTIFY_PLUGIN_URL . 'css/guestify-builder.css?v=' . time(); ?>" type="text/css" media="all" />
         </head>
-        <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-initializing gmkb-simplified" data-post-id="<?php echo esc_attr($post_id); ?>" data-template-version="simplified-wordpress-native">
+        <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-simplified" data-post-id="<?php echo esc_attr($post_id); ?>" data-template-version="simplified-wordpress-native">
             
             <!-- Error boundary for template -->
             <div id="gmkb-template-error-boundary" style="display: none;">

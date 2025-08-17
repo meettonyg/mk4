@@ -164,11 +164,13 @@
          */
         async renderComponentOnServer(componentType, props, componentId) {
             try {
-                const ajaxUrl = (window.guestifyData || window.gmkbData)?.ajaxUrl;
-                const nonce = (window.guestifyData || window.gmkbData)?.nonce;
+                // ROOT FIX: Wait for WordPress data to be available
+                const data = await this.waitForWordPressData();
+                const ajaxUrl = data.ajaxUrl;
+                const nonce = data.nonce;
 
                 if (!ajaxUrl || !nonce) {
-                    throw new Error('AJAX URL or nonce not available');
+                    throw new Error('AJAX URL or nonce not available after waiting');
                 }
 
                 const formData = new FormData();
@@ -404,6 +406,44 @@
          */
         getAllComponents() {
             return Array.from(this.components.values());
+        }
+
+        /**
+         * ROOT FIX: Wait for WordPress localized data to be available
+         * @returns {Promise<Object>} WordPress data object
+         */
+        async waitForWordPressData() {
+            const maxAttempts = 50; // 5 seconds max wait
+            const delay = 100; // 100ms between attempts
+            
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                // Check for data in multiple possible locations
+                const data = window.guestifyData || window.gmkbData || window.MKCG;
+                
+                if (data && data.ajaxUrl && data.nonce) {
+                    logger.debug('COMPONENT', `WordPress data found on attempt ${attempt + 1}`, { 
+                        source: window.guestifyData ? 'guestifyData' : window.gmkbData ? 'gmkbData' : 'MKCG',
+                        hasAjaxUrl: !!data.ajaxUrl,
+                        hasNonce: !!data.nonce
+                    });
+                    return data;
+                }
+                
+                // Wait before next attempt
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            
+            // Last resort: check if data exists but is incomplete
+            const partialData = window.guestifyData || window.gmkbData || window.MKCG;
+            if (partialData) {
+                logger.warn('COMPONENT', 'Partial WordPress data found', {
+                    hasAjaxUrl: !!partialData.ajaxUrl,
+                    hasNonce: !!partialData.nonce,
+                    availableKeys: Object.keys(partialData)
+                });
+            }
+            
+            throw new Error('WordPress data not available after waiting');
         }
 
         /**
