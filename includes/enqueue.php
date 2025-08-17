@@ -96,7 +96,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // Export modal - ROOT FIX: Added missing script (correctly placed after main.js)
+    // Export modal - ROOT FIX: Added missing script
     if (!wp_script_is('gmkb-export-modal', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-export-modal',
