@@ -11,6 +11,10 @@ console.log('📜 Load time:', new Date().toISOString());
 console.log('🔧 ARCHITECTURE: Simplified WordPress-compatible initialization');
 console.log('✅ ROOT FIX: Event-driven initialization with minimal dependencies');
 
+// ROOT FIX: No longer needed - loading overlay issue fixed at source
+// The problematic CSS was removed from PHP template
+console.log('✅ GMKB: Loading overlay issue resolved - no cleanup needed');
+
 // ROOT FIX: IMMEDIATE component data exposure to prevent "No component data in globals"
 if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
     const data = window.gmkbData || window.guestifyData;
@@ -137,17 +141,16 @@ async function initializeWhenReady() {
 }
 
 /**
- * ROOT FIX: Hide loading state and show the builder interface
+ * ROOT FIX: Simplified loading state management - no more overlay issues
  */
 function hideLoadingState() {
     try {
-        // Hide various loading states that might be showing
+        // Hide any actual loading states that might be showing
         const loadingStates = [
             document.getElementById('loading-state'),
             document.getElementById('state-loading-enhanced'),
             document.querySelector('.loading-state'),
-            document.querySelector('.gmkb-loading'),
-            document.querySelector('[data-loading]')
+            document.querySelector('.gmkb-loading')
         ];
         
         loadingStates.forEach(element => {
@@ -172,21 +175,13 @@ function hideLoadingState() {
             }
         });
         
-        // Update any loading text
-        const loadingTexts = document.querySelectorAll('[data-loading-text]');
-        loadingTexts.forEach(element => {
-            const readyText = element.dataset.readyText || 'Media Kit Builder';
-            element.textContent = readyText;
-        });
-        
-        // Remove loading classes from body
-        document.body.classList.remove('gmkb-loading', 'loading');
+        // Ensure body has ready class
         document.body.classList.add('gmkb-ready');
         
-        window.structuredLogger.info('MAIN', 'Loading state hidden, builder interface shown');
+        window.structuredLogger.info('MAIN', 'Loading state management complete');
         
     } catch (error) {
-        window.structuredLogger.error('MAIN', 'Failed to hide loading state', error);
+        window.structuredLogger.error('MAIN', 'Failed to manage loading state', error);
     }
 }
 
@@ -544,6 +539,29 @@ window.gmkbApp = {
     isInitializing: () => isInitializing,
     hideLoading: hideLoadingState,
     setupUI: setupCoreUI,
+    // ROOT FIX: Emergency overlay removal (if any edge cases remain)
+    removeLoadingOverlay: () => {
+        try {
+            // Remove any remaining isolation styles
+            const isolationStyles = document.getElementById('gmkb-isolation-styles');
+            if (isolationStyles) {
+                isolationStyles.remove();
+                console.log('✅ Emergency: Removed isolation styles');
+            }
+            
+            // Remove problematic body classes
+            document.body.classList.remove('gmkb-initializing', 'gmkb-loading');
+            document.body.classList.add('gmkb-ready');
+            
+            // Remove any overlay elements
+            const overlays = document.querySelectorAll('[style*="Loading WordPress-Native Builder"], [style*="Loading WordPress-Native"]');
+            overlays.forEach(el => el.remove());
+            
+            console.log('✅ Emergency: Loading overlay cleanup complete');
+        } catch (error) {
+            console.error('❌ Emergency overlay removal failed:', error);
+        }
+    },
     debug: {
         state: () => window.enhancedStateManager?.debug(),
         components: () => window.enhancedComponentManager?.getStatus(),
