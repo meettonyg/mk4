@@ -31,13 +31,19 @@
  * ✅ WordPress Integration: Proper CSS enqueuing via includes/enqueue.php
  */
 
-// ROOT FIX: Removed state coordinator - bundles handle everything
+// ROOT FIX: Dynamic template instructions based on actual saved state
 $template_instructions = array(
-    'show_empty_state' => true,
+    'show_empty_state' => true,  // Default: show empty state
     'show_mkcg_dashboard' => true,
     'show_loading_state' => false,
-    'loading_message' => ''
+    'loading_message' => '',
+    'show_saved_components' => false  // Default: hide saved components container
 );
+
+// Add debug logging for template instructions initialization
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('🔧 GMKB Template: Initial template_instructions: ' . print_r($template_instructions, true));
+}
 
 // ROOT FIX: Lightweight post detection without heavy processing
 $post_id = 0;
@@ -50,6 +56,58 @@ if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
     $post_id = intval($_GET['p']);
 } elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
     $post_id = intval($_GET['page_id']);
+}
+
+// Add debug logging for post ID detection
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('🔧 GMKB Template: POST ID detection - GET params: ' . print_r($_GET, true));
+    error_log('🔧 GMKB Template: Detected POST ID: ' . $post_id);
+}
+
+// ROOT FIX: Load saved media kit state FIRST to determine template behavior
+$saved_state = array();
+$has_saved_components = false;
+
+if ($post_id > 0) {
+    $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔧 GMKB Template: Raw saved_state for post ' . $post_id . ': ' . print_r($saved_state, true));
+    }
+    
+    if (!empty($saved_state) && isset($saved_state['components']) && is_array($saved_state['components'])) {
+        $has_saved_components = count($saved_state['components']) > 0;
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Template: Found ' . count($saved_state['components']) . ' saved components for post ' . $post_id);
+        }
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔧 GMKB Template: No valid saved state found for post ' . $post_id);
+        }
+    }
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔧 GMKB Template: No valid post ID - cannot load saved state');
+    }
+}
+    
+    // ROOT FIX: CORRECTED LOGIC - Update template instructions based on saved state
+    if ($has_saved_components) {
+        $template_instructions['show_empty_state'] = false; // HIDE empty state when we have components
+        $template_instructions['show_loading_state'] = false;
+        $template_instructions['show_saved_components'] = true; // SHOW saved components
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Template: Has saved components - hiding empty state, showing saved components');
+        }
+    } else {
+        $template_instructions['show_empty_state'] = true; // SHOW empty state when no components
+        $template_instructions['show_saved_components'] = false; // HIDE saved components container
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Template: No saved components - showing empty state');
+        }
+    }
 }
 
 // ROOT FIX: Enhanced MKCG data processing with dashboard preparation
@@ -296,9 +354,22 @@ if ($post_id > 0) {
                     </div>
                 <?php endif; ?>
                 
-                <?php if ($template_instructions['show_empty_state']): ?>
+                <?php if ($template_instructions['show_saved_components']): ?>
+                    <!-- ROOT FIX: Saved Components Container - VISIBLE when we have saved components -->
+                    <div class="saved-components-container" id="saved-components-container" style="display: block;">
+                        <!-- Components will be rendered here by JavaScript -->
+                        <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
+                            <!-- Debug info for saved components -->
+                            <div class="debug-saved-components" style="position: absolute; top: 5px; right: 5px; background: rgba(0,255,0,0.1); padding: 5px; font-size: 10px; border-radius: 3px; z-index: 1000;">
+                                <?php echo count($saved_state['components']); ?> saved components
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($template_instructions['show_empty_state']) && $template_instructions['show_empty_state'] && !$has_saved_components): ?>
                     <!-- ROOT FIX: Enhanced Empty State with Auto-Loading Support -->
-                    <div class="empty-state-optimized" id="empty-state">
+                    <div class="empty-state-optimized" id="empty-state" data-allow-js-control="true">
                     <?php if ($dashboard_data): ?>
                         <!-- MKCG Data Auto-Loading State -->
                         <div class="empty-state-icon auto-loading">⚙️</div>

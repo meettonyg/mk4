@@ -697,7 +697,7 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle state changes from state manager
-     * DISABLED: Do not override PHP template rendering
+     * Respects PHP template rendering decisions
      * 
      * @param {Object} state - New state object
      */
@@ -705,10 +705,33 @@ class EmptyStateHandlers {
         try {
             const componentCount = Object.keys(state.components || {}).length;
             
-            // ROOT FIX: DO NOT FORCE STATE TRANSITIONS - PHP template controls display
-            // Only log the state change, do not manipulate DOM
+            // ROOT FIX: Check if template already decided to show saved components
+            const emptyStateElement = document.getElementById('empty-state');
+            const savedComponentsContainer = document.getElementById('saved-components-container');
             
-            structuredLogger.info('EMPTY_STATE', 'State change handled (non-invasive)', { componentCount, note: 'PHP template controls display' });
+            // CRITICAL: If saved components container exists and is visible, do NOT interfere
+            if (savedComponentsContainer && savedComponentsContainer.style.display !== 'none') {
+                structuredLogger.info('EMPTY_STATE', 'Saved components container is active - will not interfere', { componentCount });
+                
+                // Ensure empty state is hidden when saved components are showing
+                if (emptyStateElement && componentCount > 0) {
+                    emptyStateElement.style.display = 'none';
+                    structuredLogger.info('EMPTY_STATE', 'Hidden empty state to show saved components');
+                }
+                return;
+            }
+            
+            // If template shows empty state but we have components, this might be a state update
+            if (emptyStateElement && componentCount > 0) {
+                // Only hide if the template explicitly allows JavaScript control
+                const allowJsControl = emptyStateElement.dataset.allowJsControl;
+                if (allowJsControl === 'true') {
+                    emptyStateElement.style.display = 'none';
+                    structuredLogger.info('EMPTY_STATE', 'Components added - hiding empty state with JS permission');
+                }
+            }
+            
+            structuredLogger.info('EMPTY_STATE', 'State change handled (respecting template)', { componentCount, note: 'PHP template controls initial display' });
             
         } catch (error) {
             structuredLogger.error('EMPTY_STATE', 'State change handling failed', error);
@@ -717,17 +740,27 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle component addition events
-     * DISABLED: Do not override PHP template rendering
+     * Respects PHP template rendering decisions
      * 
      * @param {Object} detail - Event detail with component info
      */
     handleComponentAdded(detail) {
         try {
-            // ROOT FIX: DO NOT HIDE EMPTY STATE - PHP template controls display
-            // Only show success feedback, do not manipulate DOM display
-            
             // Show success feedback
             this.showSuccess(`${detail.componentType || 'Component'} added successfully`);
+            
+            // ROOT FIX: Check if this is the first component and empty state allows JS control
+            const emptyStateElement = document.getElementById('empty-state');
+            if (emptyStateElement && emptyStateElement.dataset.allowJsControl === 'true') {
+                // Get current component count
+                const currentState = window.enhancedStateManager?.getState();
+                const componentCount = currentState ? Object.keys(currentState.components || {}).length : 0;
+                
+                if (componentCount > 0) {
+                    emptyStateElement.style.display = 'none';
+                    structuredLogger.info('EMPTY_STATE', 'First component added - hiding empty state with permission');
+                }
+            }
             
             this.trackInteraction('component_added_via_empty_state', detail);
             structuredLogger.info('EMPTY_STATE', 'Component added (non-invasive)', detail);
@@ -739,14 +772,24 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle component removal events
-     * DISABLED: Do not override PHP template rendering
+     * Respects PHP template rendering decisions
      * 
      * @param {Object} detail - Event detail with component info
      */
     handleComponentRemoved(detail) {
         try {
-            // ROOT FIX: DO NOT SHOW EMPTY STATE - PHP template controls display
-            // Only track the removal, do not manipulate DOM display
+            // ROOT FIX: Check if this removal makes the kit empty and empty state allows JS control
+            const emptyStateElement = document.getElementById('empty-state');
+            if (emptyStateElement && emptyStateElement.dataset.allowJsControl === 'true') {
+                // Get current component count after removal
+                const currentState = window.enhancedStateManager?.getState();
+                const componentCount = currentState ? Object.keys(currentState.components || {}).length : 0;
+                
+                if (componentCount === 0) {
+                    emptyStateElement.style.display = 'block';
+                    structuredLogger.info('EMPTY_STATE', 'Last component removed - showing empty state with permission');
+                }
+            }
             
             this.trackInteraction('component_removed_to_empty_state', detail);
             structuredLogger.info('EMPTY_STATE', 'Component removed (non-invasive)', detail);

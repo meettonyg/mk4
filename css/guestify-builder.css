@@ -391,6 +391,30 @@
     opacity: 0.5;
 }
 
+/* ROOT FIX: Saved Components Container */
+.saved-components-container {
+    width: 100%;
+    min-height: 200px;
+    position: relative;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+.saved-components-container .debug-saved-components {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0, 255, 0, 0.1);
+    color: #059669;
+    padding: 5px 8px;
+    font-size: 10px;
+    border-radius: 3px;
+    z-index: 1000;
+    font-weight: 500;
+    border: 1px solid rgba(0, 255, 0, 0.2);
+}
+
 /* Hide empty state when components exist */
 .has-components .empty-state {
     display: none;

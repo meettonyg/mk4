@@ -263,10 +263,19 @@ class EnhancedComponentRenderer {
 
             this.updateEmptyState(initialState);
             
-            // ROOT FIX: Only check for components, don't force render - let state subscription handle it
+            // ROOT FIX: CRITICAL - Force initial render for saved components
             const componentCount = Object.keys(initialState.components || {}).length;
+            const domChildrenCount = this.previewContainer.children.length;
+            
             if (componentCount > 0) {
-                this.logger.info('RENDER', `Found ${componentCount} saved components - will render via state subscription`);
+                this.logger.info('RENDER', `Found ${componentCount} saved components - forcing immediate render`);
+                
+                // ROOT FIX: ALWAYS render saved components on initialization
+                // This prevents the "component briefly appears then disappears" issue
+                setTimeout(() => {
+                    this.renderSavedComponents(initialState);
+                }, 50); // Minimal delay to ensure DOM is ready
+                
             } else {
                 this.logger.debug('RENDER', 'No saved components found initially');
             }
@@ -938,6 +947,111 @@ class EnhancedComponentRenderer {
         } catch (error) {
             this.logger.error('RENDER', 'renderComponent failed', error);
             throw error;
+        }
+    }
+    
+    /**
+     * ROOT FIX: CRITICAL - Render saved components on initialization
+     * This specialized method ensures saved components are properly rendered
+     * into the correct container without interference from empty state handlers
+     * 
+     * @param {Object} initialState - Initial state containing saved components
+     */
+    async renderSavedComponents(initialState) {
+        if (!initialState || !initialState.components) {
+            this.logger.warn('RENDER', 'renderSavedComponents: No initial state or components');
+            return false;
+        }
+        
+        try {
+            const componentCount = Object.keys(initialState.components).length;
+            this.logger.info('RENDER', `renderSavedComponents: Starting render of ${componentCount} saved components`);
+            
+            // ROOT FIX: Check for saved components container first
+            let targetContainer = document.getElementById('saved-components-container');
+            
+            // If saved components container doesn't exist or isn't visible, use preview container
+            if (!targetContainer || targetContainer.style.display === 'none') {
+                this.logger.warn('RENDER', 'Saved components container not found or hidden, using preview container');
+                targetContainer = this.previewContainer;
+            } else {
+                this.logger.info('RENDER', 'Using saved components container for rendering');
+            }
+            
+            if (!targetContainer) {
+                this.logger.error('RENDER', 'No target container available for saved components');
+                return false;
+            }
+            
+            // Clear the target container
+            targetContainer.innerHTML = '';
+            this.componentCache.clear();
+            
+            // Render all saved components
+            const componentIds = Object.keys(initialState.components);
+            const fragment = document.createDocumentFragment();
+            
+            this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIds.length} components`);
+            
+            for (const componentId of componentIds) {
+                try {
+                    const componentState = initialState.components[componentId];
+                    if (!componentState) {
+                        this.logger.warn('RENDER', `No state found for saved component: ${componentId}`);
+                        continue;
+                    }
+                    
+                    const result = await this.renderComponentWithLoader(
+                        componentId,
+                        componentState.type,
+                        componentState.props || componentState.data || {}
+                    );
+                    
+                    if (result && result.element) {
+                        fragment.appendChild(result.element);
+                        this.componentCache.set(componentId, result.element);
+                        
+                        // Register with UI registry
+                        this.registerComponentWithUIRegistry(componentId, result.element, componentState);
+                        
+                        this.logger.debug('RENDER', `renderSavedComponents: Successfully rendered ${componentId}`);
+                    } else {
+                        this.logger.error('RENDER', `renderSavedComponents: Failed to render ${componentId}`);
+                    }
+                    
+                } catch (componentError) {
+                    this.logger.error('RENDER', `renderSavedComponents: Error rendering component ${componentId}:`, componentError);
+                }
+            }
+            
+            // Append all components to target container
+            targetContainer.appendChild(fragment);
+            
+            // Apply layout order if available
+            if (initialState.layout && Array.isArray(initialState.layout)) {
+                this.reorderComponents(initialState.layout);
+            }
+            
+            // Verify render success
+            const finalChildCount = targetContainer.children.length;
+            const successfulRenders = finalChildCount;
+            
+            this.logger.info('RENDER', `renderSavedComponents: Completed - ${successfulRenders}/${componentCount} components rendered`);
+            
+            // ROOT FIX: Hide empty state if components were successfully rendered
+            if (successfulRenders > 0) {
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState && emptyState.dataset.allowJsControl === 'true') {
+                    emptyState.style.display = 'none';
+                    this.logger.info('RENDER', 'renderSavedComponents: Hidden empty state after successful render');
+                }
+            }
+            
+            return successfulRenders > 0;
+            
+        } catch (error) {
+            this.logger.error('RENDER', 'renderSavedComponents: Critical error:', error);
+            return false;
         }
     }
     

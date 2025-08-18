@@ -672,6 +672,17 @@ function gmkb_enqueue_assets() {
                 true
             );
         }
+        
+        // ROOT FIX: Component rendering fix verification
+        if (!wp_script_is('gmkb-component-rendering-fix-test', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-component-rendering-fix-test',
+                $plugin_url . 'test-component-rendering-fix.js',
+                array('gmkb-enhanced-component-renderer', 'gmkb-empty-state-handlers'),
+                $version,
+                true
+            );
+        }
     }
 
     // ROOT FIX: Single wp_localize_script call to prevent duplicate WordPress data with error handling
