@@ -83,12 +83,6 @@
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
-    /* ROOT CAUSE FIX: Ensure vertical layout from the beginning */
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
 }
 
 /* Main responsive design */
