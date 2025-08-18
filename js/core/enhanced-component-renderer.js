@@ -248,6 +248,10 @@ class EnhancedComponentRenderer {
         });
 
         this.healthCheckInterval = setInterval(() => this.healthCheck(), 5000);
+        
+        // ROOT CAUSE FIX: CRITICAL - Setup layout protection observer
+        this.setupLayoutProtectionObserver();
+        
         this.initialized = true;
     }
 
@@ -617,6 +621,9 @@ class EnhancedComponentRenderer {
         const state = enhancedStateManager.getState();
         this.reorderComponents(state.layout);
         
+        // ROOT CAUSE FIX: CRITICAL - Enforce layout protection after adding components
+        this.enforceMediaKitLayout();
+        
         perfEnd();
         
         this.logger.debug('RENDER', `Rendered ${componentIds.size} new components, ${addedToFragment} added to DOM`);
@@ -709,6 +716,9 @@ class EnhancedComponentRenderer {
         
         await Promise.all(updatePromises);
         
+        // ROOT CAUSE FIX: CRITICAL - Enforce layout protection after updating components
+        this.enforceMediaKitLayout();
+        
         perfEnd();
         
         this.logger.debug('RENDER', `Updated ${componentIds.size} components`, {
@@ -744,6 +754,9 @@ class EnhancedComponentRenderer {
                 }
             }
         });
+        
+        // ROOT CAUSE FIX: CRITICAL - Enforce layout protection after reordering
+        this.enforceMediaKitLayout();
 
         perfEnd();
     }
@@ -851,6 +864,13 @@ class EnhancedComponentRenderer {
         if (this.stateUnsubscribe) this.stateUnsubscribe();
         if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
         if (this.renderDebounceTimer) clearTimeout(this.renderDebounceTimer);
+        
+        // ROOT CAUSE FIX: Clean up layout protection observer
+        if (this.layoutObserver) {
+            this.layoutObserver.disconnect();
+            this.layoutObserver = null;
+            this.logger.info('RENDER', 'Layout protection observer disconnected');
+        }
         
         // Clean up UI registry registrations
         this.registeredComponents.forEach(componentId => {
@@ -1320,9 +1340,7 @@ class EnhancedComponentRenderer {
         });
     }
     
-    /**
-     * ROOT FIX: Ultimate fallback - create placeholder components if rendering fails
-     */
+// ROOT CAUSE FIX: Ultimate fallback - create placeholder components if rendering fails
     async createPlaceholderComponents(components) {
         this.logger.warn('RENDER', 'Creating placeholder components as fallback');
         
@@ -1363,6 +1381,98 @@ class EnhancedComponentRenderer {
                 this.logger.error('RENDER', `Failed to create placeholder for ${componentId}:`, error);
             }
         }
+        
+        // ROOT CAUSE FIX: CRITICAL - Apply layout protection after adding components
+        this.enforceMediaKitLayout();
+    }
+    
+    /**
+     * ROOT CAUSE FIX: Enforce media-kit vertical layout after any DOM changes
+     * This function aggressively ensures the media-kit stays vertical
+     */
+    enforceMediaKitLayout() {
+        const mediaKit = document.querySelector('.media-kit');
+        if (mediaKit) {
+            // Force vertical layout using maximum priority
+            mediaKit.style.setProperty('display', 'flex', 'important');
+            mediaKit.style.setProperty('flex-direction', 'column', 'important');
+            mediaKit.style.setProperty('width', '100%', 'important');
+            mediaKit.style.setProperty('align-items', 'stretch', 'important');
+            mediaKit.style.setProperty('justify-content', 'flex-start', 'important');
+            mediaKit.style.setProperty('flex-wrap', 'nowrap', 'important');
+            mediaKit.classList.add('layout-protected');
+            
+            // Remove any conflicting classes or attributes
+            mediaKit.classList.remove('horizontal', 'row-layout');
+            mediaKit.removeAttribute('data-direction');
+            
+            // Override any inline styles that might cause horizontal layout
+            if (mediaKit.style.flexDirection === 'row') {
+                mediaKit.style.flexDirection = 'column';
+            }
+            
+            this.logger.debug('RENDER', 'Media-kit layout enforced: vertical, column direction');
+        }
+    }
+    
+    /**
+     * ROOT CAUSE FIX: Setup MutationObserver to protect layout
+     * Watches for any changes to media-kit that might break layout
+     */
+    setupLayoutProtectionObserver() {
+        if (!window.MutationObserver) {
+            this.logger.warn('RENDER', 'MutationObserver not supported, layout protection limited');
+            return;
+        }
+        
+        const mediaKit = document.querySelector('.media-kit');
+        if (!mediaKit) {
+            this.logger.warn('RENDER', 'Media-kit element not found for layout protection observer');
+            return;
+        }
+        
+        // Create observer to watch for style changes
+        this.layoutObserver = new MutationObserver((mutations) => {
+            let needsLayoutFix = false;
+            
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && 
+                    (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
+                    const target = mutation.target;
+                    
+                    if (target.classList.contains('media-kit')) {
+                        // Check if layout was compromised
+                        const computedStyle = window.getComputedStyle(target);
+                        const currentDirection = computedStyle.flexDirection;
+                        const currentDisplay = computedStyle.display;
+                        
+                        if (currentDirection === 'row' || currentDirection === 'row-reverse' || 
+                            currentDisplay !== 'flex') {
+                            needsLayoutFix = true;
+                            this.logger.warn('RENDER', 'Layout compromise detected:', {
+                                flexDirection: currentDirection,
+                                display: currentDisplay
+                            });
+                        }
+                    }
+                }
+            });
+            
+            if (needsLayoutFix) {
+                // Fix layout immediately
+                this.enforceMediaKitLayout();
+                this.logger.info('RENDER', 'Layout automatically corrected by observer');
+            }
+        });
+        
+        // Start observing
+        this.layoutObserver.observe(mediaKit, {
+            attributes: true,
+            attributeFilter: ['style', 'class'],
+            subtree: false
+        });
+        
+        this.logger.info('RENDER', 'Layout protection observer active');
     }
     
     /**

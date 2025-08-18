@@ -57,6 +57,62 @@
    CRITICAL CSS - IMMEDIATE THEMING
    ======================================== */
 
+/* ROOT CAUSE FIX: ULTIMATE MEDIA-KIT LAYOUT PROTECTION */
+/* This MUST come before all other CSS to prevent horizontal layout */
+/* Maximum CSS specificity to override any other rules */
+.media-kit,
+.media-kit.layout-protected,
+.preview .media-kit,
+.preview__container .media-kit,
+#preview-container .media-kit,
+#media-kit-preview .media-kit,
+[data-preview-mode] .media-kit,
+[data-preview-mode="desktop"] .media-kit,
+[data-preview-mode="tablet"] .media-kit,
+[data-preview-mode="mobile"] .media-kit,
+.preview--desktop .media-kit,
+.preview--tablet .media-kit,
+.preview--mobile .media-kit,
+body .builder .preview .media-kit,
+body .media-kit,
+html .media-kit,
+.builder-container .media-kit,
+.media-kit-builder .media-kit,
+.gmkb-isolated-builder .media-kit {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+    align-content: stretch !important;
+    position: relative !important;
+    min-height: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Block ANY attempts to set horizontal flex-direction */
+.media-kit[style*="flex-direction: row"],
+.media-kit[style*="flex-direction:row"],
+.media-kit[data-direction="horizontal"],
+.media-kit.horizontal {
+    flex-direction: column !important;
+}
+
+/* Force all direct children to be full width */
+.media-kit > * {
+    width: 100% !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Prevent any grid or inline-flex overrides */
+.media-kit {
+    display: flex !important;
+    grid-template-columns: unset !important;
+    grid-auto-flow: unset !important;
+}
+
 /* Enhanced CSS Variables - Original Design Specifications */
 :root {
     --gmkb-sidebar-bg: #2a2a2a;

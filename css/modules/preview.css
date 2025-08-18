@@ -31,16 +31,32 @@
     margin: 20px auto;
 }
 
-/* Media Kit Preview Styles */
+/* Media Kit Preview Styles - ROOT CAUSE FIX: Maximum specificity vertical layout protection */
 .media-kit {
     color: #1a1a1a;
     position: relative;
     background: white;
-    display: flex;
-    flex-direction: column;
+    display: flex !important; /* ROOT CAUSE FIX: Force flex display */
+    flex-direction: column !important; /* ROOT CAUSE FIX: Force vertical layout */
     flex: 1; /* Critical: Makes container fill available height */
-    width: 100%;
+    width: 100% !important; /* ROOT CAUSE FIX: Force full width */
     min-height: 500px;
+}
+
+.media-kit {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+}
+
+/* ROOT CAUSE FIX: Prevent any horizontal layout overrides */
+.media-kit * {
+    box-sizing: border-box;
+}
+
+.media-kit > * {
+    width: 100% !important;
+    flex-shrink: 0;
 }
 
 /* When empty, center the content */
