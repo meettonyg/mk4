@@ -49,6 +49,15 @@
             // Save management
             this.SAVE_KEY = 'guestifyMediaKitState';
             this.SAVE_VERSION = '2.2.0';
+            this.lastManualSaveTime = 0; // ROOT FIX: Track manual save operations
+            
+            // ROOT FIX: Listen for manual save events to coordinate with auto-save
+            if (typeof document !== 'undefined') {
+                document.addEventListener('gmkb:manual-save-start', () => {
+                    this.lastManualSaveTime = Date.now();
+                    this.logger.debug('STATE', 'Manual save detected - will coordinate with auto-save');
+                });
+            }
             
             this.logger.info('STATE', 'Enhanced State Manager initialized (simplified)');
         }
@@ -512,18 +521,27 @@
                 // Save to localStorage first (fast)
                 this.saveStateToStorage(this.state);
                 
-                // ROOT FIX: Also auto-save to database via component manager
-                try {
-                    if (window.enhancedComponentManager && window.enhancedComponentManager.autoSaveState) {
-                        await window.enhancedComponentManager.autoSaveState('state_changed', {
-                            source: 'state_manager_debounced_save',
-                            componentCount: Object.keys(this.state.components || {}).length
-                        });
-                        this.logger.debug('STATE', 'Auto-save to database completed via debounced save');
+                // ROOT FIX: Skip auto-save to database during manual save operations
+                // to prevent state conflicts and double-rendering
+                const timeSinceLastManualSave = Date.now() - (this.lastManualSaveTime || 0);
+                const isRecentManualSave = timeSinceLastManualSave < 5000; // Within 5 seconds
+                
+                if (!isRecentManualSave) {
+                    // ROOT FIX: Also auto-save to database via component manager
+                    try {
+                        if (window.enhancedComponentManager && window.enhancedComponentManager.autoSaveState) {
+                            await window.enhancedComponentManager.autoSaveState('state_changed', {
+                                source: 'state_manager_debounced_save',
+                                componentCount: Object.keys(this.state.components || {}).length
+                            });
+                            this.logger.debug('STATE', 'Auto-save to database completed via debounced save');
+                        }
+                    } catch (error) {
+                        this.logger.warn('STATE', 'Auto-save to database failed in debounced save:', error.message);
+                        // Don't fail the local save if database save fails
                     }
-                } catch (error) {
-                    this.logger.warn('STATE', 'Auto-save to database failed in debounced save:', error.message);
-                    // Don't fail the local save if database save fails
+                } else {
+                    this.logger.debug('STATE', 'Skipping debounced auto-save - recent manual save detected');
                 }
                 
                 this.saveTimeout = null;

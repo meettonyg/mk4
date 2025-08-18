@@ -303,34 +303,39 @@ class EnhancedComponentRenderer {
                 return;
             }
             
-            // ROOT FIX: CRITICAL - Enhanced protection against save-triggered clearing
+            // ROOT FIX: CRITICAL - Fixed overly aggressive save-protection logic
             const hasRenderedComponents = this.componentCache.size > 0;
             const newStateHasComponents = Object.keys(newState.components || {}).length > 0;
             const savedContainer = document.getElementById('saved-components-container');
             const previewHasChildren = this.previewContainer && this.previewContainer.children.length > 0;
             const savedContainerHasChildren = savedContainer && savedContainer.children.length > 0;
             
-            // ROOT FIX: Enhanced detection - also check if this is immediately after a save
+            // ROOT FIX: Enhanced detection - check if this is immediately after a save
             const timeSinceLastSave = Date.now() - (this.lastSaveTime || 0);
             const isRecentSave = timeSinceLastSave < 2000; // Within 2 seconds of save
             
-            if (hasRenderedComponents && newStateHasComponents && !previewHasChildren && !savedContainerHasChildren) {
-                this.logger.warn('RENDER', 'CRITICAL: Save-triggered render clearing detected - skipping to prevent blank page');
-                this.logger.debug('RENDER', 'Protection triggered', {
-                    hasRenderedComponents,
-                    newStateHasComponents,
-                    previewHasChildren,
-                    savedContainerHasChildren,
-                    componentCacheSize: this.componentCache.size,
-                    isRecentSave,
-                    timeSinceLastSave
-                });
-                return;
+            // ROOT FIX: ONLY skip if we're about to clear components when they should exist
+            // BUT allow rendering if components exist and need to be restored after save
+            if (hasRenderedComponents && newStateHasComponents && !previewHasChildren && !savedContainerHasChildren && isRecentSave) {
+                this.logger.info('RENDER', 'Save-triggered restore: Re-rendering components that disappeared after save');
+                
+                // ROOT FIX: Instead of skipping, FORCE restore the components
+                if (savedContainer) {
+                    // Make sure saved container is visible
+                    savedContainer.style.display = 'block';
+                    await this.renderSavedComponents(newState);
+                    this.logger.info('RENDER', 'Components restored to saved container after save');
+                    return;
+                } else {
+                    // Fall through to normal rendering in preview container
+                    this.logger.info('RENDER', 'No saved container found, proceeding with normal render');
+                }
             }
             
             // ROOT FIX: If we have components but no containers are visible, force container restoration
             if (newStateHasComponents && !previewHasChildren && !savedContainerHasChildren && savedContainer) {
                 this.logger.warn('RENDER', 'Components exist but no container visible - forcing saved component restoration');
+                savedContainer.style.display = 'block';
                 await this.renderSavedComponents(newState);
                 return;
             }

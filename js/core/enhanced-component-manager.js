@@ -532,9 +532,31 @@
                     });
                 }
                 
-                await this.autoSaveState('manual_save', { source: 'save_button' });
-                logger.info('COMPONENT', 'Manual save completed successfully');
-                return true;
+                // ROOT FIX: Temporarily disable rendering during save to prevent state conflicts
+                const wasRenderingDisabled = window.enhancedComponentRenderer ? window.enhancedComponentRenderer.disableRendering : false;
+                if (window.enhancedComponentRenderer) {
+                    window.enhancedComponentRenderer.disableRendering = true;
+                }
+                
+                try {
+                    await this.autoSaveState('manual_save', { source: 'save_button' });
+                    logger.info('COMPONENT', 'Manual save completed successfully');
+                    
+                    // ROOT FIX: Brief delay to ensure save completion before re-enabling rendering
+                    setTimeout(() => {
+                        if (window.enhancedComponentRenderer) {
+                            window.enhancedComponentRenderer.disableRendering = wasRenderingDisabled;
+                        }
+                    }, 100);
+                    
+                    return true;
+                } catch (saveError) {
+                    // Re-enable rendering immediately on error
+                    if (window.enhancedComponentRenderer) {
+                        window.enhancedComponentRenderer.disableRendering = wasRenderingDisabled;
+                    }
+                    throw saveError;
+                }
             } catch (error) {
                 logger.error('COMPONENT', 'Manual save failed:', error);
                 throw error;

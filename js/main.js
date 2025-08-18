@@ -513,8 +513,23 @@ async function handleSaveClick() {
         window.structuredLogger?.info('MAIN', 'Manual save requested via save button');
         console.log('💾 GMKB: Saving current state...');
         
+        // ROOT FIX: Preserve component visibility during save
+        const savedContainer = document.getElementById('saved-components-container');
+        const hasComponents = window.enhancedStateManager ? Object.keys(window.enhancedStateManager.getState().components || {}).length > 0 : false;
+        
         // Use component manager's save method which includes auto-save functionality
         await window.enhancedComponentManager.manualSave();
+        
+        // ROOT FIX: Ensure saved container stays visible if we have components
+        if (hasComponents && savedContainer) {
+            savedContainer.style.display = 'block';
+            
+            // Hide empty state if it's showing
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+        }
         
         console.log('✅ GMKB: State saved successfully via save button');
         window.structuredLogger?.info('MAIN', 'Manual save completed successfully');
