@@ -12,44 +12,75 @@ console.log('🔧 ARCHITECTURE: Simplified WordPress-compatible initialization')
 console.log('✅ ROOT FIX: Event-driven initialization with minimal dependencies');
 
 // ROOT FIX: IMMEDIATE component data exposure to prevent "No component data in globals"
-if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
-    const data = window.gmkbData || window.guestifyData;
-    if (data && data.components) {
-        window.gmkbComponentsData = data.components;
-        console.log('✅ GMKB: Component data exposed immediately', { count: data.components.length });
-    }
-} else if (!window.gmkbComponentsData) {
-    // Create minimal fallback immediately
-    window.gmkbComponentsData = [
-        {
-            type: 'hero',
-            name: 'Hero Section',
-            title: 'Hero Section',
-            description: 'A prominent header section with title and subtitle',
-            category: 'essential',
-            premium: false,
-            icon: 'fa-star'
-        },
-        {
-            type: 'biography',
-            name: 'Biography',
-            title: 'Biography',
-            description: 'Professional biography section',
-            category: 'essential',
-            premium: false,
-            icon: 'fa-user'
-        },
-        {
-            type: 'contact',
-            name: 'Contact',
-            title: 'Contact Information',
-            description: 'Contact details and social links',
-            category: 'essential',
-            premium: false,
-            icon: 'fa-envelope'
+// ROOT FIX: SAFE component data exposure with error handling
+function safeExposeComponentData() {
+    try {
+        if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
+            const data = window.gmkbData || window.guestifyData;
+            if (data && data.components) {
+                // ROOT FIX: Check if components is object or array
+                if (Array.isArray(data.components)) {
+                    window.gmkbComponentsData = data.components;
+                    console.log('✅ GMKB: Component data exposed immediately (array)', { count: data.components.length });
+                } else if (typeof data.components === 'object') {
+                    window.gmkbComponentsData = Object.values(data.components);
+                    console.log('✅ GMKB: Component data exposed immediately (object)', { count: Object.keys(data.components).length });
+                }
+                return true;
+            }
         }
-    ];
-    console.log('🛡️ GMKB: Component data fallback created immediately');
+        
+        if (!window.gmkbComponentsData) {
+            // Create minimal fallback immediately
+            window.gmkbComponentsData = [
+                {
+                    type: 'hero',
+                    name: 'Hero Section',
+                    title: 'Hero Section',
+                    description: 'A prominent header section with title and subtitle',
+                    category: 'essential',
+                    premium: false,
+                    icon: 'fa-star'
+                },
+                {
+                    type: 'biography',
+                    name: 'Biography',
+                    title: 'Biography',
+                    description: 'Professional biography section',
+                    category: 'essential',
+                    premium: false,
+                    icon: 'fa-user'
+                },
+                {
+                    type: 'contact',
+                    name: 'Contact',
+                    title: 'Contact Information',
+                    description: 'Contact details and social links',
+                    category: 'essential',
+                    premium: false,
+                    icon: 'fa-envelope'
+                }
+            ];
+            console.log('🛡️ GMKB: Component data fallback created immediately');
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ GMKB: Error in safeExposeComponentData:', error);
+        return false;
+    }
+    return false;
+}
+
+// Execute safely
+if (safeExposeComponentData()) {
+    console.log('✅ GMKB: Component data setup completed');
+} else {
+    // Retry if WordPress data isn't available yet
+    setTimeout(() => {
+        if (safeExposeComponentData()) {
+            console.log('✅ GMKB: Component data exposed on retry');
+        }
+    }, 100);
 }
 
 // ROOT FIX: Simplified initialization with essential systems only
@@ -66,56 +97,29 @@ async function initializeWhenReady() {
         // ROOT FIX: Initialize only essential systems
         window.structuredLogger.info('MAIN', 'Starting simplified application initialization');
         
-        // 1. Initialize state manager and WAIT for WordPress data to be ready
-        if (window.enhancedStateManager) {
-            window.structuredLogger.info('STATE', 'Waiting for WordPress data before initializing state...');
+        // 1. Initialize state manager - ROOT FIX: Prevent double initialization
+        if (window.enhancedStateManager && !window.enhancedStateManager.isInitialized) {
+            window.structuredLogger.info('STATE', 'Initializing state manager ONCE with WordPress data...');
             
-            // ROOT CAUSE FIX: Wait for WordPress data ready event before initializing state
-            await new Promise((resolve) => {
-                const checkForWordPressData = () => {
-                    // Check if WordPress data is already available
-                    if (window.gmkbData || window.guestifyData || window.MKCG) {
-                        window.structuredLogger.info('STATE', 'WordPress data found, initializing state manager...');
-                        resolve();
-                        return;
-                    }
-                    
-                    // Listen for WordPress data ready event
-                    const handleWordPressReady = (event) => {
-                        window.structuredLogger.info('STATE', 'WordPress data ready event received, initializing state manager...');
-                        document.removeEventListener('gmkb:wordpress-data-ready', handleWordPressReady);
-                        resolve();
-                    };
-                    
-                    document.addEventListener('gmkb:wordpress-data-ready', handleWordPressReady, { once: true });
-                    
-                    // Timeout fallback after 3 seconds
-                    setTimeout(() => {
-                        document.removeEventListener('gmkb:wordpress-data-ready', handleWordPressReady);
-                        window.structuredLogger.warn('STATE', 'WordPress data timeout - proceeding with state initialization anyway');
-                        resolve();
-                    }, 3000);
-                };
-                
-                checkForWordPressData();
-            });
-            
-            // Now initialize the state manager
-            window.structuredLogger.info('STATE', 'Initializing Enhanced State Manager...');
+            // ROOT FIX: Single initialization path - no complex waiting
             if (window.enhancedStateManager.initializeAfterSystems) {
                 await window.enhancedStateManager.initializeAfterSystems();
             }
-            window.structuredLogger.info('MAIN', 'State manager initialized');
+            window.structuredLogger.info('MAIN', 'State manager initialized successfully');
+        } else if (window.enhancedStateManager && window.enhancedStateManager.isInitialized) {
+            window.structuredLogger.debug('MAIN', 'State manager already initialized, skipping');
         } else {
             window.structuredLogger.warn('MAIN', 'Enhanced state manager not available');
         }
         
-        // 2. Initialize component renderer AFTER state manager completes
-        if (window.enhancedComponentRenderer) {
+        // 2. Initialize component renderer - ROOT FIX: Prevent double initialization and render
+        if (window.enhancedComponentRenderer && !window.enhancedComponentRenderer.initialized) {
             window.enhancedComponentRenderer.init();
-            window.structuredLogger.info('MAIN', 'Component renderer initialized - will display saved components');
+            window.structuredLogger.info('MAIN', 'Component renderer initialized once');
+        } else if (window.enhancedComponentRenderer && window.enhancedComponentRenderer.initialized) {
+            window.structuredLogger.debug('MAIN', 'Component renderer already initialized, skipping');
         } else {
-            window.structuredLogger.error('MAIN', 'Enhanced component renderer not available - saved components will not display');
+            window.structuredLogger.error('MAIN', 'Enhanced component renderer not available');
         }
         
         // 3. Initialize component manager
@@ -393,11 +397,23 @@ function setupModals() {
  * ROOT FIX: Setup component library functionality with race condition prevention
  */
 function setupComponentLibrary() {
-    // Ensure component data is available globally
+    // Ensure component data is available globally with enhanced safety
     if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
         const data = window.gmkbData || window.guestifyData;
-        window.gmkbComponentsData = data.components || [];
-        window.structuredLogger.info('MAIN', 'Component data made globally available', { count: window.gmkbComponentsData.length });
+        if (data && data.components) {
+            // ROOT FIX: Handle both object and array component formats
+            if (Array.isArray(data.components)) {
+                window.gmkbComponentsData = data.components;
+            } else if (typeof data.components === 'object') {
+                window.gmkbComponentsData = Object.values(data.components);
+            } else {
+                window.gmkbComponentsData = [];
+            }
+            window.structuredLogger.info('MAIN', 'Component data made globally available', { count: window.gmkbComponentsData.length });
+        } else {
+            window.gmkbComponentsData = [];
+            window.structuredLogger.warn('MAIN', 'No components found in WordPress data, using empty array');
+        }
     }
     
     // ROOT CAUSE FIX: Prevent duplicate component library initialization that causes toolbar race condition

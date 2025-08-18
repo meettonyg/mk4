@@ -263,25 +263,12 @@ class EnhancedComponentRenderer {
 
             this.updateEmptyState(initialState);
             
-            // ROOT FIX: Trigger initial render of saved components
+            // ROOT FIX: Only check for components, don't force render - let state subscription handle it
             const componentCount = Object.keys(initialState.components || {}).length;
             if (componentCount > 0) {
-                this.logger.info('RENDER', `Triggering initial render for ${componentCount} saved components`);
-                
-                // Force a render of all saved components
-                setTimeout(() => {
-                    this.render().then(success => {
-                        if (success) {
-                            this.logger.info('RENDER', 'Initial render of saved components completed successfully');
-                        } else {
-                            this.logger.error('RENDER', 'Initial render of saved components failed');
-                        }
-                    }).catch(error => {
-                        this.logger.error('RENDER', 'Initial render error:', error);
-                    });
-                }, 100); // Small delay to ensure all systems are ready
+                this.logger.info('RENDER', `Found ${componentCount} saved components - will render via state subscription`);
             } else {
-                this.logger.debug('RENDER', 'No saved components to render initially');
+                this.logger.debug('RENDER', 'No saved components found initially');
             }
         }
 
@@ -295,13 +282,27 @@ class EnhancedComponentRenderer {
             clearTimeout(this.renderDebounceTimer);
         }
 
-        // ROOT FIX: Coordinated rendering with queue system
+        // ROOT FIX: Prevent duplicate renders by checking for actual changes
         this.renderDebounceTimer = setTimeout(async () => {
+            // ROOT FIX: Skip rendering if this is the same state we just processed
+            if (this.lastState && JSON.stringify(this.lastState) === JSON.stringify(newState)) {
+                this.logger.debug('RENDER', 'State unchanged, skipping render');
+                return;
+            }
+            
             const changes = this.diffState(this.lastState, newState);
 
             if (!changes.added.size && !changes.removed.size && !changes.updated.size && !changes.moved.size) {
+                this.logger.debug('RENDER', 'No changes detected, skipping render');
                 return;
             }
+
+            this.logger.info('RENDER', 'Processing state changes', {
+                added: changes.added.size,
+                removed: changes.removed.size, 
+                updated: changes.updated.size,
+                moved: changes.moved.size
+            });
 
             // ROOT FIX: Process changes through rendering queue for race-condition-free rendering
             await this.processChangesWithQueue(changes, newState);
@@ -1398,23 +1399,26 @@ class EnhancedComponentRenderer {
 
     /**
      * Update empty state visibility based on component count
+     * DISABLED: Do not override PHP template rendering
      */
     updateEmptyState(state) {
-        const emptyStateEl = document.getElementById('empty-state');
-        const dropZone = document.querySelector('.drop-zone--primary');
-
-        if (!emptyStateEl) return;
-
+        // ROOT FIX: DO NOT MANIPULATE DISPLAY STYLES - LET PHP TEMPLATE CONTROL RENDERING
+        // The PHP template already renders the correct empty state based on MKCG data availability
+        // JavaScript should not override the template's display decisions
+        
         const hasComponents = Object.keys(state.components || {}).length > 0;
-
-        if (hasComponents) {
-            // Hide empty state
-            emptyStateEl.style.display = 'none';
-            if (dropZone) dropZone.style.display = 'none';
-        } else {
-            // Show empty state
-            emptyStateEl.style.display = 'flex';
-            if (dropZone) dropZone.style.display = 'none'; // Keep drop zone hidden
+        
+        // Only log the state for debugging, do not manipulate DOM
+        this.logger.debug('RENDER', 'Empty state check (non-invasive)', { 
+            hasComponents, 
+            note: 'PHP template controls empty state display' 
+        });
+        
+        // Optional: Update drop zones without affecting empty state
+        const dropZone = document.querySelector('.drop-zone--primary');
+        if (dropZone && hasComponents) {
+            // Only hide primary drop zone when components exist, but don't show it otherwise
+            dropZone.style.display = 'none';
         }
     }
 

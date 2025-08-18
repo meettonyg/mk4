@@ -24,7 +24,9 @@
             this.state = {
                 layout: [],
                 components: {},
-                globalSettings: {},
+                globalSettings: {
+                    layout: 'vertical' // ROOT FIX: Default to vertical layout from start
+                },
                 version: '2.2.0'
             };
             this.subscribers = [];
@@ -33,6 +35,7 @@
             this.isBatching = false;
             this.isValidationEnabled = false; // Simplified - disable validation
             this.isNotifyingSubscribers = false;
+            this.isInitialized = false; // ROOT FIX: Track initialization status
             this.logger = structuredLogger;
             
             // Performance tracking
@@ -55,20 +58,27 @@
          * ROOT FIX: Load WordPress data first, then localStorage as fallback
          */
         async initializeAfterSystems() {
+            if (this.isInitialized) {
+                this.logger.debug('STATE', 'Already initialized, skipping');
+                return;
+            }
+            
             this.logger.info('STATE', 'Initializing Enhanced State Manager...');
             
             try {
                 // ROOT CAUSE FIX: Use robust getInitialState method
                 const initialState = this.getInitialState();
                 
-                if (initialState && Object.keys(initialState.components || {}).length > 0) {
+                if (initialState && initialState.components && typeof initialState.components === 'object' && Object.keys(initialState.components).length > 0) {
                     this.logger.info('STATE', 'Loaded state with components:', {
                         components: Object.keys(initialState.components).length
                     });
                     this.logger.info('STATE', 'Loading state with components:');
                     Object.keys(initialState.components).forEach(id => {
                         const comp = initialState.components[id];
-                        this.logger.debug('STATE', `  - ${id}: ${comp.type}`);
+                        if (comp && comp.type) {
+                            this.logger.debug('STATE', `  - ${id}: ${comp.type}`);
+                        }
                     });
                     
                     this.state = this.validateAndNormalizeState(initialState);
@@ -78,15 +88,19 @@
                     this.state = initialState || {
                         layout: [],
                         components: {},
-                        globalSettings: {},
+                        globalSettings: {
+                            layout: 'vertical' // ROOT FIX: Ensure empty state defaults to vertical layout
+                        },
                         version: this.SAVE_VERSION
                     };
                 }
                 
+                this.isInitialized = true;
                 this.logger.info('STATE', 'Enhanced State Manager initialization completed');
                 
             } catch (error) {
                 this.logger.error('STATE', 'Error during initialization', error);
+                this.isInitialized = true; // Mark as initialized even on error to prevent retries
             }
         }
 
@@ -107,7 +121,7 @@
             if (wpData) {
                 this.logger.debug('STATE', '🔍 Found WordPress data object.', { data: wpData });
 
-                // ROOT CAUSE FIX: Check for the actual saved components array
+                // ROOT CAUSE FIX: Check for the actual saved components array with null safety
                 if (wpData.saved_components && Array.isArray(wpData.saved_components)) {
                     
                     this.logger.info('STATE', '💾 Hydrating state from `saved_components` in WordPress data.', {
@@ -130,7 +144,9 @@
                      this.logger.info('STATE', '💾 WordPress data found, but no `saved_components` array. Starting with a clean state.');
                      return {
                         components: {},
-                        globalSettings: wpData.global_settings || {},
+                        globalSettings: {
+                            layout: 'vertical' // ROOT FIX: Ensure new media kits default to vertical layout
+                        },
                         layout: [],
                         version: '2.2.0'
                      };
@@ -152,30 +168,60 @@
             
             // Final fallback: a completely empty state
             this.logger.info('STATE', '💾 No valid data source found. Starting with a completely empty state.');
-            return { components: {}, globalSettings: {}, layout: [], version: '2.2.0' };
+            return { 
+                components: {}, 
+                globalSettings: {
+                    layout: 'vertical' // ROOT FIX: Ensure fallback state defaults to vertical layout
+                }, 
+                layout: [], 
+                version: '2.2.0' 
+            };
         }
 
         /**
          * Maps an array of component data to the object format used by the state.
+         * ROOT FIX: Enhanced null safety and error handling
          */
         mapComponentData(components) {
             const componentMap = {};
-            if (!Array.isArray(components)) return componentMap;
+            if (!components || !Array.isArray(components)) {
+                this.logger.warn('STATE', 'mapComponentData received invalid input', { components });
+                return componentMap;
+            }
 
-            components.forEach(comp => {
-                if (comp && comp.id) {
-                    componentMap[comp.id] = { ...comp };
-                }
-            });
+            try {
+                components.forEach(comp => {
+                    if (comp && comp.id && typeof comp === 'object') {
+                        componentMap[comp.id] = { ...comp };
+                    } else {
+                        this.logger.warn('STATE', 'Skipping invalid component in mapComponentData', { comp });
+                    }
+                });
+            } catch (error) {
+                this.logger.error('STATE', 'Error in mapComponentData', error);
+            }
+            
             return componentMap;
         }
 
         /**
          * Generates a layout array (an array of component IDs) from the component list.
+         * ROOT FIX: Enhanced null safety and error handling
          */
         generateLayout(components) {
-            if (!Array.isArray(components)) return [];
-            return components.map(comp => comp.id).filter(id => !!id);
+            if (!components || !Array.isArray(components)) {
+                this.logger.warn('STATE', 'generateLayout received invalid input', { components });
+                return [];
+            }
+            
+            try {
+                return components
+                    .map(comp => comp && comp.id ? comp.id : null)
+                    .filter(id => !!id);
+            } catch (error) {
+                this.logger.error('STATE', 'Error in generateLayout', error);
+                return [];
+            }
         }
 
         /**
@@ -496,7 +542,7 @@
                     }
                     
                     // If no saved state but we have components, create initial state with empty components
-                    if (wpData.components && Object.keys(wpData.components).length > 0) {
+                    if (wpData.components && typeof wpData.components === 'object' && Object.keys(wpData.components).length > 0) {
                         console.log('✅ STATE MANAGER: Found component definitions in WordPress data');
                         this.logger.info('STATE', '💾 Found WordPress component definitions. Creating empty state...', {
                             source: Object.keys({gmkbData: window.gmkbData, guestifyData: window.guestifyData, MKCG: window.MKCG}).filter(k => window[k]),
@@ -533,9 +579,10 @@
                 const saved = localStorage.getItem(this.SAVE_KEY);
                 if (saved) {
                     const data = JSON.parse(saved);
+                    const componentCount = data.components && typeof data.components === 'object' ? Object.keys(data.components).length : 0;
                     this.logger.info('STATE', 'Loaded state from localStorage', {
-                        components: Object.keys(data.components || {}).length
-                    });
+                        components: componentCount
+                });
                     return data;
                 }
             } catch (error) {
@@ -564,7 +611,9 @@
                 return {
                     layout: [],
                     components: {},
-                    globalSettings: {},
+                    globalSettings: {
+                        layout: 'vertical' // ROOT FIX: Ensure normalized state defaults to vertical layout
+                    },
                     version: this.SAVE_VERSION
                 };
             }
@@ -583,7 +632,10 @@
             const validComponents = {};
             const recoveredCount = { fixed: 0, removed: 0 };
             
-            Object.keys(normalized.components).forEach(id => {
+            // ROOT FIX: Null safety for Object.keys
+            const componentKeys = normalized.components && typeof normalized.components === 'object' ? Object.keys(normalized.components) : [];
+            
+            componentKeys.forEach(id => {
                 const component = normalized.components[id];
                 
                 // Check for missing required properties
@@ -646,10 +698,12 @@
             // Update normalized components with valid ones
             normalized.components = validComponents;
             
-            // Log recovery results
+            // Log recovery results with null safety
+            const finalComponentCount = normalized.components && typeof normalized.components === 'object' ? Object.keys(normalized.components).length : 0;
+            
             if (recoveredCount.fixed > 0 || recoveredCount.removed > 0) {
                 this.logger.info('STATE', 'Component validation and recovery complete', {
-                    totalComponents: Object.keys(normalized.components).length,
+                    totalComponents: finalComponentCount,
                     recovered: recoveredCount.fixed,
                     removed: recoveredCount.removed,
                     layoutComponents: normalized.layout.length
@@ -657,7 +711,7 @@
             }
             
             this.logger.debug('STATE', 'State normalized', {
-                componentsCount: Object.keys(normalized.components).length,
+                componentsCount: finalComponentCount,
                 layoutCount: normalized.layout.length
             });
             

@@ -33,12 +33,11 @@ function setupToolbar() {
         console.log('✅ TOOLBAR: Toolbar setup complete');
     };
     
-    // ROOT FIX: Delayed initialization to ensure DOM is ready
+    // ROOT FIX: Initialize immediately to prevent race conditions
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initializeToolbar);
     } else {
-        // DOM already ready, wait a tick for dynamic content
-        setTimeout(initializeToolbar, 100);
+        initializeToolbar();
     }
 }
 
@@ -69,7 +68,7 @@ function setupDevicePreviewToggle() {
     
     console.log(`🔍 TOOLBAR: Found ${previewButtons.length} preview buttons and preview container`);
     
-    // ROOT CAUSE FIX: Mark as initialized BEFORE adding event listeners
+    // ROOT CAUSE FIX: Mark as initialized BEFORE adding event listeners to prevent race conditions
     window._devicePreviewInitialized = true;
     
     previewButtons.forEach(button => {

@@ -55,6 +55,22 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Initialize all empty state event handlers
+     * 
+     * CRITICAL DISABLE: This module NO LONGER manipulates display styles
+     * The PHP template controls all rendering - JavaScript only handles events
+     * 
+     * DISABLED FEATURES:
+     * - transitionToState() display manipulation
+     * - handleStateChange() DOM manipulation  
+     * - handleComponentAdded() display hiding
+     * - handleComponentRemoved() display showing
+     * - showGenerationError() state transitions
+     * 
+     * ENABLED FEATURES:
+     * - Event listeners for buttons
+     * - AJAX calls for generation
+     * - Success/error notifications
+     * - Interaction tracking
      */
     init() {
         if (this.isInitialized) {
@@ -681,6 +697,7 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle state changes from state manager
+     * DISABLED: Do not override PHP template rendering
      * 
      * @param {Object} state - New state object
      */
@@ -688,14 +705,10 @@ class EmptyStateHandlers {
         try {
             const componentCount = Object.keys(state.components || {}).length;
             
-            // Transition empty state based on component count
-            if (componentCount > 0) {
-                this.transitionToState('populated');
-            } else {
-                this.transitionToState('empty');
-            }
+            // ROOT FIX: DO NOT FORCE STATE TRANSITIONS - PHP template controls display
+            // Only log the state change, do not manipulate DOM
             
-            structuredLogger.info('EMPTY_STATE', 'State change handled', { componentCount });
+            structuredLogger.info('EMPTY_STATE', 'State change handled (non-invasive)', { componentCount, note: 'PHP template controls display' });
             
         } catch (error) {
             structuredLogger.error('EMPTY_STATE', 'State change handling failed', error);
@@ -704,19 +717,20 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle component addition events
+     * DISABLED: Do not override PHP template rendering
      * 
      * @param {Object} detail - Event detail with component info
      */
     handleComponentAdded(detail) {
         try {
-            // Hide empty state when first component is added
-            this.transitionToState('populated');
+            // ROOT FIX: DO NOT HIDE EMPTY STATE - PHP template controls display
+            // Only show success feedback, do not manipulate DOM display
             
             // Show success feedback
             this.showSuccess(`${detail.componentType || 'Component'} added successfully`);
             
             this.trackInteraction('component_added_via_empty_state', detail);
-            structuredLogger.info('EMPTY_STATE', 'Component added', detail);
+            structuredLogger.info('EMPTY_STATE', 'Component added (non-invasive)', detail);
             
         } catch (error) {
             structuredLogger.error('EMPTY_STATE', 'Component addition handling failed', error);
@@ -725,23 +739,17 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle component removal events
+     * DISABLED: Do not override PHP template rendering
      * 
      * @param {Object} detail - Event detail with component info
      */
     handleComponentRemoved(detail) {
         try {
-            // Check if we should show empty state again
-            if (window.enhancedStateManager) {
-                const state = window.enhancedStateManager.getState();
-                const componentCount = Object.keys(state.components || {}).length;
-                
-                if (componentCount === 0) {
-                    this.transitionToState('empty');
-                }
-            }
+            // ROOT FIX: DO NOT SHOW EMPTY STATE - PHP template controls display
+            // Only track the removal, do not manipulate DOM display
             
             this.trackInteraction('component_removed_to_empty_state', detail);
-            structuredLogger.info('EMPTY_STATE', 'Component removed', detail);
+            structuredLogger.info('EMPTY_STATE', 'Component removed (non-invasive)', detail);
             
         } catch (error) {
             structuredLogger.error('EMPTY_STATE', 'Component removal handling failed', error);
@@ -750,39 +758,26 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Transition between different empty states
+     * DISABLED: Do not override PHP template rendering
      * 
      * @param {string} targetState - Target state name
      * @param {string} message - Optional message to display
      */
     transitionToState(targetState, message = null) {
         try {
-            const emptyState = document.getElementById('empty-state');
-            const loadingState = document.getElementById('state-loading-enhanced');
+            // ROOT FIX: DO NOT MANIPULATE DISPLAY STYLES - LET PHP TEMPLATE CONTROL RENDERING
+            // The PHP template already renders the correct state, JavaScript should not override it
             
-            switch (targetState) {
-                case 'empty':
-                    if (emptyState) emptyState.style.display = 'block';
-                    if (loadingState) loadingState.style.display = 'none';
-                    break;
-                    
-                case 'loading':
-                    if (emptyState) emptyState.style.display = 'none';
-                    if (loadingState) {
-                        loadingState.style.display = 'block';
-                        if (message) {
-                            const desc = loadingState.querySelector('.loading-state-description');
-                            if (desc) desc.textContent = message;
-                        }
-                    }
-                    break;
-                    
-                case 'populated':
-                    if (emptyState) emptyState.style.display = 'none';
-                    if (loadingState) loadingState.style.display = 'none';
-                    break;
+            // Only update loading messages, never display styles
+            if (targetState === 'loading' && message) {
+                const loadingState = document.getElementById('state-loading-enhanced');
+                if (loadingState) {
+                    const desc = loadingState.querySelector('.loading-state-description');
+                    if (desc) desc.textContent = message;
+                }
             }
             
-            structuredLogger.info('EMPTY_STATE', 'State transition', { targetState, message });
+            structuredLogger.info('EMPTY_STATE', 'State transition (non-invasive)', { targetState, message, note: 'PHP template controls display' });
             
         } catch (error) {
             structuredLogger.error('EMPTY_STATE', 'State transition failed', error);
@@ -858,13 +853,14 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Show generation error feedback
+     * DISABLED: Do not override PHP template rendering
      * 
      * @param {string} error - Error message
      */
     showGenerationError(error) {
         try {
             this.showError(`Auto-generation failed: ${error}`);
-            this.transitionToState('empty');
+            // ROOT FIX: DO NOT TRANSITION TO EMPTY STATE - PHP template controls display
         } catch (e) {
             structuredLogger.error('EMPTY_STATE', 'Show generation error failed', e);
         }

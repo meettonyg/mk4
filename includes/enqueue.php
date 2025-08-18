@@ -74,112 +74,46 @@ function gmkb_enqueue_assets() {
     $plugin_url = GUESTIFY_PLUGIN_URL;
     $version = '2.2.0-stable-architecture-FIXED-' . time(); // Cache busting for development
     
-    // ROOT FIX: Get component data early for wp_data array with comprehensive debugging
-    $components_data = array();
-    $categories_data = array();
+    // ROOT FIX: Get component data ONCE - eliminate duplicate discovery that causes double rendering
+    static $components_data_cache = null;
+    static $categories_data_cache = null;
     
-    // ROOT CAUSE DEBUG: Log the component discovery process step by step
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( '🔍 GMKB ENQUEUE: Starting component data retrieval process' );
-    }
-    
-    // Get the plugin instance to access component discovery
-    $plugin_instance = Guestify_Media_Kit_Builder::get_instance();
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( '🔍 GMKB ENQUEUE: Plugin instance available: ' . ($plugin_instance ? 'YES' : 'NO') );
-    }
-    
-    if ($plugin_instance) {
-        $component_discovery = $plugin_instance->get_component_discovery();
+    // Use cached data to prevent duplicate component discovery
+    if ($components_data_cache === null) {
+        $components_data = array();
+        $categories_data = array();
+        
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '🔍 GMKB ENQUEUE: Component discovery available: ' . ($component_discovery ? 'YES' : 'NO') );
+            error_log( '🔍 GMKB ENQUEUE: Single component discovery initiated' );
         }
         
-        if ($component_discovery) {
-            // ROOT FIX: Force a fresh scan to debug the issue
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( '🔍 GMKB: Starting component discovery debugging...' );
-                error_log( '📁 GMKB: Components directory: ' . GUESTIFY_PLUGIN_DIR . 'components' );
-                error_log( '📁 GMKB: Directory exists: ' . (is_dir(GUESTIFY_PLUGIN_DIR . 'components') ? 'YES' : 'NO') );
+        // Get the plugin instance ONCE
+        $plugin_instance = Guestify_Media_Kit_Builder::get_instance();
+        
+        if ($plugin_instance) {
+            $component_discovery = $plugin_instance->get_component_discovery();
+            
+            if ($component_discovery) {
+                // Single component scan - no forced rescans
+                $components_data = $component_discovery->getComponents();
+                $categories_data = $component_discovery->getCategories();
                 
-                if (is_dir(GUESTIFY_PLUGIN_DIR . 'components')) {
-                    $component_dirs = glob(GUESTIFY_PLUGIN_DIR . 'components/*', GLOB_ONLYDIR);
-                    error_log( '📂 GMKB: Found component directories: ' . print_r(array_map('basename', $component_dirs), true) );
-                    
-                    foreach ($component_dirs as $dir) {
-                        $component_json = $dir . '/component.json';
-                        error_log( '📄 GMKB: Checking ' . basename($dir) . '/component.json - exists: ' . (file_exists($component_json) ? 'YES' : 'NO') );
-                        
-                        if (file_exists($component_json)) {
-                            $content = file_get_contents($component_json);
-                            $json_data = json_decode($content, true);
-                            if (json_last_error() === JSON_ERROR_NONE) {
-                                error_log( '✅ GMKB: ' . basename($dir) . ' - Valid JSON with name: ' . ($json_data['name'] ?? 'MISSING') );
-                            } else {
-                                error_log( '❌ GMKB: ' . basename($dir) . ' - JSON parse error: ' . json_last_error_msg() );
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // ROOT CAUSE DEBUG: Try to get existing components first
-            $existing_components = $component_discovery->getComponents();
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( '🔍 GMKB ENQUEUE: Existing components count: ' . count($existing_components) );
-            }
-            
-            // If no existing components, force a scan
-            if (empty($existing_components)) {
                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( '🔍 GMKB ENQUEUE: No existing components, forcing fresh scan...' );
+                    error_log( '✅ GMKB: Single scan completed: ' . count($components_data) . ' components found' );
                 }
-                try {
-                    $scan_result = $component_discovery->scan(true); // Force fresh scan
-                    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                        error_log( '🔍 GMKB ENQUEUE: Scan completed, result: ' . print_r($scan_result, true) );
-                    }
-                } catch (Exception $e) {
-                    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                        error_log( '❌ GMKB ENQUEUE: Scan failed with exception: ' . $e->getMessage() );
-                    }
-                }
-            }
-            
-            // Try to get components (may trigger scan)
-            $components_data = $component_discovery->getComponents();
-            $categories_data = $component_discovery->getCategories();
-            
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( '📊 GMKB: Component discovery returned: ' . count($components_data) . ' components' );
-                error_log( '📊 GMKB: Categories returned: ' . count($categories_data) . ' categories' );
-                
-                if (!empty($components_data)) {
-                    error_log( '📝 GMKB: Component types found: ' . implode(', ', array_column($components_data, 'type')) );
-                } else {
-                    error_log( '🔍 GMKB: Attempting manual scan to debug...' );
-                    try {
-                        $manual_categories = $component_discovery->scan(true); // Force fresh scan
-                        $manual_components = $component_discovery->getComponents();
-                        error_log( '🔄 GMKB: Manual scan result: ' . count($manual_components) . ' components' );
-                        
-                        if (!empty($manual_components)) {
-                            $components_data = $manual_components;
-                            $categories_data = $manual_categories;
-                        }
-                    } catch (Exception $e) {
-                        error_log( '❌ GMKB: Manual scan failed: ' . $e->getMessage() );
-                    }
-                }
-            }
-        } else {
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( '❌ GMKB: Component discovery object not available from plugin instance' );
             }
         }
+        
+        // Cache the results
+        $components_data_cache = $components_data;
+        $categories_data_cache = $categories_data;
     } else {
+        // Use cached data
+        $components_data = $components_data_cache;
+        $categories_data = $categories_data_cache;
+        
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '❌ GMKB: Plugin instance not available' );
+            error_log( '✅ GMKB ENQUEUE: Using cached component data: ' . count($components_data) . ' components' );
         }
     }
     
@@ -585,20 +519,37 @@ function gmkb_enqueue_assets() {
         }
     }
 
-    wp_localize_script( 'gmkb-main-script', 'gmkbData', $wp_data );
-    
-    // ROOT FIX: Add debug output to verify data is being set correctly
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        echo '<script>console.log("MKCG: AJAX URL set to:", "' . esc_js($wp_data['ajaxUrl']) . '");</script>';
-        echo '<script>console.log("MKCG: Nonce set:", "' . esc_js(substr($wp_data['nonce'], 0, 10) . '...'). '");</script>';
-        echo '<script>console.log("MKCG: Post ID set to:", "' . esc_js($wp_data['postId']) . '");</script>';
+    // ROOT FIX: Single wp_localize_script call to prevent duplicate WordPress data with error handling
+    if ( wp_script_is( 'gmkb-main-script', 'enqueued' ) ) {
+        wp_localize_script( 'gmkb-main-script', 'gmkbData', $wp_data );
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: wp_localize_script completed successfully for gmkbData' );
+        }
+    } else {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '❌ GMKB: Cannot localize script - gmkb-main-script not enqueued' );
+        }
     }
     
-    // ROOT FIX: Also create guestifyData alias for compatibility (using same data)
-    wp_localize_script( 'gmkb-main-script', 'guestifyData', $wp_data );
+    // ROOT FIX: Create aliases via JavaScript to prevent duplicate PHP processing with timing safety
+    echo '<script>';
+    echo 'function safeCreateAliases() {';
+    echo '  if (window.gmkbData) {';
+    echo '    window.guestifyData = window.gmkbData;';
+    echo '    window.MKCG = window.gmkbData;';
+    echo '    if (window.gmkbData.debugMode) console.log("✅ GMKB: Data aliases created successfully");';
+    echo '  } else {';
+    echo '    setTimeout(safeCreateAliases, 50);';
+    echo '  }';
+    echo '}';
+    echo 'safeCreateAliases();';
+    echo '</script>';
     
-    // ROOT FIX: Also create MKCG object for additional compatibility
-    wp_localize_script( 'gmkb-main-script', 'MKCG', $wp_data );
+    // ROOT FIX: Add debug output to verify data is being set correctly with null checks
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        echo '<script>console.log("✅ GMKB: Single WordPress data object created with", window.gmkbData ? Object.keys(window.gmkbData).length : 0, "properties");</script>';
+        echo '<script>console.log("✅ GMKB: Component count:", (window.gmkbData && window.gmkbData.components) ? Object.keys(window.gmkbData.components).length : 0);</script>';
+    }
     
     // ROOT FIX: Event-driven data ready notification (CHECKLIST COMPLIANT)
     echo '<script>
@@ -630,13 +581,15 @@ function gmkb_enqueue_assets() {
         echo '<script>console.log("DEBUG: MKCG available?", typeof window.MKCG !== "undefined");</script>';
         echo '<script>console.log("DEBUG: All window keys with data:", Object.keys(window).filter(k => k.includes("Data") || k.includes("data")));</script>';
         
-        // ROOT CAUSE DEBUG: Show component data in console immediately
+        // ROOT CAUSE DEBUG: Show component data in console immediately with enhanced null safety
         echo '<script>setTimeout(function() {';
+        echo 'try {';
         echo 'console.log("\u2705 GMKB DEBUG: WordPress component data check:");';
-        echo 'console.log("  gmkbData.components:", window.gmkbData ? window.gmkbData.components : "gmkbData not found");';
-        echo 'console.log("  guestifyData.components:", window.guestifyData ? window.guestifyData.components : "guestifyData not found");';
-        echo 'console.log("  MKCG.components:", window.MKCG ? window.MKCG.components : "MKCG not found");';
+        echo 'console.log("  gmkbData.components:", (window.gmkbData && window.gmkbData.components) ? window.gmkbData.components : "gmkbData not found");';
+        echo 'console.log("  guestifyData.components:", (window.guestifyData && window.guestifyData.components) ? window.guestifyData.components : "guestifyData not found");';
+        echo 'console.log("  MKCG.components:", (window.MKCG && window.MKCG.components) ? window.MKCG.components : "MKCG not found");';
         echo 'console.log("  Component count in PHP:", ' . count($components_data) . ');';
+        echo '} catch(e) { console.error("Debug script error:", e); }';
         echo '}, 1000);</script>';
     }
 
