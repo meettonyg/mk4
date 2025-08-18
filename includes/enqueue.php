@@ -474,11 +474,11 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 14. Component library (depends on modal base, state manager, and component manager) - ROOT FIX: Added duplicate prevention
-    if (!wp_script_is('gmkb-component-library', 'enqueued')) {
+    // 14. Component library (SIMPLIFIED VERSION - fixes infinite loops and race conditions)
+    if (!wp_script_is('gmkb-component-library-simple', 'enqueued')) {
         wp_enqueue_script(
-            'gmkb-component-library',
-            $plugin_url . 'js/modals/component-library.js',
+            'gmkb-component-library-simple',
+            $plugin_url . 'js/modals/component-library-simple.js',
             array('gmkb-modal-base', 'gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-structured-logger'),
             $version,
             true
@@ -538,7 +538,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-controls-manager',
                 'gmkb-enhanced-component-renderer',
                 'gmkb-empty-state-handlers',
-                'gmkb-component-library',
+                'gmkb-component-library-simple',
                 'gmkb-tabs',
                 'gmkb-toolbar',
                 'gmkb-component-interactions',
