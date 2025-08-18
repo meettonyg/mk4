@@ -596,6 +596,28 @@ function gmkb_enqueue_assets() {
                 true
             );
         }
+        
+        // ROOT FIX: Debug script for component library button issues
+        if (!wp_script_is('gmkb-debug-buttons', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-debug-buttons',
+                $plugin_url . 'debug-component-library-buttons.js',
+                array('gmkb-component-library-simple'),
+                $version,
+                true
+            );
+        }
+        
+        // ROOT FIX: Test script for component library button verification
+        if (!wp_script_is('gmkb-test-buttons', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-test-buttons',
+                $plugin_url . 'test-component-library-buttons.js',
+                array('gmkb-component-library-simple', 'gmkb-debug-buttons'),
+                $version,
+                true
+            );
+        }
     }
 
     // ROOT FIX: Single wp_localize_script call to prevent duplicate WordPress data with error handling

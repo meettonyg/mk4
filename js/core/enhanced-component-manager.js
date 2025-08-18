@@ -476,6 +476,30 @@
     window.EnhancedComponentManager = EnhancedComponentManager;
     window.enhancedComponentManager = new EnhancedComponentManager();
     
+    // ROOT FIX: Listen for component addition events from component library
+    document.addEventListener('gmkb:add-component', async (event) => {
+        const { componentType, props, source } = event.detail;
+        
+        logger.info('COMPONENT', `Received add-component event from ${source}`, {
+            componentType,
+            props
+        });
+        
+        try {
+            if (window.enhancedComponentManager.isReady()) {
+                await window.enhancedComponentManager.addComponent(componentType, props);
+                logger.info('COMPONENT', `Successfully added component via event: ${componentType}`);
+            } else {
+                logger.warn('COMPONENT', 'Component manager not ready, initializing...');
+                window.enhancedComponentManager.initialize();
+                await window.enhancedComponentManager.addComponent(componentType, props);
+            }
+        } catch (error) {
+            logger.error('COMPONENT', `Failed to add component via event: ${componentType}`, error);
+        }
+    });
+    
     console.log('✅ Enhanced Component Manager: Available globally and ready');
+    console.log('✅ Enhanced Component Manager: Event listeners for gmkb:add-component ready');
 
 })();
