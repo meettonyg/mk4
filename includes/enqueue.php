@@ -236,13 +236,47 @@ function gmkb_enqueue_assets() {
         }
     }
     
+    // ROOT FIX: Load saved media kit state from database
+    $saved_state = array();
+    $post_id = get_current_post_id_safe();
+    if ( $post_id > 0 ) {
+        $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            if ( !empty( $saved_state ) ) {
+                error_log( '✅ GMKB: Loaded saved state from database for post ' . $post_id );
+                error_log( '📊 GMKB: Saved components count: ' . count( $saved_state['components'] ?? [] ) );
+            } else {
+                error_log( '📝 GMKB: No saved state found for post ' . $post_id . ' - starting fresh' );
+            }
+        }
+    }
+    
+    // ROOT FIX: Convert saved components to JavaScript-compatible format
+    $saved_components = array();
+    if ( !empty( $saved_state ) && isset( $saved_state['components'] ) && is_array( $saved_state['components'] ) ) {
+        // Convert object format to array format for JavaScript
+        foreach ( $saved_state['components'] as $component_id => $component_data ) {
+            $saved_components[] = array(
+                'id' => $component_id,
+                'type' => $component_data['type'] ?? 'unknown',
+                'props' => $component_data['props'] ?? array(),
+                'data' => $component_data['data'] ?? $component_data['props'] ?? array(),
+                'timestamp' => $component_data['timestamp'] ?? time()
+            );
+        }
+        
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: Converted ' . count( $saved_components ) . ' saved components for JavaScript' );
+        }
+    }
+
     // ROOT FIX: Create WordPress data array early so it can be used by multiple scripts
     $wp_data = array(
         'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
         'restUrl'       => esc_url_raw( rest_url() ),
         'nonce'         => wp_create_nonce( 'gmkb_nonce' ),
         'restNonce'     => wp_create_nonce( 'wp_rest' ),
-        'postId'        => get_current_post_id_safe(),
+        'postId'        => $post_id,
         'pluginUrl'     => $plugin_url,
         'siteUrl'       => home_url(),
         'pluginVersion' => defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : 'unknown',
@@ -261,11 +295,20 @@ function gmkb_enqueue_assets() {
         'componentsSource' => 'direct_discovery',
         'rootCauseFixActive' => true,
         'componentKeys' => array_column($components_data, 'type'),
+        // ROOT FIX: Include saved state data for auto-save functionality
+        'saved_components' => $saved_components,
+        'saved_state' => $saved_state,
+        'global_settings' => $saved_state['globalSettings'] ?? array(),
+        'layout' => $saved_state['layout'] ?? array(),
+        'hasSavedData' => !empty( $saved_state ),
+        'autoSaveEnabled' => true,
         'debugInfo' => array(
             'timestamp' => time(),
             'componentsFound' => count($components_data),
             'categoriesFound' => count($categories_data),
-            'sampleComponent' => !empty($components_data) ? $components_data[0] : null
+            'sampleComponent' => !empty($components_data) ? $components_data[0] : null,
+            'savedComponentsCount' => count($saved_components),
+            'hasSavedState' => !empty($saved_state)
         )
     );
 

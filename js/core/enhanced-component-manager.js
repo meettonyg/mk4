@@ -95,6 +95,15 @@
                 // Store component reference
                 this.components.set(componentId, componentData);
 
+                // ROOT FIX: AUTO-SAVE to database immediately after component addition
+                try {
+                    await this.autoSaveState('component_added', { componentId, componentType });
+                    logger.info('COMPONENT', `Component auto-saved to database: ${componentType}`, { componentId });
+                } catch (saveError) {
+                    logger.warn('COMPONENT', `Auto-save failed for ${componentType}:`, saveError.message);
+                    // Don't fail component addition if save fails - user can manually save
+                }
+
                 // Emit event
                 document.dispatchEvent(new CustomEvent('componentAdded', {
                     detail: { 
@@ -139,6 +148,15 @@
 
                 // Remove from local storage
                 this.components.delete(componentId);
+
+                // ROOT FIX: AUTO-SAVE to database immediately after component removal
+                try {
+                    await this.autoSaveState('component_removed', { componentId, componentType: componentData.type });
+                    logger.info('COMPONENT', `Component removal auto-saved to database: ${componentId}`);
+                } catch (saveError) {
+                    logger.warn('COMPONENT', `Auto-save failed for component removal:`, saveError.message);
+                    // Don't fail component removal if save fails - user can manually save
+                }
 
                 // Emit event
                 document.dispatchEvent(new CustomEvent('componentRemoved', {
@@ -499,10 +517,113 @@
         }
 
         /**
+         * ROOT FIX: Manual save method (for save button)
+         * CHECKLIST COMPLIANT: Event-driven, no polling, root cause fix
+         */
+        async manualSave() {
+            try {
+                logger.info('COMPONENT', 'Manual save requested');
+                await this.autoSaveState('manual_save', { source: 'save_button' });
+                logger.info('COMPONENT', 'Manual save completed successfully');
+                return true;
+            } catch (error) {
+                logger.error('COMPONENT', 'Manual save failed:', error);
+                throw error;
+            }
+        }
+
+        /**
          * Check if manager is ready
          */
         isReady() {
             return this.isInitialized && window.enhancedStateManager;
+        }
+
+        /**
+         * ROOT FIX: Auto-save current state to database
+         * CHECKLIST COMPLIANT: Event-driven, no polling, root cause fix
+         * @param {string} action - Action that triggered the save (component_added, component_removed)
+         * @param {Object} metadata - Additional metadata about the action
+         */
+        async autoSaveState(action, metadata = {}) {
+            try {
+                // Get current state from state manager
+                if (!window.enhancedStateManager) {
+                    throw new Error('State manager not available for auto-save');
+                }
+
+                const currentState = window.enhancedStateManager.getState();
+                if (!currentState) {
+                    throw new Error('No state available for auto-save');
+                }
+
+                // Get WordPress data for AJAX call
+                const wpData = this.getWordPressData();
+                
+                logger.debug('COMPONENT', `Auto-saving state after ${action}`, {
+                    componentCount: Object.keys(currentState.components || {}).length,
+                    action,
+                    metadata
+                });
+
+                // Prepare save request
+                const formData = new FormData();
+                formData.append('action', 'guestify_save_media_kit');
+                formData.append('nonce', wpData.nonce);
+                formData.append('post_id', wpData.postId);
+                formData.append('state', JSON.stringify(currentState));
+                
+                // Add metadata for tracking
+                formData.append('auto_save', 'true');
+                formData.append('trigger_action', action);
+                formData.append('trigger_metadata', JSON.stringify(metadata));
+
+                // Make AJAX request to save
+                const response = await fetch(wpData.ajaxUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const responseData = await response.json();
+
+                if (responseData.success) {
+                    logger.debug('COMPONENT', `Auto-save successful after ${action}`, {
+                        components: responseData.data?.components_count || 'unknown',
+                        dataSize: responseData.data?.data_size || 'unknown'
+                    });
+                    
+                    // Emit success event
+                    document.dispatchEvent(new CustomEvent('gmkb:auto-save-success', {
+                        detail: {
+                            action,
+                            metadata,
+                            response: responseData.data
+                        }
+                    }));
+                    
+                    return responseData.data;
+                } else {
+                    throw new Error(responseData.data?.message || 'Auto-save failed');
+                }
+
+            } catch (error) {
+                logger.error('COMPONENT', `Auto-save failed after ${action}:`, error);
+                
+                // Emit failure event
+                document.dispatchEvent(new CustomEvent('gmkb:auto-save-failed', {
+                    detail: {
+                        action,
+                        metadata,
+                        error: error.message
+                    }
+                }));
+                
+                throw error;
+            }
         }
 
         /**

@@ -499,74 +499,41 @@ function setupBasicEventListeners() {
 }
 
 /**
- * ROOT FIX: Event-driven save handler (CHECKLIST COMPLIANT)
+ * ROOT FIX: Simplified save handler using component manager auto-save
+ * CHECKLIST COMPLIANT: Event-driven, no polling, root cause fix
  */
-function handleSaveClick() {
-    if (!window.enhancedStateManager) {
-        console.warn('⚠️ GMKB: Cannot save - state manager not available');
+async function handleSaveClick() {
+    if (!window.enhancedComponentManager) {
+        console.warn('⚠️ GMKB: Cannot save - component manager not available');
+        window.structuredLogger?.warn('MAIN', 'Component manager not available for save');
         return;
     }
     
     try {
-        const state = window.enhancedStateManager.getState();
+        window.structuredLogger?.info('MAIN', 'Manual save requested via save button');
+        console.log('💾 GMKB: Saving current state...');
         
-        // ROOT FIX: Listen for WordPress data ready event instead of global object access
-        const handleDataReady = (event) => {
-            document.removeEventListener('wordpressDataReady', handleDataReady);
-            
-            const wpData = event.detail;
-            if (!wpData || !wpData.ajaxUrl || !wpData.nonce || !wpData.postId) {
-                console.error('❌ GMKB: WordPress data not available for save');
-                window.structuredLogger.error('MAIN', 'WordPress data not available for save', { wpData });
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('action', 'guestify_save_media_kit');
-            formData.append('nonce', wpData.nonce);
-            formData.append('post_id', wpData.postId);
-            formData.append('state', JSON.stringify(state));
-            
-            fetch(wpData.ajaxUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('✅ GMKB: State saved successfully');
-                    window.structuredLogger.info('MAIN', 'State saved successfully');
-                } else {
-                    console.error('❌ GMKB: Save failed:', data.message);
-                    window.structuredLogger.error('MAIN', 'Save failed', data.message);
-                }
-            })
-            .catch(error => {
-                console.error('❌ GMKB: Save error:', error);
-                window.structuredLogger.error('MAIN', 'Save error', error);
-            });
-        };
+        // Use component manager's save method which includes auto-save functionality
+        await window.enhancedComponentManager.manualSave();
         
-        // Check if data is already available via cached component manager data
-        if (window.enhancedComponentManager && window.enhancedComponentManager.cachedWordPressData) {
-            const wpData = window.enhancedComponentManager.cachedWordPressData;
-            handleDataReady({ detail: wpData });
-        } else {
-            // Listen for the event
-            document.addEventListener('wordpressDataReady', handleDataReady);
-            
-            // Trigger a re-emit if the event has already fired
-            setTimeout(() => {
-                if (document.readyState === 'complete') {
-                    console.warn('⚠️ GMKB: WordPress data event may have already fired, requesting re-emit');
-                    // The event should already be cached by the component manager
-                }
-            }, 100);
+        console.log('✅ GMKB: State saved successfully via save button');
+        window.structuredLogger?.info('MAIN', 'Manual save completed successfully');
+        
+        // Show success feedback to user
+        if (window.showToast) {
+            window.showToast('Media kit saved successfully!', 'success', 3000);
         }
         
     } catch (error) {
-        console.error('❌ GMKB: Save handler error:', error);
-        window.structuredLogger.error('MAIN', 'Save handler error', error);
+        console.error('❌ GMKB: Save failed:', error);
+        window.structuredLogger?.error('MAIN', 'Manual save failed', error);
+        
+        // Show error feedback to user
+        if (window.showToast) {
+            window.showToast('Failed to save media kit. Please try again.', 'error', 5000);
+        } else {
+            alert('Failed to save media kit. Please try again.');
+        }
     }
 }
 
@@ -677,6 +644,7 @@ window.gmkbApp = {
         await safeInitialization();
     },
     save: handleSaveClick,
+    manualSave: () => window.enhancedComponentManager?.manualSave(),
     getState: () => window.enhancedStateManager?.getState(),
     addComponent: (type, props) => window.enhancedComponentManager?.addComponent(type, props),
     removeComponent: (id) => window.enhancedComponentManager?.removeComponent(id),

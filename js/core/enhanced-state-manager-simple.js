@@ -501,14 +501,31 @@
         }
 
         /**
-         * Debounced save
+         * ROOT FIX: Enhanced debounced save with auto-save to database
+         * CHECKLIST COMPLIANT: Event-driven, no polling, root cause fix
          */
         debouncedSave() {
             if (this.saveTimeout) {
                 clearTimeout(this.saveTimeout);
             }
-            this.saveTimeout = setTimeout(() => {
+            this.saveTimeout = setTimeout(async () => {
+                // Save to localStorage first (fast)
                 this.saveStateToStorage(this.state);
+                
+                // ROOT FIX: Also auto-save to database via component manager
+                try {
+                    if (window.enhancedComponentManager && window.enhancedComponentManager.autoSaveState) {
+                        await window.enhancedComponentManager.autoSaveState('state_changed', {
+                            source: 'state_manager_debounced_save',
+                            componentCount: Object.keys(this.state.components || {}).length
+                        });
+                        this.logger.debug('STATE', 'Auto-save to database completed via debounced save');
+                    }
+                } catch (error) {
+                    this.logger.warn('STATE', 'Auto-save to database failed in debounced save:', error.message);
+                    // Don't fail the local save if database save fails
+                }
+                
                 this.saveTimeout = null;
             }, 1000);
         }
