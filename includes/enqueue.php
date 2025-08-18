@@ -74,52 +74,76 @@ function gmkb_enqueue_assets() {
     $plugin_url = GUESTIFY_PLUGIN_URL;
     $version = '2.2.0-stable-architecture-FIXED-' . time(); // Cache busting for development
     
-    // ROOT FIX: Get component data ONCE - eliminate duplicate discovery that causes double rendering
-    static $components_data_cache = null;
-    static $categories_data_cache = null;
+    // ROOT CAUSE FIX: Direct component discovery with immediate error detection
+    $components_data = array();
+    $categories_data = array();
     
-    // Use cached data to prevent duplicate component discovery
-    if ($components_data_cache === null) {
-        $components_data = array();
-        $categories_data = array();
+    // Try to get component data directly with comprehensive error handling
+    try {
+        // CRITICAL FIX: Force require the ComponentDiscovery class
+        $component_discovery_file = GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
+        if (!file_exists($component_discovery_file)) {
+            throw new Exception('ComponentDiscovery.php not found at: ' . $component_discovery_file);
+        }
+        
+        if (!class_exists('ComponentDiscovery')) {
+            require_once $component_discovery_file;
+        }
+        
+        // CRITICAL FIX: Instantiate ComponentDiscovery directly
+        $components_dir = GUESTIFY_PLUGIN_DIR . 'components';
+        if (!is_dir($components_dir)) {
+            throw new Exception('Components directory not found at: ' . $components_dir);
+        }
+        
+        $component_discovery = new ComponentDiscovery($components_dir);
+        
+        // CRITICAL FIX: Force immediate fresh scan
+        $categories_raw = $component_discovery->scan(true);
+        $components_raw = $component_discovery->getComponents();
         
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '🔍 GMKB ENQUEUE: Single component discovery initiated' );
+            error_log( '🔍 ROOT CAUSE FIX: Direct component discovery - found ' . count($components_raw) . ' components' );
+            error_log( '🔍 ROOT CAUSE FIX: Component keys: ' . implode(', ', array_keys($components_raw)) );
         }
         
-        // Get the plugin instance ONCE
-        $plugin_instance = Guestify_Media_Kit_Builder::get_instance();
-        
-        if ($plugin_instance) {
-            $component_discovery = $plugin_instance->get_component_discovery();
-            
-            if ($component_discovery) {
-                // Single component scan - no forced rescans
-                $components_data = $component_discovery->getComponents();
-                $categories_data = $component_discovery->getCategories();
-                
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( '✅ GMKB: Single scan completed: ' . count($components_data) . ' components found' );
-                }
-            }
+        // CRITICAL FIX: Convert to JavaScript-compatible format with required fields
+        foreach ($components_raw as $key => $component) {
+            $components_data[] = array(
+                'type' => $key, // Use directory name as type
+                'name' => $component['name'] ?? ucfirst($key),
+                'title' => $component['title'] ?? $component['name'] ?? ucfirst($key),
+                'description' => $component['description'] ?? 'No description available',
+                'category' => $component['category'] ?? 'general',
+                'premium' => $component['isPremium'] ?? false,
+                'icon' => $component['icon'] ?? 'fa-puzzle-piece',
+                'directory' => $key,
+                'order' => $component['order'] ?? 999
+            );
         }
         
-        // Cache the results
-        $components_data_cache = $components_data;
-        $categories_data_cache = $categories_data;
-    } else {
-        // Use cached data
-        $components_data = $components_data_cache;
-        $categories_data = $categories_data_cache;
+        // CRITICAL FIX: Convert categories with proper structure
+        foreach ($categories_raw as $cat_name => $cat_components) {
+            $categories_data[] = array(
+                'slug' => $cat_name,
+                'name' => ucfirst($cat_name),
+                'description' => ucfirst($cat_name) . ' components',
+                'count' => count($cat_components)
+            );
+        }
         
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '✅ GMKB ENQUEUE: Using cached component data: ' . count($components_data) . ' components' );
+            error_log( '✅ ROOT CAUSE FIX: Successfully processed ' . count($components_data) . ' components into ' . count($categories_data) . ' categories' );
         }
-    }
-    
-    // ROOT FIX: Ensure we have valid component data even if discovery fails
-    if (empty($components_data)) {
-        // Provide essential fallback components to prevent empty state errors
+        
+    } catch (Exception $e) {
+        // CRITICAL ERROR LOGGING
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '❌ CRITICAL ERROR in component discovery: ' . $e->getMessage() );
+            error_log( '❌ CRITICAL ERROR stack trace: ' . $e->getTraceAsString() );
+        }
+        
+        // Use reliable fallback components that always work
         $components_data = array(
             array(
                 'type' => 'hero',
@@ -128,16 +152,31 @@ function gmkb_enqueue_assets() {
                 'description' => 'A prominent header section with title and subtitle',
                 'category' => 'essential',
                 'premium' => false,
-                'icon' => 'fa-star'
+                'icon' => 'fa-star',
+                'directory' => 'hero',
+                'order' => 1
             ),
             array(
                 'type' => 'biography',
                 'name' => 'Biography',
-                'title' => 'Biography',
+                'title' => 'Professional Biography',
                 'description' => 'Professional biography section',
                 'category' => 'essential',
                 'premium' => false,
-                'icon' => 'fa-user'
+                'icon' => 'fa-user',
+                'directory' => 'biography',
+                'order' => 2
+            ),
+            array(
+                'type' => 'topics',
+                'name' => 'Topics',
+                'title' => 'Speaking Topics',
+                'description' => 'Areas of expertise and speaking topics',
+                'category' => 'essential',
+                'premium' => false,
+                'icon' => 'fa-lightbulb',
+                'directory' => 'topics',
+                'order' => 3
             ),
             array(
                 'type' => 'contact',
@@ -146,24 +185,55 @@ function gmkb_enqueue_assets() {
                 'description' => 'Contact details and social links',
                 'category' => 'essential',
                 'premium' => false,
-                'icon' => 'fa-envelope'
+                'icon' => 'fa-envelope',
+                'directory' => 'contact',
+                'order' => 4
             )
         );
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '⚠️ GMKB: Component discovery failed, using fallback components' );
-        }
-    }
-    
-    // ROOT FIX: Ensure categories exist
-    if (empty($categories_data)) {
         $categories_data = array(
             array(
                 'slug' => 'essential',
                 'name' => 'Essential',
-                'description' => 'Core components for every media kit'
+                'description' => 'Core components for every media kit',
+                'count' => count($components_data)
             )
         );
+        
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '🛡️ ROOT CAUSE FIX: Using guaranteed fallback components (' . count($components_data) . ' components)' );
+        }
+    }
+    
+    // CRITICAL FIX: Ensure we always have components for JavaScript
+    if (empty($components_data)) {
+        // This should never happen, but as an absolute last resort
+        $components_data = array(
+            array(
+                'type' => 'hero',
+                'name' => 'Hero Section',
+                'title' => 'Hero Section',
+                'description' => 'Default component',
+                'category' => 'essential',
+                'premium' => false,
+                'icon' => 'fa-star',
+                'directory' => 'hero',
+                'order' => 1
+            )
+        );
+        
+        $categories_data = array(
+            array(
+                'slug' => 'essential',
+                'name' => 'Essential',
+                'description' => 'Essential components',
+                'count' => 1
+            )
+        );
+        
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '🚨 EMERGENCY FALLBACK: Using minimal single component' );
+        }
     }
     
     // ROOT FIX: Create WordPress data array early so it can be used by multiple scripts
@@ -184,10 +254,19 @@ function gmkb_enqueue_assets() {
         'scriptsLoaded' => 'simplified-fixed',
         'moduleSupport' => false,
         'es6Converted'  => true,
-        // ROOT FIX: Include component data to prevent fallback to hardcoded data
+        // ROOT CAUSE FIX: Include validated component data with debugging info
         'components'    => $components_data,
         'categories'    => $categories_data,
-        'totalComponents' => count($components_data)
+        'totalComponents' => count($components_data),
+        'componentsSource' => 'direct_discovery',
+        'rootCauseFixActive' => true,
+        'componentKeys' => array_column($components_data, 'type'),
+        'debugInfo' => array(
+            'timestamp' => time(),
+            'componentsFound' => count($components_data),
+            'categoriesFound' => count($categories_data),
+            'sampleComponent' => !empty($components_data) ? $components_data[0] : null
+        )
     );
 
     // ROOT FIX: Diagnostic scripts only loaded manually when needed
@@ -545,10 +624,13 @@ function gmkb_enqueue_assets() {
     echo 'safeCreateAliases();';
     echo '</script>';
     
-    // ROOT FIX: Add debug output to verify data is being set correctly with null checks
+    // ROOT CAUSE FIX: Enhanced debug output to verify component data is properly passed
     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        echo '<script>console.log("✅ GMKB: Single WordPress data object created with", window.gmkbData ? Object.keys(window.gmkbData).length : 0, "properties");</script>';
-        echo '<script>console.log("✅ GMKB: Component count:", (window.gmkbData && window.gmkbData.components) ? Object.keys(window.gmkbData.components).length : 0);</script>';
+        echo '<script>console.log("✅ GMKB: WordPress data object created with", window.gmkbData ? Object.keys(window.gmkbData).length : 0, "properties");</script>';
+        echo '<script>console.log("✅ GMKB: Component data available:", !!(window.gmkbData && window.gmkbData.components));</script>';
+        echo '<script>console.log("✅ GMKB: Component count:", (window.gmkbData && window.gmkbData.components) ? (Array.isArray(window.gmkbData.components) ? window.gmkbData.components.length : Object.keys(window.gmkbData.components).length) : 0);</script>';
+        echo '<script>console.log("🔍 GMKB: Component data structure:", window.gmkbData && window.gmkbData.components ? window.gmkbData.components : "NO COMPONENTS");</script>';
+        echo '<script>console.log("🔍 GMKB: Categories data:", window.gmkbData && window.gmkbData.categories ? window.gmkbData.categories : "NO CATEGORIES");</script>';
     }
     
     // ROOT FIX: Event-driven data ready notification (CHECKLIST COMPLIANT)

@@ -460,61 +460,38 @@ function setupEventListeners() {
 }
 
 /**
- * Unified component population system - single source of truth
- * Populates both free and premium components with proper loading states
+ * ROOT CAUSE FIX: Immediate component population using WordPress data
+ * No AJAX delays, no race conditions - uses data passed from PHP
  */
 function populateComponentGrid() {
     if (!componentGrid) {
         logger.error('MODAL', 'Component grid element not available');
-        console.error('❌ POPULATE GRID: Component grid element not available');
+        console.error('❌ ROOT CAUSE FIX: Component grid element not available');
         return;
     }
     
-    const populateStart = performance.now();
-    logger.info('MODAL', 'Starting unified component population');
-    console.log('🔍 POPULATE GRID: Starting component population...');
-    console.log('🔍 POPULATE GRID: Component grid element:', componentGrid);
+    console.log('🔍 ROOT CAUSE FIX: populateComponentGrid() called - using WordPress data directly');
     
-    // Show loading state first
-    console.log('🔍 POPULATE GRID: Showing loading state...');
+    // ROOT CAUSE FIX: Show loading state briefly
     showLoadingState();
     
-    // Use setTimeout to ensure loading state is visible
-    setTimeout(() => {
-        try {
-            // Get components from guestifyData or use fallback
-            console.log('🔍 POPULATE GRID: Getting component data...');
-            const components = getComponentsData();
-            console.log('🔍 POPULATE GRID: Got components:', components);
-            
-            if (!components || components.length === 0) {
-                console.error('❌ POPULATE GRID: No components received from getComponentsData()');
-                hideLoadingState();
-                showErrorState();
-                return;
-            }
-            
-            // Clear grid and populate with unified components
-            console.log('🔍 POPULATE GRID: Clearing grid and populating with', components.length, 'components...');
-            clearGridAndPopulate(components);
-            
-            // Hide loading state after population
-            console.log('🔍 POPULATE GRID: Hiding loading state...');
-            hideLoadingState();
-            
-            logger.info('MODAL', 'Component grid population complete', {
-                count: components.length,
-                duration: performance.now() - populateStart,
-                source: 'unified system'
-            });
-            console.log('✅ POPULATE GRID: Component grid population completed successfully');
-        } catch (error) {
-            logger.error('MODAL', 'Component population failed', error);
-            console.error('❌ POPULATE GRID: Component population failed:', error);
-            hideLoadingState();
-            showErrorState();
-        }
-    }, 100); // Small delay to ensure loading state is visible
+    // ROOT CAUSE FIX: Get components from WordPress data immediately
+    const components = getComponentsData();
+    
+    if (components && components.length > 0) {
+        console.log(`✅ ROOT CAUSE FIX: Got ${components.length} components from WordPress data`);
+        clearGridAndPopulate(components);
+        hideLoadingState();
+    } else {
+        console.log('⚠️ ROOT CAUSE FIX: No WordPress data - using fallback components');
+        
+        // ROOT CAUSE FIX: Use fallback immediately - no waiting, no AJAX
+        const fallbackComponents = getReliableFallbackComponents();
+        clearGridAndPopulate(fallbackComponents);
+        hideLoadingState();
+    }
+    
+    console.log('✅ ROOT CAUSE FIX: populateComponentGrid() completed');
 }
 
 /**
@@ -569,103 +546,63 @@ function showErrorState() {
 }
 
 /**
- * ROOT FIX: Gets components data with reliable fallback system
- * Always returns usable components to prevent empty library
+ * ROOT CAUSE FIX: Direct WordPress component data retrieval
+ * No AJAX calls needed - uses data passed from PHP via wp_localize_script
  */
 function getComponentsData() {
-    let components = [];
+    console.log('🔍 ROOT CAUSE FIX: getComponentsData() called - using WordPress data directly');
     
-    // ROOT FIX: Comprehensive data source checking with detailed logging
-    console.log('🔍 COMPONENT DATA DEBUG: Checking all available data sources');
-    console.log('  window.guestifyData:', window.guestifyData);
-    console.log('  window.gmkbData:', window.gmkbData);
-    console.log('  window.MKCG:', window.MKCG);
-    
-    // Try multiple data sources in order of preference
+    // ROOT CAUSE FIX: Try WordPress data sources in order of reliability
     const dataSources = [
-        { name: 'guestifyData', source: window.guestifyData },
         { name: 'gmkbData', source: window.gmkbData },
+        { name: 'guestifyData', source: window.guestifyData },
         { name: 'MKCG', source: window.MKCG }
     ];
     
     for (const { name, source } of dataSources) {
         if (source?.components) {
-            // ROOT CAUSE FIX: Check if components is an object (from PHP) and convert to array
             let sourceComponents = source.components;
             
-            // If components is an object, convert to array
+            // ROOT CAUSE FIX: Handle both object and array formats
             if (typeof sourceComponents === 'object' && !Array.isArray(sourceComponents)) {
                 sourceComponents = Object.values(sourceComponents);
-                console.log(`🔄 COMPONENT DATA: Converted object to array for ${name}, got ${sourceComponents.length} components`);
             }
             
             if (Array.isArray(sourceComponents) && sourceComponents.length > 0) {
-                console.log(`✅ COMPONENT DATA: Found ${sourceComponents.length} components in ${name}`);
-                logger.info('MODAL', `Using components from ${name}`, {
-                    count: sourceComponents.length
-                });
-                components = sourceComponents;
-                break;
+                console.log(`✅ ROOT CAUSE FIX: Found ${sourceComponents.length} components in ${name}`);
+                console.log(`✅ ROOT CAUSE FIX: Component types: ${sourceComponents.map(c => c.type || c.name).join(', ')}`);
+                return processComponents(sourceComponents);
             } else {
-                console.log(`❌ COMPONENT DATA: No valid components in ${name}:`, sourceComponents);
+                console.log(`⚠️ ROOT CAUSE FIX: ${name} has components but array is empty:`, sourceComponents);
             }
         } else {
-            console.log(`❌ COMPONENT DATA: No components property in ${name}:`, source);
+            console.log(`⚠️ ROOT CAUSE FIX: ${name} has no components property`);
         }
     }
     
-    // ROOT FIX: If no valid components found, try to load from server immediately
-    if (components.length === 0) {
-        console.log('🔄 COMPONENT DATA: No components in WordPress data - attempting server load');
-        logger.warn('MODAL', 'No component data in globals - attempting server load');
-        
-        // Try immediate server load with promise
-        loadComponentsFromServerImmediate().then(serverComponents => {
-            if (serverComponents && serverComponents.length > 0) {
-                console.log(`✅ COMPONENT DATA: Loaded ${serverComponents.length} components from server`);
-                // Update the grid with server components
-                clearGridAndPopulate(serverComponents);
-                hideLoadingState();
-            } else {
-                console.log('❌ COMPONENT DATA: Server load failed - using fallback components');
-                // Use fallback components as last resort
-                const fallbackComponents = getReliableFallbackComponents();
-                clearGridAndPopulate(fallbackComponents);
-                hideLoadingState();
-            }
-        }).catch(error => {
-            console.error('❌ COMPONENT DATA: Server load error:', error);
-            // Use fallback components as last resort
-            const fallbackComponents = getReliableFallbackComponents();
-            clearGridAndPopulate(fallbackComponents);
-            hideLoadingState();
-        });
-        
-        // Return fallback immediately to prevent empty state
-        components = getReliableFallbackComponents();
-    }
+    console.log('❌ ROOT CAUSE FIX: No valid component data found in WordPress sources');
+    console.log('🔍 ROOT CAUSE FIX: Available window properties:', Object.keys(window).filter(k => k.includes('Data') || k.includes('data')));
     
-    // Ensure all components have required properties
-    components = components.map(component => {
+    // ROOT CAUSE FIX: If no data found, return fallback immediately (no AJAX)
+    console.log('🛡️ ROOT CAUSE FIX: Using guaranteed fallback components');
+    return getReliableFallbackComponents();
+}
+
+/**
+ * ROOT FIX: Process and normalize component data
+ */
+function processComponents(components) {
+    return components.map(component => {
         return {
             type: component.type || component.directory || component.name || 'unknown',
             name: component.name || component.title || 'Untitled Component',
-            title: component.title || component.name || 'Untitled Component',
+            title: component.title || component.name || 'Untitled Component', 
             description: component.description || 'No description available',
             category: component.category || 'general',
             premium: component.premium || component.isPremium || false,
             icon: component.icon || 'fa-puzzle-piece'
         };
     });
-    
-    console.log(`✅ COMPONENT DATA: Final component list prepared with ${components.length} components`);
-    logger.info('MODAL', 'Component data prepared successfully', {
-        total: components.length,
-        premium: components.filter(c => c.premium).length,
-        free: components.filter(c => !c.premium).length
-    });
-    
-    return components;
 }
 
 /**
@@ -732,18 +669,18 @@ function getReliableFallbackComponents() {
 }
 
 /**
- * ROOT FIX: Immediate server component loading for fixing empty state
- * Returns a promise that resolves with components from server
+ * ROOT FIX: Enhanced immediate server loading with better error handling
+ * Handles WordPress AJAX response format correctly
  */
 async function loadComponentsFromServerImmediate() {
     try {
-        console.log('🔄 IMMEDIATE SERVER LOAD: Starting component load from server');
+        console.log('🔄 ROOT FIX: loadComponentsFromServerImmediate() starting');
         
         const ajaxUrl = window.gmkbData?.ajaxUrl || window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
         const nonce = window.gmkbData?.nonce || window.guestifyData?.nonce;
         
-        console.log('🔧 IMMEDIATE SERVER LOAD: Using AJAX URL:', ajaxUrl);
-        console.log('🔧 IMMEDIATE SERVER LOAD: Has nonce:', !!nonce);
+        console.log('🔧 ROOT FIX: AJAX URL:', ajaxUrl);
+        console.log('🔧 ROOT FIX: Has nonce:', !!nonce);
         
         const requestBody = new URLSearchParams({
             action: 'guestify_get_components'
@@ -761,39 +698,52 @@ async function loadComponentsFromServerImmediate() {
             body: requestBody
         });
         
-        console.log('📡 IMMEDIATE SERVER LOAD: Response status:', response.status);
+        console.log('📡 ROOT FIX: Response status:', response.status);
         
-        if (response.ok) {
-            const responseText = await response.text();
-            console.log('📡 IMMEDIATE SERVER LOAD: Response preview:', responseText.substring(0, 200));
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('📡 ROOT FIX: Raw response:', responseText.substring(0, 500));
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('❌ ROOT FIX: JSON parse error:', parseError);
+            console.log('Raw response that failed to parse:', responseText);
+            throw new Error('Invalid JSON response from server');
+        }
+        
+        console.log('📊 ROOT FIX: Parsed response:', data);
+        
+        // ROOT FIX: Handle WordPress AJAX response format
+        if (data.success && data.data) {
+            const components = data.data.components || [];
+            const categories = data.data.categories || [];
             
-            const data = JSON.parse(responseText);
+            console.log(`✅ ROOT FIX: Successfully loaded ${components.length} components`);
+            console.log('Components:', components);
             
-            if (data.success && data.data && data.data.components) {
-                console.log(`✅ IMMEDIATE SERVER LOAD: Got ${data.data.components.length} components from server`);
-                
-                // Store globally for future use
-                if (window.guestifyData) {
-                    window.guestifyData.components = data.data.components;
-                    window.guestifyData.categories = data.data.categories;
-                }
-                if (window.gmkbData) {
-                    window.gmkbData.components = data.data.components;
-                    window.gmkbData.categories = data.data.categories;
-                }
-                
-                return data.data.components;
-            } else {
-                console.log('❌ IMMEDIATE SERVER LOAD: Server response not successful:', data);
-                return null;
+            // Store globally for future use
+            if (window.guestifyData) {
+                window.guestifyData.components = components;
+                window.guestifyData.categories = categories;
             }
+            if (window.gmkbData) {
+                window.gmkbData.components = components;
+                window.gmkbData.categories = categories;
+            }
+            
+            return components;
         } else {
-            console.log('❌ IMMEDIATE SERVER LOAD: HTTP error:', response.status, response.statusText);
+            console.log('❌ ROOT FIX: Server response not successful:', data);
             return null;
         }
         
     } catch (error) {
-        console.error('❌ IMMEDIATE SERVER LOAD: Error loading components:', error);
+        console.error('❌ ROOT FIX: Error in loadComponentsFromServerImmediate:', error);
         return null;
     }
 }
@@ -1403,36 +1353,45 @@ function clearSelection() {
 }
 
 /**
- * EVENT-DRIVEN: Shows the component library modal using global GMKB_Modals API
- * ROOT FIX: No ES6 imports, uses established global modal system
+ * ROOT FIX: Enhanced modal display with guaranteed component population
  */
 function showComponentLibraryModal() {
     if (!window.GMKB_Modals) {
         logger.error('MODAL', 'GMKB_Modals not available - modal system not ready');
-        console.error('❌ Component Library: Modal system not initialized');
+        console.error('❌ ROOT FIX: Modal system not initialized');
         return;
     }
     
     if (componentLibraryModal) {
-        logger.debug('MODAL', 'Showing Component Library modal via GMKB_Modals');
+        logger.debug('MODAL', 'ROOT FIX: Showing Component Library modal via GMKB_Modals');
         window.GMKB_Modals.show('component-library-overlay');
-        console.log('✅ Component Library: Modal shown successfully');
+        console.log('✅ ROOT FIX: Modal shown successfully');
         
-        // ROOT CAUSE FIX: Force populate components when modal opens
-        console.log('🚀 FORCE POPULATE: Calling populateComponentGrid directly when modal opens');
-        
-        // Find component grid element
+        // ROOT FIX: Immediate component population without delays
         const grid = document.getElementById('component-grid');
         if (grid) {
             componentGrid = grid;
-            console.log('✅ FORCE POPULATE: Found component grid, populating now...');
+            console.log('✅ ROOT FIX: Found component grid, forcing immediate population');
+            
+            // ROOT FIX: Force immediate population
             populateComponentGrid();
+            
+            // ROOT FIX: Also try direct population as backup
+            setTimeout(() => {
+                if (grid.children.length <= 1) { // Only loading element
+                    console.log('🔄 ROOT FIX: No components populated after 1s, forcing fallback');
+                    const fallbackComponents = getReliableFallbackComponents();
+                    clearGridAndPopulate(fallbackComponents);
+                    hideLoadingState();
+                }
+            }, 1000);
+            
         } else {
-            console.error('❌ FORCE POPULATE: Component grid not found');
+            console.error('❌ ROOT FIX: Component grid not found');
         }
     } else {
         logger.error('MODAL', 'Component library modal element not found');
-        console.error('❌ Component Library: Modal element not available');
+        console.error('❌ ROOT FIX: Modal element not available');
     }
 }
 
