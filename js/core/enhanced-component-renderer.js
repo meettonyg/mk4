@@ -74,6 +74,7 @@ class EnhancedComponentRenderer {
         this.renderStartTime = null;
         this.healthCheckInterval = null;
         this.logger = structuredLogger;
+        this.lastSaveTime = 0; // ROOT FIX: Track save operations to prevent clearing
         
         // UI Registry integration
         this.registeredComponents = new Set();
@@ -92,6 +93,9 @@ class EnhancedComponentRenderer {
         
         // ROOT FIX: Setup rendering queue event listeners
         this.setupRenderingQueueListeners();
+        
+        // ROOT FIX: Setup save operation tracking
+        this.setupSaveTracking();
     }
     
     /**
@@ -296,6 +300,38 @@ class EnhancedComponentRenderer {
             // ROOT FIX: Skip rendering if this is the same state we just processed
             if (this.lastState && JSON.stringify(this.lastState) === JSON.stringify(newState)) {
                 this.logger.debug('RENDER', 'State unchanged, skipping render');
+                return;
+            }
+            
+            // ROOT FIX: CRITICAL - Enhanced protection against save-triggered clearing
+            const hasRenderedComponents = this.componentCache.size > 0;
+            const newStateHasComponents = Object.keys(newState.components || {}).length > 0;
+            const savedContainer = document.getElementById('saved-components-container');
+            const previewHasChildren = this.previewContainer && this.previewContainer.children.length > 0;
+            const savedContainerHasChildren = savedContainer && savedContainer.children.length > 0;
+            
+            // ROOT FIX: Enhanced detection - also check if this is immediately after a save
+            const timeSinceLastSave = Date.now() - (this.lastSaveTime || 0);
+            const isRecentSave = timeSinceLastSave < 2000; // Within 2 seconds of save
+            
+            if (hasRenderedComponents && newStateHasComponents && !previewHasChildren && !savedContainerHasChildren) {
+                this.logger.warn('RENDER', 'CRITICAL: Save-triggered render clearing detected - skipping to prevent blank page');
+                this.logger.debug('RENDER', 'Protection triggered', {
+                    hasRenderedComponents,
+                    newStateHasComponents,
+                    previewHasChildren,
+                    savedContainerHasChildren,
+                    componentCacheSize: this.componentCache.size,
+                    isRecentSave,
+                    timeSinceLastSave
+                });
+                return;
+            }
+            
+            // ROOT FIX: If we have components but no containers are visible, force container restoration
+            if (newStateHasComponents && !previewHasChildren && !savedContainerHasChildren && savedContainer) {
+                this.logger.warn('RENDER', 'Components exist but no container visible - forcing saved component restoration');
+                await this.renderSavedComponents(newState);
                 return;
             }
             
@@ -566,6 +602,27 @@ class EnhancedComponentRenderer {
         
         this.logger.debug('RENDER', `Starting renderNewComponents for ${componentIds.size} components`);
         
+        // ROOT FIX: Smart container selection for new components
+        let targetContainer = this.previewContainer; // Default fallback
+        let containerReason = 'default_preview';
+        
+        // Check if saved components container should be used
+        const savedContainer = document.getElementById('saved-components-container');
+        if (savedContainer) {
+            const computedStyle = window.getComputedStyle(savedContainer);
+            const isVisible = computedStyle.display !== 'none' && 
+                            computedStyle.visibility !== 'hidden' &&
+                            savedContainer.offsetParent !== null;
+            
+            if (isVisible) {
+                targetContainer = savedContainer;
+                containerReason = 'saved_container_active';
+                this.logger.info('RENDER', 'Using saved components container for new components');
+            } else {
+                this.logger.debug('RENDER', 'Saved container exists but hidden, using preview container');
+            }
+        }
+        
         const fragment = document.createDocumentFragment();
         const renderPromises = Array.from(componentIds).map(id => {
             const componentState = newState.components[id];
@@ -585,7 +642,8 @@ class EnhancedComponentRenderer {
         this.logger.debug('RENDER', `Render promises completed:`, {
             totalPromises: renderPromises.length,
             successfulRenders: renderedComponents.filter(comp => comp && comp.element).length,
-            failedRenders: renderedComponents.filter(comp => !comp || !comp.element).length
+            failedRenders: renderedComponents.filter(comp => !comp || !comp.element).length,
+            targetContainer: containerReason
         });
         
         let addedToFragment = 0;
@@ -606,22 +664,22 @@ class EnhancedComponentRenderer {
             }
         });
         
-        this.logger.debug('RENDER', `Fragment created with ${addedToFragment} components, appending to preview container`);
+        this.logger.debug('RENDER', `Fragment created with ${addedToFragment} components, appending to ${targetContainer.id || 'container'}`);
         
-        // ROOT FIX: Verify preview container exists before appending
-        if (!this.previewContainer) {
-            this.logger.error('RENDER', 'Preview container not found! Cannot append components.');
+        // ROOT FIX: Verify target container exists before appending
+        if (!targetContainer) {
+            this.logger.error('RENDER', 'Target container not found! Cannot append components.');
             return;
         }
         
-        this.previewContainer.appendChild(fragment);
+        targetContainer.appendChild(fragment);
         
         // ROOT FIX: Verify components were actually added to DOM
-        const finalChildrenCount = this.previewContainer.children.length;
-        this.logger.debug('RENDER', `After appendChild: preview container has ${finalChildrenCount} children`);
+        const finalChildrenCount = targetContainer.children.length;
+        this.logger.debug('RENDER', `After appendChild: target container has ${finalChildrenCount} children`);
         
         if (finalChildrenCount === 0 && componentIds.size > 0) {
-            this.logger.error('RENDER', 'DOM insertion failed - no children in preview container after appendChild');
+            this.logger.error('RENDER', 'DOM insertion failed - no children in container after appendChild');
         }
 
         const state = enhancedStateManager.getState();
@@ -629,7 +687,7 @@ class EnhancedComponentRenderer {
         
         perfEnd();
         
-        this.logger.debug('RENDER', `Rendered ${componentIds.size} new components, ${addedToFragment} added to DOM`);
+        this.logger.debug('RENDER', `Rendered ${componentIds.size} new components, ${addedToFragment} added to DOM via ${containerReason}`);
     }
     
     /**
@@ -740,22 +798,43 @@ class EnhancedComponentRenderer {
             count: validatedLayout.length
         });
 
+        // ROOT FIX: Container-aware reordering
+        // Find which container actually has components and reorder within that container
+        const savedContainer = document.getElementById('saved-components-container');
+        let activeContainer = this.previewContainer;
+        
+        if (savedContainer && savedContainer.children.length > 0) {
+            activeContainer = savedContainer;
+            this.logger.debug('RENDER', 'Reordering within saved components container');
+        } else if (this.previewContainer && this.previewContainer.children.length > 0) {
+            activeContainer = this.previewContainer;
+            this.logger.debug('RENDER', 'Reordering within preview container');
+        } else {
+            this.logger.debug('RENDER', 'No container with children found for reordering');
+            perfEnd();
+            return;
+        }
+
         const elementMap = new Map();
-        Array.from(this.previewContainer.children).forEach(child => {
-            elementMap.set(child.id, child);
+        Array.from(activeContainer.children).forEach(child => {
+            if (child.id) {
+                elementMap.set(child.id, child);
+            }
         });
 
         validatedLayout.forEach((componentId, index) => {
             const element = elementMap.get(componentId);
             if (element) {
-                const expectedPosition = this.previewContainer.children[index];
+                const expectedPosition = activeContainer.children[index];
                 if (element !== expectedPosition) {
-                    this.previewContainer.insertBefore(element, expectedPosition || null);
+                    activeContainer.insertBefore(element, expectedPosition || null);
                 }
             }
         });
 
         perfEnd();
+        
+        this.logger.debug('RENDER', `Reordered ${validatedLayout.length} components in ${activeContainer.id || 'container'}`);
     }
 
     /**
@@ -967,15 +1046,34 @@ class EnhancedComponentRenderer {
             const componentCount = Object.keys(initialState.components).length;
             this.logger.info('RENDER', `renderSavedComponents: Starting render of ${componentCount} saved components`);
             
-            // ROOT FIX: Check for saved components container first
+            // ROOT FIX: Enhanced container detection with comprehensive checks
             let targetContainer = document.getElementById('saved-components-container');
+            let containerReason = 'not_found';
             
-            // If saved components container doesn't exist or isn't visible, use preview container
-            if (!targetContainer || targetContainer.style.display === 'none') {
-                this.logger.warn('RENDER', 'Saved components container not found or hidden, using preview container');
-                targetContainer = this.previewContainer;
+            if (targetContainer) {
+                // Check if container is actually visible using computed styles
+                const computedStyle = window.getComputedStyle(targetContainer);
+                const isVisible = computedStyle.display !== 'none' && 
+                                computedStyle.visibility !== 'hidden' &&
+                                targetContainer.offsetParent !== null;
+                
+                if (isVisible) {
+                    containerReason = 'saved_container_visible';
+                    this.logger.info('RENDER', 'Using saved components container for rendering');
+                } else {
+                    targetContainer = null;
+                    containerReason = 'saved_container_hidden';
+                    this.logger.warn('RENDER', 'Saved components container exists but is hidden');
+                }
             } else {
-                this.logger.info('RENDER', 'Using saved components container for rendering');
+                this.logger.warn('RENDER', 'Saved components container not found in DOM');
+            }
+            
+            // Fallback to preview container if saved container unavailable
+            if (!targetContainer) {
+                targetContainer = this.previewContainer;
+                containerReason = 'fallback_to_preview';
+                this.logger.warn('RENDER', 'Falling back to preview container', { reason: containerReason });
             }
             
             if (!targetContainer) {
@@ -1036,7 +1134,10 @@ class EnhancedComponentRenderer {
             const finalChildCount = targetContainer.children.length;
             const successfulRenders = finalChildCount;
             
-            this.logger.info('RENDER', `renderSavedComponents: Completed - ${successfulRenders}/${componentCount} components rendered`);
+            this.logger.info('RENDER', `renderSavedComponents: Completed - ${successfulRenders}/${componentCount} components rendered`, {
+                containerUsed: containerReason,
+                targetContainerId: targetContainer.id || 'preview-container'
+            });
             
             // ROOT FIX: Hide empty state if components were successfully rendered
             if (successfulRenders > 0) {
@@ -1358,6 +1459,33 @@ class EnhancedComponentRenderer {
         });
         
         this.logger.debug('RENDER', 'Rendering queue event listeners setup complete');
+    }
+    
+    /**
+     * ROOT FIX: Setup save operation tracking to prevent render clearing
+     */
+    setupSaveTracking() {
+        // Listen for manual save events
+        eventBus.on('gmkb:manual-save-start', () => {
+            this.lastSaveTime = Date.now();
+            this.logger.debug('RENDER', 'Manual save started - tracking for render protection');
+        });
+        
+        // Listen for auto-save events
+        eventBus.on('gmkb:auto-save-success', () => {
+            this.lastSaveTime = Date.now();
+            this.logger.debug('RENDER', 'Auto-save completed - tracking for render protection');
+        });
+        
+        // Listen for save button clicks
+        document.addEventListener('click', (event) => {
+            if (event.target && (event.target.id === 'save-btn' || event.target.closest('#save-btn'))) {
+                this.lastSaveTime = Date.now();
+                this.logger.debug('RENDER', 'Save button clicked - tracking for render protection');
+            }
+        });
+        
+        this.logger.debug('RENDER', 'Save operation tracking setup complete');
     }
     
     /**

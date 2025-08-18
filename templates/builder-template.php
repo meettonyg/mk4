@@ -56,6 +56,15 @@ if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
     $post_id = intval($_GET['p']);
 } elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
     $post_id = intval($_GET['page_id']);
+} elseif (function_exists('get_the_ID') && get_the_ID()) {
+    // Try to get current post ID from WordPress context
+    $post_id = get_the_ID();
+} elseif (is_page('guestify-media-kit') || is_page('media-kit')) {
+    // Try to get the ID of the current page
+    global $post;
+    if ($post && $post->ID) {
+        $post_id = $post->ID;
+    }
 }
 
 // Add debug logging for post ID detection
@@ -91,22 +100,38 @@ if ($post_id > 0) {
     }
 }
     
-    // ROOT FIX: CORRECTED LOGIC - Update template instructions based on saved state
-    if ($has_saved_components) {
-        $template_instructions['show_empty_state'] = false; // HIDE empty state when we have components
-        $template_instructions['show_loading_state'] = false;
-        $template_instructions['show_saved_components'] = true; // SHOW saved components
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Template: Has saved components - hiding empty state, showing saved components');
-        }
-    } else {
-        $template_instructions['show_empty_state'] = true; // SHOW empty state when no components
-        $template_instructions['show_saved_components'] = false; // HIDE saved components container
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Template: No saved components - showing empty state');
-        }
+// ROOT FIX: CORRECTED LOGIC - Update template instructions based on saved state
+if ($has_saved_components) {
+    $template_instructions['show_empty_state'] = false; // HIDE empty state when we have components
+    $template_instructions['show_loading_state'] = false;
+    $template_instructions['show_saved_components'] = true; // SHOW saved components
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB Template: Has saved components - hiding empty state, showing saved components');
+        error_log('🔧 GMKB Template: Final template_instructions (HAS COMPONENTS): ' . print_r($template_instructions, true));
+    }
+} else {
+    $template_instructions['show_empty_state'] = true; // SHOW empty state when no components
+    $template_instructions['show_saved_components'] = false; // HIDE saved components container
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB Template: No saved components - showing empty state');
+        error_log('🔧 GMKB Template: Final template_instructions (NO COMPONENTS): ' . print_r($template_instructions, true));
+    }
+}
+
+// CRITICAL FIX: Ensure at least one container is always shown
+if (!$template_instructions['show_saved_components'] && !$template_instructions['show_empty_state']) {
+    // Fallback: if neither container is shown, default to empty state
+    $template_instructions['show_empty_state'] = true;
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('😨 GMKB Template: CRITICAL FIX - Neither container was set to show! Defaulting to empty state.');
+        error_log('🔧 GMKB Template: Corrected template_instructions: ' . print_r($template_instructions, true));
+    }
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB Template: Container logic OK - will show: ' . 
+                   ($template_instructions['show_saved_components'] ? 'SAVED COMPONENTS' : 'EMPTY STATE'));
     }
 }
 
@@ -337,6 +362,27 @@ if ($post_id > 0) {
         <div class="preview__container" id="preview-container">
             <div class="media-kit" id="media-kit-preview">
                 <!-- ROOT FIX: Coordinated State Loading System -->
+                <?php 
+                    // CRITICAL SAFETY CHECK: Ensure at least one container will be rendered
+                    if (!$template_instructions['show_saved_components'] && !$template_instructions['show_empty_state'] && !$template_instructions['show_loading_state']) {
+                        // Emergency fallback: force empty state
+                        $template_instructions['show_empty_state'] = true;
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('🚨 GMKB Template: EMERGENCY FALLBACK - No container was set to render! Forcing empty state.');
+                        }
+                    }
+                    
+                    // Debug output for browser console
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        echo '<!-- GMKB Template Debug: ';
+                        echo 'post_id=' . $post_id . ', ';
+                        echo 'has_saved_components=' . ($has_saved_components ? 'true' : 'false') . ', ';
+                        echo 'show_saved_components=' . ($template_instructions['show_saved_components'] ? 'true' : 'false') . ', ';
+                        echo 'show_empty_state=' . ($template_instructions['show_empty_state'] ? 'true' : 'false');
+                        echo ' -->';
+                    }
+                ?>
+                
                 <?php if ($template_instructions['show_loading_state']): ?>
                     <!-- ROOT FIX: Loading State for Saved Components -->
                     <div class="state-loading-enhanced" id="state-loading-enhanced">
@@ -365,9 +411,14 @@ if ($post_id > 0) {
                             </div>
                         <?php endif; ?>
                     </div>
+                    <?php 
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('✅ GMKB Template: RENDERED saved-components-container in DOM');
+                        }
+                    ?>
                 <?php endif; ?>
                 
-                <?php if (isset($template_instructions['show_empty_state']) && $template_instructions['show_empty_state'] && !$has_saved_components): ?>
+                <?php if ($template_instructions['show_empty_state']): ?>
                     <!-- ROOT FIX: Enhanced Empty State with Auto-Loading Support -->
                     <div class="empty-state-optimized" id="empty-state" data-allow-js-control="true">
                     <?php if ($dashboard_data): ?>
@@ -456,6 +507,11 @@ if ($post_id > 0) {
                         </div>
                     <?php endif; ?>
                 </div>
+                <?php 
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('✅ GMKB Template: RENDERED empty-state-optimized in DOM');
+                    }
+                ?>
                 <?php endif; // end show_empty_state ?>
                 
                 <!-- ROOT FIX: Minimal drop zone (no complex bridge elements) -->

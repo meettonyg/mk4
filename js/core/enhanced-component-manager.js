@@ -523,6 +523,15 @@
         async manualSave() {
             try {
                 logger.info('COMPONENT', 'Manual save requested');
+                
+                // ROOT FIX: Emit save start event for render protection
+                if (window.eventBus) {
+                    window.eventBus.emit('gmkb:manual-save-start', {
+                        timestamp: Date.now(),
+                        source: 'manual_save_button'
+                    });
+                }
+                
                 await this.autoSaveState('manual_save', { source: 'save_button' });
                 logger.info('COMPONENT', 'Manual save completed successfully');
                 return true;
