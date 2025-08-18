@@ -475,20 +475,34 @@ function populateComponentGrid() {
     // ROOT CAUSE FIX: Show loading state briefly
     showLoadingState();
     
-    // ROOT CAUSE FIX: Get components from WordPress data immediately
-    const components = getComponentsData();
-    
-    if (components && components.length > 0) {
-        console.log(`✅ ROOT CAUSE FIX: Got ${components.length} components from WordPress data`);
-        clearGridAndPopulate(components);
-        hideLoadingState();
-    } else {
-        console.log('⚠️ ROOT CAUSE FIX: No WordPress data - using fallback components');
+    try {
+        // ROOT CAUSE FIX: Get components from WordPress data immediately
+        const components = getComponentsData();
         
-        // ROOT CAUSE FIX: Use fallback immediately - no waiting, no AJAX
+        if (components && components.length > 0) {
+            console.log(`✅ ROOT CAUSE FIX: Got ${components.length} components, populating grid`);
+            clearGridAndPopulate(components);
+            console.log('✅ ROOT CAUSE FIX: Grid populated successfully');
+        } else {
+            console.log('⚠️ ROOT CAUSE FIX: No components returned, using fallback');
+            
+            // ROOT CAUSE FIX: Use fallback immediately - no waiting, no AJAX
+            const fallbackComponents = getReliableFallbackComponents();
+            console.log('🛡️ ROOT CAUSE FIX: Using', fallbackComponents.length, 'fallback components');
+            clearGridAndPopulate(fallbackComponents);
+            console.log('✅ ROOT CAUSE FIX: Fallback components populated');
+        }
+    } catch (error) {
+        console.error('❌ ROOT CAUSE FIX: Error in populateComponentGrid:', error);
+        
+        // ROOT CAUSE FIX: Even on error, show fallback components
         const fallbackComponents = getReliableFallbackComponents();
+        console.log('🚨 ROOT CAUSE FIX: Error occurred, using emergency fallback:', fallbackComponents.length, 'components');
         clearGridAndPopulate(fallbackComponents);
+    } finally {
+        // ROOT CAUSE FIX: ALWAYS hide loading state regardless of success or failure
         hideLoadingState();
+        console.log('✅ ROOT CAUSE FIX: Loading state hidden');
     }
     
     console.log('✅ ROOT CAUSE FIX: populateComponentGrid() completed');
@@ -552,6 +566,18 @@ function showErrorState() {
 function getComponentsData() {
     console.log('🔍 ROOT CAUSE FIX: getComponentsData() called - using WordPress data directly');
     
+    // ROOT CAUSE FIX: Debug available data sources first
+    console.log('🔍 ROOT CAUSE FIX: Available window data sources:');
+    console.log('  - window.gmkbData:', window.gmkbData ? 'AVAILABLE' : 'NOT FOUND');
+    console.log('  - window.guestifyData:', window.guestifyData ? 'AVAILABLE' : 'NOT FOUND');
+    console.log('  - window.MKCG:', window.MKCG ? 'AVAILABLE' : 'NOT FOUND');
+    
+    if (window.gmkbData) {
+        console.log('  - gmkbData keys:', Object.keys(window.gmkbData));
+        console.log('  - gmkbData.components type:', typeof window.gmkbData.components);
+        console.log('  - gmkbData.components length/size:', Array.isArray(window.gmkbData.components) ? window.gmkbData.components.length : (window.gmkbData.components ? Object.keys(window.gmkbData.components).length : 'N/A'));
+    }
+    
     // ROOT CAUSE FIX: Try WordPress data sources in order of reliability
     const dataSources = [
         { name: 'gmkbData', source: window.gmkbData },
@@ -560,28 +586,41 @@ function getComponentsData() {
     ];
     
     for (const { name, source } of dataSources) {
-        if (source?.components) {
-            let sourceComponents = source.components;
+        console.log(`🔍 ROOT CAUSE FIX: Checking ${name}...`);
+        
+        if (source) {
+            console.log(`  - ${name} exists, keys:`, Object.keys(source));
             
-            // ROOT CAUSE FIX: Handle both object and array formats
-            if (typeof sourceComponents === 'object' && !Array.isArray(sourceComponents)) {
-                sourceComponents = Object.values(sourceComponents);
-            }
-            
-            if (Array.isArray(sourceComponents) && sourceComponents.length > 0) {
-                console.log(`✅ ROOT CAUSE FIX: Found ${sourceComponents.length} components in ${name}`);
-                console.log(`✅ ROOT CAUSE FIX: Component types: ${sourceComponents.map(c => c.type || c.name).join(', ')}`);
-                return processComponents(sourceComponents);
+            if (source.components) {
+                let sourceComponents = source.components;
+                console.log(`  - ${name}.components type:`, typeof sourceComponents);
+                console.log(`  - ${name}.components is array:`, Array.isArray(sourceComponents));
+                console.log(`  - ${name}.components value:`, sourceComponents);
+                
+                // ROOT CAUSE FIX: Handle both object and array formats
+                if (typeof sourceComponents === 'object' && !Array.isArray(sourceComponents)) {
+                    console.log(`  - Converting ${name}.components object to array`);
+                    sourceComponents = Object.values(sourceComponents);
+                }
+                
+                if (Array.isArray(sourceComponents) && sourceComponents.length > 0) {
+                    console.log(`✅ ROOT CAUSE FIX: Found ${sourceComponents.length} components in ${name}`);
+                    console.log(`✅ ROOT CAUSE FIX: First component:`, sourceComponents[0]);
+                    console.log(`✅ ROOT CAUSE FIX: Component types: ${sourceComponents.map(c => c.type || c.name || c.directory || 'unknown').join(', ')}`);
+                    return processComponents(sourceComponents);
+                } else {
+                    console.log(`⚠️ ROOT CAUSE FIX: ${name} has components but array is empty or invalid:`, sourceComponents);
+                }
             } else {
-                console.log(`⚠️ ROOT CAUSE FIX: ${name} has components but array is empty:`, sourceComponents);
+                console.log(`⚠️ ROOT CAUSE FIX: ${name} has no components property`);
             }
         } else {
-            console.log(`⚠️ ROOT CAUSE FIX: ${name} has no components property`);
+            console.log(`⚠️ ROOT CAUSE FIX: ${name} is not available`);
         }
     }
     
     console.log('❌ ROOT CAUSE FIX: No valid component data found in WordPress sources');
-    console.log('🔍 ROOT CAUSE FIX: Available window properties:', Object.keys(window).filter(k => k.includes('Data') || k.includes('data')));
+    console.log('🔍 ROOT CAUSE FIX: Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('data')));
     
     // ROOT CAUSE FIX: If no data found, return fallback immediately (no AJAX)
     console.log('🛡️ ROOT CAUSE FIX: Using guaranteed fallback components');
@@ -592,17 +631,32 @@ function getComponentsData() {
  * ROOT FIX: Process and normalize component data
  */
 function processComponents(components) {
-    return components.map(component => {
-        return {
-            type: component.type || component.directory || component.name || 'unknown',
-            name: component.name || component.title || 'Untitled Component',
-            title: component.title || component.name || 'Untitled Component', 
+    console.log('🔍 ROOT FIX: processComponents() called with', components ? components.length : 0, 'components');
+    
+    if (!Array.isArray(components)) {
+        console.error('❌ ROOT FIX: processComponents() received non-array:', typeof components, components);
+        return getReliableFallbackComponents();
+    }
+    
+    const processedComponents = components.map((component, index) => {
+        console.log(`🔍 ROOT FIX: Processing component ${index}:`, component);
+        
+        const processed = {
+            type: component.type || component.directory || component.name || `component-${index}`,
+            name: component.name || component.title || `Component ${index + 1}`,
+            title: component.title || component.name || `Component ${index + 1}`, 
             description: component.description || 'No description available',
             category: component.category || 'general',
             premium: component.premium || component.isPremium || false,
             icon: component.icon || 'fa-puzzle-piece'
         };
+        
+        console.log(`✅ ROOT FIX: Processed component ${index}:`, processed);
+        return processed;
     });
+    
+    console.log(`✅ ROOT FIX: processComponents() completed - ${processedComponents.length} components processed`);
+    return processedComponents;
 }
 
 /**
@@ -979,8 +1033,16 @@ async function loadComponentsFromServer() {
  * Enhanced to exclude section headers from component grid area
  */
 function clearGridAndPopulate(components) {
+    console.log('🔍 ROOT FIX: clearGridAndPopulate() called with', components ? components.length : 0, 'components');
+    
+    if (!components || !Array.isArray(components) || components.length === 0) {
+        console.error('❌ ROOT FIX: clearGridAndPopulate() received invalid components:', components);
+        return;
+    }
+    
     // Store reference to loading element before clearing
     const loadingElement = document.getElementById('component-grid-loading');
+    console.log('🔍 ROOT FIX: Loading element found:', !!loadingElement);
     
     // Clear ALL existing content except loading element (including any hardcoded cards)
     const elementsToRemove = [];
@@ -989,8 +1051,11 @@ function clearGridAndPopulate(components) {
             elementsToRemove.push(child);
         }
     }
-    elementsToRemove.forEach(element => {
-        logger.debug('MODAL', 'Removing existing element', {
+    
+    console.log('🔍 ROOT FIX: Removing', elementsToRemove.length, 'existing elements from grid');
+    
+    elementsToRemove.forEach((element, index) => {
+        console.log(`🔍 ROOT FIX: Removing element ${index}:`, {
             className: element.className,
             dataComponent: element.dataset?.component,
             dataSource: element.dataset?.source || 'unknown'
@@ -999,36 +1064,54 @@ function clearGridAndPopulate(components) {
     });
     
     // Ensure we start with a completely clean grid
-    logger.info('MODAL', 'Grid cleared, starting fresh population');
+    console.log('✅ ROOT FIX: Grid cleared, starting fresh population');
     
     // Group components by premium status
     const freeComponents = components.filter(c => !c.premium);
     const premiumComponents = components.filter(c => c.premium);
     
-    logger.debug('MODAL', 'Component categorization', {
+    console.log('🔍 ROOT FIX: Component categorization:', {
         freeCount: freeComponents.length,
         premiumCount: premiumComponents.length,
         total: components.length
     });
     
     // Add free components directly (no section header in grid)
-    freeComponents.forEach(component => {
-        const card = createComponentCard(component, false);
-        componentGrid.appendChild(card);
+    freeComponents.forEach((component, index) => {
+        console.log(`🔍 ROOT FIX: Creating free component card ${index}:`, component.type || component.name);
+        try {
+            const card = createComponentCard(component, false);
+            componentGrid.appendChild(card);
+            console.log(`✅ ROOT FIX: Free component card ${index} added successfully`);
+        } catch (error) {
+            console.error(`❌ ROOT FIX: Error creating free component card ${index}:`, error);
+        }
     });
     
     // Add premium components directly (no section header in grid) 
-    premiumComponents.forEach(component => {
-        const card = createComponentCard(component, true);
-        componentGrid.appendChild(card);
+    premiumComponents.forEach((component, index) => {
+        console.log(`🔍 ROOT FIX: Creating premium component card ${index}:`, component.type || component.name);
+        try {
+            const card = createComponentCard(component, true);
+            componentGrid.appendChild(card);
+            console.log(`✅ ROOT FIX: Premium component card ${index} added successfully`);
+        } catch (error) {
+            console.error(`❌ ROOT FIX: Error creating premium component card ${index}:`, error);
+        }
     });
     
-    logger.info('MODAL', 'Component grid populated with components only (no headers)', {
+    const finalCardCount = componentGrid.querySelectorAll('.component-card').length;
+    console.log('✅ ROOT FIX: Component grid population completed:', {
         freeComponents: freeComponents.length,
         premiumComponents: premiumComponents.length,
-        total: components.length,
-        allDynamic: true
+        totalExpected: components.length,
+        actualCardsInGrid: finalCardCount,
+        success: finalCardCount === components.length
     });
+    
+    if (finalCardCount !== components.length) {
+        console.warn('⚠️ ROOT FIX: Card count mismatch - expected', components.length, 'but found', finalCardCount);
+    }
 }
 
 /**
@@ -1425,22 +1508,41 @@ let isSetupComplete = false;
 let isSetupInProgress = false;
 
 function initializeComponentLibrarySystem() {
-    console.log('🚀 Component Library: Starting event-driven initialization');
-    
-    // ROOT FIX: Prevent multiple setup attempts within same initialization
-    if (isSetupComplete) {
-        console.log('✅ Component Library: Setup already complete, skipping');
-        return;
-    }
+    console.log('🚀 Component Library: Starting IMMEDIATE data-aware initialization');
     
     // Initialize utilities first
     initializeUtilities();
     
-    // ROOT FIX: Wait for modal system ready event
-    document.addEventListener('gmkb:modal-base-ready', async (event) => {
-        console.log('✅ Component Library: Modal system ready event received', event.detail);
+    // ROOT CAUSE FIX: IMMEDIATE DATA CHECK - Don't wait for events if data already exists
+    const hasExistingData = checkForExistingWordPressData();
+    
+    if (hasExistingData) {
+        console.log('⚡ Component Library: WordPress data already available, initializing immediately');
+        initializeWithExistingData();
+        return;
+    }
+    
+    console.log('🔍 Component Library: No existing data found, setting up event listeners');
+    
+    // ROOT CAUSE FIX: Register event listeners IMMEDIATELY (not after DOMContentLoaded)
+    document.addEventListener('wordpressDataReady', handleWordPressDataReady, { once: true });
+    document.addEventListener('gmkb:wordpress-data-ready', handleWordPressDataReady, { once: true });
+    console.log('📡 Component Library: WordPress data event listeners registered immediately');
+    
+    // ROOT CAUSE FIX: Wait for WordPress data ready event (now guaranteed to catch it)
+    async function handleWordPressDataReady(event) {
+        console.log('✅ Component Library: WordPress data ready event received', event.detail);
+        console.log('🔍 Component Library: Data includes components:', !!event.detail.components);
+        console.log('🔍 Component Library: Component count in event:', event.detail.components ? event.detail.components.length : 0);
         
-        // ROOT FIX: Prevent duplicate setup attempts
+        // ROOT CAUSE FIX: Reset guards to allow initialization now that data is available
+        if (isSetupComplete && event.detail.components && event.detail.components.length > 0) {
+            console.log('🔄 Component Library: Data now available - resetting guards to allow re-initialization');
+            isSetupComplete = false;
+            isSetupInProgress = false;
+        }
+        
+        // ROOT CAUSE FIX: Prevent duplicate setup attempts
         if (isSetupComplete || isSetupInProgress) {
             console.log('🚷 Component Library: Setup already in progress or complete, skipping event handler');
             return;
@@ -1449,69 +1551,44 @@ function initializeComponentLibrarySystem() {
         isSetupInProgress = true;
         
         try {
-            // Verify modal system is actually available
-            if (!window.GMKB_Modals) {
-                console.error('❌ Component Library: GMKB_Modals not available despite ready event');
-                return;
+            // Verify component data is actually available in the event
+            if (!event.detail.components || event.detail.components.length === 0) {
+                console.warn('⚠️ Component Library: WordPress data event has no components, using fallback');
             }
             
-            // Log modal system status
-            const modalStatus = window.GMKB_Modals.getStatus();
-            console.log('🔍 Component Library: Modal system status:', modalStatus);
+            // Wait for modal system if not ready
+            if (!window.GMKB_Modals) {
+                console.log('🔄 Component Library: Waiting for modal system...');
+                await waitForModalSystem();
+            }
             
-            // Setup component library now that modals are ready
-            await setupComponentLibrary();
+            // Setup component library now that both data and modals are ready
+            console.log('🚀 Component Library: Setting up with WordPress data available');
+            await setupComponentLibrary(true); // Force setup since we have data
             
             isSetupComplete = true;
-            console.log('✅ Component Library: Successfully initialized after modal system ready');
+            console.log('✅ Component Library: Successfully initialized with WordPress data');
             
             // Dispatch our own ready event
             document.dispatchEvent(new CustomEvent('gmkb:component-library-ready', {
                 detail: {
                     timestamp: Date.now(),
-                    modalSystemReady: true,
-                    setupComplete: true
+                    wordpressDataReady: true,
+                    setupComplete: true,
+                    componentCount: event.detail.components ? event.detail.components.length : 0
                 }
             }));
             
         } catch (error) {
-            console.error('❌ Component Library: Setup failed after modal ready event:', error);
+            console.error('❌ Component Library: Setup failed after WordPress data ready:', error);
             isSetupInProgress = false; // Reset on failure
-        }
-    }, { once: true }); // Only listen once
-    
-    // FALLBACK: If modal system is already ready
-    if (window.GMKB_Modals) {
-        console.log('🔄 Component Library: Modal system already ready, initializing immediately');
-        
-        // ROOT CAUSE FIX: Prevent fallback from triggering during main app initialization
-        // The fallback should only run if no other initialization is happening
-        if (!isSetupComplete && !isSetupInProgress && !window._toolbarInitialized) {
-            isSetupInProgress = true;
-            console.log('🔍 Component Library: Using fallback initialization...');
-            
-            setTimeout(async () => {
-                try {
-                    console.log('🔍 Component Library: Fallback calling setupComponentLibrary()...');
-                    
-                    // ROOT CAUSE FIX: Direct setup call without guard reset to prevent infinite loop
-                    console.log('🚀 DIRECT SETUP: Calling setupComponentLibrary with force=true...');
-                    
-                    await setupComponentLibrary(true); // Force setup to bypass guards
-                    isSetupComplete = true;
-                    console.log('✅ Component Library: Fallback initialization successful');
-                } catch (error) {
-                    console.error('❌ Component Library: Fallback initialization failed:', error);
-                    isSetupInProgress = false; // Reset on failure
-                }
-            }, 100); // Small delay to ensure DOM is ready
-        } else {
-            console.log('🚧 Component Library: Fallback skipped - setup already in progress, complete, or toolbar already initialized');
         }
     }
     
-    console.log('🔍 Component Library: Event listeners registered, waiting for modal system...');
+    console.log('🔍 Component Library: Initialization system ready');
 }
+
+
 
 // ===================================================================
 // AUTO-INITIALIZATION
@@ -1523,11 +1600,11 @@ let isComponentLibraryInitialized = false;
 let isComponentLibraryInitializing = false;
 
 /**
- * ROOT FIX: Guarded auto-initialization - prevents multiple initialization attempts
- * This fixes the infinite loop by ensuring initialization only happens once
+ * ROOT CAUSE FIX: Immediate guarded initialization - no DOM waiting
+ * This fixes the timing issue by checking for data immediately
  */
 function guardedInitialization() {
-    // ROOT FIX: Prevent duplicate initialization attempts
+    // ROOT CAUSE FIX: Prevent duplicate initialization attempts
     if (isComponentLibraryInitialized || isComponentLibraryInitializing) {
         console.log('🚷 Component Library: Already initialized or initializing, skipping duplicate attempt');
         return;
@@ -1536,7 +1613,8 @@ function guardedInitialization() {
     isComponentLibraryInitializing = true;
     
     try {
-        initializeComponentLibrarySystem();
+        // ROOT CAUSE FIX: Use check-then-listen pattern instead of just initializing
+        checkForExistingDataOrListen();
         isComponentLibraryInitialized = true;
         console.log('✅ Component Library: Initialization completed successfully');
     } catch (error) {
@@ -1546,28 +1624,91 @@ function guardedInitialization() {
 }
 
 /**
- * ROOT FIX: Safe DOM ready handler with initialization guard
- * Uses native DOMContentLoaded for maximum reliability
+ * ROOT CAUSE FIX: "Check-then-Listen" Pattern
+ * CRITICAL TIMING FIX: This eliminates the race condition where the WordPress data ready event
+ * is fired before component-library.js registers its listener.
+ * 
+ * Strategy:
+ * 1. IMMEDIATELY check if WordPress data already exists
+ * 2. If data exists, initialize immediately 
+ * 3. If data doesn't exist, register event listener immediately (not after DOMContentLoaded)
  */
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', guardedInitialization, { once: true });
-    console.log('🕰️ Component Library: Waiting for DOMContentLoaded...');
-} else {
-    // DOM is already ready
-    console.log('📝 Component Library: DOM already ready, initializing with guard');
-    guardedInitialization();
+function checkForExistingDataOrListen() {
+    console.log('🚀 ROOT FIX: checkForExistingDataOrListen() - Implementing check-then-listen pattern');
+    
+    // IMMEDIATE CHECK: Has WordPress data already been loaded?
+    const hasExistingData = (
+        (window.gmkbData && window.gmkbData.components && Array.isArray(window.gmkbData.components) && window.gmkbData.components.length > 0) ||
+        (window.guestifyData && window.guestifyData.components && Array.isArray(window.guestifyData.components) && window.guestifyData.components.length > 0) ||
+        (window.MKCG && window.MKCG.components && Array.isArray(window.MKCG.components) && window.MKCG.components.length > 0)
+    );
+    
+    console.log('🔍 ROOT FIX: Data availability check:', {
+        gmkbData: !!window.gmkbData,
+        gmkbComponents: window.gmkbData?.components?.length || 0,
+        guestifyData: !!window.guestifyData,
+        guestifyComponents: window.guestifyData?.components?.length || 0,
+        hasExistingData
+    });
+    
+    if (hasExistingData) {
+        console.log('✅ ROOT FIX: WordPress data already available! Initializing immediately without waiting for events.');
+        
+        // Data is already here - initialize immediately
+        initializeComponentLibrarySystem();
+    } else {
+        console.log('⏳ ROOT FIX: WordPress data not yet available. Registering event listener IMMEDIATELY.');
+        
+        // IMMEDIATE EVENT LISTENER REGISTRATION (no DOMContentLoaded wait)
+        // This ensures we catch the event when main.js fires it
+        document.addEventListener('wordpressDataReady', (event) => {
+            console.log('🎉 ROOT FIX: WordPress data ready event received!', event.detail);
+            
+            // Prevent duplicate initialization
+            if (isSetupComplete || isSetupInProgress) {
+                console.log('🚷 ROOT FIX: Already initialized, ignoring duplicate event');
+                return;
+            }
+            
+            // Store the data in global variables for immediate access
+            if (event.detail) {
+                if (!window.gmkbData) window.gmkbData = {};
+                if (!window.guestifyData) window.guestifyData = {};
+                if (!window.MKCG) window.MKCG = {};
+                
+                Object.assign(window.gmkbData, event.detail);
+                Object.assign(window.guestifyData, event.detail);
+                Object.assign(window.MKCG, event.detail);
+                
+                console.log('✅ ROOT FIX: WordPress data stored globally from event');
+            }
+            
+            // Initialize component library now that we have data
+            initializeComponentLibrarySystem();
+        }, { once: true }); // Only listen once
+        
+        console.log('✅ ROOT FIX: Event listener registered immediately - ready to catch WordPress data event');
+    }
 }
 
-// ROOT FIX: Expose global API for testing and integration
+/**
+ * ROOT CAUSE FIX: IMMEDIATE INITIALIZATION - No waiting for DOMContentLoaded
+ * This ensures we catch WordPress data events that fire before DOM is ready
+ */
+console.log('⚡ Component Library: Starting immediate initialization (no DOM waiting)');
+guardedInitialization();
+
+// ROOT CAUSE FIX: Enhanced global API with data-aware status
 window.componentLibrarySystem = {
-    initialize: guardedInitialization, // Use guarded version
+    initialize: guardedInitialization,
     show: showComponentLibraryModal,
     hide: hideComponentLibraryModal,
     isReady: () => !!componentLibraryModal && !!window.GMKB_Modals && isSetupComplete,
     isInitialized: () => isComponentLibraryInitialized,
     isSetupComplete: () => isSetupComplete,
+    hasWordPressData: () => !!(window.gmkbData?.components || window.guestifyData?.components),
     forceReinitialize: () => {
-        // ROOT FIX: Allow manual reset for debugging
+        // ROOT CAUSE FIX: Allow manual reset for debugging
         isComponentLibraryInitialized = false;
         isComponentLibraryInitializing = false;
         isSetupComplete = false;
@@ -1579,6 +1720,8 @@ window.componentLibrarySystem = {
         modalElementFound: !!componentLibraryModal,
         modalSystemReady: !!window.GMKB_Modals,
         utilitiesReady: !!logger,
+        wordpressDataReady: !!(window.gmkbData?.components || window.guestifyData?.components),
+        componentCount: (window.gmkbData?.components || window.guestifyData?.components || []).length,
         isInitialized: isComponentLibraryInitialized,
         isInitializing: isComponentLibraryInitializing,
         isSetupComplete: isSetupComplete,
@@ -1587,6 +1730,23 @@ window.componentLibrarySystem = {
     })
 };
 
-console.log('✅ Component Library: Event-driven system loaded and ready for initialization');
+console.log('✅ Component Library: IMMEDIATE event-driven system loaded and active');
 console.log('🛡️ Component Library: INFINITE LOOP FIX APPLIED - Multiple initialization guards active');
+console.log('⚡ Component Library: TIMING FIX APPLIED - No DOMContentLoaded dependencies');
 console.log('🔧 Component Library: Debug API available via window.componentLibrarySystem.getStatus()');
+
+// ROOT CAUSE FIX: Manual trigger for testing
+window.testComponentLibraryInit = () => {
+    console.log('🧪 Testing component library initialization with current data...');
+    const status = window.componentLibrarySystem.getStatus();
+    console.log('Current status:', status);
+    
+    if (status.wordpressDataReady && !status.isSetupComplete) {
+        console.log('✅ Data available, forcing initialization...');
+        window.componentLibrarySystem.forceReinitialize();
+    } else if (!status.wordpressDataReady) {
+        console.log('❌ WordPress data not ready yet');
+    } else {
+        console.log('✅ Already setup complete');
+    }
+};
