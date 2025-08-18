@@ -43,10 +43,10 @@ function setupToolbar() {
 }
 
 /**
- * ROOT FIX: Setup device preview toggle functionality with basic guard
+ * ROOT FIX: Setup device preview toggle functionality with initialization guard
  */
 function setupDevicePreviewToggle() {
-    // ROOT CAUSE FIX: Simple guard to prevent duplicate initialization
+    // ROOT CAUSE FIX: Prevent duplicate initialization that causes race conditions
     if (window._devicePreviewInitialized) {
         console.log('🚷 TOOLBAR: Device preview already initialized, skipping duplicate setup');
         return;
@@ -69,10 +69,17 @@ function setupDevicePreviewToggle() {
     
     console.log(`🔍 TOOLBAR: Found ${previewButtons.length} preview buttons and preview container`);
     
-    // ROOT CAUSE FIX: Mark as initialized immediately to prevent race conditions
+    // ROOT CAUSE FIX: Mark as initialized BEFORE adding event listeners
     window._devicePreviewInitialized = true;
     
     previewButtons.forEach(button => {
+        // ROOT CAUSE FIX: Check if event listener already exists to prevent duplicates
+        if (button.hasAttribute('data-preview-listener-attached')) {
+            return;
+        }
+        
+        button.setAttribute('data-preview-listener-attached', 'true');
+        
         button.addEventListener('click', (e) => {
             e.preventDefault();
             
