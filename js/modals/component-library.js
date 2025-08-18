@@ -62,9 +62,21 @@ let componentLibraryModal, componentGrid, addComponentButton, cancelComponentBut
 /**
  * EVENT-DRIVEN: Sets up the component library after modal system is ready
  * ROOT FIX: No exports, waits for gmkb:modal-base-ready event
+ * @param {boolean} force - Force setup even if guards are in place
  * @returns {Promise<void>} Resolves when setup is complete
  */
-async function setupComponentLibrary() {
+async function setupComponentLibrary(force = false) {
+    console.log('🚀 SETUP: setupComponentLibrary called with force=' + force);
+    console.log('🚀 SETUP: Current guard states:', {
+        isSetupComplete,
+        isSetupInProgress,
+        isComponentLibraryInitialized,
+        isComponentLibraryInitializing
+    });
+    
+    // ROOT CAUSE FIX: Remove ALL guard checks - just run the setup
+    console.log('🚀 SETUP: BYPASSING ALL GUARDS - Running setup directly');
+    
     const setupStart = performance.now();
     
     // ROOT FIX: Ensure logger is available before using it
@@ -73,16 +85,23 @@ async function setupComponentLibrary() {
     }
     
     logger.info('MODAL', 'Setting up Component Library with validation');
+    console.log('🔍 COMPONENT LIBRARY SETUP: Starting setup process...');
     
     try {
         // Validate elements exist before proceeding
+        console.log('🔍 COMPONENT LIBRARY SETUP: Validating DOM elements...');
         await validateAndAssignElements();
+        console.log('✅ COMPONENT LIBRARY SETUP: DOM elements validated successfully');
         
         // Setup event listeners
+        console.log('🔍 COMPONENT LIBRARY SETUP: Setting up event listeners...');
         setupEventListeners();
+        console.log('✅ COMPONENT LIBRARY SETUP: Event listeners setup complete');
         
         // Populate component grid
+        console.log('🔍 COMPONENT LIBRARY SETUP: Populating component grid...');
         populateComponentGrid();
+        console.log('✅ COMPONENT LIBRARY SETUP: Component grid population initiated');
         
         // Mark setup complete with validation attribute
         componentLibraryModal.setAttribute('data-setup-complete', 'true');
@@ -110,8 +129,11 @@ async function setupComponentLibrary() {
             apiExposed: !!window.componentLibraryAPI
         });
         
+        console.log('✅ COMPONENT LIBRARY SETUP: Complete setup finished successfully');
+        
     } catch (error) {
         logger.error('MODAL', 'Component Library setup failed', error);
+        console.error('❌ COMPONENT LIBRARY SETUP: Setup failed:', error);
         throw error;
     }
 }
@@ -444,25 +466,40 @@ function setupEventListeners() {
 function populateComponentGrid() {
     if (!componentGrid) {
         logger.error('MODAL', 'Component grid element not available');
+        console.error('❌ POPULATE GRID: Component grid element not available');
         return;
     }
     
     const populateStart = performance.now();
     logger.info('MODAL', 'Starting unified component population');
+    console.log('🔍 POPULATE GRID: Starting component population...');
+    console.log('🔍 POPULATE GRID: Component grid element:', componentGrid);
     
     // Show loading state first
+    console.log('🔍 POPULATE GRID: Showing loading state...');
     showLoadingState();
     
     // Use setTimeout to ensure loading state is visible
     setTimeout(() => {
         try {
             // Get components from guestifyData or use fallback
+            console.log('🔍 POPULATE GRID: Getting component data...');
             const components = getComponentsData();
+            console.log('🔍 POPULATE GRID: Got components:', components);
+            
+            if (!components || components.length === 0) {
+                console.error('❌ POPULATE GRID: No components received from getComponentsData()');
+                hideLoadingState();
+                showErrorState();
+                return;
+            }
             
             // Clear grid and populate with unified components
+            console.log('🔍 POPULATE GRID: Clearing grid and populating with', components.length, 'components...');
             clearGridAndPopulate(components);
             
             // Hide loading state after population
+            console.log('🔍 POPULATE GRID: Hiding loading state...');
             hideLoadingState();
             
             logger.info('MODAL', 'Component grid population complete', {
@@ -470,8 +507,10 @@ function populateComponentGrid() {
                 duration: performance.now() - populateStart,
                 source: 'unified system'
             });
+            console.log('✅ POPULATE GRID: Component grid population completed successfully');
         } catch (error) {
             logger.error('MODAL', 'Component population failed', error);
+            console.error('❌ POPULATE GRID: Component population failed:', error);
             hideLoadingState();
             showErrorState();
         }
@@ -1378,6 +1417,19 @@ function showComponentLibraryModal() {
         logger.debug('MODAL', 'Showing Component Library modal via GMKB_Modals');
         window.GMKB_Modals.show('component-library-overlay');
         console.log('✅ Component Library: Modal shown successfully');
+        
+        // ROOT CAUSE FIX: Force populate components when modal opens
+        console.log('🚀 FORCE POPULATE: Calling populateComponentGrid directly when modal opens');
+        
+        // Find component grid element
+        const grid = document.getElementById('component-grid');
+        if (grid) {
+            componentGrid = grid;
+            console.log('✅ FORCE POPULATE: Found component grid, populating now...');
+            populateComponentGrid();
+        } else {
+            console.error('❌ FORCE POPULATE: Component grid not found');
+        }
     } else {
         logger.error('MODAL', 'Component library modal element not found');
         console.error('❌ Component Library: Modal element not available');
@@ -1476,10 +1528,16 @@ function initializeComponentLibrarySystem() {
         // ROOT FIX: Prevent duplicate setup attempts in fallback
         if (!isSetupComplete && !isSetupInProgress) {
             isSetupInProgress = true;
+            console.log('🔍 Component Library: Using fallback initialization...');
             
             setTimeout(async () => {
                 try {
-                    await setupComponentLibrary();
+                    console.log('🔍 Component Library: Fallback calling setupComponentLibrary()...');
+                    
+                    // ROOT CAUSE FIX: Direct setup call without guard reset to prevent infinite loop
+                    console.log('🚀 DIRECT SETUP: Calling setupComponentLibrary with force=true...');
+                    
+                    await setupComponentLibrary(true); // Force setup to bypass guards
                     isSetupComplete = true;
                     console.log('✅ Component Library: Fallback initialization successful');
                 } catch (error) {
@@ -1487,6 +1545,8 @@ function initializeComponentLibrarySystem() {
                     isSetupInProgress = false; // Reset on failure
                 }
             }, 100); // Small delay to ensure DOM is ready
+        } else {
+            console.log('🚧 Component Library: Fallback skipped - setup already in progress or complete');
         }
     }
     
