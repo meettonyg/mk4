@@ -82,26 +82,55 @@ class ComponentDiscovery {
             $componentName = basename($componentDir);
             $componentJsonPath = $componentDir . '/component.json';
 
+            // ROOT CAUSE DEBUG: Log each component being processed
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("ComponentDiscovery: Processing component '{$componentName}'");
+                error_log("ComponentDiscovery: JSON path: {$componentJsonPath}");
+                error_log("ComponentDiscovery: JSON exists: " . (file_exists($componentJsonPath) ? 'YES' : 'NO'));
+            }
+
             // Check if component.json exists
             if (!file_exists($componentJsonPath)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ComponentDiscovery: Skipping '{$componentName}' - no component.json");
+                }
                 continue;
             }
 
             // Load component data
             $componentData = $this->loadComponentJson($componentJsonPath);
             
+            // ROOT CAUSE DEBUG: Log loaded data
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("ComponentDiscovery: Loaded data for '{$componentName}': " . print_r($componentData, true));
+            }
+            
             // Skip if required fields are missing
             if (!isset($componentData['name']) || !isset($componentData['category'])) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ComponentDiscovery: Skipping '{$componentName}' - missing required fields (name: " . (isset($componentData['name']) ? 'YES' : 'NO') . ", category: " . (isset($componentData['category']) ? 'YES' : 'NO') . ")");
+                }
                 continue;
             }
 
-            // Set default values if not provided
+            // ROOT CAUSE FIX: Set required fields for JavaScript compatibility
             $componentData['order'] = $componentData['order'] ?? 999;
             $componentData['isPremium'] = $componentData['isPremium'] ?? false;
             $componentData['dependencies'] = $componentData['dependencies'] ?? [];
             
-            // Add component directory
+            // CRITICAL FIX: Add 'type' field that JavaScript expects
+            $componentData['type'] = $componentName;
             $componentData['directory'] = $componentName;
+            
+            // ROOT CAUSE FIX: Ensure title exists (JavaScript fallback)
+            if (!isset($componentData['title'])) {
+                $componentData['title'] = $componentData['name'];
+            }
+            
+            // ROOT CAUSE DEBUG: Log final component data
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("ComponentDiscovery: Successfully processed '{$componentName}' with type: {$componentData['type']}");
+            }
             
             // Add component to the list
             $this->components[$componentName] = $componentData;

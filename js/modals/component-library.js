@@ -536,28 +536,74 @@ function showErrorState() {
 function getComponentsData() {
     let components = [];
     
-    // Try to get from guestifyData first
-    if (window.guestifyData?.components && Array.isArray(window.guestifyData.components)) {
-        logger.info('MODAL', 'Using components from guestifyData', {
-            count: window.guestifyData.components.length
-        });
-        components = window.guestifyData.components;
+    // ROOT FIX: Comprehensive data source checking with detailed logging
+    console.log('🔍 COMPONENT DATA DEBUG: Checking all available data sources');
+    console.log('  window.guestifyData:', window.guestifyData);
+    console.log('  window.gmkbData:', window.gmkbData);
+    console.log('  window.MKCG:', window.MKCG);
+    
+    // Try multiple data sources in order of preference
+    const dataSources = [
+        { name: 'guestifyData', source: window.guestifyData },
+        { name: 'gmkbData', source: window.gmkbData },
+        { name: 'MKCG', source: window.MKCG }
+    ];
+    
+    for (const { name, source } of dataSources) {
+        if (source?.components) {
+            // ROOT CAUSE FIX: Check if components is an object (from PHP) and convert to array
+            let sourceComponents = source.components;
+            
+            // If components is an object, convert to array
+            if (typeof sourceComponents === 'object' && !Array.isArray(sourceComponents)) {
+                sourceComponents = Object.values(sourceComponents);
+                console.log(`🔄 COMPONENT DATA: Converted object to array for ${name}, got ${sourceComponents.length} components`);
+            }
+            
+            if (Array.isArray(sourceComponents) && sourceComponents.length > 0) {
+                console.log(`✅ COMPONENT DATA: Found ${sourceComponents.length} components in ${name}`);
+                logger.info('MODAL', `Using components from ${name}`, {
+                    count: sourceComponents.length
+                });
+                components = sourceComponents;
+                break;
+            } else {
+                console.log(`❌ COMPONENT DATA: No valid components in ${name}:`, sourceComponents);
+            }
+        } else {
+            console.log(`❌ COMPONENT DATA: No components property in ${name}:`, source);
+        }
     }
-    // Try gmkbData as backup
-    else if (window.gmkbData?.components && Array.isArray(window.gmkbData.components)) {
-        logger.info('MODAL', 'Using components from gmkbData', {
-            count: window.gmkbData.components.length
-        });
-        components = window.gmkbData.components;
-    }
-    // ROOT FIX: Reliable fallback components - essential for functionality
-    else {
-        logger.warn('MODAL', 'No component data in globals - using reliable fallback components');
+    
+    // ROOT FIX: If no valid components found, try to load from server immediately
+    if (components.length === 0) {
+        console.log('🔄 COMPONENT DATA: No components in WordPress data - attempting server load');
+        logger.warn('MODAL', 'No component data in globals - attempting server load');
         
+        // Try immediate server load with promise
+        loadComponentsFromServerImmediate().then(serverComponents => {
+            if (serverComponents && serverComponents.length > 0) {
+                console.log(`✅ COMPONENT DATA: Loaded ${serverComponents.length} components from server`);
+                // Update the grid with server components
+                clearGridAndPopulate(serverComponents);
+                hideLoadingState();
+            } else {
+                console.log('❌ COMPONENT DATA: Server load failed - using fallback components');
+                // Use fallback components as last resort
+                const fallbackComponents = getReliableFallbackComponents();
+                clearGridAndPopulate(fallbackComponents);
+                hideLoadingState();
+            }
+        }).catch(error => {
+            console.error('❌ COMPONENT DATA: Server load error:', error);
+            // Use fallback components as last resort
+            const fallbackComponents = getReliableFallbackComponents();
+            clearGridAndPopulate(fallbackComponents);
+            hideLoadingState();
+        });
+        
+        // Return fallback immediately to prevent empty state
         components = getReliableFallbackComponents();
-        
-        // Also try to load from server in background for future use
-        loadComponentsFromServerBackground();
     }
     
     // Ensure all components have required properties
@@ -573,6 +619,7 @@ function getComponentsData() {
         };
     });
     
+    console.log(`✅ COMPONENT DATA: Final component list prepared with ${components.length} components`);
     logger.info('MODAL', 'Component data prepared successfully', {
         total: components.length,
         premium: components.filter(c => c.premium).length,
@@ -643,6 +690,73 @@ function getReliableFallbackComponents() {
             icon: 'fa-quote-left'
         }
     ];
+}
+
+/**
+ * ROOT FIX: Immediate server component loading for fixing empty state
+ * Returns a promise that resolves with components from server
+ */
+async function loadComponentsFromServerImmediate() {
+    try {
+        console.log('🔄 IMMEDIATE SERVER LOAD: Starting component load from server');
+        
+        const ajaxUrl = window.gmkbData?.ajaxUrl || window.guestifyData?.ajaxUrl || '/wp-admin/admin-ajax.php';
+        const nonce = window.gmkbData?.nonce || window.guestifyData?.nonce;
+        
+        console.log('🔧 IMMEDIATE SERVER LOAD: Using AJAX URL:', ajaxUrl);
+        console.log('🔧 IMMEDIATE SERVER LOAD: Has nonce:', !!nonce);
+        
+        const requestBody = new URLSearchParams({
+            action: 'guestify_get_components'
+        });
+        
+        if (nonce) {
+            requestBody.append('nonce', nonce);
+        }
+        
+        const response = await fetch(ajaxUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: requestBody
+        });
+        
+        console.log('📡 IMMEDIATE SERVER LOAD: Response status:', response.status);
+        
+        if (response.ok) {
+            const responseText = await response.text();
+            console.log('📡 IMMEDIATE SERVER LOAD: Response preview:', responseText.substring(0, 200));
+            
+            const data = JSON.parse(responseText);
+            
+            if (data.success && data.data && data.data.components) {
+                console.log(`✅ IMMEDIATE SERVER LOAD: Got ${data.data.components.length} components from server`);
+                
+                // Store globally for future use
+                if (window.guestifyData) {
+                    window.guestifyData.components = data.data.components;
+                    window.guestifyData.categories = data.data.categories;
+                }
+                if (window.gmkbData) {
+                    window.gmkbData.components = data.data.components;
+                    window.gmkbData.categories = data.data.categories;
+                }
+                
+                return data.data.components;
+            } else {
+                console.log('❌ IMMEDIATE SERVER LOAD: Server response not successful:', data);
+                return null;
+            }
+        } else {
+            console.log('❌ IMMEDIATE SERVER LOAD: HTTP error:', response.status, response.statusText);
+            return null;
+        }
+        
+    } catch (error) {
+        console.error('❌ IMMEDIATE SERVER LOAD: Error loading components:', error);
+        return null;
+    }
 }
 
 /**

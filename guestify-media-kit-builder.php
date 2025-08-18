@@ -79,16 +79,42 @@ class Guestify_Media_Kit_Builder {
             error_log('✅ GMKB: ComponentDiscovery initialized with dir: ' . GUESTIFY_PLUGIN_DIR . 'components');
         }
         
-        $this->component_discovery->scan();
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            $debug_info = $this->component_discovery->getDebugInfo();
-            error_log('✅ GMKB: ComponentDiscovery scan complete. Found ' . $debug_info['components_count'] . ' components');
-            error_log('📋 GMKB: Available components: ' . implode(', ', $debug_info['component_names']));
-            if (isset($debug_info['cache_status']['cache_exists'])) {
-                error_log('🗄️ GMKB: Cache status - exists: ' . ($debug_info['cache_status']['cache_exists'] ? 'yes' : 'no') . ', age: ' . $debug_info['cache_status']['cache_age'] . 's');
+        // ROOT CAUSE FIX: Force a fresh scan to ensure components are always available
+        try {
+            $scan_result = $this->component_discovery->scan(true); // Force fresh scan
+            $components_found = $this->component_discovery->getComponents();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🔄 GMKB: Forced fresh component scan completed');
+                error_log('📊 GMKB: Found ' . count($components_found) . ' components after fresh scan');
+                
+                if (!empty($components_found)) {
+                    $component_types = array_column($components_found, 'type');
+                    error_log('📝 GMKB: Component types: ' . implode(', ', $component_types));
+                } else {
+                    error_log('❌ GMKB: No components found even after forced scan - investigating...');
+                    
+                    // Additional debugging
+                    $components_dir = GUESTIFY_PLUGIN_DIR . 'components';
+                    error_log('🔍 GMKB: Components directory exists: ' . (is_dir($components_dir) ? 'YES' : 'NO'));
+                    error_log('🔍 GMKB: Components directory readable: ' . (is_readable($components_dir) ? 'YES' : 'NO'));
+                    
+                    if (is_dir($components_dir)) {
+                        $subdirs = glob($components_dir . '/*', GLOB_ONLYDIR);
+                        error_log('🔍 GMKB: Subdirectories found: ' . count($subdirs));
+                        foreach ($subdirs as $subdir) {
+                            $component_json = $subdir . '/component.json';
+                            error_log('🔍 GMKB: ' . basename($subdir) . ' has component.json: ' . (file_exists($component_json) ? 'YES' : 'NO'));
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Component scan failed: ' . $e->getMessage());
             }
         }
+        
         $this->component_loader = new ComponentLoader(GUESTIFY_PLUGIN_DIR . 'components', $this->component_discovery);
         $this->design_panel = new DesignPanel(GUESTIFY_PLUGIN_DIR . 'components');
         
