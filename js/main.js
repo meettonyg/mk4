@@ -66,8 +66,41 @@ async function initializeWhenReady() {
         // ROOT FIX: Initialize only essential systems
         window.structuredLogger.info('MAIN', 'Starting simplified application initialization');
         
-        // 1. Initialize state manager and WAIT for it to complete
+        // 1. Initialize state manager and WAIT for WordPress data to be ready
         if (window.enhancedStateManager) {
+            window.structuredLogger.info('STATE', 'Waiting for WordPress data before initializing state...');
+            
+            // ROOT CAUSE FIX: Wait for WordPress data ready event before initializing state
+            await new Promise((resolve) => {
+                const checkForWordPressData = () => {
+                    // Check if WordPress data is already available
+                    if (window.gmkbData || window.guestifyData || window.MKCG) {
+                        window.structuredLogger.info('STATE', 'WordPress data found, initializing state manager...');
+                        resolve();
+                        return;
+                    }
+                    
+                    // Listen for WordPress data ready event
+                    const handleWordPressReady = (event) => {
+                        window.structuredLogger.info('STATE', 'WordPress data ready event received, initializing state manager...');
+                        document.removeEventListener('gmkb:wordpress-data-ready', handleWordPressReady);
+                        resolve();
+                    };
+                    
+                    document.addEventListener('gmkb:wordpress-data-ready', handleWordPressReady, { once: true });
+                    
+                    // Timeout fallback after 3 seconds
+                    setTimeout(() => {
+                        document.removeEventListener('gmkb:wordpress-data-ready', handleWordPressReady);
+                        window.structuredLogger.warn('STATE', 'WordPress data timeout - proceeding with state initialization anyway');
+                        resolve();
+                    }, 3000);
+                };
+                
+                checkForWordPressData();
+            });
+            
+            // Now initialize the state manager
             window.structuredLogger.info('STATE', 'Initializing Enhanced State Manager...');
             if (window.enhancedStateManager.initializeAfterSystems) {
                 await window.enhancedStateManager.initializeAfterSystems();
