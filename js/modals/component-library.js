@@ -1525,8 +1525,9 @@ function initializeComponentLibrarySystem() {
     if (window.GMKB_Modals) {
         console.log('🔄 Component Library: Modal system already ready, initializing immediately');
         
-        // ROOT FIX: Prevent duplicate setup attempts in fallback
-        if (!isSetupComplete && !isSetupInProgress) {
+        // ROOT CAUSE FIX: Prevent fallback from triggering during main app initialization
+        // The fallback should only run if no other initialization is happening
+        if (!isSetupComplete && !isSetupInProgress && !window._toolbarInitialized) {
             isSetupInProgress = true;
             console.log('🔍 Component Library: Using fallback initialization...');
             
@@ -1546,7 +1547,7 @@ function initializeComponentLibrarySystem() {
                 }
             }, 100); // Small delay to ensure DOM is ready
         } else {
-            console.log('🚧 Component Library: Fallback skipped - setup already in progress or complete');
+            console.log('🚧 Component Library: Fallback skipped - setup already in progress, complete, or toolbar already initialized');
         }
     }
     

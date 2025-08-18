@@ -281,11 +281,9 @@ function setupCoreUI() {
             console.warn('⚠️ MAIN: Component interactions setup function not available');
         }
         
-        // Initialize preview toggle functionality (fallback if toolbar doesn't handle it)
-        if (window.setupDevicePreviewToggle) {
-            window.setupDevicePreviewToggle();
-            window.structuredLogger.info('MAIN', 'Device preview toggle initialized');
-        }
+        // ROOT CAUSE FIX: Remove duplicate call to setupDevicePreviewToggle()
+        // Device preview toggle is already initialized by setupToolbar() above
+        // This prevents the race condition that causes horizontal layout issues
         
         // Initialize form controls
         if (window.formControls) {
@@ -392,7 +390,7 @@ function setupModals() {
 }
 
 /**
- * ROOT FIX: Setup component library functionality
+ * ROOT FIX: Setup component library functionality with race condition prevention
  */
 function setupComponentLibrary() {
     // Ensure component data is available globally
@@ -402,10 +400,13 @@ function setupComponentLibrary() {
         window.structuredLogger.info('MAIN', 'Component data made globally available', { count: window.gmkbComponentsData.length });
     }
     
-    // Initialize component library modal if it exists
+    // ROOT CAUSE FIX: Prevent duplicate component library initialization that causes toolbar race condition
     const componentLibrary = document.getElementById('component-library-overlay');
     if (componentLibrary && window.componentLibrarySystem) {
-        if (typeof window.componentLibrarySystem.initialize === 'function') {
+        // Check if component library is already initialized to prevent double initialization
+        if (window.componentLibrarySystem.isInitialized && window.componentLibrarySystem.isInitialized()) {
+            window.structuredLogger.info('MAIN', 'Component library already initialized, skipping duplicate setup');
+        } else if (typeof window.componentLibrarySystem.initialize === 'function') {
             window.componentLibrarySystem.initialize();
             window.structuredLogger.info('MAIN', 'Component library system initialized');
         }

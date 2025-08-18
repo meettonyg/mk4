@@ -5,13 +5,22 @@
  */
 
 /**
- * ROOT FIX: Setup toolbar functionality
+ * ROOT FIX: Setup toolbar functionality with initialization guard
  */
 function setupToolbar() {
+    // ROOT CAUSE FIX: Prevent duplicate initialization that causes the horizontal layout issue
+    if (window._toolbarInitialized) {
+        console.log('🚷 TOOLBAR: Toolbar already initialized, skipping duplicate setup');
+        return;
+    }
+    
     console.log('🔧 TOOLBAR: Setting up toolbar functionality...');
     
     // Wait for DOM to be ready
     const initializeToolbar = () => {
+        // ROOT CAUSE FIX: Mark as initialized BEFORE any setup to prevent race conditions
+        window._toolbarInitialized = true;
+        
         // Setup device preview toggle
         setupDevicePreviewToggle();
         
@@ -34,9 +43,15 @@ function setupToolbar() {
 }
 
 /**
- * ROOT FIX: Setup device preview toggle functionality
+ * ROOT FIX: Setup device preview toggle functionality with initialization guard
  */
 function setupDevicePreviewToggle() {
+    // ROOT CAUSE FIX: Prevent duplicate initialization that causes race conditions
+    if (window._devicePreviewInitialized) {
+        console.log('🚷 TOOLBAR: Device preview already initialized, skipping duplicate setup');
+        return;
+    }
+    
     console.log('📱 TOOLBAR: Setting up device preview toggle...');
     
     const previewButtons = document.querySelectorAll('.toolbar__preview-btn');
@@ -54,7 +69,17 @@ function setupDevicePreviewToggle() {
     
     console.log(`🔍 TOOLBAR: Found ${previewButtons.length} preview buttons and preview container`);
     
+    // ROOT CAUSE FIX: Mark as initialized BEFORE adding event listeners
+    window._devicePreviewInitialized = true;
+    
     previewButtons.forEach(button => {
+        // ROOT CAUSE FIX: Check if event listener already exists to prevent duplicates
+        if (button.hasAttribute('data-preview-listener-attached')) {
+            return;
+        }
+        
+        button.setAttribute('data-preview-listener-attached', 'true');
+        
         button.addEventListener('click', (e) => {
             e.preventDefault();
             
@@ -276,7 +301,7 @@ function setupModalCloseHandlers(modal) {
         return; // Already setup or invalid modal
     }
     
-    console.log('🔧 TOOLBAR: Setting up close handlers for modal:', modal.id);
+    console.log('🔧 TOOLBAR: Setting up close handlers for modal:', modal.id || modal.className);
     
     // Mark as setup to prevent duplicates
     modal.setAttribute('data-close-handlers-setup', 'true');
