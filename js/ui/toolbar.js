@@ -5,10 +5,10 @@
  */
 
 /**
- * ROOT FIX: Setup toolbar functionality with initialization guard
+ * ROOT FIX: Setup toolbar functionality with initialization guard to prevent race conditions
  */
 function setupToolbar() {
-    // ROOT CAUSE FIX: Prevent duplicate initialization that causes the horizontal layout issue
+    // ROOT CAUSE FIX: Prevent duplicate toolbar initialization that causes the horizontal layout issue
     if (window._toolbarInitialized) {
         console.log('🚷 TOOLBAR: Toolbar already initialized, skipping duplicate setup');
         return;
@@ -16,30 +16,20 @@ function setupToolbar() {
     
     console.log('🔧 TOOLBAR: Setting up toolbar functionality...');
     
-    // Wait for DOM to be ready
-    const initializeToolbar = () => {
-        // ROOT CAUSE FIX: Mark as initialized BEFORE any setup to prevent race conditions
-        window._toolbarInitialized = true;
-        
-        // Setup device preview toggle
-        setupDevicePreviewToggle();
-        
-        // Setup basic button click handlers
-        setupBasicButtonHandlers();
-        
-        // ROOT FIX: Setup close handlers for any existing modals
-        setupExistingModalHandlers();
-        
-        console.log('✅ TOOLBAR: Toolbar setup complete');
-    };
+    // ROOT CAUSE FIX: Mark as initialized IMMEDIATELY to prevent race conditions
+    window._toolbarInitialized = true;
     
-    // ROOT FIX: Delayed initialization to ensure DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeToolbar);
-    } else {
-        // DOM already ready, wait a tick for dynamic content
-        setTimeout(initializeToolbar, 100);
-    }
+    // ROOT FIX: Initialize immediately instead of using setTimeout to prevent race conditions
+    // Setup device preview toggle
+    setupDevicePreviewToggle();
+    
+    // Setup basic button click handlers
+    setupBasicButtonHandlers();
+    
+    // ROOT FIX: Setup close handlers for any existing modals
+    setupExistingModalHandlers();
+    
+    console.log('✅ TOOLBAR: Toolbar setup complete');
 }
 
 /**
