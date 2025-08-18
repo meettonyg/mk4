@@ -1521,34 +1521,11 @@ function initializeComponentLibrarySystem() {
         }
     }, { once: true }); // Only listen once
     
-    // FALLBACK: If modal system is already ready
+    // ROOT FIX: Main app handles all initialization - no fallback needed
+    // The fallback was causing race conditions and duplicate toolbar setup
     if (window.GMKB_Modals) {
-        console.log('🔄 Component Library: Modal system already ready, initializing immediately');
-        
-        // ROOT CAUSE FIX: Prevent fallback from triggering during main app initialization
-        // The fallback should only run if no other initialization is happening
-        if (!isSetupComplete && !isSetupInProgress && !window._toolbarInitialized) {
-            isSetupInProgress = true;
-            console.log('🔍 Component Library: Using fallback initialization...');
-            
-            setTimeout(async () => {
-                try {
-                    console.log('🔍 Component Library: Fallback calling setupComponentLibrary()...');
-                    
-                    // ROOT CAUSE FIX: Direct setup call without guard reset to prevent infinite loop
-                    console.log('🚀 DIRECT SETUP: Calling setupComponentLibrary with force=true...');
-                    
-                    await setupComponentLibrary(true); // Force setup to bypass guards
-                    isSetupComplete = true;
-                    console.log('✅ Component Library: Fallback initialization successful');
-                } catch (error) {
-                    console.error('❌ Component Library: Fallback initialization failed:', error);
-                    isSetupInProgress = false; // Reset on failure
-                }
-            }, 100); // Small delay to ensure DOM is ready
-        } else {
-            console.log('🚧 Component Library: Fallback skipped - setup already in progress, complete, or toolbar already initialized');
-        }
+        console.log('🔄 Component Library: Modal system ready - waiting for main app initialization');
+        console.log('🚧 Component Library: Fallback removed to prevent race conditions');
     }
     
     console.log('🔍 Component Library: Event listeners registered, waiting for modal system...');
