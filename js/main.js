@@ -224,6 +224,14 @@ function setupCoreUI() {
             console.warn('⚠️ MAIN: Toolbar setup function not available');
         }
         
+        // ROOT FIX: Initialize component interactions (component clicks, drag and drop)
+        if (window.setupComponentInteractions) {
+            window.setupComponentInteractions();
+            window.structuredLogger.info('MAIN', 'Component interactions initialized');
+        } else {
+            console.warn('⚠️ MAIN: Component interactions setup function not available');
+        }
+        
         // Initialize preview toggle functionality (fallback if toolbar doesn't handle it)
         if (window.setupDevicePreviewToggle) {
             window.setupDevicePreviewToggle();

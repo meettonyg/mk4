@@ -330,6 +330,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 12c. Component interactions (component click handlers, drag and drop)
+    if (!wp_script_is('gmkb-component-interactions', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-interactions',
+            $plugin_url . 'js/ui/component-interactions.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 13. Enhanced component renderer (CRITICAL: renders components on screen) - ROOT FIX: Added missing script
     if (!wp_script_is('gmkb-enhanced-component-renderer', 'enqueued')) {
         wp_enqueue_script(
@@ -372,7 +383,8 @@ function gmkb_enqueue_assets() {
                 'gmkb-empty-state-handlers',
                 'gmkb-component-library',
                 'gmkb-tabs',
-                'gmkb-toolbar'
+                'gmkb-toolbar',
+                'gmkb-component-interactions'
             ),
             $version,
             true
