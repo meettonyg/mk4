@@ -115,7 +115,14 @@ async function initializeWhenReady() {
         // 7. Hide loading state and show the builder
         hideLoadingState();
         
-        // 8. Emit application ready event
+        // 8. Update GMKB systems references
+        if (window.GMKB) {
+            window.GMKB.systems.StateManager = window.enhancedStateManager;
+            window.GMKB.systems.ComponentManager = window.enhancedComponentManager;
+            window.GMKB.systems.ComponentRenderer = window.enhancedComponentRenderer;
+        }
+        
+        // 9. Emit application ready event
         document.dispatchEvent(new CustomEvent('gmkb:application-ready', {
             detail: {
                 timestamp: Date.now(),
@@ -124,7 +131,16 @@ async function initializeWhenReady() {
             }
         }));
         
+        // 10. Emit initialization complete event for other modules
+        document.dispatchEvent(new CustomEvent('gmkb:initialization-complete', {
+            detail: {
+                timestamp: Date.now(),
+                GMKB: window.GMKB
+            }
+        }));
+        
         console.log('✅ GMKB: Simplified application initialization completed successfully.');
+        console.log('📡 GMKB: Global namespace exposed for module coordination');
         window.structuredLogger.info('MAIN', 'Application initialization complete');
         
     } catch (error) {
@@ -564,7 +580,44 @@ if (document.readyState === 'loading') {
     safeInitialization();
 }
 
-// ROOT FIX: Expose minimal global API for testing
+// ROOT FIX: Expose GMKB globally to fix infinite polling loops
+// This prevents sortable-integration.js from infinite polling
+window.GMKB = {
+    // Core systems for coordination
+    systems: {
+        StateManager: window.enhancedStateManager,
+        ComponentManager: window.enhancedComponentManager,
+        ComponentRenderer: window.enhancedComponentRenderer
+    },
+    
+    // Event system for coordination (simplified)
+    subscribe: function(event, callback) {
+        console.log(`📡 GMKB: Subscribing to event: ${event}`);
+        document.addEventListener(event, callback);
+    },
+    
+    dispatch: function(event, data) {
+        console.log(`📡 GMKB: Dispatching event: ${event}`, data);
+        document.dispatchEvent(new CustomEvent(event, { detail: data }));
+    },
+    
+    // Initialize function for coordination
+    initialize: safeInitialization,
+    
+    // Status checks
+    isReady: () => !!(window.structuredLogger && window.enhancedStateManager && window.enhancedComponentManager),
+    isInitialized: () => isInitialized,
+    isInitializing: () => isInitializing,
+    
+    // Component data access
+    getComponentsData: () => window.gmkbComponentsData || [],
+    
+    // Version info
+    version: '4.0.0',
+    architecture: 'simplified-wordpress-compatible'
+};
+
+// ROOT FIX: Also expose gmkbApp for backwards compatibility
 window.gmkbApp = {
     initialize: safeInitialization,
     forceReinitialize: async () => {
@@ -577,9 +630,9 @@ window.gmkbApp = {
     getState: () => window.enhancedStateManager?.getState(),
     addComponent: (type, props) => window.enhancedComponentManager?.addComponent(type, props),
     removeComponent: (id) => window.enhancedComponentManager?.removeComponent(id),
-    isReady: () => !!(window.structuredLogger && window.enhancedStateManager && window.enhancedComponentManager),
-    isInitialized: () => isInitialized,
-    isInitializing: () => isInitializing,
+    isReady: () => window.GMKB.isReady(),
+    isInitialized: () => window.GMKB.isInitialized(),
+    isInitializing: () => window.GMKB.isInitializing(),
     hideLoading: hideLoadingState,
     setupUI: setupCoreUI,
     debug: {

@@ -61,13 +61,26 @@
                     // this.setupPreviewSorting();
             });
             } else {
-                // Fallback: Initialize after a delay if GMKB not ready
-                console.log('🎯 DragDropManager: GMKB not ready, using fallback initialization');
-                setTimeout(() => {
+                // ROOT FIX: Event-driven fallback (NO POLLING)
+                console.log('⚡ DragDropManager: GMKB not ready, waiting for initialization event');
+                const handleInitComplete = (event) => {
+                    console.log('⚡ DragDropManager: Received initialization complete event');
+                    document.removeEventListener('gmkb:initialization-complete', handleInitComplete);
+                    
                     this.setupComponentLibraryDrag();
                     this.setupDropZones();
-                   //   this.setupPreviewSorting();
-                }, 2000);
+                };
+                
+                document.addEventListener('gmkb:initialization-complete', handleInitComplete);
+                
+                // Fallback timeout (single check, not polling)
+                setTimeout(() => {
+                    if (!this.isInitialized) {
+                        console.log('⚡ DragDropManager: Fallback timeout, attempting initialization');
+                        this.setupComponentLibraryDrag();
+                        this.setupDropZones();
+                    }
+                }, 3000);
             }
 
             this.isInitialized = true;

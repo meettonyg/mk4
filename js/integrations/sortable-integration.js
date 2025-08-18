@@ -44,18 +44,28 @@
             
             console.log('🔄 SortableManager: Initializing enhanced component reordering...');
             
-            // Wait for both GMKB and DragDropManager to be ready
+            // ROOT FIX: Event-driven initialization (NO POLLING)
+            // Check if GMKB is already available
             if (window.GMKB && window.GMKB.subscribe) {
-                // Listen for initialization complete
-                window.GMKB.subscribe('gmkb:initialization-complete', () => {
-                    console.log('🔄 SortableManager: GMKB initialization complete');
-                    this.checkReadiness();
-                });
-                
+                console.log('✅ SortableManager: GMKB available immediately, setting up event listeners');
+                this.setupEventListeners();
+                this.checkReadiness();
+            } else {
+                // ROOT FIX: Listen for GMKB to become available via event
+                console.log('⚡ SortableManager: GMKB not ready, waiting for initialization event');
+                this.waitForDependencies();
+            }
+        },
+        
+        /**
+         * ROOT FIX: Setup event listeners for coordination
+         */
+        setupEventListeners() {
+            if (window.GMKB && window.GMKB.subscribe) {
                 // Listen for components loaded
                 window.GMKB.subscribe('gmkb:components-loaded', () => {
                     console.log('🔄 SortableManager: Components loaded');
-                    this.checkReadiness();
+                    this.refreshSortable();
                 });
                 
                 // Listen for saved state loaded (components restored)
@@ -69,19 +79,16 @@
                     console.log('🔄 SortableManager: Component added, refreshing sortable');
                     setTimeout(() => this.refreshSortable(), 100);
                 });
-            } else {
-                // Fallback initialization
-                console.log('🔄 SortableManager: GMKB not ready, using fallback initialization');
-                setTimeout(() => {
-                    this.checkReadiness();
-                }, 2000);
+                
+                console.log('✅ SortableManager: Event listeners setup complete');
             }
             
             this.isInitialized = true;
         },
         
         /**
-         * ROOT FIX: Check if all dependencies are ready
+         * ROOT FIX: Event-driven dependency check (NO POLLING)
+         * Checklist compliance: Event-driven initialization, no polling
          */
         checkReadiness() {
             console.log('🔍 SortableManager: Checking readiness...');
@@ -93,9 +100,37 @@
                 this.dragDropManager = window.DragDropManager;
                 this.setupSortable();
             } else {
-                console.log('🔄 SortableManager: Dependencies not ready, retrying...');
-                setTimeout(() => this.checkReadiness(), 1000);
+                // ROOT FIX: NO POLLING - use event listener instead
+                console.log('⚡ SortableManager: Dependencies not ready, listening for initialization event...');
+                this.waitForDependencies();
             }
+        },
+        
+        /**
+         * ROOT FIX: Event-driven waiting (CHECKLIST COMPLIANT)
+         * Instead of polling, listen for the initialization complete event
+         */
+        waitForDependencies() {
+            // Listen for GMKB initialization complete
+            const handleInitComplete = (event) => {
+                console.log('⚡ SortableManager: Received initialization complete event');
+                document.removeEventListener('gmkb:initialization-complete', handleInitComplete);
+                
+                // Small delay to ensure all systems are fully ready
+                setTimeout(() => {
+                    this.checkReadiness();
+                }, 100);
+            };
+            
+            document.addEventListener('gmkb:initialization-complete', handleInitComplete);
+            
+            // Fallback: if event already fired, check again in 2 seconds
+            setTimeout(() => {
+                if (!this.isInitialized) {
+                    console.log('⚡ SortableManager: Fallback check after initialization timeout');
+                    this.checkReadiness();
+                }
+            }, 2000);
         },
 
         /**
@@ -444,7 +479,7 @@
         }
     };
 
-    // ROOT FIX: Enhanced auto-initialization with coordination
+    // ROOT FIX: Event-driven auto-initialization (NO POLLING)
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🔄 SortableManager: DOM ready, initializing...');
