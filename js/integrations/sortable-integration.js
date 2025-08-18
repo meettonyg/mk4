@@ -1,7 +1,7 @@
 /**
  * @file sortable-integration.js - SortableJS integration for component reordering
  * @description Complete drag-to-reorder functionality within the preview area  
- * @version 2.0.0 - ROOT FIX IMPLEMENTATION
+ * @version 2.1.0 - GEMINI FIX IMPLEMENTED
  * 
  * ROOT FIX: Complete intra-preview drag-to-reorder functionality
  * - Integrates with existing drag-drop-manager.js
@@ -9,6 +9,11 @@
  * - Preserves all existing move up/down functionality
  * - Integrates with existing StateManager for layout updates
  * - Follows developer checklist requirements
+ * 
+ * GEMINI FIX: Fixed critical logic error in onEnd handler
+ * - Now uses evt.to.children directly from SortableJS event
+ * - Eliminates incorrect DOM re-querying that ignored reorder
+ * - Ensures component order changes are properly saved
  */
 
 (function() {
@@ -187,8 +192,28 @@
                     
                     // Only update if position actually changed
                     if (evt.oldIndex !== evt.newIndex) {
-                        // Update component layout in state
-                        this.updateLayoutFromDOM();
+                        // ✅ GEMINI FIX: Get the new order directly from the event's "to" element
+                        const newOrder = Array.from(evt.to.children)
+                            .map(el => el.dataset.componentId || el.id)
+                            .filter(id => id && id !== 'empty-state'); // Filter out empty state and invalid IDs
+                        
+                        console.log('🔄 SortableManager: New component order from SortableJS event:', newOrder);
+                        
+                        // Update state via StateManager
+                        if (window.GMKB?.systems?.StateManager && newOrder.length > 0) {
+                            const currentState = window.GMKB.systems.StateManager.getState();
+                            const currentLayout = currentState.layout || [];
+                            
+                            // Only update if layout actually changed
+                            if (JSON.stringify(newOrder) !== JSON.stringify(currentLayout)) {
+                                window.GMKB.systems.StateManager.setState({ layout: newOrder });
+                                console.log('✅ SortableManager: Layout updated successfully via SortableJS event');
+                            } else {
+                                console.log('🔄 SortableManager: Layout unchanged, skipping update');
+                            }
+                        } else {
+                            console.error('🔄 SortableManager: StateManager not available or no valid components');
+                        }
                         
                         // Show success feedback
                         this.showSortSuccess(evt.item.id);
@@ -199,6 +224,7 @@
                                 componentId: evt.item.id,
                                 fromIndex: evt.oldIndex,
                                 toIndex: evt.newIndex,
+                                newOrder: newOrder,
                                 timestamp: Date.now()
                             });
                         }
@@ -316,6 +342,8 @@
 
         /**
          * ROOT FIX: Enhanced layout update with validation and coordination
+         * NOTE: This method is now primarily a fallback. The main reordering
+         * logic uses SortableJS event data directly (Gemini fix in onEnd handler)
          */
         updateLayoutFromDOM() {
             if (!this.previewContainer) {

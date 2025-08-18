@@ -7,8 +7,10 @@
  * ✅ wp_localize_script for ALL data passing
  * ✅ Zero polling, zero setTimeout, pure event-driven
  * ✅ Follows WordPress patterns naturally
+ * ✅ VANILLA JAVASCRIPT ONLY - NO JQUERY DEPENDENCIES!
+ * ✅ SortableJS from CDN replaces jQuery UI Sortable
  * * @package Guestify
- * @version 2.2.0-stable-architecture
+ * @version 2.2.0-vanilla-js-no-jquery
  */
 
 // Exit if accessed directly.
@@ -165,6 +167,18 @@ function gmkb_enqueue_assets() {
     
     // --- ROOT CAUSE FIX: COMPREHENSIVE SCRIPT DEPENDENCY CHAIN ---
     // Loading all core dependencies that main.js requires via ES6 imports
+    
+    // ROOT FIX: PHASE 0 - Third-Party Libraries (NO JQUERY!)
+    // SortableJS for drag-and-drop functionality (replaces jQuery UI Sortable)
+    if (!wp_script_is('sortable-js', 'enqueued')) {
+        wp_enqueue_script(
+            'sortable-js',
+            'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js',
+            array(), // NO jQuery dependency!
+            '1.15.0',
+            true
+        );
+    }
     
     // ROOT FIX: PHASE 1 - Core Dependencies Only (CRITICAL)
     // Load only essential scripts to prevent circular dependencies with duplicate checks
@@ -363,12 +377,47 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT FIX: PHASE 2B - Drag & Drop Integration (Uses SortableJS)
+    // Sortable integration (depends on SortableJS from CDN)
+    if (!wp_script_is('gmkb-sortable-integration', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-sortable-integration',
+            $plugin_url . 'js/integrations/sortable-integration.js',
+            array('sortable-js', 'gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // Drag and drop manager (coordinates with sortable integration)
+    if (!wp_script_is('gmkb-drag-drop-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-drag-drop-manager',
+            $plugin_url . 'js/managers/drag-drop-manager.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // Vanilla JS drag and drop (NO jQuery)
+    if (!wp_script_is('gmkb-dnd', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-dnd',
+            $plugin_url . 'js/ui/dnd.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-component-manager'),
+            $version,
+            true
+        );
+    }
+    
     // ROOT FIX: PHASE 3 - Main Application (simplified dependencies) - ROOT FIX: Added duplicate prevention
     if (!wp_script_is('gmkb-main-script', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-main-script',
             $plugin_url . 'js/main.js',
             array(
+                'sortable-js', // Include SortableJS
                 'gmkb-structured-logger',
                 'gmkb-enhanced-state-manager',
                 'gmkb-enhanced-component-manager',
@@ -384,7 +433,10 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-library',
                 'gmkb-tabs',
                 'gmkb-toolbar',
-                'gmkb-component-interactions'
+                'gmkb-component-interactions',
+                'gmkb-sortable-integration',
+                'gmkb-drag-drop-manager',
+                'gmkb-dnd'
             ),
             $version,
             true

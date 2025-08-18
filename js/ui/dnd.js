@@ -3,21 +3,19 @@
  * @description Handles all drag and drop functionality for the Media Kit Builder.
  * This includes dragging components from the sidebar to the preview area.
  *
- * This version has been updated to use the new enhancedComponentManager for adding components,
- * resolving module errors and aligning with the new architecture.
+ * ROOT FIX: Converted from ES6 imports to WordPress global namespace approach
+ * No more ES6 imports - uses global enhancedComponentManager
  */
 
-// FIX: Import the enhancedComponentManager which is now responsible for all component actions.
-import {
-    enhancedComponentManager
-} from '../core/enhanced-component-manager.js';
+// ROOT FIX: Remove ES6 imports - use global namespace
+// enhancedComponentManager will be available globally via WordPress enqueue system
 
 let draggedItem = null;
 
 /**
  * Initializes all drag and drop event listeners.
  */
-export function initializeDragAndDrop() {
+function initializeDragAndDrop() {
     const componentItems = document.querySelectorAll('.component-item');
     const dropZone = document.getElementById('media-kit-preview');
 
@@ -85,8 +83,32 @@ function handleDrop(e) {
     const componentType = e.dataTransfer.getData('text/plain');
 
     if (componentType) {
-        // FIX: Use the enhancedComponentManager to add the component.
-        // This single call handles state updates and triggers the renderer.
-        enhancedComponentManager.addComponent(componentType);
+        // ROOT FIX: Use global enhancedComponentManager to add the component
+        if (window.enhancedComponentManager && window.enhancedComponentManager.addComponent) {
+            window.enhancedComponentManager.addComponent(componentType);
+            console.log(`✅ DND: Component ${componentType} added via enhancedComponentManager`);
+        } else {
+            console.error('❌ DND: enhancedComponentManager not available globally');
+        }
     }
 }
+
+// ROOT FIX: Expose functions globally instead of ES6 export
+window.dragAndDropSystem = {
+    initializeDragAndDrop: initializeDragAndDrop,
+    handleDragStart: handleDragStart,
+    handleDragEnd: handleDragEnd,
+    handleDragOver: handleDragOver,
+    handleDragEnter: handleDragEnter,
+    handleDragLeave: handleDragLeave,
+    handleDrop: handleDrop
+};
+
+// ROOT FIX: Auto-initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeDragAndDrop);
+} else {
+    initializeDragAndDrop();
+}
+
+console.log('✅ Drag and Drop System: Global namespace setup complete');
