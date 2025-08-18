@@ -128,17 +128,6 @@ class EmptyStateHandlers {
             this.isInitialized = true;
             safeLog('info', 'EMPTY_STATE', 'Empty state handlers setup complete (graceful degradation)');
             
-            // ROOT CAUSE FIX: Check initial state to show/hide empty state correctly
-            if (window.enhancedStateManager) {
-                try {
-                    const currentState = window.enhancedStateManager.getState();
-                    this.handleStateChange(currentState);
-                    safeLog('info', 'EMPTY_STATE', 'Initial state check completed');
-                } catch (error) {
-                    safeLog('warn', 'EMPTY_STATE', 'Initial state check failed', error);
-                }
-            }
-            
         } catch (error) {
             safeLog('error', 'EMPTY_STATE', 'Failed to initialize empty state handlers', error);
             // ROOT FIX: Don't completely fail - mark as initialized anyway for basic functionality
@@ -692,24 +681,18 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle state changes from state manager
-     * CHECKLIST COMPLIANT: Simple state-based visibility control
      * 
      * @param {Object} state - New state object
      */
     handleStateChange(state) {
         try {
-            const componentCount = state && state.components ? Object.keys(state.components).length : 0;
+            const componentCount = Object.keys(state.components || {}).length;
             
-            // ROOT CAUSE FIX: Simple show/hide logic based on component count
-            const emptyState = document.getElementById('empty-state') || document.querySelector('.empty-state-optimized');
-            if (emptyState) {
-                if (componentCount === 0) {
-                    emptyState.style.display = 'flex';
-                    structuredLogger.info('EMPTY_STATE', 'Showing empty state - no components');
-                } else {
-                    emptyState.style.display = 'none';
-                    structuredLogger.info('EMPTY_STATE', 'Hiding empty state - components exist', { componentCount });
-                }
+            // Transition empty state based on component count
+            if (componentCount > 0) {
+                this.transitionToState('populated');
+            } else {
+                this.transitionToState('empty');
             }
             
             structuredLogger.info('EMPTY_STATE', 'State change handled', { componentCount });
