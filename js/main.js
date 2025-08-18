@@ -187,9 +187,23 @@ async function initializeWhenReady() {
 
 /**
  * ROOT FIX: Hide loading state and show the builder interface
+ * ROOT CAUSE FIX: Added media-kit layout protection during initialization
  */
 function hideLoadingState() {
     try {
+        // ROOT CAUSE FIX: CRITICAL LAYOUT PROTECTION - Apply layout protection immediately
+        const mediaKit = document.querySelector('.media-kit');
+        if (mediaKit) {
+            // Force vertical layout using setProperty for maximum priority
+            mediaKit.style.setProperty('display', 'flex', 'important');
+            mediaKit.style.setProperty('flex-direction', 'column', 'important');
+            mediaKit.style.setProperty('width', '100%', 'important');
+            mediaKit.style.setProperty('align-items', 'stretch', 'important');
+            mediaKit.style.setProperty('justify-content', 'flex-start', 'important');
+            mediaKit.classList.add('layout-protected');
+            window.structuredLogger.info('MAIN', 'Media-kit layout protection applied during loading state hide');
+        }
+        
         // Hide various loading states that might be showing
         const loadingStates = [
             document.getElementById('loading-state'),
@@ -269,21 +283,13 @@ function setupCoreUI() {
         if (window.setupToolbar) {
             window.setupToolbar();
             window.structuredLogger.info('MAIN', 'Toolbar system initialized');
-        } else {
-            console.warn('⚠️ MAIN: Toolbar setup function not available');
         }
         
         // ROOT FIX: Initialize component interactions (component clicks, drag and drop)
         if (window.setupComponentInteractions) {
             window.setupComponentInteractions();
             window.structuredLogger.info('MAIN', 'Component interactions initialized');
-        } else {
-            console.warn('⚠️ MAIN: Component interactions setup function not available');
         }
-        
-        // ROOT CAUSE FIX: Remove duplicate call to setupDevicePreviewToggle()
-        // Device preview toggle is already initialized by setupToolbar() above
-        // This prevents the race condition that causes horizontal layout issues
         
         // Initialize form controls
         if (window.formControls) {

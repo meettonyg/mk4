@@ -19,6 +19,16 @@ function setupToolbar() {
     // ROOT CAUSE FIX: Mark as initialized IMMEDIATELY to prevent race conditions
     window._toolbarInitialized = true;
     
+    // ROOT CAUSE FIX: Immediate layout protection before any other setup
+    // Ensure media-kit container maintains vertical layout from the start
+    const mediaKit = document.querySelector('.media-kit');
+    if (mediaKit) {
+        mediaKit.style.display = 'flex';
+        mediaKit.style.flexDirection = 'column';
+        mediaKit.style.width = '100%';
+        console.log('✅ TOOLBAR: Protected media-kit vertical layout during toolbar setup');
+    }
+    
     // ROOT FIX: Initialize immediately instead of using setTimeout to prevent race conditions
     // Setup device preview toggle
     setupDevicePreviewToggle();
@@ -32,15 +42,11 @@ function setupToolbar() {
     console.log('✅ TOOLBAR: Toolbar setup complete');
 }
 
-/**
- * ROOT FIX: Setup device preview toggle functionality with basic guard
- */
 function setupDevicePreviewToggle() {
-    // ROOT CAUSE FIX: Simple guard to prevent duplicate initialization
     if (window._devicePreviewInitialized) {
-        console.log('🚷 TOOLBAR: Device preview already initialized, skipping duplicate setup');
         return;
     }
+    window._devicePreviewInitialized = true;
     
     console.log('📱 TOOLBAR: Setting up device preview toggle...');
     
@@ -57,10 +63,41 @@ function setupDevicePreviewToggle() {
         return;
     }
     
-    console.log(`🔍 TOOLBAR: Found ${previewButtons.length} preview buttons and preview container`);
+    // Ensure media-kit stays vertical
+    const mediaKit = previewContainer?.querySelector('.media-kit');
+    if (mediaKit) {
+        mediaKit.style.display = 'flex';
+        mediaKit.style.flexDirection = 'column';
+        mediaKit.style.width = '100%';
+    }
     
-    // ROOT CAUSE FIX: Mark as initialized immediately to prevent race conditions
-    window._devicePreviewInitialized = true;
+    // ROOT CAUSE FIX: Simplified default mode application that doesn't touch media-kit layout
+    const activeButton = document.querySelector('.toolbar__preview-btn--active') || previewButtons[0];
+    if (activeButton) {
+        const defaultMode = activeButton.getAttribute('data-preview') || 'desktop';
+        console.log(`📱 TOOLBAR: Applying default preview mode: ${defaultMode}`);
+        
+        // Set the active button class correctly
+        previewButtons.forEach(btn => btn.classList.remove('toolbar__preview-btn--active'));
+        activeButton.classList.add('toolbar__preview-btn--active');
+        
+        // ROOT CAUSE FIX: Only apply preview classes to container, NOT media-kit
+        previewContainer.classList.remove('preview--desktop', 'preview--tablet', 'preview--mobile');
+        previewContainer.classList.add('preview--' + defaultMode);
+        previewContainer.setAttribute('data-preview-mode', defaultMode);
+        
+        console.log(`✅ TOOLBAR: Applied default preview mode: ${defaultMode}`);
+    } else {
+        console.warn('⚠️ TOOLBAR: No active or default preview button found - applying desktop as fallback');
+        // Fallback to desktop mode - only touch container, not media-kit
+        previewContainer.classList.remove('preview--desktop', 'preview--tablet', 'preview--mobile');
+        previewContainer.classList.add('preview--desktop');
+        previewContainer.setAttribute('data-preview-mode', 'desktop');
+        
+        if (previewButtons[0]) {
+            previewButtons[0].classList.add('toolbar__preview-btn--active');
+        }
+    }
     
     previewButtons.forEach(button => {
         button.addEventListener('click', (e) => {
@@ -85,6 +122,14 @@ function setupDevicePreviewToggle() {
             
             // Remove all preview mode classes from container
             previewContainer.classList.remove('preview--desktop', 'preview--tablet', 'preview--mobile');
+            
+            // Maintain vertical layout
+            const mediaKit = previewContainer?.querySelector('.media-kit');
+            if (mediaKit) {
+                mediaKit.style.display = 'flex';
+                mediaKit.style.flexDirection = 'column';
+                mediaKit.style.width = '100%';
+            }
             
             // Add the selected preview mode class
             previewContainer.classList.add('preview--' + previewMode);
@@ -397,6 +442,73 @@ window.setupModalCloseHandlers = setupModalCloseHandlers;
 window.setupExistingModalHandlers = setupExistingModalHandlers;
 window.hideModal = hideModal;
 
+// ROOT CAUSE FIX: Global debug function to check media-kit layout status
+window.debugMediaKitLayout = function() {
+    console.group('🔧 Media Kit Layout Debug');
+    
+    const mediaKit = document.querySelector('.media-kit');
+    if (!mediaKit) {
+        console.error('❌ Media kit container not found');
+        console.groupEnd();
+        return;
+    }
+    
+    const computedStyle = window.getComputedStyle(mediaKit);
+    const inlineStyles = {
+        display: mediaKit.style.display,
+        flexDirection: mediaKit.style.flexDirection,
+        width: mediaKit.style.width
+    };
+    
+    console.log('✅ Media kit container found');
+    console.log('📊 Computed styles:', {
+        display: computedStyle.display,
+        flexDirection: computedStyle.flexDirection,
+        width: computedStyle.width,
+        alignItems: computedStyle.alignItems,
+        justifyContent: computedStyle.justifyContent
+    });
+    console.log('🎨 Inline styles:', inlineStyles);
+    console.log('📋 Classes:', mediaKit.className);
+    console.log('🔍 Layout Status:', {
+        isVertical: computedStyle.flexDirection === 'column',
+        isFlex: computedStyle.display === 'flex',
+        hasLayoutProtection: mediaKit.classList.contains('layout-protected')
+    });
+    
+    // Check for any horizontal indicators
+    const horizontalIndicators = [];
+    if (computedStyle.flexDirection === 'row') horizontalIndicators.push('flex-direction: row');
+    if (computedStyle.display !== 'flex') horizontalIndicators.push('display: ' + computedStyle.display);
+    if (mediaKit.classList.contains('horizontal')) horizontalIndicators.push('horizontal class');
+    
+    if (horizontalIndicators.length > 0) {
+        console.warn('⚠️ HORIZONTAL LAYOUT DETECTED:', horizontalIndicators);
+        console.log('🔧 Running automatic fix...');
+        if (window.fixMediaKitLayout) {
+            window.fixMediaKitLayout();
+        }
+    } else {
+        console.log('✅ Layout is correctly vertical');
+    }
+    
+    console.groupEnd();
+};
+
+// ROOT CAUSE FIX: Auto-check layout every 5 seconds if in debug mode
+if (window.gmkbData && window.gmkbData.debugMode) {
+    setInterval(() => {
+        const mediaKit = document.querySelector('.media-kit');
+        if (mediaKit) {
+            const computedStyle = window.getComputedStyle(mediaKit);
+            if (computedStyle.flexDirection !== 'column') {
+                console.warn('🚨 LAYOUT DRIFT DETECTED - Media kit is not vertical!');
+                window.debugMediaKitLayout();
+            }
+        }
+    }, 5000);
+}
+
 // ROOT FIX: Global toolbar API for other scripts
 window.GMKBToolbar = {
     setupToolbar: setupToolbar,
@@ -428,6 +540,64 @@ window.GMKBToolbar = {
 };
 
 console.log('✅ Toolbar System: Available globally and ready');
+
+// ROOT CAUSE FIX: Layout protection mechanism - runs after page load
+// This ensures the media-kit always maintains vertical layout regardless of initialization order
+function protectMediaKitLayout() {
+    const mediaKit = document.querySelector('.media-kit');
+    if (mediaKit) {
+        // Force vertical layout
+        mediaKit.style.display = 'flex';
+        mediaKit.style.flexDirection = 'column';
+        mediaKit.style.width = '100%';
+        
+        // Add a class to indicate protection is active
+        mediaKit.classList.add('layout-protected');
+        
+        console.log('✅ TOOLBAR: Media-kit layout protection applied');
+        
+        // Set up a mutation observer to prevent any CSS overrides
+        if (window.MutationObserver) {
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        const target = mutation.target;
+                        if (target.classList.contains('media-kit')) {
+                            // Re-enforce layout if something tries to change it
+                            const currentDisplay = target.style.display;
+                            const currentDirection = target.style.flexDirection;
+                            const currentWidth = target.style.width;
+                            
+                            if (currentDisplay !== 'flex' || currentDirection !== 'column' || currentWidth !== '100%') {
+                                target.style.display = 'flex';
+                                target.style.flexDirection = 'column';
+                                target.style.width = '100%';
+                                console.warn('⚠️ TOOLBAR: Media-kit layout was changed, re-enforcing vertical layout');
+                            }
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(mediaKit, {
+                attributes: true,
+                attributeFilter: ['style', 'class']
+            });
+            
+            console.log('✅ TOOLBAR: Layout protection observer active');
+        }
+    }
+}
+
+// Run layout protection when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', protectMediaKitLayout);
+} else {
+    protectMediaKitLayout();
+}
+
+// Also run after a short delay to catch any late modifications
+setTimeout(protectMediaKitLayout, 1000);
 
 // ROOT FIX: Debug function to test modal close functionality
 window.debugModalClose = function() {
@@ -478,3 +648,64 @@ window.closeThemeModal = function() {
     console.error('❌ Theme modal not found');
     return false;
 };
+
+// ROOT CAUSE FIX: Debug utility to manually fix media-kit layout
+window.fixMediaKitLayout = function() {
+    console.group('🔧 Media Kit Layout Fix');
+    
+    const mediaKit = document.querySelector('.media-kit');
+    if (!mediaKit) {
+        console.error('❌ Media kit container not found');
+        console.groupEnd();
+        return false;
+    }
+    
+    console.log('✅ Media kit container found');
+    console.log('Current styles:', {
+        display: mediaKit.style.display,
+        flexDirection: mediaKit.style.flexDirection,
+        width: mediaKit.style.width,
+        classes: mediaKit.className
+    });
+    
+    // Force correct layout
+    mediaKit.style.display = 'flex';
+    mediaKit.style.flexDirection = 'column';
+    mediaKit.style.width = '100%';
+    mediaKit.classList.add('layout-protected');
+    
+    console.log('✅ Layout fixed - media kit should now display vertically');
+    console.log('New styles:', {
+        display: mediaKit.style.display,
+        flexDirection: mediaKit.style.flexDirection,
+        width: mediaKit.style.width,
+        classes: mediaKit.className
+    });
+    
+    // Also run the protection mechanism
+    protectMediaKitLayout();
+    
+    console.groupEnd();
+    return true;
+};
+
+// ROOT CAUSE FIX: Auto-run the layout fix on page load
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        console.log('🔍 TOOLBAR: Running final layout check after page load...');
+        const mediaKit = document.querySelector('.media-kit');
+        if (mediaKit) {
+            const computedStyle = window.getComputedStyle(mediaKit);
+            const isVertical = computedStyle.flexDirection === 'column' || computedStyle.flexDirection === 'column-reverse';
+            
+            if (!isVertical) {
+                console.warn('⚠️ TOOLBAR: Media kit layout is not vertical after page load, fixing...');
+                window.fixMediaKitLayout();
+            } else {
+                console.log('✅ TOOLBAR: Media kit layout is correctly vertical');
+            }
+        }
+    }, 2000); // Run after 2 seconds to catch any late initialization
+});
+
+
