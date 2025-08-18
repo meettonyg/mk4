@@ -20,7 +20,7 @@
             this.components = new Map();
             this.isInitialized = false;
             this.componentCounter = 0;
-            this.cachedWordPressData = null; // ROOT FIX: Cache for event-driven data
+            this.cachedWordPressData = null; // ROOT FIX: Cache for WordPress data access
             
             logger.info('COMPONENT', 'Enhanced Component Manager created');
         }
@@ -157,7 +157,8 @@
         }
 
         /**
-         * ROOT FIX: Event-driven component rendering (CHECKLIST COMPLIANT)
+         * ROOT FIX: Direct WordPress data access (CHECKLIST COMPLIANT)
+         * Uses WordPress global namespace pattern instead of race-prone event waiting
          * @param {string} componentType - Component type
          * @param {Object} props - Component props
          * @param {string} componentId - Component ID
@@ -165,14 +166,21 @@
          */
         async renderComponentOnServer(componentType, props, componentId) {
             try {
-                // ROOT FIX: Use event-driven data access - NO global object sniffing
-                const wpData = await this.waitForWordPressDataEvent();
+                // ROOT FIX: Direct access to WordPress data (already available globally)
+                const wpData = this.getWordPressData();
                 const ajaxUrl = wpData.ajaxUrl;
                 const nonce = wpData.nonce;
 
                 if (!ajaxUrl || !nonce) {
-                    throw new Error('AJAX URL or nonce not available from event data');
+                    throw new Error('AJAX URL or nonce not available from WordPress data');
                 }
+
+                logger.debug('COMPONENT', `Rendering ${componentType} server-side`, {
+                    hasAjaxUrl: !!ajaxUrl,
+                    hasNonce: !!nonce,
+                    hasPostId: !!wpData.postId,
+                    componentId
+                });
 
                 const formData = new FormData();
                 formData.append('action', 'guestify_render_component');
@@ -415,53 +423,79 @@
         }
 
         /**
-         * ROOT FIX: Event-driven WordPress data access (CHECKLIST COMPLIANT)
-         * Listens for wordpressDataReady event instead of checking global objects
-         * @returns {Promise<Object>} WordPress data object from event
+         * ROOT FIX: Direct WordPress data access (CHECKLIST COMPLIANT)
+         * Uses WordPress global namespace pattern - no race conditions, no timeouts
+         * @returns {Object} WordPress data object
          */
-        async waitForWordPressDataEvent() {
-            return new Promise((resolve, reject) => {
-                // Check if we already have cached data from a previous event
-                if (this.cachedWordPressData) {
-                    logger.debug('COMPONENT', 'Using cached WordPress data from previous event');
-                    resolve(this.cachedWordPressData);
-                    return;
-                }
+        getWordPressData() {
+            // ROOT FIX: Cache data once accessed to avoid repeated global object access
+            if (this.cachedWordPressData) {
+                return this.cachedWordPressData;
+            }
+
+            // ROOT FIX: Access WordPress data from global namespace (WordPress standard pattern)
+            let wpData = null;
+            
+            // Primary: Use gmkbData (main WordPress data object)
+            if (window.gmkbData && window.gmkbData.ajaxUrl && window.gmkbData.nonce) {
+                wpData = window.gmkbData;
+                logger.debug('COMPONENT', 'Using gmkbData for WordPress data');
+            }
+            // Fallback 1: Use guestifyData alias
+            else if (window.guestifyData && window.guestifyData.ajaxUrl && window.guestifyData.nonce) {
+                wpData = window.guestifyData;
+                logger.debug('COMPONENT', 'Using guestifyData for WordPress data');
+            }
+            // Fallback 2: Use MKCG alias  
+            else if (window.MKCG && window.MKCG.ajaxUrl && window.MKCG.nonce) {
+                wpData = window.MKCG;
+                logger.debug('COMPONENT', 'Using MKCG for WordPress data');
+            }
+            // Fallback 3: Try to get from window.wordpressDataCache if set by event
+            else if (window.wordpressDataCache && window.wordpressDataCache.ajaxUrl && window.wordpressDataCache.nonce) {
+                wpData = window.wordpressDataCache;
+                logger.debug('COMPONENT', 'Using wordpressDataCache for WordPress data');
+            }
+            else {
+                // ROOT FIX: If no data available, provide meaningful error
+                const availableGlobals = Object.keys(window).filter(key => 
+                    key.toLowerCase().includes('data') || key === 'MKCG'
+                ).join(', ');
                 
-                const timeout = setTimeout(() => {
-                    logger.error('COMPONENT', 'WordPress data ready event timeout after 10 seconds');
-                    reject(new Error('WordPress data ready event timeout'));
-                }, 10000);
+                logger.error('COMPONENT', 'WordPress data not found in global namespace', {
+                    availableGlobals,
+                    gmkbDataExists: !!window.gmkbData,
+                    guestifyDataExists: !!window.guestifyData,
+                    MCKGExists: !!window.MKCG
+                });
                 
-                // ROOT FIX: Listen for the WordPress data ready event
-                const handleDataReady = (event) => {
-                    clearTimeout(timeout);
-                    document.removeEventListener('wordpressDataReady', handleDataReady);
-                    
-                    const eventData = event.detail;
-                    
-                    if (eventData && eventData.ajaxUrl && eventData.nonce) {
-                        // Cache the data for future use
-                        this.cachedWordPressData = eventData;
-                        
-                        logger.debug('COMPONENT', 'WordPress data received via event', {
-                            hasAjaxUrl: !!eventData.ajaxUrl,
-                            hasNonce: !!eventData.nonce,
-                            hasPostId: !!eventData.postId,
-                            postId: eventData.postId
-                        });
-                        
-                        resolve(eventData);
-                    } else {
-                        logger.error('COMPONENT', 'Invalid WordPress data in event', eventData);
-                        reject(new Error('Invalid WordPress data in event'));
-                    }
-                };
-                
-                document.addEventListener('wordpressDataReady', handleDataReady);
-                
-                logger.debug('COMPONENT', 'Listening for WordPress data ready event...');
+                throw new Error('WordPress data not available. Available globals: ' + availableGlobals);
+            }
+
+            // ROOT FIX: Validate required fields
+            if (!wpData.ajaxUrl || !wpData.nonce) {
+                logger.error('COMPONENT', 'WordPress data missing required fields', {
+                    hasAjaxUrl: !!wpData.ajaxUrl,
+                    hasNonce: !!wpData.nonce,
+                    dataKeys: Object.keys(wpData)
+                });
+                throw new Error('WordPress data missing required fields (ajaxUrl or nonce)');
+            }
+
+            // Cache for future use
+            this.cachedWordPressData = wpData;
+            
+            logger.debug('COMPONENT', 'WordPress data accessed successfully', {
+                source: wpData === window.gmkbData ? 'gmkbData' : 
+                       wpData === window.guestifyData ? 'guestifyData' : 
+                       wpData === window.MKCG ? 'MKCG' : 'other',
+                hasAjaxUrl: !!wpData.ajaxUrl,
+                hasNonce: !!wpData.nonce,
+                hasPostId: !!wpData.postId,
+                postId: wpData.postId
             });
+
+            return wpData;
         }
 
         /**
@@ -469,6 +503,14 @@
          */
         isReady() {
             return this.isInitialized && window.enhancedStateManager;
+        }
+
+        /**
+         * ROOT FIX: Clear cached WordPress data (useful for testing)
+         */
+        clearWordPressDataCache() {
+            this.cachedWordPressData = null;
+            logger.debug('COMPONENT', 'WordPress data cache cleared');
         }
     }
 
