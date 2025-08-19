@@ -262,7 +262,9 @@
                             .map(el => el.dataset.componentId || el.id)
                             .filter(id => id && id !== 'empty-state'); // Filter out empty state and invalid IDs
                         
-                        console.log('🔄 SortableManager: New component order from SortableJS event:', newOrder);
+                        if (window.gmkbData?.debugMode) {
+                            console.log('🔄 SortableManager: New component order from SortableJS event:', newOrder);
+                        }
                         
                         // Update state via StateManager
                         if (window.GMKB?.systems?.StateManager && newOrder.length > 0) {
@@ -272,9 +274,13 @@
                             // Only update if layout actually changed
                             if (JSON.stringify(newOrder) !== JSON.stringify(currentLayout)) {
                                 window.GMKB.systems.StateManager.setState({ layout: newOrder });
-                                console.log('✅ SortableManager: Layout updated successfully via SortableJS event');
+                                if (window.gmkbData?.debugMode) {
+                                    console.log('✅ SortableManager: Layout updated successfully via SortableJS event');
+                                }
                             } else {
-                                console.log('🔄 SortableManager: Layout unchanged, skipping update');
+                                if (window.gmkbData?.debugMode) {
+                                    console.log('🔄 SortableManager: Layout unchanged, skipping update');
+                                }
                             }
                         } else {
                             console.error('🔄 SortableManager: StateManager not available or no valid components');
@@ -294,7 +300,9 @@
                             });
                         }
                     } else {
-                        console.log('🔄 SortableManager: No position change, skipping state update');
+                        if (window.gmkbData?.debugMode) {
+                            console.log('🔄 SortableManager: No position change, skipping state update');
+                        }
                     }
                 },
                 
@@ -386,19 +394,27 @@
          */
         refreshSortable() {
             if (this.sortableInstance && this.isEnabled) {
-                console.log('🔄 SortableManager: Refreshing sortable instance');
+                if (window.gmkbData?.debugMode) {
+                    console.log('🔄 SortableManager: Refreshing sortable instance');
+                }
                 // SortableJS automatically updates when DOM changes
                 // But we can force a refresh if needed
                 try {
                     // Check if there are sortable elements
                     const sortableElements = this.previewContainer.querySelectorAll('.media-kit-component');
-                    console.log(`🔄 SortableManager: Found ${sortableElements.length} sortable components`);
+                    if (window.gmkbData?.debugMode) {
+                        console.log(`🔄 SortableManager: Found ${sortableElements.length} sortable components`);
+                    }
                     
                     if (sortableElements.length === 0) {
-                        console.log('🔄 SortableManager: No components to sort, disabling temporarily');
+                        if (window.gmkbData?.debugMode) {
+                            console.log('🔄 SortableManager: No components to sort, disabling temporarily');
+                        }
                         this.disable();
                     } else {
-                        console.log('🔄 SortableManager: Components available, ensuring sortable is enabled');
+                        if (window.gmkbData?.debugMode) {
+                            console.log('🔄 SortableManager: Components available, ensuring sortable is enabled');
+                        }
                         this.enable();
                     }
                 } catch (error) {
@@ -458,7 +474,9 @@
         disable() {
             if (this.sortableInstance) {
                 this.sortableInstance.option('disabled', true);
-                console.log('🔄 SortableManager: Disabled sortable functionality');
+                if (window.gmkbData?.debugMode) {
+                    console.log('🔄 SortableManager: Disabled sortable functionality');
+                }
             }
         },
 
@@ -468,7 +486,9 @@
         enable() {
             if (this.sortableInstance) {
                 this.sortableInstance.option('disabled', false);
-                console.log('🔄 SortableManager: Enabled sortable functionality');
+                if (window.gmkbData?.debugMode) {
+                    console.log('🔄 SortableManager: Enabled sortable functionality');
+                }
             }
         },
         
@@ -480,7 +500,9 @@
                 this.sortableInstance.destroy();
                 this.sortableInstance = null;
                 this.isEnabled = false;
-                console.log('🔄 SortableManager: Destroyed sortable instance');
+                if (window.gmkbData?.debugMode) {
+                    console.log('🔄 SortableManager: Destroyed sortable instance');
+                }
             }
         },
 

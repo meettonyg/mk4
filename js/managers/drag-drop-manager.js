@@ -13,7 +13,9 @@
 (function() {
     'use strict';
 
-    console.log('🎯 DragDropManager: Initializing drag and drop system...');
+    if (window.gmkbData?.debugMode) {
+        console.log('🎯 DragDropManager: Initializing drag and drop system...');
+    }
 
     /**
      * Drag and Drop Manager
@@ -40,31 +42,43 @@
          */
         init() {
             if (this.isInitialized) {
-                console.log('🎯 DragDropManager: Already initialized');
+                if (window.gmkbData?.debugMode) {
+                    console.log('🎯 DragDropManager: Already initialized');
+                }
                 return;
             }
 
-            console.log('🎯 DragDropManager: Starting initialization...');
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 DragDropManager: Starting initialization...');
+            }
 
             // Wait for core systems to be ready
             if (window.GMKB && window.GMKB.subscribe) {
                 // Listen for components loaded event
                 window.GMKB.subscribe('gmkb:components-loaded', (event) => {
-                    console.log('🎯 DragDropManager: Components loaded, setting up drag handlers');
+                    if (window.gmkbData?.debugMode) {
+                        console.log('🎯 DragDropManager: Components loaded, setting up drag handlers');
+                    }
                     this.setupComponentLibraryDrag();
                 });
 
                 // Listen for initialization complete
                 window.GMKB.subscribe('gmkb:initialization-complete', (event) => {
-                console.log('🎯 DragDropManager: System initialized, setting up drop zones and preview sorting');
+                if (window.gmkbData?.debugMode) {
+                    console.log('🎯 DragDropManager: System initialized, setting up drop zones and preview sorting');
+                }
                 this.setupDropZones();
                     // this.setupPreviewSorting();
             });
             } else {
                 // ROOT FIX: Event-driven fallback (NO POLLING)
-                console.log('⚡ DragDropManager: GMKB not ready, waiting for initialization event');
+                if (window.gmkbData?.debugMode) {
+                    console.log('⚡ DragDropManager: GMKB not ready, waiting for initialization event');
+                }
                 const handleInitComplete = (event) => {
-                    console.log('⚡ DragDropManager: Received initialization complete event');
+                    if (window.gmkbData?.debugMode) {
+                        console.log('⚡ DragDropManager: Received initialization complete event');
+                    }
                     document.removeEventListener('gmkb:initialization-complete', handleInitComplete);
                     
                     this.setupComponentLibraryDrag();
@@ -76,7 +90,9 @@
                 // Fallback timeout (single check, not polling)
                 setTimeout(() => {
                     if (!this.isInitialized) {
-                        console.log('⚡ DragDropManager: Fallback timeout, attempting initialization');
+                        if (window.gmkbData?.debugMode) {
+                            console.log('⚡ DragDropManager: Fallback timeout, attempting initialization');
+                        }
                         this.setupComponentLibraryDrag();
                         this.setupDropZones();
                     }
@@ -84,14 +100,18 @@
             }
 
             this.isInitialized = true;
-            console.log('✅ DragDropManager: Initialization complete');
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ DragDropManager: Initialization complete');
+            }
         },
 
         /**
          * Setup drag functionality for component library items
          */
         setupComponentLibraryDrag() {
-            console.log('🎯 DragDropManager: Setting up component library drag handlers');
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 DragDropManager: Setting up component library drag handlers');
+            }
 
             // Find component library
             const componentLibrary = document.getElementById('component-grid');
@@ -118,7 +138,9 @@
             });
 
             observer.observe(componentLibrary, { childList: true, subtree: true });
-            console.log('✅ DragDropManager: Component library drag setup complete');
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ DragDropManager: Component library drag setup complete');
+            }
         },
 
         /**
@@ -126,13 +148,17 @@
          */
         updateComponentLibraryDragHandlers() {
             const componentItems = document.querySelectorAll('.component-card, .component-item');
-            console.log(`🎯 DragDropManager: Adding drag handlers to ${componentItems.length} components`);
+            if (window.gmkbData?.debugMode) {
+                console.log(`🎯 DragDropManager: Adding drag handlers to ${componentItems.length} components`);
+            }
 
             componentItems.forEach(item => {
                 this.makeComponentDraggable(item);
             });
             
-            console.log('✅ DragDropManager: Component library drag setup complete');
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ DragDropManager: Component library drag setup complete');
+            }
         },
 
         /**
@@ -152,7 +178,9 @@
 
             // Add drag start handler
             componentItem.addEventListener('dragstart', (e) => {
-                console.log(`🎯 DragDropManager: Drag started for ${componentType}`);
+                if (window.gmkbData?.debugMode) {
+                    console.log(`🎯 DragDropManager: Drag started for ${componentType}`);
+                }
                 
                 this.draggedComponentType = componentType;
                 this.draggedElement = componentItem;
@@ -172,7 +200,9 @@
 
             // Add drag end handler
             componentItem.addEventListener('dragend', (e) => {
-                console.log(`🎯 DragDropManager: Drag ended for ${componentType}`);
+                if (window.gmkbData?.debugMode) {
+                    console.log(`🎯 DragDropManager: Drag ended for ${componentType}`);
+                }
                 
                 // Clean up
                 componentItem.classList.remove('dragging');
@@ -181,7 +211,9 @@
                 this.draggedElement = null;
             });
 
-            console.log(`✅ DragDropManager: Made ${componentType} draggable`);
+            if (window.gmkbData?.debugMode) {
+                console.log(`✅ DragDropManager: Made ${componentType} draggable`);
+            }
         },
 
         /**
@@ -224,7 +256,9 @@
          * Setup drag-to-reorder functionality within preview area
          */
         setupPreviewSorting() {
-            console.log('🎯 DragDropManager: Setting up preview area sorting...');
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 DragDropManager: Setting up preview area sorting...');
+            }
             
             if (!this.previewContainer) {
                 this.previewContainer = document.getElementById('media-kit-preview');
@@ -250,7 +284,9 @@
                 });
             }
             
-            console.log('✅ DragDropManager: Preview sorting setup complete');
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ DragDropManager: Preview sorting setup complete');
+            }
         },
 
         /**
@@ -258,7 +294,9 @@
          */
         makePreviewComponentsSortable() {
             const components = this.previewContainer.querySelectorAll('.media-kit-component');
-            console.log(`🎯 DragDropManager: Making ${components.length} components sortable`);
+            if (window.gmkbData?.debugMode) {
+                console.log(`🎯 DragDropManager: Making ${components.length} components sortable`);
+            }
             
             components.forEach(component => {
                 this.makeComponentSortable(component);
@@ -287,7 +325,9 @@
             
             // Add drag start handler for sorting
             componentElement.addEventListener('dragstart', (e) => {
-                console.log(`🎯 DragDropManager: Started sorting component ${componentId}`);
+                if (window.gmkbData?.debugMode) {
+                    console.log(`🎯 DragDropManager: Started sorting component ${componentId}`);
+                }
                 
                 this.draggedComponentId = componentId;
                 this.draggedElement = componentElement;
@@ -310,7 +350,9 @@
             
             // Add drag end handler for sorting
             componentElement.addEventListener('dragend', (e) => {
-                console.log(`🎯 DragDropManager: Finished sorting component ${componentId}`);
+                if (window.gmkbData?.debugMode) {
+                    console.log(`🎯 DragDropManager: Finished sorting component ${componentId}`);
+                }
                 
                 // Clean up sorting state
                 componentElement.classList.remove('dragging-for-sort');
@@ -324,7 +366,9 @@
                 this.lastValidDropTarget = null;
             });
             
-            console.log(`✅ DragDropManager: Component ${componentId} is now sortable`);
+            if (window.gmkbData?.debugMode) {
+                console.log(`✅ DragDropManager: Component ${componentId} is now sortable`);
+            }
         },
 
         /**
@@ -490,7 +534,9 @@
          * Reorder component in layout and DOM
          */
         async reorderComponent(draggedId, targetId, position) {
-            console.log(`🎯 DragDropManager: Reordering ${draggedId} ${position} ${targetId}`);
+            if (window.gmkbData?.debugMode) {
+                console.log(`🎯 DragDropManager: Reordering ${draggedId} ${position} ${targetId}`);
+            }
             
             if (!window.GMKB?.systems?.StateManager) {
                 console.error('🎯 DragDropManager: StateManager not available for reordering');
@@ -533,7 +579,9 @@
             // Visual feedback
             this.showReorderSuccess(draggedId);
             
-            console.log('✅ DragDropManager: Component reordering complete');
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ DragDropManager: Component reordering complete');
+            }
         },
 
         /**
@@ -556,7 +604,9 @@
             // Add components after empty state and drop zones
             this.previewContainer.appendChild(fragment);
             
-            console.log('✅ DragDropManager: DOM order updated to match layout');
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ DragDropManager: DOM order updated to match layout');
+            }
         },
 
         /**
@@ -572,7 +622,9 @@
             }
         },
         setupDropZones() {
-            console.log('🎯 DragDropManager: Setting up drop zones');
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 DragDropManager: Setting up drop zones');
+            }
 
             // Get preview container
             this.previewContainer = document.getElementById('media-kit-preview');
@@ -591,7 +643,9 @@
                 this.makeDropZone(zone);
             });
 
-            console.log('✅ DragDropManager: Drop zones setup complete');
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ DragDropManager: Drop zones setup complete');
+            }
         },
 
         /**
@@ -618,7 +672,9 @@
 
             element.addEventListener('drop', (e) => {
                 e.preventDefault();
-                console.log('🎯 DragDropManager: Drop event triggered');
+                if (window.gmkbData?.debugMode) {
+                    console.log('🎯 DragDropManager: Drop event triggered');
+                }
 
                 // Remove hover effects
                 element.classList.remove('drag-over');
@@ -628,21 +684,27 @@
                                     e.dataTransfer.getData('text/plain');
 
                 if (componentType && this.draggedComponentType === componentType) {
-                    console.log(`🎯 DragDropManager: Dropping ${componentType} component`);
+                    if (window.gmkbData?.debugMode) {
+                        console.log(`🎯 DragDropManager: Dropping ${componentType} component`);
+                    }
                     this.handleComponentDrop(componentType, element, e);
                 } else {
                     console.warn('🎯 DragDropManager: Invalid drop - component type mismatch');
                 }
             });
 
-            console.log(`✅ DragDropManager: Made element a drop zone:`, element.className || element.id);
+            if (window.gmkbData?.debugMode) {
+                console.log(`✅ DragDropManager: Made element a drop zone:`, element.className || element.id);
+            }
         },
 
         /**
          * Handle component drop
          */
         async handleComponentDrop(componentType, dropZone, event) {
-            console.log(`🎯 DragDropManager: Handling drop of ${componentType}`);
+            if (window.gmkbData?.debugMode) {
+                console.log(`🎯 DragDropManager: Handling drop of ${componentType}`);
+            }
 
             try {
                 // Check if ComponentManager is available
@@ -663,7 +725,9 @@
                 });
 
                 if (componentId) {
-                    console.log(`✅ DragDropManager: Successfully added ${componentType} with ID ${componentId}`);
+                    if (window.gmkbData?.debugMode) {
+                        console.log(`✅ DragDropManager: Successfully added ${componentType} with ID ${componentId}`);
+                    }
                     this.showDropSuccess(dropZone);
                     
                     // Scroll to new component
@@ -692,7 +756,9 @@
          * Show drop zones during drag
          */
         showDropZones() {
-            console.log('🎯 DragDropManager: Showing drop zones');
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 DragDropManager: Showing drop zones');
+            }
             
             // Show preview container as drop zone
             if (this.previewContainer) {
@@ -714,7 +780,9 @@
          * Hide drop zones after drag
          */
         hideDropZones() {
-            console.log('🎯 DragDropManager: Hiding drop zones');
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 DragDropManager: Hiding drop zones');
+            }
             
             // Remove drag state from preview container
             if (this.previewContainer) {
@@ -866,6 +934,8 @@
     // Expose to global scope for debugging
     window.DragDropManager = DragDropManager;
     
-    console.log('✅ DragDropManager: Module loaded successfully');
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ DragDropManager: Module loaded successfully');
+    }
 
 })();

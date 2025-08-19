@@ -10,11 +10,15 @@
 function setupToolbar() {
     // ROOT CAUSE FIX: Prevent duplicate initialization that causes the horizontal layout issue
     if (window._toolbarInitialized) {
-        console.log('🚷 TOOLBAR: Toolbar already initialized, skipping duplicate setup');
+        if (window.gmkbData?.debugMode) {
+            console.log('🚷 TOOLBAR: Toolbar already initialized, skipping duplicate setup');
+        }
         return;
     }
     
-    console.log('🔧 TOOLBAR: Setting up toolbar functionality...');
+    if (window.gmkbData?.debugMode) {
+        console.log('🔧 TOOLBAR: Setting up toolbar functionality...');
+    }
     
     // Wait for DOM to be ready
     const initializeToolbar = () => {
@@ -30,7 +34,9 @@ function setupToolbar() {
         // ROOT FIX: Setup close handlers for any existing modals
         setupExistingModalHandlers();
         
-        console.log('✅ TOOLBAR: Toolbar setup complete');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ TOOLBAR: Toolbar setup complete');
+        }
     };
     
     // ROOT FIX: Initialize immediately to prevent race conditions
@@ -47,11 +53,15 @@ function setupToolbar() {
 function setupDevicePreviewToggle() {
     // ROOT CAUSE FIX: Prevent duplicate initialization that causes race conditions
     if (window._devicePreviewInitialized) {
-        console.log('🚷 TOOLBAR: Device preview already initialized, skipping duplicate setup');
+        if (window.gmkbData?.debugMode) {
+            console.log('🚷 TOOLBAR: Device preview already initialized, skipping duplicate setup');
+        }
         return;
     }
     
-    console.log('📱 TOOLBAR: Setting up device preview toggle...');
+    if (window.gmkbData?.debugMode) {
+        console.log('📱 TOOLBAR: Setting up device preview toggle...');
+    }
     
     const previewButtons = document.querySelectorAll('.toolbar__preview-btn');
     const previewContainer = document.getElementById('preview-container') || document.querySelector('.preview__container, .preview');
@@ -66,7 +76,9 @@ function setupDevicePreviewToggle() {
         return;
     }
     
-    console.log(`🔍 TOOLBAR: Found ${previewButtons.length} preview buttons and preview container`);
+    if (window.gmkbData?.debugMode) {
+        console.log(`🔍 TOOLBAR: Found ${previewButtons.length} preview buttons and preview container`);
+    }
     
     // ROOT CAUSE FIX: Mark as initialized BEFORE adding event listeners to prevent race conditions
     window._devicePreviewInitialized = true;
@@ -89,7 +101,9 @@ function setupDevicePreviewToggle() {
                 return;
             }
             
-            console.log(`📱 TOOLBAR: Switching to ${previewMode} preview mode`);
+            if (window.gmkbData?.debugMode) {
+                console.log(`📱 TOOLBAR: Switching to ${previewMode} preview mode`);
+            }
             
             // Remove active class from all buttons
             previewButtons.forEach(btn => {
@@ -121,7 +135,9 @@ function setupDevicePreviewToggle() {
         });
     });
     
-    console.log('✅ TOOLBAR: Device preview toggle setup complete');
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ TOOLBAR: Device preview toggle setup complete');
+    }
 }
 
 /**
@@ -138,7 +154,9 @@ function showPreviewFeedback(mode) {
     const modeName = modeNames[mode] || mode;
     
     // Simple console feedback for now
-    console.log('✅ TOOLBAR: Preview mode changed to ' + modeName);
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ TOOLBAR: Preview mode changed to ' + modeName);
+    }
     
     // TODO: Add toast notification when toast system is available
 }
@@ -147,7 +165,9 @@ function showPreviewFeedback(mode) {
  * ROOT FIX: Setup basic button handlers for non-device buttons
  */
 function setupBasicButtonHandlers() {
-    console.log('🔘 TOOLBAR: Setting up basic button handlers...');
+    if (window.gmkbData?.debugMode) {
+        console.log('🔘 TOOLBAR: Setting up basic button handlers...');
+    }
     
     // Save button (handled by main.js but we can add feedback)
     const saveBtn = document.getElementById('save-btn');
@@ -155,9 +175,13 @@ function setupBasicButtonHandlers() {
         // The actual save functionality is handled by main.js
         // This just provides visual feedback
         saveBtn.addEventListener('click', function() {
-            console.log('💾 TOOLBAR: Save button clicked');
+            if (window.gmkbData?.debugMode) {
+                console.log('💾 TOOLBAR: Save button clicked');
+            }
         });
-        console.log('✅ TOOLBAR: Save button handler attached');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ TOOLBAR: Save button handler attached');
+        }
     }
     
     // Export button
@@ -165,14 +189,18 @@ function setupBasicButtonHandlers() {
     if (exportBtn) {
         exportBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('📤 TOOLBAR: Export button clicked');
+            if (window.gmkbData?.debugMode) {
+                console.log('📤 TOOLBAR: Export button clicked');
+            }
             
             // Try to open export modal
             const exportModal = document.getElementById('export-modal');
             if (exportModal) {
                 exportModal.style.display = 'flex';
                 exportModal.classList.add('modal--open');
-                console.log('✅ TOOLBAR: Export modal opened');
+                if (window.gmkbData?.debugMode) {
+                    console.log('✅ TOOLBAR: Export modal opened');
+                }
                 
                 // ROOT FIX: Immediately setup close handlers when modal opens
                 setupModalCloseHandlers(exportModal);
@@ -180,7 +208,9 @@ function setupBasicButtonHandlers() {
                 console.warn('⚠️ TOOLBAR: Export modal not found');
             }
         });
-        console.log('✅ TOOLBAR: Export button handler attached');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ TOOLBAR: Export button handler attached');
+        }
     }
     
     // Theme button
@@ -188,14 +218,18 @@ function setupBasicButtonHandlers() {
     if (themeBtn) {
         themeBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('🎨 TOOLBAR: Theme button clicked');
+            if (window.gmkbData?.debugMode) {
+                console.log('🎨 TOOLBAR: Theme button clicked');
+            }
             
             // Try to open theme modal
             const themeModal = document.getElementById('global-settings-modal');
             if (themeModal) {
                 themeModal.style.display = 'flex';
                 themeModal.classList.add('modal--open');
-                console.log('✅ TOOLBAR: Theme modal opened');
+                if (window.gmkbData?.debugMode) {
+                    console.log('✅ TOOLBAR: Theme modal opened');
+                }
                 
                 // ROOT FIX: Immediately setup close handlers when modal opens
                 setupModalCloseHandlers(themeModal);
@@ -203,7 +237,9 @@ function setupBasicButtonHandlers() {
                 console.warn('⚠️ TOOLBAR: Theme modal not found');
             }
         });
-        console.log('✅ TOOLBAR: Theme button handler attached');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ TOOLBAR: Theme button handler attached');
+        }
     }
     
     // Share button
@@ -211,13 +247,17 @@ function setupBasicButtonHandlers() {
     if (shareBtn) {
         shareBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('🔗 TOOLBAR: Share button clicked');
+            if (window.gmkbData?.debugMode) {
+                console.log('🔗 TOOLBAR: Share button clicked');
+            }
             
             // Simple share functionality
             const url = window.location.href;
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(url).then(function() {
-                    console.log('✅ TOOLBAR: URL copied to clipboard');
+                    if (window.gmkbData?.debugMode) {
+                        console.log('✅ TOOLBAR: URL copied to clipboard');
+                    }
                     // TODO: Show toast notification
                 }).catch(function() {
                     console.warn('⚠️ TOOLBAR: Failed to copy to clipboard');
@@ -226,7 +266,9 @@ function setupBasicButtonHandlers() {
                 console.warn('⚠️ TOOLBAR: Clipboard API not available');
             }
         });
-        console.log('✅ TOOLBAR: Share button handler attached');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ TOOLBAR: Share button handler attached');
+        }
     }
     
     // Undo button
@@ -234,10 +276,14 @@ function setupBasicButtonHandlers() {
     if (undoBtn) {
         undoBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('↶ TOOLBAR: Undo button clicked');
+            if (window.gmkbData?.debugMode) {
+                console.log('↶ TOOLBAR: Undo button clicked');
+            }
             // TODO: Implement undo functionality
         });
-        console.log('✅ TOOLBAR: Undo button handler attached');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ TOOLBAR: Undo button handler attached');
+        }
     }
     
     // Redo button
@@ -245,20 +291,28 @@ function setupBasicButtonHandlers() {
     if (redoBtn) {
         redoBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('↷ TOOLBAR: Redo button clicked');
+            if (window.gmkbData?.debugMode) {
+                console.log('↷ TOOLBAR: Redo button clicked');
+            }
             // TODO: Implement redo functionality
         });
-        console.log('✅ TOOLBAR: Redo button handler attached');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ TOOLBAR: Redo button handler attached');
+        }
     }
     
-    console.log('✅ TOOLBAR: Basic button handlers setup complete');
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ TOOLBAR: Basic button handlers setup complete');
+    }
 }
 
 /**
  * ROOT FIX: Setup close handlers for actual modals only (intelligent detection)
  */
 function setupExistingModalHandlers() {
-    console.log('🔍 TOOLBAR: Looking for actual modals (intelligent detection)...');
+    if (window.gmkbData?.debugMode) {
+        console.log('🔍 TOOLBAR: Looking for actual modals (intelligent detection)...');
+    }
     
     // ROOT FIX: Specific known modal IDs only (no wildcards)
     const knownModalIds = [
@@ -275,7 +329,9 @@ function setupExistingModalHandlers() {
         const modal = document.getElementById(modalId);
         if (modal && isActualModal(modal)) {
             foundModals.push(modal);
-            console.log('🎯 TOOLBAR: Found valid modal:', modalId);
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 TOOLBAR: Found valid modal:', modalId);
+            }
         }
     });
     
@@ -285,7 +341,9 @@ function setupExistingModalHandlers() {
     potentialModals.forEach(modal => {
         if (isActualModal(modal) && !foundModals.includes(modal)) {
             foundModals.push(modal);
-            console.log('🎯 TOOLBAR: Found additional modal:', modal.id || modal.className);
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 TOOLBAR: Found additional modal:', modal.id || modal.className);
+            }
         }
     });
     
@@ -294,7 +352,9 @@ function setupExistingModalHandlers() {
         setupModalCloseHandlers(modal);
     });
     
-    console.log(`✅ TOOLBAR: Setup close handlers for ${foundModals.length} actual modals (filtered from potential false positives)`);
+    if (window.gmkbData?.debugMode) {
+        console.log(`✅ TOOLBAR: Setup close handlers for ${foundModals.length} actual modals (filtered from potential false positives)`);
+    }
 }
 
 /**
@@ -345,7 +405,9 @@ function setupModalCloseHandlers(modal) {
         return; // Already setup or invalid modal
     }
     
-    console.log('🔧 TOOLBAR: Setting up close handlers for modal:', modal.id || modal.className);
+    if (window.gmkbData?.debugMode) {
+        console.log('🔧 TOOLBAR: Setting up close handlers for modal:', modal.id || modal.className);
+    }
     
     // Mark as setup to prevent duplicates
     modal.setAttribute('data-close-handlers-setup', 'true');
@@ -366,7 +428,9 @@ function setupModalCloseHandlers(modal) {
     for (const selector of closeBtnSelectors) {
         closeBtn = modal.querySelector(selector);
         if (closeBtn) {
-            console.log('🎯 TOOLBAR: Found close button with selector:', selector);
+            if (window.gmkbData?.debugMode) {
+                console.log('🎯 TOOLBAR: Found close button with selector:', selector);
+            }
             break;
         }
     }
@@ -378,17 +442,21 @@ function setupModalCloseHandlers(modal) {
             console.log('🚪 TOOLBAR: Close button clicked for modal:', modal.id);
             hideModal(modal);
         });
-        console.log('✅ TOOLBAR: Close button handler attached');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ TOOLBAR: Close button handler attached');
+        }
     } else {
         console.warn('⚠️ TOOLBAR: No close button found in modal:', modal.id);
         // Log available buttons for debugging
         const allButtons = modal.querySelectorAll('button');
-        console.log('Available buttons in modal:', Array.from(allButtons).map(btn => ({
-            text: btn.textContent?.trim(),
-            class: btn.className,
-            id: btn.id,
-            title: btn.title
-        })));
+        if (window.gmkbData?.debugMode) {
+            console.log('Available buttons in modal:', Array.from(allButtons).map(btn => ({
+                text: btn.textContent?.trim(),
+                class: btn.className,
+                id: btn.id,
+                title: btn.title
+            })));
+        }
     }
     
     // Backdrop click handler
@@ -412,7 +480,9 @@ function setupModalCloseHandlers(modal) {
     // Store handler reference for cleanup
     modal._escHandler = escHandler;
     
-    console.log('✅ TOOLBAR: Close handlers setup complete for modal:', modal.id);
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ TOOLBAR: Close handlers setup complete for modal:', modal.id);
+    }
 }
 
 /**
@@ -488,7 +558,9 @@ window.GMKBToolbar = {
     }
 };
 
-console.log('✅ Toolbar System: Available globally and ready');
+if (window.gmkbData?.debugMode) {
+    console.log('✅ Toolbar System: Available globally and ready');
+}
 
 // ROOT FIX: Debug function to test modal close functionality
 window.debugModalClose = function() {

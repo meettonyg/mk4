@@ -339,7 +339,9 @@ function addSelectedComponents() {
     const selectedCards = componentGrid.querySelectorAll('.component-card.selected');
     
     if (selectedCards.length === 0) {
-        console.log('⚠️ Component Library: No components selected');
+        if (window.gmkbData?.debugMode) {
+            console.log('⚠️ Component Library: No components selected');
+        }
         
         // ROOT FIX: Show user feedback for no selection
         if (window.GMKB_Toast) {
@@ -354,13 +356,17 @@ function addSelectedComponents() {
         return;
     }
     
-    console.log(`➕ Component Library: Adding ${selectedCards.length} selected components`);
+    if (window.gmkbData?.debugMode) {
+        console.log(`➕ Component Library: Adding ${selectedCards.length} selected components`);
+    }
     
     let addedCount = 0;
     
     selectedCards.forEach(card => {
         const componentType = card.dataset.component;
-        console.log(`➕ Adding component: ${componentType}`);
+        if (window.gmkbData?.debugMode) {
+            console.log(`➕ Adding component: ${componentType}`);
+        }
         
         // ROOT FIX: Try multiple methods to add components
         let added = false;
@@ -397,7 +403,9 @@ function addSelectedComponents() {
                 }
             });
             document.dispatchEvent(addComponentEvent);
-            console.log(`➕ Dispatched add-component event for: ${componentType}`);
+            if (window.gmkbData?.debugMode) {
+                console.log(`➕ Dispatched add-component event for: ${componentType}`);
+            }
             addedCount++;
         }
     });
@@ -416,7 +424,9 @@ function addSelectedComponents() {
             });
         }
         
-        console.log(`✅ Component Library: Successfully added ${addedCount} components`);
+        if (window.gmkbData?.debugMode) {
+            console.log(`✅ Component Library: Successfully added ${addedCount} components`);
+        }
     }
     
     // Clear selection and hide modal

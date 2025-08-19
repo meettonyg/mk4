@@ -693,7 +693,9 @@
         }
     });
     
-    console.log('✅ Enhanced Component Manager: Available globally and ready');
-    console.log('✅ Enhanced Component Manager: Event listeners for gmkb:add-component ready');
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ Enhanced Component Manager: Available globally and ready');
+        console.log('✅ Enhanced Component Manager: Event listeners for gmkb:add-component ready');
+    }
 
 })();

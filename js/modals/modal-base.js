@@ -26,7 +26,9 @@
             return;
         }
 
-        console.log('🔄 Initializing Modal System...');
+        if (window.gmkbData?.debugMode) {
+            console.log('🔄 Initializing Modal System...');
+        }
 
         // Discover and register all modals present in the DOM
         document.querySelectorAll('.modal-overlay, .library-modal').forEach(modalElement => {
@@ -37,7 +39,9 @@
         document.addEventListener('keydown', handleEscKey);
 
         state.initialized = true;
-        console.log(`✅ Modal System Initialized: ${state.registeredModals.size} modals registered.`);
+        if (window.gmkbData?.debugMode) {
+            console.log(`✅ Modal System Initialized: ${state.registeredModals.size} modals registered.`);
+        }
 
         // --- ROOT FIX: Announce readiness via a custom event ---
         // This is the key change that allows other scripts to hook into the modal
@@ -82,7 +86,9 @@
         });
         
         state.registeredModals.set(modalId, modalElement);
-        console.log(`🔹 Modal Registered: ${modalId}`);
+        if (window.gmkbData?.debugMode) {
+            console.log(`🔹 Modal Registered: ${modalId}`);
+        }
     }
 
     /**
@@ -105,7 +111,9 @@
         document.body.classList.add('modal-open');
         state.activeModals.add(modalId);
         
-        console.log(`🔵 Modal Shown: ${modalId}`);
+        if (window.gmkbData?.debugMode) {
+            console.log(`🔵 Modal Shown: ${modalId}`);
+        }
         dispatchModalEvent('gmkb:modal-shown', modalId);
     }
 
@@ -132,7 +140,9 @@
             document.body.classList.remove('modal-open');
         }
         
-        console.log(`⚪️ Modal Hidden: ${modalId}`);
+        if (window.gmkbData?.debugMode) {
+            console.log(`⚪️ Modal Hidden: ${modalId}`);
+        }
         dispatchModalEvent('gmkb:modal-hidden', modalId);
     }
     
