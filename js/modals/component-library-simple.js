@@ -78,6 +78,7 @@ function initializeComponentLibrary() {
 
 /**
  * ROOT FIX: Clean event listener setup (NO ONCLICK ASSIGNMENT)
+ * EMERGENCY RE-ATTACHMENT: Re-attach listeners if they get lost
  */
 function setupComponentLibraryEventListeners() {
     logger.info('COMPONENT_LIBRARY', 'Setting up event listeners');
@@ -87,48 +88,75 @@ function setupComponentLibraryEventListeners() {
         throw new Error('Cannot setup event listeners - DOM elements missing');
     }
     
-    // Show modal buttons
-    const showButtons = document.querySelectorAll('#add-component-btn, #add-first-component, .show-component-library');
-    showButtons.forEach((button, index) => {
-        // Remove any existing listeners first
-        button.removeEventListener('click', showModal);
-        button.addEventListener('click', showModal);
-        logger.info('COMPONENT_LIBRARY', `Show button ${index + 1} attached: ${button.id || button.className}`);
-    });
+    // ROOT FIX: Enhanced button selection with retries for missing buttons
+    function attachShowButtonListeners() {
+        const showButtons = document.querySelectorAll('#add-component-btn, #add-first-component, .show-component-library, [data-action="add-component"]');
+        
+        if (showButtons.length === 0) {
+            logger.error('COMPONENT_LIBRARY', 'No show buttons found, scheduling retry');
+            // Retry in 100ms if buttons not found
+            setTimeout(attachShowButtonListeners, 100);
+            return;
+        }
+        
+        showButtons.forEach((button, index) => {
+            // Remove any existing listeners first
+            button.removeEventListener('click', showModal);
+            button.addEventListener('click', showModal);
+            logger.info('COMPONENT_LIBRARY', `Show button ${index + 1} attached: ${button.id || button.className}`);
+        });
+    }
+    
+    // Start attaching show button listeners
+    attachShowButtonListeners();
     
     // Modal close buttons
-    const closeButtons = componentLibraryModal.querySelectorAll('.library__close, .modal__close');
+    const closeButtons = componentLibraryModal.querySelectorAll('.library__close, .modal__close, .close-modal');
     closeButtons.forEach((button, index) => {
         button.removeEventListener('click', hideModal);
         button.addEventListener('click', hideModal);
         logger.info('COMPONENT_LIBRARY', `Close button ${index + 1} attached`);
     });
     
-    // ROOT FIX: Cancel button with addEventListener (no onclick)
-    const cancelButton = document.getElementById('cancel-component-button');
-    if (cancelButton) {
-        // Remove any existing listeners
-        cancelButton.removeEventListener('click', handleCancelClick);
-        cancelButton.addEventListener('click', handleCancelClick);
-        logger.info('COMPONENT_LIBRARY', 'Cancel button event listener attached');
-    } else {
-        logger.error('COMPONENT_LIBRARY', 'Cancel button not found', {
-            selector: '#cancel-component-button'
-        });
+    // ROOT FIX: Cancel button with enhanced selection and retries
+    function attachCancelButton() {
+        const cancelButton = document.getElementById('cancel-component-button') || 
+                            document.querySelector('[data-action="cancel-component"]') ||
+                            componentLibraryModal.querySelector('.cancel-btn, .btn-cancel');
+        
+        if (cancelButton) {
+            // Remove any existing listeners
+            cancelButton.removeEventListener('click', handleCancelClick);
+            cancelButton.addEventListener('click', handleCancelClick);
+            logger.info('COMPONENT_LIBRARY', 'Cancel button event listener attached');
+        } else {
+            logger.error('COMPONENT_LIBRARY', 'Cancel button not found - will retry');
+            // Retry in 200ms
+            setTimeout(attachCancelButton, 200);
+        }
     }
     
-    // ROOT FIX: Add button with addEventListener (no onclick)
-    const addButton = document.getElementById('add-component-button');
-    if (addButton) {
-        // Remove any existing listeners
-        addButton.removeEventListener('click', handleAddClick);
-        addButton.addEventListener('click', handleAddClick);
-        logger.info('COMPONENT_LIBRARY', 'Add button event listener attached');
-    } else {
-        logger.error('COMPONENT_LIBRARY', 'Add button not found', {
-            selector: '#add-component-button'
-        });
+    attachCancelButton();
+    
+    // ROOT FIX: Add button with enhanced selection and retries
+    function attachAddButton() {
+        const addButton = document.getElementById('add-component-button') ||
+                         document.querySelector('[data-action="add-selected-components"]') ||
+                         componentLibraryModal.querySelector('.add-btn, .btn-add');
+        
+        if (addButton) {
+            // Remove any existing listeners
+            addButton.removeEventListener('click', handleAddClick);
+            addButton.addEventListener('click', handleAddClick);
+            logger.info('COMPONENT_LIBRARY', 'Add button event listener attached');
+        } else {
+            logger.error('COMPONENT_LIBRARY', 'Add button not found - will retry');
+            // Retry in 200ms
+            setTimeout(attachAddButton, 200);
+        }
     }
+    
+    attachAddButton();
     
     // Modal backdrop click to close
     componentLibraryModal.removeEventListener('click', handleBackdropClick);

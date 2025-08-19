@@ -55,10 +55,8 @@ add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets' );
  * The conflicting inline scripts previously loaded in the footer have been removed.
  */
 function gmkb_enqueue_assets() {
-    // ROOT FIX: Only output debug info if in debug mode
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        echo '<script>console.log("🔧 GMKB ENQUEUE DEBUG: Function executed at " + new Date().toISOString());</script>';
-    }
+    // ROOT FIX: Removed early debug output to prevent timing issues
+    // Debug output now happens after wp_localize_script ensures data is available
     
     // Use the existing reliable page detection
     if ( ! is_media_kit_builder_page() ) {
@@ -628,70 +626,11 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ROOT FIX: Development scripts only in debug mode
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        // ROOT FIX: Test scripts removed from production (Step 2 complete)
-        // These scripts served their purpose and are no longer needed
-        
-        /*
-        // REMOVED: Test scalable architecture file (prevents 404 errors)
-        if (!wp_script_is('gmkb-test-architecture', 'enqueued')) {
-            wp_enqueue_script(
-                'gmkb-test-architecture',
-                $plugin_url . 'test-scalable-architecture.js',
-                array('gmkb-main-script'),
-                $version,
-                true
-            );
-        }
-        
-        // REMOVED: Debug script for component library button issues
-        if (!wp_script_is('gmkb-debug-buttons', 'enqueued')) {
-            wp_enqueue_script(
-                'gmkb-debug-buttons',
-                $plugin_url . 'debug-component-library-buttons.js',
-                array('gmkb-component-library-simple'),
-                $version,
-                true
-            );
-        }
-        
-        // REMOVED: Test script for component library button verification
-        if (!wp_script_is('gmkb-test-buttons', 'enqueued')) {
-            wp_enqueue_script(
-                'gmkb-test-buttons',
-                $plugin_url . 'test-component-library-buttons.js',
-                array('gmkb-component-library-simple', 'gmkb-debug-buttons'),
-                $version,
-                true
-            );
-        }
-        
-        // REMOVED: Test script to verify the 10-second timeout fix
-        if (!wp_script_is('gmkb-root-fix-verification', 'enqueued')) {
-            wp_enqueue_script(
-                'gmkb-root-fix-verification',
-                $plugin_url . 'test-root-fix-verification.js',
-                array('gmkb-enhanced-component-manager'),
-                $version,
-                true
-            );
-        }
-        
-        // REMOVED: Component rendering fix verification
-        if (!wp_script_is('gmkb-component-rendering-fix-test', 'enqueued')) {
-            wp_enqueue_script(
-                'gmkb-component-rendering-fix-test',
-                $plugin_url . 'test-component-rendering-fix.js',
-                array('gmkb-enhanced-component-renderer', 'gmkb-empty-state-handlers'),
-                $version,
-                true
-            );
-        }
-        */
-    }
+    // ROOT FIX: Test scripts completely removed from production
+    // No development scripts loaded to prevent console errors and performance issues
 
-    // ROOT FIX: Single wp_localize_script call to prevent duplicate WordPress data with error handling
+    // ROOT FIX: Move wp_localize_script BEFORE any debug output
+    // This ensures data is available when first scripts run
     if ( wp_script_is( 'gmkb-main-script', 'enqueued' ) ) {
         wp_localize_script( 'gmkb-main-script', 'gmkbData', $wp_data );
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -722,8 +661,7 @@ function gmkb_enqueue_assets() {
         echo '<script>console.log("✅ GMKB: WordPress data object created with", window.gmkbData ? Object.keys(window.gmkbData).length : 0, "properties");</script>';
         echo '<script>console.log("✅ GMKB: Component data available:", !!(window.gmkbData && window.gmkbData.components));</script>';
         echo '<script>console.log("✅ GMKB: Component count:", (window.gmkbData && window.gmkbData.components) ? (Array.isArray(window.gmkbData.components) ? window.gmkbData.components.length : Object.keys(window.gmkbData.components).length) : 0);</script>';
-        echo '<script>console.log("🔍 GMKB: Component data structure:", window.gmkbData && window.gmkbData.components ? window.gmkbData.components : "NO COMPONENTS");</script>';
-        echo '<script>console.log("🔍 GMKB: Categories data:", window.gmkbData && window.gmkbData.categories ? window.gmkbData.categories : "NO CATEGORIES");</script>';
+        // ROOT FIX: Removed excessive debug output to reduce console noise
     }
     
     // ROOT FIX: Global namespace data availability (CHECKLIST COMPLIANT)
@@ -753,7 +691,6 @@ function gmkb_enqueue_assets() {
                 console.log("✅ ROOT FIX ACTIVE: WordPress data available immediately in global namespace");
                 console.log("✅ ROOT FIX ACTIVE: WordPress data ready event also dispatched for compatibility");
                 console.log("✅ ROOT FIX ACTIVE: 10-second timeout issue eliminated - components should add instantly");
-                console.log("✅ ROOT FIX ACTIVE: Use window.rootFixVerification.runAllTests() to verify the fix");
             }
         });
     </script>';
@@ -807,10 +744,7 @@ function gmkb_enqueue_assets() {
 function is_media_kit_builder_page() {
     $request_uri = $_SERVER['REQUEST_URI'] ?? '';
     
-    // ROOT FIX: Only output debug info if in debug mode
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        echo '<script>console.log("🎯 PAGE DETECTION: URL=' . esc_js($request_uri) . ', Contains guestify-media-kit=' . (strpos( $request_uri, 'guestify-media-kit' ) !== false ? 'YES' : 'NO') . '");</script>';
-    }
+    // ROOT FIX: Removed early debug output to prevent timing issues with wp_localize_script
     
     // Strategy 1: URL-based detection (most reliable)
     if ( strpos( $request_uri, 'guestify-media-kit' ) !== false ) {

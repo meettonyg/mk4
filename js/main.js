@@ -4,12 +4,12 @@
  * Phase 1: Architectural Integrity & Race Condition Prevention - COMPLETE
  */
 
-// ROOT FIX: Immediate debug log with simplified architecture
-console.log('%c🚀 GMKB main.js LOADING (SIMPLIFIED ARCHITECTURE)...', 'font-weight: bold; color: #10b981; background: #ecfdf5; padding: 2px 6px; border-radius: 3px;');
-console.log('📜 Script URL:', document.currentScript?.src || 'unknown');
-console.log('📜 Load time:', new Date().toISOString());
-console.log('🔧 ARCHITECTURE: Simplified WordPress-compatible initialization');
-console.log('✅ ROOT FIX: Event-driven initialization with minimal dependencies');
+// ROOT FIX: Simplified debug log with minimal console output
+if (window.gmkbData?.debugMode) {
+    console.log('%c🚀 GMKB main.js LOADING (SIMPLIFIED ARCHITECTURE)...', 'font-weight: bold; color: #10b981; background: #ecfdf5; padding: 2px 6px; border-radius: 3px;');
+    console.log('📜 Script URL:', document.currentScript?.src || 'unknown');
+    console.log('📜 Load time:', new Date().toISOString());
+}
 
 // ROOT FIX: IMMEDIATE component data exposure to prevent "No component data in globals"
 // ROOT FIX: SAFE component data exposure with error handling
@@ -21,10 +21,14 @@ function safeExposeComponentData() {
                 // ROOT FIX: Check if components is object or array
                 if (Array.isArray(data.components)) {
                     window.gmkbComponentsData = data.components;
-                    console.log('✅ GMKB: Component data exposed immediately (array)', { count: data.components.length });
+                    if (window.gmkbData?.debugMode) {
+                        console.log('✅ GMKB: Component data exposed immediately (array)', { count: data.components.length });
+                    }
                 } else if (typeof data.components === 'object') {
                     window.gmkbComponentsData = Object.values(data.components);
-                    console.log('✅ GMKB: Component data exposed immediately (object)', { count: Object.keys(data.components).length });
+                    if (window.gmkbData?.debugMode) {
+                        console.log('✅ GMKB: Component data exposed immediately (object)', { count: Object.keys(data.components).length });
+                    }
                 }
                 return true;
             }
@@ -61,7 +65,9 @@ function safeExposeComponentData() {
                     icon: 'fa-envelope'
                 }
             ];
-            console.log('🛡️ GMKB: Component data fallback created immediately');
+            if (window.gmkbData?.debugMode) {
+                console.log('🛡️ GMKB: Component data fallback created immediately');
+            }
             return true;
         }
     } catch (error) {
@@ -73,11 +79,13 @@ function safeExposeComponentData() {
 
 // Execute safely
 if (safeExposeComponentData()) {
-    console.log('✅ GMKB: Component data setup completed');
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ GMKB: Component data setup completed');
+    }
 } else {
     // Retry if WordPress data isn't available yet
     setTimeout(() => {
-        if (safeExposeComponentData()) {
+        if (safeExposeComponentData() && window.gmkbData?.debugMode) {
             console.log('✅ GMKB: Component data exposed on retry');
         }
     }, 100);
@@ -176,8 +184,10 @@ async function initializeWhenReady() {
             }
         }));
         
-        console.log('✅ GMKB: Simplified application initialization completed successfully.');
-        console.log('📡 GMKB: Global namespace exposed for module coordination');
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ GMKB: Simplified application initialization completed successfully.');
+            console.log('📡 GMKB: Global namespace exposed for module coordination');
+        }
         window.structuredLogger.info('MAIN', 'Application initialization complete');
         
     } catch (error) {
@@ -394,7 +404,8 @@ function setupModals() {
 }
 
 /**
- * ROOT FIX: Setup component library functionality with race condition prevention
+ * ROOT FIX: Setup component library functionality (DATA ONLY - NO EVENT HANDLERS)
+ * Event handlers are managed by component-library-simple.js to prevent conflicts
  */
 function setupComponentLibrary() {
     // Ensure component data is available globally with enhanced safety
@@ -416,17 +427,9 @@ function setupComponentLibrary() {
         }
     }
     
-    // ROOT CAUSE FIX: Prevent duplicate component library initialization that causes toolbar race condition
-    const componentLibrary = document.getElementById('component-library-overlay');
-    if (componentLibrary && window.componentLibrarySystem) {
-        // Check if component library is already initialized to prevent double initialization
-        if (window.componentLibrarySystem.isInitialized && window.componentLibrarySystem.isInitialized()) {
-            window.structuredLogger.info('MAIN', 'Component library already initialized, skipping duplicate setup');
-        } else if (typeof window.componentLibrarySystem.initialize === 'function') {
-            window.componentLibrarySystem.initialize();
-            window.structuredLogger.info('MAIN', 'Component library system initialized');
-        }
-    }
+    // ROOT FIX: Let component-library-simple.js handle ALL initialization
+    // This prevents race conditions and duplicate event handlers
+    window.structuredLogger.info('MAIN', 'Component library data setup complete - initialization handled by component-library-simple.js');
 }
 
 /**
@@ -468,31 +471,13 @@ function setupBasicEventListeners() {
         window.structuredLogger.info('MAIN', 'Save button listener attached');
     }
     
-    // Listen for add component button clicks (fallback)
+    // ROOT FIX: DO NOT attach add component button listeners here
+    // This prevents conflicts with component-library-simple.js
+    // component-library-simple.js handles ALL component library buttons
+    
     const addComponentBtn = document.getElementById('add-component-btn');
     if (addComponentBtn) {
-        addComponentBtn.addEventListener('click', () => {
-            // ROOT FIX: Try multiple ways to open component library
-            if (window.componentLibrarySystem && window.componentLibrarySystem.show) {
-                window.componentLibrarySystem.show();
-            } else {
-                // Fallback: directly show the modal
-                const modal = document.getElementById('component-library-overlay');
-                if (modal) {
-                    modal.style.display = 'block';
-                    modal.classList.add('show');
-                    
-                    // Ensure component data is available
-                    if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
-                        const data = window.gmkbData || window.guestifyData;
-                        window.gmkbComponentsData = data.components || [];
-                    }
-                } else {
-                    window.structuredLogger.warn('MAIN', 'Component library modal not found');
-                }
-            }
-        });
-        window.structuredLogger.info('MAIN', 'Add component button listener attached');
+        window.structuredLogger.info('MAIN', 'Add component button found - event handlers will be attached by component-library-simple.js');
     }
     
     window.structuredLogger.info('MAIN', 'Basic event listeners setup complete');
@@ -677,4 +662,6 @@ window.gmkbApp = {
 
 })(); // End IIFE
 
-console.log('✅ GMKB: Simplified main application loaded and ready');
+if (window.gmkbData?.debugMode) {
+    console.log('✅ GMKB: Simplified main application loaded and ready');
+}

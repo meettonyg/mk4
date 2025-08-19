@@ -36,7 +36,8 @@ class TemplateCache {
         this.config = {
             maxAge: 86400000,    // 24 hours (templates change infrequently)
             maxSize: 100,        // Maximum number of templates to cache
-            validateOnGet: false // Only validate on cache miss for better performance
+            validateOnGet: false, // Only validate on cache miss for better performance
+            disableExpiration: false // Disable expiration warnings for production
         };
         
         structuredLogger.info('CACHE', 'Template cache initialized', { config: this.config });
@@ -104,9 +105,8 @@ class TemplateCache {
         if (template) {
             this.cacheStats.hits++;
             
-            // ROOT FIX: Only validate expiration if explicitly requested
-            // or if cache is severely outdated (prevents unnecessary warnings)
-            if (this.config.validateOnGet && this.isSeverelyExpired()) {
+            // ROOT FIX: Only validate expiration in production and if severely outdated
+            if (this.config.validateOnGet && !window.gmkbData?.debugMode && this.isSeverelyExpired()) {
                 structuredLogger.warn('CACHE', 'Cache severely expired, consider refresh', {
                     type,
                     ageHours: Math.round((Date.now() - this.lastFetch) / 3600000)
@@ -186,12 +186,18 @@ class TemplateCache {
     }
     
     /**
-     * ROOT FIX: Check if cache is expired
+     * ROOT FIX: Check if cache is expired (lenient for development)
      * @returns {boolean}
      */
     isExpired() {
         if (!this.lastFetch) return true;
-        return (Date.now() - this.lastFetch) > this.config.maxAge;
+        
+        // ROOT FIX: In development, extend cache lifetime to reduce noise
+        const effectiveMaxAge = window.gmkbData?.debugMode ? 
+            this.config.maxAge * 7 : // 7 days in debug mode
+            this.config.maxAge;      // Normal 24 hours in production
+            
+        return (Date.now() - this.lastFetch) > effectiveMaxAge;
     }
     
     /**

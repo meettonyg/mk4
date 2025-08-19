@@ -19,7 +19,9 @@
 (function() {
     'use strict';
 
-    console.log('🔄 SortableManager: Loading enhanced sortable integration...');
+    if (window.gmkbData?.debugMode) {
+        console.log('🔄 SortableManager: Loading enhanced sortable integration...');
+    }
 
     /**
      * ROOT FIX: Enhanced Sortable Integration for Component Reordering
@@ -38,21 +40,29 @@
          */
         init() {
             if (this.isInitialized) {
-                console.log('🔄 SortableManager: Already initialized');
+                if (window.gmkbData?.debugMode) {
+                    console.log('🔄 SortableManager: Already initialized');
+                }
                 return;
             }
             
-            console.log('🔄 SortableManager: Initializing enhanced component reordering...');
+            if (window.gmkbData?.debugMode) {
+                console.log('🔄 SortableManager: Initializing enhanced component reordering...');
+            }
             
             // ROOT FIX: Event-driven initialization (NO POLLING)
             // Check if GMKB is already available
             if (window.GMKB && window.GMKB.subscribe) {
-                console.log('✅ SortableManager: GMKB available immediately, setting up event listeners');
+                if (window.gmkbData?.debugMode) {
+                    console.log('✅ SortableManager: GMKB available immediately, setting up event listeners');
+                }
                 this.setupEventListeners();
                 this.checkReadiness();
             } else {
                 // ROOT FIX: Listen for GMKB to become available via event
-                console.log('⚡ SortableManager: GMKB not ready, waiting for initialization event');
+                if (window.gmkbData?.debugMode) {
+                    console.log('⚡ SortableManager: GMKB not ready, waiting for initialization event');
+                }
                 this.waitForDependencies();
             }
         },
@@ -64,23 +74,31 @@
             if (window.GMKB && window.GMKB.subscribe) {
                 // Listen for components loaded
                 window.GMKB.subscribe('gmkb:components-loaded', () => {
-                    console.log('🔄 SortableManager: Components loaded');
+                    if (window.gmkbData?.debugMode) {
+                        console.log('🔄 SortableManager: Components loaded');
+                    }
                     this.refreshSortable();
                 });
                 
                 // Listen for saved state loaded (components restored)
                 window.GMKB.subscribe('gmkb:saved-state-loaded', () => {
-                    console.log('🔄 SortableManager: Saved state loaded, setting up sortable');
+                    if (window.gmkbData?.debugMode) {
+                        console.log('🔄 SortableManager: Saved state loaded, setting up sortable');
+                    }
                     setTimeout(() => this.setupSortable(), 500);
                 });
                 
                 // Listen for component additions
                 window.GMKB.subscribe('gmkb:component-added', () => {
-                    console.log('🔄 SortableManager: Component added, refreshing sortable');
+                    if (window.gmkbData?.debugMode) {
+                        console.log('🔄 SortableManager: Component added, refreshing sortable');
+                    }
                     setTimeout(() => this.refreshSortable(), 100);
                 });
                 
-                console.log('✅ SortableManager: Event listeners setup complete');
+                if (window.gmkbData?.debugMode) {
+                    console.log('✅ SortableManager: Event listeners setup complete');
+                }
             }
             
             this.isInitialized = true;
@@ -91,17 +109,21 @@
          * Checklist compliance: Event-driven initialization, no polling
          */
         checkReadiness() {
-            console.log('🔍 SortableManager: Checking readiness...');
-            console.log('  - SortableJS available:', typeof Sortable !== 'undefined');
-            console.log('  - DragDropManager available:', !!window.DragDropManager);
-            console.log('  - GMKB available:', !!window.GMKB);
+            if (window.gmkbData?.debugMode) {
+                console.log('🔍 SortableManager: Checking readiness...');
+                console.log('  - SortableJS available:', typeof Sortable !== 'undefined');
+                console.log('  - DragDropManager available:', !!window.DragDropManager);
+                console.log('  - GMKB available:', !!window.GMKB);
+            }
             
             if (typeof Sortable !== 'undefined' && window.DragDropManager && window.GMKB) {
                 this.dragDropManager = window.DragDropManager;
                 this.setupSortable();
             } else {
                 // ROOT FIX: NO POLLING - use event listener instead
-                console.log('⚡ SortableManager: Dependencies not ready, listening for initialization event...');
+                if (window.gmkbData?.debugMode) {
+                    console.log('⚡ SortableManager: Dependencies not ready, listening for initialization event...');
+                }
                 this.waitForDependencies();
             }
         },
@@ -113,7 +135,9 @@
         waitForDependencies() {
             // Listen for GMKB initialization complete
             const handleInitComplete = (event) => {
-                console.log('⚡ SortableManager: Received initialization complete event');
+                if (window.gmkbData?.debugMode) {
+                    console.log('⚡ SortableManager: Received initialization complete event');
+                }
                 document.removeEventListener('gmkb:initialization-complete', handleInitComplete);
                 
                 // Small delay to ensure all systems are fully ready
@@ -126,7 +150,7 @@
             
             // Fallback: if event already fired, check again in 2 seconds
             setTimeout(() => {
-                if (!this.isInitialized) {
+                if (!this.isInitialized && window.gmkbData?.debugMode) {
                     console.log('⚡ SortableManager: Fallback check after initialization timeout');
                     this.checkReadiness();
                 }
@@ -137,7 +161,9 @@
          * ROOT FIX: Enhanced sortable setup with full integration
          */
         setupSortable() {
-            console.log('🔄 SortableManager: Setting up enhanced sortable functionality...');
+            if (window.gmkbData?.debugMode) {
+                console.log('🔄 SortableManager: Setting up enhanced sortable functionality...');
+            }
             
             this.previewContainer = document.getElementById('media-kit-preview');
             if (!this.previewContainer) {
@@ -187,7 +213,9 @@
                 
                 // ROOT FIX: Enhanced event handlers with state management integration
                 onStart: (evt) => {
-                    console.log('🔄 SortableManager: Started sorting component:', evt.item.id);
+                    if (window.gmkbData?.debugMode) {
+                        console.log('🔄 SortableManager: Started sorting component:', evt.item.id);
+                    }
                     
                     // Add global sorting state
                     document.body.classList.add('sorting-active', 'sorting-components');
@@ -211,8 +239,10 @@
                 },
                 
                 onEnd: (evt) => {
-                    console.log('🔄 SortableManager: Finished sorting component:', evt.item.id);
-                    console.log('  From index:', evt.oldIndex, 'To index:', evt.newIndex);
+                    if (window.gmkbData?.debugMode) {
+                        console.log('🔄 SortableManager: Finished sorting component:', evt.item.id);
+                        console.log('  From index:', evt.oldIndex, 'To index:', evt.newIndex);
+                    }
                     
                     // Remove global sorting state
                     document.body.classList.remove('sorting-active', 'sorting-components');
@@ -281,8 +311,10 @@
             });
             
             this.isEnabled = true;
-            console.log('✅ SortableManager: Enhanced sortable functionality enabled');
-            console.log('🔗 SortableManager: Integrated with DragDropManager and StateManager');
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ SortableManager: Enhanced sortable functionality enabled');
+                console.log('🔗 SortableManager: Integrated with DragDropManager and StateManager');
+            }
             
             // Add CSS classes for enhanced styling
             this.previewContainer.classList.add('sortable-enabled', 'drag-drop-complete');
@@ -482,12 +514,16 @@
     // ROOT FIX: Event-driven auto-initialization (NO POLLING)
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🔄 SortableManager: DOM ready, initializing...');
+            if (window.gmkbData?.debugMode) {
+                console.log('🔄 SortableManager: DOM ready, initializing...');
+            }
             SortableManager.init();
         });
     } else {
         // DOM already ready
-        console.log('🔄 SortableManager: DOM already ready, initializing...');
+        if (window.gmkbData?.debugMode) {
+            console.log('🔄 SortableManager: DOM already ready, initializing...');
+        }
         SortableManager.init();
     }
 
@@ -496,12 +532,18 @@
 
     // ROOT FIX: Coordinate with DragDropManager
     if (window.DragDropManager) {
-        console.log('🔗 SortableManager: Coordinating with existing DragDropManager');
+        if (window.gmkbData?.debugMode) {
+            console.log('🔗 SortableManager: Coordinating with existing DragDropManager');
+        }
     } else {
-        console.log('🔄 SortableManager: DragDropManager not yet available, will coordinate when ready');
+        if (window.gmkbData?.debugMode) {
+            console.log('🔄 SortableManager: DragDropManager not yet available, will coordinate when ready');
+        }
     }
 
-    console.log('✅ SortableManager: Enhanced module loaded with SortableJS integration');
-    console.log('🎯 SortableManager: Root-level drag-to-reorder implementation complete');
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ SortableManager: Enhanced module loaded with SortableJS integration');
+        console.log('🎯 SortableManager: Root-level drag-to-reorder implementation complete');
+    }
 
 })();

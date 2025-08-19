@@ -255,41 +255,86 @@ function setupBasicButtonHandlers() {
 }
 
 /**
- * ROOT FIX: Setup close handlers for any existing modals in the DOM
+ * ROOT FIX: Setup close handlers for actual modals only (intelligent detection)
  */
 function setupExistingModalHandlers() {
-    console.log('🔍 TOOLBAR: Looking for existing modals to setup close handlers...');
+    console.log('🔍 TOOLBAR: Looking for actual modals (intelligent detection)...');
     
-    // Common modal selectors
-    const modalSelectors = [
-        '#global-settings-modal',
-        '#export-modal',
-        '#component-library-overlay',
-        '#template-library-modal',
-        '.modal-overlay',
-        '.library-modal',
-        '[id*="modal"]',
-        '[class*="modal"]'
+    // ROOT FIX: Specific known modal IDs only (no wildcards)
+    const knownModalIds = [
+        'global-settings-modal',
+        'export-modal',
+        'component-library-overlay',
+        'template-library-modal'
     ];
     
     const foundModals = [];
     
-    modalSelectors.forEach(selector => {
-        const modals = document.querySelectorAll(selector);
-        modals.forEach(modal => {
-            if (!foundModals.includes(modal)) {
-                foundModals.push(modal);
-                console.log('🎯 TOOLBAR: Found existing modal:', modal.id || modal.className);
-            }
-        });
+    // ROOT FIX: Only check specific known modals
+    knownModalIds.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal && isActualModal(modal)) {
+            foundModals.push(modal);
+            console.log('🎯 TOOLBAR: Found valid modal:', modalId);
+        }
     });
     
-    // Setup close handlers for all found modals
+    // ROOT FIX: Additional check for any other legitimate modals
+    // Use strict criteria to avoid false positives
+    const potentialModals = document.querySelectorAll('.modal-overlay, .library-modal');
+    potentialModals.forEach(modal => {
+        if (isActualModal(modal) && !foundModals.includes(modal)) {
+            foundModals.push(modal);
+            console.log('🎯 TOOLBAR: Found additional modal:', modal.id || modal.className);
+        }
+    });
+    
+    // Setup close handlers for valid modals only
     foundModals.forEach(modal => {
         setupModalCloseHandlers(modal);
     });
     
-    console.log(`✅ TOOLBAR: Setup close handlers for ${foundModals.length} existing modals`);
+    console.log(`✅ TOOLBAR: Setup close handlers for ${foundModals.length} actual modals (filtered from potential false positives)`);
+}
+
+/**
+ * ROOT FIX: Intelligent modal detection to filter out false positives
+ * @param {Element} element - Element to check
+ * @returns {boolean} - True if element is actually a modal
+ */
+function isActualModal(element) {
+    if (!element) return false;
+    
+    // ROOT FIX: Exclude script tags, style tags, and other non-modal elements
+    if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE' || element.tagName === 'LINK') {
+        return false;
+    }
+    
+    // ROOT FIX: Exclude buttons and other interactive elements
+    if (element.tagName === 'BUTTON' || element.tagName === 'INPUT' || element.tagName === 'A') {
+        return false;
+    }
+    
+    // ROOT FIX: Exclude elements that are too small to be modals
+    if (element.offsetWidth < 100 || element.offsetHeight < 100) {
+        return false;
+    }
+    
+    // ROOT FIX: Must be a container element (div, section, article, etc.)
+    const containerTags = ['DIV', 'SECTION', 'ARTICLE', 'ASIDE', 'MAIN', 'DIALOG'];
+    if (!containerTags.includes(element.tagName)) {
+        return false;
+    }
+    
+    // ROOT FIX: Should have modal-like characteristics
+    const hasModalClass = element.classList.contains('modal') || 
+                         element.classList.contains('modal-overlay') ||
+                         element.classList.contains('library-modal') ||
+                         element.id.endsWith('-modal') ||
+                         element.id.includes('modal-') ||
+                         element.id.includes('library');
+    
+    return hasModalClass;
 }
 
 /**
