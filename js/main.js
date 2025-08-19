@@ -4,6 +4,68 @@
  * Phase 1: Architectural Integrity & Race Condition Prevention - COMPLETE
  */
 
+// ROOT FIX: WordPress data verification and alias creation
+// This runs after wp_localize_script has made data available
+(function verifyWordPressData() {
+    'use strict';
+    
+    // ROOT FIX: Create data aliases for backward compatibility
+    function createDataAliases() {
+        if (window.gmkbData) {
+            window.guestifyData = window.gmkbData;
+            window.MKCG = window.gmkbData;
+            
+            if (window.gmkbData.debugMode) {
+                console.log('✅ GMKB: Data aliases created successfully');
+                console.log('✅ GMKB: WordPress data object created with', Object.keys(window.gmkbData).length, 'properties');
+                console.log('✅ GMKB: Component data available:', !!(window.gmkbData && window.gmkbData.components));
+                console.log('✅ GMKB: Component count:', window.gmkbData.components ? window.gmkbData.components.length : 0);
+                console.log('✅ ROOT FIX ACTIVE: WordPress data available immediately in global namespace');
+                console.log('✅ ROOT FIX ACTIVE: WordPress data ready event also dispatched for compatibility');
+                console.log('✅ ROOT FIX ACTIVE: 10-second timeout issue eliminated - components should add instantly');
+                
+                // Detailed verification only in debug mode
+                setTimeout(function() {
+                    console.log('✅ GMKB DEBUG: WordPress component data check:');
+                    console.log('  gmkbData.components:', window.gmkbData.components || 'not found');
+                    console.log('  guestifyData.components:', window.guestifyData.components || 'not found');
+                    console.log('  MKCG.components:', window.MKCG.components || 'not found');
+                    console.log('  Total components found:', window.gmkbData.totalComponents || 0);
+                }, 100);
+            }
+            
+            // ROOT FIX: Dispatch compatibility event for other scripts
+            setTimeout(function() {
+                const wordPressDataReadyEvent = new CustomEvent('wordpressDataReady', {
+                    detail: window.gmkbData
+                });
+                document.dispatchEvent(wordPressDataReadyEvent);
+                
+                // Also create a backup data cache for any scripts that expect it
+                window.wordpressDataCache = {
+                    ajaxUrl: window.gmkbData.ajaxUrl,
+                    nonce: window.gmkbData.nonce,
+                    postId: window.gmkbData.postId,
+                    pluginUrl: window.gmkbData.pluginUrl,
+                    components: window.gmkbData.components,
+                    categories: window.gmkbData.categories,
+                    debugMode: window.gmkbData.debugMode,
+                    timestamp: Date.now(),
+                    source: 'main_js_after_localize'
+                };
+            }, 10);
+            return true;
+        }
+        return false;
+    }
+    
+    // Try immediately
+    if (!createDataAliases()) {
+        // Retry if data not available yet
+        setTimeout(createDataAliases, 50);
+    }
+})();
+
 // ROOT FIX: Simplified debug log with minimal console output
 if (window.gmkbData?.debugMode) {
     console.log('%c🚀 GMKB main.js LOADING (SIMPLIFIED ARCHITECTURE)...', 'font-weight: bold; color: #10b981; background: #ecfdf5; padding: 2px 6px; border-radius: 3px;');

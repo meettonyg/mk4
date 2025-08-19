@@ -642,77 +642,14 @@ function gmkb_enqueue_assets() {
         }
     }
     
-    // ROOT FIX: Create aliases via JavaScript to prevent duplicate PHP processing with timing safety
-    echo '<script>';
-    echo 'function safeCreateAliases() {';
-    echo '  if (window.gmkbData) {';
-    echo '    window.guestifyData = window.gmkbData;';
-    echo '    window.MKCG = window.gmkbData;';
-    echo '    if (window.gmkbData.debugMode) console.log("✅ GMKB: Data aliases created successfully");';
-    echo '  } else {';
-    echo '    setTimeout(safeCreateAliases, 50);';
-    echo '  }';
-    echo '}';
-    echo 'safeCreateAliases();';
-    echo '</script>';
+    // ROOT FIX: Remove all immediate debug output to prevent timing conflicts
+    // All debug verification moved to JavaScript files that load after wp_localize_script
     
-    // ROOT CAUSE FIX: Enhanced debug output to verify component data is properly passed
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        echo '<script>console.log("✅ GMKB: WordPress data object created with", window.gmkbData ? Object.keys(window.gmkbData).length : 0, "properties");</script>';
-        echo '<script>console.log("✅ GMKB: Component data available:", !!(window.gmkbData && window.gmkbData.components));</script>';
-        echo '<script>console.log("✅ GMKB: Component count:", (window.gmkbData && window.gmkbData.components) ? (Array.isArray(window.gmkbData.components) ? window.gmkbData.components.length : Object.keys(window.gmkbData.components).length) : 0);</script>';
-        // ROOT FIX: Removed excessive debug output to reduce console noise
-    }
+    // ROOT FIX: WordPress data now handled entirely in JavaScript files
+    // This eliminates all timing race conditions with wp_localize_script
     
-    // ROOT FIX: Global namespace data availability (CHECKLIST COMPLIANT)
-    // Store WordPress data in global namespace immediately - no race conditions
-    echo '<script>
-        // ROOT FIX: Store data in global namespace for immediate access
-        window.wordpressDataCache = {
-            ajaxUrl: "' . esc_js($wp_data['ajaxUrl']) . '",
-            nonce: "' . esc_js($wp_data['nonce']) . '",
-            postId: "' . esc_js($wp_data['postId']) . '",
-            pluginUrl: "' . esc_js($wp_data['pluginUrl']) . '",
-            components: ' . json_encode($wp_data['components']) . ',
-            categories: ' . json_encode($wp_data['categories']) . ',
-            debugMode: ' . ($wp_data['debugMode'] ? 'true' : 'false') . ',
-            timestamp: ' . time() . ',
-            source: "enqueue_php_immediate"
-        };
-        
-        // ROOT FIX: Also dispatch event for backward compatibility
-        document.addEventListener("DOMContentLoaded", function() {
-            const wordPressDataReadyEvent = new CustomEvent("wordpressDataReady", {
-                detail: window.wordpressDataCache
-            });
-            document.dispatchEvent(wordPressDataReadyEvent);
-            
-            if (' . ($wp_data['debugMode'] ? 'true' : 'false') . ') {
-                console.log("✅ ROOT FIX ACTIVE: WordPress data available immediately in global namespace");
-                console.log("✅ ROOT FIX ACTIVE: WordPress data ready event also dispatched for compatibility");
-                console.log("✅ ROOT FIX ACTIVE: 10-second timeout issue eliminated - components should add instantly");
-            }
-        });
-    </script>';
-    
-    // ROOT FIX: Add immediate debug output to browser console to verify data is available
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        echo '<script>console.log("DEBUG: gmkbData available?", typeof window.gmkbData !== "undefined");</script>';
-        echo '<script>console.log("DEBUG: guestifyData available?", typeof window.guestifyData !== "undefined");</script>';
-        echo '<script>console.log("DEBUG: MKCG available?", typeof window.MKCG !== "undefined");</script>';
-        echo '<script>console.log("DEBUG: All window keys with data:", Object.keys(window).filter(k => k.includes("Data") || k.includes("data")));</script>';
-        
-        // ROOT CAUSE DEBUG: Show component data in console immediately with enhanced null safety
-        echo '<script>setTimeout(function() {';
-        echo 'try {';
-        echo 'console.log("\u2705 GMKB DEBUG: WordPress component data check:");';
-        echo 'console.log("  gmkbData.components:", (window.gmkbData && window.gmkbData.components) ? window.gmkbData.components : "gmkbData not found");';
-        echo 'console.log("  guestifyData.components:", (window.guestifyData && window.guestifyData.components) ? window.guestifyData.components : "guestifyData not found");';
-        echo 'console.log("  MKCG.components:", (window.MKCG && window.MKCG.components) ? window.MKCG.components : "MKCG not found");';
-        echo 'console.log("  Component count in PHP:", ' . count($components_data) . ');';
-        echo '} catch(e) { console.error("Debug script error:", e); }';
-        echo '}, 1000);</script>';
-    }
+    // ROOT FIX: Remove immediate debug scripts that cause timing conflicts
+    // All data verification now happens inside JavaScript files after proper loading
 
     // Enqueue CSS
     wp_enqueue_style(
