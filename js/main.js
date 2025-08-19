@@ -4,92 +4,59 @@
  * Phase 1: Architectural Integrity & Race Condition Prevention - COMPLETE
  */
 
-// ROOT FIX: WordPress data verification and alias creation
-// This runs after wp_localize_script has made data available
+// ROOT FIX: WordPress data verification - STREAMLINED
+// Single data source, no redundant aliases
 (function verifyWordPressData() {
     'use strict';
     
-    // ROOT FIX: Create data aliases for backward compatibility
-    function createDataAliases() {
-        if (window.gmkbData) {
-            window.guestifyData = window.gmkbData;
-            window.MKCG = window.gmkbData;
-            
+    function verifyDataAvailability() {
+        if (window.gmkbData && window.gmkbData.components) {
             if (window.gmkbData.debugMode) {
-                console.log('✅ GMKB: Data aliases created successfully');
-                console.log('✅ GMKB: WordPress data object created with', Object.keys(window.gmkbData).length, 'properties');
-                console.log('✅ GMKB: Component data available:', !!(window.gmkbData && window.gmkbData.components));
-                console.log('✅ GMKB: Component count:', window.gmkbData.components ? window.gmkbData.components.length : 0);
-                console.log('✅ ROOT FIX ACTIVE: WordPress data available immediately in global namespace');
-                console.log('✅ ROOT FIX ACTIVE: WordPress data ready event also dispatched for compatibility');
-                console.log('✅ ROOT FIX ACTIVE: 10-second timeout issue eliminated - components should add instantly');
-                
-                // Detailed verification only in debug mode
-                setTimeout(function() {
-                    console.log('✅ GMKB DEBUG: WordPress component data check:');
-                    console.log('  gmkbData.components:', window.gmkbData.components || 'not found');
-                    console.log('  guestifyData.components:', window.guestifyData.components || 'not found');
-                    console.log('  MKCG.components:', window.MKCG.components || 'not found');
-                    console.log('  Total components found:', window.gmkbData.totalComponents || 0);
-                }, 100);
+                console.log('🚀 gmkb: Ready [' + window.gmkbData.components.length + ' components, ' + Object.keys(window.gmkbData).length + ' properties]');
             }
             
-            // ROOT FIX: Dispatch compatibility event for other scripts
+            // Dispatch single core event
             setTimeout(function() {
-                const wordPressDataReadyEvent = new CustomEvent('wordpressDataReady', {
-                    detail: window.gmkbData
+                const gmkbReadyEvent = new CustomEvent('gmkb:ready', {
+                    detail: { 
+                        componentCount: window.gmkbData.components.length,
+                        totalProperties: Object.keys(window.gmkbData).length 
+                    }
                 });
-                document.dispatchEvent(wordPressDataReadyEvent);
-                
-                // Also create a backup data cache for any scripts that expect it
-                window.wordpressDataCache = {
-                    ajaxUrl: window.gmkbData.ajaxUrl,
-                    nonce: window.gmkbData.nonce,
-                    postId: window.gmkbData.postId,
-                    pluginUrl: window.gmkbData.pluginUrl,
-                    components: window.gmkbData.components,
-                    categories: window.gmkbData.categories,
-                    debugMode: window.gmkbData.debugMode,
-                    timestamp: Date.now(),
-                    source: 'main_js_after_localize'
-                };
+                document.dispatchEvent(gmkbReadyEvent);
             }, 10);
+            
             return true;
         }
         return false;
     }
     
-    // Try immediately
-    if (!createDataAliases()) {
-        // Retry if data not available yet
-        setTimeout(createDataAliases, 50);
+    // Try immediately, retry once if needed
+    if (!verifyDataAvailability()) {
+        setTimeout(verifyDataAvailability, 50);
     }
 })();
 
-// ROOT FIX: Simplified debug log with minimal console output
+// ROOT FIX: Streamlined debug output
 if (window.gmkbData?.debugMode) {
-    console.log('%c🚀 GMKB main.js LOADING (SIMPLIFIED ARCHITECTURE)...', 'font-weight: bold; color: #10b981; background: #ecfdf5; padding: 2px 6px; border-radius: 3px;');
-    console.log('📜 Script URL:', document.currentScript?.src || 'unknown');
-    console.log('📜 Load time:', new Date().toISOString());
+    console.log('%c🚀 gmkb: main.js loading...', 'font-weight: bold; color: #10b981;');
 }
 
-// ROOT FIX: IMMEDIATE component data exposure to prevent "No component data in globals"
-// ROOT FIX: SAFE component data exposure with error handling
+// ROOT FIX: Streamlined component data exposure
 function safeExposeComponentData() {
     try {
-        if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
-            const data = window.gmkbData || window.guestifyData;
+        if (!window.gmkbComponentsData && window.gmkbData) {
+            const data = window.gmkbData;
             if (data && data.components) {
-                // ROOT FIX: Check if components is object or array
                 if (Array.isArray(data.components)) {
                     window.gmkbComponentsData = data.components;
                     if (window.gmkbData?.debugMode) {
-                        console.log('✅ GMKB: Component data exposed immediately (array)', { count: data.components.length });
+                        console.log('✅ gmkb: Component data exposed [' + data.components.length + ' components]');
                     }
                 } else if (typeof data.components === 'object') {
                     window.gmkbComponentsData = Object.values(data.components);
                     if (window.gmkbData?.debugMode) {
-                        console.log('✅ GMKB: Component data exposed immediately (object)', { count: Object.keys(data.components).length });
+                        console.log('✅ gmkb: Component data exposed [' + Object.keys(data.components).length + ' components]');
                     }
                 }
                 return true;
@@ -97,69 +64,50 @@ function safeExposeComponentData() {
         }
         
         if (!window.gmkbComponentsData) {
-            // Create minimal fallback immediately
+            // Create minimal fallback
             window.gmkbComponentsData = [
                 {
                     type: 'hero',
                     name: 'Hero Section',
-                    title: 'Hero Section',
-                    description: 'A prominent header section with title and subtitle',
+                    description: 'Essential header component',
                     category: 'essential',
                     premium: false,
                     icon: 'fa-star'
-                },
-                {
-                    type: 'biography',
-                    name: 'Biography',
-                    title: 'Biography',
-                    description: 'Professional biography section',
-                    category: 'essential',
-                    premium: false,
-                    icon: 'fa-user'
-                },
-                {
-                    type: 'contact',
-                    name: 'Contact',
-                    title: 'Contact Information',
-                    description: 'Contact details and social links',
-                    category: 'essential',
-                    premium: false,
-                    icon: 'fa-envelope'
                 }
             ];
             if (window.gmkbData?.debugMode) {
-                console.log('🛡️ GMKB: Component data fallback created immediately');
+                console.log('🛡️ gmkb: Fallback component created');
             }
             return true;
         }
     } catch (error) {
-        console.error('❌ GMKB: Error in safeExposeComponentData:', error);
+        console.error('❌ gmkb: Component data exposure error:', error);
         return false;
     }
     return false;
 }
 
-// Execute safely
+// Execute component data setup
 if (safeExposeComponentData()) {
     if (window.gmkbData?.debugMode) {
-        console.log('✅ GMKB: Component data setup completed');
+        console.log('✅ gmkb: Component data setup completed');
     }
 } else {
     // Retry if WordPress data isn't available yet
     setTimeout(() => {
         if (safeExposeComponentData() && window.gmkbData?.debugMode) {
-            console.log('✅ GMKB: Component data exposed on retry');
+            console.log('✅ gmkb: Component data exposed on retry');
         }
     }, 100);
 }
 
-// ROOT FIX: Simplified initialization with essential systems only
+// ROOT FIX: Streamlined initialization
 async function initializeWhenReady() {
-    console.log('🚀 GMKB: Starting simplified initialization sequence');
+    console.log('🚀 gmkb: Starting simplified initialization sequence');
     
     // ROOT FIX: Ensure essential dependencies are available
     if (!window.structuredLogger) {
-        console.warn('⚠️ GMKB: Structured logger not available, using console fallback');
+        console.warn('⚠️ gmkb: Structured logger not available, using console fallback');
         createFallbackLogger();
     }
     
@@ -247,13 +195,13 @@ async function initializeWhenReady() {
         }));
         
         if (window.gmkbData?.debugMode) {
-            console.log('✅ GMKB: Simplified application initialization completed successfully.');
-            console.log('📡 GMKB: Global namespace exposed for module coordination');
+            console.log('✅ gmkb: Simplified application initialization completed successfully.');
+            console.log('📡 gmkb: Global namespace exposed for module coordination');
         }
         window.structuredLogger.info('MAIN', 'Application initialization complete');
         
     } catch (error) {
-        console.error('❌ GMKB: Initialization failed:', error);
+        console.error('❌ gmkb: Initialization failed:', error);
         window.structuredLogger.error('MAIN', 'Initialization failed', error);
         
         // ROOT FIX: Create minimal fallback
@@ -471,8 +419,8 @@ function setupModals() {
  */
 function setupComponentLibrary() {
     // Ensure component data is available globally with enhanced safety
-    if (!window.gmkbComponentsData && (window.gmkbData || window.guestifyData)) {
-        const data = window.gmkbData || window.guestifyData;
+    if (!window.gmkbComponentsData && window.gmkbData) {
+        const data = window.gmkbData;
         if (data && data.components) {
             // ROOT FIX: Handle both object and array component formats
             if (Array.isArray(data.components)) {
@@ -551,14 +499,14 @@ function setupBasicEventListeners() {
  */
 async function handleSaveClick() {
     if (!window.enhancedComponentManager) {
-        console.warn('⚠️ GMKB: Cannot save - component manager not available');
+        console.warn('⚠️ gmkb: Cannot save - component manager not available');
         window.structuredLogger?.warn('MAIN', 'Component manager not available for save');
         return;
     }
     
     try {
         window.structuredLogger?.info('MAIN', 'Manual save requested via save button');
-        console.log('💾 GMKB: Saving current state...');
+        console.log('💾 gmkb: Saving current state...');
         
         // ROOT FIX: Preserve component visibility during save
         const savedContainer = document.getElementById('saved-components-container');
@@ -578,7 +526,7 @@ async function handleSaveClick() {
             }
         }
         
-        console.log('✅ GMKB: State saved successfully via save button');
+        console.log('✅ gmkb: State saved successfully via save button');
         window.structuredLogger?.info('MAIN', 'Manual save completed successfully');
         
         // Show success feedback to user
@@ -587,7 +535,7 @@ async function handleSaveClick() {
         }
         
     } catch (error) {
-        console.error('❌ GMKB: Save failed:', error);
+        console.error('❌ gmkb: Save failed:', error);
         window.structuredLogger?.error('MAIN', 'Manual save failed', error);
         
         // Show error feedback to user
@@ -646,7 +594,7 @@ async function safeInitialization() {
         await initializeWhenReady();
         isInitialized = true;
     } catch (error) {
-        console.error('❌ GMKB: Safe initialization failed:', error);
+        console.error('❌ gmkb: Safe initialization failed:', error);
     } finally {
         isInitializing = false;
     }
@@ -702,7 +650,7 @@ window.gmkbApp = {
     forceReinitialize: async () => {
         isInitialized = false;
         isInitializing = false;
-        console.log('🔄 GMKB: Force reinitializing...');
+        console.log('🔄 gmkb: Force reinitializing...');
         await safeInitialization();
     },
     save: handleSaveClick,
@@ -725,5 +673,5 @@ window.gmkbApp = {
 })(); // End IIFE
 
 if (window.gmkbData?.debugMode) {
-    console.log('✅ GMKB: Simplified main application loaded and ready');
+    console.log('✅ gmkb: Simplified main application loaded and ready');
 }
