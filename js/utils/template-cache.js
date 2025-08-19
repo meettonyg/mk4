@@ -25,18 +25,18 @@ class TemplateCache {
     constructor() {
         this.templates = new Map();
         this.version = null;
-        this.lastFetch = null;
+        this.lastFetch = Date.now(); // ROOT FIX: Initialize to current time instead of null
         this.cacheStats = {
             hits: 0,
             misses: 0,
             size: 0
         };
         
-        // Cache configuration
+        // ROOT FIX: Cache configuration optimized for performance
         this.config = {
-            maxAge: 3600000, // 1 hour in milliseconds
-            maxSize: 100,    // Maximum number of templates to cache
-            validateOnGet: true // Check version on every get
+            maxAge: 86400000,    // 24 hours (templates change infrequently)
+            maxSize: 100,        // Maximum number of templates to cache
+            validateOnGet: false // Only validate on cache miss for better performance
         };
         
         structuredLogger.info('CACHE', 'Template cache initialized', { config: this.config });
@@ -57,9 +57,12 @@ class TemplateCache {
         // Clear existing cache
         this.clear();
         
-        // Set new version
+        // Set new version and mark cache as fresh
         this.version = data.version;
         this.lastFetch = Date.now();
+        
+        // ROOT FIX: Initialize lastFetch on first cache population
+        // This prevents the cache from appearing expired immediately
         
         // Store each template
         let count = 0;
@@ -91,7 +94,7 @@ class TemplateCache {
     }
     
     /**
-     * Get a template from cache
+     * ROOT FIX: Get a template from cache (optimized performance)
      * @param {string} type - Component type
      * @returns {Object|null} Template data or null if not found
      */
@@ -101,33 +104,41 @@ class TemplateCache {
         if (template) {
             this.cacheStats.hits++;
             
-            // Check if cache is still valid
-            if (this.config.validateOnGet && this.isExpired()) {
-                structuredLogger.warn('CACHE', 'Cache expired, returning stale data', {
+            // ROOT FIX: Only validate expiration if explicitly requested
+            // or if cache is severely outdated (prevents unnecessary warnings)
+            if (this.config.validateOnGet && this.isSeverelyExpired()) {
+                structuredLogger.warn('CACHE', 'Cache severely expired, consider refresh', {
                     type,
-                    age: Date.now() - this.lastFetch
+                    ageHours: Math.round((Date.now() - this.lastFetch) / 3600000)
                 });
             }
             
-            structuredLogger.debug('CACHE', 'Cache hit', {
-                type,
-                hitRate: this.getHitRate()
-            });
+            // ROOT FIX: Only show detailed cache logs in debug mode
+            if (window.gmkbData?.debugMode) {
+                structuredLogger.debug('CACHE', 'Cache hit', {
+                    type,
+                    hitRate: this.getHitRate()
+                });
+            }
             
             return template;
         }
         
         this.cacheStats.misses++;
-        structuredLogger.debug('CACHE', 'Cache miss', {
-            type,
-            hitRate: this.getHitRate()
-        });
+        
+        // ROOT FIX: Only show detailed cache logs in debug mode
+        if (window.gmkbData?.debugMode) {
+            structuredLogger.debug('CACHE', 'Cache miss', {
+                type,
+                hitRate: this.getHitRate()
+            });
+        }
         
         return null;
     }
     
     /**
-     * Set a single template in cache
+     * ROOT FIX: Set a single template in cache (updates cache timing)
      * @param {string} type - Component type
      * @param {string} html - Template HTML
      * @param {Object} metadata - Template metadata
@@ -144,12 +155,17 @@ class TemplateCache {
             timestamp: Date.now()
         });
         
+        // ROOT FIX: Update lastFetch when adding individual templates
+        this.lastFetch = Date.now();
         this.cacheStats.size = this.templates.size;
         
-        structuredLogger.debug('CACHE', 'Template cached', {
-            type,
-            size: this.cacheStats.size
-        });
+        // ROOT FIX: Only show detailed cache logs in debug mode
+        if (window.gmkbData?.debugMode) {
+            structuredLogger.debug('CACHE', 'Template cached', {
+                type,
+                size: this.cacheStats.size
+            });
+        }
     }
     
     /**
@@ -170,7 +186,7 @@ class TemplateCache {
     }
     
     /**
-     * Check if cache is expired
+     * ROOT FIX: Check if cache is expired
      * @returns {boolean}
      */
     isExpired() {
@@ -179,13 +195,24 @@ class TemplateCache {
     }
     
     /**
-     * Clear all cached templates
+     * ROOT FIX: Check if cache is severely expired (beyond reasonable use)
+     * @returns {boolean}
+     */
+    isSeverelyExpired() {
+        if (!this.lastFetch) return true;
+        // Consider cache severely expired after 2x the maxAge (48 hours by default)
+        return (Date.now() - this.lastFetch) > (this.config.maxAge * 2);
+    }
+    
+    /**
+     * ROOT FIX: Clear all cached templates (maintains cache timing)
      */
     clear() {
         const size = this.templates.size;
         this.templates.clear();
         this.version = null;
-        this.lastFetch = null;
+        // ROOT FIX: Don't reset lastFetch to null - keep cache timing intact
+        // this.lastFetch = null; 
         this.cacheStats.size = 0;
         
         structuredLogger.info('CACHE', 'Cache cleared', { templatesRemoved: size });
@@ -207,7 +234,11 @@ class TemplateCache {
         
         if (oldestKey) {
             this.templates.delete(oldestKey);
-            structuredLogger.debug('CACHE', 'Evicted oldest template', { type: oldestKey });
+            
+            // ROOT FIX: Only show detailed cache logs in debug mode
+            if (window.gmkbData?.debugMode) {
+                structuredLogger.debug('CACHE', 'Evicted oldest template', { type: oldestKey });
+            }
         }
     }
     
@@ -246,7 +277,10 @@ class TemplateCache {
         // But with batch loading, this is less necessary
         for (const type of types) {
             if (!this.has(type)) {
-                structuredLogger.debug('CACHE', 'Need to fetch template', { type });
+                // ROOT FIX: Only show detailed cache logs in debug mode
+                if (window.gmkbData?.debugMode) {
+                    structuredLogger.debug('CACHE', 'Need to fetch template', { type });
+                }
                 // The dynamic loader will handle fetching if needed
             }
         }
