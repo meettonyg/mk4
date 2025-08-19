@@ -551,26 +551,11 @@ class EnhancedComponentRenderer {
         
         this.logger.debug('RENDER', `Starting renderNewComponents for ${componentIds.size} components`);
         
-        // ROOT FIX: Smart container selection for new components
-        let targetContainer = this.previewContainer; // Default fallback
-        let containerReason = 'default_preview';
+        // ROOT FIX: Always use preview container - no complex container switching
+        let targetContainer = this.previewContainer;
+        let containerReason = 'preview_container_always';
         
-        // Check if saved components container should be used
-        const savedContainer = document.getElementById('saved-components-container');
-        if (savedContainer) {
-            const computedStyle = window.getComputedStyle(savedContainer);
-            const isVisible = computedStyle.display !== 'none' && 
-                            computedStyle.visibility !== 'hidden' &&
-                            savedContainer.offsetParent !== null;
-            
-            if (isVisible) {
-                targetContainer = savedContainer;
-                containerReason = 'saved_container_active';
-                this.logger.info('RENDER', 'Using saved components container for new components');
-            } else {
-                this.logger.debug('RENDER', 'Saved container exists but hidden, using preview container');
-            }
-        }
+        this.logger.debug('RENDER', 'Using preview container consistently (no container switching)');
         
         const fragment = document.createDocumentFragment();
         const renderPromises = Array.from(componentIds).map(id => {
@@ -747,22 +732,16 @@ class EnhancedComponentRenderer {
             count: validatedLayout.length
         });
 
-        // ROOT FIX: Container-aware reordering
-        // Find which container actually has components and reorder within that container
-        const savedContainer = document.getElementById('saved-components-container');
+        // ROOT FIX: Always use preview container for reordering
         let activeContainer = this.previewContainer;
         
-        if (savedContainer && savedContainer.children.length > 0) {
-            activeContainer = savedContainer;
-            this.logger.debug('RENDER', 'Reordering within saved components container');
-        } else if (this.previewContainer && this.previewContainer.children.length > 0) {
-            activeContainer = this.previewContainer;
-            this.logger.debug('RENDER', 'Reordering within preview container');
-        } else {
-            this.logger.debug('RENDER', 'No container with children found for reordering');
+        if (!activeContainer || activeContainer.children.length === 0) {
+            this.logger.debug('RENDER', 'No components in preview container for reordering');
             perfEnd();
             return;
         }
+        
+        this.logger.debug('RENDER', 'Reordering within preview container consistently');
 
         const elementMap = new Map();
         Array.from(activeContainer.children).forEach(child => {
@@ -995,43 +974,11 @@ class EnhancedComponentRenderer {
             const componentCount = Object.keys(initialState.components).length;
             this.logger.info('RENDER', `renderSavedComponents: Starting render of ${componentCount} saved components`);
             
-            // ROOT FIX: Enhanced container detection with comprehensive checks
-            let targetContainer = document.getElementById('saved-components-container');
-            let containerReason = 'not_found';
+            // ROOT FIX: Always use preview container consistently
+            let targetContainer = this.previewContainer;
+            let containerReason = 'preview_container_consistent';
             
-            if (targetContainer) {
-                // CRITICAL FIX: More robust visibility check - show container if it exists but is hidden
-                const computedStyle = window.getComputedStyle(targetContainer);
-                const isCurrentlyVisible = computedStyle.display !== 'none' && 
-                                        computedStyle.visibility !== 'hidden';
-                
-                if (isCurrentlyVisible) {
-                    containerReason = 'saved_container_visible';
-                    this.logger.info('RENDER', 'Using visible saved components container');
-                } else {
-                    // CRITICAL FIX: Show the container if it's hidden but exists
-                    targetContainer.style.display = 'block';
-                    targetContainer.style.visibility = 'visible';
-                    
-                    // Hide empty state when showing saved container
-                    const emptyState = document.getElementById('empty-state');
-                    if (emptyState && emptyState.dataset.allowJsControl === 'true') {
-                        emptyState.style.display = 'none';
-                    }
-                    
-                    containerReason = 'saved_container_activated';
-                    this.logger.info('RENDER', 'Activated hidden saved components container for rendering');
-                }
-            } else {
-                this.logger.warn('RENDER', 'Saved components container not found in DOM');
-            }
-            
-            // Fallback to preview container if saved container unavailable
-            if (!targetContainer) {
-                targetContainer = this.previewContainer;
-                containerReason = 'fallback_to_preview';
-                this.logger.warn('RENDER', 'Falling back to preview container', { reason: containerReason });
-            }
+            this.logger.info('RENDER', 'Using preview container consistently for saved components');
             
             if (!targetContainer) {
                 this.logger.error('RENDER', 'No target container available for saved components');
@@ -1096,14 +1043,8 @@ class EnhancedComponentRenderer {
                 targetContainerId: targetContainer.id || 'preview-container'
             });
             
-            // ROOT FIX: Hide empty state if components were successfully rendered
-            if (successfulRenders > 0) {
-                const emptyState = document.getElementById('empty-state');
-                if (emptyState && emptyState.dataset.allowJsControl === 'true') {
-                    emptyState.style.display = 'none';
-                    this.logger.info('RENDER', 'renderSavedComponents: Hidden empty state after successful render');
-                }
-            }
+            // ROOT FIX: Don't manipulate empty state display - let PHP template handle it
+            this.logger.debug('RENDER', 'Skipping empty state manipulation - PHP template controls display');
             
             return successfulRenders > 0;
             

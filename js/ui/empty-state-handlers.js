@@ -709,27 +709,9 @@ class EmptyStateHandlers {
             const emptyStateElement = document.getElementById('empty-state');
             const savedComponentsContainer = document.getElementById('saved-components-container');
             
-            // CRITICAL: If saved components container exists and is visible, do NOT interfere
-            if (savedComponentsContainer && savedComponentsContainer.style.display !== 'none') {
-                structuredLogger.info('EMPTY_STATE', 'Saved components container is active - will not interfere', { componentCount });
-                
-                // Ensure empty state is hidden when saved components are showing
-                if (emptyStateElement && componentCount > 0) {
-                    emptyStateElement.style.display = 'none';
-                    structuredLogger.info('EMPTY_STATE', 'Hidden empty state to show saved components');
-                }
-                return;
-            }
-            
-            // If template shows empty state but we have components, this might be a state update
-            if (emptyStateElement && componentCount > 0) {
-                // Only hide if the template explicitly allows JavaScript control
-                const allowJsControl = emptyStateElement.dataset.allowJsControl;
-                if (allowJsControl === 'true') {
-                    emptyStateElement.style.display = 'none';
-                    structuredLogger.info('EMPTY_STATE', 'Components added - hiding empty state with JS permission');
-                }
-            }
+            // ROOT FIX: Never manipulate container or empty state display - let PHP template control everything
+            structuredLogger.info('EMPTY_STATE', 'State change observed but not manipulating display', { componentCount });
+            structuredLogger.debug('EMPTY_STATE', 'PHP template controls all display logic - JavaScript is non-invasive');
             
             structuredLogger.info('EMPTY_STATE', 'State change handled (respecting template)', { componentCount, note: 'PHP template controls initial display' });
             
@@ -749,18 +731,8 @@ class EmptyStateHandlers {
             // Show success feedback
             this.showSuccess(`${detail.componentType || 'Component'} added successfully`);
             
-            // ROOT FIX: Check if this is the first component and empty state allows JS control
-            const emptyStateElement = document.getElementById('empty-state');
-            if (emptyStateElement && emptyStateElement.dataset.allowJsControl === 'true') {
-                // Get current component count
-                const currentState = window.enhancedStateManager?.getState();
-                const componentCount = currentState ? Object.keys(currentState.components || {}).length : 0;
-                
-                if (componentCount > 0) {
-                    emptyStateElement.style.display = 'none';
-                    structuredLogger.info('EMPTY_STATE', 'First component added - hiding empty state with permission');
-                }
-            }
+            // ROOT FIX: Do not manipulate empty state display - let PHP template handle visibility
+            structuredLogger.debug('EMPTY_STATE', 'Component added - skipping empty state manipulation (PHP template controls)');
             
             this.trackInteraction('component_added_via_empty_state', detail);
             structuredLogger.info('EMPTY_STATE', 'Component added (non-invasive)', detail);

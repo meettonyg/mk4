@@ -1,0 +1,48 @@
+/**
+ * @file container-protection.css
+ * @description Critical CSS protection against blank screen issues
+ * EMERGENCY FIX: Ensures key containers remain visible
+ */
+
+/* ROOT FIX: Ensure core containers are never accidentally hidden */
+#media-kit-preview {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 50px !important;
+}
+
+/* ROOT FIX: Ensure body remains visible */
+body {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* ROOT FIX: Ensure main containers remain visible */
+.media-kit-builder-container,
+.guestify-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* ROOT FIX: Prevent component wrappers from being hidden */
+.component-wrapper,
+.media-kit-component {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* ROOT FIX: Emergency visibility for debugging */
+.blank-screen-emergency {
+    position: fixed !important;
+    top: 10px !important;
+    right: 10px !important;
+    background: red !important;
+    color: white !important;
+    padding: 10px !important;
+    z-index: 99999 !important;
+    font-size: 12px !important;
+}
