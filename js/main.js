@@ -114,7 +114,7 @@ async function initializeWhenReady() {
         
         // 2. Initialize component renderer - ROOT FIX: Prevent double initialization and render
         if (window.enhancedComponentRenderer && !window.enhancedComponentRenderer.initialized) {
-            window.enhancedComponentRenderer.init();
+            await window.enhancedComponentRenderer.init();
             window.structuredLogger.info('MAIN', 'Component renderer initialized once');
         } else if (window.enhancedComponentRenderer && window.enhancedComponentRenderer.initialized) {
             window.structuredLogger.debug('MAIN', 'Component renderer already initialized, skipping');

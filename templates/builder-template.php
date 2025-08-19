@@ -83,12 +83,25 @@ if ($post_id > 0) {
         error_log('🔧 GMKB Template: Raw saved_state for post ' . $post_id . ': ' . print_r($saved_state, true));
     }
     
-    if (!empty($saved_state) && isset($saved_state['components']) && is_array($saved_state['components'])) {
-        $has_saved_components = count($saved_state['components']) > 0;
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Template: Found ' . count($saved_state['components']) . ' saved components for post ' . $post_id);
+    // CRITICAL FIX: Check both components object and saved_components array
+    $component_count = 0;
+    if (!empty($saved_state)) {
+        // Primary check: saved_components array (for template compatibility)
+        if (isset($saved_state['saved_components']) && is_array($saved_state['saved_components'])) {
+            $component_count = count($saved_state['saved_components']);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Template: Found ' . $component_count . ' components in saved_components array for post ' . $post_id);
+            }
         }
+        // Fallback check: components object (legacy format)
+        elseif (isset($saved_state['components']) && is_array($saved_state['components'])) {
+            $component_count = count($saved_state['components']);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Template: Found ' . $component_count . ' components in components object for post ' . $post_id);
+            }
+        }
+        
+        $has_saved_components = $component_count > 0;
     } else {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('🔧 GMKB Template: No valid saved state found for post ' . $post_id);

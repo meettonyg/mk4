@@ -245,6 +245,7 @@ function gmkb_enqueue_assets() {
             if ( !empty( $saved_state ) ) {
                 error_log( '✅ GMKB: Loaded saved state from database for post ' . $post_id );
                 error_log( '📊 GMKB: Saved components count: ' . count( $saved_state['components'] ?? [] ) );
+                error_log( '📊 GMKB: Saved_components array count: ' . count( $saved_state['saved_components'] ?? [] ) );
             } else {
                 error_log( '📝 GMKB: No saved state found for post ' . $post_id . ' - starting fresh' );
             }

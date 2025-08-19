@@ -779,6 +779,7 @@ class Guestify_Media_Kit_Builder {
     
     /**
      * ROOT FIX: Save media kit state to database with comprehensive error handling and diagnostics
+     * CRITICAL FIX: Ensures proper data format consistency between save and load operations
      */
     public function ajax_save_media_kit() {
         // Enhanced error logging for debugging
@@ -942,6 +943,24 @@ class Guestify_Media_Kit_Builder {
         
         // ROOT FIX: Enhanced save operation with detailed error reporting
         $meta_key = 'gmkb_media_kit_state';
+        
+        // CRITICAL FIX: Ensure saved_components array format for template compatibility
+        if (isset($state['components']) && is_object($state['components'])) {
+            // Convert components object to saved_components array for template
+            $saved_components = array();
+            foreach ($state['components'] as $component_id => $component_data) {
+                if (is_array($component_data) || is_object($component_data)) {
+                    $component_array = (array) $component_data;
+                    $component_array['id'] = $component_id; // Ensure ID is set
+                    $saved_components[] = $component_array;
+                }
+            }
+            $state['saved_components'] = $saved_components;
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Added saved_components array with ' . count($saved_components) . ' components for template compatibility');
+            }
+        }
         
         // Check if meta already exists
         $existing_meta = get_post_meta($post_id, $meta_key, true);

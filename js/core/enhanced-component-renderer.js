@@ -239,54 +239,43 @@ class EnhancedComponentRenderer {
         }
     }
 
-    init() {
+    async init() {
         if (this.initialized) return;
 
         this.previewContainer = document.getElementById('media-kit-preview');
-        if (!this.previewContainer) return;
+        if (!this.previewContainer) {
+            console.error('RENDER', 'Preview container not found. Cannot initialize.');
+            return;
+        }
 
-        this.initializeFromDOM();
+        // 1. Get the initial state directly from the manager
+        const initialState = enhancedStateManager.getInitialState();
+        this.logger.info('RENDER', 'Performing initial render with state:', initialState);
 
+        // 2. Perform a direct, one-time render of the initial state
+        if (initialState && initialState.components && Object.keys(initialState.components).length > 0) {
+            await this.renderSavedComponents(initialState);
+        } else {
+            this.updateEmptyState(initialState);
+        }
+        
+        // 3. Set the lastState AFTER the initial render is complete
+        this.lastState = this.cloneState(initialState);
+
+        // 4. NOW, subscribe to future changes
         this.stateUnsubscribe = enhancedStateManager.subscribeGlobal((state) => {
             this.onStateChange(state);
         });
 
+        // 5. Setup empty state listeners
+        this.setupEmptyStateListeners();
+
         this.healthCheckInterval = setInterval(() => this.healthCheck(), 5000);
         this.initialized = true;
+        this.logger.info('RENDER', 'Initial render complete. Now listening for state changes.');
     }
 
-    initializeFromDOM() {
-        const initialState = enhancedStateManager.getState();
-        if (initialState) {
-            this.lastState = this.cloneState(initialState);
-            Array.from(this.previewContainer.children).forEach(element => {
-                if (element.id && this.lastState.components[element.id]) {
-                    this.componentCache.set(element.id, element);
-                }
-            });
 
-            this.updateEmptyState(initialState);
-            
-            // ROOT FIX: CRITICAL - Force initial render for saved components
-            const componentCount = Object.keys(initialState.components || {}).length;
-            const domChildrenCount = this.previewContainer.children.length;
-            
-            if (componentCount > 0) {
-                this.logger.info('RENDER', `Found ${componentCount} saved components - forcing immediate render`);
-                
-                // ROOT FIX: ALWAYS render saved components on initialization
-                // This prevents the "component briefly appears then disappears" issue
-                setTimeout(() => {
-                    this.renderSavedComponents(initialState);
-                }, 50); // Minimal delay to ensure DOM is ready
-                
-            } else {
-                this.logger.debug('RENDER', 'No saved components found initially');
-            }
-        }
-
-        this.setupEmptyStateListeners();
-    }
 
     onStateChange(newState) {
         if (!this.initialized || this.disableRendering) return;
@@ -295,51 +284,7 @@ class EnhancedComponentRenderer {
             clearTimeout(this.renderDebounceTimer);
         }
 
-        // ROOT FIX: Prevent duplicate renders by checking for actual changes
         this.renderDebounceTimer = setTimeout(async () => {
-            // ROOT FIX: Skip rendering if this is the same state we just processed
-            if (this.lastState && JSON.stringify(this.lastState) === JSON.stringify(newState)) {
-                this.logger.debug('RENDER', 'State unchanged, skipping render');
-                return;
-            }
-            
-            // ROOT FIX: CRITICAL - Fixed overly aggressive save-protection logic
-            const hasRenderedComponents = this.componentCache.size > 0;
-            const newStateHasComponents = Object.keys(newState.components || {}).length > 0;
-            const savedContainer = document.getElementById('saved-components-container');
-            const previewHasChildren = this.previewContainer && this.previewContainer.children.length > 0;
-            const savedContainerHasChildren = savedContainer && savedContainer.children.length > 0;
-            
-            // ROOT FIX: Enhanced detection - check if this is immediately after a save
-            const timeSinceLastSave = Date.now() - (this.lastSaveTime || 0);
-            const isRecentSave = timeSinceLastSave < 2000; // Within 2 seconds of save
-            
-            // ROOT FIX: ONLY skip if we're about to clear components when they should exist
-            // BUT allow rendering if components exist and need to be restored after save
-            if (hasRenderedComponents && newStateHasComponents && !previewHasChildren && !savedContainerHasChildren && isRecentSave) {
-                this.logger.info('RENDER', 'Save-triggered restore: Re-rendering components that disappeared after save');
-                
-                // ROOT FIX: Instead of skipping, FORCE restore the components
-                if (savedContainer) {
-                    // Make sure saved container is visible
-                    savedContainer.style.display = 'block';
-                    await this.renderSavedComponents(newState);
-                    this.logger.info('RENDER', 'Components restored to saved container after save');
-                    return;
-                } else {
-                    // Fall through to normal rendering in preview container
-                    this.logger.info('RENDER', 'No saved container found, proceeding with normal render');
-                }
-            }
-            
-            // ROOT FIX: If we have components but no containers are visible, force container restoration
-            if (newStateHasComponents && !previewHasChildren && !savedContainerHasChildren && savedContainer) {
-                this.logger.warn('RENDER', 'Components exist but no container visible - forcing saved component restoration');
-                savedContainer.style.display = 'block';
-                await this.renderSavedComponents(newState);
-                return;
-            }
-            
             const changes = this.diffState(this.lastState, newState);
 
             if (!changes.added.size && !changes.removed.size && !changes.updated.size && !changes.moved.size) {
@@ -354,7 +299,6 @@ class EnhancedComponentRenderer {
                 moved: changes.moved.size
             });
 
-            // ROOT FIX: Process changes through rendering queue for race-condition-free rendering
             await this.processChangesWithQueue(changes, newState);
             this.lastState = this.cloneState(newState);
         }, 50);
@@ -1056,19 +1000,27 @@ class EnhancedComponentRenderer {
             let containerReason = 'not_found';
             
             if (targetContainer) {
-                // Check if container is actually visible using computed styles
+                // CRITICAL FIX: More robust visibility check - show container if it exists but is hidden
                 const computedStyle = window.getComputedStyle(targetContainer);
-                const isVisible = computedStyle.display !== 'none' && 
-                                computedStyle.visibility !== 'hidden' &&
-                                targetContainer.offsetParent !== null;
+                const isCurrentlyVisible = computedStyle.display !== 'none' && 
+                                        computedStyle.visibility !== 'hidden';
                 
-                if (isVisible) {
+                if (isCurrentlyVisible) {
                     containerReason = 'saved_container_visible';
-                    this.logger.info('RENDER', 'Using saved components container for rendering');
+                    this.logger.info('RENDER', 'Using visible saved components container');
                 } else {
-                    targetContainer = null;
-                    containerReason = 'saved_container_hidden';
-                    this.logger.warn('RENDER', 'Saved components container exists but is hidden');
+                    // CRITICAL FIX: Show the container if it's hidden but exists
+                    targetContainer.style.display = 'block';
+                    targetContainer.style.visibility = 'visible';
+                    
+                    // Hide empty state when showing saved container
+                    const emptyState = document.getElementById('empty-state');
+                    if (emptyState && emptyState.dataset.allowJsControl === 'true') {
+                        emptyState.style.display = 'none';
+                    }
+                    
+                    containerReason = 'saved_container_activated';
+                    this.logger.info('RENDER', 'Activated hidden saved components container for rendering');
                 }
             } else {
                 this.logger.warn('RENDER', 'Saved components container not found in DOM');
