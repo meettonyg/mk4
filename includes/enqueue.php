@@ -630,7 +630,11 @@ function gmkb_enqueue_assets() {
     
     // ROOT FIX: Development scripts only in debug mode
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        // Test scalable architecture file (prevents 404 errors) - ROOT FIX: Added duplicate prevention
+        // ROOT FIX: Test scripts removed from production (Step 2 complete)
+        // These scripts served their purpose and are no longer needed
+        
+        /*
+        // REMOVED: Test scalable architecture file (prevents 404 errors)
         if (!wp_script_is('gmkb-test-architecture', 'enqueued')) {
             wp_enqueue_script(
                 'gmkb-test-architecture',
@@ -641,7 +645,7 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Debug script for component library button issues
+        // REMOVED: Debug script for component library button issues
         if (!wp_script_is('gmkb-debug-buttons', 'enqueued')) {
             wp_enqueue_script(
                 'gmkb-debug-buttons',
@@ -652,7 +656,7 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Test script for component library button verification
+        // REMOVED: Test script for component library button verification
         if (!wp_script_is('gmkb-test-buttons', 'enqueued')) {
             wp_enqueue_script(
                 'gmkb-test-buttons',
@@ -663,7 +667,7 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Test script to verify the 10-second timeout fix
+        // REMOVED: Test script to verify the 10-second timeout fix
         if (!wp_script_is('gmkb-root-fix-verification', 'enqueued')) {
             wp_enqueue_script(
                 'gmkb-root-fix-verification',
@@ -674,7 +678,7 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Component rendering fix verification
+        // REMOVED: Component rendering fix verification
         if (!wp_script_is('gmkb-component-rendering-fix-test', 'enqueued')) {
             wp_enqueue_script(
                 'gmkb-component-rendering-fix-test',
@@ -684,6 +688,7 @@ function gmkb_enqueue_assets() {
                 true
             );
         }
+        */
     }
 
     // ROOT FIX: Single wp_localize_script call to prevent duplicate WordPress data with error handling
