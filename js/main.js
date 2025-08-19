@@ -619,12 +619,16 @@ window.GMKB = {
     
     // Event system for coordination (simplified)
     subscribe: function(event, callback) {
-        console.log(`📡 GMKB: Subscribing to event: ${event}`);
+        if (window.gmkbData?.debugMode) {
+            console.log(`📡 gmkb: Subscribing to event: ${event}`);
+        }
         document.addEventListener(event, callback);
     },
     
     dispatch: function(event, data) {
-        console.log(`📡 GMKB: Dispatching event: ${event}`, data);
+        if (window.gmkbData?.debugMode) {
+            console.log(`📡 gmkb: Dispatching event: ${event}`, data);
+        }
         document.dispatchEvent(new CustomEvent(event, { detail: data }));
     },
     
