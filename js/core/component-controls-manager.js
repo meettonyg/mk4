@@ -96,7 +96,9 @@
         
         // ROOT FIX: Attach controls to any existing components immediately
         setTimeout(() => {
-        this.attachControlsToAllExistingComponents();
+            if (window.componentControlsManager && window.componentControlsManager.attachControlsToAllExistingComponents) {
+                window.componentControlsManager.attachControlsToAllExistingComponents();
+            }
         }, 100);
         
         // ROOT FIX: Dispatch ready event for event-driven coordination (NO POLLING)
@@ -857,14 +859,14 @@
      * ROOT FIX: Attach controls to all existing components on initialization
      * Ensures components rendered before controls manager was ready get controls
      */
-    attachControlsToAllExistingComponents() {
+    componentControlsManager.attachControlsToAllExistingComponents = function() {
         const existingComponents = document.querySelectorAll('[data-component-id]');
         let attachedCount = 0;
         
         existingComponents.forEach(element => {
             const componentId = element.getAttribute('data-component-id');
             if (componentId && !element.querySelector('.component-controls--dynamic')) {
-                const success = this.attachControls(element, componentId);
+                const success = componentControlsManager.attachControls(element, componentId);
                 if (success) {
                     attachedCount++;
                     structuredLogger.debug('CONTROLS', `Retroactively attached controls to: ${componentId}`);
@@ -884,6 +886,6 @@
                 }
             }));
         }
-    }
+    };
 
 })(); // ROOT FIX: Close IIFE wrapper
