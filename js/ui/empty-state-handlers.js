@@ -226,29 +226,16 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Setup manual component addition button handlers
+     * CRITICAL FIX: Do not interfere with component library buttons
+     * Let component library system handle these buttons properly
      */
     setupManualAdditionButtons() {
-        // Add first component button
-        const addFirstComponentBtn = document.getElementById('add-first-component');
-        if (addFirstComponentBtn) {
-            addFirstComponentBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.handleManualComponentAddition(e.target);
-            });
-            this.activeButtons.add('add-first-component');
-        }
+        // ROOT FIX: REMOVED conflicting event listeners for component library buttons
+        // The component library system properly handles these buttons:
+        // - #add-first-component (handled by component-library-simple.js)
+        // - #add-component-btn (handled by component-library-simple.js)
         
-        // Add component button (generic)
-        const addComponentBtn = document.getElementById('add-component-btn');
-        if (addComponentBtn) {
-            addComponentBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.handleManualComponentAddition(e.target);
-            });
-            this.activeButtons.add('add-component-btn');
-        }
-        
-        // Connect data button
+        // Only handle non-component-library buttons
         const connectDataBtn = document.getElementById('connect-data-btn');
         if (connectDataBtn) {
             connectDataBtn.addEventListener('click', (e) => {
@@ -309,18 +296,15 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Setup component library trigger handlers
+     * CRITICAL FIX: Removed conflicting handlers - let component library system handle its own buttons
      */
     setupComponentLibraryTriggers() {
-        // Component library modal trigger
-        const libraryTriggers = document.querySelectorAll('[data-action="open-component-library"]');
-        libraryTriggers.forEach(trigger => {
-            trigger.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.handleOpenComponentLibrary(e.target);
-            });
-        });
+        // ROOT FIX: REMOVED component library triggers that conflict with component-library-simple.js
+        // The component library system handles these selectors:
+        // - [data-action="add-component"] (fixed in template)
+        // - #add-component-btn, #add-first-component (handled by component-library-simple.js)
         
-        // Template library trigger
+        // Only handle template library triggers
         const templateTriggers = document.querySelectorAll('[data-action="open-template-library"]');
         templateTriggers.forEach(trigger => {
             trigger.addEventListener('click', (e) => {
@@ -482,6 +466,8 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle manual component addition button clicks
+     * DEPRECATED: This method is no longer used since component library handles these buttons
+     * Kept for compatibility but should not be called
      * 
      * @param {HTMLElement} button - Clicked button element
      */
@@ -489,23 +475,28 @@ class EmptyStateHandlers {
         try {
             this.trackInteraction('manual_addition_started');
             
-            // Check if component library modal exists
-            const componentLibrary = document.getElementById('component-library-overlay');
-            if (componentLibrary) {
-                // Show component library
-                componentLibrary.style.display = 'block';
-                componentLibrary.classList.add('show');
-                
-                // Focus on search input if available
-                const searchInput = componentLibrary.querySelector('#component-search');
-                if (searchInput) {
-                    setTimeout(() => searchInput.focus(), 100);
-                }
-                
-                structuredLogger.info('EMPTY_STATE', 'Component library opened for manual addition');
+            // ROOT FIX: Use proper modal system instead of direct style manipulation
+            if (window.GMKB_Modals) {
+                window.GMKB_Modals.show('component-library-overlay');
+                structuredLogger.info('EMPTY_STATE', 'Component library opened via proper modal system');
             } else {
-                // Fallback: try to add a default component
-                this.addDefaultComponent();
+                // Fallback: Check if component library modal exists
+                const componentLibrary = document.getElementById('component-library-overlay');
+                if (componentLibrary) {
+                    // Show component library using proper flex display
+                    componentLibrary.style.display = 'flex';
+                    
+                    // Focus on search input if available
+                    const searchInput = componentLibrary.querySelector('#component-search');
+                    if (searchInput) {
+                        setTimeout(() => searchInput.focus(), 100);
+                    }
+                    
+                    structuredLogger.info('EMPTY_STATE', 'Component library opened via fallback method');
+                } else {
+                    // Fallback: try to add a default component
+                    this.addDefaultComponent();
+                }
             }
             
         } catch (error) {
@@ -651,25 +642,33 @@ class EmptyStateHandlers {
     
     /**
      * ROOT FIX: Handle component library opening
+     * DEPRECATED: This method should not be called since component library handles its own buttons
      * 
      * @param {HTMLElement} trigger - Trigger element
      */
     handleOpenComponentLibrary(trigger) {
         try {
-            const componentLibrary = document.getElementById('component-library-overlay');
-            if (componentLibrary) {
-                componentLibrary.style.display = 'block';
-                componentLibrary.classList.add('show');
-                
-                // Focus search if available
-                const searchInput = componentLibrary.querySelector('#component-search');
-                if (searchInput) {
-                    setTimeout(() => searchInput.focus(), 100);
+            // ROOT FIX: Use proper modal system instead of direct style manipulation
+            if (window.GMKB_Modals) {
+                window.GMKB_Modals.show('component-library-overlay');
+                structuredLogger.info('EMPTY_STATE', 'Component library opened via proper modal system');
+            } else {
+                // Fallback to direct manipulation
+                const componentLibrary = document.getElementById('component-library-overlay');
+                if (componentLibrary) {
+                    componentLibrary.style.display = 'flex';
+                    
+                    // Focus search if available
+                    const searchInput = componentLibrary.querySelector('#component-search');
+                    if (searchInput) {
+                        setTimeout(() => searchInput.focus(), 100);
+                    }
+                    
+                    structuredLogger.info('EMPTY_STATE', 'Component library opened via fallback');
                 }
-                
-                this.trackInteraction('component_library_opened');
-                structuredLogger.info('EMPTY_STATE', 'Component library opened');
             }
+            
+            this.trackInteraction('component_library_opened');
         } catch (error) {
             structuredLogger.error('EMPTY_STATE', 'Failed to open component library', error);
         }

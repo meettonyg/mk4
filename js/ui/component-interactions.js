@@ -27,9 +27,36 @@
         }
 
         console.log('🚀 INTERACTIONS: Setting up all component interactions...');
+        
+        // ROOT FIX: Verify dependencies before initializing
+        const dependencyCheck = {
+            enhancedComponentManager: !!window.enhancedComponentManager,
+            enhancedStateManager: !!window.enhancedStateManager,
+            structuredLogger: !!window.structuredLogger
+        };
+        
+        console.log('🔍 INTERACTIONS: Dependency check:', dependencyCheck);
+        
+        if (!dependencyCheck.enhancedComponentManager) {
+            console.warn('⚠️ INTERACTIONS: enhancedComponentManager not available during setup');
+        }
 
         // Use a central event listener on the document body for robust delegation
         document.body.addEventListener('click', handleGlobalClick);
+        
+        // ROOT FIX: Add verification timeout to check if component items are clickable
+        setTimeout(() => {
+            const componentItems = document.querySelectorAll('.component-item');
+            console.log('🔍 INTERACTIONS: Post-setup verification:', {
+                componentItemsFound: componentItems.length,
+                sampleItems: Array.from(componentItems).slice(0, 3).map(item => ({
+                    className: item.className,
+                    dataComponent: item.dataset.component,
+                    isDraggable: item.draggable
+                })),
+                enhancedComponentManagerReady: window.enhancedComponentManager ? window.enhancedComponentManager.isReady() : false
+            });
+        }, 1000);
 
         isInitialized = true;
         console.log('✅ INTERACTIONS: Component interactions setup complete.');
@@ -41,6 +68,21 @@
      */
     function handleGlobalClick(event) {
         const target = event.target;
+        
+        // ROOT FIX: Enhanced debugging for click events
+        if (window.gmkbData?.debugMode) {
+            console.log('🔘 INTERACTIONS: Click detected', {
+                target: target.tagName,
+                className: target.className,
+                id: target.id,
+                dataComponent: target.dataset.component,
+                closest: {
+                    componentItem: !!target.closest('.component-item'),
+                    deleteButton: !!target.closest('.delete-component'),
+                    addComponentBtn: !!target.closest('#add-component-btn')
+                }
+            });
+        }
 
         // --- Delegated Event: Delete Component ---
         const deleteButton = target.closest('.delete-component');
@@ -54,6 +96,15 @@
         if (componentItem) {
             event.preventDefault();
             event.stopPropagation();
+            
+            if (window.gmkbData?.debugMode) {
+                console.log('🧩 INTERACTIONS: Component item clicked detected', {
+                    element: componentItem,
+                    dataComponent: componentItem.dataset.component,
+                    isDraggable: componentItem.draggable
+                });
+            }
+            
             handleAddFromLibrary(componentItem);
             return; // Stop further processing
         }
@@ -100,13 +151,35 @@
 
         console.log(`🧩 INTERACTIONS: Component clicked in library: ${componentType}`);
         addClickFeedback(componentItem); // Provide visual feedback
-
+        
+        // ROOT FIX: Enhanced component manager availability check
         if (window.enhancedComponentManager) {
-            // The component manager will handle creating default props
-            window.enhancedComponentManager.addComponent(componentType);
-            console.log(`✅ INTERACTIONS: ${componentType} added via enhancedComponentManager.`);
+            // Check if the component manager is initialized
+            if (!window.enhancedComponentManager.isReady()) {
+                console.log('🔄 INTERACTIONS: Component manager not ready, initializing...');
+                try {
+                    window.enhancedComponentManager.initialize();
+                } catch (initError) {
+                    console.error('❌ INTERACTIONS: Failed to initialize component manager:', initError);
+                    return;
+                }
+            }
+            
+            // Add the component
+            try {
+                window.enhancedComponentManager.addComponent(componentType)
+                    .then((componentId) => {
+                        console.log(`✅ INTERACTIONS: ${componentType} added successfully with ID: ${componentId}`);
+                    })
+                    .catch((error) => {
+                        console.error(`❌ INTERACTIONS: Failed to add ${componentType}:`, error);
+                    });
+            } catch (error) {
+                console.error(`❌ INTERACTIONS: Exception while adding ${componentType}:`, error);
+            }
         } else {
             console.error('❌ INTERACTIONS: enhancedComponentManager not found.');
+            console.log('🔍 INTERACTIONS: Available window properties:', Object.keys(window).filter(key => key.toLowerCase().includes('component')));
         }
     }
     
@@ -176,5 +249,37 @@
 
     // Expose the single setup function to the global scope for main.js to call
     window.setupComponentInteractions = setupComponentInteractions;
+    
+    // ROOT FIX: Debug utilities for testing component interactions
+    window.debugComponentInteractions = {
+        testComponentClick: (componentType) => {
+            console.log(`🧪 TESTING: Simulating click for ${componentType}`);
+            const componentItem = document.querySelector(`[data-component="${componentType}"]`);
+            if (componentItem) {
+                handleAddFromLibrary(componentItem);
+            } else {
+                console.error(`Component item not found: ${componentType}`);
+            }
+        },
+        checkStatus: () => {
+            return {
+                isInitialized,
+                componentItemsFound: document.querySelectorAll('.component-item').length,
+                enhancedComponentManagerAvailable: !!window.enhancedComponentManager,
+                enhancedComponentManagerReady: window.enhancedComponentManager ? window.enhancedComponentManager.isReady() : false,
+                availableComponentTypes: Array.from(document.querySelectorAll('.component-item')).map(item => item.dataset.component)
+            };
+        },
+        listClickableElements: () => {
+            const items = document.querySelectorAll('.component-item');
+            return Array.from(items).map(item => ({
+                element: item,
+                dataComponent: item.dataset.component,
+                className: item.className,
+                isDraggable: item.draggable,
+                boundingRect: item.getBoundingClientRect()
+            }));
+        }
+    };
 
 })();

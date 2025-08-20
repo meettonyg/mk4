@@ -65,6 +65,19 @@ function initializeComponentLibrary() {
         // Mark as initialized
         isInitialized = true;
         
+        // ROOT FIX: Enhanced verification - check if buttons are actually working
+        setTimeout(() => {
+            const testButtons = document.querySelectorAll('#add-component-btn, #add-first-component, [data-action="add-component"]');
+            logger.info('COMPONENT_LIBRARY', 'Post-initialization button verification', {
+                buttonsFound: testButtons.length,
+                buttonDetails: Array.from(testButtons).map(b => ({
+                    id: b.id,
+                    dataAction: b.dataset.action,
+                    hasClickListener: b.onclick !== null || b.addEventListener !== undefined
+                }))
+            });
+        }, 500);
+        
         logger.info('COMPONENT_LIBRARY', 'Initialization complete');
         
         // Dispatch ready event
@@ -88,23 +101,39 @@ function setupComponentLibraryEventListeners() {
         throw new Error('Cannot setup event listeners - DOM elements missing');
     }
     
-    // ROOT FIX: Enhanced button selection with retries for missing buttons
+    // ROOT FIX: Enhanced button selection with comprehensive selectors and debugging
     function attachShowButtonListeners() {
+        // ROOT FIX: Updated selectors to match the corrected template buttons
         const showButtons = document.querySelectorAll('#add-component-btn, #add-first-component, .show-component-library, [data-action="add-component"]');
         
         if (showButtons.length === 0) {
             logger.error('COMPONENT_LIBRARY', 'No show buttons found, scheduling retry');
+            // Check if we can find any potential buttons for debugging
+            const allButtons = document.querySelectorAll('button[id*="component"], button[class*="component"], button[data-action]');
+            if (allButtons.length > 0) {
+                logger.info('COMPONENT_LIBRARY', 'Found potential buttons for debugging:', Array.from(allButtons).map(b => ({ id: b.id, className: b.className, dataAction: b.dataset.action })));
+            }
+            
             // Retry in 100ms if buttons not found
             setTimeout(attachShowButtonListeners, 100);
             return;
         }
         
         showButtons.forEach((button, index) => {
-            // Remove any existing listeners first
+            // Remove any existing listeners first to prevent duplicates
             button.removeEventListener('click', showModal);
             button.addEventListener('click', showModal);
             logger.info('COMPONENT_LIBRARY', `Show button ${index + 1} attached: ${button.id || button.className}`);
+            
+            // Add debugging for click events
+            if (window.gmkbData?.debugMode) {
+                button.addEventListener('click', () => {
+                    console.log('🔘 Component library button clicked:', { id: button.id, dataAction: button.dataset.action });
+                });
+            }
         });
+        
+        logger.info('COMPONENT_LIBRARY', `Successfully attached listeners to ${showButtons.length} buttons`);
     }
     
     // Start attaching show button listeners
@@ -315,13 +344,44 @@ function createComponentCard(component) {
 /**
  * SIMPLE ARCHITECTURE: Modal functions
  */
-function showModal() {
+function showModal(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    if (window.gmkbData?.debugMode) {
+        console.log('🔘 showModal called, checking dependencies...');
+        console.log('- GMKB_Modals available:', !!window.GMKB_Modals);
+        console.log('- componentLibraryModal available:', !!componentLibraryModal);
+        console.log('- isInitialized:', isInitialized);
+    }
+    
     if (window.GMKB_Modals && componentLibraryModal) {
         window.GMKB_Modals.show('component-library-overlay');
         
         // Ensure components are populated
         if (!isInitialized) {
+            logger.info('COMPONENT_LIBRARY', 'Modal opened but not initialized, initializing now...');
             initializeComponentLibrary();
+        }
+        
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ Component library modal should now be visible');
+        }
+    } else {
+        logger.error('COMPONENT_LIBRARY', 'Cannot show modal - dependencies missing', {
+            hasGMKBModals: !!window.GMKB_Modals,
+            hasComponentLibraryModal: !!componentLibraryModal
+        });
+        
+        // Fallback: try to find and display the modal manually
+        const modal = document.getElementById('component-library-overlay');
+        if (modal) {
+            modal.style.display = 'flex';
+            logger.info('COMPONENT_LIBRARY', 'Displayed modal manually as fallback');
+        } else {
+            logger.error('COMPONENT_LIBRARY', 'Component library modal not found in DOM');
         }
     }
 }
@@ -479,6 +539,44 @@ document.addEventListener('gmkb:wordpress-data-ready', tryInitialization);
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
     tryInitialization();
 }
+
+// ROOT FIX: Additional retry mechanism for resilient initialization
+setTimeout(() => {
+    if (!isInitialized) {
+        logger.info('COMPONENT_LIBRARY', 'Delayed initialization attempt - ensuring system is ready');
+        tryInitialization();
+    }
+}, 1000);
+
+// ROOT FIX: Emergency fallback - try to attach event listeners even without full initialization
+setTimeout(() => {
+    if (!isInitialized) {
+        logger.info('COMPONENT_LIBRARY', 'Emergency fallback - attempting basic button attachment');
+        
+        // Try to find modal elements
+        componentLibraryModal = document.getElementById('component-library-overlay');
+        componentGrid = document.getElementById('component-grid');
+        
+        if (componentLibraryModal && componentGrid) {
+            // Try basic event listener attachment
+            const emergencyButtons = document.querySelectorAll('#add-component-btn, #add-first-component');
+            emergencyButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    logger.info('COMPONENT_LIBRARY', 'Emergency button clicked, attempting manual modal display');
+                    componentLibraryModal.style.display = 'flex';
+                    
+                    // Try to populate components if not done
+                    if (componentGrid.children.length <= 1) {
+                        populateComponents();
+                    }
+                });
+            });
+            
+            logger.info('COMPONENT_LIBRARY', 'Emergency fallback initialized');
+        }
+    }
+}, 2000);
 
 // =============================================================================
 // GLOBAL API (SIMPLIFIED)
