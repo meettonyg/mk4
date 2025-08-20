@@ -233,6 +233,7 @@
 
         /**
          * ROOT FIX: Create fallback component HTML when server render fails
+         * Now delegates control attachment to ComponentControlsManager
          * @param {string} componentType - Component type
          * @param {Object} props - Component props
          * @param {string} componentId - Component ID
@@ -246,20 +247,7 @@
                     <div class="component-content">
                         <div class="component-header">
                             <h3>${componentName} Component</h3>
-                            <div class="component-controls">
-                                <button class="component-control edit-component" data-action="edit" title="Edit Component">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                </button>
-                                <button class="component-control remove-component" data-action="remove" title="Remove Component">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="3,6 5,6 21,6"></polyline>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    </svg>
-                                </button>
-                            </div>
+                            <!-- ROOT FIX: Controls removed - will be added by ComponentControlsManager -->
                         </div>
                         <div class="component-body">
                             <p>This is a placeholder for the ${componentName.toLowerCase()} component. Edit to customize content.</p>
@@ -324,8 +312,8 @@
             componentWrapper.setAttribute('data-component-id', componentId);
             componentWrapper.innerHTML = html;
 
-            // Add event listeners for component controls
-            this.attachComponentEventListeners(componentWrapper, componentId);
+            // ROOT FIX: Component controls handled by ComponentControlsManager
+            // Controls will be attached via enhanced-component-renderer integration
 
             // Add to preview
             previewContainer.appendChild(componentWrapper);
@@ -357,25 +345,11 @@
         }
 
         /**
-         * Attach event listeners to component controls
+         * ROOT FIX: Removed conflicting event listener attachment
+         * Controls are now managed by ComponentControlsManager exclusively
+         * This prevents conflicts between multiple control systems
          */
-        attachComponentEventListeners(componentWrapper, componentId) {
-            // Edit button
-            const editBtn = componentWrapper.querySelector('.edit-component');
-            if (editBtn) {
-                editBtn.addEventListener('click', () => {
-                    this.editComponent(componentId);
-                });
-            }
-
-            // Remove button
-            const removeBtn = componentWrapper.querySelector('.remove-component');
-            if (removeBtn) {
-                removeBtn.addEventListener('click', () => {
-                    this.removeComponent(componentId);
-                });
-            }
-        }
+        // attachComponentEventListeners method removed - ComponentControlsManager handles all control events
 
         /**
          * Edit component (placeholder for now)
@@ -690,6 +664,74 @@
             }
         } catch (error) {
             logger.error('COMPONENT', `Failed to add component via event: ${componentType}`, error);
+        }
+    });
+    
+    // ROOT FIX: Listen for component control action events from ComponentControlsManager
+    document.addEventListener('gmkb:component-edit-requested', (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Edit requested for component: ${componentId}`);
+        
+        if (window.enhancedComponentManager.editComponent) {
+            window.enhancedComponentManager.editComponent(componentId);
+        } else {
+            logger.warn('COMPONENT', 'Edit functionality not implemented yet');
+        }
+    });
+    
+    document.addEventListener('gmkb:component-delete-requested', async (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Delete requested for component: ${componentId}`);
+        
+        try {
+            await window.enhancedComponentManager.removeComponent(componentId);
+            logger.info('COMPONENT', `Successfully deleted component: ${componentId}`);
+        } catch (error) {
+            logger.error('COMPONENT', `Failed to delete component: ${componentId}`, error);
+        }
+    });
+    
+    document.addEventListener('gmkb:component-duplicate-requested', async (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Duplicate requested for component: ${componentId}`);
+        
+        try {
+            const originalComponent = window.enhancedComponentManager.getComponent(componentId);
+            if (originalComponent) {
+                const duplicatedId = await window.enhancedComponentManager.addComponent(
+                    originalComponent.type, 
+                    { ...originalComponent.props }
+                );
+                logger.info('COMPONENT', `Successfully duplicated component: ${componentId} → ${duplicatedId}`);
+            } else {
+                logger.warn('COMPONENT', `Component not found for duplication: ${componentId}`);
+            }
+        } catch (error) {
+            logger.error('COMPONENT', `Failed to duplicate component: ${componentId}`, error);
+        }
+    });
+    
+    document.addEventListener('gmkb:component-move-up-requested', (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Move up requested for component: ${componentId}`);
+        
+        // Move up functionality - would need state manager integration
+        if (window.enhancedStateManager && window.enhancedStateManager.moveComponentUp) {
+            window.enhancedStateManager.moveComponentUp(componentId);
+        } else {
+            logger.warn('COMPONENT', 'Move up functionality not implemented yet');
+        }
+    });
+    
+    document.addEventListener('gmkb:component-move-down-requested', (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Move down requested for component: ${componentId}`);
+        
+        // Move down functionality - would need state manager integration
+        if (window.enhancedStateManager && window.enhancedStateManager.moveComponentDown) {
+            window.enhancedStateManager.moveComponentDown(componentId);
+        } else {
+            logger.warn('COMPONENT', 'Move down functionality not implemented yet');
         }
     });
     

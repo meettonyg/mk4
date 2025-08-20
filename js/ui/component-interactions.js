@@ -69,30 +69,34 @@
     function handleGlobalClick(event) {
         const target = event.target;
         
-        // ROOT FIX: Enhanced debugging for click events
-        if (window.gmkbData?.debugMode) {
+        // ROOT FIX: Only log clicks for our specific targets to reduce noise
+        // and prevent interference with ComponentControlsManager
+        const deleteButton = target.closest('.delete-component');
+        const componentItem = target.closest('.component-item');
+        const addComponentBtn = target.closest('#add-component-btn');
+        
+        // Only log if this is a click we care about
+        if ((deleteButton || componentItem || addComponentBtn) && window.gmkbData?.debugMode) {
             console.log('🔘 INTERACTIONS: Click detected', {
                 target: target.tagName,
                 className: target.className,
                 id: target.id,
                 dataComponent: target.dataset.component,
                 closest: {
-                    componentItem: !!target.closest('.component-item'),
-                    deleteButton: !!target.closest('.delete-component'),
-                    addComponentBtn: !!target.closest('#add-component-btn')
+                    componentItem: !!componentItem,
+                    deleteButton: !!deleteButton,
+                    addComponentBtn: !!addComponentBtn
                 }
             });
         }
 
         // --- Delegated Event: Delete Component ---
-        const deleteButton = target.closest('.delete-component');
         if (deleteButton) {
             handleDeleteComponent(deleteButton);
             return; // Stop further processing
         }
 
         // --- Delegated Event: Add Component from Library ---
-        const componentItem = target.closest('.component-item');
         if (componentItem) {
             event.preventDefault();
             event.stopPropagation();
@@ -110,7 +114,6 @@
         }
         
         // --- Delegated Event: Open Component Library Modal ---
-        const addComponentBtn = target.closest('#add-component-btn');
         if (addComponentBtn) {
             event.preventDefault();
             handleOpenLibraryModal();

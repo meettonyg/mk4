@@ -233,6 +233,53 @@ class EnhancedComponentRenderer {
     }
     
     /**
+     * ROOT FIX: Attach component controls to rendered element
+     * Integrates with ComponentControlsManager for proper control attachment
+     * @param {HTMLElement} element - Rendered component element
+     * @param {string} componentId - Component ID
+     */
+    attachComponentControls(element, componentId) {
+        try {
+            // Verify ComponentControlsManager is available
+            if (!window.componentControlsManager) {
+                this.logger.warn('RENDER', 'ComponentControlsManager not available for control attachment', { componentId });
+                return false;
+            }
+            
+            // Ensure element has proper data attributes for controls
+            if (!element.getAttribute('data-component-id')) {
+                element.setAttribute('data-component-id', componentId);
+            }
+            
+            // Attach controls using ComponentControlsManager
+            const success = window.componentControlsManager.attachControls(element, componentId);
+            
+            if (success) {
+                this.logger.debug('RENDER', `Controls attached successfully to component: ${componentId}`);
+                
+                // Emit control attachment event
+                document.dispatchEvent(new CustomEvent('gmkb:controls-attached', {
+                    detail: {
+                        componentId,
+                        element,
+                        source: 'enhanced-component-renderer',
+                        timestamp: Date.now()
+                    }
+                }));
+                
+                return true;
+            } else {
+                this.logger.warn('RENDER', `Failed to attach controls to component: ${componentId}`);
+                return false;
+            }
+            
+        } catch (error) {
+            this.logger.error('RENDER', `Error attaching controls to component ${componentId}:`, error);
+            return false;
+        }
+    }
+    
+    /**
      * Setup UI registry event listeners
      */
     setupUIRegistryListeners() {
@@ -633,7 +680,10 @@ class EnhancedComponentRenderer {
                 const componentState = newState.components[comp.id];
                 this.registerComponentWithUIRegistry(comp.id, comp.element, componentState);
                 
-                this.logger.debug('RENDER', `Added component ${comp.id} to fragment`);
+                // ROOT FIX: Ensure controls are attached for new components
+                this.attachComponentControls(comp.element, comp.id);
+                
+                this.logger.debug('RENDER', `Added component ${comp.id} to fragment with controls attached`);
             } else {
                 this.logger.warn('RENDER', `Component render failed or returned no element:`, comp);
             }
@@ -872,10 +922,14 @@ class EnhancedComponentRenderer {
                 throw new Error('Template produced no element');
             }
             
+            // ROOT FIX: CRITICAL - Attach component controls after successful rendering
+            this.attachComponentControls(element, id);
+            
             this.logger.debug('RENDER', `Successfully rendered component ${id}:`, {
                 elementTagName: element.tagName,
                 elementId: element.id,
-                hasContent: element.innerHTML.length > 0
+                hasContent: element.innerHTML.length > 0,
+                controlsAttached: true
             });
             
             return {
@@ -1143,7 +1197,10 @@ class EnhancedComponentRenderer {
                         // Register with UI registry
                         this.registerComponentWithUIRegistry(componentId, result.element, componentState);
                         
-                        this.logger.debug('RENDER', `renderSavedComponents: Successfully rendered ${componentId}`);
+                        // ROOT FIX: Ensure controls are attached for saved components
+                        this.attachComponentControls(result.element, componentId);
+                        
+                        this.logger.debug('RENDER', `renderSavedComponents: Successfully rendered ${componentId} with controls`);
                         return { componentId, element: result.element, componentState };
                     } else {
                         this.logger.error('RENDER', `renderSavedComponents: Failed to render ${componentId}`);

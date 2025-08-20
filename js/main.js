@@ -130,6 +130,18 @@ async function initializeWhenReady() {
             window.structuredLogger.warn('MAIN', 'Enhanced state manager not available');
         }
         
+        // ROOT FIX: Initialize ComponentControlsManager before component rendering
+        if (window.componentControlsManager && !window.componentControlsManager.isInitialized) {
+            if (window.componentControlsManager.init) {
+                window.componentControlsManager.init();
+                window.structuredLogger.info('MAIN', 'Component controls manager initialized');
+            }
+        } else if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+            window.structuredLogger.debug('MAIN', 'Component controls manager already initialized, skipping');
+        } else {
+            window.structuredLogger.warn('MAIN', 'Component controls manager not available - controls may not work');
+        }
+        
         // 2. Initialize component renderer - ROOT FIX: Prevent double initialization and render
         if (window.enhancedComponentRenderer && !window.enhancedComponentRenderer.initialized) {
             await window.enhancedComponentRenderer.init();
@@ -175,6 +187,7 @@ async function initializeWhenReady() {
             window.GMKB.systems.StateManager = window.enhancedStateManager;
             window.GMKB.systems.ComponentManager = window.enhancedComponentManager;
             window.GMKB.systems.ComponentRenderer = window.enhancedComponentRenderer;
+            window.GMKB.systems.ComponentControlsManager = window.componentControlsManager;
         }
         
         // 9. Emit application ready event
@@ -614,7 +627,8 @@ window.GMKB = {
     systems: {
         StateManager: window.enhancedStateManager,
         ComponentManager: window.enhancedComponentManager,
-        ComponentRenderer: window.enhancedComponentRenderer
+        ComponentRenderer: window.enhancedComponentRenderer,
+        ComponentControlsManager: window.componentControlsManager
     },
     
     // Event system for coordination (simplified)
