@@ -250,14 +250,14 @@
             container.className = 'component-controls component-controls--dynamic';
             container.setAttribute('data-controls-type', 'dynamic');
             
-            // ROOT FIX: Add CSS for dynamic controls with better visibility
+            // ROOT FIX: Add CSS for dynamic controls with PROPER visibility behavior
             container.style.cssText = `
                 position: absolute;
                 top: 8px;
                 right: 8px;
                 opacity: 0;
                 visibility: hidden;
-                transition: all 0.2s ease;
+                transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
                 z-index: 1000;
                 pointer-events: none;
                 background: rgba(0, 0, 0, 0.9);
@@ -265,6 +265,7 @@
                 padding: 4px;
                 box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
                 backdrop-filter: blur(8px);
+                transform: translateY(-2px);
             `;
             
             return container;
@@ -440,20 +441,41 @@
          * ROOT FIX: Attach hover behavior for control visibility
          */
         attachHoverBehavior(componentElement, controlsContainer) {
+            let hoverTimeout = null;
+            
             const showControls = () => {
+                // Clear any pending hide timeout
+                if (hoverTimeout) {
+                    clearTimeout(hoverTimeout);
+                    hoverTimeout = null;
+                }
+                
                 console.log('🎛️ Showing controls for:', componentElement.id);
                 controlsContainer.style.opacity = '1';
                 controlsContainer.style.visibility = 'visible';
                 controlsContainer.style.pointerEvents = 'all';
                 controlsContainer.style.transform = 'translateY(-2px)';
+                
+                // Add debugging border to verify the component
+                if (window.GMKBDebugMode) {
+                    componentElement.style.outline = '2px solid green';
+                }
             };
             
             const hideControls = () => {
-                console.log('🎛️ Hiding controls for:', componentElement.id);
-                controlsContainer.style.opacity = '0';
-                controlsContainer.style.visibility = 'hidden';
-                controlsContainer.style.pointerEvents = 'none';
-                controlsContainer.style.transform = 'translateY(0)';
+                // Use a small delay to prevent flickering when moving between element and controls
+                hoverTimeout = setTimeout(() => {
+                    console.log('🎛️ Hiding controls for:', componentElement.id);
+                    controlsContainer.style.opacity = '0';
+                    controlsContainer.style.visibility = 'hidden';
+                    controlsContainer.style.pointerEvents = 'none';
+                    controlsContainer.style.transform = 'translateY(0)';
+                    
+                    // Remove debugging border
+                    if (window.GMKBDebugMode) {
+                        componentElement.style.outline = '';
+                    }
+                }, 100);
             };
             
             // ROOT FIX: Use both mouseenter/leave AND focus events for better accessibility
@@ -865,6 +887,215 @@
     };
     
     structuredLogger.info('CONTROLS', '✅ ComponentControlsManager loaded and ready for dynamic control generation');
+    
+    // ROOT FIX: Enhanced debugging function to test and fix controls immediately
+    window.fixControlsNow = () => {
+        console.log('🔧 FIXING CONTROLS NOW - Root cause fix applied');
+        
+        // Enable debug mode
+        window.GMKBDebugMode = true;
+        document.body.classList.add('gmkb-debug-mode');
+        
+        const allComponents = document.querySelectorAll('[data-component-id]');
+        console.log(`Found ${allComponents.length} components to fix`);
+        
+        let fixedCount = 0;
+        
+        allComponents.forEach(component => {
+            const componentId = component.getAttribute('data-component-id');
+            if (!componentId) return;
+            
+            // Remove any existing controls to start fresh
+            const existingControls = component.querySelectorAll('.component-controls, .component-controls--dynamic');
+            existingControls.forEach(ctrl => ctrl.remove());
+            
+            // Force attach new controls
+            const success = componentControlsManager.attachControls(component, componentId);
+            if (success) {
+                fixedCount++;
+                
+                // Force show the controls immediately for testing
+                const newControls = component.querySelector('.component-controls--dynamic');
+                if (newControls) {
+                    newControls.style.opacity = '1';
+                    newControls.style.visibility = 'visible';
+                    newControls.style.pointerEvents = 'all';
+                    newControls.style.border = '2px solid lime';
+                    newControls.style.background = 'rgba(0, 255, 0, 0.2)';
+                    
+                    console.log(`✅ Fixed controls for ${componentId}`);
+                }
+            } else {
+                console.error(`❌ Failed to fix controls for ${componentId}`);
+            }
+        });
+        
+        console.log(`🎉 Fixed ${fixedCount}/${allComponents.length} components`);
+        
+        return {
+            totalComponents: allComponents.length,
+            fixedComponents: fixedCount,
+            debugMode: true,
+            message: 'Controls fixed and debug mode enabled. Hover over components to test.'
+        };
+    };
+    
+    // ROOT FIX: IMMEDIATE FUNCTIONALITY TEST - Tests complete event flow
+    window.testControlFunctionality = (componentId) => {
+        if (!componentId) {
+            const allComponents = document.querySelectorAll('[data-component-id]');
+            if (allComponents.length > 0) {
+                componentId = allComponents[0].getAttribute('data-component-id');
+                console.log('Auto-selecting first component:', componentId);
+            } else {
+                console.error('No components found to test');
+                return;
+            }
+        }
+        
+        console.log('🧪 TESTING COMPLETE CONTROL FUNCTIONALITY for:', componentId);
+        console.log('='.repeat(60));
+        
+        // Test event dispatching with detailed logging
+        const testEvent = (eventType, action) => {
+            console.log(`\n🚀 Testing ${action.toUpperCase()} functionality...`);
+            
+            // Listen for the event to confirm it's received
+            const eventReceived = new Promise((resolve) => {
+                const handler = (event) => {
+                    console.log(`  ✅ Event received: ${eventType}`, event.detail);
+                    document.removeEventListener(eventType, handler);
+                    resolve(true);
+                };
+                document.addEventListener(eventType, handler);
+                
+                // Timeout if event not received
+                setTimeout(() => {
+                    document.removeEventListener(eventType, handler);
+                    resolve(false);
+                }, 2000);
+            });
+            
+            // Dispatch the event
+            console.log(`  📡 Dispatching: ${eventType}`);
+            document.dispatchEvent(new CustomEvent(eventType, {
+                detail: {
+                    componentId,
+                    source: 'manual-test',
+                    timestamp: Date.now()
+                }
+            }));
+            
+            return eventReceived;
+        };
+        
+        // Test each control action
+        const tests = [
+            { eventType: 'gmkb:component-edit-requested', action: 'edit' },
+            { eventType: 'gmkb:component-duplicate-requested', action: 'duplicate' },
+            { eventType: 'gmkb:component-move-up-requested', action: 'move-up' },
+            { eventType: 'gmkb:component-move-down-requested', action: 'move-down' },
+            { eventType: 'gmkb:component-delete-requested', action: 'delete' }
+        ];
+        
+        // Run tests sequentially
+        const runTests = async () => {
+            const results = [];
+            
+            for (const test of tests) {
+                const received = await testEvent(test.eventType, test.action);
+                results.push({ ...test, received });
+                
+                // Wait between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            // Summary
+            console.log('\n📊 FUNCTIONALITY TEST RESULTS:');
+            console.log('='.repeat(40));
+            results.forEach(result => {
+                const status = result.received ? '✅ WORKING' : '❌ FAILED';
+                console.log(`  ${result.action}: ${status}`);
+            });
+            
+            const workingCount = results.filter(r => r.received).length;
+            const totalCount = results.length;
+            
+            console.log(`\n🎯 SUMMARY: ${workingCount}/${totalCount} controls working`);
+            
+            if (workingCount === 0) {
+                console.log('\n❌ NO CONTROLS WORKING - Event handlers may be missing or broken');
+                console.log('Recommendations:');
+                console.log('  1. Check console for JavaScript errors');
+                console.log('  2. Verify enhancedComponentManager is loaded');
+                console.log('  3. Check event listener registration');
+            } else if (workingCount < totalCount) {
+                console.log('\n⚠️ PARTIAL FUNCTIONALITY - Some controls working, others not');
+            } else {
+                console.log('\n✅ ALL CONTROLS WORKING - The issue may be with visual controls, not functionality');
+            }
+        };
+        
+        runTests();
+    };
+    
+    // ROOT FIX: Test control button clicking directly
+    window.testControlButtons = (componentId) => {
+        if (!componentId) {
+            const allComponents = document.querySelectorAll('[data-component-id]');
+            if (allComponents.length > 0) {
+                componentId = allComponents[0].getAttribute('data-component-id');
+                console.log('Auto-selecting first component:', componentId);
+            } else {
+                console.error('No components found to test');
+                return;
+            }
+        }
+        
+        console.log('🖱️ TESTING CONTROL BUTTON CLICKS for:', componentId);
+        
+        const component = document.getElementById(componentId);
+        if (!component) {
+            console.error('Component not found:', componentId);
+            return;
+        }
+        
+        const controls = component.querySelector('.component-controls--dynamic');
+        if (!controls) {
+            console.error('Controls not found for component:', componentId);
+            return;
+        }
+        
+        // Force show controls
+        controls.style.opacity = '1';
+        controls.style.visibility = 'visible';
+        controls.style.pointerEvents = 'all';
+        controls.style.border = '2px solid orange';
+        
+        console.log('Controls made visible, testing buttons...');
+        
+        // Test each button
+        const buttons = [
+            { selector: '[data-action="edit"]', action: 'edit' },
+            { selector: '[data-action="duplicate"]', action: 'duplicate' },
+            { selector: '[data-action="moveUp"]', action: 'moveUp' },
+            { selector: '[data-action="moveDown"]', action: 'moveDown' },
+            { selector: '[data-action="delete"]', action: 'delete' }
+        ];
+        
+        buttons.forEach((buttonTest, index) => {
+            setTimeout(() => {
+                const button = controls.querySelector(buttonTest.selector);
+                if (button) {
+                    console.log(`Clicking ${buttonTest.action} button...`);
+                    button.style.border = '2px solid red';
+                    button.click();
+                } else {
+                    console.error(`Button not found: ${buttonTest.action}`);
+                }
+            }, index * 1000);
+        });
+    };
         
     /**
      * ROOT FIX: Attach controls to all existing components on initialization

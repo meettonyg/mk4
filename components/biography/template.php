@@ -16,19 +16,7 @@ $finalComponentId = $componentId ?? $id ?? 'biography-' . uniqid();
      style="position: relative; cursor: pointer;"
      tabindex="0">
     
-    <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
-    <!-- EMERGENCY FIX: Ensure controls are attached via DOM ready event -->
-    <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        const element = document.getElementById('<?php echo esc_js($finalComponentId); ?>');
-        if (element && window.componentControlsManager) {
-            setTimeout(() => {
-                const success = window.componentControlsManager.attachControls(element, '<?php echo esc_js($finalComponentId); ?>');
-                console.log('EMERGENCY FIX: Controls attached to <?php echo esc_js($finalComponentId); ?>:', success);
-            }, 100);
-        }
-    });
-    </script>
+    <!-- ROOT FIX: Controls are handled entirely by JavaScript - NO server-side script injection -->
     
     <h2 class="section-title"><?php echo isset($title) ? esc_html($title) : 'About Me'; ?></h2>
     <div class="biography-content">
