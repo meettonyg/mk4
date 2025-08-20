@@ -121,47 +121,29 @@
                 structuredLogger.warn('CONTROLS', 'Invalid parameters for control attachment', { componentElement: !!componentElement, componentId });
                 return false;
             }
-            
-            // ROOT FIX: Check if controls already exist in DOM (from preserved controls)
-            const existingControlsInDOM = componentElement.querySelector('.component-controls');
-            if (existingControlsInDOM) {
-                structuredLogger.debug('CONTROLS', `Controls already exist in DOM for ${componentId}, updating tracker`);
-                
-                // Update tracker with new element reference but keep existing controls
-                this.attachedControls.set(componentId, {
-                    element: componentElement,
-                    controls: existingControlsInDOM,
-                    attachedAt: Date.now(),
-                    preserved: true
-                });
-                
-                // Re-attach event listeners to the preserved controls
-                this.attachEventListeners(existingControlsInDOM, componentId);
-                this.attachHoverBehavior(componentElement, existingControlsInDOM);
-                
-                structuredLogger.info('CONTROLS', `Preserved controls updated for ${componentId}`);
-                return true;
-            }
-            
-            // ROOT FIX: Deduplication check - prevent duplicate attachment
+
+            // ROOT FIX: Check if controls are already properly attached BEFORE force-clearing
             if (this.attachedControls.has(componentId)) {
-                const trackerData = this.attachedControls.get(componentId);
-                // Check if the tracked controls still exist in DOM
-                if (trackerData.controls && trackerData.controls.parentNode) {
-                    structuredLogger.debug('CONTROLS', `Controls already attached to ${componentId}, skipping`);
+                const existingControlsContainer = componentElement.querySelector('.component-controls--dynamic');
+                
+                // If we have tracker data AND functional dynamic controls are in DOM, skip attachment
+                if (existingControlsContainer && existingControlsContainer.children.length > 0) {
+                    structuredLogger.debug('CONTROLS', `Controls already attached and functional for ${componentId}`);
                     return true;
-                } else {
-                    // Controls are tracked but missing from DOM, remove from tracker and recreate
-                    structuredLogger.debug('CONTROLS', `Controls tracked but missing from DOM for ${componentId}, recreating`);
-                    this.attachedControls.delete(componentId);
                 }
+                
+                // If tracker exists but no functional controls in DOM, clean up tracker and proceed
+                structuredLogger.debug('CONTROLS', `Cleaning up stale tracker data for ${componentId}`);
+                this.attachedControls.delete(componentId);
             }
-            
-            // ROOT FIX: Check for existing controls in DOM from other sources
-            const existingControls = componentElement.querySelector('.component-controls');
-            if (existingControls) {
-                structuredLogger.debug('CONTROLS', `Removing existing controls from ${componentId}`);
-                this.removeControlsFromElement(componentElement, componentId);
+
+            // ROOT FIX: Force-clear any pre-existing or cached HTML controls
+            // This guarantees a clean slate every time, preventing "preserved controls" interference
+            const existingControlsContainer = componentElement.querySelector('.component-controls');
+            if (existingControlsContainer) {
+                // CRITICAL: Completely remove existing container to prevent any interference
+                existingControlsContainer.remove();
+                structuredLogger.debug('CONTROLS', `Force-removed existing controls container for ${componentId}`);
             }
             
             try {
