@@ -1118,18 +1118,19 @@ class EnhancedComponentRenderer {
             targetContainer.innerHTML = '';
             this.componentCache.clear();
             
-            // Render all saved components
+            // Render all saved components IN PARALLEL for fast loading
             const componentIds = Object.keys(initialState.components);
             const fragment = document.createDocumentFragment();
             
-            this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIds.length} components`);
+            this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIds.length} components IN PARALLEL`);
             
-            for (const componentId of componentIds) {
+            // ROOT FIX: CRITICAL - Restore parallel rendering for fast performance
+            const renderPromises = componentIds.map(async (componentId) => {
                 try {
                     const componentState = initialState.components[componentId];
                     if (!componentState) {
                         this.logger.warn('RENDER', `No state found for saved component: ${componentId}`);
-                        continue;
+                        return null;
                     }
                     
                     const result = await this.renderComponentWithLoader(
@@ -1139,21 +1140,34 @@ class EnhancedComponentRenderer {
                     );
                     
                     if (result && result.element) {
-                        fragment.appendChild(result.element);
-                        this.componentCache.set(componentId, result.element);
-                        
                         // Register with UI registry
                         this.registerComponentWithUIRegistry(componentId, result.element, componentState);
                         
                         this.logger.debug('RENDER', `renderSavedComponents: Successfully rendered ${componentId}`);
+                        return { componentId, element: result.element, componentState };
                     } else {
                         this.logger.error('RENDER', `renderSavedComponents: Failed to render ${componentId}`);
+                        return null;
                     }
                     
                 } catch (componentError) {
                     this.logger.error('RENDER', `renderSavedComponents: Error rendering component ${componentId}:`, componentError);
+                    return null;
                 }
-            }
+            });
+            
+            // Wait for all components to render in parallel
+            const renderedResults = await Promise.all(renderPromises);
+            
+            // Add successful renders to fragment
+            let successfulRenders = 0;
+            renderedResults.forEach(result => {
+                if (result && result.element) {
+                    fragment.appendChild(result.element);
+                    this.componentCache.set(result.componentId, result.element);
+                    successfulRenders++;
+                }
+            });
             
             // Append all components to target container
             targetContainer.appendChild(fragment);
@@ -1165,11 +1179,12 @@ class EnhancedComponentRenderer {
             
             // Verify render success
             const finalChildCount = targetContainer.children.length;
-            const successfulRenders = finalChildCount;
             
             this.logger.info('RENDER', `renderSavedComponents: Completed - ${successfulRenders}/${componentCount} components rendered`, {
                 containerUsed: containerReason,
-                targetContainerId: targetContainer.id || 'preview-container'
+                targetContainerId: targetContainer.id || 'preview-container',
+                parallelRenderingUsed: true,
+                totalRenderTime: Date.now() - Date.now() // Will be calculated by perf monitor
             });
             
             // ROOT FIX: Don't manipulate empty state display - let PHP template handle it
