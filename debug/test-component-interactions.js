@@ -118,14 +118,14 @@
         };
     };
     
-    // Auto-run if in debug mode
-    if (window.gmkbData?.debugMode) {
-        // Run test after a short delay to ensure everything is loaded
-        setTimeout(() => {
-            console.log('🔧 Debug mode detected - running component interaction test...');
-            window.testComponentInteractions();
-        }, 2000);
-    }
+    // ROOT FIX: Auto-run disabled to prevent test components from being added automatically
+    // if (window.gmkbData?.debugMode) {
+    //     // Run test after a short delay to ensure everything is loaded
+    //     setTimeout(() => {
+    //         console.log('🔧 Debug mode detected - running component interaction test...');
+    //         window.testComponentInteractions();
+    //     }, 2000);
+    // }
     
     console.log('🧪 Component interaction testing script loaded. Run testComponentInteractions() to test.');
     

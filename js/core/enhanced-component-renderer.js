@@ -97,8 +97,8 @@ class EnhancedComponentRenderer {
         // ROOT FIX: Setup save operation tracking
         this.setupSaveTracking();
         
-        // ROOT FIX: Setup component controls integration
-        this.setupComponentControlsIntegration();
+        // ROOT FIX: Component controls integration moved to init() method
+        // to ensure this.previewContainer is available before event listeners are attached
     }
     
     /**
@@ -124,6 +124,12 @@ class EnhancedComponentRenderer {
      * ROOT FIX: Verify all components are properly rendered in DOM
      */
     verifyAllComponentsRendered(state) {
+        // ROOT FIX: Add null check for previewContainer to prevent race condition
+        if (!this.previewContainer) {
+            this.logger.warn('RENDER', 'Preview container not available for verification');
+            return false;
+        }
+        
         const componentIds = Object.keys(state.components || {});
         const renderedIds = Array.from(this.previewContainer.children)
             .map(child => child.id)
@@ -249,9 +255,20 @@ class EnhancedComponentRenderer {
                 return false;
             }
             
-            // Ensure element has proper data attributes for controls
+            // ROOT FIX: Ensure element has proper attributes and styling for hover behavior
             if (!element.getAttribute('data-component-id')) {
                 element.setAttribute('data-component-id', componentId);
+            }
+            
+            // ROOT FIX: Add necessary CSS properties for proper hover detection
+            element.style.position = element.style.position || 'relative';
+            element.style.cursor = 'pointer';
+            element.tabIndex = element.tabIndex >= 0 ? element.tabIndex : 0; // Make focusable
+            element.setAttribute('data-controls-enabled', 'true');
+            
+            // ROOT FIX: Add debug border to verify element boundaries
+            if (window.GMKBDebugMode) {
+                element.style.border = '1px dashed rgba(0, 255, 0, 0.3)';
             }
             
             // Attach controls using ComponentControlsManager
@@ -259,6 +276,14 @@ class EnhancedComponentRenderer {
             
             if (success) {
                 this.logger.debug('RENDER', `Controls attached successfully to component: ${componentId}`);
+                
+                // ROOT FIX: Verify controls are actually in DOM
+                const controlsElement = element.querySelector('.component-controls--dynamic');
+                if (controlsElement) {
+                    this.logger.debug('RENDER', `Controls element found in DOM for: ${componentId}`);
+                } else {
+                    this.logger.warn('RENDER', `Controls element NOT found in DOM for: ${componentId}`);
+                }
                 
                 // Emit control attachment event
                 document.dispatchEvent(new CustomEvent('gmkb:controls-attached', {
@@ -337,6 +362,10 @@ class EnhancedComponentRenderer {
             console.error('RENDER', 'Preview container not found. Cannot initialize.');
             return;
         }
+
+        // ROOT FIX: Setup component controls integration AFTER previewContainer is available
+        // This prevents the race condition where event listeners try to access null previewContainer
+        this.setupComponentControlsIntegration();
 
         // 1. Get the initial state directly from the manager
         const initialState = enhancedStateManager.getInitialState();
@@ -563,10 +592,11 @@ class EnhancedComponentRenderer {
                 await this.queueComponentUpdates(changes.updated, newState);
             }
             
-            // Handle moves with event-driven coordination to ensure new components are fully rendered
-            if (changes.moved.size > 0) {
-                // ROOT FIX: Event-driven reordering coordination
-                this.scheduleReorderAfterRender(newState);
+            // ROOT CAUSE FIX: Handle moves and ensure proper reordering after removals
+            if (changes.moved.size > 0 || changes.removed.size > 0) {
+                // ROOT FIX: Immediate reordering for better UX, especially after removals
+                const state = enhancedStateManager.getState();
+                this.reorderComponents(state.layout);
             }
             
             // ROOT FIX: Conservative cleanup - don't aggressively remove components that might be in transition
@@ -848,16 +878,15 @@ class EnhancedComponentRenderer {
         // ROOT FIX: Always use preview container for reordering
         let activeContainer = this.previewContainer;
         
-        if (!activeContainer || activeContainer.children.length === 0) {
-            this.logger.debug('RENDER', 'No components in preview container for reordering');
+        if (!activeContainer) {
+            this.logger.debug('RENDER', 'No preview container available for reordering');
             perfEnd();
             return;
         }
         
         this.logger.debug('RENDER', 'Reordering within preview container consistently');
 
-        // ROOT FIX: CRITICAL - Don't reorder during component additions to prevent clearing newly added components
-        // Check if we're in the middle of adding components
+        // ROOT FIX: CRITICAL - FIXED reordering logic to handle component removal properly
         const currentChildren = Array.from(activeContainer.children);
         const currentChildIds = currentChildren.map(child => child.id).filter(id => id);
         
@@ -876,13 +905,39 @@ class EnhancedComponentRenderer {
             return;
         }
         
-        // ROOT FIX: Conservative reordering - only reorder if all components are present
-        const missingFromDOM = validatedLayout.filter(id => !currentChildIds.includes(id));
-        if (missingFromDOM.length > 0) {
-            this.logger.warn('RENDER', 'Skipping reorder - some components missing from DOM:', missingFromDOM);
-            this.logger.debug('RENDER', 'This prevents newly added components from being cleared during reorder');
-            perfEnd();
-            return;
+        // ROOT CAUSE FIX: Instead of skipping reorder when components are missing,
+        // first remove any DOM elements that shouldn't be there (removed components)
+        const elementsToRemove = currentChildren.filter(child => 
+            child.id && !validatedLayout.includes(child.id)
+        );
+        
+        if (elementsToRemove.length > 0) {
+            this.logger.info('RENDER', `Removing ${elementsToRemove.length} components no longer in layout`);
+            elementsToRemove.forEach(element => {
+                element.remove();
+                if (element.id) {
+                    this.componentCache.delete(element.id);
+                    this.logger.debug('RENDER', `Removed component from DOM: ${element.id}`);
+                }
+            });
+        }
+        
+        // Now check if we have all required components in DOM
+        const updatedChildren = Array.from(activeContainer.children);
+        const updatedChildIds = updatedChildren.map(child => child.id).filter(id => id);
+        const stillMissingFromDOM = validatedLayout.filter(id => !updatedChildIds.includes(id));
+        
+        if (stillMissingFromDOM.length > 0) {
+            this.logger.debug('RENDER', 'Some components still missing from DOM after cleanup:', stillMissingFromDOM);
+            this.logger.debug('RENDER', 'This is expected during component transitions - will be resolved by rendering queue');
+            
+            // ROOT CAUSE FIX: Don't proceed with reordering if too many components are missing
+            // This prevents DOM corruption during component transitions
+            if (stillMissingFromDOM.length >= validatedLayout.length / 2) {
+                this.logger.debug('RENDER', 'Skipping reorder - majority of components missing (likely during render transition)');
+                perfEnd();
+                return;
+            }
         }
 
         const elementMap = new Map();
@@ -991,35 +1046,48 @@ class EnhancedComponentRenderer {
     }
 
     /**
-     * ROOT FIX: Conservative cleanup that doesn't remove components during state transitions
-     * Prevents newly added components from disappearing due to timing issues
+     * ROOT CAUSE FIX: Enhanced cleanup that properly removes components not in current state
+     * This fixes the root cause of components disappearing by ensuring DOM stays in sync with state
      */
     conservativeCleanup(state) {
-        // Only remove elements that are definitively orphaned
+        if (!this.previewContainer) {
+            this.logger.warn('RENDER', 'No preview container for cleanup');
+            return;
+        }
+        
+        const currentStateComponentIds = new Set(Object.keys(state.components || {}));
         const elementsToRemove = [];
         
         for (const child of this.previewContainer.children) {
-            // Only remove elements that are clearly errors, have no ID, or are temporary placeholders
+            // Remove elements that are definitely orphaned
             if (!child.id || 
                 child.classList.contains('component-error') || 
                 child.classList.contains('component-placeholder') ||
                 child.textContent === 'Component loading...') {
                 elementsToRemove.push(child);
             }
+            // ROOT CAUSE FIX: Also remove elements that are no longer in the current state
+            else if (child.id && !currentStateComponentIds.has(child.id)) {
+                elementsToRemove.push(child);
+                this.logger.debug('RENDER', `Cleanup: Component ${child.id} no longer in state, removing from DOM`);
+            }
         }
         
-        // Remove only the confirmed orphaned elements
+        // Remove the confirmed orphaned elements
         elementsToRemove.forEach(element => {
             element.remove();
             if (element.id) {
                 this.componentCache.delete(element.id);
-                this.logger.debug('RENDER', `Conservative cleanup: Removed ${element.id}`);
+                this.logger.debug('RENDER', `Cleanup: Removed ${element.id}`);
             }
         });
         
         if (elementsToRemove.length > 0) {
-            this.logger.debug('RENDER', `Conservative cleanup: Removed ${elementsToRemove.length} orphaned elements`);
+            this.logger.debug('RENDER', `Cleanup: Removed ${elementsToRemove.length} orphaned elements`);
         }
+        
+        // ROOT CAUSE FIX: After cleanup, ensure empty state display is updated
+        this.updateEmptyStateAfterCleanup(state);
     }
 
     cleanupOrphanedElements(state) {
@@ -1627,6 +1695,12 @@ class EnhancedComponentRenderer {
      * This fixes the race condition where components were rendered before controls manager was ready
      */
     attachControlsToExistingComponents() {
+        // ROOT FIX: Add defensive null check to prevent race condition errors
+        if (!this.previewContainer) {
+            this.logger.warn('RENDER', 'Preview container not available, skipping attachment of controls to existing components.');
+            return;
+        }
+        
         if (!window.componentControlsManager || !window.componentControlsManager.isInitialized) {
             this.logger.warn('RENDER', 'Cannot attach controls - component controls manager not ready');
             return;
@@ -1812,28 +1886,60 @@ class EnhancedComponentRenderer {
     }
 
     /**
-     * Update empty state visibility based on component count
-     * DISABLED: Do not override PHP template rendering
+     * ROOT CAUSE FIX: Update empty state visibility AND container visibility
+     * Fixed to properly handle container switching when components are added/removed
      */
     updateEmptyState(state) {
-        // ROOT FIX: DO NOT MANIPULATE DISPLAY STYLES - LET PHP TEMPLATE CONTROL RENDERING
-        // The PHP template already renders the correct empty state based on MKCG data availability
-        // JavaScript should not override the template's display decisions
-        
         const hasComponents = Object.keys(state.components || {}).length > 0;
         
-        // Only log the state for debugging, do not manipulate DOM
-        this.logger.debug('RENDER', 'Empty state check (non-invasive)', { 
+        this.logger.debug('RENDER', 'Empty state check (respecting template)', { 
             hasComponents, 
-            note: 'PHP template controls empty state display' 
+            note: 'PHP template controls initial display' 
         });
         
-        // Optional: Update drop zones without affecting empty state
+        // ROOT CAUSE FIX: Update container visibility based on component count
+        const savedComponentsContainer = document.getElementById('saved-components-container');
+        const emptyState = document.getElementById('empty-state');
+        
+        if (hasComponents) {
+            // Show saved components container, hide empty state
+            if (savedComponentsContainer) {
+                savedComponentsContainer.style.display = 'block';
+                this.logger.debug('RENDER', 'Showing saved components container');
+            }
+            if (emptyState) {
+                emptyState.style.display = 'none';
+                this.logger.debug('RENDER', 'Hiding empty state');
+            }
+        } else {
+            // Show empty state, hide saved components container  
+            if (emptyState) {
+                emptyState.style.display = 'block';
+                this.logger.debug('RENDER', 'Showing empty state');
+            }
+            if (savedComponentsContainer) {
+                savedComponentsContainer.style.display = 'none';
+                this.logger.debug('RENDER', 'Hiding saved components container');
+            }
+        }
+        
+        // Update drop zones without affecting empty state
         const dropZone = document.querySelector('.drop-zone--primary');
         if (dropZone && hasComponents) {
-            // Only hide primary drop zone when components exist, but don't show it otherwise
             dropZone.style.display = 'none';
         }
+    }
+    
+    /**
+     * ROOT CAUSE FIX: Update empty state after cleanup operations
+     * This ensures the UI properly reflects the current state after component removal
+     */
+    updateEmptyStateAfterCleanup(state) {
+        // Use the main updateEmptyState method to ensure consistency
+        this.updateEmptyState(state);
+        
+        const hasComponents = Object.keys(state.components || {}).length > 0;
+        this.logger.debug('RENDER', `Empty state updated after cleanup: ${hasComponents ? 'has components' : 'empty'}`);
     }
 
     /**

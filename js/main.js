@@ -130,31 +130,45 @@ async function initializeWhenReady() {
             window.structuredLogger.warn('MAIN', 'Enhanced state manager not available');
         }
         
-        // ROOT FIX: Initialize component manager BEFORE controls to prevent race conditions
-        // This ensures component manager is ready and dispatches events before controls try to attach
-        if (window.enhancedComponentManager) {
-            if (window.enhancedComponentManager.isInitialized) {
-                window.structuredLogger.debug('MAIN', 'Component manager already initialized, skipping');
-            } else if (window.enhancedComponentManager.initialize) {
-                window.enhancedComponentManager.initialize();
-                window.structuredLogger.info('MAIN', 'Component manager initialized with ready event dispatch');
-            }
-        } else {
-            window.structuredLogger.warn('MAIN', 'Enhanced component manager not available');
-        }
-        
-        // ROOT FIX: Initialize ComponentControlsManager AFTER component manager
-        // Controls manager will wait for component manager ready event
+        // ROOT FIX: Initialize ComponentControlsManager FIRST to ensure it's ready for events
+        // This prevents race conditions where controls manager misses component manager events
         if (window.componentControlsManager && !window.componentControlsManager.isInitialized) {
             if (window.componentControlsManager.init) {
                 window.componentControlsManager.init();
-                window.structuredLogger.info('MAIN', 'Component controls manager initialization started (event-driven)');
+                window.structuredLogger.info('MAIN', 'Component controls manager initialization started (priority - before component manager)');
             }
         } else if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
             window.structuredLogger.debug('MAIN', 'Component controls manager already initialized, skipping');
         } else {
             window.structuredLogger.warn('MAIN', 'Component controls manager not available - controls may not work');
+            
+            // ROOT FIX: Create emergency fallback controls
+            createEmergencyControlsFallback();
         }
+        
+        // ROOT FIX: Initialize component manager AFTER controls manager is listening
+        // This ensures controls manager will receive the component manager ready event
+        if (window.enhancedComponentManager) {
+            if (window.enhancedComponentManager.isInitialized) {
+                window.structuredLogger.debug('MAIN', 'Component manager already initialized, skipping');
+            } else if (window.enhancedComponentManager.initialize) {
+                window.enhancedComponentManager.initialize();
+                window.structuredLogger.info('MAIN', 'Component manager initialized after controls manager is listening');
+            }
+        } else {
+            window.structuredLogger.warn('MAIN', 'Enhanced component manager not available');
+        }
+        
+        // ROOT FIX: Ensure component controls manager completes initialization
+        // Double-check after component manager initialization to catch any missed events
+        setTimeout(() => {
+            if (window.componentControlsManager && !window.componentControlsManager.isInitialized) {
+                console.warn('⚠️ GMKB: Component controls manager not initialized via events, forcing direct initialization');
+                if (window.componentControlsManager.completeInitialization) {
+                    window.componentControlsManager.completeInitialization();
+                }
+            }
+        }, 500); // Shorter timeout for faster recovery
         
         // 2. Initialize component renderer - ROOT FIX: Prevent double initialization and render
         if (window.enhancedComponentRenderer && !window.enhancedComponentRenderer.initialized) {
@@ -190,6 +204,13 @@ async function initializeWhenReady() {
             window.GMKB.systems.ComponentRenderer = window.enhancedComponentRenderer;
             window.GMKB.systems.ComponentControlsManager = window.componentControlsManager;
         }
+        
+        // ROOT FIX: Force component controls attachment after everything is initialized
+        setTimeout(() => {
+            if (window.componentControlsManager && window.enhancedComponentRenderer) {
+                forceAttachControlsToExistingComponents();
+            }
+        }, 1000);
         
         // 9. Emit application ready event
         document.dispatchEvent(new CustomEvent('gmkb:application-ready', {
@@ -562,6 +583,137 @@ async function handleSaveClick() {
 }
 
 /**
+ * ROOT FIX: Emergency fallback for component controls if main system fails
+ */
+function createEmergencyControlsFallback() {
+    console.warn('⚠️ GMKB: Creating emergency component controls fallback');
+    
+    // Create a minimal controls system
+    window.emergencyControls = {
+        attachControls: function(element, componentId) {
+            if (!element || element.querySelector('.emergency-controls')) {
+                return; // Already has controls or invalid element
+            }
+            
+            const controlsContainer = document.createElement('div');
+            controlsContainer.className = 'emergency-controls component-controls component-controls--dynamic';
+            controlsContainer.style.cssText = `
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background: rgba(0, 0, 0, 0.9);
+                border-radius: 6px;
+                padding: 4px;
+                display: flex;
+                gap: 4px;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+                z-index: 10000;
+            `;
+            
+            // Create delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.style.cssText = `
+                width: 28px;
+                height: 28px;
+                border: none;
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                border-radius: 4px;
+                cursor: pointer;
+            `;
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm('Delete this component?')) {
+                    element.remove();
+                }
+            };
+            
+            // Create duplicate button
+            const duplicateBtn = document.createElement('button');
+            duplicateBtn.innerHTML = '📋';
+            duplicateBtn.style.cssText = deleteBtn.style.cssText;
+            duplicateBtn.onclick = (e) => {
+                e.stopPropagation();
+                const clone = element.cloneNode(true);
+                clone.id = componentId + '-copy-' + Date.now();
+                element.parentNode.insertBefore(clone, element.nextSibling);
+                this.attachControls(clone, clone.id);
+            };
+            
+            controlsContainer.appendChild(deleteBtn);
+            controlsContainer.appendChild(duplicateBtn);
+            element.appendChild(controlsContainer);
+            
+            // Add hover behavior
+            element.addEventListener('mouseenter', () => {
+                controlsContainer.style.opacity = '1';
+            });
+            element.addEventListener('mouseleave', () => {
+                controlsContainer.style.opacity = '0';
+            });
+            
+            console.log('Emergency controls attached to:', componentId);
+        }
+    };
+    
+    // Attach to existing components
+    setTimeout(() => {
+        const components = document.querySelectorAll('[data-component-id]');
+        components.forEach(element => {
+            const id = element.getAttribute('data-component-id');
+            if (id) {
+                window.emergencyControls.attachControls(element, id);
+            }
+        });
+        console.log(`Emergency controls attached to ${components.length} components`);
+    }, 500);
+}
+
+/**
+ * ROOT FIX: Force attach controls to all existing components
+ */
+function forceAttachControlsToExistingComponents() {
+    console.log('🔧 GMKB: Force attaching controls to existing components');
+    
+    const components = document.querySelectorAll('[data-component-id]');
+    let attachedCount = 0;
+    
+    components.forEach(element => {
+        const componentId = element.getAttribute('data-component-id');
+        if (componentId) {
+            // Ensure element is positioned relative
+            if (getComputedStyle(element).position === 'static') {
+                element.style.position = 'relative';
+            }
+            
+            // Try to attach controls
+            if (window.componentControlsManager && window.componentControlsManager.attachControls) {
+                const success = window.componentControlsManager.attachControls(element, componentId);
+                if (success) {
+                    attachedCount++;
+                }
+            } else if (window.emergencyControls) {
+                window.emergencyControls.attachControls(element, componentId);
+                attachedCount++;
+            }
+        }
+    });
+    
+    console.log(`🔧 GMKB: Force attached controls to ${attachedCount}/${components.length} components`);
+    
+    // Dispatch event for tracking
+    document.dispatchEvent(new CustomEvent('gmkb:force-controls-attached', {
+        detail: {
+            attachedCount,
+            totalComponents: components.length,
+            timestamp: Date.now()
+        }
+    }));
+}
+
+/**
  * ROOT FIX: Minimal fallback initialization when core systems fail
  */
 function initializeMinimalFallback() {
@@ -575,6 +727,9 @@ function initializeMinimalFallback() {
         
         // Set up basic button functionality
         setupBasicEventListeners();
+        
+        // Create emergency controls
+        createEmergencyControlsFallback();
         
         console.log('✅ GMKB: Minimal fallback initialization completed');
         window.structuredLogger.info('MAIN', 'Minimal fallback active');
@@ -658,6 +813,53 @@ window.GMKB = {
     // Component data access
     getComponentsData: () => window.gmkbComponentsData || [],
     
+    // ROOT FIX: Component controls debugging and force functions
+    debugComponentControls: () => {
+        if (window.GMKBDebugControls && window.GMKBDebugControls.debugControlsStatus) {
+            window.GMKBDebugControls.debugControlsStatus();
+        } else {
+            console.log('🎛️ Component Controls Debug');
+            const components = document.querySelectorAll('[data-component-id]');
+            console.log(`Found ${components.length} components:`);
+            components.forEach(el => {
+                const id = el.getAttribute('data-component-id');
+                const hasControls = el.querySelector('.component-controls--dynamic');
+                console.log(`- ${id}: controls ${hasControls ? 'PRESENT' : 'MISSING'}`);
+            });
+        }
+    },
+    
+    forceShowAllControls: () => {
+        if (window.GMKBDebugControls && window.GMKBDebugControls.forceShowAllControls) {
+            window.GMKBDebugControls.forceShowAllControls();
+        } else {
+            document.body.classList.add('gmkb-debug-mode');
+            const controls = document.querySelectorAll('.component-controls');
+            controls.forEach(ctrl => {
+                ctrl.style.opacity = '1';
+                ctrl.style.visibility = 'visible';
+                ctrl.style.pointerEvents = 'all';
+            });
+            console.log(`🚨 Forced ${controls.length} controls to be visible`);
+        }
+    },
+    
+    forceAttachControls: () => {
+        if (window.forceAttachControlsToExistingComponents) {
+            window.forceAttachControlsToExistingComponents();
+        } else {
+            console.warn('Force attach function not available');
+        }
+    },
+    
+    emergencyControlsMode: () => {
+        if (window.createEmergencyControlsFallback) {
+            window.createEmergencyControlsFallback();
+        } else {
+            console.warn('Emergency controls function not available');
+        }
+    },
+    
     // Version info
     version: '4.0.0',
     architecture: 'simplified-wordpress-compatible'
@@ -685,7 +887,11 @@ window.gmkbApp = {
     debug: {
         state: () => window.enhancedStateManager?.debug(),
         components: () => window.enhancedComponentManager?.getStatus(),
-        empty: () => window.emptyStateHandlers?.getStatus()
+        empty: () => window.emptyStateHandlers?.getStatus(),
+        controls: () => window.GMKB.debugComponentControls(),
+        forceShowControls: () => window.GMKB.forceShowAllControls(),
+        forceAttachControls: () => window.GMKB.forceAttachControls(),
+        emergencyMode: () => window.GMKB.emergencyControlsMode()
     }
 };
 

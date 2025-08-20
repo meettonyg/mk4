@@ -19,6 +19,7 @@
 /* Component Modules */
 @import url('modules/components.css');
 @import url('modules/component-interactions.css');
+@import url('modules/component-controls.css');
 
 /* MKCG Integration */
 @import url('modules/mkcg-dashboard.css');

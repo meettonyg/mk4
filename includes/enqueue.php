@@ -637,6 +637,17 @@ function gmkb_enqueue_assets() {
                 true
             );
         }
+        
+        // ROOT FIX: Load cleanup script to handle test component removal
+        if (!wp_script_is('gmkb-clear-test-components', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-clear-test-components',
+                $plugin_url . 'debug/clear-test-components.js',
+                array('gmkb-enhanced-state-manager', 'gmkb-enhanced-component-renderer'),
+                $version,
+                true
+            );
+        }
     }
 
     // ROOT FIX: Move wp_localize_script BEFORE any debug output
@@ -680,6 +691,14 @@ function gmkb_enqueue_assets() {
     wp_enqueue_style(
         'gmkb-container-protection',
         $plugin_url . 'css/container-protection.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // ROOT FIX: Component controls CSS for duplicate/delete/move buttons
+    wp_enqueue_style(
+        'gmkb-component-controls',
+        $plugin_url . 'css/modules/component-controls.css',
         array( 'gmkb-main-styles' ),
         $version
     );

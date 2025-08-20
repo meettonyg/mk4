@@ -58,42 +58,57 @@
                 return;
             }
             
-            // ROOT FIX: Wait for component manager to be ready before initializing
+            // ROOT FIX: Check if component manager is ready immediately
             if (window.enhancedComponentManager && window.enhancedComponentManager.isInitialized) {
+                structuredLogger.info('CONTROLS', 'Component manager already ready, initializing immediately');
                 this.completeInitialization();
-            } else {
-                // Listen for component manager ready event
-                structuredLogger.info('CONTROLS', 'Waiting for component manager to be ready...');
-                document.addEventListener('gmkb:component-manager-ready', () => {
-                    structuredLogger.info('CONTROLS', 'Component manager ready signal received');
-                    this.completeInitialization();
-                }, { once: true });
-            }
-        }
-        
-        /**
-         * ROOT FIX: Complete initialization after dependencies are ready
-         */
-        completeInitialization() {
-            if (this.isInitialized) {
                 return;
             }
             
-            this.setupEventListeners();
-            this.isInitialized = true;
+            // ROOT FIX: Listen for component manager ready event with fallback
+            structuredLogger.info('CONTROLS', 'Waiting for component manager to be ready...');
+            document.addEventListener('gmkb:component-manager-ready', () => {
+                structuredLogger.info('CONTROLS', 'Component manager ready signal received');
+                this.completeInitialization();
+            }, { once: true });
             
-            structuredLogger.info('CONTROLS', '✅ ComponentControlsManager ready for dynamic control generation');
-            
-            // ROOT FIX: Dispatch ready event for event-driven coordination (NO POLLING)
-            document.dispatchEvent(new CustomEvent('gmkb:component-controls-manager-ready', {
-                detail: {
-                    timestamp: Date.now(),
-                    manager: this,
-                    architecture: 'event-driven',
-                    dependenciesReady: true
+            // ROOT FIX: Fallback - check again after a brief delay in case the event already fired
+            setTimeout(() => {
+                if (!this.isInitialized && window.enhancedComponentManager && window.enhancedComponentManager.isInitialized) {
+                    structuredLogger.info('CONTROLS', 'Component manager ready detected via fallback check');
+                    this.completeInitialization();
                 }
-            }));
+            }, 100);
         }
+        
+        /**
+        * ROOT FIX: Complete initialization after dependencies are ready
+        */
+        completeInitialization() {
+        if (this.isInitialized) {
+        return;
+        }
+        
+        this.setupEventListeners();
+        this.isInitialized = true;
+        
+        structuredLogger.info('CONTROLS', '✅ ComponentControlsManager ready for dynamic control generation');
+        
+        // ROOT FIX: Attach controls to any existing components immediately
+        setTimeout(() => {
+        this.attachControlsToAllExistingComponents();
+        }, 100);
+        
+        // ROOT FIX: Dispatch ready event for event-driven coordination (NO POLLING)
+        document.dispatchEvent(new CustomEvent('gmkb:component-controls-manager-ready', {
+        detail: {
+                timestamp: Date.now(),
+                    manager: this,
+                architecture: 'event-driven',
+                dependenciesReady: true
+            }
+        }));
+    }
         
         /**
          * ROOT FIX: Define control configurations
@@ -222,7 +237,7 @@
             container.className = 'component-controls component-controls--dynamic';
             container.setAttribute('data-controls-type', 'dynamic');
             
-            // ROOT FIX: Add CSS for dynamic controls
+            // ROOT FIX: Add CSS for dynamic controls with better visibility
             container.style.cssText = `
                 position: absolute;
                 top: 8px;
@@ -230,8 +245,13 @@
                 opacity: 0;
                 visibility: hidden;
                 transition: all 0.2s ease;
-                z-index: 100;
+                z-index: 1000;
                 pointer-events: none;
+                background: rgba(0, 0, 0, 0.9);
+                border-radius: 6px;
+                padding: 4px;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(8px);
             `;
             
             return container;
@@ -408,19 +428,30 @@
          */
         attachHoverBehavior(componentElement, controlsContainer) {
             const showControls = () => {
+                console.log('🎛️ Showing controls for:', componentElement.id);
                 controlsContainer.style.opacity = '1';
                 controlsContainer.style.visibility = 'visible';
                 controlsContainer.style.pointerEvents = 'all';
+                controlsContainer.style.transform = 'translateY(-2px)';
             };
             
             const hideControls = () => {
+                console.log('🎛️ Hiding controls for:', componentElement.id);
                 controlsContainer.style.opacity = '0';
                 controlsContainer.style.visibility = 'hidden';
                 controlsContainer.style.pointerEvents = 'none';
+                controlsContainer.style.transform = 'translateY(0)';
             };
             
+            // ROOT FIX: Use both mouseenter/leave AND focus events for better accessibility
             componentElement.addEventListener('mouseenter', showControls);
             componentElement.addEventListener('mouseleave', hideControls);
+            componentElement.addEventListener('focus', showControls);
+            componentElement.addEventListener('blur', hideControls);
+            
+            // ROOT FIX: Keep controls visible when hovering the controls themselves
+            controlsContainer.addEventListener('mouseenter', showControls);
+            controlsContainer.addEventListener('mouseleave', hideControls);
             
             // ROOT FIX: Track hover listeners for cleanup
             const componentId = componentElement.getAttribute('data-component-id');
@@ -431,7 +462,11 @@
             if (componentId) {
                 this.eventListeners.get(componentId).push(
                     { element: componentElement, event: 'mouseenter', handler: showControls },
-                    { element: componentElement, event: 'mouseleave', handler: hideControls }
+                    { element: componentElement, event: 'mouseleave', handler: hideControls },
+                    { element: componentElement, event: 'focus', handler: showControls },
+                    { element: componentElement, event: 'blur', handler: hideControls },
+                    { element: controlsContainer, event: 'mouseenter', handler: showControls },
+                    { element: controlsContainer, event: 'mouseleave', handler: hideControls }
                 );
             }
         }
@@ -738,6 +773,17 @@
         console.log('Manager Status:', componentControlsManager.getStatus());
         console.log('Attached Controls:', Array.from(componentControlsManager.attachedControls.keys()));
         console.log('Event Listeners:', componentControlsManager.eventListeners.size);
+        
+        // Check all components in DOM
+        const allComponents = document.querySelectorAll('[data-component-id]');
+        console.log('Components in DOM:', allComponents.length);
+        
+        allComponents.forEach(element => {
+            const id = element.getAttribute('data-component-id');
+            const hasControls = element.querySelector('.component-controls--dynamic');
+            console.log(`- ${id}: controls ${hasControls ? 'PRESENT' : 'MISSING'}`);
+        });
+        
         console.groupEnd();
     };
     
@@ -758,6 +804,86 @@
         console.log('Attachment result:', success);
     };
     
+    // ROOT FIX: Emergency function to force show all controls for debugging
+    window.forceShowAllControls = () => {
+        console.log('🚨 Force showing all controls for debugging');
+        const allControls = document.querySelectorAll('.component-controls--dynamic');
+        
+        allControls.forEach(controls => {
+            controls.style.opacity = '1';
+            controls.style.visibility = 'visible';
+            controls.style.pointerEvents = 'all';
+            controls.style.border = '2px solid red';
+            controls.style.background = 'rgba(255, 0, 0, 0.8)';
+        });
+        
+        console.log(`🚨 Forced ${allControls.length} control groups to be visible`);
+        
+        // Also enable debug mode
+        document.body.classList.add('gmkb-debug-mode');
+        window.GMKBDebugMode = true;
+    };
+    
+    // ROOT FIX: Function to test hover behavior
+    window.testHoverBehavior = (componentId) => {
+        const element = document.getElementById(componentId);
+        if (!element) {
+            console.error('Component not found:', componentId);
+            return;
+        }
+        
+        console.log('🖱️ Testing hover behavior for:', componentId);
+        
+        // Simulate mouseenter
+        element.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        console.log('Dispatched mouseenter event');
+        
+        setTimeout(() => {
+            // Check if controls are visible
+            const controls = element.querySelector('.component-controls--dynamic');
+            if (controls) {
+                console.log('Controls opacity:', controls.style.opacity);
+                console.log('Controls visibility:', controls.style.visibility);
+                console.log('Controls pointer-events:', controls.style.pointerEvents);
+            } else {
+                console.error('No controls found in element');
+            }
+        }, 100);
+    };
+    
     structuredLogger.info('CONTROLS', '✅ ComponentControlsManager loaded and ready for dynamic control generation');
+        
+    /**
+     * ROOT FIX: Attach controls to all existing components on initialization
+     * Ensures components rendered before controls manager was ready get controls
+     */
+    attachControlsToAllExistingComponents() {
+        const existingComponents = document.querySelectorAll('[data-component-id]');
+        let attachedCount = 0;
+        
+        existingComponents.forEach(element => {
+            const componentId = element.getAttribute('data-component-id');
+            if (componentId && !element.querySelector('.component-controls--dynamic')) {
+                const success = this.attachControls(element, componentId);
+                if (success) {
+                    attachedCount++;
+                    structuredLogger.debug('CONTROLS', `Retroactively attached controls to: ${componentId}`);
+                }
+            }
+        });
+        
+        if (attachedCount > 0) {
+            structuredLogger.info('CONTROLS', `Retroactively attached controls to ${attachedCount} existing components`);
+            
+            // Dispatch event for tracking
+            document.dispatchEvent(new CustomEvent('gmkb:retroactive-controls-attached', {
+                detail: {
+                    attachedCount,
+                    totalExisting: existingComponents.length,
+                    timestamp: Date.now()
+                }
+            }));
+        }
+    }
 
 })(); // ROOT FIX: Close IIFE wrapper

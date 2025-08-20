@@ -76,7 +76,7 @@
             
             try {
                 // ROOT CAUSE FIX: Use robust getInitialState method
-                const initialState = this.getInitialState();
+                const initialState = this.getInitialStateFromSources();
                 
                 if (initialState && initialState.components && typeof initialState.components === 'object' && Object.keys(initialState.components).length > 0) {
                     this.logger.info('STATE', 'Loaded state with components:', {
@@ -106,6 +106,15 @@
                 
                 this.isInitialized = true;
                 this.logger.info('STATE', 'Enhanced State Manager initialization completed');
+                
+                // ROOT FIX: Dispatch state manager ready event for component manager coordination
+                document.dispatchEvent(new CustomEvent('gmkb:state-manager-ready', {
+                    detail: {
+                        timestamp: Date.now(),
+                        componentCount: Object.keys(this.state.components || {}).length,
+                        hasComponents: Object.keys(this.state.components || {}).length > 0
+                    }
+                }));
                 
             } catch (error) {
                 this.logger.error('STATE', 'Error during initialization', error);
