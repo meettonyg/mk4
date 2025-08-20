@@ -167,10 +167,20 @@ async function initializeWhenReady() {
             }
         }, 500); // Shorter timeout for faster recovery
         
-        // 2. Initialize component renderer - ROOT FIX: Prevent double initialization and render
+        // ROOT FIX: Initialize DOM Render Coordinator FIRST to prevent duplication
+        if (window.domRenderCoordinator && !window.domRenderCoordinator.isInitialized) {
+            window.domRenderCoordinator.init();
+            window.structuredLogger.info('MAIN', 'DOM Render Coordinator initialized - duplication prevention active');
+        } else if (window.domRenderCoordinator && window.domRenderCoordinator.isInitialized) {
+            window.structuredLogger.debug('MAIN', 'DOM Render Coordinator already initialized');
+        } else {
+            window.structuredLogger.warn('MAIN', 'DOM Render Coordinator not available - duplication risk exists');
+        }
+        
+        // 2. Initialize component renderer - SIMPLIFIED: JavaScript always renders
         if (window.enhancedComponentRenderer && !window.enhancedComponentRenderer.initialized) {
             await window.enhancedComponentRenderer.init();
-            window.structuredLogger.info('MAIN', 'Component renderer initialized once');
+            window.structuredLogger.info('MAIN', 'Component renderer initialized');
         } else if (window.enhancedComponentRenderer && window.enhancedComponentRenderer.initialized) {
             window.structuredLogger.debug('MAIN', 'Component renderer already initialized, skipping');
         } else {
@@ -215,7 +225,8 @@ async function initializeWhenReady() {
                     console.log('📊 Duplicated components:', componentIds.filter((id, index) => componentIds.indexOf(id) !== index));
                     
                     // Emergency deduplication before attaching controls
-                    emergencyDeduplicateAllComponents();
+                    const result = emergencyDeduplicateAllComponents();
+                    console.log(`✅ Deduplication result: removed ${result.duplicatesRemoved} duplicates`);
                 } else {
                     console.log(`✅ DOM CLEAN: ${uniqueIds.length} unique components, no duplicates detected`);
                 }
@@ -602,18 +613,14 @@ async function handleSaveClick() {
 function emergencyDeduplicateAllComponents() {
     console.log('🚨 EMERGENCY: Starting DOM deduplication process');
     
-    const previewContainer = document.getElementById('media-kit-preview');
-    if (!previewContainer) {
-        console.error('Preview container not found for deduplication');
-        return;
-    }
-    
+    // Look for duplicates across the entire document, not just preview container
+    const allComponents = document.querySelectorAll('[data-component-id]');
     const componentMap = new Map();
     const elementsToRemove = [];
     let duplicatesFound = 0;
     
     // Find all components and identify duplicates
-    Array.from(previewContainer.children).forEach(element => {
+    allComponents.forEach(element => {
         const componentId = element.getAttribute('data-component-id');
         
         if (componentId) {
@@ -621,7 +628,7 @@ function emergencyDeduplicateAllComponents() {
                 // This is a duplicate
                 elementsToRemove.push(element);
                 duplicatesFound++;
-                console.log(`🗑️ DUPLICATE FOUND: ${componentId} (removing)`);
+                console.log(`🗑️ DUPLICATE FOUND: ${componentId} (will remove)`);
             } else {
                 // First occurrence - keep it
                 componentMap.set(componentId, element);
@@ -651,7 +658,7 @@ function emergencyDeduplicateAllComponents() {
     return {
         duplicatesRemoved: duplicatesFound,
         uniqueComponentsKept: componentMap.size,
-        success: duplicatesFound >= 0
+        success: duplicatesFound > 0
     };
 }
 

@@ -164,12 +164,27 @@
 
             // ROOT FIX: SINGLE-INSTANCE ENFORCEMENT - Ensure only ONE element with this ID exists
             const allElementsWithId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
-            if (allElementsWithId.length > 1) {
-                structuredLogger.error('CONTROLS', `CRITICAL: Found ${allElementsWithId.length} elements with ID ${componentId}! Controls will only attach to the FIRST one.`);
+            const elementsById = document.querySelectorAll(`#${componentId}`);
+            
+            if (allElementsWithId.length > 1 || elementsById.length > 1) {
+                structuredLogger.error('CONTROLS', `CRITICAL: Found ${allElementsWithId.length} elements with data-component-id=${componentId} and ${elementsById.length} with id=${componentId}!`);
                 
-                // Only work with the first element, ignore duplicates
-                if (componentElement !== allElementsWithId[0]) {
-                    structuredLogger.warn('CONTROLS', `Skipping control attachment to duplicate element for ${componentId}`);
+                // ROOT FIX: Remove ALL duplicates except the first one
+                for (let i = 1; i < allElementsWithId.length; i++) {
+                    allElementsWithId[i].remove();
+                    structuredLogger.warn('CONTROLS', `Removed duplicate element ${i} for ${componentId}`);
+                }
+                
+                for (let i = 1; i < elementsById.length; i++) {
+                    elementsById[i].remove();
+                    structuredLogger.warn('CONTROLS', `Removed duplicate element by ID ${i} for ${componentId}`);
+                }
+                
+                // Use the first element that still exists
+                componentElement = allElementsWithId[0] || document.getElementById(componentId);
+                
+                if (!componentElement) {
+                    structuredLogger.error('CONTROLS', `No valid element found after deduplication for ${componentId}`);
                     return false;
                 }
             }

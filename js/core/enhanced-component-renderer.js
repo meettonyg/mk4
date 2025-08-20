@@ -335,6 +335,17 @@ class EnhancedComponentRenderer {
         try {
             const perfEnd = performanceMonitor.start('component-rerender', { componentId });
             
+            // CRITICAL FIX: Remove ALL duplicates before re-rendering
+            const allDuplicates = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+            if (allDuplicates.length > 1) {
+                this.logger.warn('RENDER', `Found ${allDuplicates.length} duplicates of ${componentId}, cleaning up`);
+                // Keep only the first one for replacement
+                for (let i = 1; i < allDuplicates.length; i++) {
+                    allDuplicates[i].remove();
+                }
+                element = allDuplicates[0]; // Use the first element
+            }
+            
             // Re-render component with new state
             const { element: newElement } = await this.renderComponentWithLoader(
                 componentId, 
@@ -343,7 +354,9 @@ class EnhancedComponentRenderer {
             );
             
             // Replace in DOM
-            element.replaceWith(newElement);
+            if (element && element.parentNode) {
+                element.replaceWith(newElement);
+            }
             
             // Update cache
             this.componentCache.set(componentId, newElement);
@@ -362,6 +375,9 @@ class EnhancedComponentRenderer {
 
     async init() {
         if (this.initialized) return;
+        
+        // Track initialization time to prevent duplicate renders during startup
+        this.initTime = Date.now();
 
         this.previewContainer = document.getElementById('media-kit-preview');
         if (!this.previewContainer) {
@@ -369,8 +385,7 @@ class EnhancedComponentRenderer {
             return;
         }
 
-        // ROOT FIX: Setup component controls integration AFTER previewContainer is available
-        // This prevents the race condition where event listeners try to access null previewContainer
+        // Setup component controls integration AFTER previewContainer is available
         this.setupComponentControlsIntegration();
 
         // 1. Get the initial state directly from the manager
@@ -412,6 +427,13 @@ class EnhancedComponentRenderer {
             return;
         }
         this.lastStateHash = stateHash;
+        
+        // CRITICAL FIX: Prevent duplicate renders during initialization
+        // If we're still in the initial render phase, skip state changes
+        if (Date.now() - (this.initTime || 0) < 1000) {
+            this.logger.debug('RENDER', 'Skipping state change during initialization phase');
+            return;
+        }
         
         // ROOT FIX: RENDER THROTTLING - Prevent cascade renders during active rendering
         if (this.isCurrentlyRendering) {
@@ -726,122 +748,189 @@ class EnhancedComponentRenderer {
         
         this.logger.debug('RENDER', `Starting renderNewComponents for ${componentIds.size} components`);
         
-        // ROOT FIX: Use DOM Render Coordinator to prevent duplication
-        if (!window.domRenderCoordinator) {
-            this.logger.error('RENDER', 'DOM Render Coordinator not available - falling back to legacy rendering');
-            return this.renderNewComponentsLegacy(componentIds, newState);
-        }
+        // ROOT FIX: CRITICAL - Remove ALL existing duplicates FIRST
+        this.removeAllDuplicatesBeforeRender(componentIds);
         
-        try {
-            // Render components one by one through coordinator for strict duplication control
-            const renderPromises = Array.from(componentIds).map(async (componentId) => {
-                const componentState = newState.components[componentId];
-                if (!componentState) {
-                    this.logger.error('RENDER', `State for new component ${componentId} not found!`);
-                    return null;
-                }
-                
-                // Render the component element
-                const result = await this.renderComponentWithLoader(componentId, componentState.type, componentState.props || componentState.data);
-                
-                if (result && result.element) {
-                    // Use coordinator to ensure unique DOM insertion
-                    const success = await window.domRenderCoordinator.renderComponent(
-                        componentId,
-                        result.element,
-                        'media-kit-preview',
-                        { 
-                            componentType: componentState.type,
-                            source: 'renderNewComponents'
-                        }
-                    );
-                    
-                    if (success) {
-                        // Update our cache
-                        this.componentCache.set(componentId, result.element);
-                        
-                        // Register with UI registry
-                        this.registerComponentWithUIRegistry(componentId, result.element, componentState);
-                        
-                        this.logger.debug('RENDER', `Successfully coordinated render of ${componentId}`);
-                        
-                        return {
-                            id: componentId,
-                            element: result.element,
-                            success: true
-                        };
-                    } else {
-                        this.logger.error('RENDER', `Coordinator failed to render ${componentId}`);
+        // ROOT FIX: Try to use DOM Render Coordinator first
+        if (window.domRenderCoordinator && window.domRenderCoordinator.isInitialized) {
+            try {
+                // Render components one by one through coordinator for strict duplication control
+                const renderPromises = Array.from(componentIds).map(async (componentId) => {
+                    const componentState = newState.components[componentId];
+                    if (!componentState) {
+                        this.logger.error('RENDER', `State for new component ${componentId} not found!`);
                         return null;
                     }
-                } else {
-                    this.logger.error('RENDER', `Failed to create element for ${componentId}`);
-                    return null;
-                }
-            });
-            
-            const results = await Promise.all(renderPromises);
-            const successfulRenders = results.filter(r => r && r.success);
-            
-            this.logger.info('RENDER', `Coordinated rendering completed`, {
-                requested: componentIds.size,
-                successful: successfulRenders.length,
-                failed: componentIds.size - successfulRenders.length
-            });
-            
-            // Dispatch batch render completion event
-            document.dispatchEvent(new CustomEvent('gmkb:batch-render-completed', {
-                detail: {
-                    componentIds: Array.from(componentIds),
-                    results: results,
-                    source: 'coordinated-rendering',
-                    timestamp: Date.now()
-                }
-            }));
-            
-        } catch (error) {
-            this.logger.error('RENDER', 'Coordinated rendering failed', error);
-            
-            // Fallback to legacy rendering
-            this.logger.warn('RENDER', 'Falling back to legacy rendering');
-            return this.renderNewComponentsLegacy(componentIds, newState);
+                    
+                    // Render the component element
+                    const result = await this.renderComponentWithLoader(componentId, componentState.type, componentState.props || componentState.data);
+                    
+                    if (result && result.element) {
+                        // Use coordinator to ensure unique DOM insertion
+                        const success = await window.domRenderCoordinator.renderComponent(
+                            componentId,
+                            result.element,
+                            'media-kit-preview',
+                            { 
+                                componentType: componentState.type,
+                                source: 'renderNewComponents'
+                            }
+                        );
+                        
+                        if (success) {
+                            // Update our cache
+                            this.componentCache.set(componentId, result.element);
+                            
+                            // Register with UI registry
+                            this.registerComponentWithUIRegistry(componentId, result.element, componentState);
+                            
+                            this.logger.debug('RENDER', `Successfully coordinated render of ${componentId}`);
+                            
+                            return {
+                                id: componentId,
+                                element: result.element,
+                                success: true
+                            };
+                        } else {
+                            this.logger.error('RENDER', `Coordinator failed to render ${componentId}`);
+                            return null;
+                        }
+                    } else {
+                        this.logger.error('RENDER', `Failed to create element for ${componentId}`);
+                        return null;
+                    }
+                });
+                
+                const results = await Promise.all(renderPromises);
+                const successfulRenders = results.filter(r => r && r.success);
+                
+                this.logger.info('RENDER', `Coordinated rendering completed`, {
+                    requested: componentIds.size,
+                    successful: successfulRenders.length,
+                    failed: componentIds.size - successfulRenders.length
+                });
+                
+                // ROOT FIX: Post-render verification
+                this.verifyNoDuplicatesAfterRender(componentIds);
+                
+                // Dispatch batch render completion event
+                document.dispatchEvent(new CustomEvent('gmkb:batch-render-completed', {
+                    detail: {
+                        componentIds: Array.from(componentIds),
+                        results: results,
+                        source: 'coordinated-rendering',
+                        timestamp: Date.now()
+                    }
+                }));
+                
+                perfEnd();
+                return;
+                
+            } catch (error) {
+                this.logger.error('RENDER', 'Coordinated rendering failed', error);
+                // Fall through to legacy rendering
+            }
         }
         
+        // Fallback to legacy rendering with enhanced duplicate prevention
+        this.logger.warn('RENDER', 'Using legacy rendering with enhanced duplicate prevention');
+        await this.renderNewComponentsLegacy(componentIds, newState);
+        
         perfEnd();
+    }
+    
+    /**
+     * ROOT FIX: Remove all duplicates before rendering
+     */
+    removeAllDuplicatesBeforeRender(componentIds) {
+        let totalRemoved = 0;
+        
+        componentIds.forEach(componentId => {
+            // Remove by ID
+            const elementsById = document.querySelectorAll(`#${componentId}`);
+            elementsById.forEach(el => {
+                el.remove();
+                totalRemoved++;
+            });
+            
+            // Remove by data attribute
+            const elementsByDataId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+            elementsByDataId.forEach(el => {
+                el.remove();
+                totalRemoved++;
+            });
+            
+            // Clear from cache
+            this.componentCache.delete(componentId);
+        });
+        
+        if (totalRemoved > 0) {
+            this.logger.warn('RENDER', `PRE-RENDER CLEANUP: Removed ${totalRemoved} existing elements to prevent duplication`);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Verify no duplicates after rendering
+     */
+    verifyNoDuplicatesAfterRender(componentIds) {
+        let duplicatesFound = 0;
+        
+        componentIds.forEach(componentId => {
+            const elements = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+            if (elements.length > 1) {
+                duplicatesFound += elements.length - 1;
+                this.logger.error('RENDER', `DUPLICATE DETECTED: Found ${elements.length} elements for ${componentId}`);
+                
+                // Keep only the first element
+                for (let i = 1; i < elements.length; i++) {
+                    elements[i].remove();
+                }
+            }
+        });
+        
+        if (duplicatesFound > 0) {
+            this.logger.error('RENDER', `POST-RENDER CLEANUP: Removed ${duplicatesFound} duplicate elements`);
+        } else {
+            this.logger.debug('RENDER', 'POST-RENDER VERIFICATION: No duplicates found ✓');
+        }
     }
     
     /**
      * ROOT FIX: Legacy rendering method as fallback
      */
     async renderNewComponentsLegacy(componentIds, newState) {
-        this.logger.warn('RENDER', 'Using legacy rendering - duplication risk exists');
-        
-        // ROOT FIX: AGGRESSIVE DEDUPLICATION - Remove existing elements FIRST
-        componentIds.forEach(componentId => {
-            const existingElements = document.querySelectorAll(`[data-component-id="${componentId}"]`);
-            if (existingElements.length > 0) {
-                this.logger.warn('RENDER', `DEDUPLICATION: Found ${existingElements.length} existing elements for ${componentId}, removing ALL`);
-                existingElements.forEach(el => {
-                    el.remove();
-                    this.componentCache.delete(componentId);
-                });
-            }
-        });
+        this.logger.warn('RENDER', 'Using legacy rendering with enhanced duplicate prevention');
         
         // ROOT FIX: Always use preview container - no complex container switching
         let targetContainer = this.previewContainer;
         let containerReason = 'preview_container_always';
         
+        if (!targetContainer) {
+            this.logger.error('RENDER', 'Preview container not available for rendering');
+            return;
+        }
+        
         this.logger.debug('RENDER', 'Using preview container consistently (no container switching)');
         
+        // ROOT FIX: Track which components we're actually rendering
+        const componentsToRender = new Set();
+        
         const fragment = document.createDocumentFragment();
-        const renderPromises = Array.from(componentIds).map(id => {
+        const renderPromises = Array.from(componentIds).map(async (id) => {
             const componentState = newState.components[id];
             if (!componentState) {
                 this.logger.error('RENDER', `State for new component ${id} not found!`);
                 return null;
             }
             
+            // ROOT FIX: One more check before rendering
+            const alreadyExists = document.getElementById(id);
+            if (alreadyExists) {
+                this.logger.warn('RENDER', `Component ${id} already exists in DOM, skipping render`);
+                return null;
+            }
+            
+            componentsToRender.add(id);
             this.logger.debug('RENDER', `Rendering component ${id} of type ${componentState.type}`);
             
             // FIX: Use the new dynamicComponentLoader instance
@@ -896,28 +985,18 @@ class EnhancedComponentRenderer {
             return;
         }
         
-        targetContainer.appendChild(fragment);
-        
-        // ROOT FIX: CRITICAL - Verify components were actually added to DOM and update cache
-        const finalChildrenCount = targetContainer.children.length;
-        this.logger.debug('RENDER', `After appendChild: target container has ${finalChildrenCount} children`);
-        
-        // ROOT FIX: CRITICAL DEDUPLICATION CHECK - Verify no duplicates in DOM
-        const domComponentIds = Array.from(targetContainer.children)
-            .map(child => child.id)
-            .filter(id => id);
-        
-        const uniqueIds = [...new Set(domComponentIds)];
-        
-        if (domComponentIds.length !== uniqueIds.length) {
-            this.logger.error('RENDER', `CRITICAL: DOM DUPLICATION DETECTED!`, {
-                totalElements: domComponentIds.length,
-                uniqueComponents: uniqueIds.length,
-                duplicates: domComponentIds.length - uniqueIds.length
-            });
+        // ROOT FIX: Append only if we have content
+        if (fragment.childNodes.length > 0) {
+            targetContainer.appendChild(fragment);
             
-            // EMERGENCY DEDUPLICATION
-            this.emergencyDeduplicateDOM(targetContainer);
+            // ROOT FIX: CRITICAL - Verify components were actually added to DOM and update cache
+            const finalChildrenCount = targetContainer.children.length;
+            this.logger.debug('RENDER', `After appendChild: target container has ${finalChildrenCount} children`);
+            
+            // ROOT FIX: IMMEDIATE deduplication check
+            this.verifyNoDuplicatesAfterRender(componentsToRender);
+        } else {
+            this.logger.warn('RENDER', 'No components were added to fragment - all were duplicates or failed');
         }
         
         // ROOT FIX: Update component cache for all rendered components in DOM
@@ -980,6 +1059,17 @@ class EnhancedComponentRenderer {
     async updateComponents(componentIds, newState) {
         const perfEnd = performanceMonitor.start('update-components', {
             count: componentIds.size
+        });
+        
+        // CRITICAL FIX: Clean up any duplicates before updating
+        componentIds.forEach(id => {
+            const duplicates = document.querySelectorAll(`[data-component-id="${id}"]`);
+            if (duplicates.length > 1) {
+                this.logger.warn('RENDER', `Cleaning ${duplicates.length - 1} duplicates of ${id} before update`);
+                for (let i = 1; i < duplicates.length; i++) {
+                    duplicates[i].remove();
+                }
+            }
         });
         
         // Use UI registry for efficient updates where possible
@@ -1251,30 +1341,33 @@ class EnhancedComponentRenderer {
      */
     emergencyDeduplicateDOM(container) {
         try {
-            this.logger.warn('RENDER', 'EMERGENCY DEDUPLICATION: Starting aggressive cleanup');
+            this.logger.warn('RENDER', 'EMERGENCY DEDUPLICATION: Starting GLOBAL cleanup (not just container)');
             
-            const componentMap = new Map();
-            const elementsToRemove = [];
+            // ROOT FIX: Check ALL components globally, not just in container
+            const globalComponentMap = new Map();
+            const globalElementsToRemove = [];
             
-            // Find all components and track duplicates
-            Array.from(container.children).forEach(element => {
+            // Find ALL components in the entire document
+            const allComponents = document.querySelectorAll('[data-component-id]');
+            
+            allComponents.forEach(element => {
                 const componentId = element.getAttribute('data-component-id');
                 
                 if (componentId) {
-                    if (componentMap.has(componentId)) {
+                    if (globalComponentMap.has(componentId)) {
                         // This is a duplicate - mark for removal
-                        elementsToRemove.push(element);
+                        globalElementsToRemove.push(element);
                         this.logger.debug('RENDER', `DUPLICATE MARKED: ${componentId}`);
                     } else {
                         // First occurrence - keep it
-                        componentMap.set(componentId, element);
+                        globalComponentMap.set(componentId, element);
                         this.logger.debug('RENDER', `KEEPING: ${componentId}`);
                     }
                 }
             });
             
             // Remove all duplicates
-            elementsToRemove.forEach(element => {
+            globalElementsToRemove.forEach(element => {
                 const componentId = element.getAttribute('data-component-id');
                 element.remove();
                 this.logger.debug('RENDER', `REMOVED DUPLICATE: ${componentId}`);
@@ -1282,15 +1375,24 @@ class EnhancedComponentRenderer {
             
             // Update cache to reflect cleaned DOM
             this.componentCache.clear();
-            componentMap.forEach((element, componentId) => {
+            globalComponentMap.forEach((element, componentId) => {
                 this.componentCache.set(componentId, element);
             });
             
-            this.logger.warn('RENDER', `EMERGENCY DEDUPLICATION COMPLETE: Removed ${elementsToRemove.length} duplicates, keeping ${componentMap.size} unique components`);
+            this.logger.warn('RENDER', `EMERGENCY DEDUPLICATION COMPLETE: Removed ${globalElementsToRemove.length} duplicates globally, keeping ${globalComponentMap.size} unique components`);
+            
+            // Also emit event for tracking
+            document.dispatchEvent(new CustomEvent('gmkb:emergency-deduplication-completed', {
+                detail: {
+                    removed: globalElementsToRemove.length,
+                    kept: globalComponentMap.size,
+                    timestamp: Date.now()
+                }
+            }));
             
             return {
-                removed: elementsToRemove.length,
-                kept: componentMap.size,
+                removed: globalElementsToRemove.length,
+                kept: globalComponentMap.size,
                 success: true
             };
             
@@ -1498,20 +1600,42 @@ class EnhancedComponentRenderer {
             const componentCount = Object.keys(initialState.components).length;
             this.logger.info('RENDER', `renderSavedComponents: Starting render of ${componentCount} saved components`);
             
-            // ROOT FIX: Always use preview container consistently
-            let targetContainer = this.previewContainer;
-            let containerReason = 'preview_container_consistent';
+            // ROOT FIX: Get the saved components container if it exists
+            let targetContainer = document.getElementById('saved-components-container');
             
-            this.logger.info('RENDER', 'Using preview container consistently for saved components');
+            // If no saved container, use preview container
+            if (!targetContainer) {
+                targetContainer = this.previewContainer;
+                this.logger.info('RENDER', 'No saved-components-container found, using preview container');
+            } else {
+                this.logger.info('RENDER', 'Using saved-components-container for rendering');
+            }
             
             if (!targetContainer) {
                 this.logger.error('RENDER', 'No target container available for saved components');
                 return false;
             }
             
-            // Clear the target container
-            targetContainer.innerHTML = '';
+            // ROOT FIX: More aggressive cleanup - remove ALL components globally before rendering
+            const allExistingComponents = document.querySelectorAll('[data-component-id]');
+            let removedCount = 0;
+            
+            allExistingComponents.forEach(el => {
+                el.remove();
+                removedCount++;
+            });
+            
+            // Also cleanup by ID selectors
+            Object.keys(initialState.components).forEach(componentId => {
+                const elementsById = document.querySelectorAll(`#${componentId}`);
+                elementsById.forEach(el => {
+                    el.remove();
+                    removedCount++;
+                });
+            });
+            
             this.componentCache.clear();
+            this.logger.debug('RENDER', `AGGRESSIVE CLEANUP: Removed ${removedCount} existing elements before rendering saved components`);
             
             // Render all saved components IN PARALLEL for fast loading
             const componentIds = Object.keys(initialState.components);
@@ -1570,6 +1694,10 @@ class EnhancedComponentRenderer {
             // Append all components to target container
             targetContainer.appendChild(fragment);
             
+            // ROOT FIX: Immediate duplicate verification
+            const componentIdsToVerify = new Set(Object.keys(initialState.components));
+            this.verifyNoDuplicatesAfterRender(componentIdsToVerify);
+            
             // Apply layout order if available
             if (initialState.layout && Array.isArray(initialState.layout)) {
                 this.reorderComponents(initialState.layout);
@@ -1579,10 +1707,10 @@ class EnhancedComponentRenderer {
             const finalChildCount = targetContainer.children.length;
             
             this.logger.info('RENDER', `renderSavedComponents: Completed - ${successfulRenders}/${componentCount} components rendered`, {
-                containerUsed: containerReason,
                 targetContainerId: targetContainer.id || 'preview-container',
                 parallelRenderingUsed: true,
-                totalRenderTime: Date.now() - Date.now() // Will be calculated by perf monitor
+                finalChildCount,
+                expectedCount: componentCount
             });
             
             // ROOT FIX: Don't manipulate empty state display - let PHP template handle it
