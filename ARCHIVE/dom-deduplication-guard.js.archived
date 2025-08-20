@@ -1,0 +1,307 @@
+/**
+ * @file dom-deduplication-guard.js
+ * @description ROOT FIX: Global DOM deduplication guard to prevent duplicate rendering
+ * This module provides system-wide protection against DOM element duplication
+ */
+
+(function() {
+    'use strict';
+    
+    class DOMDeduplicationGuard {
+        constructor() {
+            this.renderingInProgress = false;
+            this.renderQueue = [];
+            this.componentRegistry = new Map();
+            this.renderingHistory = new Map();
+            this.logger = window.structuredLogger || console;
+            
+            // Configuration
+            this.config = {
+                maxRenderAttempts: 3,
+                renderTimeout: 5000,
+                deduplicationInterval: 500
+            };
+            
+            // Start periodic deduplication check
+            this.startPeriodicCheck();
+            
+            this.logger.info('DOM_GUARD', 'DOM Deduplication Guard initialized');
+        }
+        
+        /**
+         * Register a component rendering attempt
+         * Returns true if rendering should proceed, false if it should be blocked
+         */
+        shouldRender(componentId, source = 'unknown') {
+            // Check if component is already in DOM
+            const existingElements = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+            
+            if (existingElements.length > 0) {
+                this.logger.warn('DOM_GUARD', `Blocking render - component ${componentId} already exists in DOM`, {
+                    source,
+                    existingCount: existingElements.length
+                });
+                return false;
+            }
+            
+            // Check rendering history
+            const lastRender = this.renderingHistory.get(componentId);
+            if (lastRender) {
+                const timeSinceLastRender = Date.now() - lastRender.timestamp;
+                if (timeSinceLastRender < 100) { // Less than 100ms since last render
+                    this.logger.warn('DOM_GUARD', `Blocking render - component ${componentId} rendered too recently`, {
+                        source,
+                        timeSinceLastRender
+                    });
+                    return false;
+                }
+            }
+            
+            // Register this render attempt
+            this.renderingHistory.set(componentId, {
+                timestamp: Date.now(),
+                source,
+                attempts: (lastRender?.attempts || 0) + 1
+            });
+            
+            return true;
+        }
+        
+        /**
+         * Emergency deduplication - removes all duplicate elements from DOM
+         */
+        emergencyDeduplication() {
+            const startTime = Date.now();
+            const componentMap = new Map();
+            const duplicatesFound = [];
+            
+            // Find all components in DOM
+            const allComponents = document.querySelectorAll('[data-component-id]');
+            
+            allComponents.forEach(element => {
+                const componentId = element.getAttribute('data-component-id');
+                if (componentId) {
+                    if (componentMap.has(componentId)) {
+                        // This is a duplicate
+                        duplicatesFound.push({
+                            id: componentId,
+                            element
+                        });
+                    } else {
+                        // First occurrence
+                        componentMap.set(componentId, element);
+                    }
+                }
+            });
+            
+            // Remove duplicates
+            let removed = 0;
+            duplicatesFound.forEach(({ id, element }) => {
+                try {
+                    element.remove();
+                    removed++;
+                    this.logger.debug('DOM_GUARD', `Removed duplicate: ${id}`);
+                } catch (error) {
+                    this.logger.error('DOM_GUARD', `Failed to remove duplicate ${id}:`, error);
+                }
+            });
+            
+            const duration = Date.now() - startTime;
+            
+            this.logger.info('DOM_GUARD', 'Emergency deduplication complete', {
+                totalElements: allComponents.length,
+                uniqueComponents: componentMap.size,
+                duplicatesRemoved: removed,
+                duration
+            });
+            
+            return {
+                success: true,
+                uniqueComponents: componentMap.size,
+                duplicatesRemoved: removed,
+                duration
+            };
+        }
+        
+        /**
+         * Start periodic deduplication check
+         */
+        startPeriodicCheck() {
+            // Initial check after page load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    setTimeout(() => this.checkAndCleanDuplicates(), 1000);
+                });
+            } else {
+                setTimeout(() => this.checkAndCleanDuplicates(), 1000);
+            }
+            
+            // Periodic check every 5 seconds (only during development)
+            if (window.gmkbData?.debugMode) {
+                setInterval(() => {
+                    const stats = this.getDuplicationStats();
+                    if (stats.hasDuplicates) {
+                        this.logger.warn('DOM_GUARD', 'Duplicates detected in periodic check', stats);
+                        this.emergencyDeduplication();
+                    }
+                }, 5000);
+            }
+        }
+        
+        /**
+         * Check for and clean duplicates
+         */
+        checkAndCleanDuplicates() {
+            const stats = this.getDuplicationStats();
+            
+            if (stats.hasDuplicates) {
+                this.logger.warn('DOM_GUARD', 'Duplicates detected!', stats);
+                
+                // Emit warning event
+                document.dispatchEvent(new CustomEvent('gmkb:dom-duplicates-detected', {
+                    detail: stats
+                }));
+                
+                // Auto-fix if too many duplicates
+                if (stats.totalDuplicates > 5) {
+                    this.logger.warn('DOM_GUARD', 'Too many duplicates - running emergency deduplication');
+                    this.emergencyDeduplication();
+                }
+            }
+        }
+        
+        /**
+         * Get duplication statistics
+         */
+        getDuplicationStats() {
+            const componentCounts = new Map();
+            const allComponents = document.querySelectorAll('[data-component-id]');
+            
+            allComponents.forEach(element => {
+                const id = element.getAttribute('data-component-id');
+                if (id) {
+                    componentCounts.set(id, (componentCounts.get(id) || 0) + 1);
+                }
+            });
+            
+            const duplicates = [];
+            let totalDuplicates = 0;
+            
+            componentCounts.forEach((count, id) => {
+                if (count > 1) {
+                    duplicates.push({ id, count });
+                    totalDuplicates += (count - 1);
+                }
+            });
+            
+            return {
+                totalElements: allComponents.length,
+                uniqueComponents: componentCounts.size,
+                hasDuplicates: duplicates.length > 0,
+                duplicatedComponents: duplicates,
+                totalDuplicates
+            };
+        }
+        
+        /**
+         * Lock rendering for a specific component
+         */
+        lockRendering(componentId) {
+            this.componentRegistry.set(componentId, {
+                locked: true,
+                lockedAt: Date.now()
+            });
+        }
+        
+        /**
+         * Unlock rendering for a specific component
+         */
+        unlockRendering(componentId) {
+            const entry = this.componentRegistry.get(componentId);
+            if (entry) {
+                entry.locked = false;
+            }
+        }
+        
+        /**
+         * Check if rendering is locked for a component
+         */
+        isRenderingLocked(componentId) {
+            const entry = this.componentRegistry.get(componentId);
+            if (!entry || !entry.locked) return false;
+            
+            // Auto-unlock after timeout
+            if (Date.now() - entry.lockedAt > this.config.renderTimeout) {
+                this.unlockRendering(componentId);
+                return false;
+            }
+            
+            return true;
+        }
+        
+        /**
+         * Clear all locks and history
+         */
+        reset() {
+            this.componentRegistry.clear();
+            this.renderingHistory.clear();
+            this.renderingInProgress = false;
+            this.logger.info('DOM_GUARD', 'DOM guard reset');
+        }
+        
+        /**
+         * Get guard status
+         */
+        getStatus() {
+            const stats = this.getDuplicationStats();
+            return {
+                ...stats,
+                renderingInProgress: this.renderingInProgress,
+                lockedComponents: Array.from(this.componentRegistry.entries())
+                    .filter(([, entry]) => entry.locked)
+                    .map(([id]) => id),
+                renderingHistory: this.renderingHistory.size
+            };
+        }
+    }
+    
+    // Create and expose globally
+    window.domDeduplicationGuard = new DOMDeduplicationGuard();
+    
+    // Expose convenience functions
+    window.checkDOMDuplicates = () => {
+        const stats = window.domDeduplicationGuard.getDuplicationStats();
+        console.group('🔍 DOM Duplication Check');
+        console.log('Total Elements:', stats.totalElements);
+        console.log('Unique Components:', stats.uniqueComponents);
+        console.log('Has Duplicates:', stats.hasDuplicates);
+        if (stats.hasDuplicates) {
+            console.table(stats.duplicatedComponents);
+        }
+        console.groupEnd();
+        return stats;
+    };
+    
+    window.fixDOMDuplicates = () => {
+        console.log('🔧 Running emergency DOM deduplication...');
+        return window.domDeduplicationGuard.emergencyDeduplication();
+    };
+    
+    // Auto-fix command for console
+    window.autoFixDOM = () => {
+        const checkResult = window.checkDOMDuplicates();
+        if (checkResult.hasDuplicates) {
+            return window.fixDOMDuplicates();
+        } else {
+            console.log('✅ No duplicates found - DOM is clean');
+            return { success: true, message: 'No duplicates to fix' };
+        }
+    };
+    
+    console.log('✅ DOM Deduplication Guard loaded');
+    console.log('📋 Available commands:');
+    console.log('  - checkDOMDuplicates() - Check for duplicate components');
+    console.log('  - fixDOMDuplicates() - Remove all duplicates');
+    console.log('  - autoFixDOM() - Check and fix if needed');
+    
+})();
