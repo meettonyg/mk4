@@ -391,6 +391,10 @@ class EnhancedComponentRenderer {
         // 1. Get the initial state directly from the manager
         const initialState = enhancedStateManager.getInitialState();
         this.logger.info('RENDER', 'Performing initial render with state:', initialState);
+        
+        // ROOT CAUSE FIX: Set lastState and lastStateHash BEFORE rendering to prevent duplicate renders
+        this.lastState = this.cloneState(initialState);
+        this.lastStateHash = this.generateStateHash(initialState);
 
         // 2. Perform a direct, one-time render of the initial state
         if (initialState && initialState.components && Object.keys(initialState.components).length > 0) {
@@ -399,13 +403,14 @@ class EnhancedComponentRenderer {
             this.updateEmptyState(initialState);
         }
         
-        // 3. Set the lastState AFTER the initial render is complete
-        this.lastState = this.cloneState(initialState);
-
-        // 4. NOW, subscribe to future changes
-        this.stateUnsubscribe = enhancedStateManager.subscribeGlobal((state) => {
-            this.onStateChange(state);
-        });
+        // 3. ROOT FIX: Add a delay before subscribing to prevent immediate re-render
+        setTimeout(() => {
+            // 4. NOW, subscribe to future changes
+            this.stateUnsubscribe = enhancedStateManager.subscribeGlobal((state) => {
+                this.onStateChange(state);
+            });
+            this.logger.debug('RENDER', 'State change subscription activated after initial render');
+        }, 500);
 
         // 5. Setup empty state listeners
         this.setupEmptyStateListeners();
@@ -426,14 +431,17 @@ class EnhancedComponentRenderer {
             this.logger.debug('RENDER', 'State hash unchanged, skipping render entirely');
             return;
         }
-        this.lastStateHash = stateHash;
         
         // CRITICAL FIX: Prevent duplicate renders during initialization
         // If we're still in the initial render phase, skip state changes
-        if (Date.now() - (this.initTime || 0) < 1000) {
+        if (Date.now() - (this.initTime || 0) < 2000) {
             this.logger.debug('RENDER', 'Skipping state change during initialization phase');
             return;
         }
+        
+        // ROOT CAUSE FIX: Only update hash if we're actually going to render
+        // This prevents lost updates if we skip rendering
+        this.lastStateHash = stateHash;
         
         // ROOT FIX: RENDER THROTTLING - Prevent cascade renders during active rendering
         if (this.isCurrentlyRendering) {
@@ -901,16 +909,27 @@ class EnhancedComponentRenderer {
     async renderNewComponentsLegacy(componentIds, newState) {
         this.logger.warn('RENDER', 'Using legacy rendering with enhanced duplicate prevention');
         
-        // ROOT FIX: Always use preview container - no complex container switching
-        let targetContainer = this.previewContainer;
-        let containerReason = 'preview_container_always';
+        // ROOT CAUSE FIX: Use the correct container based on component state
+        let targetContainer = null;
+        let containerReason = '';
+        
+        // Check if saved-components-container exists and should be used
+        const savedContainer = document.getElementById('saved-components-container');
+        if (savedContainer && savedContainer.style.display !== 'none') {
+            targetContainer = savedContainer;
+            containerReason = 'saved_components_container';
+        } else {
+            // Fall back to preview container
+            targetContainer = this.previewContainer;
+            containerReason = 'preview_container';
+        }
         
         if (!targetContainer) {
-            this.logger.error('RENDER', 'Preview container not available for rendering');
+            this.logger.error('RENDER', 'No container available for rendering');
             return;
         }
         
-        this.logger.debug('RENDER', 'Using preview container consistently (no container switching)');
+        this.logger.debug('RENDER', `Using ${containerReason} for component rendering`);
         
         // ROOT FIX: Track which components we're actually rendering
         const componentsToRender = new Set();
@@ -1600,15 +1619,23 @@ class EnhancedComponentRenderer {
             const componentCount = Object.keys(initialState.components).length;
             this.logger.info('RENDER', `renderSavedComponents: Starting render of ${componentCount} saved components`);
             
-            // ROOT FIX: Get the saved components container if it exists
+            // ROOT CAUSE FIX: Get the correct container and ensure it's visible
             let targetContainer = document.getElementById('saved-components-container');
             
-            // If no saved container, use preview container
-            if (!targetContainer) {
+            if (targetContainer) {
+                // Make sure the saved components container is visible
+                targetContainer.style.display = 'block';
+                this.logger.info('RENDER', 'Using saved-components-container for rendering');
+                
+                // Hide empty state if it exists
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            } else {
+                // Fall back to preview container
                 targetContainer = this.previewContainer;
                 this.logger.info('RENDER', 'No saved-components-container found, using preview container');
-            } else {
-                this.logger.info('RENDER', 'Using saved-components-container for rendering');
             }
             
             if (!targetContainer) {
@@ -1616,40 +1643,53 @@ class EnhancedComponentRenderer {
                 return false;
             }
             
-            // ROOT FIX: More aggressive cleanup - remove ALL components globally before rendering
-            const allExistingComponents = document.querySelectorAll('[data-component-id]');
-            let removedCount = 0;
-            
-            allExistingComponents.forEach(el => {
-                el.remove();
-                removedCount++;
-            });
-            
-            // Also cleanup by ID selectors
-            Object.keys(initialState.components).forEach(componentId => {
-                const elementsById = document.querySelectorAll(`#${componentId}`);
-                elementsById.forEach(el => {
-                    el.remove();
-                    removedCount++;
-                });
-            });
-            
-            this.componentCache.clear();
-            this.logger.debug('RENDER', `AGGRESSIVE CLEANUP: Removed ${removedCount} existing elements before rendering saved components`);
-            
-            // Render all saved components IN PARALLEL for fast loading
+            // ROOT CAUSE FIX: Remove ONLY duplicate elements, not all components
+            // This prevents the blank page issue when saved components exist
             const componentIds = Object.keys(initialState.components);
+            let duplicatesRemoved = 0;
+            
+            componentIds.forEach(componentId => {
+                // Find all elements with this component ID
+                const allMatchingElements = [
+                    ...document.querySelectorAll(`#${componentId}`),
+                    ...document.querySelectorAll(`[data-component-id="${componentId}"]`)
+                ];
+                
+                // Remove duplicates only (keep first occurrence)
+                if (allMatchingElements.length > 1) {
+                    for (let i = 1; i < allMatchingElements.length; i++) {
+                        allMatchingElements[i].remove();
+                        duplicatesRemoved++;
+                    }
+                }
+            });
+            
+            if (duplicatesRemoved > 0) {
+                this.logger.warn('RENDER', `Removed ${duplicatesRemoved} duplicate elements before rendering`);
+            }
+            
+            // ROOT CAUSE FIX: Render components SEQUENTIALLY to prevent race conditions
+            // This prevents duplicates and ensures proper DOM insertion
+            const componentIdList = Object.keys(initialState.components);
             const fragment = document.createDocumentFragment();
             
-            this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIds.length} components IN PARALLEL`);
+            this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIdList.length} components SEQUENTIALLY`);
             
-            // ROOT FIX: CRITICAL - Restore parallel rendering for fast performance
-            const renderPromises = componentIds.map(async (componentId) => {
+            // ROOT FIX: Sequential rendering to prevent duplicates
+            const renderedResults = [];
+            for (const componentId of componentIdList) {
                 try {
                     const componentState = initialState.components[componentId];
                     if (!componentState) {
                         this.logger.warn('RENDER', `No state found for saved component: ${componentId}`);
-                        return null;
+                        continue;
+                    }
+                    
+                    // Check if component already exists in DOM
+                    const existingElement = document.getElementById(componentId);
+                    if (existingElement) {
+                        this.logger.debug('RENDER', `Component ${componentId} already exists in DOM, skipping render`);
+                        continue;
                     }
                     
                     const result = await this.renderComponentWithLoader(
@@ -1666,20 +1706,15 @@ class EnhancedComponentRenderer {
                         this.attachComponentControls(result.element, componentId);
                         
                         this.logger.debug('RENDER', `renderSavedComponents: Successfully rendered ${componentId} with controls`);
-                        return { componentId, element: result.element, componentState };
+                        renderedResults.push({ componentId, element: result.element, componentState });
                     } else {
                         this.logger.error('RENDER', `renderSavedComponents: Failed to render ${componentId}`);
-                        return null;
                     }
                     
                 } catch (componentError) {
                     this.logger.error('RENDER', `renderSavedComponents: Error rendering component ${componentId}:`, componentError);
-                    return null;
                 }
-            });
-            
-            // Wait for all components to render in parallel
-            const renderedResults = await Promise.all(renderPromises);
+            }
             
             // Add successful renders to fragment
             let successfulRenders = 0;
@@ -1695,7 +1730,7 @@ class EnhancedComponentRenderer {
             targetContainer.appendChild(fragment);
             
             // ROOT FIX: Immediate duplicate verification
-            const componentIdsToVerify = new Set(Object.keys(initialState.components));
+            const componentIdsToVerify = new Set(componentIdList);
             this.verifyNoDuplicatesAfterRender(componentIdsToVerify);
             
             // Apply layout order if available
@@ -1713,8 +1748,10 @@ class EnhancedComponentRenderer {
                 expectedCount: componentCount
             });
             
-            // ROOT FIX: Don't manipulate empty state display - let PHP template handle it
-            this.logger.debug('RENDER', 'Skipping empty state manipulation - PHP template controls display');
+            // ROOT CAUSE FIX: Update empty state display after rendering
+            // This ensures the UI correctly reflects the component state
+            this.updateEmptyState(initialState);
+            this.logger.debug('RENDER', 'Updated empty state display after rendering saved components');
             
             return successfulRenders > 0;
             
