@@ -665,6 +665,14 @@ function gmkb_enqueue_assets() {
         array( 'gmkb-main-styles' ),
         $version
     );
+    
+    // ROOT FIX: Critical container protection CSS to prevent blank screen issues
+    wp_enqueue_style(
+        'gmkb-container-protection',
+        $plugin_url . 'css/container-protection.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
 
     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
         error_log( '✅ GMKB: Comprehensive WordPress-native assets enqueued successfully.' );

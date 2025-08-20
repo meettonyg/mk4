@@ -99,6 +99,46 @@ class EnhancedComponentRenderer {
     }
     
     /**
+     * ROOT FIX: Event-driven reordering coordination
+     * Schedules reordering after component rendering is complete
+     */
+    scheduleReorderAfterRender(newState) {
+        // Use requestAnimationFrame for smooth DOM coordination
+        requestAnimationFrame(() => {
+            // Verify all components are rendered before reordering
+            const allComponentsRendered = this.verifyAllComponentsRendered(newState);
+            
+            if (allComponentsRendered) {
+                this.reorderComponents(newState.layout);
+                this.logger.debug('RENDER', 'Reordering completed after render verification');
+            } else {
+                this.logger.debug('RENDER', 'Skipping reorder - not all components fully rendered yet');
+            }
+        });
+    }
+    
+    /**
+     * ROOT FIX: Verify all components are properly rendered in DOM
+     */
+    verifyAllComponentsRendered(state) {
+        const componentIds = Object.keys(state.components || {});
+        const renderedIds = Array.from(this.previewContainer.children)
+            .map(child => child.id)
+            .filter(id => id);
+        
+        const allPresent = componentIds.every(id => renderedIds.includes(id));
+        
+        this.logger.debug('RENDER', 'Component render verification:', {
+            expectedComponents: componentIds.length,
+            renderedComponents: renderedIds.length,
+            allPresent,
+            missingComponents: componentIds.filter(id => !renderedIds.includes(id))
+        });
+        
+        return allPresent;
+    }
+
+    /**
      * Setup keyboard shortcuts for undo/redo and other functions
      */
     setupKeyboardShortcuts() {
@@ -473,14 +513,14 @@ class EnhancedComponentRenderer {
                 await this.queueComponentUpdates(changes.updated, newState);
             }
             
-            // Handle moves immediately (layout changes)
+            // Handle moves with event-driven coordination to ensure new components are fully rendered
             if (changes.moved.size > 0) {
-                const state = enhancedStateManager.getState();
-                this.reorderComponents(state.layout);
+                // ROOT FIX: Event-driven reordering coordination
+                this.scheduleReorderAfterRender(newState);
             }
             
-            // Cleanup and update empty state
-            this.cleanupOrphanedElements(newState);
+            // ROOT FIX: Conservative cleanup - don't aggressively remove components that might be in transition
+            this.conservativeCleanup(newState);
             this.updateEmptyState(newState);
             
         } catch (error) {
@@ -509,7 +549,8 @@ class EnhancedComponentRenderer {
             const state = enhancedStateManager.getState();
             this.reorderComponents(state.layout);
         }
-        this.cleanupOrphanedElements(newState);
+            // ROOT FIX: Conservative cleanup - don't aggressively remove components
+            this.conservativeCleanup(newState);
 
         this.updateEmptyState(newState);
     }
@@ -608,16 +649,25 @@ class EnhancedComponentRenderer {
         
         targetContainer.appendChild(fragment);
         
-        // ROOT FIX: Verify components were actually added to DOM
+        // ROOT FIX: CRITICAL - Verify components were actually added to DOM and update cache
         const finalChildrenCount = targetContainer.children.length;
         this.logger.debug('RENDER', `After appendChild: target container has ${finalChildrenCount} children`);
+        
+        // ROOT FIX: Update component cache for all rendered components in DOM
+        Array.from(targetContainer.children).forEach(child => {
+            if (child.id && !this.componentCache.has(child.id)) {
+                this.componentCache.set(child.id, child);
+                this.logger.debug('RENDER', `Updated cache for DOM component: ${child.id}`);
+            }
+        });
         
         if (finalChildrenCount === 0 && componentIds.size > 0) {
             this.logger.error('RENDER', 'DOM insertion failed - no children in container after appendChild');
         }
 
-        const state = enhancedStateManager.getState();
-        this.reorderComponents(state.layout);
+        // ROOT FIX: Skip immediate reordering - let the event-driven process handle it
+        // const state = enhancedStateManager.getState();
+        // this.reorderComponents(state.layout);
         
         perfEnd();
         
@@ -743,6 +793,35 @@ class EnhancedComponentRenderer {
         
         this.logger.debug('RENDER', 'Reordering within preview container consistently');
 
+        // ROOT FIX: CRITICAL - Don't reorder during component additions to prevent clearing newly added components
+        // Check if we're in the middle of adding components
+        const currentChildren = Array.from(activeContainer.children);
+        const currentChildIds = currentChildren.map(child => child.id).filter(id => id);
+        
+        this.logger.debug('RENDER', 'Reorder check:', {
+            layoutLength: validatedLayout.length,
+            currentChildrenCount: currentChildren.length,
+            currentChildIds: currentChildIds,
+            layoutIds: validatedLayout
+        });
+        
+        // ROOT FIX: Skip reordering if layout and DOM are already in sync
+        const layoutMatches = JSON.stringify(validatedLayout) === JSON.stringify(currentChildIds);
+        if (layoutMatches) {
+            this.logger.debug('RENDER', 'Layout already matches DOM order, skipping reorder');
+            perfEnd();
+            return;
+        }
+        
+        // ROOT FIX: Conservative reordering - only reorder if all components are present
+        const missingFromDOM = validatedLayout.filter(id => !currentChildIds.includes(id));
+        if (missingFromDOM.length > 0) {
+            this.logger.warn('RENDER', 'Skipping reorder - some components missing from DOM:', missingFromDOM);
+            this.logger.debug('RENDER', 'This prevents newly added components from being cleared during reorder');
+            perfEnd();
+            return;
+        }
+
         const elementMap = new Map();
         Array.from(activeContainer.children).forEach(child => {
             if (child.id) {
@@ -844,14 +923,64 @@ class EnhancedComponentRenderer {
         return state ? JSON.parse(JSON.stringify(state)) : null;
     }
 
-    cleanupOrphanedElements(state) {
-        const componentIdsInState = new Set(Object.keys(state.components));
+    /**
+     * ROOT FIX: Conservative cleanup that doesn't remove components during state transitions
+     * Prevents newly added components from disappearing due to timing issues
+     */
+    conservativeCleanup(state) {
+        // Only remove elements that are definitively orphaned
+        const elementsToRemove = [];
+        
         for (const child of this.previewContainer.children) {
-            if (!componentIdsInState.has(child.id)) {
-                child.remove();
-                this.componentCache.delete(child.id);
+            // Only remove elements that are clearly errors, have no ID, or are temporary placeholders
+            if (!child.id || 
+                child.classList.contains('component-error') || 
+                child.classList.contains('component-placeholder') ||
+                child.textContent === 'Component loading...') {
+                elementsToRemove.push(child);
             }
         }
+        
+        // Remove only the confirmed orphaned elements
+        elementsToRemove.forEach(element => {
+            element.remove();
+            if (element.id) {
+                this.componentCache.delete(element.id);
+                this.logger.debug('RENDER', `Conservative cleanup: Removed ${element.id}`);
+            }
+        });
+        
+        if (elementsToRemove.length > 0) {
+            this.logger.debug('RENDER', `Conservative cleanup: Removed ${elementsToRemove.length} orphaned elements`);
+        }
+    }
+
+    cleanupOrphanedElements(state) {
+        // ROOT FIX: CRITICAL - Disable aggressive cleanup that removes newly added components
+        // This method was causing newly added components to disappear due to state sync timing issues
+        
+        this.logger.debug('RENDER', 'cleanupOrphanedElements: Skipping aggressive cleanup to prevent component disappearance');
+        
+        // Only remove elements that are definitively orphaned (have no ID or are error elements)
+        const elementsToRemove = [];
+        
+        for (const child of this.previewContainer.children) {
+            // Only remove elements that are clearly errors or have no ID
+            if (!child.id || child.classList.contains('component-error')) {
+                elementsToRemove.push(child);
+            }
+        }
+        
+        // Remove only the confirmed orphaned elements
+        elementsToRemove.forEach(element => {
+            element.remove();
+            if (element.id) {
+                this.componentCache.delete(element.id);
+                this.logger.debug('RENDER', `Removed orphaned element: ${element.id}`);
+            }
+        });
+        
+        this.logger.debug('RENDER', `Cleaned up ${elementsToRemove.length} orphaned elements (conservative approach)`);
     }
 
     healthCheck() {
