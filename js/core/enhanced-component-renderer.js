@@ -70,11 +70,17 @@ class EnhancedComponentRenderer {
         this.disableRendering = false;
         this.stateUnsubscribe = null;
         this.lastState = null;
+        this.lastStateHash = null; // ROOT FIX: Track state hash for deduplication
         this.renderDebounceTimer = null;
         this.renderStartTime = null;
         this.healthCheckInterval = null;
         this.logger = structuredLogger;
         this.lastSaveTime = 0; // ROOT FIX: Track save operations to prevent clearing
+        
+        // ROOT FIX: Render throttling to prevent cascade renders
+        this.isCurrentlyRendering = false;
+        this.pendingRenderRequest = null;
+        this.renderThrottleDelay = 150; // Minimum time between renders
         
         // UI Registry integration
         this.registeredComponents = new Set();
@@ -399,28 +405,62 @@ class EnhancedComponentRenderer {
     onStateChange(newState) {
         if (!this.initialized || this.disableRendering) return;
 
+        // ROOT FIX: AGGRESSIVE DUPLICATE RENDER PREVENTION
+        const stateHash = this.generateStateHash(newState);
+        if (this.lastStateHash === stateHash) {
+            this.logger.debug('RENDER', 'State hash unchanged, skipping render entirely');
+            return;
+        }
+        this.lastStateHash = stateHash;
+        
+        // ROOT FIX: RENDER THROTTLING - Prevent cascade renders during active rendering
+        if (this.isCurrentlyRendering) {
+            this.logger.debug('RENDER', 'Currently rendering, storing pending request');
+            this.pendingRenderRequest = { newState, timestamp: Date.now() };
+            return;
+        }
+
         if (this.renderDebounceTimer) {
             clearTimeout(this.renderDebounceTimer);
         }
 
         this.renderDebounceTimer = setTimeout(async () => {
-            const changes = this.diffState(this.lastState, newState);
+            this.isCurrentlyRendering = true;
+            
+            try {
+                const changes = this.diffState(this.lastState, newState);
 
-            if (!changes.added.size && !changes.removed.size && !changes.updated.size && !changes.moved.size) {
-                this.logger.debug('RENDER', 'No changes detected, skipping render');
-                return;
+                if (!changes.added.size && !changes.removed.size && !changes.updated.size && !changes.moved.size) {
+                    this.logger.debug('RENDER', 'No changes detected, skipping render');
+                    return;
+                }
+
+                this.logger.info('RENDER', 'Processing state changes', {
+                    added: changes.added.size,
+                    removed: changes.removed.size, 
+                    updated: changes.updated.size,
+                    moved: changes.moved.size
+                });
+
+                await this.processChangesWithQueue(changes, newState);
+                this.lastState = this.cloneState(newState);
+                
+            } finally {
+                this.isCurrentlyRendering = false;
+                
+                // ROOT FIX: Process any pending render request
+                if (this.pendingRenderRequest) {
+                    const pending = this.pendingRenderRequest;
+                    this.pendingRenderRequest = null;
+                    
+                    // Only process if the pending request is relatively recent
+                    if (Date.now() - pending.timestamp < 5000) {
+                        this.logger.debug('RENDER', 'Processing pending render request');
+                        setTimeout(() => this.onStateChange(pending.newState), 50);
+                    }
+                }
             }
-
-            this.logger.info('RENDER', 'Processing state changes', {
-                added: changes.added.size,
-                removed: changes.removed.size, 
-                updated: changes.updated.size,
-                moved: changes.moved.size
-            });
-
-            await this.processChangesWithQueue(changes, newState);
-            this.lastState = this.cloneState(newState);
-        }, 50);
+        }, this.renderThrottleDelay);
     }
 
     diffState(oldState, newState) {
@@ -641,22 +681,36 @@ class EnhancedComponentRenderer {
         });
         
         componentIds.forEach(id => {
-            const element = this.componentCache.get(id) || document.getElementById(id);
-            if (element) {
-                element.remove();
-                this.componentCache.delete(id);
-                
-                // Unregister from UI registry
-                if (this.registeredComponents.has(id)) {
-                    const unregister = this.updateHandlers.get(id);
-                    if (unregister) {
-                        unregister();
-                    }
-                    this.updateHandlers.delete(id);
-                    this.registeredComponents.delete(id);
-                    
-                    this.logger.debug('RENDER', `Unregistered component from UI registry: ${id}`);
+            // ROOT FIX: Use DOM Render Coordinator for removal if available
+            if (window.domRenderCoordinator) {
+                const success = window.domRenderCoordinator.removeComponent(id);
+                if (success) {
+                    this.logger.debug('RENDER', `Component ${id} removed via coordinator`);
+                } else {
+                    this.logger.warn('RENDER', `Coordinator failed to remove ${id}, using fallback`);
                 }
+            } else {
+                // Fallback to legacy removal
+                const element = this.componentCache.get(id) || document.getElementById(id);
+                if (element) {
+                    element.remove();
+                    this.logger.debug('RENDER', `Component ${id} removed via fallback`);
+                }
+            }
+            
+            // Clean up our internal tracking
+            this.componentCache.delete(id);
+            
+            // Unregister from UI registry
+            if (this.registeredComponents.has(id)) {
+                const unregister = this.updateHandlers.get(id);
+                if (unregister) {
+                    unregister();
+                }
+                this.updateHandlers.delete(id);
+                this.registeredComponents.delete(id);
+                
+                this.logger.debug('RENDER', `Unregistered component from UI registry: ${id}`);
             }
         });
         
@@ -671,6 +725,108 @@ class EnhancedComponentRenderer {
         });
         
         this.logger.debug('RENDER', `Starting renderNewComponents for ${componentIds.size} components`);
+        
+        // ROOT FIX: Use DOM Render Coordinator to prevent duplication
+        if (!window.domRenderCoordinator) {
+            this.logger.error('RENDER', 'DOM Render Coordinator not available - falling back to legacy rendering');
+            return this.renderNewComponentsLegacy(componentIds, newState);
+        }
+        
+        try {
+            // Render components one by one through coordinator for strict duplication control
+            const renderPromises = Array.from(componentIds).map(async (componentId) => {
+                const componentState = newState.components[componentId];
+                if (!componentState) {
+                    this.logger.error('RENDER', `State for new component ${componentId} not found!`);
+                    return null;
+                }
+                
+                // Render the component element
+                const result = await this.renderComponentWithLoader(componentId, componentState.type, componentState.props || componentState.data);
+                
+                if (result && result.element) {
+                    // Use coordinator to ensure unique DOM insertion
+                    const success = await window.domRenderCoordinator.renderComponent(
+                        componentId,
+                        result.element,
+                        'media-kit-preview',
+                        { 
+                            componentType: componentState.type,
+                            source: 'renderNewComponents'
+                        }
+                    );
+                    
+                    if (success) {
+                        // Update our cache
+                        this.componentCache.set(componentId, result.element);
+                        
+                        // Register with UI registry
+                        this.registerComponentWithUIRegistry(componentId, result.element, componentState);
+                        
+                        this.logger.debug('RENDER', `Successfully coordinated render of ${componentId}`);
+                        
+                        return {
+                            id: componentId,
+                            element: result.element,
+                            success: true
+                        };
+                    } else {
+                        this.logger.error('RENDER', `Coordinator failed to render ${componentId}`);
+                        return null;
+                    }
+                } else {
+                    this.logger.error('RENDER', `Failed to create element for ${componentId}`);
+                    return null;
+                }
+            });
+            
+            const results = await Promise.all(renderPromises);
+            const successfulRenders = results.filter(r => r && r.success);
+            
+            this.logger.info('RENDER', `Coordinated rendering completed`, {
+                requested: componentIds.size,
+                successful: successfulRenders.length,
+                failed: componentIds.size - successfulRenders.length
+            });
+            
+            // Dispatch batch render completion event
+            document.dispatchEvent(new CustomEvent('gmkb:batch-render-completed', {
+                detail: {
+                    componentIds: Array.from(componentIds),
+                    results: results,
+                    source: 'coordinated-rendering',
+                    timestamp: Date.now()
+                }
+            }));
+            
+        } catch (error) {
+            this.logger.error('RENDER', 'Coordinated rendering failed', error);
+            
+            // Fallback to legacy rendering
+            this.logger.warn('RENDER', 'Falling back to legacy rendering');
+            return this.renderNewComponentsLegacy(componentIds, newState);
+        }
+        
+        perfEnd();
+    }
+    
+    /**
+     * ROOT FIX: Legacy rendering method as fallback
+     */
+    async renderNewComponentsLegacy(componentIds, newState) {
+        this.logger.warn('RENDER', 'Using legacy rendering - duplication risk exists');
+        
+        // ROOT FIX: AGGRESSIVE DEDUPLICATION - Remove existing elements FIRST
+        componentIds.forEach(componentId => {
+            const existingElements = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+            if (existingElements.length > 0) {
+                this.logger.warn('RENDER', `DEDUPLICATION: Found ${existingElements.length} existing elements for ${componentId}, removing ALL`);
+                existingElements.forEach(el => {
+                    el.remove();
+                    this.componentCache.delete(componentId);
+                });
+            }
+        });
         
         // ROOT FIX: Always use preview container - no complex container switching
         let targetContainer = this.previewContainer;
@@ -746,6 +902,24 @@ class EnhancedComponentRenderer {
         const finalChildrenCount = targetContainer.children.length;
         this.logger.debug('RENDER', `After appendChild: target container has ${finalChildrenCount} children`);
         
+        // ROOT FIX: CRITICAL DEDUPLICATION CHECK - Verify no duplicates in DOM
+        const domComponentIds = Array.from(targetContainer.children)
+            .map(child => child.id)
+            .filter(id => id);
+        
+        const uniqueIds = [...new Set(domComponentIds)];
+        
+        if (domComponentIds.length !== uniqueIds.length) {
+            this.logger.error('RENDER', `CRITICAL: DOM DUPLICATION DETECTED!`, {
+                totalElements: domComponentIds.length,
+                uniqueComponents: uniqueIds.length,
+                duplicates: domComponentIds.length - uniqueIds.length
+            });
+            
+            // EMERGENCY DEDUPLICATION
+            this.emergencyDeduplicateDOM(targetContainer);
+        }
+        
         // ROOT FIX: Update component cache for all rendered components in DOM
         Array.from(targetContainer.children).forEach(child => {
             if (child.id && !this.componentCache.has(child.id)) {
@@ -758,10 +932,6 @@ class EnhancedComponentRenderer {
             this.logger.error('RENDER', 'DOM insertion failed - no children in container after appendChild');
         }
 
-        // ROOT FIX: Skip immediate reordering - let the event-driven process handle it
-        // const state = enhancedStateManager.getState();
-        // this.reorderComponents(state.layout);
-        
         perfEnd();
         
         this.logger.debug('RENDER', `Rendered ${componentIds.size} new components, ${addedToFragment} added to DOM via ${containerReason}`);
@@ -863,6 +1033,13 @@ class EnhancedComponentRenderer {
     }
 
     reorderComponents(layout) {
+        // ROOT FIX: Use DOM Render Coordinator for reordering if available
+        if (window.domRenderCoordinator) {
+            this.logger.debug('RENDER', 'Using DOM Render Coordinator for reordering');
+            window.domRenderCoordinator.reorderComponents(layout);
+            return;
+        }
+        
         // ROOT FIX: Enhanced layout validation
         const validatedLayout = this.validateAndNormalizeLayout(layout);
         
@@ -1043,6 +1220,89 @@ class EnhancedComponentRenderer {
 
     cloneState(state) {
         return state ? JSON.parse(JSON.stringify(state)) : null;
+    }
+    
+    /**
+     * ROOT FIX: Generate a hash of the state for duplicate render prevention
+     */
+    generateStateHash(state) {
+        try {
+            if (!state || !state.components) {
+                return 'empty-state';
+            }
+            
+            // Create a simplified hash from component IDs and their types
+            const componentData = Object.entries(state.components || {})
+                .map(([id, data]) => `${id}:${data.type}:${JSON.stringify(data.props || {})}`)
+                .sort()
+                .join('|');
+            
+            const layoutData = Array.isArray(state.layout) ? state.layout.join(',') : '';
+            
+            return `${componentData}#${layoutData}`;
+        } catch (error) {
+            this.logger.warn('RENDER', 'Failed to generate state hash:', error);
+            return Date.now().toString(); // Fallback to timestamp
+        }
+    }
+    
+    /**
+     * ROOT FIX: Emergency deduplication when DOM has duplicate components
+     */
+    emergencyDeduplicateDOM(container) {
+        try {
+            this.logger.warn('RENDER', 'EMERGENCY DEDUPLICATION: Starting aggressive cleanup');
+            
+            const componentMap = new Map();
+            const elementsToRemove = [];
+            
+            // Find all components and track duplicates
+            Array.from(container.children).forEach(element => {
+                const componentId = element.getAttribute('data-component-id');
+                
+                if (componentId) {
+                    if (componentMap.has(componentId)) {
+                        // This is a duplicate - mark for removal
+                        elementsToRemove.push(element);
+                        this.logger.debug('RENDER', `DUPLICATE MARKED: ${componentId}`);
+                    } else {
+                        // First occurrence - keep it
+                        componentMap.set(componentId, element);
+                        this.logger.debug('RENDER', `KEEPING: ${componentId}`);
+                    }
+                }
+            });
+            
+            // Remove all duplicates
+            elementsToRemove.forEach(element => {
+                const componentId = element.getAttribute('data-component-id');
+                element.remove();
+                this.logger.debug('RENDER', `REMOVED DUPLICATE: ${componentId}`);
+            });
+            
+            // Update cache to reflect cleaned DOM
+            this.componentCache.clear();
+            componentMap.forEach((element, componentId) => {
+                this.componentCache.set(componentId, element);
+            });
+            
+            this.logger.warn('RENDER', `EMERGENCY DEDUPLICATION COMPLETE: Removed ${elementsToRemove.length} duplicates, keeping ${componentMap.size} unique components`);
+            
+            return {
+                removed: elementsToRemove.length,
+                kept: componentMap.size,
+                success: true
+            };
+            
+        } catch (error) {
+            this.logger.error('RENDER', 'Emergency deduplication failed:', error);
+            return {
+                removed: 0,
+                kept: 0,
+                success: false,
+                error: error.message
+            };
+        }
     }
 
     /**

@@ -152,7 +152,7 @@
         }
         
         /**
-         * ROOT FIX: Dynamic control attachment with AGGRESSIVE deduplication prevention
+         * ROOT FIX: Dynamic control attachment with SINGLE-INSTANCE ENFORCEMENT
          * @param {HTMLElement} componentElement - Component DOM element
          * @param {string} componentId - Component ID
          */
@@ -160,6 +160,30 @@
             if (!componentElement || !componentId) {
                 structuredLogger.warn('CONTROLS', 'Invalid parameters for control attachment', { componentElement: !!componentElement, componentId });
                 return false;
+            }
+
+            // ROOT FIX: SINGLE-INSTANCE ENFORCEMENT - Ensure only ONE element with this ID exists
+            const allElementsWithId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+            if (allElementsWithId.length > 1) {
+                structuredLogger.error('CONTROLS', `CRITICAL: Found ${allElementsWithId.length} elements with ID ${componentId}! Controls will only attach to the FIRST one.`);
+                
+                // Only work with the first element, ignore duplicates
+                if (componentElement !== allElementsWithId[0]) {
+                    structuredLogger.warn('CONTROLS', `Skipping control attachment to duplicate element for ${componentId}`);
+                    return false;
+                }
+            }
+            
+            // ROOT FIX: Check if controls already attached to THIS SPECIFIC component ID (not element)
+            if (this.attachedControls.has(componentId)) {
+                const existingData = this.attachedControls.get(componentId);
+                if (existingData && existingData.element && existingData.element.parentNode) {
+                    structuredLogger.debug('CONTROLS', `Controls already attached to ${componentId}, skipping duplicate attachment`);
+                    return true; // Already attached successfully
+                }
+                // Clean up stale data if element no longer exists
+                this.attachedControls.delete(componentId);
+                this.cleanupEventListeners(componentId);
             }
 
             // ROOT FIX: AGGRESSIVE deduplication - remove ALL existing controls first
@@ -171,12 +195,6 @@
                 controlElement.remove();
                 structuredLogger.debug('CONTROLS', `Aggressively removed existing control element for ${componentId}`);
             });
-            
-            // Clear any tracking data to prevent stale references
-            if (this.attachedControls.has(componentId)) {
-                this.attachedControls.delete(componentId);
-                structuredLogger.debug('CONTROLS', `Cleared stale tracking data for ${componentId}`);
-            }
             
             // Clean up any old event listeners
             this.cleanupEventListeners(componentId);

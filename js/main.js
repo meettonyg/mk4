@@ -202,9 +202,24 @@ async function initializeWhenReady() {
             window.GMKB.systems.ComponentControlsManager = window.componentControlsManager;
         }
         
-        // ROOT FIX: Force component controls attachment after everything is initialized
+        // ROOT FIX: Single-instance component controls attachment with deduplication check
         setTimeout(() => {
             if (window.componentControlsManager && window.enhancedComponentRenderer) {
+                // CRITICAL: Check for DOM duplication before attaching controls
+                const allComponents = document.querySelectorAll('[data-component-id]');
+                const componentIds = Array.from(allComponents).map(el => el.getAttribute('data-component-id'));
+                const uniqueIds = [...new Set(componentIds)];
+                
+                if (componentIds.length !== uniqueIds.length) {
+                    console.error(`🚨 CRITICAL: DOM DUPLICATION DETECTED! ${componentIds.length} elements for ${uniqueIds.length} unique components`);
+                    console.log('📊 Duplicated components:', componentIds.filter((id, index) => componentIds.indexOf(id) !== index));
+                    
+                    // Emergency deduplication before attaching controls
+                    emergencyDeduplicateAllComponents();
+                } else {
+                    console.log(`✅ DOM CLEAN: ${uniqueIds.length} unique components, no duplicates detected`);
+                }
+                
                 forceAttachControlsToExistingComponents();
             }
         }, 1000);
@@ -582,39 +597,108 @@ async function handleSaveClick() {
 
 
 /**
- * ROOT FIX: Force attach controls to all existing components
+ * ROOT FIX: Emergency deduplication of all components in DOM
  */
-function forceAttachControlsToExistingComponents() {
-    console.log('🔧 GMKB: Force attaching controls to existing components');
+function emergencyDeduplicateAllComponents() {
+    console.log('🚨 EMERGENCY: Starting DOM deduplication process');
     
-    const components = document.querySelectorAll('[data-component-id]');
-    let attachedCount = 0;
+    const previewContainer = document.getElementById('media-kit-preview');
+    if (!previewContainer) {
+        console.error('Preview container not found for deduplication');
+        return;
+    }
     
-    components.forEach(element => {
+    const componentMap = new Map();
+    const elementsToRemove = [];
+    let duplicatesFound = 0;
+    
+    // Find all components and identify duplicates
+    Array.from(previewContainer.children).forEach(element => {
         const componentId = element.getAttribute('data-component-id');
+        
         if (componentId) {
-            // Ensure element is positioned relative
-            if (getComputedStyle(element).position === 'static') {
-                element.style.position = 'relative';
-            }
-            
-            // Try to attach controls
-            if (window.componentControlsManager && window.componentControlsManager.attachControls) {
-                const success = window.componentControlsManager.attachControls(element, componentId);
-                if (success) {
-                    attachedCount++;
-                }
+            if (componentMap.has(componentId)) {
+                // This is a duplicate
+                elementsToRemove.push(element);
+                duplicatesFound++;
+                console.log(`🗑️ DUPLICATE FOUND: ${componentId} (removing)`);
+            } else {
+                // First occurrence - keep it
+                componentMap.set(componentId, element);
+                console.log(`✅ KEEPING: ${componentId}`);
             }
         }
     });
     
-    console.log(`🔧 GMKB: Force attached controls to ${attachedCount}/${components.length} components`);
+    // Remove all duplicates
+    elementsToRemove.forEach(element => {
+        const componentId = element.getAttribute('data-component-id');
+        element.remove();
+        console.log(`🗑️ REMOVED DUPLICATE: ${componentId}`);
+    });
+    
+    console.log(`✅ DEDUPLICATION COMPLETE: Removed ${duplicatesFound} duplicates, keeping ${componentMap.size} unique components`);
+    
+    // Clear and update component cache if renderer is available
+    if (window.enhancedComponentRenderer && window.enhancedComponentRenderer.componentCache) {
+        window.enhancedComponentRenderer.componentCache.clear();
+        componentMap.forEach((element, componentId) => {
+            window.enhancedComponentRenderer.componentCache.set(componentId, element);
+        });
+        console.log('🗚️ Component cache updated after deduplication');
+    }
+    
+    return {
+        duplicatesRemoved: duplicatesFound,
+        uniqueComponentsKept: componentMap.size,
+        success: duplicatesFound >= 0
+    };
+}
+
+/**
+ * ROOT FIX: Force attach controls to all existing components (SINGLE INSTANCE ONLY)
+ */
+function forceAttachControlsToExistingComponents() {
+    console.log('🔧 GMKB: Force attaching controls to existing components');
+    
+    // ROOT FIX: Only get UNIQUE components (no duplicates)
+    const uniqueComponents = new Map();
+    const allComponents = document.querySelectorAll('[data-component-id]');
+    
+    allComponents.forEach(element => {
+        const componentId = element.getAttribute('data-component-id');
+        if (componentId && !uniqueComponents.has(componentId)) {
+            uniqueComponents.set(componentId, element);
+        }
+    });
+    
+    console.log(`🔧 GMKB: Found ${uniqueComponents.size} unique components (filtered from ${allComponents.length} total elements)`);
+    
+    let attachedCount = 0;
+    
+    uniqueComponents.forEach((element, componentId) => {
+        // Ensure element is positioned relative
+        if (getComputedStyle(element).position === 'static') {
+            element.style.position = 'relative';
+        }
+        
+        // Try to attach controls
+        if (window.componentControlsManager && window.componentControlsManager.attachControls) {
+            const success = window.componentControlsManager.attachControls(element, componentId);
+            if (success) {
+                attachedCount++;
+            }
+        }
+    });
+    
+    console.log(`🔧 GMKB: Force attached controls to ${attachedCount}/${uniqueComponents.size} components`);
     
     // Dispatch event for tracking
     document.dispatchEvent(new CustomEvent('gmkb:force-controls-attached', {
         detail: {
             attachedCount,
-            totalComponents: components.length,
+            totalComponents: uniqueComponents.size,
+            duplicatesSkipped: allComponents.length - uniqueComponents.size,
             timestamp: Date.now()
         }
     }));
@@ -763,6 +847,92 @@ window.GMKB = {
         const allControls = document.querySelectorAll('.component-controls, .emergency-controls');
         allControls.forEach(control => control.remove());
         console.log(`🧹 Cleaned up ${allControls.length} overlapping controls`);
+    },
+    
+    // ROOT FIX: Advanced debugging functions for DOM duplication issues
+    emergencyDeduplicateDOM: () => {
+        if (window.emergencyDeduplicateAllComponents) {
+            return window.emergencyDeduplicateAllComponents();
+        } else {
+            console.warn('Emergency deduplication function not available');
+            return { success: false };
+        }
+    },
+    
+    analyzeComponentDuplication: () => {
+        const allComponents = document.querySelectorAll('[data-component-id]');
+        const componentCounts = new Map();
+        const duplicates = new Map();
+        
+        allComponents.forEach(element => {
+            const id = element.getAttribute('data-component-id');
+            if (id) {
+                const count = componentCounts.get(id) || 0;
+                componentCounts.set(id, count + 1);
+                
+                if (count > 0) {
+                    if (!duplicates.has(id)) {
+                        duplicates.set(id, []);
+                    }
+                    duplicates.get(id).push(element);
+                }
+            }
+        });
+        
+        console.group('🔍 Component Duplication Analysis');
+        console.log(`Total DOM elements: ${allComponents.length}`);
+        console.log(`Unique component IDs: ${componentCounts.size}`);
+        console.log(`Duplicated component IDs: ${duplicates.size}`);
+        
+        if (duplicates.size > 0) {
+            console.group('😱 DUPLICATES FOUND:');
+            duplicates.forEach((elements, id) => {
+                console.log(`${id}: ${elements.length + 1} instances (${elements.length} duplicates)`);
+            });
+            console.groupEnd();
+        } else {
+            console.log('✅ No duplicates found!');
+        }
+        
+        console.groupEnd();
+        
+        return {
+            totalElements: allComponents.length,
+            uniqueIds: componentCounts.size,
+            duplicatedIds: duplicates.size,
+            duplicates: Object.fromEntries(duplicates)
+        };
+    },
+    
+    fixComponentControlsNow: () => {
+        console.log('🔧 COMPREHENSIVE COMPONENT CONTROLS FIX');
+        
+        // Step 1: Analyze duplication
+        const analysis = window.GMKB.analyzeComponentDuplication();
+        
+        // Step 2: Emergency deduplication if needed
+        if (analysis.duplicatedIds > 0) {
+            console.log('🚨 Duplicates detected, running emergency deduplication...');
+            const deduplicationResult = window.GMKB.emergencyDeduplicateDOM();
+            console.log('Deduplication result:', deduplicationResult);
+        }
+        
+        // Step 3: Clean up existing controls
+        window.GMKB.cleanupOverlappingControls();
+        
+        // Step 4: Force attach controls to clean DOM
+        setTimeout(() => {
+            window.GMKB.forceAttachControls();
+            
+            // Step 5: Enable debug mode for testing
+            document.body.classList.add('gmkb-debug-mode');
+            window.GMKBDebugMode = true;
+            
+            console.log('✅ COMPREHENSIVE FIX COMPLETE!');
+            console.log('Hover over components to test controls.');
+        }, 500);
+        
+        return analysis;
     },
     
     // Version info
