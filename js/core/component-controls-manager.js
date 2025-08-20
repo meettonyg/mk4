@@ -152,7 +152,7 @@
         }
         
         /**
-         * ROOT FIX: Dynamic control attachment with deduplication prevention
+         * ROOT FIX: Dynamic control attachment with AGGRESSIVE deduplication prevention
          * @param {HTMLElement} componentElement - Component DOM element
          * @param {string} componentId - Component ID
          */
@@ -162,29 +162,35 @@
                 return false;
             }
 
-            // ROOT FIX: Check if controls are already properly attached BEFORE force-clearing
+            // ROOT FIX: AGGRESSIVE deduplication - remove ALL existing controls first
+            // This prevents overlapping/stacking controls from multiple attachment attempts
+            
+            // Remove ALL control containers (any class variation)
+            const allExistingControls = componentElement.querySelectorAll('.component-controls, .component-controls--dynamic, .emergency-controls');
+            allExistingControls.forEach(controlElement => {
+                controlElement.remove();
+                structuredLogger.debug('CONTROLS', `Aggressively removed existing control element for ${componentId}`);
+            });
+            
+            // Clear any tracking data to prevent stale references
             if (this.attachedControls.has(componentId)) {
-                const existingControlsContainer = componentElement.querySelector('.component-controls--dynamic');
-                
-                // If we have tracker data AND functional dynamic controls are in DOM, skip attachment
-                if (existingControlsContainer && existingControlsContainer.children.length > 0) {
-                    structuredLogger.debug('CONTROLS', `Controls already attached and functional for ${componentId}`);
-                    return true;
-                }
-                
-                // If tracker exists but no functional controls in DOM, clean up tracker and proceed
-                structuredLogger.debug('CONTROLS', `Cleaning up stale tracker data for ${componentId}`);
                 this.attachedControls.delete(componentId);
+                structuredLogger.debug('CONTROLS', `Cleared stale tracking data for ${componentId}`);
             }
-
-            // ROOT FIX: Force-clear any pre-existing or cached HTML controls
-            // This guarantees a clean slate every time, preventing "preserved controls" interference
-            const existingControlsContainer = componentElement.querySelector('.component-controls');
-            if (existingControlsContainer) {
-                // CRITICAL: Completely remove existing container to prevent any interference
-                existingControlsContainer.remove();
-                structuredLogger.debug('CONTROLS', `Force-removed existing controls container for ${componentId}`);
+            
+            // Clean up any old event listeners
+            this.cleanupEventListeners(componentId);
+            
+            // Remove any control-related attributes to start fresh
+            componentElement.removeAttribute('data-controls-attached');
+            componentElement.removeAttribute('data-controls-manager');
+            
+            // Mark component as being processed to prevent simultaneous attachments
+            if (componentElement.hasAttribute('data-controls-processing')) {
+                structuredLogger.debug('CONTROLS', `Component ${componentId} already being processed, skipping`);
+                return false;
             }
+            componentElement.setAttribute('data-controls-processing', 'true');
             
             try {
                 // ROOT FIX: Create controls container dynamically
@@ -214,6 +220,9 @@
                 componentElement.setAttribute('data-controls-attached', 'true');
                 componentElement.setAttribute('data-controls-manager', 'dynamic');
                 
+                // Remove processing flag on success
+                componentElement.removeAttribute('data-controls-processing');
+                
                 structuredLogger.info('CONTROLS', `Dynamic controls attached to ${componentId}`);
                 
                 // ROOT FIX: Dispatch control attachment event
@@ -226,6 +235,8 @@
                 return true;
                 
             } catch (error) {
+                // Remove processing flag on error
+                componentElement.removeAttribute('data-controls-processing');
                 structuredLogger.error('CONTROLS', `Failed to attach controls to ${componentId}`, error);
                 return false;
             }

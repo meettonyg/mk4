@@ -141,9 +141,6 @@ async function initializeWhenReady() {
             window.structuredLogger.debug('MAIN', 'Component controls manager already initialized, skipping');
         } else {
             window.structuredLogger.warn('MAIN', 'Component controls manager not available - controls may not work');
-            
-            // ROOT FIX: Create emergency fallback controls
-            createEmergencyControlsFallback();
         }
         
         // ROOT FIX: Initialize component manager AFTER controls manager is listening
@@ -582,94 +579,7 @@ async function handleSaveClick() {
     }
 }
 
-/**
- * ROOT FIX: Emergency fallback for component controls if main system fails
- */
-function createEmergencyControlsFallback() {
-    console.warn('⚠️ GMKB: Creating emergency component controls fallback');
-    
-    // Create a minimal controls system
-    window.emergencyControls = {
-        attachControls: function(element, componentId) {
-            if (!element || element.querySelector('.emergency-controls')) {
-                return; // Already has controls or invalid element
-            }
-            
-            const controlsContainer = document.createElement('div');
-            controlsContainer.className = 'emergency-controls component-controls component-controls--dynamic';
-            controlsContainer.style.cssText = `
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                background: rgba(0, 0, 0, 0.9);
-                border-radius: 6px;
-                padding: 4px;
-                display: flex;
-                gap: 4px;
-                opacity: 0;
-                transition: opacity 0.2s ease;
-                z-index: 10000;
-            `;
-            
-            // Create delete button
-            const deleteBtn = document.createElement('button');
-            deleteBtn.innerHTML = '🗑️';
-            deleteBtn.style.cssText = `
-                width: 28px;
-                height: 28px;
-                border: none;
-                background: rgba(255, 255, 255, 0.1);
-                color: white;
-                border-radius: 4px;
-                cursor: pointer;
-            `;
-            deleteBtn.onclick = (e) => {
-                e.stopPropagation();
-                if (confirm('Delete this component?')) {
-                    element.remove();
-                }
-            };
-            
-            // Create duplicate button
-            const duplicateBtn = document.createElement('button');
-            duplicateBtn.innerHTML = '📋';
-            duplicateBtn.style.cssText = deleteBtn.style.cssText;
-            duplicateBtn.onclick = (e) => {
-                e.stopPropagation();
-                const clone = element.cloneNode(true);
-                clone.id = componentId + '-copy-' + Date.now();
-                element.parentNode.insertBefore(clone, element.nextSibling);
-                this.attachControls(clone, clone.id);
-            };
-            
-            controlsContainer.appendChild(deleteBtn);
-            controlsContainer.appendChild(duplicateBtn);
-            element.appendChild(controlsContainer);
-            
-            // Add hover behavior
-            element.addEventListener('mouseenter', () => {
-                controlsContainer.style.opacity = '1';
-            });
-            element.addEventListener('mouseleave', () => {
-                controlsContainer.style.opacity = '0';
-            });
-            
-            console.log('Emergency controls attached to:', componentId);
-        }
-    };
-    
-    // Attach to existing components
-    setTimeout(() => {
-        const components = document.querySelectorAll('[data-component-id]');
-        components.forEach(element => {
-            const id = element.getAttribute('data-component-id');
-            if (id) {
-                window.emergencyControls.attachControls(element, id);
-            }
-        });
-        console.log(`Emergency controls attached to ${components.length} components`);
-    }, 500);
-}
+
 
 /**
  * ROOT FIX: Force attach controls to all existing components
@@ -694,9 +604,6 @@ function forceAttachControlsToExistingComponents() {
                 if (success) {
                     attachedCount++;
                 }
-            } else if (window.emergencyControls) {
-                window.emergencyControls.attachControls(element, componentId);
-                attachedCount++;
             }
         }
     });
@@ -728,8 +635,7 @@ function initializeMinimalFallback() {
         // Set up basic button functionality
         setupBasicEventListeners();
         
-        // Create emergency controls
-        createEmergencyControlsFallback();
+        // Basic fallback functionality available
         
         console.log('✅ GMKB: Minimal fallback initialization completed');
         window.structuredLogger.info('MAIN', 'Minimal fallback active');
@@ -852,12 +758,11 @@ window.GMKB = {
         }
     },
     
-    emergencyControlsMode: () => {
-        if (window.createEmergencyControlsFallback) {
-            window.createEmergencyControlsFallback();
-        } else {
-            console.warn('Emergency controls function not available');
-        }
+    cleanupOverlappingControls: () => {
+        // Remove all overlapping/duplicate controls
+        const allControls = document.querySelectorAll('.component-controls, .emergency-controls');
+        allControls.forEach(control => control.remove());
+        console.log(`🧹 Cleaned up ${allControls.length} overlapping controls`);
     },
     
     // Version info
@@ -891,7 +796,7 @@ window.gmkbApp = {
         controls: () => window.GMKB.debugComponentControls(),
         forceShowControls: () => window.GMKB.forceShowAllControls(),
         forceAttachControls: () => window.GMKB.forceAttachControls(),
-        emergencyMode: () => window.GMKB.emergencyControlsMode()
+        cleanupOverlapping: () => window.GMKB.cleanupOverlappingControls()
     }
 };
 
