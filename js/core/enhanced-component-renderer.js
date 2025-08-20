@@ -96,6 +96,9 @@ class EnhancedComponentRenderer {
         
         // ROOT FIX: Setup save operation tracking
         this.setupSaveTracking();
+        
+        // ROOT FIX: Setup component controls integration
+        this.setupComponentControlsIntegration();
     }
     
     /**
@@ -682,6 +685,16 @@ class EnhancedComponentRenderer {
                 
                 // ROOT FIX: Ensure controls are attached for new components
                 this.attachComponentControls(comp.element, comp.id);
+                
+                // Emit component rendered event for integration
+                document.dispatchEvent(new CustomEvent('gmkb:component-rendered', {
+                    detail: {
+                        componentId: comp.id,
+                        element: comp.element,
+                        componentType: componentState.type,
+                        source: 'renderNewComponents'
+                    }
+                }));
                 
                 this.logger.debug('RENDER', `Added component ${comp.id} to fragment with controls attached`);
             } else {
@@ -1585,6 +1598,66 @@ class EnhancedComponentRenderer {
         });
         
         this.logger.debug('RENDER', 'Save operation tracking setup complete');
+    }
+    
+    /**
+     * ROOT FIX: Setup component controls integration
+     * CHECKLIST COMPLIANT: Event-driven, dependency-aware, no polling
+     */
+    setupComponentControlsIntegration() {
+        // Listen for component controls manager ready event
+        document.addEventListener('gmkb:component-controls-manager-ready', () => {
+            this.logger.info('RENDER', 'Component controls manager ready - attaching controls to existing components');
+            this.attachControlsToExistingComponents();
+        });
+        
+        // Listen for individual component ready events
+        document.addEventListener('gmkb:component-rendered', (event) => {
+            const { componentId, element } = event.detail;
+            if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                this.attachComponentControls(element, componentId);
+            }
+        });
+        
+        this.logger.debug('RENDER', 'Component controls integration setup complete');
+    }
+    
+    /**
+     * ROOT FIX: Attach controls to all existing components after controls manager is ready
+     * This fixes the race condition where components were rendered before controls manager was ready
+     */
+    attachControlsToExistingComponents() {
+        if (!window.componentControlsManager || !window.componentControlsManager.isInitialized) {
+            this.logger.warn('RENDER', 'Cannot attach controls - component controls manager not ready');
+            return;
+        }
+        
+        let attachedCount = 0;
+        const allComponents = this.previewContainer.querySelectorAll('[data-component-id]');
+        
+        allComponents.forEach(element => {
+            const componentId = element.getAttribute('data-component-id');
+            if (componentId) {
+                const success = this.attachComponentControls(element, componentId);
+                if (success) {
+                    attachedCount++;
+                }
+            }
+        });
+        
+        this.logger.info('RENDER', `Controls attached to ${attachedCount}/${allComponents.length} existing components`);
+        
+        // Emit event for successful bulk attachment
+        if (attachedCount > 0) {
+            document.dispatchEvent(new CustomEvent('gmkb:bulk-controls-attached', {
+                detail: {
+                    attachedCount,
+                    totalComponents: allComponents.length,
+                    source: 'renderer-integration',
+                    timestamp: Date.now()
+                }
+            }));
+        }
     }
     
     /**

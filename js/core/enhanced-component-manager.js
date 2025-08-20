@@ -27,6 +27,7 @@
 
         /**
          * Initialize the component manager
+         * ROOT FIX: Add proper ready event dispatch for dependency coordination
          */
         initialize() {
             if (this.isInitialized) {
@@ -42,6 +43,18 @@
 
                 this.isInitialized = true;
                 logger.info('COMPONENT', 'Enhanced Component Manager initialized successfully');
+
+                // ROOT FIX: Dispatch ready event for event-driven coordination
+                // This prevents race conditions with component controls
+                document.dispatchEvent(new CustomEvent('gmkb:component-manager-ready', {
+                    detail: {
+                        timestamp: Date.now(),
+                        manager: this,
+                        architecture: 'event-driven'
+                    }
+                }));
+
+                logger.info('COMPONENT', 'Component manager ready event dispatched');
 
             } catch (error) {
                 logger.error('COMPONENT', 'Failed to initialize component manager', error);

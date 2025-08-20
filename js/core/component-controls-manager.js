@@ -50,9 +50,31 @@
         }
         
         /**
-         * ROOT FIX: Initialize the controls manager
+         * ROOT FIX: Initialize the controls manager with dependency awareness
+         * CHECKLIST COMPLIANT: Event-driven initialization, no polling
          */
         init() {
+            if (this.isInitialized) {
+                return;
+            }
+            
+            // ROOT FIX: Wait for component manager to be ready before initializing
+            if (window.enhancedComponentManager && window.enhancedComponentManager.isInitialized) {
+                this.completeInitialization();
+            } else {
+                // Listen for component manager ready event
+                structuredLogger.info('CONTROLS', 'Waiting for component manager to be ready...');
+                document.addEventListener('gmkb:component-manager-ready', () => {
+                    structuredLogger.info('CONTROLS', 'Component manager ready signal received');
+                    this.completeInitialization();
+                }, { once: true });
+            }
+        }
+        
+        /**
+         * ROOT FIX: Complete initialization after dependencies are ready
+         */
+        completeInitialization() {
             if (this.isInitialized) {
                 return;
             }
@@ -60,14 +82,15 @@
             this.setupEventListeners();
             this.isInitialized = true;
             
-            structuredLogger.info('CONTROLS', 'ComponentControlsManager ready for dynamic control attachment');
+            structuredLogger.info('CONTROLS', '✅ ComponentControlsManager ready for dynamic control generation');
             
             // ROOT FIX: Dispatch ready event for event-driven coordination (NO POLLING)
             document.dispatchEvent(new CustomEvent('gmkb:component-controls-manager-ready', {
                 detail: {
                     timestamp: Date.now(),
                     manager: this,
-                    architecture: 'event-driven'
+                    architecture: 'event-driven',
+                    dependenciesReady: true
                 }
             }));
         }

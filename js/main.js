@@ -130,11 +130,25 @@ async function initializeWhenReady() {
             window.structuredLogger.warn('MAIN', 'Enhanced state manager not available');
         }
         
-        // ROOT FIX: Initialize ComponentControlsManager before component rendering
+        // ROOT FIX: Initialize component manager BEFORE controls to prevent race conditions
+        // This ensures component manager is ready and dispatches events before controls try to attach
+        if (window.enhancedComponentManager) {
+            if (window.enhancedComponentManager.isInitialized) {
+                window.structuredLogger.debug('MAIN', 'Component manager already initialized, skipping');
+            } else if (window.enhancedComponentManager.initialize) {
+                window.enhancedComponentManager.initialize();
+                window.structuredLogger.info('MAIN', 'Component manager initialized with ready event dispatch');
+            }
+        } else {
+            window.structuredLogger.warn('MAIN', 'Enhanced component manager not available');
+        }
+        
+        // ROOT FIX: Initialize ComponentControlsManager AFTER component manager
+        // Controls manager will wait for component manager ready event
         if (window.componentControlsManager && !window.componentControlsManager.isInitialized) {
             if (window.componentControlsManager.init) {
                 window.componentControlsManager.init();
-                window.structuredLogger.info('MAIN', 'Component controls manager initialized');
+                window.structuredLogger.info('MAIN', 'Component controls manager initialization started (event-driven)');
             }
         } else if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
             window.structuredLogger.debug('MAIN', 'Component controls manager already initialized, skipping');
@@ -152,20 +166,7 @@ async function initializeWhenReady() {
             window.structuredLogger.error('MAIN', 'Enhanced component renderer not available');
         }
         
-        // 3. Initialize component manager
-        if (window.enhancedComponentManager) {
-            if (window.enhancedComponentManager.isInitialized) {
-                // ROOT FIX: Reduce noise - only log in debug mode
-                if (window.gmkbData && window.gmkbData.debugMode) {
-                    window.structuredLogger.debug('COMPONENT', 'Component manager already initialized, skipping');
-                }
-            } else if (window.enhancedComponentManager.initialize) {
-                window.enhancedComponentManager.initialize();
-                window.structuredLogger.info('MAIN', 'Component manager initialized');
-            }
-        } else {
-            window.structuredLogger.warn('MAIN', 'Enhanced component manager not available');
-        }
+        // 3. Component manager already initialized above - skip duplicate initialization
         
         // 4. Initialize empty state handlers (already loaded)
         if (window.emptyStateHandlers && window.emptyStateHandlers.init) {

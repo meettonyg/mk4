@@ -64,37 +64,33 @@
 
     /**
      * Handles all delegated click events from the document body.
+     * ROOT FIX: Removed component control handling to prevent conflicts with ComponentControlsManager
      * @param {MouseEvent} event - The click event.
      */
     function handleGlobalClick(event) {
         const target = event.target;
         
-        // ROOT FIX: Only log clicks for our specific targets to reduce noise
-        // and prevent interference with ComponentControlsManager
-        const deleteButton = target.closest('.delete-component');
+        // ROOT FIX: Only handle component library interactions
+        // Component controls (delete, edit, etc.) are handled by ComponentControlsManager
         const componentItem = target.closest('.component-item');
         const addComponentBtn = target.closest('#add-component-btn');
         
         // Only log if this is a click we care about
-        if ((deleteButton || componentItem || addComponentBtn) && window.gmkbData?.debugMode) {
-            console.log('🔘 INTERACTIONS: Click detected', {
+        if ((componentItem || addComponentBtn) && window.gmkbData?.debugMode) {
+            console.log('🔘 INTERACTIONS: Library click detected', {
                 target: target.tagName,
                 className: target.className,
                 id: target.id,
                 dataComponent: target.dataset.component,
                 closest: {
                     componentItem: !!componentItem,
-                    deleteButton: !!deleteButton,
                     addComponentBtn: !!addComponentBtn
                 }
             });
         }
 
-        // --- Delegated Event: Delete Component ---
-        if (deleteButton) {
-            handleDeleteComponent(deleteButton);
-            return; // Stop further processing
-        }
+        // ROOT FIX: Component control events (delete, edit, move, duplicate) are now
+        // exclusively handled by ComponentControlsManager to prevent conflicts
 
         // --- Delegated Event: Add Component from Library ---
         if (componentItem) {
@@ -121,25 +117,8 @@
         }
     }
 
-    /**
-     * Handles the logic for deleting a component.
-     * @param {HTMLElement} deleteButton - The delete button that was clicked.
-     */
-    function handleDeleteComponent(deleteButton) {
-        const component = deleteButton.closest('.gmkb-component');
-        if (component && component.dataset.componentId) {
-            const componentId = component.dataset.componentId;
-            console.log(`🗑️ INTERACTIONS: Delete button clicked for component ${componentId}`);
-
-            if (window.enhancedComponentManager) {
-                window.enhancedComponentManager.removeComponent(componentId);
-            } else {
-                console.error('❌ INTERACTIONS: enhancedComponentManager not found.');
-            }
-        } else {
-            console.warn('⚠️ INTERACTIONS: Could not find component ID for deletion.');
-        }
-    }
+    // ROOT FIX: handleDeleteComponent removed - now handled exclusively by ComponentControlsManager
+    // This prevents conflicts and ensures single source of truth for component controls
 
     /**
      * Handles adding a component when an item in the library is clicked.
