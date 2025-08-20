@@ -626,8 +626,18 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ROOT FIX: Test scripts completely removed from production
-    // No development scripts loaded to prevent console errors and performance issues
+    // ROOT FIX: Debug utilities for component interaction testing (development only)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        if (!wp_script_is('gmkb-test-component-interactions', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-test-component-interactions',
+                $plugin_url . 'debug/test-component-interactions.js',
+                array('gmkb-component-interactions', 'gmkb-enhanced-component-manager'),
+                $version,
+                true
+            );
+        }
+    }
 
     // ROOT FIX: Move wp_localize_script BEFORE any debug output
     // This ensures data is available when first scripts run
