@@ -403,14 +403,14 @@ class EnhancedComponentRenderer {
             this.updateEmptyState(initialState);
         }
         
-        // 3. ROOT FIX: Add a delay before subscribing to prevent immediate re-render
-        setTimeout(() => {
-            // 4. NOW, subscribe to future changes
-            this.stateUnsubscribe = enhancedStateManager.subscribeGlobal((state) => {
+        // 3. ROOT FIX: Subscribe immediately to catch all state changes
+        this.stateUnsubscribe = enhancedStateManager.subscribeGlobal((state) => {
+            // Only process if the state has actually changed from our last state
+            if (this.lastStateHash !== this.generateStateHash(state)) {
                 this.onStateChange(state);
-            });
-            this.logger.debug('RENDER', 'State change subscription activated after initial render');
-        }, 500);
+            }
+        });
+        this.logger.debug('RENDER', 'State change subscription activated immediately');
 
         // 5. Setup empty state listeners
         this.setupEmptyStateListeners();
@@ -432,10 +432,30 @@ class EnhancedComponentRenderer {
             return;
         }
         
-        // CRITICAL FIX: Prevent duplicate renders during initialization
-        // If we're still in the initial render phase, skip state changes
-        if (Date.now() - (this.initTime || 0) < 2000) {
-            this.logger.debug('RENDER', 'Skipping state change during initialization phase');
+        // ROOT FIX: Allow renders after a shorter initialization period
+        // This ensures new components added via UI are rendered promptly
+        if (Date.now() - (this.initTime || 0) < 100) {
+            this.logger.debug('RENDER', 'Skipping state change during brief initialization phase');
+            return;
+        }
+        
+        // ROOT FIX: CRITICAL - Check if all components already exist in DOM
+        // This prevents re-rendering when state manager fires events after initial render
+        const componentIds = Object.keys(newState.components || {});
+        const allComponentsExist = componentIds.length > 0 && componentIds.every(id => {
+            const element = document.getElementById(id);
+            return element && element.parentNode;
+        });
+        
+        if (allComponentsExist && this.lastState && 
+            Object.keys(this.lastState.components || {}).length === componentIds.length) {
+            // All components exist and count hasn't changed - likely just a state sync
+            this.logger.debug('RENDER', 'All components already in DOM, skipping re-render', {
+                componentCount: componentIds.length,
+                existingComponents: componentIds
+            });
+            this.lastStateHash = stateHash; // Update hash to prevent future duplicate checks
+            this.lastState = this.cloneState(newState); // Update lastState
             return;
         }
         
@@ -944,32 +964,55 @@ class EnhancedComponentRenderer {
         
         let addedToFragment = 0;
         
-        renderedComponents.forEach(comp => {
+        for (const comp of renderedComponents) {
             if (comp && comp.element) {
-                // ROOT FIX: Render via the coordinator (single pipeline)
-                document.dispatchEvent(new CustomEvent('gmkb:coordinate-render-request', {
-                    detail: {
-                        componentId: comp.id,
-                        element: comp.element,
-                        targetContainer: targetContainer.id,
-                        options: { attachControls: true } // The coordinator will now handle attaching controls
+                // ROOT FIX: Use DOM Render Coordinator directly for guaranteed deduplication
+                if (window.domRenderCoordinator && window.domRenderCoordinator.isInitialized) {
+                    const success = await window.domRenderCoordinator.renderComponent(
+                        comp.id,
+                        comp.element,
+                        targetContainer.id || 'media-kit-preview',
+                        { 
+                            componentType: newState.components[comp.id]?.type,
+                            source: 'renderNewComponentsLegacy',
+                            attachControls: true
+                        }
+                    );
+                    
+                    if (success) {
+                        // Update our cache
+                        this.componentCache.set(comp.id, comp.element);
+                        
+                        // Register with UI registry
+                        const componentState = newState.components[comp.id];
+                        this.registerComponentWithUIRegistry(comp.id, comp.element, componentState);
+                        
+                        addedToFragment++;
+                        this.logger.debug('RENDER', `Successfully rendered ${comp.id} via coordinator`);
+                    } else {
+                        this.logger.error('RENDER', `Coordinator failed to render ${comp.id}`);
                     }
-                }));
-                
-                // Do NOT append to fragment. Let the coordinator insert and track it.
-                this.componentCache.set(comp.id, comp.element);
-                
-                // Register with UI registry
-                const componentState = newState.components[comp.id];
-                this.registerComponentWithUIRegistry(comp.id, comp.element, componentState);
-                
-                addedToFragment++;
-                
-                this.logger.debug('RENDER', `Dispatched render request to coordinator for ${comp.id}`);
+                } else {
+                    // Fallback: dispatch event (should not happen)
+                    document.dispatchEvent(new CustomEvent('gmkb:coordinate-render-request', {
+                        detail: {
+                            componentId: comp.id,
+                            element: comp.element,
+                            targetContainer: targetContainer.id,
+                            options: { attachControls: true }
+                        }
+                    }));
+                    
+                    this.componentCache.set(comp.id, comp.element);
+                    const componentState = newState.components[comp.id];
+                    this.registerComponentWithUIRegistry(comp.id, comp.element, componentState);
+                    addedToFragment++;
+                    this.logger.warn('RENDER', `Used event dispatch fallback for ${comp.id}`);
+                }
             } else {
                 this.logger.warn('RENDER', `Component render failed or returned no element:`, comp);
             }
-        });
+        }
         
         this.logger.debug('RENDER', `Dispatched ${addedToFragment} components to coordinator for rendering`);
         
@@ -1552,7 +1595,7 @@ class EnhancedComponentRenderer {
             
             this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIdList.length} components SEQUENTIALLY`);
             
-            // ROOT FIX: Sequential rendering to prevent duplicates
+            // ROOT FIX: Use DOM Render Coordinator for duplicate-free rendering
             const renderedResults = [];
             for (const componentId of componentIdList) {
                 try {
@@ -1562,10 +1605,16 @@ class EnhancedComponentRenderer {
                         continue;
                     }
                     
-                    // Check if component already exists in DOM
+                    // ROOT FIX: Use DOM Render Coordinator to check and prevent duplicates
+                    if (window.domRenderCoordinator) {
+                        // Force cleanup any existing duplicates before rendering
+                        window.domRenderCoordinator.aggressiveDeduplication(componentId);
+                    }
+                    
+                    // Check if component already exists in DOM after cleanup
                     const existingElement = document.getElementById(componentId);
                     if (existingElement) {
-                        this.logger.debug('RENDER', `Component ${componentId} already exists in DOM, skipping render`);
+                        this.logger.debug('RENDER', `Component ${componentId} already exists in DOM after cleanup, skipping render`);
                         continue;
                     }
                     
@@ -1576,14 +1625,42 @@ class EnhancedComponentRenderer {
                     );
                     
                     if (result && result.element) {
-                        // Register with UI registry
-                        this.registerComponentWithUIRegistry(componentId, result.element, componentState);
-                        
-                        // ROOT FIX: Ensure controls are attached for saved components
-                        this.attachComponentControls(result.element, componentId);
-                        
-                        this.logger.debug('RENDER', `renderSavedComponents: Successfully rendered ${componentId} with controls`);
-                        renderedResults.push({ componentId, element: result.element, componentState });
+                        // ROOT FIX: Use DOM Render Coordinator for insertion
+                        if (window.domRenderCoordinator && window.domRenderCoordinator.isInitialized) {
+                            const success = await window.domRenderCoordinator.renderComponent(
+                                componentId,
+                                result.element,
+                                targetContainer.id || 'saved-components-container',
+                                { 
+                                    componentType: componentState.type,
+                                    source: 'renderSavedComponents',
+                                    attachControls: true
+                                }
+                            );
+                            
+                            if (success) {
+                                // Update our cache
+                                this.componentCache.set(componentId, result.element);
+                                
+                                // Register with UI registry
+                                this.registerComponentWithUIRegistry(componentId, result.element, componentState);
+                                
+                                this.logger.debug('RENDER', `renderSavedComponents: Successfully rendered ${componentId} via coordinator`);
+                                renderedResults.push({ componentId, element: result.element, componentState });
+                                successfulRenders++;
+                            } else {
+                                this.logger.error('RENDER', `renderSavedComponents: Coordinator failed to render ${componentId}`);
+                            }
+                        } else {
+                            // Fallback: Direct insertion (should not happen)
+                            targetContainer.appendChild(result.element);
+                            this.componentCache.set(componentId, result.element);
+                            this.registerComponentWithUIRegistry(componentId, result.element, componentState);
+                            this.attachComponentControls(result.element, componentId);
+                            renderedResults.push({ componentId, element: result.element, componentState });
+                            successfulRenders++;
+                            this.logger.warn('RENDER', `renderSavedComponents: Used fallback rendering for ${componentId}`);
+                        }
                     } else {
                         this.logger.error('RENDER', `renderSavedComponents: Failed to render ${componentId}`);
                     }
@@ -1593,18 +1670,8 @@ class EnhancedComponentRenderer {
                 }
             }
             
-            // Add successful renders to fragment
-            let successfulRenders = 0;
-            renderedResults.forEach(result => {
-                if (result && result.element) {
-                    fragment.appendChild(result.element);
-                    this.componentCache.set(result.componentId, result.element);
-                    successfulRenders++;
-                }
-            });
-            
-            // Append all components to target container
-            targetContainer.appendChild(fragment);
+            // ROOT FIX: Don't append fragment since coordinator already handled DOM insertion
+            let successfulRenders = renderedResults.length;
             
             // ROOT FIX: Duplicate verification delegated to DOM Render Coordinator
             

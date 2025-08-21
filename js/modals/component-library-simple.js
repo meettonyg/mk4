@@ -503,7 +503,8 @@ function addSelectedComponents() {
  */
 function checkDependencies() {
     const modalReady = !!window.GMKB_Modals;
-    const dataReady = !!(window.gmkbData?.components || window.guestifyData?.components || window.MKCG?.components);
+    // ROOT FIX: Check for gmkbDataReady flag set by main.js, or direct data availability
+    const dataReady = window.gmkbDataReady || !!(window.gmkbData?.components || window.guestifyData?.components || window.MKCG?.components);
     const domReady = !!(document.getElementById('component-library-overlay') && document.getElementById('component-grid'));
     
     return { modalReady, dataReady, domReady, allReady: modalReady && dataReady && domReady };
@@ -534,6 +535,9 @@ document.addEventListener('DOMContentLoaded', tryInitialization);
 document.addEventListener('gmkb:modal-base-ready', tryInitialization);
 document.addEventListener('wordpressDataReady', tryInitialization);
 document.addEventListener('gmkb:wordpress-data-ready', tryInitialization);
+// ROOT FIX: Listen for the main.js ready event
+document.addEventListener('gmkb:ready', tryInitialization);
+document.addEventListener('gmkb:application-ready', tryInitialization);
 
 // ROOT FIX: Try immediately if DOM is already ready
 if (document.readyState === 'complete' || document.readyState === 'interactive') {

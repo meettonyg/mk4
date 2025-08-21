@@ -9,32 +9,48 @@
 (function verifyWordPressData() {
     'use strict';
     
+    let retryCount = 0;
+    const maxRetries = 10;
+    
     function verifyDataAvailability() {
         if (window.gmkbData && window.gmkbData.components) {
-            if (window.gmkbData.debugMode) {
-                console.log('🚀 gmkb: Ready [' + window.gmkbData.components.length + ' components, ' + Object.keys(window.gmkbData).length + ' properties]');
-            }
+            console.log('✅ gmkb: WordPress data verified [' + window.gmkbData.components.length + ' components, ' + Object.keys(window.gmkbData).length + ' properties]');
+            
+            // Mark data as ready globally for other systems to check
+            window.gmkbDataReady = true;
             
             // Dispatch single core event
             setTimeout(function() {
                 const gmkbReadyEvent = new CustomEvent('gmkb:ready', {
                     detail: { 
                         componentCount: window.gmkbData.components.length,
-                        totalProperties: Object.keys(window.gmkbData).length 
+                        totalProperties: Object.keys(window.gmkbData).length,
+                        retryCount: retryCount
                     }
                 });
                 document.dispatchEvent(gmkbReadyEvent);
+                console.log('🚀 gmkb: Ready event dispatched - initialization can begin');
             }, 10);
             
             return true;
         }
+        
+        retryCount++;
+        if (retryCount <= maxRetries) {
+            console.log('⏳ gmkb: Waiting for WordPress data... (attempt ' + retryCount + '/' + maxRetries + ')');
+            setTimeout(verifyDataAvailability, 100);
+        } else {
+            console.error('❌ gmkb: WordPress data not available after ' + maxRetries + ' attempts');
+            // Dispatch failure event
+            document.dispatchEvent(new CustomEvent('gmkb:data-load-failed', {
+                detail: { attempts: retryCount }
+            }));
+        }
         return false;
     }
     
-    // Try immediately, retry once if needed
-    if (!verifyDataAvailability()) {
-        setTimeout(verifyDataAvailability, 50);
-    }
+    // Start verification process
+    verifyDataAvailability();
 })();
 
 // ROOT FIX: Streamlined debug output
@@ -87,18 +103,24 @@ function safeExposeComponentData() {
     return false;
 }
 
-// Execute component data setup
-if (safeExposeComponentData()) {
-    if (window.gmkbData?.debugMode) {
-        console.log('✅ gmkb: Component data setup completed');
+// ROOT FIX: Wait for data verification before exposing component data
+// This ensures we don't try to expose data before it's available
+if (window.gmkbDataReady) {
+    // Data already ready, expose immediately
+    if (safeExposeComponentData()) {
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ gmkb: Component data setup completed');
+        }
     }
 } else {
-    // Retry if WordPress data isn't available yet
-    setTimeout(() => {
-        if (safeExposeComponentData() && window.gmkbData?.debugMode) {
-            console.log('✅ gmkb: Component data exposed on retry');
+    // Wait for data to be ready
+    document.addEventListener('gmkb:ready', () => {
+        if (safeExposeComponentData()) {
+            if (window.gmkbData?.debugMode) {
+                console.log('✅ gmkb: Component data exposed after data ready event');
+            }
         }
-    }, 100);
+    });
 }
 
 // ROOT FIX: Streamlined initialization
@@ -697,12 +719,19 @@ async function safeInitialization() {
     }
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', safeInitialization);
-} else {
-    // DOM is already ready
-    safeInitialization();
-}
+// ROOT FIX: Start initialization only when WordPress data is verified.
+// This ensures gmkbData is available before any system tries to use it.
+// The gmkb:ready event is dispatched by the data verification logic at the top of this file.
+document.addEventListener('gmkb:ready', safeInitialization);
+
+// ROOT FIX: Fallback check - if gmkbData is already available and we missed the event
+// (This can happen if the script loads after wp_localize_script has already run)
+setTimeout(() => {
+    if (window.gmkbData && window.gmkbData.components && !isInitialized && !isInitializing) {
+        console.log('🔄 gmkb: Data already available, initializing via fallback');
+        safeInitialization();
+    }
+}, 100);
 
 // ROOT FIX: Expose GMKB globally to fix infinite polling loops
 // This prevents sortable-integration.js from infinite polling
@@ -734,7 +763,8 @@ window.GMKB = {
     initialize: safeInitialization,
     
     // Status checks
-    isReady: () => !!(window.structuredLogger && window.enhancedStateManager && window.enhancedComponentManager),
+    isReady: () => !!(window.gmkbDataReady && window.structuredLogger && window.enhancedStateManager && window.enhancedComponentManager),
+    isDataReady: () => !!(window.gmkbDataReady && window.gmkbData && window.gmkbData.components),
     isInitialized: () => isInitialized,
     isInitializing: () => isInitializing,
     

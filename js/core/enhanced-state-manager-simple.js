@@ -123,104 +123,9 @@
         }
 
         /**
-         * ROOT CAUSE FIX: Robust initial state loading with proper WordPress data handling
+         * ROOT FIX: DELETED - This was a duplicate method. Using getInitialStateFromSources instead.
+         * The actual getInitialState() method is defined later in the file.
          */
-        getInitialState() {
-            this.logger.info('STATE', '💾 Initializing state from available data sources...');
-            const wpData = window.gmkbData || window.guestifyData || window.MKCG;
-
-            this.logger.debug('STATE', '🔍 Checking WordPress data sources:', {
-                gmkbData: !!window.gmkbData,
-                guestifyData: !!window.guestifyData,
-                MKCG: !!window.MKCG,
-                foundData: !!wpData
-            });
-
-            if (wpData) {
-                this.logger.debug('STATE', '🔍 Found WordPress data object.', { data: wpData });
-
-                // CRITICAL FIX: Check both saved_components array and saved_state for maximum compatibility
-                let componentsData = null;
-                let componentCount = 0;
-                
-                // Primary check: saved_components array from WordPress data
-                if (wpData.saved_components && Array.isArray(wpData.saved_components)) {
-                    componentsData = wpData.saved_components;
-                    componentCount = componentsData.length;
-                    this.logger.info('STATE', '💾 Using saved_components array from WordPress data', { componentCount });
-                }
-                // Secondary check: saved_state.saved_components
-                else if (wpData.saved_state && wpData.saved_state.saved_components && Array.isArray(wpData.saved_state.saved_components)) {
-                    componentsData = wpData.saved_state.saved_components;
-                    componentCount = componentsData.length;
-                    this.logger.info('STATE', '💾 Using saved_components from saved_state', { componentCount });
-                }
-                // Fallback check: saved_state.components object (legacy format)
-                else if (wpData.saved_state && wpData.saved_state.components && typeof wpData.saved_state.components === 'object') {
-                    // Convert object to array format
-                    const componentsObj = wpData.saved_state.components;
-                    componentsData = Object.keys(componentsObj).map(id => ({ 
-                        id, 
-                        ...componentsObj[id] 
-                    }));
-                    componentCount = componentsData.length;
-                    this.logger.info('STATE', '💾 Using components object from saved_state (converted to array)', { componentCount });
-                }
-
-                if (componentsData && componentCount > 0) {
-                    this.logger.info('STATE', '💾 Hydrating state from components data', {
-                        componentCount,
-                        hasGlobalSettings: !!(wpData.global_settings || wpData.saved_state?.globalSettings)
-                    });
-
-                    const components = this.mapComponentData(componentsData);
-                    const layout = this.generateLayout(componentsData);
-                    const globalSettings = wpData.global_settings || wpData.saved_state?.globalSettings || {};
-
-                    return {
-                        components: components,
-                        globalSettings: globalSettings,
-                        layout: layout,
-                        version: '2.2.0' 
-                    };
-                } else {
-                     // This covers cases where it's a new post or data is only partially loaded
-                     this.logger.info('STATE', '💾 WordPress data found, but no components data. Starting with a clean state.');
-                     return {
-                        components: {},
-                        globalSettings: {
-                            layout: 'vertical' // ROOT FIX: Ensure new media kits default to vertical layout
-                        },
-                        layout: [],
-                        version: '2.2.0'
-                     };
-                }
-            }
-
-            // Fallback to localStorage ONLY if no WordPress data object was found at all
-            this.logger.warn('STATE', '💾 No WordPress data object found. Attempting to load state from localStorage.');
-            try {
-                const savedStateJSON = localStorage.getItem(this.SAVE_KEY);
-                if (savedStateJSON) {
-                    const savedState = JSON.parse(savedStateJSON);
-                    this.logger.info('STATE', '💾 Successfully loaded and normalized state from localStorage.', { version: savedState.version });
-                    return this.normalizeState(savedState);
-                }
-            } catch (error) {
-                this.logger.error('STATE', '💾 Failed to parse state from localStorage.', error);
-            }
-            
-            // Final fallback: a completely empty state
-            this.logger.info('STATE', '💾 No valid data source found. Starting with a completely empty state.');
-            return { 
-                components: {}, 
-                globalSettings: {
-                    layout: 'vertical' // ROOT FIX: Ensure fallback state defaults to vertical layout
-                }, 
-                layout: [], 
-                version: '2.2.0' 
-            };
-        }
 
         /**
          * Maps an array of component data to the object format used by the state.
@@ -328,6 +233,7 @@
         }
 
         /**
+         * ROOT FIX: Removed duplicate method - using getInitialStateFromSources instead
          * Get the initial state for components that need it during startup
          * This method is safe to call during initialization
          */

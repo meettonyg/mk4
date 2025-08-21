@@ -598,7 +598,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-library-simple',
                 'gmkb-tabs',
                 'gmkb-toolbar',
-                'gmkb-component-interactions',
+                // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure
                 'gmkb-sortable-integration',
                 'gmkb-drag-drop-manager',
                 'gmkb-dnd'
