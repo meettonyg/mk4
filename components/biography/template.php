@@ -10,7 +10,6 @@ $finalComponentId = $componentId ?? $id ?? 'biography-' . uniqid();
 <div class="content-section biography-component editable-element" 
      data-element="biography" 
      data-component="biography" 
-     data-component-id="<?php echo esc_attr($finalComponentId); ?>" 
      data-component-type="biography"
      data-controls-enabled="true"
      style="position: relative; cursor: pointer;"

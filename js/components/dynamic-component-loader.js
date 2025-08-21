@@ -366,6 +366,7 @@ class DynamicComponentLoader {
 
     /**
      * Creates an HTML element from a template string.
+     * ROOT FIX: Ensures ONLY the ID is set, not data-component-id to prevent duplicates
      * @param {string} template - The HTML template string.
      * @param {string} id - The unique ID to assign to the element.
      * @returns {HTMLElement|null} The created HTML element.
@@ -375,8 +376,20 @@ class DynamicComponentLoader {
         tempDiv.innerHTML = template.trim();
         const element = tempDiv.firstElementChild;
         if (element) {
+            // ROOT FIX: Set ID first
             element.id = id;
-            element.dataset.componentId = id;
+            
+            // ROOT FIX: Remove any existing data-component-id from template
+            // This prevents duplicates when templates already have this attribute
+            if (element.hasAttribute('data-component-id')) {
+                element.removeAttribute('data-component-id');
+            }
+            
+            // ROOT FIX: Now set the correct data-component-id
+            element.setAttribute('data-component-id', id);
+            
+            // ROOT FIX: Mark render time for debugging
+            element.setAttribute('data-render-time', Date.now().toString());
         }
         return element;
     }

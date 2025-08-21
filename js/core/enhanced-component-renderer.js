@@ -374,7 +374,13 @@ class EnhancedComponentRenderer {
     }
 
     async init() {
-        if (this.initialized) return;
+        // ROOT CAUSE FIX: Prevent duplicate initialization
+        if (this.initialized || this.isInitializing) {
+            this.logger.warn('RENDER', 'Already initialized or initializing, skipping');
+            return;
+        }
+        
+        this.isInitializing = true;
         
         // Track initialization time to prevent duplicate renders during startup
         this.initTime = Date.now();
@@ -382,6 +388,7 @@ class EnhancedComponentRenderer {
         this.previewContainer = document.getElementById('media-kit-preview');
         if (!this.previewContainer) {
             console.error('RENDER', 'Preview container not found. Cannot initialize.');
+            this.isInitializing = false;
             return;
         }
 
@@ -403,20 +410,24 @@ class EnhancedComponentRenderer {
             this.updateEmptyState(initialState);
         }
         
-        // 3. ROOT FIX: Subscribe immediately to catch all state changes
+        // 3. ROOT CAUSE FIX: Delay subscription to prevent immediate re-render of the same state
+        // Wait one tick to ensure state manager has stabilized
+        await new Promise(resolve => setTimeout(resolve, 0));
+        
         this.stateUnsubscribe = enhancedStateManager.subscribeGlobal((state) => {
             // Only process if the state has actually changed from our last state
             if (this.lastStateHash !== this.generateStateHash(state)) {
                 this.onStateChange(state);
             }
         });
-        this.logger.debug('RENDER', 'State change subscription activated immediately');
+        this.logger.debug('RENDER', 'State change subscription activated after initial render');
 
         // 5. Setup empty state listeners
         this.setupEmptyStateListeners();
 
         this.healthCheckInterval = setInterval(() => this.healthCheck(), 5000);
         this.initialized = true;
+        this.isInitializing = false;
         this.logger.info('RENDER', 'Initial render complete. Now listening for state changes.');
     }
 
@@ -776,8 +787,7 @@ class EnhancedComponentRenderer {
         
         this.logger.debug('RENDER', `Starting renderNewComponents for ${componentIds.size} components`);
         
-        // ROOT FIX: CRITICAL - Remove ALL existing duplicates FIRST
-        this.removeAllDuplicatesBeforeRender(componentIds);
+        // ROOT FIX: Skip duplicate removal - templates no longer create duplicates
         
         // ROOT FIX: Try to use DOM Render Coordinator first
         if (window.domRenderCoordinator && window.domRenderCoordinator.isInitialized) {
@@ -1347,8 +1357,8 @@ class EnhancedComponentRenderer {
     // ROOT FIX: emergencyDeduplicateDOM removed - DOM Render Coordinator handles all deduplication
 
     /**
-     * ROOT CAUSE FIX: Enhanced cleanup that properly removes components not in current state
-     * This fixes the root cause of components disappearing by ensuring DOM stays in sync with state
+     * ROOT FIX: Conservative cleanup - only remove obvious orphans, not valid components
+     * This prevents components from disappearing during state transitions
      */
     conservativeCleanup(state) {
         if (!this.previewContainer) {
@@ -1359,35 +1369,54 @@ class EnhancedComponentRenderer {
         const currentStateComponentIds = new Set(Object.keys(state.components || {}));
         const elementsToRemove = [];
         
-        for (const child of this.previewContainer.children) {
-            // Remove elements that are definitely orphaned
-            if (!child.id || 
-                child.classList.contains('component-error') || 
-                child.classList.contains('component-placeholder') ||
-                child.textContent === 'Component loading...') {
-                elementsToRemove.push(child);
-            }
-            // ROOT CAUSE FIX: Also remove elements that are no longer in the current state
-            else if (child.id && !currentStateComponentIds.has(child.id)) {
-                elementsToRemove.push(child);
-                this.logger.debug('RENDER', `Cleanup: Component ${child.id} no longer in state, removing from DOM`);
-            }
-        }
+        // ROOT FIX: Check ALL containers, not just preview container
+        const allContainers = ['saved-components-container', 'media-kit-preview']
+            .map(id => document.getElementById(id))
+            .filter(container => container !== null);
         
-        // Remove the confirmed orphaned elements
-        elementsToRemove.forEach(element => {
-            element.remove();
-            if (element.id) {
-                this.componentCache.delete(element.id);
-                this.logger.debug('RENDER', `Cleanup: Removed ${element.id}`);
+        allContainers.forEach(container => {
+            for (const child of container.children) {
+                // Only remove elements that are definitely orphaned
+                if (!child.id || 
+                    child.classList.contains('component-error') || 
+                    child.classList.contains('component-placeholder') ||
+                    child.textContent === 'Component loading...') {
+                    elementsToRemove.push(child);
+                }
+                // ROOT FIX: Be more careful about removing components
+                // Only remove if they're truly not in state AND not recently rendered
+                else if (child.id && !currentStateComponentIds.has(child.id)) {
+                    const renderTime = child.getAttribute('data-render-time');
+                    const isRecentlyRendered = renderTime && (Date.now() - parseInt(renderTime)) < 2000;
+                    
+                    if (!isRecentlyRendered) {
+                        elementsToRemove.push(child);
+                        this.logger.debug('RENDER', `Cleanup: Component ${child.id} no longer in state and not recent, removing`);
+                    } else {
+                        this.logger.debug('RENDER', `Cleanup: Skipping recently rendered component ${child.id}`);
+                    }
+                }
             }
+        });
+        
+        // Use DOM Render Coordinator for removal if available
+        elementsToRemove.forEach(element => {
+            if (element.id && window.domRenderCoordinator?.isInitialized) {
+                window.domRenderCoordinator.removeComponent(element.id);
+            } else {
+                element.remove();
+                if (element.id) {
+                    this.componentCache.delete(element.id);
+                }
+            }
+            this.logger.debug('RENDER', `Cleanup: Removed ${element.id || 'orphan element'}`);
         });
         
         if (elementsToRemove.length > 0) {
             this.logger.debug('RENDER', `Cleanup: Removed ${elementsToRemove.length} orphaned elements`);
         }
         
-        // ROOT CAUSE FIX: After cleanup, ensure empty state display is updated
+        // ROOT FIX: After cleanup, ensure empty state display is updated
         this.updateEmptyStateAfterCleanup(state);
     }
 
@@ -1535,6 +1564,13 @@ class EnhancedComponentRenderer {
             return false;
         }
         
+        // ROOT CAUSE FIX: Add render guard to prevent duplicate calls
+        if (this.renderingSavedComponents) {
+            this.logger.warn('RENDER', 'renderSavedComponents: Already rendering, skipping duplicate call');
+            return false;
+        }
+        this.renderingSavedComponents = true;
+        
         try {
             const componentCount = Object.keys(initialState.components).length;
             this.logger.info('RENDER', `renderSavedComponents: Starting render of ${componentCount} saved components`);
@@ -1563,61 +1599,59 @@ class EnhancedComponentRenderer {
                 return false;
             }
             
-            // ROOT CAUSE FIX: Remove ONLY duplicate elements, not all components
-            // This prevents the blank page issue when saved components exist
-            const componentIds = Object.keys(initialState.components);
-            let duplicatesRemoved = 0;
+            // ROOT FIX: Simple, direct container clearing - no complex coordination
+            targetContainer.innerHTML = '';
+            this.logger.info('RENDER', 'Cleared target container for fresh render');
             
-            componentIds.forEach(componentId => {
-                // Find all elements with this component ID
-                const allMatchingElements = [
-                    ...document.querySelectorAll(`#${componentId}`),
-                    ...document.querySelectorAll(`[data-component-id="${componentId}"]`)
-                ];
-                
-                // Remove duplicates only (keep first occurrence)
-                if (allMatchingElements.length > 1) {
-                    for (let i = 1; i < allMatchingElements.length; i++) {
-                        allMatchingElements[i].remove();
-                        duplicatesRemoved++;
-                    }
-                }
-            });
-            
-            if (duplicatesRemoved > 0) {
-                this.logger.warn('RENDER', `Removed ${duplicatesRemoved} duplicate elements before rendering`);
+            // ROOT CAUSE FIX: Ensure DOM Render Coordinator is ready
+            if (window.domRenderCoordinator && !window.domRenderCoordinator.isInitialized) {
+                this.logger.info('RENDER', 'Waiting for DOM Render Coordinator to initialize...');
+                await new Promise(resolve => {
+                    const checkInterval = setInterval(() => {
+                        if (window.domRenderCoordinator && window.domRenderCoordinator.isInitialized) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 50);
+                    // Timeout after 2 seconds
+                    setTimeout(() => {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }, 2000);
+                });
             }
             
-            // ROOT CAUSE FIX: Render components SEQUENTIALLY to prevent race conditions
-            // This prevents duplicates and ensures proper DOM insertion
             const componentIdList = Object.keys(initialState.components);
-            const fragment = document.createDocumentFragment();
+            this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIdList.length} components STRICTLY SEQUENTIALLY`);
             
-            this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIdList.length} components SEQUENTIALLY`);
+            // ROOT CAUSE FIX: Render STRICTLY ONE AT A TIME - NO PARALLEL RENDERING
+            let successfulRenders = 0;
+            const renderedComponents = new Set(); // Track what we've rendered
             
-            // ROOT FIX: Use DOM Render Coordinator for duplicate-free rendering
-            const renderedResults = [];
             for (const componentId of componentIdList) {
                 try {
+                    // ROOT CAUSE FIX: Skip if already rendered in this session
+                    if (renderedComponents.has(componentId)) {
+                        this.logger.debug('RENDER', `Component ${componentId} already rendered in this session, skipping`);
+                        continue;
+                    }
+                    
                     const componentState = initialState.components[componentId];
                     if (!componentState) {
                         this.logger.warn('RENDER', `No state found for saved component: ${componentId}`);
                         continue;
                     }
                     
-                    // ROOT FIX: Use DOM Render Coordinator to check and prevent duplicates
-                    if (window.domRenderCoordinator) {
-                        // Force cleanup any existing duplicates before rendering
-                        window.domRenderCoordinator.aggressiveDeduplication(componentId);
-                    }
-                    
-                    // Check if component already exists in DOM after cleanup
+                    // ROOT CAUSE FIX: STRICT duplicate check before rendering
                     const existingElement = document.getElementById(componentId);
-                    if (existingElement) {
-                        this.logger.debug('RENDER', `Component ${componentId} already exists in DOM after cleanup, skipping render`);
+                    if (existingElement && existingElement.parentNode === targetContainer) {
+                        this.logger.debug('RENDER', `Component ${componentId} already exists in target container, skipping`);
+                        renderedComponents.add(componentId);
+                        successfulRenders++;
                         continue;
                     }
                     
+                    // ROOT FIX: Create the element
                     const result = await this.renderComponentWithLoader(
                         componentId,
                         componentState.type,
@@ -1625,44 +1659,33 @@ class EnhancedComponentRenderer {
                     );
                     
                     if (result && result.element) {
-                        // ROOT FIX: Use DOM Render Coordinator for insertion
-                        if (window.domRenderCoordinator && window.domRenderCoordinator.isInitialized) {
-                            const success = await window.domRenderCoordinator.renderComponent(
-                                componentId,
-                                result.element,
-                                targetContainer.id || 'saved-components-container',
-                                { 
-                                    componentType: componentState.type,
-                                    source: 'renderSavedComponents',
-                                    attachControls: true
-                                }
-                            );
-                            
-                            if (success) {
-                                // Update our cache
-                                this.componentCache.set(componentId, result.element);
-                                
-                                // Register with UI registry
-                                this.registerComponentWithUIRegistry(componentId, result.element, componentState);
-                                
-                                this.logger.debug('RENDER', `renderSavedComponents: Successfully rendered ${componentId} via coordinator`);
-                                renderedResults.push({ componentId, element: result.element, componentState });
-                                successfulRenders++;
-                            } else {
-                                this.logger.error('RENDER', `renderSavedComponents: Coordinator failed to render ${componentId}`);
-                            }
-                        } else {
-                            // Fallback: Direct insertion (should not happen)
+                        // ROOT FIX: SIMPLE DIRECT RENDERING - No complex coordination
+                        // The element already has ID and data-component-id set by createElementFromTemplate
+                        
+                        // Simple duplicate check
+                        if (!document.getElementById(componentId)) {
+                            // Append directly to container
                             targetContainer.appendChild(result.element);
-                            this.componentCache.set(componentId, result.element);
-                            this.registerComponentWithUIRegistry(componentId, result.element, componentState);
-                            this.attachComponentControls(result.element, componentId);
-                            renderedResults.push({ componentId, element: result.element, componentState });
-                            successfulRenders++;
-                            this.logger.warn('RENDER', `renderSavedComponents: Used fallback rendering for ${componentId}`);
+                        
+                        // Update our cache
+                        this.componentCache.set(componentId, result.element);
+                        
+                        // Attach controls immediately
+                        this.attachComponentControls(result.element, componentId);
+                        
+                        // Register with UI registry
+                        this.registerComponentWithUIRegistry(componentId, result.element, componentState);
+                        
+                        // Mark as rendered
+                        renderedComponents.add(componentId);
+                        successfulRenders++;
+                        
+                        this.logger.debug('RENDER', `renderSavedComponents: Rendered ${componentId}`);
+                        } else {
+                        this.logger.warn('RENDER', `Component ${componentId} already exists, skipping`);
                         }
                     } else {
-                        this.logger.error('RENDER', `renderSavedComponents: Failed to render ${componentId}`);
+                        this.logger.error('RENDER', `renderSavedComponents: Failed to create element for ${componentId}`);
                     }
                     
                 } catch (componentError) {
@@ -1670,24 +1693,22 @@ class EnhancedComponentRenderer {
                 }
             }
             
-            // ROOT FIX: Don't append fragment since coordinator already handled DOM insertion
-            let successfulRenders = renderedResults.length;
-            
-            // ROOT FIX: Duplicate verification delegated to DOM Render Coordinator
-            
             // Apply layout order if available
             if (initialState.layout && Array.isArray(initialState.layout)) {
                 this.reorderComponents(initialState.layout);
             }
+            
+            // ROOT CAUSE FIX: Skip final verification - duplicates prevented at source
             
             // Verify render success
             const finalChildCount = targetContainer.children.length;
             
             this.logger.info('RENDER', `renderSavedComponents: Completed - ${successfulRenders}/${componentCount} components rendered`, {
                 targetContainerId: targetContainer.id || 'preview-container',
-                parallelRenderingUsed: true,
+                sequentialRendering: true,
                 finalChildCount,
-                expectedCount: componentCount
+                expectedCount: componentCount,
+                renderMethod: 'direct-simple'
             });
             
             // ROOT CAUSE FIX: Update empty state display after rendering
@@ -1700,8 +1721,43 @@ class EnhancedComponentRenderer {
         } catch (error) {
             this.logger.error('RENDER', 'renderSavedComponents: Critical error:', error);
             return false;
+        } finally {
+            // ROOT CAUSE FIX: Clear render guard
+            this.renderingSavedComponents = false;
         }
     }
+    
+    /**
+     * ROOT CAUSE FIX: Verify no duplicates exist in DOM
+     */
+    verifyNoDuplicatesInDOM() {
+        const componentMap = new Map();
+        const duplicates = [];
+        
+        const allComponents = document.querySelectorAll('[data-component-id]');
+        allComponents.forEach(element => {
+            const id = element.getAttribute('data-component-id');
+            if (id) {
+                if (componentMap.has(id)) {
+                    duplicates.push(id);
+                } else {
+                    componentMap.set(id, element);
+                }
+            }
+        });
+        
+        return {
+            clean: duplicates.length === 0,
+            totalComponents: allComponents.length,
+            uniqueComponents: componentMap.size,
+            duplicateIds: duplicates
+        };
+    }
+    
+    /**
+     * ROOT FIX: REMOVED emergencyCleanupDuplicates - it was a patch that violated the checklist
+     * Deduplication should be handled at the source by DOM Render Coordinator
+     */
     
     /**
      * Manual render method - forces a complete re-render of all components

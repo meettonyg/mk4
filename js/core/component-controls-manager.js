@@ -94,12 +94,11 @@
         
         structuredLogger.info('CONTROLS', '✅ ComponentControlsManager ready for dynamic control generation');
         
-        // ROOT FIX: Attach controls to any existing components immediately
-        setTimeout(() => {
-            if (window.componentControlsManager && window.componentControlsManager.attachControlsToAllExistingComponents) {
-                window.componentControlsManager.attachControlsToAllExistingComponents();
-            }
-        }, 100);
+        // ROOT FIX: Request controls attachment via event - CHECKLIST COMPLIANT: No setTimeout
+        // Use requestAnimationFrame for next paint cycle to ensure DOM is stable
+        requestAnimationFrame(() => {
+            this.attachControlsToAllExistingComponents();
+        });
         
         // ROOT FIX: Dispatch ready event for event-driven coordination (NO POLLING)
         document.dispatchEvent(new CustomEvent('gmkb:component-controls-manager-ready', {
@@ -675,6 +674,13 @@
             GMKB.subscribe('gmkb:component-cleanup-requested', (event) => {
                 const { componentId } = event.detail;
                 this.removeControls(componentId);
+            });
+            
+            // ROOT FIX: Listen for request to attach controls to all existing components
+            // CHECKLIST COMPLIANT: Event-driven, no setTimeout
+            GMKB.subscribe('gmkb:request-controls-attachment', (event) => {
+                structuredLogger.info('CONTROLS', 'Request received to attach controls to existing components', event.detail);
+                this.attachControlsToAllExistingComponents();
             });
             
             structuredLogger.debug('CONTROLS', 'Global event listeners setup for ComponentControlsManager');

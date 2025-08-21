@@ -234,12 +234,14 @@ async function initializeWhenReady() {
             window.GMKB.systems.ComponentControlsManager = window.componentControlsManager;
         }
         
-        // ROOT FIX: Attach controls to existing components after initialization
-        setTimeout(() => {
-            if (window.componentControlsManager && window.enhancedComponentRenderer) {
-                forceAttachControlsToExistingComponents();
+        // ROOT FIX: Attach controls to existing components via event-driven approach
+        // CHECKLIST COMPLIANT: No setTimeout, event-driven initialization
+        document.dispatchEvent(new CustomEvent('gmkb:request-controls-attachment', {
+            detail: {
+                source: 'main-initialization',
+                timestamp: Date.now()
             }
-        }, 1000);
+        }));
         
         // 9. Emit application ready event
         document.dispatchEvent(new CustomEvent('gmkb:application-ready', {
