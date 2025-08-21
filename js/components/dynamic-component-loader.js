@@ -434,10 +434,11 @@ class DynamicComponentLoader {
             element.id = id;
             element.setAttribute('data-component-id', id);
             
-            // ROOT FIX: Check for and clean any child elements with data-component-id from template
+            // ROOT FIX: Ensure no child elements have data-component-id - only root element should have it
+            // This is the SINGLE SOURCE OF TRUTH for proper element structure
             const existingDataIds = element.querySelectorAll('[data-component-id]');
             if (existingDataIds.length > 0) {
-                structuredLogger.warn('LOADER', `Cleaning ${existingDataIds.length} child elements with data-component-id from template`);
+                structuredLogger.debug('LOADER', `Cleaning ${existingDataIds.length} child elements with data-component-id`);
                 existingDataIds.forEach(child => child.removeAttribute('data-component-id'));
             }
             

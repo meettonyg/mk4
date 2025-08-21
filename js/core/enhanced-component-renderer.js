@@ -1666,12 +1666,8 @@ class EnhancedComponentRenderer {
                         continue;
                     }
                     
-                    // ROOT CAUSE FIX: Clean up any DOM elements with this data-component-id to prevent duplicates
-                    const existingByDataId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
-                    if (existingByDataId.length > 0) {
-                        this.logger.warn('RENDER', `Found ${existingByDataId.length} existing elements with data-component-id=${componentId}, removing all`);
-                        existingByDataId.forEach(el => el.remove());
-                    }
+                    // ROOT FIX: Trust the dynamic-component-loader to provide clean elements
+                    // No need for redundant cleanup here
                     
                     // ROOT FIX: Create the element
                     const result = await this.renderComponentWithLoader(
@@ -1689,12 +1685,8 @@ class EnhancedComponentRenderer {
                         const existingByDataId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
                         
                         if (!existingById && existingByDataId.length === 0) {
-                            // Clean element - verify it only has one data-component-id
-                            const elementDataIds = result.element.querySelectorAll('[data-component-id]');
-                            if (elementDataIds.length > 0) {
-                                this.logger.warn('RENDER', `Element for ${componentId} contains ${elementDataIds.length} child elements with data-component-id, cleaning...`);
-                                elementDataIds.forEach(child => child.removeAttribute('data-component-id'));
-                            }
+                            // ROOT FIX: Trust dynamic-component-loader to provide properly structured elements
+                            // The loader is the single source of truth for element creation
                             
                             // ROOT CAUSE CHECK: Verify element before appending
                             const preAppendCheck = document.getElementById(componentId);
