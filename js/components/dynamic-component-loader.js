@@ -11,6 +11,35 @@
 (function() {
     'use strict';
     
+    // ROOT CAUSE TRACKING: Global render tracker
+    window.GMKBRenderTracker = window.GMKBRenderTracker || {
+        renders: new Map(),
+        track: function(componentId, source, action) {
+            if (!this.renders.has(componentId)) {
+                this.renders.set(componentId, []);
+            }
+            const entry = {
+                source,
+                action,
+                timestamp: Date.now(),
+                stack: new Error().stack
+            };
+            this.renders.get(componentId).push(entry);
+            
+            // Check for duplicates
+            const renders = this.renders.get(componentId);
+            if (renders.length > 1) {
+                console.warn(`ROOT CAUSE: Multiple renders detected for ${componentId}:`, renders);
+            }
+        },
+        getRenders: function(componentId) {
+            return this.renders.get(componentId) || [];
+        },
+        clear: function() {
+            this.renders.clear();
+        }
+    };
+    
     // ROOT FIX: Use global objects instead of ES6 imports
     const getPluginRoot = () => {
         if (window.GMKBHelpers && window.GMKBHelpers.getPluginRoot) {
@@ -130,6 +159,7 @@ class DynamicComponentLoader {
      * @returns {Promise<string>} A promise that resolves to the component's HTML template.
      */
     async getTemplate(type) {
+        console.log('ROOT CAUSE DEBUG: getTemplate called for:', type);
         // CRITICAL FIX: Resolve component type aliases
         const originalType = type;
         const resolvedType = this.resolveComponentType(type);
@@ -260,9 +290,19 @@ class DynamicComponentLoader {
             throw new Error('WordPress AJAX returned invalid template data');
         }
         
+        // ROOT CAUSE DEBUG: Check template for duplicate data-component-id
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = template;
+        const dataIdElements = tempDiv.querySelectorAll('[data-component-id]');
+        if (dataIdElements.length > 0) {
+            console.warn('ROOT CAUSE WARNING: Template from WordPress already contains', dataIdElements.length, 'elements with data-component-id!');
+            console.log('ROOT CAUSE DEBUG: Template HTML:', template.substring(0, 500) + '...');
+        }
+        
         structuredLogger.debug('LOADER', 'WordPress AJAX successful', {
             originalType,
-            templateLength: template.length
+            templateLength: template.length,
+            existingDataIdCount: dataIdElements.length
         });
         
         return template;
@@ -366,30 +406,86 @@ class DynamicComponentLoader {
 
     /**
      * Creates an HTML element from a template string.
-     * ROOT FIX: Ensures ONLY the ID is set, not data-component-id to prevent duplicates
+     * ROOT CAUSE FIX: Prevents multiple elements with same data-component-id
      * @param {string} template - The HTML template string.
      * @param {string} id - The unique ID to assign to the element.
      * @returns {HTMLElement|null} The created HTML element.
      */
     createElementFromTemplate(template, id) {
+        // ROOT CAUSE TRACKING
+        if (window.GMKBRenderTracker) {
+            window.GMKBRenderTracker.track(id, 'dynamic-component-loader', 'createElementFromTemplate');
+        }
+        
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = template.trim();
+        
+        // ROOT CAUSE FIX: Check if template has multiple root elements
+        if (tempDiv.children.length > 1) {
+            console.error('ROOT CAUSE ERROR: Template has multiple root elements!', {
+                componentId: id,
+                rootElementCount: tempDiv.children.length,
+                innerHTML: tempDiv.innerHTML.substring(0, 200) + '...'
+            });
+        }
+        
         const element = tempDiv.firstElementChild;
         if (element) {
-            // ROOT FIX: Set ID first
+            // ROOT CAUSE FIX: Set ID and data-component-id ONLY on the root element
             element.id = id;
-            
-            // ROOT FIX: Remove any existing data-component-id from template
-            // This prevents duplicates when templates already have this attribute
-            if (element.hasAttribute('data-component-id')) {
-                element.removeAttribute('data-component-id');
-            }
-            
-            // ROOT FIX: Now set the correct data-component-id
             element.setAttribute('data-component-id', id);
+            
+            // ROOT CAUSE INVESTIGATION: Check if template has unexpected attributes
+            const existingDataIds = element.querySelectorAll('[data-component-id]');
+            if (existingDataIds.length > 0) {
+                console.error('ROOT CAUSE ERROR: Template should NOT contain data-component-id attributes!', {
+                    count: existingDataIds.length,
+                    componentId: id,
+                    templateContent: element.innerHTML.substring(0, 200) + '...'
+                });
+                // This indicates a fundamental problem - templates should be clean
+                throw new Error(`Template corruption: Found ${existingDataIds.length} elements with data-component-id in template`);
+            }
             
             // ROOT FIX: Mark render time for debugging
             element.setAttribute('data-render-time', Date.now().toString());
+            
+            console.log(`ROOT CAUSE FIX: Created element with unique data-component-id="${id}" on root only`);
+            
+            // ROOT CAUSE DEBUG: Log the final structure
+            const finalDataIdCount = element.querySelectorAll('[data-component-id]').length;
+            const finalIdCount = element.querySelectorAll(`[id="${id}"]`).length;
+            console.log(`ROOT CAUSE VERIFICATION: Final element has ${finalDataIdCount} children with data-component-id and ${finalIdCount} children with id="${id}"`);
+            
+            // ROOT CAUSE TRACE: Add mutation observer to track changes
+            if (window.MutationObserver && window.GMKBDebugMode) {
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList') {
+                            mutation.addedNodes.forEach((node) => {
+                                if (node.nodeType === 1 && node.getAttribute && node.getAttribute('data-component-id') === id) {
+                                    console.error('ROOT CAUSE DETECTED: Node with duplicate data-component-id added!', {
+                                        node,
+                                        parent: mutation.target,
+                                        stackTrace: new Error().stack
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+                
+                // Observe the element and its subtree
+                observer.observe(element, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['data-component-id']
+                });
+                
+                // Stop observing after 5 seconds
+                setTimeout(() => observer.disconnect(), 5000);
+            }
         }
         return element;
     }
@@ -455,5 +551,13 @@ window.DynamicComponentLoader = DynamicComponentLoader;
 
 console.log('✅ ROOT FIX: Simplified Dynamic Component Loader exposed globally (WordPress-compatible)');
 console.log('✅ ROOT FIX: Event-driven via native Promises - NO external dependencies');
+
+// ROOT CAUSE DEBUG: Enable debug mode command
+window.enableDuplicationDebug = function() {
+    window.GMKBDebugMode = true;
+    console.log('🔍 ROOT CAUSE DEBUG: Duplication debug mode enabled');
+    console.log('🔍 Will track any DOM mutations that add duplicate data-component-id attributes');
+    return 'Debug mode enabled - mutations will be logged';
+};
 
 })(); // ROOT FIX: Close IIFE wrapper

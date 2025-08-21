@@ -161,31 +161,60 @@
                 return false;
             }
 
-            // ROOT FIX: SINGLE-INSTANCE ENFORCEMENT - Ensure only ONE element with this ID exists
-            const allElementsWithId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
-            const elementsById = document.querySelectorAll(`#${componentId}`);
+            // ROOT CAUSE INVESTIGATION: Check what's really happening
+            // First, let's check if the component element itself has the attribute
+            const hasDataComponentId = componentElement.hasAttribute('data-component-id');
+            const dataComponentIdValue = componentElement.getAttribute('data-component-id');
             
-            if (allElementsWithId.length > 1 || elementsById.length > 1) {
-                structuredLogger.error('CONTROLS', `CRITICAL: Found ${allElementsWithId.length} elements with data-component-id=${componentId} and ${elementsById.length} with id=${componentId}!`);
+            structuredLogger.info('CONTROLS', `Component element check:`, {
+                hasDataComponentId,
+                dataComponentIdValue,
+                expectedId: componentId,
+                elementId: componentElement.id,
+                matches: dataComponentIdValue === componentId
+            });
+            
+            // Now check all elements in the entire document
+            const allElementsWithAnyDataId = document.querySelectorAll('[data-component-id]');
+            structuredLogger.info('CONTROLS', `Total elements with ANY data-component-id: ${allElementsWithAnyDataId.length}`);
+            
+            // Check specifically for this component ID
+            const selector = `[data-component-id="${componentId}"]`;
+            const allElementsWithSameDataId = document.querySelectorAll(selector);
+            
+            structuredLogger.info('CONTROLS', `Query selector used: ${selector}`);
+            structuredLogger.info('CONTROLS', `Elements found with this selector: ${allElementsWithSameDataId.length}`);
+            
+            // If we find multiple, let's understand why
+            if (allElementsWithSameDataId.length > 1) {
+                structuredLogger.error('CONTROLS', `❌ MULTIPLE ELEMENTS FOUND!`);
                 
-                // ROOT FIX: Remove ALL duplicates except the first one
-                for (let i = 1; i < allElementsWithId.length; i++) {
-                    allElementsWithId[i].remove();
-                    structuredLogger.warn('CONTROLS', `Removed duplicate element ${i} for ${componentId}`);
-                }
+                // Check each element
+                allElementsWithSameDataId.forEach((el, index) => {
+                    structuredLogger.error('CONTROLS', `Element ${index}:`, {
+                        tagName: el.tagName,
+                        id: el.id,
+                        className: el.className,
+                        actualDataComponentId: el.getAttribute('data-component-id'),
+                        outerHTML: el.outerHTML.substring(0, 200) + '...',
+                        isSameAsComponentElement: el === componentElement
+                    });
+                });
                 
-                for (let i = 1; i < elementsById.length; i++) {
-                    elementsById[i].remove();
-                    structuredLogger.warn('CONTROLS', `Removed duplicate element by ID ${i} for ${componentId}`);
-                }
-                
-                // Use the first element that still exists
-                componentElement = allElementsWithId[0] || document.getElementById(componentId);
-                
-                if (!componentElement) {
-                    structuredLogger.error('CONTROLS', `No valid element found after deduplication for ${componentId}`);
-                    return false;
-                }
+                // This is critical - we need to understand this
+                debugger; // This will pause execution in the browser debugger
+            }
+            
+            // ROOT CAUSE FIX: Verify this is the correct root element (has both id and data-component-id)
+            if (!componentElement.id || componentElement.getAttribute('data-component-id') !== componentId) {
+                structuredLogger.warn('CONTROLS', `Element validation failed for ${componentId} - not the root component element`);
+                return false;
+            }
+            
+            // ROOT CAUSE FIX: Ensure we're attaching to the actual component root, not a child
+            if (componentElement.id !== componentId) {
+                structuredLogger.warn('CONTROLS', `Element ID mismatch: expected ${componentId}, got ${componentElement.id}`);
+                return false;
             }
             
             // ROOT FIX: Check if controls already attached to THIS SPECIFIC component ID (not element)

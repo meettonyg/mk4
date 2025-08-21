@@ -4,8 +4,14 @@
  * ROOT FIX: Enhanced with proper control attachment support
  */
 
-// ROOT FIX: Ensure component ID is always available
-$finalComponentId = $componentId ?? $id ?? 'biography-' . uniqid();
+// ROOT FIX: Ensure component ID is always available - DO NOT generate new ID here
+// The ID should be passed from the parent context
+$finalComponentId = isset($component_id) ? $component_id : (isset($id) ? $id : (isset($componentId) ? $componentId : ''));
+if (empty($finalComponentId)) {
+    // This should not happen if the component is loaded properly
+    error_log('WARNING: Biography template loaded without component ID!');
+    $finalComponentId = 'biography-error-' . uniqid();
+}
 ?>
 <div class="content-section biography-component editable-element" 
      data-element="biography" 
@@ -14,8 +20,6 @@ $finalComponentId = $componentId ?? $id ?? 'biography-' . uniqid();
      data-controls-enabled="true"
      style="position: relative; cursor: pointer;"
      tabindex="0">
-    
-    <!-- ROOT FIX: Controls are handled entirely by JavaScript - NO server-side script injection -->
     
     <h2 class="section-title"><?php echo isset($title) ? esc_html($title) : 'About Me'; ?></h2>
     <div class="biography-content">

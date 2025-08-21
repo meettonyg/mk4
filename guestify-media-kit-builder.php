@@ -417,9 +417,12 @@ class Guestify_Media_Kit_Builder {
         }
         
         // ROOT FIX: Ensure post ID and consistent component ID are passed
+        $componentId = isset($props['component_id']) ? $props['component_id'] : ('component-' . round(microtime(true) * 1000));
         $enhanced_props = array_merge($props, [
-        'post_id' => $post_id,
-        'component_id' => $componentId ?? 'component-' . round(microtime(true) * 1000)
+            'post_id' => $post_id,
+            'component_id' => $componentId,
+            'id' => $componentId,  // Ensure both id and component_id are set
+            'componentId' => $componentId  // Also set camelCase version
         ]);
                 
                 $html = $this->component_loader->loadComponent( $component_slug, $enhanced_props );
@@ -620,6 +623,11 @@ class Guestify_Media_Kit_Builder {
 
         // --- ROOT FIX: SINGLE-STEP RENDER LOGIC ---
         // Pre-load data for components that need server-side data loading
+        // ROOT CAUSE DEBUG: Log template request
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("ajax_render_component: Rendering component {$component_type} with props: " . print_r($props, true));
+        }
+        
         if ($component_type === 'topics') {
             $topics_ajax_handler_path = GMKB_PLUGIN_DIR . 'components/topics/ajax-handler.php';
             if (file_exists($topics_ajax_handler_path)) {
@@ -677,6 +685,22 @@ class Guestify_Media_Kit_Builder {
             ob_start();
             include $template_path;
             $html = ob_get_clean();
+            
+            // ROOT CAUSE DEBUG: Check template output
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                // Check for duplicate data-component-id in template
+                $dom = new DOMDocument();
+                @$dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+                $xpath = new DOMXPath($dom);
+                $elements_with_data_id = $xpath->query('//*[@data-component-id]');
+                
+                if ($elements_with_data_id->length > 0) {
+                    error_log("ROOT CAUSE WARNING: Template for {$component_type} already contains {$elements_with_data_id->length} elements with data-component-id!");
+                }
+                
+                error_log("ajax_render_component: HTML length = " . strlen($html) . " for component {$component_type}");
+            }
+            
             $scripts_data = $this->get_component_scripts($component_type, $props);
             wp_send_json_success(['html' => $html, 'scripts' => $scripts_data]);
         } else {

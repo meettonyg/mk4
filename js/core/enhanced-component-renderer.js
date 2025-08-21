@@ -1257,7 +1257,21 @@ class EnhancedComponentRenderer {
      */
     async renderComponentWithLoader(id, type, props) {
         try {
-            this.logger.debug('RENDER', `renderComponentWithLoader called:`, { id, type, propsKeys: Object.keys(props || {}) });
+            // ROOT CAUSE TRACKING: Check if this component is being rendered multiple times
+            if (!window.GMKBRenderCalls) {
+                window.GMKBRenderCalls = new Map();
+            }
+            
+            const callCount = (window.GMKBRenderCalls.get(id) || 0) + 1;
+            window.GMKBRenderCalls.set(id, callCount);
+            
+            if (callCount > 1) {
+                this.logger.error('RENDER', `DUPLICATE RENDER DETECTED: Component ${id} is being rendered ${callCount} times!`, {
+                    stack: new Error().stack
+                });
+            }
+            
+            this.logger.debug('RENDER', `renderComponentWithLoader called:`, { id, type, propsKeys: Object.keys(props || {}), callCount });
             
             // ROOT FIX: Verify dynamicComponentLoader is available
             if (!window.dynamicComponentLoader) {
@@ -1651,6 +1665,13 @@ class EnhancedComponentRenderer {
                         continue;
                     }
                     
+                    // ROOT CAUSE FIX: Clean up any DOM elements with this data-component-id to prevent duplicates
+                    const existingByDataId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+                    if (existingByDataId.length > 0) {
+                        this.logger.warn('RENDER', `Found ${existingByDataId.length} existing elements with data-component-id=${componentId}, removing all`);
+                        existingByDataId.forEach(el => el.remove());
+                    }
+                    
                     // ROOT FIX: Create the element
                     const result = await this.renderComponentWithLoader(
                         componentId,
@@ -1662,27 +1683,76 @@ class EnhancedComponentRenderer {
                         // ROOT FIX: SIMPLE DIRECT RENDERING - No complex coordination
                         // The element already has ID and data-component-id set by createElementFromTemplate
                         
-                        // Simple duplicate check
-                        if (!document.getElementById(componentId)) {
+                        // ROOT CAUSE FIX: More thorough duplicate check before appending
+                        const existingById = document.getElementById(componentId);
+                        const existingByDataId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+                        
+                        if (!existingById && existingByDataId.length === 0) {
+                            // Clean element - verify it only has one data-component-id
+                            const elementDataIds = result.element.querySelectorAll('[data-component-id]');
+                            if (elementDataIds.length > 0) {
+                                this.logger.warn('RENDER', `Element for ${componentId} contains ${elementDataIds.length} child elements with data-component-id, cleaning...`);
+                                elementDataIds.forEach(child => child.removeAttribute('data-component-id'));
+                            }
+                            
+                            // ROOT CAUSE CHECK: Verify element before appending
+                            const preAppendCheck = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+                            this.logger.info('RENDER', `PRE-APPEND: Found ${preAppendCheck.length} elements with data-component-id=${componentId}`);
+                            
                             // Append directly to container
                             targetContainer.appendChild(result.element);
-                        
-                        // Update our cache
-                        this.componentCache.set(componentId, result.element);
-                        
-                        // Attach controls immediately
-                        this.attachComponentControls(result.element, componentId);
-                        
-                        // Register with UI registry
-                        this.registerComponentWithUIRegistry(componentId, result.element, componentState);
-                        
-                        // Mark as rendered
-                        renderedComponents.add(componentId);
-                        successfulRenders++;
-                        
-                        this.logger.debug('RENDER', `renderSavedComponents: Rendered ${componentId}`);
+                            
+                            // ROOT CAUSE CHECK: Verify element immediately after appending
+                            const postAppendCheck = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+                            this.logger.info('RENDER', `POST-APPEND: Found ${postAppendCheck.length} elements with data-component-id=${componentId}`);
+                            
+                            if (postAppendCheck.length > 1) {
+                                // Something created duplicates - investigate DOM structure
+                                this.logger.error('RENDER', 'DOM DUPLICATION DETECTED!', {
+                                    targetContainer: targetContainer.id,
+                                    containerChildCount: targetContainer.children.length,
+                                    containerHTML: targetContainer.innerHTML.substring(0, 500) + '...'
+                                });
+                                
+                                // Check if all elements are actually the same element
+                                const firstElement = postAppendCheck[0];
+                                let allSame = true;
+                                for (let i = 1; i < postAppendCheck.length; i++) {
+                                    if (postAppendCheck[i] !== firstElement) {
+                                        allSame = false;
+                                        break;
+                                    }
+                                }
+                                
+                                this.logger.error('RENDER', `All elements are the same: ${allSame}`);
+                            }
+                            
+                            // Update our cache
+                            this.componentCache.set(componentId, result.element);
+                            
+                            // ROOT CAUSE DEBUG: Check DOM immediately after append
+                            const checkAfterAppend = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+                            if (checkAfterAppend.length > 1) {
+                                this.logger.error('RENDER', `CRITICAL: After appending ${componentId}, found ${checkAfterAppend.length} elements with same data-component-id!`);
+                                // Something is duplicating our element - investigate
+                                for (let i = 1; i < checkAfterAppend.length; i++) {
+                                    checkAfterAppend[i].remove();
+                                }
+                            }
+                            
+                            // Attach controls immediately
+                            this.attachComponentControls(result.element, componentId);
+                            
+                            // Register with UI registry
+                            this.registerComponentWithUIRegistry(componentId, result.element, componentState);
+                            
+                            // Mark as rendered
+                            renderedComponents.add(componentId);
+                            successfulRenders++;
+                            
+                            this.logger.debug('RENDER', `renderSavedComponents: Rendered ${componentId}`);
                         } else {
-                        this.logger.warn('RENDER', `Component ${componentId} already exists, skipping`);
+                            this.logger.warn('RENDER', `Component ${componentId} already exists (byId: ${!!existingById}, byDataId: ${existingByDataId.length}), skipping`);
                         }
                     } else {
                         this.logger.error('RENDER', `renderSavedComponents: Failed to create element for ${componentId}`);
