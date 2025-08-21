@@ -818,8 +818,7 @@ class EnhancedComponentRenderer {
                     failed: componentIds.size - successfulRenders.length
                 });
                 
-                // ROOT FIX: Post-render verification
-                this.verifyNoDuplicatesAfterRender(componentIds);
+                // ROOT FIX: Post-render verification delegated to DOM Render Coordinator
                 
                 // Dispatch batch render completion event
                 document.dispatchEvent(new CustomEvent('gmkb:batch-render-completed', {
@@ -877,134 +876,9 @@ class EnhancedComponentRenderer {
         }
     }
     
-    /**
-     * ROOT FIX: Verify no duplicates after rendering
-     */
-    verifyNoDuplicatesAfterRender(componentIds) {
-        let duplicatesFound = 0;
-        
-        componentIds.forEach(componentId => {
-            // ROOT FIX: Only check actual component elements, not nested controls
-            const elements = Array.from(document.querySelectorAll(`[data-component-id="${componentId}"]`))
-                .filter(el => {
-                    // Exclude control elements
-                    if (el.classList.contains('component-controls--dynamic') || 
-                        el.classList.contains('control-button')) {
-                        return false;
-                    }
-                    // Only include if it's a direct child of a container
-                    const parent = el.parentElement;
-                    return parent && (parent.id === 'saved-components-container' || 
-                                    parent.id === 'media-kit-preview' ||
-                                    parent.classList.contains('drop-zone'));
-                });
-            
-            if (elements.length > 1) {
-                duplicatesFound += elements.length - 1;
-                this.logger.error('RENDER', `DUPLICATE DETECTED: Found ${elements.length} actual component elements for ${componentId}`);
-                
-                // Keep only the first element
-                for (let i = 1; i < elements.length; i++) {
-                    elements[i].remove();
-                }
-            }
-        });
-        
-        if (duplicatesFound > 0) {
-            this.logger.error('RENDER', `POST-RENDER CLEANUP: Removed ${duplicatesFound} duplicate component elements`);
-        } else {
-            this.logger.debug('RENDER', 'POST-RENDER VERIFICATION: No duplicates found ✓');
-        }
-    }
+    // ROOT FIX: verifyNoDuplicatesAfterRender removed - DOM Render Coordinator handles all deduplication
     
-    /**
-     * ROOT FIX: Cleanup duplicates after rendering with intelligent detection
-     * This method is more careful than verifyNoDuplicatesAfterRender
-     */
-    cleanupDuplicatesAfterRender(componentIds) {
-        let duplicatesFound = 0;
-        let duplicatesRemoved = 0;
-        
-        componentIds.forEach(componentId => {
-            // ROOT FIX: Only look for actual component containers, not nested control elements
-            // Find elements by ID (should be the main component)
-            const elementsById = document.querySelectorAll(`#${componentId}`);
-            
-            // Find elements with data-component-id that are NOT control elements
-            // Control elements are nested inside components, so we only want top-level components
-            const elementsByDataId = document.querySelectorAll(
-                `[data-component-id="${componentId}"]:not(.component-controls--dynamic):not(.control-button)`
-            );
-            
-            // Create a Set to track unique COMPONENT elements (not controls)
-            const uniqueElements = new Set();
-            
-            // Add elements by ID
-            elementsById.forEach(el => {
-                // Only add if it's not a control element
-                if (!el.classList.contains('component-controls--dynamic') && 
-                    !el.classList.contains('control-button')) {
-                    uniqueElements.add(el);
-                }
-            });
-            
-            // Add elements by data attribute that are actual components
-            elementsByDataId.forEach(el => {
-                // Additional check: Only add if it's a direct child of a container
-                const parent = el.parentElement;
-                if (parent && (parent.id === 'saved-components-container' || 
-                              parent.id === 'media-kit-preview' ||
-                              parent.classList.contains('drop-zone'))) {
-                    uniqueElements.add(el);
-                }
-            });
-            
-            // Convert to array for processing
-            const allElements = Array.from(uniqueElements);
-            
-            if (allElements.length > 1) {
-                duplicatesFound += allElements.length - 1;
-                
-                // Keep the element that's in the correct container (saved-components-container or preview)
-                let elementToKeep = null;
-                const savedContainer = document.getElementById('saved-components-container');
-                const previewContainer = document.getElementById('media-kit-preview');
-                
-                // Prefer element in saved-components-container if it exists
-                if (savedContainer) {
-                    elementToKeep = allElements.find(el => savedContainer.contains(el));
-                }
-                
-                // Otherwise keep element in preview container
-                if (!elementToKeep && previewContainer) {
-                    elementToKeep = allElements.find(el => previewContainer.contains(el));
-                }
-                
-                // If still no element found in proper containers, keep the first one
-                if (!elementToKeep) {
-                    elementToKeep = allElements[0];
-                }
-                
-                // Remove all other elements
-                allElements.forEach(el => {
-                    if (el !== elementToKeep) {
-                        el.remove();
-                        duplicatesRemoved++;
-                        this.logger.debug('RENDER', `Removed duplicate element for ${componentId}`);
-                    }
-                });
-                
-                // Update cache with the kept element
-                this.componentCache.set(componentId, elementToKeep);
-            }
-        });
-        
-        if (duplicatesFound > 0) {
-            this.logger.warn('RENDER', `DUPLICATE CLEANUP: Found ${duplicatesFound} duplicates, removed ${duplicatesRemoved}`);
-        } else {
-            this.logger.debug('RENDER', 'DUPLICATE CLEANUP: No duplicates found ✓');
-        }
-    }
+    // ROOT FIX: cleanupDuplicatesAfterRender removed - DOM Render Coordinator handles all deduplication
     
     /**
      * ROOT FIX: Legacy rendering method as fallback
@@ -1072,70 +946,39 @@ class EnhancedComponentRenderer {
         
         renderedComponents.forEach(comp => {
             if (comp && comp.element) {
-                fragment.appendChild(comp.element);
+                // ROOT FIX: Render via the coordinator (single pipeline)
+                document.dispatchEvent(new CustomEvent('gmkb:coordinate-render-request', {
+                    detail: {
+                        componentId: comp.id,
+                        element: comp.element,
+                        targetContainer: targetContainer.id,
+                        options: { attachControls: true } // The coordinator will now handle attaching controls
+                    }
+                }));
+                
+                // Do NOT append to fragment. Let the coordinator insert and track it.
                 this.componentCache.set(comp.id, comp.element);
-                addedToFragment++;
                 
                 // Register with UI registry
                 const componentState = newState.components[comp.id];
                 this.registerComponentWithUIRegistry(comp.id, comp.element, componentState);
                 
-                // ROOT FIX: Ensure controls are attached for new components
-                this.attachComponentControls(comp.element, comp.id);
+                addedToFragment++;
                 
-                // Emit component rendered event for integration
-                document.dispatchEvent(new CustomEvent('gmkb:component-rendered', {
-                    detail: {
-                        componentId: comp.id,
-                        element: comp.element,
-                        componentType: componentState.type,
-                        source: 'renderNewComponents'
-                    }
-                }));
-                
-                this.logger.debug('RENDER', `Added component ${comp.id} to fragment with controls attached`);
+                this.logger.debug('RENDER', `Dispatched render request to coordinator for ${comp.id}`);
             } else {
                 this.logger.warn('RENDER', `Component render failed or returned no element:`, comp);
             }
         });
         
-        this.logger.debug('RENDER', `Fragment created with ${addedToFragment} components, appending to ${targetContainer.id || 'container'}`);
+        this.logger.debug('RENDER', `Dispatched ${addedToFragment} components to coordinator for rendering`);
         
-        // ROOT FIX: Verify target container exists before appending
-        if (!targetContainer) {
-            this.logger.error('RENDER', 'Target container not found! Cannot append components.');
-            return;
-        }
+        // ROOT FIX: The coordinator now handles all DOM insertion and deduplication
+        // No need to append fragment or verify duplicates here
         
-        // ROOT FIX: Append only if we have content
-        if (fragment.childNodes.length > 0) {
-            targetContainer.appendChild(fragment);
-            
-            // ROOT FIX: CRITICAL - Verify components were actually added to DOM and update cache
-            const finalChildrenCount = targetContainer.children.length;
-            this.logger.debug('RENDER', `After appendChild: target container has ${finalChildrenCount} children`);
-            
-            // ROOT FIX: IMMEDIATE deduplication check
-            this.verifyNoDuplicatesAfterRender(componentsToRender);
-        } else {
-            this.logger.warn('RENDER', 'No components were added to fragment - all were duplicates or failed');
-        }
-        
-        // ROOT FIX: Update component cache for all rendered components in DOM
-        Array.from(targetContainer.children).forEach(child => {
-            if (child.id && !this.componentCache.has(child.id)) {
-                this.componentCache.set(child.id, child);
-                this.logger.debug('RENDER', `Updated cache for DOM component: ${child.id}`);
-            }
-        });
-        
-        if (finalChildrenCount === 0 && componentIds.size > 0) {
-            this.logger.error('RENDER', 'DOM insertion failed - no children in container after appendChild');
-        }
-
         perfEnd();
         
-        this.logger.debug('RENDER', `Rendered ${componentIds.size} new components, ${addedToFragment} added to DOM via ${containerReason}`);
+        this.logger.debug('RENDER', `Rendered ${componentIds.size} new components via coordinator`);
     }
     
     /**
@@ -1458,76 +1301,7 @@ class EnhancedComponentRenderer {
         }
     }
     
-    /**
-     * ROOT FIX: Emergency deduplication when DOM has duplicate components
-     */
-    emergencyDeduplicateDOM(container) {
-        try {
-            this.logger.warn('RENDER', 'EMERGENCY DEDUPLICATION: Starting GLOBAL cleanup (not just container)');
-            
-            // ROOT FIX: Check ALL components globally, not just in container
-            const globalComponentMap = new Map();
-            const globalElementsToRemove = [];
-            
-            // Find ALL components in the entire document
-            const allComponents = document.querySelectorAll('[data-component-id]');
-            
-            allComponents.forEach(element => {
-                const componentId = element.getAttribute('data-component-id');
-                
-                if (componentId) {
-                    if (globalComponentMap.has(componentId)) {
-                        // This is a duplicate - mark for removal
-                        globalElementsToRemove.push(element);
-                        this.logger.debug('RENDER', `DUPLICATE MARKED: ${componentId}`);
-                    } else {
-                        // First occurrence - keep it
-                        globalComponentMap.set(componentId, element);
-                        this.logger.debug('RENDER', `KEEPING: ${componentId}`);
-                    }
-                }
-            });
-            
-            // Remove all duplicates
-            globalElementsToRemove.forEach(element => {
-                const componentId = element.getAttribute('data-component-id');
-                element.remove();
-                this.logger.debug('RENDER', `REMOVED DUPLICATE: ${componentId}`);
-            });
-            
-            // Update cache to reflect cleaned DOM
-            this.componentCache.clear();
-            globalComponentMap.forEach((element, componentId) => {
-                this.componentCache.set(componentId, element);
-            });
-            
-            this.logger.warn('RENDER', `EMERGENCY DEDUPLICATION COMPLETE: Removed ${globalElementsToRemove.length} duplicates globally, keeping ${globalComponentMap.size} unique components`);
-            
-            // Also emit event for tracking
-            document.dispatchEvent(new CustomEvent('gmkb:emergency-deduplication-completed', {
-                detail: {
-                    removed: globalElementsToRemove.length,
-                    kept: globalComponentMap.size,
-                    timestamp: Date.now()
-                }
-            }));
-            
-            return {
-                removed: globalElementsToRemove.length,
-                kept: globalComponentMap.size,
-                success: true
-            };
-            
-        } catch (error) {
-            this.logger.error('RENDER', 'Emergency deduplication failed:', error);
-            return {
-                removed: 0,
-                kept: 0,
-                success: false,
-                error: error.message
-            };
-        }
-    }
+    // ROOT FIX: emergencyDeduplicateDOM removed - DOM Render Coordinator handles all deduplication
 
     /**
      * ROOT CAUSE FIX: Enhanced cleanup that properly removes components not in current state
@@ -1832,9 +1606,7 @@ class EnhancedComponentRenderer {
             // Append all components to target container
             targetContainer.appendChild(fragment);
             
-            // ROOT FIX: Immediate duplicate verification with proper cleanup
-            const componentIdsToVerify = new Set(componentIdList);
-            this.cleanupDuplicatesAfterRender(componentIdsToVerify);
+            // ROOT FIX: Duplicate verification delegated to DOM Render Coordinator
             
             // Apply layout order if available
             if (initialState.layout && Array.isArray(initialState.layout)) {

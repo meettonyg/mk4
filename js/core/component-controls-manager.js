@@ -204,8 +204,11 @@
             // ROOT FIX: AGGRESSIVE deduplication - remove ALL existing controls first
             // This prevents overlapping/stacking controls from multiple attachment attempts
             
-            // Remove ALL control containers (any class variation)
-            const allExistingControls = componentElement.querySelectorAll('.component-controls, .component-controls--dynamic, .emergency-controls');
+            // Remove ALL control containers (any class variation) including legacy controls
+            const allExistingControls = componentElement.querySelectorAll(
+                '.component-controls, .component-controls--dynamic, .component-controls--legacy,' +
+                ' .control-toolbar, .control-button, [data-controls-type="legacy"], .emergency-controls'
+            );
             allExistingControls.forEach(controlElement => {
                 controlElement.remove();
                 structuredLogger.debug('CONTROLS', `Aggressively removed existing control element for ${componentId}`);

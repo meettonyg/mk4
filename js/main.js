@@ -212,25 +212,9 @@ async function initializeWhenReady() {
             window.GMKB.systems.ComponentControlsManager = window.componentControlsManager;
         }
         
-        // ROOT FIX: Single-instance component controls attachment with deduplication check
+        // ROOT FIX: Attach controls to existing components after initialization
         setTimeout(() => {
             if (window.componentControlsManager && window.enhancedComponentRenderer) {
-                // CRITICAL: Check for DOM duplication before attaching controls
-                const allComponents = document.querySelectorAll('[data-component-id]');
-                const componentIds = Array.from(allComponents).map(el => el.getAttribute('data-component-id'));
-                const uniqueIds = [...new Set(componentIds)];
-                
-                if (componentIds.length !== uniqueIds.length) {
-                    console.error(`🚨 CRITICAL: DOM DUPLICATION DETECTED! ${componentIds.length} elements for ${uniqueIds.length} unique components`);
-                    console.log('📊 Duplicated components:', componentIds.filter((id, index) => componentIds.indexOf(id) !== index));
-                    
-                    // Emergency deduplication before attaching controls
-                    const result = emergencyDeduplicateAllComponents();
-                    console.log(`✅ Deduplication result: removed ${result.duplicatesRemoved} duplicates`);
-                } else {
-                    console.log(`✅ DOM CLEAN: ${uniqueIds.length} unique components, no duplicates detected`);
-                }
-                
                 forceAttachControlsToExistingComponents();
             }
         }, 1000);
@@ -607,60 +591,7 @@ async function handleSaveClick() {
 
 
 
-/**
- * ROOT FIX: Emergency deduplication of all components in DOM
- */
-function emergencyDeduplicateAllComponents() {
-    console.log('🚨 EMERGENCY: Starting DOM deduplication process');
-    
-    // Look for duplicates across the entire document, not just preview container
-    const allComponents = document.querySelectorAll('[data-component-id]');
-    const componentMap = new Map();
-    const elementsToRemove = [];
-    let duplicatesFound = 0;
-    
-    // Find all components and identify duplicates
-    allComponents.forEach(element => {
-        const componentId = element.getAttribute('data-component-id');
-        
-        if (componentId) {
-            if (componentMap.has(componentId)) {
-                // This is a duplicate
-                elementsToRemove.push(element);
-                duplicatesFound++;
-                console.log(`🗑️ DUPLICATE FOUND: ${componentId} (will remove)`);
-            } else {
-                // First occurrence - keep it
-                componentMap.set(componentId, element);
-                console.log(`✅ KEEPING: ${componentId}`);
-            }
-        }
-    });
-    
-    // Remove all duplicates
-    elementsToRemove.forEach(element => {
-        const componentId = element.getAttribute('data-component-id');
-        element.remove();
-        console.log(`🗑️ REMOVED DUPLICATE: ${componentId}`);
-    });
-    
-    console.log(`✅ DEDUPLICATION COMPLETE: Removed ${duplicatesFound} duplicates, keeping ${componentMap.size} unique components`);
-    
-    // Clear and update component cache if renderer is available
-    if (window.enhancedComponentRenderer && window.enhancedComponentRenderer.componentCache) {
-        window.enhancedComponentRenderer.componentCache.clear();
-        componentMap.forEach((element, componentId) => {
-            window.enhancedComponentRenderer.componentCache.set(componentId, element);
-        });
-        console.log('🗚️ Component cache updated after deduplication');
-    }
-    
-    return {
-        duplicatesRemoved: duplicatesFound,
-        uniqueComponentsKept: componentMap.size,
-        success: duplicatesFound > 0
-    };
-}
+// ROOT FIX: Emergency deduplication removed - DOM Render Coordinator now handles all deduplication
 
 /**
  * ROOT FIX: Force attach controls to all existing components (SINGLE INSTANCE ONLY)
@@ -849,22 +780,9 @@ window.GMKB = {
         }
     },
     
-    cleanupOverlappingControls: () => {
-        // Remove all overlapping/duplicate controls
-        const allControls = document.querySelectorAll('.component-controls, .emergency-controls');
-        allControls.forEach(control => control.remove());
-        console.log(`🧹 Cleaned up ${allControls.length} overlapping controls`);
-    },
+    // ROOT FIX: cleanupOverlappingControls removed - DOM Render Coordinator handles control management
     
-    // ROOT FIX: Advanced debugging functions for DOM duplication issues
-    emergencyDeduplicateDOM: () => {
-        if (window.emergencyDeduplicateAllComponents) {
-            return window.emergencyDeduplicateAllComponents();
-        } else {
-            console.warn('Emergency deduplication function not available');
-            return { success: false };
-        }
-    },
+    // ROOT FIX: Emergency deduplication removed - DOM Render Coordinator handles all deduplication
     
     analyzeComponentDuplication: () => {
         const allComponents = document.querySelectorAll('[data-component-id]');
@@ -917,21 +835,20 @@ window.GMKB = {
         // Step 1: Analyze duplication
         const analysis = window.GMKB.analyzeComponentDuplication();
         
-        // Step 2: Emergency deduplication if needed
+        // Step 2: Use DOM Render Coordinator for cleanup if needed
         if (analysis.duplicatedIds > 0) {
-            console.log('🚨 Duplicates detected, running emergency deduplication...');
-            const deduplicationResult = window.GMKB.emergencyDeduplicateDOM();
-            console.log('Deduplication result:', deduplicationResult);
+            console.log('🚨 Duplicates detected, using coordinator for cleanup...');
+            if (window.domRenderCoordinator) {
+                const cleanupResult = window.domRenderCoordinator.forceCleanupAllDuplicates();
+                console.log('Cleanup result:', cleanupResult);
+            }
         }
         
-        // Step 3: Clean up existing controls
-        window.GMKB.cleanupOverlappingControls();
-        
-        // Step 4: Force attach controls to clean DOM
+        // Step 3: Force attach controls to clean DOM
         setTimeout(() => {
             window.GMKB.forceAttachControls();
             
-            // Step 5: Enable debug mode for testing
+            // Step 4: Enable debug mode for testing
             document.body.classList.add('gmkb-debug-mode');
             window.GMKBDebugMode = true;
             

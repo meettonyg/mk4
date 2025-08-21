@@ -495,6 +495,9 @@ function gmkb_enqueue_assets() {
     }
     
     // 12c. Component interactions (component click handlers, drag and drop)
+    // ROOT FIX: DISABLED on builder pages - legacy control system conflicts with modern component-controls-manager.js
+    // The modern dynamic control system (component-controls-manager.js) handles all control functionality
+    /*
     if (!wp_script_is('gmkb-component-interactions', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-component-interactions',
@@ -504,6 +507,7 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
     
     // 12d. DOM Render Coordinator - ROOT FIX: CRITICAL for preventing duplicate rendering
     if (!wp_script_is('gmkb-dom-render-coordinator', 'enqueued')) {
