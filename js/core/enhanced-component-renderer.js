@@ -353,16 +353,36 @@ class EnhancedComponentRenderer {
                 state.props || state.data
             );
             
-            // Replace in DOM
-            if (element && element.parentNode) {
-                element.replaceWith(newElement);
+            // ROOT FIX: NON-DESTRUCTIVE UPDATE for UI registry re-render requests
+            if (element && element.parentNode && newElement) {
+                // Save controls state
+                const hasControls = element.querySelector('.component-controls--dynamic');
+                
+                // Update innerHTML without replacing the element
+                if (element.innerHTML !== newElement.innerHTML) {
+                    element.innerHTML = newElement.innerHTML;
+                    
+                    // Preserve data attributes
+                    Array.from(newElement.attributes).forEach(attr => {
+                        if (attr.name.startsWith('data-') && attr.name !== 'data-component-id') {
+                            element.setAttribute(attr.name, attr.value);
+                        }
+                    });
+                    
+                    // Update component props
+                    if (typeof window.updateComponentProps === 'function') {
+                        window.updateComponentProps(element, state.props || state.data);
+                    }
+                }
+                
+                // Keep the existing element in cache
+                this.componentCache.set(componentId, element);
+                
+                // Re-attach controls if needed
+                if (hasControls) {
+                    this.attachComponentControls(element, componentId);
+                }
             }
-            
-            // Update cache
-            this.componentCache.set(componentId, newElement);
-            
-            // Re-register with UI registry
-            this.registerComponentWithUIRegistry(componentId, newElement, state);
             
             perfEnd();
             
@@ -595,18 +615,12 @@ class EnhancedComponentRenderer {
                 }
             });
 
-            // ROOT FIX: Enhanced layout comparison with comprehensive validation
-            const oldLayout = this.validateAndNormalizeLayout(safeOldState.layout);
-            const newLayout = this.validateAndNormalizeLayout(safeNewState.layout);
-
-            if (JSON.stringify(oldLayout) !== JSON.stringify(newLayout)) {
-                newLayout.forEach(id => {
-                    // Only mark as moved if it's not an addition or removal
-                    if (!changes.added.has(id) && !changes.removed.has(id)) {
-                        changes.moved.add(id);
-                    }
-                });
-            }
+            // ROOT FIX: REMOVED flawed layout comparison that was causing false "moved" detections
+            // The reorderComponents function will handle visual ordering separately
+            // This prevents the renderer from unnecessarily re-rendering components that haven't actually changed
+            
+            // Layout changes are now handled exclusively by the reorderComponents method
+            // which is called after processing actual content changes
             
             this.logger.debug('RENDER', 'diffState completed:', {
                 added: changes.added.size,
@@ -1120,13 +1134,36 @@ class EnhancedComponentRenderer {
                     // FIX: Use the new dynamicComponentLoader instance
                 } = await this.renderComponentWithLoader(id, componentState.type, componentState.props || componentState.data);
                 
-                // Compare content before replacing
+                // ROOT FIX: NON-DESTRUCTIVE UPDATE - Update innerHTML without replacing the element
+                // This preserves attached controls and event listeners
                 if (oldElement.innerHTML !== newElement.innerHTML) {
-                    oldElement.replaceWith(newElement);
-                    this.componentCache.set(id, newElement);
+                    // Save the current controls state
+                    const hasControls = oldElement.querySelector('.component-controls--dynamic');
                     
-                    // Register new element with UI registry
-                    this.registerComponentWithUIRegistry(id, newElement, componentState);
+                    // Update innerHTML without replacing the root element
+                    oldElement.innerHTML = newElement.innerHTML;
+                    
+                    // Preserve data attributes from the new element
+                    Array.from(newElement.attributes).forEach(attr => {
+                        if (attr.name.startsWith('data-') && attr.name !== 'data-component-id') {
+                            oldElement.setAttribute(attr.name, attr.value);
+                        }
+                    });
+                    
+                    // Update component props if the helper function exists
+                    if (typeof window.updateComponentProps === 'function') {
+                        window.updateComponentProps(oldElement, componentState.props || componentState.data);
+                    }
+                    
+                    // Keep the existing element in cache (not the new one)
+                    this.componentCache.set(id, oldElement);
+                    
+                    // Re-attach controls if they were present
+                    if (hasControls) {
+                        this.attachComponentControls(oldElement, id);
+                    }
+                    
+                    this.logger.debug('RENDER', `Non-destructive update completed for component: ${id}`);
                 }
             }
         });
