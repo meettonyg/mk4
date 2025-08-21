@@ -884,10 +884,24 @@ class EnhancedComponentRenderer {
         let duplicatesFound = 0;
         
         componentIds.forEach(componentId => {
-            const elements = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+            // ROOT FIX: Only check actual component elements, not nested controls
+            const elements = Array.from(document.querySelectorAll(`[data-component-id="${componentId}"]`))
+                .filter(el => {
+                    // Exclude control elements
+                    if (el.classList.contains('component-controls--dynamic') || 
+                        el.classList.contains('control-button')) {
+                        return false;
+                    }
+                    // Only include if it's a direct child of a container
+                    const parent = el.parentElement;
+                    return parent && (parent.id === 'saved-components-container' || 
+                                    parent.id === 'media-kit-preview' ||
+                                    parent.classList.contains('drop-zone'));
+                });
+            
             if (elements.length > 1) {
                 duplicatesFound += elements.length - 1;
-                this.logger.error('RENDER', `DUPLICATE DETECTED: Found ${elements.length} elements for ${componentId}`);
+                this.logger.error('RENDER', `DUPLICATE DETECTED: Found ${elements.length} actual component elements for ${componentId}`);
                 
                 // Keep only the first element
                 for (let i = 1; i < elements.length; i++) {
@@ -897,7 +911,7 @@ class EnhancedComponentRenderer {
         });
         
         if (duplicatesFound > 0) {
-            this.logger.error('RENDER', `POST-RENDER CLEANUP: Removed ${duplicatesFound} duplicate elements`);
+            this.logger.error('RENDER', `POST-RENDER CLEANUP: Removed ${duplicatesFound} duplicate component elements`);
         } else {
             this.logger.debug('RENDER', 'POST-RENDER VERIFICATION: No duplicates found ✓');
         }
@@ -912,18 +926,38 @@ class EnhancedComponentRenderer {
         let duplicatesRemoved = 0;
         
         componentIds.forEach(componentId => {
-            // Find all elements with this component ID (both by ID and data attribute)
+            // ROOT FIX: Only look for actual component containers, not nested control elements
+            // Find elements by ID (should be the main component)
             const elementsById = document.querySelectorAll(`#${componentId}`);
-            const elementsByDataId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
             
-            // Create a Set to track unique elements
+            // Find elements with data-component-id that are NOT control elements
+            // Control elements are nested inside components, so we only want top-level components
+            const elementsByDataId = document.querySelectorAll(
+                `[data-component-id="${componentId}"]:not(.component-controls--dynamic):not(.control-button)`
+            );
+            
+            // Create a Set to track unique COMPONENT elements (not controls)
             const uniqueElements = new Set();
             
             // Add elements by ID
-            elementsById.forEach(el => uniqueElements.add(el));
+            elementsById.forEach(el => {
+                // Only add if it's not a control element
+                if (!el.classList.contains('component-controls--dynamic') && 
+                    !el.classList.contains('control-button')) {
+                    uniqueElements.add(el);
+                }
+            });
             
-            // Add elements by data attribute
-            elementsByDataId.forEach(el => uniqueElements.add(el));
+            // Add elements by data attribute that are actual components
+            elementsByDataId.forEach(el => {
+                // Additional check: Only add if it's a direct child of a container
+                const parent = el.parentElement;
+                if (parent && (parent.id === 'saved-components-container' || 
+                              parent.id === 'media-kit-preview' ||
+                              parent.classList.contains('drop-zone'))) {
+                    uniqueElements.add(el);
+                }
+            });
             
             // Convert to array for processing
             const allElements = Array.from(uniqueElements);
