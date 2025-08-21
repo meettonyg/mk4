@@ -770,6 +770,7 @@ class EnhancedComponentRenderer {
                 }
                 this.updateHandlers.delete(id);
                 this.registeredComponents.delete(id);
+                uiRegistry.unregister(id);
                 
                 this.logger.debug('RENDER', `Unregistered component from UI registry: ${id}`);
             }
@@ -1696,35 +1697,19 @@ class EnhancedComponentRenderer {
                             }
                             
                             // ROOT CAUSE CHECK: Verify element before appending
-                            const preAppendCheck = document.querySelectorAll(`[data-component-id="${componentId}"]`);
-                            this.logger.info('RENDER', `PRE-APPEND: Found ${preAppendCheck.length} elements with data-component-id=${componentId}`);
+                            const preAppendCheck = document.getElementById(componentId);
+                            if (preAppendCheck) {
+                                this.logger.warn('RENDER', `Element with ID ${componentId} already exists in DOM, skipping append`);
+                                continue;
+                            }
                             
                             // Append directly to container
                             targetContainer.appendChild(result.element);
                             
                             // ROOT CAUSE CHECK: Verify element immediately after appending
-                            const postAppendCheck = document.querySelectorAll(`[data-component-id="${componentId}"]`);
-                            this.logger.info('RENDER', `POST-APPEND: Found ${postAppendCheck.length} elements with data-component-id=${componentId}`);
-                            
-                            if (postAppendCheck.length > 1) {
-                                // Something created duplicates - investigate DOM structure
-                                this.logger.error('RENDER', 'DOM DUPLICATION DETECTED!', {
-                                    targetContainer: targetContainer.id,
-                                    containerChildCount: targetContainer.children.length,
-                                    containerHTML: targetContainer.innerHTML.substring(0, 500) + '...'
-                                });
-                                
-                                // Check if all elements are actually the same element
-                                const firstElement = postAppendCheck[0];
-                                let allSame = true;
-                                for (let i = 1; i < postAppendCheck.length; i++) {
-                                    if (postAppendCheck[i] !== firstElement) {
-                                        allSame = false;
-                                        break;
-                                    }
-                                }
-                                
-                                this.logger.error('RENDER', `All elements are the same: ${allSame}`);
+                            const postAppendCheck = document.getElementById(componentId);
+                            if (!postAppendCheck) {
+                            this.logger.error('RENDER', `Failed to append element with ID ${componentId}`);
                             }
                             
                             // Update our cache
@@ -2200,11 +2185,16 @@ class EnhancedComponentRenderer {
         }
         
         let attachedCount = 0;
-        const allComponents = this.previewContainer.querySelectorAll('[data-component-id]');
+        // ROOT FIX: Look for components by ID pattern since templates no longer set data-component-id
+        const allComponents = this.previewContainer.querySelectorAll('[id^="component-"]');
         
         allComponents.forEach(element => {
-            const componentId = element.getAttribute('data-component-id');
+            const componentId = element.id;
             if (componentId) {
+                // Ensure element has data-component-id for controls attachment
+                if (!element.hasAttribute('data-component-id')) {
+                    element.setAttribute('data-component-id', componentId);
+                }
                 const success = this.attachComponentControls(element, componentId);
                 if (success) {
                     attachedCount++;

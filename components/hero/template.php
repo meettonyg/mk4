@@ -7,7 +7,7 @@ $name = $name ?? $title ?? 'New Hero Section';
 $title = $title ?? $subtitle ?? 'Your Professional Title';
 $bio = $bio ?? $description ?? 'Briefly introduce yourself and your expertise.';
 ?>
-<div class="hero editable-element" data-element="hero" data-component="hero" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="hero">
+<div class="hero editable-element" data-element="hero" data-component="hero" data-component-type="hero">
     <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
     <div class="hero__avatar">
         <?php if (isset($image) && !empty($image)): ?>

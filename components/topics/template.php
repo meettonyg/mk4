@@ -19,8 +19,7 @@ $has_topics = !empty($loaded_topics);
 $topics_to_display = $has_topics ? $loaded_topics : []; // Show nothing if no topics
 ?>
 
-<div class="content-section editable-element topics-component" 
-     data-component-id="<?php echo esc_attr($componentId); ?>">
+<div class="content-section editable-element topics-component">
     
     <?php
     // ROOT FIX: Dynamic Controls Architecture

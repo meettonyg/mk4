@@ -159,7 +159,7 @@ class DynamicComponentLoader {
      * @returns {Promise<string>} A promise that resolves to the component's HTML template.
      */
     async getTemplate(type) {
-        console.log('ROOT CAUSE DEBUG: getTemplate called for:', type);
+        structuredLogger.debug('LOADER', 'getTemplate called for:', type);
         // CRITICAL FIX: Resolve component type aliases
         const originalType = type;
         const resolvedType = this.resolveComponentType(type);
@@ -290,13 +290,12 @@ class DynamicComponentLoader {
             throw new Error('WordPress AJAX returned invalid template data');
         }
         
-        // ROOT CAUSE DEBUG: Check template for duplicate data-component-id
+        // ROOT FIX: Templates should NOT contain data-component-id - it's added by JavaScript
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = template;
         const dataIdElements = tempDiv.querySelectorAll('[data-component-id]');
         if (dataIdElements.length > 0) {
-            console.warn('ROOT CAUSE WARNING: Template from WordPress already contains', dataIdElements.length, 'elements with data-component-id!');
-            console.log('ROOT CAUSE DEBUG: Template HTML:', template.substring(0, 500) + '...');
+            structuredLogger.error('LOADER', `Template from WordPress contains ${dataIdElements.length} elements with data-component-id - this should be fixed in the PHP template`);
         }
         
         structuredLogger.debug('LOADER', 'WordPress AJAX successful', {
@@ -435,57 +434,17 @@ class DynamicComponentLoader {
             element.id = id;
             element.setAttribute('data-component-id', id);
             
-            // ROOT CAUSE INVESTIGATION: Check if template has unexpected attributes
+            // ROOT FIX: Check for and clean any child elements with data-component-id from template
             const existingDataIds = element.querySelectorAll('[data-component-id]');
             if (existingDataIds.length > 0) {
-                console.error('ROOT CAUSE ERROR: Template should NOT contain data-component-id attributes!', {
-                    count: existingDataIds.length,
-                    componentId: id,
-                    templateContent: element.innerHTML.substring(0, 200) + '...'
-                });
-                // This indicates a fundamental problem - templates should be clean
-                throw new Error(`Template corruption: Found ${existingDataIds.length} elements with data-component-id in template`);
+                structuredLogger.warn('LOADER', `Cleaning ${existingDataIds.length} child elements with data-component-id from template`);
+                existingDataIds.forEach(child => child.removeAttribute('data-component-id'));
             }
             
             // ROOT FIX: Mark render time for debugging
             element.setAttribute('data-render-time', Date.now().toString());
             
-            console.log(`ROOT CAUSE FIX: Created element with unique data-component-id="${id}" on root only`);
-            
-            // ROOT CAUSE DEBUG: Log the final structure
-            const finalDataIdCount = element.querySelectorAll('[data-component-id]').length;
-            const finalIdCount = element.querySelectorAll(`[id="${id}"]`).length;
-            console.log(`ROOT CAUSE VERIFICATION: Final element has ${finalDataIdCount} children with data-component-id and ${finalIdCount} children with id="${id}"`);
-            
-            // ROOT CAUSE TRACE: Add mutation observer to track changes
-            if (window.MutationObserver && window.GMKBDebugMode) {
-                const observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        if (mutation.type === 'childList') {
-                            mutation.addedNodes.forEach((node) => {
-                                if (node.nodeType === 1 && node.getAttribute && node.getAttribute('data-component-id') === id) {
-                                    console.error('ROOT CAUSE DETECTED: Node with duplicate data-component-id added!', {
-                                        node,
-                                        parent: mutation.target,
-                                        stackTrace: new Error().stack
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
-                
-                // Observe the element and its subtree
-                observer.observe(element, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true,
-                    attributeFilter: ['data-component-id']
-                });
-                
-                // Stop observing after 5 seconds
-                setTimeout(() => observer.disconnect(), 5000);
-            }
+            structuredLogger.debug('LOADER', `Created element with ID="${id}" and data-component-id="${id}"`);
         }
         return element;
     }

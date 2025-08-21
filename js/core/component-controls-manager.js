@@ -161,48 +161,10 @@
                 return false;
             }
 
-            // ROOT CAUSE INVESTIGATION: Check what's really happening
-            // First, let's check if the component element itself has the attribute
-            const hasDataComponentId = componentElement.hasAttribute('data-component-id');
-            const dataComponentIdValue = componentElement.getAttribute('data-component-id');
-            
-            structuredLogger.info('CONTROLS', `Component element check:`, {
-                hasDataComponentId,
-                dataComponentIdValue,
-                expectedId: componentId,
-                elementId: componentElement.id,
-                matches: dataComponentIdValue === componentId
-            });
-            
-            // Now check all elements in the entire document
-            const allElementsWithAnyDataId = document.querySelectorAll('[data-component-id]');
-            structuredLogger.info('CONTROLS', `Total elements with ANY data-component-id: ${allElementsWithAnyDataId.length}`);
-            
-            // Check specifically for this component ID
-            const selector = `[data-component-id="${componentId}"]`;
-            const allElementsWithSameDataId = document.querySelectorAll(selector);
-            
-            structuredLogger.info('CONTROLS', `Query selector used: ${selector}`);
-            structuredLogger.info('CONTROLS', `Elements found with this selector: ${allElementsWithSameDataId.length}`);
-            
-            // If we find multiple, let's understand why
-            if (allElementsWithSameDataId.length > 1) {
-                structuredLogger.error('CONTROLS', `❌ MULTIPLE ELEMENTS FOUND!`);
-                
-                // Check each element
-                allElementsWithSameDataId.forEach((el, index) => {
-                    structuredLogger.error('CONTROLS', `Element ${index}:`, {
-                        tagName: el.tagName,
-                        id: el.id,
-                        className: el.className,
-                        actualDataComponentId: el.getAttribute('data-component-id'),
-                        outerHTML: el.outerHTML.substring(0, 200) + '...',
-                        isSameAsComponentElement: el === componentElement
-                    });
-                });
-                
-                // This is critical - we need to understand this
-                debugger; // This will pause execution in the browser debugger
+            // ROOT FIX: Set data-component-id if not present (templates no longer set it)
+            if (!componentElement.hasAttribute('data-component-id')) {
+                componentElement.setAttribute('data-component-id', componentId);
+                structuredLogger.debug('CONTROLS', `Set data-component-id="${componentId}" on element`);
             }
             
             // ROOT CAUSE FIX: Verify this is the correct root element (has both id and data-component-id)
@@ -341,6 +303,7 @@
         createToolbar(componentId) {
             const toolbar = document.createElement('div');
             toolbar.className = 'component-controls__toolbar component-controls__toolbar--dynamic';
+            toolbar.setAttribute('data-toolbar-for', componentId);
             
             // ROOT FIX: Add toolbar styling
             toolbar.style.cssText = `
@@ -387,6 +350,7 @@
             button.className = `component-control ${definition.className}`;
             button.setAttribute('data-action', controlType);
             button.setAttribute('data-component-id', componentId);
+            button.setAttribute('data-control-component-id', componentId); // ROOT FIX: Backup attribute
             button.setAttribute('title', definition.title);
             button.type = 'button';
             
@@ -456,6 +420,15 @@
          * ROOT FIX: Attach event listeners with proper cleanup tracking
          */
         attachEventListeners(controlsContainer, componentId) {
+            // ROOT FIX: Double-check all buttons have component ID set
+            const buttons = controlsContainer.querySelectorAll('[data-action]');
+            buttons.forEach(button => {
+                if (!button.getAttribute('data-component-id')) {
+                    button.setAttribute('data-component-id', componentId);
+                    structuredLogger.debug('CONTROLS', `Fixed missing data-component-id on ${button.getAttribute('data-action')} button for ${componentId}`);
+                }
+            });
+            
             const handleControlClick = (event) => {
                 event.stopPropagation();
                 event.preventDefault();
@@ -464,7 +437,34 @@
                 if (!button) return;
                 
                 const action = button.getAttribute('data-action');
-                const targetComponentId = button.getAttribute('data-component-id');
+                let targetComponentId = button.getAttribute('data-component-id');
+                
+                // ROOT FIX: If button doesn't have data-component-id, check backup attribute
+                if (!targetComponentId) {
+                    targetComponentId = button.getAttribute('data-control-component-id');
+                    if (targetComponentId) {
+                        structuredLogger.debug('CONTROLS', 'Using backup data-control-component-id attribute', { targetComponentId });
+                    }
+                }
+                
+                // ROOT FIX: If still no ID, traverse up to find the component
+                if (!targetComponentId) {
+                    // Find the closest ancestor with data-component-id
+                    let parent = button.parentElement;
+                    while (parent && parent !== document.body) {
+                        if (parent.hasAttribute('data-component-id')) {
+                            targetComponentId = parent.getAttribute('data-component-id');
+                            break;
+                        }
+                        parent = parent.parentElement;
+                    }
+                    
+                    // If still not found, use the componentId from closure
+                    if (!targetComponentId) {
+                        targetComponentId = componentId;
+                        structuredLogger.debug('CONTROLS', 'Using componentId from closure as fallback', { componentId });
+                    }
+                }
                 
                 if (targetComponentId !== componentId) {
                     structuredLogger.warn('CONTROLS', 'Component ID mismatch in control click', {
@@ -959,6 +959,81 @@
     
     structuredLogger.info('CONTROLS', '✅ ComponentControlsManager loaded and ready for dynamic control generation');
     
+    // ROOT FIX: Diagnostic function to check control button attributes
+    window.diagnoseDuplicateIdIssue = () => {
+        console.log('🔍 DIAGNOSING DUPLICATE ID ISSUE');
+        console.log('='.repeat(60));
+        
+        // Check all control buttons
+        const allControlButtons = document.querySelectorAll('.component-control');
+        console.log(`Found ${allControlButtons.length} control buttons`);
+        
+        allControlButtons.forEach((button, index) => {
+            const action = button.getAttribute('data-action');
+            const componentId = button.getAttribute('data-component-id');
+            const backupId = button.getAttribute('data-control-component-id');
+            const toolbar = button.closest('.component-controls__toolbar');
+            const toolbarFor = toolbar?.getAttribute('data-toolbar-for');
+            const componentElement = button.closest('[data-component-id]');
+            const componentElementId = componentElement?.getAttribute('data-component-id');
+            
+            console.log(`\nButton ${index + 1} (${action}):`);
+            console.log(`  data-component-id: ${componentId || 'MISSING'} ${!componentId ? '❌' : '✅'}`);
+            console.log(`  data-control-component-id: ${backupId || 'MISSING'} ${!backupId ? '❌' : '✅'}`);
+            console.log(`  Toolbar data-toolbar-for: ${toolbarFor || 'MISSING'}`);
+            console.log(`  Closest component element ID: ${componentElementId || 'NOT FOUND'}`);
+            
+            if (!componentId && !backupId) {
+                console.log(`  ⚠️ PROBLEM: No component ID attributes on button!`);
+            }
+            
+            // Check for duplicate data-component-id in the component
+            if (componentElement) {
+                const duplicateIds = componentElement.querySelectorAll('[data-component-id]');
+                if (duplicateIds.length > 0) {
+                    console.log(`  ⚠️ WARNING: Component contains ${duplicateIds.length} child elements with data-component-id`);
+                }
+            }
+        });
+        
+        // Check all components for duplicate IDs
+        console.log('\n' + '='.repeat(60));
+        console.log('CHECKING COMPONENTS FOR DUPLICATE IDs:');
+        
+        const allComponents = document.querySelectorAll('[data-component-id]');
+        const idMap = new Map();
+        
+        allComponents.forEach(element => {
+            const id = element.getAttribute('data-component-id');
+            if (!idMap.has(id)) {
+                idMap.set(id, []);
+            }
+            idMap.get(id).push(element);
+        });
+        
+        idMap.forEach((elements, id) => {
+            if (elements.length > 1) {
+                console.log(`\n❌ DUPLICATE ID FOUND: ${id} (${elements.length} instances)`);
+                elements.forEach((el, i) => {
+                    console.log(`  Instance ${i + 1}:`, {
+                        tagName: el.tagName,
+                        className: el.className,
+                        parent: el.parentElement?.tagName + '.' + el.parentElement?.className
+                    });
+                });
+            }
+        });
+        
+        console.log('\n' + '='.repeat(60));
+        console.log('DIAGNOSIS COMPLETE');
+        
+        return {
+            controlButtons: allControlButtons.length,
+            buttonsWithoutId: Array.from(allControlButtons).filter(b => !b.getAttribute('data-component-id')).length,
+            duplicateIds: Array.from(idMap.entries()).filter(([id, els]) => els.length > 1).length
+        };
+    };
+    
     // ROOT FIX: Enhanced debugging function to test and fix controls immediately
     window.fixControlsNow = () => {
         console.log('🔧 FIXING CONTROLS NOW - Root cause fix applied');
@@ -1110,6 +1185,72 @@
         runTests();
     };
     
+    // ROOT FIX: Final fix for component ID issues
+    window.fixComponentIdIssues = () => {
+        console.log('🔧 FIXING COMPONENT ID ISSUES');
+        console.log('='.repeat(60));
+        
+        let issuesFixed = 0;
+        
+        // Step 1: Fix control buttons without component ID
+        const allControlButtons = document.querySelectorAll('.component-control');
+        allControlButtons.forEach(button => {
+            if (!button.getAttribute('data-component-id')) {
+                // Try to find component ID from toolbar
+                const toolbar = button.closest('.component-controls__toolbar');
+                const toolbarFor = toolbar?.getAttribute('data-toolbar-for');
+                
+                if (toolbarFor) {
+                    button.setAttribute('data-component-id', toolbarFor);
+                    button.setAttribute('data-control-component-id', toolbarFor);
+                    issuesFixed++;
+                    console.log(`✅ Fixed button ${button.getAttribute('data-action')} for component ${toolbarFor}`);
+                } else {
+                    // Try to find from parent component
+                    const componentElement = button.closest('[data-component-id]');
+                    if (componentElement) {
+                        const componentId = componentElement.getAttribute('data-component-id');
+                        button.setAttribute('data-component-id', componentId);
+                        button.setAttribute('data-control-component-id', componentId);
+                        issuesFixed++;
+                        console.log(`✅ Fixed button ${button.getAttribute('data-action')} for component ${componentId}`);
+                    }
+                }
+            }
+        });
+        
+        // Step 2: Remove duplicate data-component-id attributes from children
+        const allComponents = document.querySelectorAll('[data-component-id]');
+        allComponents.forEach(component => {
+            // Check if this is a root component (has ID matching data-component-id)
+            const componentId = component.getAttribute('data-component-id');
+            if (component.id === componentId) {
+                // This is a root component, check for children with data-component-id
+                const childrenWithId = component.querySelectorAll('[data-component-id]');
+                if (childrenWithId.length > 0) {
+                    childrenWithId.forEach(child => {
+                        child.removeAttribute('data-component-id');
+                        issuesFixed++;
+                    });
+                    console.log(`✅ Removed ${childrenWithId.length} duplicate data-component-id attributes from ${componentId}`);
+                }
+            }
+        });
+        
+        // Step 3: Re-run diagnosis
+        console.log('\n' + '='.repeat(60));
+        console.log('POST-FIX DIAGNOSIS:');
+        const diagnosis = window.diagnoseDuplicateIdIssue();
+        
+        console.log('\n' + '='.repeat(60));
+        console.log(`TOTAL ISSUES FIXED: ${issuesFixed}`);
+        
+        return {
+            issuesFixed,
+            remainingIssues: diagnosis.buttonsWithoutId + diagnosis.duplicateIds
+        };
+    };
+    
     // ROOT FIX: Test control button clicking directly
     window.testControlButtons = (componentId) => {
         if (!componentId) {
@@ -1173,12 +1314,18 @@
      * Ensures components rendered before controls manager was ready get controls
      */
     componentControlsManager.attachControlsToAllExistingComponents = function() {
-        const existingComponents = document.querySelectorAll('[data-component-id]');
+        // ROOT FIX: Look for components by ID pattern instead of data-component-id
+        // Since we removed data-component-id from templates to fix duplication
+        const existingComponents = document.querySelectorAll('[id^="component-"]');
         let attachedCount = 0;
         
         existingComponents.forEach(element => {
-            const componentId = element.getAttribute('data-component-id');
+            const componentId = element.id;
             if (componentId && !element.querySelector('.component-controls--dynamic')) {
+                // Ensure element has data-component-id for controls to work
+                if (!element.hasAttribute('data-component-id')) {
+                    element.setAttribute('data-component-id', componentId);
+                }
                 const success = componentControlsManager.attachControls(element, componentId);
                 if (success) {
                     attachedCount++;
