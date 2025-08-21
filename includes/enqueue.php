@@ -505,12 +505,23 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 12d. DOM Render Coordinator - ROOT FIX: CRITICAL for preventing duplicate rendering
+    if (!wp_script_is('gmkb-dom-render-coordinator', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-dom-render-coordinator',
+            $plugin_url . 'js/core/dom-render-coordinator.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 13. Enhanced component renderer (CRITICAL: renders components on screen) - ROOT FIX: Added missing script
     if (!wp_script_is('gmkb-enhanced-component-renderer', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-enhanced-component-renderer',
             $plugin_url . 'js/core/enhanced-component-renderer.js',
-            array('gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-dynamic-component-loader', 'gmkb-component-controls-manager', 'gmkb-event-bus', 'gmkb-ui-registry', 'gmkb-helpers', 'gmkb-template-cache', 'gmkb-performance-monitor', 'gmkb-structured-logger'),
+            array('gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-dynamic-component-loader', 'gmkb-component-controls-manager', 'gmkb-event-bus', 'gmkb-ui-registry', 'gmkb-helpers', 'gmkb-template-cache', 'gmkb-performance-monitor', 'gmkb-dom-render-coordinator', 'gmkb-structured-logger'),
             $version,
             true
         );
@@ -627,7 +638,9 @@ function gmkb_enqueue_assets() {
     }
     
     // ROOT FIX: Debug utilities for component interaction testing (development only)
-    if (defined('WP_DEBUG') && WP_DEBUG) {
+    // DISABLED: Test component cleanup script no longer auto-loads to prevent accidental deletions
+    // To enable, add ?debug_cleanup=1 to the URL
+    if (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['debug_cleanup']) && $_GET['debug_cleanup'] === '1') {
         if (!wp_script_is('gmkb-test-component-interactions', 'enqueued')) {
             wp_enqueue_script(
                 'gmkb-test-component-interactions',
@@ -638,7 +651,7 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Load cleanup script to handle test component removal
+        // ROOT FIX: Load cleanup script ONLY when explicitly requested via URL parameter
         if (!wp_script_is('gmkb-clear-test-components', 'enqueued')) {
             wp_enqueue_script(
                 'gmkb-clear-test-components',

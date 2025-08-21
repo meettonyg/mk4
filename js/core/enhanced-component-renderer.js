@@ -904,6 +904,75 @@ class EnhancedComponentRenderer {
     }
     
     /**
+     * ROOT FIX: Cleanup duplicates after rendering with intelligent detection
+     * This method is more careful than verifyNoDuplicatesAfterRender
+     */
+    cleanupDuplicatesAfterRender(componentIds) {
+        let duplicatesFound = 0;
+        let duplicatesRemoved = 0;
+        
+        componentIds.forEach(componentId => {
+            // Find all elements with this component ID (both by ID and data attribute)
+            const elementsById = document.querySelectorAll(`#${componentId}`);
+            const elementsByDataId = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+            
+            // Create a Set to track unique elements
+            const uniqueElements = new Set();
+            
+            // Add elements by ID
+            elementsById.forEach(el => uniqueElements.add(el));
+            
+            // Add elements by data attribute
+            elementsByDataId.forEach(el => uniqueElements.add(el));
+            
+            // Convert to array for processing
+            const allElements = Array.from(uniqueElements);
+            
+            if (allElements.length > 1) {
+                duplicatesFound += allElements.length - 1;
+                
+                // Keep the element that's in the correct container (saved-components-container or preview)
+                let elementToKeep = null;
+                const savedContainer = document.getElementById('saved-components-container');
+                const previewContainer = document.getElementById('media-kit-preview');
+                
+                // Prefer element in saved-components-container if it exists
+                if (savedContainer) {
+                    elementToKeep = allElements.find(el => savedContainer.contains(el));
+                }
+                
+                // Otherwise keep element in preview container
+                if (!elementToKeep && previewContainer) {
+                    elementToKeep = allElements.find(el => previewContainer.contains(el));
+                }
+                
+                // If still no element found in proper containers, keep the first one
+                if (!elementToKeep) {
+                    elementToKeep = allElements[0];
+                }
+                
+                // Remove all other elements
+                allElements.forEach(el => {
+                    if (el !== elementToKeep) {
+                        el.remove();
+                        duplicatesRemoved++;
+                        this.logger.debug('RENDER', `Removed duplicate element for ${componentId}`);
+                    }
+                });
+                
+                // Update cache with the kept element
+                this.componentCache.set(componentId, elementToKeep);
+            }
+        });
+        
+        if (duplicatesFound > 0) {
+            this.logger.warn('RENDER', `DUPLICATE CLEANUP: Found ${duplicatesFound} duplicates, removed ${duplicatesRemoved}`);
+        } else {
+            this.logger.debug('RENDER', 'DUPLICATE CLEANUP: No duplicates found ✓');
+        }
+    }
+    
+    /**
      * ROOT FIX: Legacy rendering method as fallback
      */
     async renderNewComponentsLegacy(componentIds, newState) {
@@ -1729,9 +1798,9 @@ class EnhancedComponentRenderer {
             // Append all components to target container
             targetContainer.appendChild(fragment);
             
-            // ROOT FIX: Immediate duplicate verification
+            // ROOT FIX: Immediate duplicate verification with proper cleanup
             const componentIdsToVerify = new Set(componentIdList);
-            this.verifyNoDuplicatesAfterRender(componentIdsToVerify);
+            this.cleanupDuplicatesAfterRender(componentIdsToVerify);
             
             // Apply layout order if available
             if (initialState.layout && Array.isArray(initialState.layout)) {

@@ -22,9 +22,11 @@
                 const component = state.components[componentId];
                 
                 // Remove components that look like test components
-                if (componentId.includes('test') || 
-                    componentId.includes('hero-175') || // Debug timestamp pattern
-                    componentId.includes('hero-1755712') || // Current debug session pattern
+                // ROOT FIX: Made pattern matching more specific to avoid false positives
+                if (componentId.includes('-test-') || 
+                    componentId.includes('test-component') || 
+                    componentId.startsWith('test-') ||
+                    componentId.endsWith('-test') ||
                     (component.props && component.props.title === 'Test Hero Component') ||
                     (component.props && component.props.subtitle === 'Added via diagnostic test')) {
                     
@@ -36,7 +38,8 @@
         }
         
         // Clear from DOM
-        const testElements = document.querySelectorAll('[id*="test"], [id*="hero-175"], [id*="hero-1755712"]');
+        // ROOT FIX: More specific selectors to avoid false positives
+        const testElements = document.querySelectorAll('[id*="-test-"], [id*="test-component"], [id^="test-"], [id$="-test"]');
         testElements.forEach(element => {
             if (element.id) {
                 console.log(`🧹 Removing test element from DOM: ${element.id}`);
@@ -57,9 +60,11 @@
                     const cleanComponents = {};
                     Object.keys(data.components).forEach(id => {
                         const component = data.components[id];
-                        if (!id.includes('test') && 
-                            !id.includes('hero-175') &&
-                            !id.includes('hero-1755712') &&
+                        // ROOT FIX: Updated pattern matching to be more specific
+                        if (!id.includes('-test-') && 
+                            !id.includes('test-component') &&
+                            !id.startsWith('test-') &&
+                            !id.endsWith('-test') &&
                             !(component.props && component.props.title === 'Test Hero Component') &&
                             !(component.props && component.props.subtitle === 'Added via diagnostic test')) {
                             cleanComponents[id] = component;
