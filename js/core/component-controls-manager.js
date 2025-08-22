@@ -277,15 +277,14 @@
             container.setAttribute('data-controls-type', 'dynamic');
             
             // ROOT FIX: Add CSS for dynamic controls with PROPER visibility behavior
+            // Remove initial hiding - let hover behavior control visibility
             container.style.cssText = `
                 position: absolute;
                 top: 8px;
                 right: 8px;
                 opacity: 0;
-                visibility: hidden;
                 transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
                 z-index: 1000;
-                pointer-events: none;
                 background: rgba(0, 0, 0, 0.9);
                 border-radius: 6px;
                 padding: 4px;
@@ -496,8 +495,15 @@
         
         /**
          * ROOT FIX: Attach hover behavior for control visibility
+         * PUBLIC METHOD - Can be called externally to re-attach hover behavior
          */
         attachHoverBehavior(componentElement, controlsContainer) {
+            // ROOT FIX: Validate inputs
+            if (!componentElement || !controlsContainer) {
+                structuredLogger.warn('CONTROLS', 'Invalid parameters for attachHoverBehavior');
+                return;
+            }
+            
             let hoverTimeout = null;
             
             const showControls = () => {
@@ -952,7 +958,127 @@
     
     structuredLogger.info('CONTROLS', '✅ ComponentControlsManager loaded and ready for dynamic control generation');
     
-    // ROOT FIX: Diagnostic function to check control button attributes
+    // ROOT FIX: Setup MutationObserver to ensure controls are always present
+    componentControlsManager.setupMutationObserver = function() {
+        const containers = [
+            document.getElementById('saved-components-container'),
+            document.getElementById('media-kit-preview')
+        ].filter(el => el !== null);
+        
+        if (containers.length === 0) {
+            structuredLogger.warn('CONTROLS', 'No containers found for MutationObserver');
+            return;
+        }
+        
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                // Check added nodes
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.id && node.id.startsWith('component-')) {
+                        // This is a component, ensure it has controls
+                        setTimeout(() => {
+                            if (!node.querySelector('.component-controls--dynamic')) {
+                                structuredLogger.debug('CONTROLS', `MutationObserver: Attaching controls to ${node.id}`);
+                                this.attachControls(node, node.id);
+                            }
+                        }, 50); // Small delay to let DOM settle
+                    }
+                });
+            });
+        });
+        
+        containers.forEach(container => {
+            observer.observe(container, {
+                childList: true,
+                subtree: true
+            });
+            structuredLogger.debug('CONTROLS', `MutationObserver attached to ${container.id}`);
+        });
+        
+        this.mutationObserver = observer;
+    };
+    
+    // ROOT FIX: Call setupMutationObserver when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            componentControlsManager.setupMutationObserver();
+        });
+    } else {
+        // Small delay to ensure containers are ready
+        setTimeout(() => componentControlsManager.setupMutationObserver(), 100);
+    }
+    
+    // ROOT FIX: Add debug helper functions
+    window.enableControlsDebug = function() {
+        console.log('🔍 Enabling controls debug mode...');
+        
+        // Add debug class to body
+        document.body.classList.add('gmkb-debug-mode');
+        document.body.classList.add('controls-debug');
+        
+        // Force show all controls
+        const allControls = document.querySelectorAll('.component-controls--dynamic');
+        allControls.forEach(controls => {
+            // Use setAttribute to apply !important styles
+            controls.setAttribute('style', 
+                'visibility: visible !important; ' +
+                'opacity: 0.7 !important; ' +
+                'pointer-events: all !important; ' +
+                'border: 2px solid red !important; ' +
+                'background: rgba(255, 0, 0, 0.1) !important; ' +
+                'z-index: 10000 !important; ' +
+                'display: block !important; ' +
+                'position: absolute !important;'
+            );
+        });
+        
+        console.log(`✅ Controls debug mode enabled. Found ${allControls.length} control groups.`);
+        
+        // Check for components without controls
+        const componentsWithoutControls = [];
+        document.querySelectorAll('[data-component-id]').forEach(component => {
+            if (!component.querySelector('.component-controls--dynamic')) {
+                componentsWithoutControls.push(component.id || component.getAttribute('data-component-id'));
+            }
+        });
+        
+        if (componentsWithoutControls.length > 0) {
+            console.warn('⚠️ Components without controls:', componentsWithoutControls);
+            console.log('Attempting to attach controls...');
+            
+            componentsWithoutControls.forEach(componentId => {
+                const element = document.getElementById(componentId);
+                if (element && window.componentControlsManager) {
+                    window.componentControlsManager.attachControls(element, componentId);
+                }
+            });
+        }
+        
+        return {
+            debugEnabled: true,
+            controlsFound: allControls.length,
+            componentsWithoutControls: componentsWithoutControls.length
+        };
+    };
+    
+    window.disableControlsDebug = function() {
+        console.log('🔍 Disabling controls debug mode...');
+        
+        document.body.classList.remove('gmkb-debug-mode');
+        document.body.classList.remove('controls-debug');
+        
+        const allControls = document.querySelectorAll('.component-controls--dynamic');
+        allControls.forEach(controls => {
+            controls.style.visibility = '';
+            controls.style.opacity = '';
+            controls.style.pointerEvents = '';
+            controls.style.border = '';
+            controls.style.background = '';
+            controls.style.zIndex = '';
+        });
+        
+        console.log('✅ Controls debug mode disabled');
+    };
     window.diagnoseDuplicateIdIssue = () => {
         console.log('🔍 DIAGNOSING DUPLICATE ID ISSUE');
         console.log('='.repeat(60));

@@ -346,6 +346,20 @@ class EnhancedComponentRenderer {
                 element = allDuplicates[0]; // Use the first element
             }
             
+            // ROOT FIX: Add dirty check to prevent unnecessary re-renders
+            const currentElement = element || document.getElementById(componentId);
+            if (currentElement) {
+                // Check if props have actually changed
+                const currentProps = currentElement.dataset.props ? JSON.parse(currentElement.dataset.props) : {};
+                const newProps = state.props || state.data || {};
+                
+                if (JSON.stringify(currentProps) === JSON.stringify(newProps)) {
+                    this.logger.debug('RENDER', `Props unchanged for ${componentId}, skipping re-render`);
+                    perfEnd();
+                    return;
+                }
+            }
+            
             // Re-render component with new state
             const { element: newElement } = await this.renderComponentWithLoader(
                 componentId, 
@@ -353,34 +367,102 @@ class EnhancedComponentRenderer {
                 state.props || state.data
             );
             
-            // ROOT FIX: NON-DESTRUCTIVE UPDATE for UI registry re-render requests
+            // ROOT FIX: TRULY NON-DESTRUCTIVE UPDATE - preserve controls
             if (element && element.parentNode && newElement) {
-                // Save controls state
-                const hasControls = element.querySelector('.component-controls--dynamic');
+                // Save controls element before update
+                const controlsElement = element.querySelector('.component-controls--dynamic');
+                const hasControls = !!controlsElement;
                 
-                // Update innerHTML without replacing the element
-                if (element.innerHTML !== newElement.innerHTML) {
-                    element.innerHTML = newElement.innerHTML;
+                // ROOT FIX: Clone controls with all event listeners preserved
+                let controlsClone = null;
+                if (hasControls) {
+                    // Deep clone to preserve structure
+                    controlsClone = controlsElement.cloneNode(true);
+                    // Store reference to original parent for event re-attachment
+                    controlsClone._originalParent = element;
+                }
+                
+                // Find the content wrapper inside the component (not the root)
+                // This preserves the controls which are at the root level
+                const contentSelectors = [
+                    '.component-content',
+                    '.component-inner',
+                    '.content-wrapper',
+                    '[data-content]',
+                    'article',
+                    '.editable-element'
+                ];
+                
+                let contentUpdated = false;
+                
+                for (const selector of contentSelectors) {
+                    const oldContent = element.querySelector(selector);
+                    const newContent = newElement.querySelector(selector);
                     
-                    // Preserve data attributes
-                    Array.from(newElement.attributes).forEach(attr => {
-                        if (attr.name.startsWith('data-') && attr.name !== 'data-component-id') {
-                            element.setAttribute(attr.name, attr.value);
+                    if (oldContent && newContent) {
+                        // Update only the content area, preserving controls
+                        oldContent.innerHTML = newContent.innerHTML;
+                        contentUpdated = true;
+                        this.logger.debug('RENDER', `Updated content via selector: ${selector}`);
+                        break;
+                    }
+                }
+                
+                // If no content wrapper found, update more carefully
+                if (!contentUpdated) {
+                    // ROOT FIX: Save all children that are NOT controls
+                    const childrenToPreserve = [];
+                    Array.from(element.children).forEach(child => {
+                        if (!child.classList.contains('component-controls--dynamic') && 
+                            !child.classList.contains('component-controls')) {
+                            childrenToPreserve.push(child);
                         }
                     });
                     
-                    // Update component props
-                    if (typeof window.updateComponentProps === 'function') {
-                        window.updateComponentProps(element, state.props || state.data);
+                    // Remove only non-control children
+                    childrenToPreserve.forEach(child => child.remove());
+                    
+                    // Add new content (skip controls from new element)
+                    Array.from(newElement.children).forEach(child => {
+                        if (!child.classList.contains('component-controls--dynamic') && 
+                            !child.classList.contains('component-controls')) {
+                            element.appendChild(child.cloneNode(true));
+                        }
+                    });
+                }
+                
+                // Preserve data attributes
+                Array.from(newElement.attributes).forEach(attr => {
+                    if (attr.name.startsWith('data-') && attr.name !== 'data-component-id') {
+                        element.setAttribute(attr.name, attr.value);
                     }
+                });
+                
+                // Store props for future dirty checking
+                element.dataset.props = JSON.stringify(state.props || state.data || {});
+                
+                // Update component props
+                if (typeof window.updateComponentProps === 'function') {
+                    window.updateComponentProps(element, state.props || state.data);
                 }
                 
                 // Keep the existing element in cache
                 this.componentCache.set(componentId, element);
                 
-                // Re-attach controls if needed
+                // ROOT FIX: Re-establish controls with proper event handling
                 if (hasControls) {
-                    this.attachComponentControls(element, componentId);
+                    const currentControls = element.querySelector('.component-controls--dynamic');
+                    if (!currentControls) {
+                        // Controls were lost, restore from clone
+                        element.insertBefore(controlsClone, element.firstChild);
+                        // Re-attach hover behavior
+                        if (window.componentControlsManager && window.componentControlsManager.attachHoverBehavior) {
+                            window.componentControlsManager.attachHoverBehavior(element, controlsClone);
+                        }
+                        this.logger.debug('RENDER', 'Controls restored from clone with events');
+                    } else {
+                        this.logger.debug('RENDER', 'Controls successfully preserved during update');
+                    }
                 }
             }
             
@@ -1134,36 +1216,14 @@ class EnhancedComponentRenderer {
                     // FIX: Use the new dynamicComponentLoader instance
                 } = await this.renderComponentWithLoader(id, componentState.type, componentState.props || componentState.data);
                 
-                // ROOT FIX: NON-DESTRUCTIVE UPDATE - Update innerHTML without replacing the element
-                // This preserves attached controls and event listeners
+                // ROOT FIX: TRULY NON-DESTRUCTIVE UPDATE - preserve controls
                 if (oldElement.innerHTML !== newElement.innerHTML) {
-                    // Save the current controls state
-                    const hasControls = oldElement.querySelector('.component-controls--dynamic');
-                    
-                    // Update innerHTML without replacing the root element
-                    oldElement.innerHTML = newElement.innerHTML;
-                    
-                    // Preserve data attributes from the new element
-                    Array.from(newElement.attributes).forEach(attr => {
-                        if (attr.name.startsWith('data-') && attr.name !== 'data-component-id') {
-                            oldElement.setAttribute(attr.name, attr.value);
-                        }
+                    // Use the same update logic as handleComponentRerenderRequest
+                    await this.handleComponentRerenderRequest({
+                        componentId: id,
+                        element: oldElement,
+                        state: componentState
                     });
-                    
-                    // Update component props if the helper function exists
-                    if (typeof window.updateComponentProps === 'function') {
-                        window.updateComponentProps(oldElement, componentState.props || componentState.data);
-                    }
-                    
-                    // Keep the existing element in cache (not the new one)
-                    this.componentCache.set(id, oldElement);
-                    
-                    // Re-attach controls if they were present
-                    if (hasControls) {
-                        this.attachComponentControls(oldElement, id);
-                    }
-                    
-                    this.logger.debug('RENDER', `Non-destructive update completed for component: ${id}`);
                 }
             }
         });
