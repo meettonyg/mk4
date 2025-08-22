@@ -51,9 +51,13 @@ class UIRegistry {
     /**
      * Setup global state change listener
      * PHASE 3 FIX: Access enhancedStateManager through window to avoid circular dependency
+     * ROOT FIX: DISABLED state subscription to prevent duplicate rendering with Enhanced Component Renderer
+     * Now listens for render completion events instead
      */
     setupStateListener() {
-        // Subscribe to state changes - access via window to avoid circular dependency
+        // ROOT FIX: Comment out state subscription that causes duplicate renders
+        // The Enhanced Component Renderer is now the single source of truth for rendering
+        /*
         const subscribeWhenReady = () => {
             const stateManager = window.enhancedStateManager;
             if (stateManager && stateManager.subscribeGlobal) {
@@ -70,6 +74,12 @@ class UIRegistry {
         
         // Start subscription process
         subscribeWhenReady();
+        */
+        
+        // ROOT FIX: Listen for render completion events instead
+        eventBus.on('gmkb:render-complete', (event) => {
+            this.updateComponentTracking(event.detail);
+        });
 
         // Listen for specific component events
         eventBus.on('state:component-added', (event) => {
@@ -175,6 +185,28 @@ class UIRegistry {
         };
     }
 
+    /**
+     * ROOT FIX: Update component tracking after render completion
+     */
+    updateComponentTracking(detail) {
+        const { renderType, changes, timestamp } = detail || {};
+        
+        this.logger.debug('UI', 'Updating component tracking after render', {
+            renderType,
+            timestamp
+        });
+        
+        // Update statistics
+        this.updateStats.total++;
+        
+        // If components were removed, clean up tracking
+        if (changes && changes.removed && changes.removed.size > 0) {
+            changes.removed.forEach(componentId => {
+                this.unregister(componentId);
+            });
+        }
+    }
+    
     /**
      * Handle global state changes
      */

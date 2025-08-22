@@ -697,12 +697,28 @@ class EnhancedComponentRenderer {
                 }
             });
 
-            // ROOT FIX: REMOVED flawed layout comparison that was causing false "moved" detections
-            // The reorderComponents function will handle visual ordering separately
-            // This prevents the renderer from unnecessarily re-rendering components that haven't actually changed
+            // ROOT FIX: Proper move detection by comparing old and new layouts
+            const oldLayout = safeOldState.layout || [];
+            const newLayout = safeNewState.layout || [];
             
-            // Layout changes are now handled exclusively by the reorderComponents method
-            // which is called after processing actual content changes
+            // Check if components just moved positions
+            if (oldLayout.length === newLayout.length && oldLayout.length > 0) {
+                const oldPositions = {};
+                const newPositions = {};
+                
+                oldLayout.forEach((id, index) => oldPositions[id] = index);
+                newLayout.forEach((id, index) => newPositions[id] = index);
+                
+                Object.keys(oldPositions).forEach(id => {
+                    if (newPositions[id] !== undefined && 
+                        oldPositions[id] !== newPositions[id] &&
+                        !changes.added.has(id) && 
+                        !changes.removed.has(id) &&
+                        !changes.updated.has(id)) {
+                        changes.moved.add(id);
+                    }
+                });
+            }
             
             this.logger.debug('RENDER', 'diffState completed:', {
                 added: changes.added.size,
@@ -770,31 +786,88 @@ class EnhancedComponentRenderer {
     }
 
     /**
+     * ROOT FIX: Detect render type based on changes
+     */
+    detectRenderType(changes) {
+        if (changes.moved.size > 0 && 
+            changes.added.size === 0 && 
+            changes.removed.size === 0 && 
+            changes.updated.size === 0) {
+            return 'reorder-only';
+        }
+        if (changes.added.size > 0) return 'add-components';
+        if (changes.removed.size > 0) return 'remove-components';
+        if (changes.updated.size > 0) return 'update-components';
+        return 'full-render';
+    }
+    
+    /**
      * ROOT FIX: Process changes through rendering queue for coordinated, race-condition-free rendering
      */
     async processChangesWithQueue(changes, newState) {
         try {
-            // Handle removals immediately (no queue needed)
-            if (changes.removed.size > 0) {
-                this.removeComponents(changes.removed);
+            const renderType = this.detectRenderType(changes);
+            
+            this.logger.info('RENDER', `Processing changes with render type: ${renderType}`, {
+                moved: changes.moved.size,
+                added: changes.added.size,
+                removed: changes.removed.size,
+                updated: changes.updated.size
+            });
+            
+            switch (renderType) {
+                case 'reorder-only':
+                    // ROOT FIX: Just reorder DOM elements, no re-rendering
+                    this.handleReorderOnly(newState.layout);
+                    break;
+                    
+                case 'remove-components':
+                    // Handle removals immediately (no queue needed)
+                    this.removeComponents(changes.removed);
+                    // Reorder after removal
+                    if (newState.layout && newState.layout.length > 0) {
+                        this.reorderComponents(newState.layout);
+                    }
+                    break;
+                    
+                case 'add-components':
+                    // Queue additions with appropriate priority
+                    await this.queueComponentAdditions(changes.added, newState);
+                    // Reorder after additions to ensure correct position
+                    if (newState.layout && newState.layout.length > 0) {
+                        setTimeout(() => this.reorderComponents(newState.layout), 100);
+                    }
+                    break;
+                    
+                case 'update-components':
+                    // Queue updates with high priority
+                    await this.queueComponentUpdates(changes.updated, newState);
+                    break;
+                    
+                default:
+                    // Full render - handle all changes
+                    if (changes.removed.size > 0) {
+                        this.removeComponents(changes.removed);
+                    }
+                    if (changes.added.size > 0) {
+                        await this.queueComponentAdditions(changes.added, newState);
+                    }
+                    if (changes.updated.size > 0) {
+                        await this.queueComponentUpdates(changes.updated, newState);
+                    }
+                    // Always reorder when we have moves or any layout changes
+                    if (newState.layout && newState.layout.length > 0) {
+                        setTimeout(() => this.reorderComponents(newState.layout), 100);
+                    }
+                    break;
             }
             
-            // Queue additions with appropriate priority
-            if (changes.added.size > 0) {
-                await this.queueComponentAdditions(changes.added, newState);
-            }
-            
-            // Queue updates with high priority
-            if (changes.updated.size > 0) {
-                await this.queueComponentUpdates(changes.updated, newState);
-            }
-            
-            // ROOT CAUSE FIX: Handle moves and ensure proper reordering after removals
-            if (changes.moved.size > 0 || changes.removed.size > 0) {
-                // ROOT FIX: Immediate reordering for better UX, especially after removals
-                const state = enhancedStateManager.getState();
-                this.reorderComponents(state.layout);
-            }
+            // ROOT FIX: Emit render completion event for UI Registry
+            eventBus.emit('gmkb:render-complete', {
+                renderType,
+                changes,
+                timestamp: Date.now()
+            });
             
             // ROOT FIX: Conservative cleanup - don't aggressively remove components that might be in transition
             this.conservativeCleanup(newState);
@@ -813,22 +886,62 @@ class EnhancedComponentRenderer {
      * LEGACY: Direct change processing (fallback)
      */
     async processChanges(changes, newState) {
-        if (changes.removed.size > 0) {
-            this.removeComponents(changes.removed);
+        const renderType = this.detectRenderType(changes);
+        
+        // Handle changes based on render type for optimal performance
+        switch (renderType) {
+            case 'reorder-only':
+                // Just reorder, no re-rendering needed
+                this.handleReorderOnly(newState.layout);
+                break;
+                
+            case 'remove-components':
+                this.removeComponents(changes.removed);
+                // Reorder after removal if layout exists
+                if (newState.layout && newState.layout.length > 0) {
+                    this.reorderComponents(newState.layout);
+                }
+                break;
+                
+            case 'add-components':
+                await this.renderNewComponents(changes.added, newState);
+                // Reorder after additions to ensure correct position
+                if (newState.layout && newState.layout.length > 0) {
+                    setTimeout(() => this.reorderComponents(newState.layout), 100);
+                }
+                break;
+                
+            case 'update-components':
+                await this.updateComponents(changes.updated, newState);
+                break;
+                
+            default:
+                // Full render - handle all changes
+                if (changes.removed.size > 0) {
+                    this.removeComponents(changes.removed);
+                }
+                if (changes.added.size > 0) {
+                    await this.renderNewComponents(changes.added, newState);
+                }
+                if (changes.updated.size > 0) {
+                    await this.updateComponents(changes.updated, newState);
+                }
+                // Always reorder when we have layout
+                if (newState.layout && newState.layout.length > 0) {
+                    setTimeout(() => this.reorderComponents(newState.layout), 100);
+                }
+                break;
         }
-        if (changes.added.size > 0) {
-            await this.renderNewComponents(changes.added, newState);
-        }
-        if (changes.updated.size > 0) {
-            await this.updateComponents(changes.updated, newState);
-        }
-        if (changes.moved.size > 0) {
-            const state = enhancedStateManager.getState();
-            this.reorderComponents(state.layout);
-        }
-            // ROOT FIX: Conservative cleanup - don't aggressively remove components
-            this.conservativeCleanup(newState);
-
+        
+        // ROOT FIX: Emit render completion event for UI Registry (same as processChangesWithQueue)
+        eventBus.emit('gmkb:render-complete', {
+            renderType,
+            changes,
+            timestamp: Date.now()
+        });
+        
+        // ROOT FIX: Conservative cleanup - don't aggressively remove components
+        this.conservativeCleanup(newState);
         this.updateEmptyState(newState);
     }
 
@@ -1238,6 +1351,55 @@ class EnhancedComponentRenderer {
         });
     }
 
+    /**
+     * ROOT FIX: Handle reorder-only changes without re-rendering
+     */
+    handleReorderOnly(layout) {
+        const container = this.previewContainer;
+        if (!container || !layout || layout.length === 0) {
+            this.logger.debug('RENDER', 'handleReorderOnly: No container or layout available');
+            return;
+        }
+        
+        this.logger.info('RENDER', 'Performing reorder-only operation (no re-rendering)');
+        
+        // Create position map of current elements
+        const elements = new Map();
+        layout.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                elements.set(id, element);
+            }
+        });
+        
+        // Reorder elements to match layout
+        layout.forEach((id, targetIndex) => {
+            const element = elements.get(id);
+            if (element) {
+                const currentChildren = Array.from(container.children);
+                const currentIndex = currentChildren.indexOf(element);
+                
+                if (currentIndex !== targetIndex) {
+                    // Move element to correct position
+                    const referenceNode = container.children[targetIndex];
+                    if (referenceNode && referenceNode !== element) {
+                        container.insertBefore(element, referenceNode);
+                        this.logger.debug('RENDER', `Moved ${id} from position ${currentIndex} to ${targetIndex}`);
+                    } else if (!referenceNode) {
+                        // Append to end if no reference node
+                        container.appendChild(element);
+                        this.logger.debug('RENDER', `Moved ${id} to end of container`);
+                    }
+                }
+            }
+        });
+        
+        this.logger.info('RENDER', 'Reorder-only operation completed successfully');
+        
+        // Show success toast
+        showToast('Component moved', 'success', 1000);
+    }
+    
     reorderComponents(layout) {
         // ROOT FIX: Use DOM Render Coordinator for reordering if available
         if (window.domRenderCoordinator) {
@@ -1529,7 +1691,7 @@ class EnhancedComponentRenderer {
         }
         
         // ROOT FIX: After cleanup, ensure empty state display is updated
-        this.updateEmptyStateAfterCleanup(state);
+        this.updateEmptyState(state);
     }
 
     cleanupOrphanedElements(state) {
@@ -1592,6 +1754,46 @@ class EnhancedComponentRenderer {
         this.updateHandlers.clear();
         
         this.logger.info('RENDER', 'Enhanced component renderer destroyed');
+    }
+    
+    /**
+     * ROOT FIX: Update empty state display based on current state
+     */
+    updateEmptyState(state) {
+        const emptyStateElement = document.getElementById('empty-state');
+        if (!emptyStateElement) {
+            this.logger.debug('RENDER', 'No empty state element found');
+            return;
+        }
+        
+        const hasComponents = state && state.components && Object.keys(state.components).length > 0;
+        
+        if (hasComponents) {
+            // Hide empty state when components exist
+            emptyStateElement.style.display = 'none';
+            this.logger.debug('RENDER', 'Empty state hidden - components exist');
+        } else {
+            // Show empty state when no components
+            emptyStateElement.style.display = 'block';
+            this.logger.debug('RENDER', 'Empty state shown - no components');
+        }
+    }
+    
+    /**
+     * Setup empty state listeners
+     */
+    setupEmptyStateListeners() {
+        // Listen for component library button clicks in empty state
+        const emptyStateButton = document.querySelector('#empty-state .btn-add-component');
+        if (emptyStateButton) {
+            emptyStateButton.addEventListener('click', () => {
+                this.logger.debug('RENDER', 'Empty state add component button clicked');
+                // Trigger component library modal
+                if (window.componentLibrary && window.componentLibrary.show) {
+                    window.componentLibrary.show();
+                }
+            });
+        }
     }
     
     /**
