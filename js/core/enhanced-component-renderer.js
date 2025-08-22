@@ -329,6 +329,42 @@ class EnhancedComponentRenderer {
     }
     
     /**
+     * ROOT FIX: Setup rendering queue event listeners
+     */
+    setupRenderingQueueListeners() {
+        // Listen for queue events if needed
+        this.logger.debug('RENDER', 'Rendering queue listeners setup complete');
+    }
+    
+    /**
+     * ROOT FIX: Setup save operation tracking
+     */
+    setupSaveTracking() {
+        // Track save operations to prevent render conflicts
+        document.addEventListener('gmkb:save-start', () => {
+            this.lastSaveTime = Date.now();
+            this.logger.debug('RENDER', 'Save operation started - tracking time');
+        });
+        
+        this.logger.debug('RENDER', 'Save tracking setup complete');
+    }
+    
+    /**
+     * ROOT FIX: Setup component controls integration
+     */
+    setupComponentControlsIntegration() {
+        // Listen for component control events
+        document.addEventListener('gmkb:component-rendered', (event) => {
+            const { componentId, element } = event.detail;
+            if (componentId && element) {
+                this.attachComponentControls(element, componentId);
+            }
+        });
+        
+        this.logger.debug('RENDER', 'Component controls integration setup complete');
+    }
+    
+    /**
      * Handle component re-render requests from UI registry
      */
     async handleComponentRerenderRequest({ componentId, element, state }) {
@@ -560,16 +596,25 @@ class EnhancedComponentRenderer {
             return element && element.parentNode;
         });
         
+        // ROOT FIX: Check if layout has changed (components moved)
+        const layoutChanged = this.lastState && 
+            JSON.stringify(this.lastState.layout) !== JSON.stringify(newState.layout);
+        
         if (allComponentsExist && this.lastState && 
-            Object.keys(this.lastState.components || {}).length === componentIds.length) {
-            // All components exist and count hasn't changed - likely just a state sync
-            this.logger.debug('RENDER', 'All components already in DOM, skipping re-render', {
+            Object.keys(this.lastState.components || {}).length === componentIds.length &&
+            !layoutChanged) {
+            // All components exist, count hasn't changed, and layout hasn't changed - likely just a state sync
+            this.logger.debug('RENDER', 'All components already in DOM and no layout change, skipping re-render', {
                 componentCount: componentIds.length,
                 existingComponents: componentIds
             });
             this.lastStateHash = stateHash; // Update hash to prevent future duplicate checks
             this.lastState = this.cloneState(newState); // Update lastState
             return;
+        }
+        
+        if (layoutChanged) {
+            this.logger.info('RENDER', 'Layout changed - components moved, processing render');
         }
         
         // ROOT CAUSE FIX: Only update hash if we're actually going to render
@@ -1355,46 +1400,10 @@ class EnhancedComponentRenderer {
      * ROOT FIX: Handle reorder-only changes without re-rendering
      */
     handleReorderOnly(layout) {
-        const container = this.previewContainer;
-        if (!container || !layout || layout.length === 0) {
-            this.logger.debug('RENDER', 'handleReorderOnly: No container or layout available');
-            return;
-        }
-        
         this.logger.info('RENDER', 'Performing reorder-only operation (no re-rendering)');
         
-        // Create position map of current elements
-        const elements = new Map();
-        layout.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                elements.set(id, element);
-            }
-        });
-        
-        // Reorder elements to match layout
-        layout.forEach((id, targetIndex) => {
-            const element = elements.get(id);
-            if (element) {
-                const currentChildren = Array.from(container.children);
-                const currentIndex = currentChildren.indexOf(element);
-                
-                if (currentIndex !== targetIndex) {
-                    // Move element to correct position
-                    const referenceNode = container.children[targetIndex];
-                    if (referenceNode && referenceNode !== element) {
-                        container.insertBefore(element, referenceNode);
-                        this.logger.debug('RENDER', `Moved ${id} from position ${currentIndex} to ${targetIndex}`);
-                    } else if (!referenceNode) {
-                        // Append to end if no reference node
-                        container.appendChild(element);
-                        this.logger.debug('RENDER', `Moved ${id} to end of container`);
-                    }
-                }
-            }
-        });
-        
-        this.logger.info('RENDER', 'Reorder-only operation completed successfully');
+        // Use the main reorderComponents method which handles all container logic
+        this.reorderComponents(layout);
         
         // Show success toast
         showToast('Component moved', 'success', 1000);
@@ -1420,29 +1429,50 @@ class EnhancedComponentRenderer {
             count: validatedLayout.length
         });
 
-        // ROOT FIX: Always use preview container for reordering
-        let activeContainer = this.previewContainer;
+        // ROOT FIX: Check all possible containers
+        let activeContainer = null;
+        const savedContainer = document.getElementById('saved-components-container');
+        const previewContainer = this.previewContainer;
+        
+        // Determine which container has the components
+        if (savedContainer && savedContainer.children.length > 0) {
+            activeContainer = savedContainer;
+            this.logger.debug('RENDER', 'Using saved-components-container for reordering');
+        } else if (previewContainer && previewContainer.children.length > 0) {
+            activeContainer = previewContainer;
+            this.logger.debug('RENDER', 'Using preview container for reordering');
+        } else {
+            // Check if components exist but are in unexpected containers
+            const componentsInDOM = document.querySelectorAll('[data-component-id]');
+            if (componentsInDOM.length > 0 && componentsInDOM[0].parentElement) {
+                activeContainer = componentsInDOM[0].parentElement;
+                this.logger.warn('RENDER', `Using unexpected container for reordering: ${activeContainer.id || activeContainer.className}`);
+            }
+        }
         
         if (!activeContainer) {
-            this.logger.debug('RENDER', 'No preview container available for reordering');
+            this.logger.error('RENDER', 'No container with components found for reordering');
             perfEnd();
             return;
         }
         
-        this.logger.debug('RENDER', 'Reordering within preview container consistently');
+        this.logger.info('RENDER', `Reordering ${validatedLayout.length} components in ${activeContainer.id || 'container'}`);
 
-        // ROOT FIX: CRITICAL - FIXED reordering logic to handle component removal properly
+        // Get current children from the active container
         const currentChildren = Array.from(activeContainer.children);
-        const currentChildIds = currentChildren.map(child => child.id).filter(id => id);
+        const currentChildIds = currentChildren.map(child => {
+            // Handle both direct ID and data-component-id
+            return child.id || child.getAttribute('data-component-id');
+        }).filter(id => id);
         
-        this.logger.debug('RENDER', 'Reorder check:', {
-            layoutLength: validatedLayout.length,
+        this.logger.debug('RENDER', 'Current DOM state:', {
+            container: activeContainer.id || activeContainer.className,
             currentChildrenCount: currentChildren.length,
             currentChildIds: currentChildIds,
             layoutIds: validatedLayout
         });
         
-        // ROOT FIX: Skip reordering if layout and DOM are already in sync
+        // Check if reordering is needed
         const layoutMatches = JSON.stringify(validatedLayout) === JSON.stringify(currentChildIds);
         if (layoutMatches) {
             this.logger.debug('RENDER', 'Layout already matches DOM order, skipping reorder');
@@ -1450,61 +1480,74 @@ class EnhancedComponentRenderer {
             return;
         }
         
-        // ROOT CAUSE FIX: Instead of skipping reorder when components are missing,
-        // first remove any DOM elements that shouldn't be there (removed components)
-        const elementsToRemove = currentChildren.filter(child => 
-            child.id && !validatedLayout.includes(child.id)
-        );
+        // Remove any components that shouldn't be there
+        const elementsToRemove = currentChildren.filter(child => {
+            const childId = child.id || child.getAttribute('data-component-id');
+            return childId && !validatedLayout.includes(childId);
+        });
         
         if (elementsToRemove.length > 0) {
             this.logger.info('RENDER', `Removing ${elementsToRemove.length} components no longer in layout`);
             elementsToRemove.forEach(element => {
                 element.remove();
-                if (element.id) {
-                    this.componentCache.delete(element.id);
-                    this.logger.debug('RENDER', `Removed component from DOM: ${element.id}`);
+                const elementId = element.id || element.getAttribute('data-component-id');
+                if (elementId) {
+                    this.componentCache.delete(elementId);
+                    this.logger.debug('RENDER', `Removed component from DOM: ${elementId}`);
                 }
             });
         }
         
-        // Now check if we have all required components in DOM
-        const updatedChildren = Array.from(activeContainer.children);
-        const updatedChildIds = updatedChildren.map(child => child.id).filter(id => id);
-        const stillMissingFromDOM = validatedLayout.filter(id => !updatedChildIds.includes(id));
-        
-        if (stillMissingFromDOM.length > 0) {
-            this.logger.debug('RENDER', 'Some components still missing from DOM after cleanup:', stillMissingFromDOM);
-            this.logger.debug('RENDER', 'This is expected during component transitions - will be resolved by rendering queue');
-            
-            // ROOT CAUSE FIX: Don't proceed with reordering if too many components are missing
-            // This prevents DOM corruption during component transitions
-            if (stillMissingFromDOM.length >= validatedLayout.length / 2) {
-                this.logger.debug('RENDER', 'Skipping reorder - majority of components missing (likely during render transition)');
-                perfEnd();
-                return;
-            }
-        }
-
+        // Create a map of component elements
         const elementMap = new Map();
         Array.from(activeContainer.children).forEach(child => {
-            if (child.id) {
-                elementMap.set(child.id, child);
+            const childId = child.id || child.getAttribute('data-component-id');
+            if (childId) {
+                elementMap.set(childId, child);
             }
         });
-
-        validatedLayout.forEach((componentId, index) => {
+        
+        // Reorder components according to layout
+        const fragment = document.createDocumentFragment();
+        validatedLayout.forEach(componentId => {
             const element = elementMap.get(componentId);
             if (element) {
-                const expectedPosition = activeContainer.children[index];
-                if (element !== expectedPosition) {
-                    activeContainer.insertBefore(element, expectedPosition || null);
-                }
+                fragment.appendChild(element);
+                this.logger.debug('RENDER', `Moving component ${componentId} to correct position`);
+            } else {
+                this.logger.warn('RENDER', `Component ${componentId} not found in DOM for reordering`);
             }
         });
-
+        
+        // Clear container and append reordered elements
+        activeContainer.innerHTML = '';
+        activeContainer.appendChild(fragment);
+        
+        // Verify the reorder was successful
+        const finalChildIds = Array.from(activeContainer.children).map(child => {
+            return child.id || child.getAttribute('data-component-id');
+        }).filter(id => id);
+        
+        const reorderSuccess = JSON.stringify(validatedLayout) === JSON.stringify(finalChildIds);
+        
         perfEnd();
         
-        this.logger.debug('RENDER', `Reordered ${validatedLayout.length} components in ${activeContainer.id || 'container'}`);
+        this.logger.info('RENDER', `Reorder ${reorderSuccess ? 'successful' : 'failed'}:`, {
+            container: activeContainer.id || activeContainer.className,
+            expectedOrder: validatedLayout,
+            actualOrder: finalChildIds,
+            success: reorderSuccess
+        });
+        
+        if (reorderSuccess) {
+            // Re-attach controls after reordering
+            validatedLayout.forEach(componentId => {
+                const element = elementMap.get(componentId);
+                if (element) {
+                    this.attachComponentControls(element, componentId);
+                }
+            });
+        }
     }
 
     /**
@@ -2163,6 +2206,42 @@ class EnhancedComponentRenderer {
      * ROOT FIX: REMOVED emergencyCleanupDuplicates - it was a patch that violated the checklist
      * Deduplication should be handled at the source by DOM Render Coordinator
      */
+    
+    /**
+     * ROOT FIX: Queue component additions - immediate rendering instead of delayed batch
+     * This fixes the issue where duplicated components disappear after 5 seconds
+     */
+    async queueComponentAdditions(componentIds, newState) {
+        // ROOT FIX: Don't use a queue that delays rendering - render immediately
+        this.logger.debug('RENDER', `Processing ${componentIds.size} component additions immediately`);
+        
+        // Render components directly without queueing
+        await this.renderNewComponents(componentIds, newState);
+        
+        // Log completion immediately
+        this.logger.info('RENDER', `Component additions completed`, {
+            count: componentIds.size,
+            queuedRenders: this.queuedRenders.size
+        });
+        
+        // No delayed batch completion - components are already rendered
+    }
+    
+    /**
+     * ROOT FIX: Queue component updates - immediate updates instead of delayed batch
+     */
+    async queueComponentUpdates(componentIds, newState) {
+        // ROOT FIX: Don't use a queue that delays updates - update immediately
+        this.logger.debug('RENDER', `Processing ${componentIds.size} component updates immediately`);
+        
+        // Update components directly without queueing
+        await this.updateComponents(componentIds, newState);
+        
+        // Log completion immediately
+        this.logger.info('RENDER', `Component updates completed`, {
+            count: componentIds.size
+        });
+    }
     
     /**
      * Manual render method - forces a complete re-render of all components

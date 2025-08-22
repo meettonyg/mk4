@@ -513,7 +513,10 @@
                     hoverTimeout = null;
                 }
                 
-                console.log('🎛️ Showing controls for:', componentElement.id);
+                // Debug logging controlled by GMKBDebug
+                if (window.GMKBDebug && window.GMKBDebug.categories.hover) {
+                    console.log('🎛️ Showing controls for:', componentElement.id);
+                }
                 controlsContainer.style.opacity = '1';
                 controlsContainer.style.visibility = 'visible';
                 controlsContainer.style.pointerEvents = 'all';
@@ -528,7 +531,10 @@
             const hideControls = () => {
                 // Use a small delay to prevent flickering when moving between element and controls
                 hoverTimeout = setTimeout(() => {
-                    console.log('🎛️ Hiding controls for:', componentElement.id);
+                    // Debug logging controlled by GMKBDebug
+                    if (window.GMKBDebug && window.GMKBDebug.categories.hover) {
+                        console.log('🎛️ Hiding controls for:', componentElement.id);
+                    }
                     controlsContainer.style.opacity = '0';
                     controlsContainer.style.visibility = 'hidden';
                     controlsContainer.style.pointerEvents = 'none';

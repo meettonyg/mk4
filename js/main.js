@@ -4,6 +4,9 @@
  * Phase 1: Architectural Integrity & Race Condition Prevention - COMPLETE
  */
 
+// Debug control is now loaded via enqueue.php before all other scripts
+// This ensures it's available for all initialization logging
+
 // ROOT FIX: WordPress data verification - STREAMLINED
 // Single data source, no redundant aliases
 (function verifyWordPressData() {
@@ -14,7 +17,11 @@
     
     function verifyDataAvailability() {
         if (window.gmkbData && window.gmkbData.components) {
-            console.log('✅ gmkb: WordPress data verified [' + window.gmkbData.components.length + ' components, ' + Object.keys(window.gmkbData).length + ' properties]');
+            if (window.GMKBDebug) {
+                window.GMKBDebug.logInit('✅ gmkb: WordPress data verified [' + window.gmkbData.components.length + ' components, ' + Object.keys(window.gmkbData).length + ' properties]');
+            } else {
+                console.log('✅ gmkb: WordPress data verified [' + window.gmkbData.components.length + ' components, ' + Object.keys(window.gmkbData).length + ' properties]');
+            }
             
             // Mark data as ready globally for other systems to check
             window.gmkbDataReady = true;
@@ -29,7 +36,11 @@
                     }
                 });
                 document.dispatchEvent(gmkbReadyEvent);
-                console.log('🚀 gmkb: Ready event dispatched - initialization can begin');
+                if (window.GMKBDebug) {
+                    window.GMKBDebug.logInit('🚀 gmkb: Ready event dispatched - initialization can begin');
+                } else {
+                    console.log('🚀 gmkb: Ready event dispatched - initialization can begin');
+                }
             }, 10);
             
             return true;
@@ -55,7 +66,11 @@
 
 // ROOT FIX: Streamlined debug output
 if (window.gmkbData?.debugMode) {
-    console.log('%c🚀 gmkb: main.js loading...', 'font-weight: bold; color: #10b981;');
+    if (window.GMKBDebug) {
+        window.GMKBDebug.logInit('%c🚀 gmkb: main.js loading...', 'font-weight: bold; color: #10b981;');
+    } else {
+        console.log('%c🚀 gmkb: main.js loading...', 'font-weight: bold; color: #10b981;');
+    }
 }
 
 // ROOT FIX: Streamlined component data exposure
@@ -66,13 +81,13 @@ function safeExposeComponentData() {
             if (data && data.components) {
                 if (Array.isArray(data.components)) {
                     window.gmkbComponentsData = data.components;
-                    if (window.gmkbData?.debugMode) {
-                        console.log('✅ gmkb: Component data exposed [' + data.components.length + ' components]');
+                    if (window.gmkbData?.debugMode && window.GMKBDebug) {
+                        window.GMKBDebug.logInit('✅ gmkb: Component data exposed [' + data.components.length + ' components]');
                     }
                 } else if (typeof data.components === 'object') {
                     window.gmkbComponentsData = Object.values(data.components);
-                    if (window.gmkbData?.debugMode) {
-                        console.log('✅ gmkb: Component data exposed [' + Object.keys(data.components).length + ' components]');
+                    if (window.gmkbData?.debugMode && window.GMKBDebug) {
+                        window.GMKBDebug.logInit('✅ gmkb: Component data exposed [' + Object.keys(data.components).length + ' components]');
                     }
                 }
                 return true;
@@ -91,8 +106,8 @@ function safeExposeComponentData() {
                     icon: 'fa-star'
                 }
             ];
-            if (window.gmkbData?.debugMode) {
-                console.log('🛡️ gmkb: Fallback component created');
+            if (window.gmkbData?.debugMode && window.GMKBDebug) {
+                window.GMKBDebug.logInit('🛡️ gmkb: Fallback component created');
             }
             return true;
         }
@@ -108,16 +123,16 @@ function safeExposeComponentData() {
 if (window.gmkbDataReady) {
     // Data already ready, expose immediately
     if (safeExposeComponentData()) {
-        if (window.gmkbData?.debugMode) {
-            console.log('✅ gmkb: Component data setup completed');
+        if (window.gmkbData?.debugMode && window.GMKBDebug) {
+            window.GMKBDebug.logInit('✅ gmkb: Component data setup completed');
         }
     }
 } else {
     // Wait for data to be ready
     document.addEventListener('gmkb:ready', () => {
         if (safeExposeComponentData()) {
-            if (window.gmkbData?.debugMode) {
-                console.log('✅ gmkb: Component data exposed after data ready event');
+            if (window.gmkbData?.debugMode && window.GMKBDebug) {
+                window.GMKBDebug.logInit('✅ gmkb: Component data exposed after data ready event');
             }
         }
     });
@@ -125,7 +140,11 @@ if (window.gmkbDataReady) {
 
 // ROOT FIX: Streamlined initialization
 async function initializeWhenReady() {
-    console.log('🚀 gmkb: Starting simplified initialization sequence');
+    if (window.GMKBDebug) {
+        window.GMKBDebug.logInit('🚀 gmkb: Starting simplified initialization sequence');
+    } else {
+        console.log('🚀 gmkb: Starting simplified initialization sequence');
+    }
     
     // ROOT FIX: Ensure essential dependencies are available
     if (!window.structuredLogger) {
@@ -260,9 +279,9 @@ async function initializeWhenReady() {
             }
         }));
         
-        if (window.gmkbData?.debugMode) {
-            console.log('✅ gmkb: Simplified application initialization completed successfully.');
-            console.log('📡 gmkb: Global namespace exposed for module coordination');
+        if (window.gmkbData?.debugMode && window.GMKBDebug) {
+            window.GMKBDebug.logInit('✅ gmkb: Simplified application initialization completed successfully.');
+            window.GMKBDebug.logInit('📡 gmkb: Global namespace exposed for module coordination');
         }
         window.structuredLogger.info('MAIN', 'Application initialization complete');
         
@@ -339,7 +358,11 @@ function createFallbackLogger() {
         warn: (category, message, data) => console.warn(`[${category}] ${message}`, data || ''),
         error: (category, message, error, data) => console.error(`[${category}] ${message}`, error, data || '')
     };
-    console.log('🛟 MAIN: Created fallback structured logger');
+    if (window.GMKBDebug) {
+        window.GMKBDebug.logInit('🛟 MAIN: Created fallback structured logger');
+    } else {
+        console.log('🛟 MAIN: Created fallback structured logger');
+    }
 }
 
 /**
@@ -366,8 +389,8 @@ function setupCoreUI() {
         // ROOT FIX: Component interactions now handled by component-controls-manager.js
         // The legacy component-interactions.js has been removed to prevent conflicts
         // All control functionality is managed by the modern dynamic control system
-        if (window.gmkbData?.debugMode) {
-            console.log('✅ MAIN: Component interactions handled by modern component-controls-manager');
+        if (window.gmkbData?.debugMode && window.GMKBDebug) {
+            window.GMKBDebug.logInit('✅ MAIN: Component interactions handled by modern component-controls-manager');
         }
         
         // ROOT CAUSE FIX: Remove duplicate call to setupDevicePreviewToggle()
@@ -571,7 +594,11 @@ async function handleSaveClick() {
     
     try {
         window.structuredLogger?.info('MAIN', 'Manual save requested via save button');
-        console.log('💾 gmkb: Saving current state...');
+        if (window.GMKBDebug) {
+            window.GMKBDebug.log('save', '💾 gmkb: Saving current state...');
+        } else {
+            console.log('💾 gmkb: Saving current state...');
+        }
         
         // ROOT FIX: Preserve component visibility during save
         const savedContainer = document.getElementById('saved-components-container');
@@ -591,7 +618,11 @@ async function handleSaveClick() {
             }
         }
         
-        console.log('✅ gmkb: State saved successfully via save button');
+        if (window.GMKBDebug) {
+            window.GMKBDebug.log('save', '✅ gmkb: State saved successfully via save button');
+        } else {
+            console.log('✅ gmkb: State saved successfully via save button');
+        }
         window.structuredLogger?.info('MAIN', 'Manual save completed successfully');
         
         // Show success feedback to user
@@ -620,7 +651,11 @@ async function handleSaveClick() {
  * ROOT FIX: Force attach controls to all existing components (SINGLE INSTANCE ONLY)
  */
 function forceAttachControlsToExistingComponents() {
+    if (window.GMKBDebug) {
+    window.GMKBDebug.log('controls', '🔧 GMKB: Force attaching controls to existing components');
+} else {
     console.log('🔧 GMKB: Force attaching controls to existing components');
+}
     
     // ROOT FIX: Only get UNIQUE components (no duplicates)
     const uniqueComponents = new Map();
@@ -633,7 +668,11 @@ function forceAttachControlsToExistingComponents() {
         }
     });
     
-    console.log(`🔧 GMKB: Found ${uniqueComponents.size} unique components (filtered from ${allComponents.length} total elements)`);
+    if (window.GMKBDebug) {
+        window.GMKBDebug.log('controls', `🔧 GMKB: Found ${uniqueComponents.size} unique components (filtered from ${allComponents.length} total elements)`);
+    } else {
+        console.log(`🔧 GMKB: Found ${uniqueComponents.size} unique components (filtered from ${allComponents.length} total elements)`);
+    }
     
     let attachedCount = 0;
     
@@ -652,7 +691,11 @@ function forceAttachControlsToExistingComponents() {
         }
     });
     
-    console.log(`🔧 GMKB: Force attached controls to ${attachedCount}/${uniqueComponents.size} components`);
+    if (window.GMKBDebug) {
+        window.GMKBDebug.log('controls', `🔧 GMKB: Force attached controls to ${attachedCount}/${uniqueComponents.size} components`);
+    } else {
+        console.log(`🔧 GMKB: Force attached controls to ${attachedCount}/${uniqueComponents.size} components`);
+    }
     
     // Dispatch event for tracking
     document.dispatchEvent(new CustomEvent('gmkb:force-controls-attached', {
@@ -669,7 +712,11 @@ function forceAttachControlsToExistingComponents() {
  * ROOT FIX: Minimal fallback initialization when core systems fail
  */
 function initializeMinimalFallback() {
-    console.log('🛟 GMKB: Starting minimal fallback initialization');
+    if (window.GMKBDebug) {
+        window.GMKBDebug.logError('🛟 GMKB: Starting minimal fallback initialization');
+    } else {
+        console.log('🛟 GMKB: Starting minimal fallback initialization');
+    }
     
     try {
         // Create basic logger if not available
@@ -682,7 +729,11 @@ function initializeMinimalFallback() {
         
         // Basic fallback functionality available
         
-        console.log('✅ GMKB: Minimal fallback initialization completed');
+        if (window.GMKBDebug) {
+            window.GMKBDebug.logInit('✅ GMKB: Minimal fallback initialization completed');
+        } else {
+            console.log('✅ GMKB: Minimal fallback initialization completed');
+        }
         window.structuredLogger.info('MAIN', 'Minimal fallback active');
         
     } catch (error) {
@@ -702,8 +753,8 @@ async function safeInitialization() {
     // ROOT FIX: Prevent duplicate initialization with better logging
     if (isInitializing || isInitialized) {
         // Only log in debug mode to reduce console noise
-        if (window.gmkbData && window.gmkbData.debugMode) {
-            console.debug('🚷 GMKB: Initialization already in progress or completed, skipping...');
+        if (window.gmkbData && window.gmkbData.debugMode && window.GMKBDebug) {
+            window.GMKBDebug.logInit('🚷 GMKB: Initialization already in progress or completed, skipping...');
         }
         return;
     }
@@ -729,7 +780,11 @@ document.addEventListener('gmkb:ready', safeInitialization);
 // (This can happen if the script loads after wp_localize_script has already run)
 setTimeout(() => {
     if (window.gmkbData && window.gmkbData.components && !isInitialized && !isInitializing) {
-        console.log('🔄 gmkb: Data already available, initializing via fallback');
+        if (window.GMKBDebug) {
+            window.GMKBDebug.logInit('🔄 gmkb: Data already available, initializing via fallback');
+        } else {
+            console.log('🔄 gmkb: Data already available, initializing via fallback');
+        }
         safeInitialization();
     }
 }, 100);
@@ -747,15 +802,15 @@ window.GMKB = {
     
     // Event system for coordination (simplified)
     subscribe: function(event, callback) {
-        if (window.gmkbData?.debugMode) {
-            console.log(`📡 gmkb: Subscribing to event: ${event}`);
+        if (window.gmkbData?.debugMode && window.GMKBDebug) {
+            window.GMKBDebug.log('init', `📡 gmkb: Subscribing to event: ${event}`);
         }
         document.addEventListener(event, callback);
     },
     
     dispatch: function(event, data) {
-        if (window.gmkbData?.debugMode) {
-            console.log(`📡 gmkb: Dispatching event: ${event}`, data);
+        if (window.gmkbData?.debugMode && window.GMKBDebug) {
+            window.GMKBDebug.log('init', `📡 gmkb: Dispatching event: ${event}`, data);
         }
         document.dispatchEvent(new CustomEvent(event, { detail: data }));
     },
@@ -928,5 +983,9 @@ window.gmkbApp = {
 })(); // End IIFE
 
 if (window.gmkbData?.debugMode) {
-    console.log('✅ gmkb: Simplified main application loaded and ready');
+    if (window.GMKBDebug) {
+        window.GMKBDebug.logInit('✅ gmkb: Simplified main application loaded and ready');
+    } else {
+        console.log('✅ gmkb: Simplified main application loaded and ready');
+    }
 }

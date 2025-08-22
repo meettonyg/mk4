@@ -330,6 +330,18 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT FIX: PHASE 0.5 - Debug Control System
+    // Load debug control before all other scripts
+    if (!wp_script_is('gmkb-debug-control', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-debug-control',
+            $plugin_url . 'js/core/debug-control.js',
+            array(), // No dependencies
+            $version,
+            true
+        );
+    }
+    
     // ROOT FIX: PHASE 1 - Core Dependencies Only (CRITICAL)
     // Load only essential scripts to prevent circular dependencies with duplicate checks
     
@@ -647,6 +659,15 @@ function gmkb_enqueue_assets() {
             'gmkb-dom-state-checker',
             $plugin_url . 'js/debug/dom-state-checker.js',
             array(),
+            $version . '-debug',
+            true
+        );
+        
+        // ROOT FIX: Component move test script
+        wp_enqueue_script(
+            'gmkb-test-component-move',
+            $plugin_url . 'test-component-move-fix.js',
+            array('gmkb-main-script'),
             $version . '-debug',
             true
         );

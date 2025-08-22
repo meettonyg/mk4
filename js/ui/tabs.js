@@ -6,14 +6,22 @@
  * ROOT FIX: Enhanced tab switching functionality with better initialization
  */
 function setupTabs() {
-    console.log('📋 TABS: Setting up enhanced tab functionality...');
+    if (window.GMKBDebug) {
+        window.GMKBDebug.logInit('📋 TABS: Setting up enhanced tab functionality...');
+    } else {
+        console.log('📋 TABS: Setting up enhanced tab functionality...');
+    }
     
     // Wait for DOM to be ready
     const initializeTabs = () => {
         const tabs = document.querySelectorAll('.sidebar__tab');
         const contents = document.querySelectorAll('.tab-content');
         
-        console.log(`🔍 TABS: Found ${tabs.length} tabs and ${contents.length} content panels`);
+        if (window.GMKBDebug) {
+            window.GMKBDebug.logInit(`🔍 TABS: Found ${tabs.length} tabs and ${contents.length} content panels`);
+        } else {
+            console.log(`🔍 TABS: Found ${tabs.length} tabs and ${contents.length} content panels`);
+        }
         
         // ROOT FIX: Use event delegation with improved error handling
         const tabContainer = document.querySelector('.sidebar__tabs');
@@ -40,7 +48,11 @@ function setupTabs() {
             activateTab(tabs[0]);
         }
         
-        console.log('✅ TABS: Enhanced tabs setup complete');
+        if (window.GMKBDebug) {
+            window.GMKBDebug.logInit('✅ TABS: Enhanced tabs setup complete');
+        } else {
+            console.log('✅ TABS: Enhanced tabs setup complete');
+        }
     };
     
     // ROOT FIX: Delayed initialization to ensure DOM is ready
@@ -71,7 +83,11 @@ function setupTabEventHandlers(tabContainer) {
         activateTab(tab);
     });
     
-    console.log('✅ TABS: Event handlers attached to tab container');
+    if (window.GMKBDebug) {
+        window.GMKBDebug.logInit('✅ TABS: Event handlers attached to tab container');
+    } else {
+        console.log('✅ TABS: Event handlers attached to tab container');
+    }
 }
 
 /**
@@ -186,4 +202,8 @@ window.GMKBTabs = {
     logAvailableTabContents
 };
 
-console.log('✅ Tabs System: Available globally and ready');
+if (window.GMKBDebug) {
+    window.GMKBDebug.logInit('✅ Tabs System: Available globally and ready');
+} else {
+    console.log('✅ Tabs System: Available globally and ready');
+}
