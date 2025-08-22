@@ -363,12 +363,11 @@ function setupCoreUI() {
             console.warn('⚠️ MAIN: Toolbar setup function not available');
         }
         
-        // ROOT FIX: Initialize component interactions (component clicks, drag and drop)
-        if (window.setupComponentInteractions) {
-            window.setupComponentInteractions();
-            window.structuredLogger.info('MAIN', 'Component interactions initialized');
-        } else {
-            console.warn('⚠️ MAIN: Component interactions setup function not available');
+        // ROOT FIX: Component interactions now handled by component-controls-manager.js
+        // The legacy component-interactions.js has been removed to prevent conflicts
+        // All control functionality is managed by the modern dynamic control system
+        if (window.gmkbData?.debugMode) {
+            console.log('✅ MAIN: Component interactions handled by modern component-controls-manager');
         }
         
         // ROOT CAUSE FIX: Remove duplicate call to setupDevicePreviewToggle()

@@ -1625,7 +1625,30 @@ class EnhancedComponentRenderer {
         
         try {
             const componentCount = Object.keys(initialState.components).length;
-            this.logger.info('RENDER', `renderSavedComponents: Starting render of ${componentCount} saved components`);
+            
+            // ROOT CAUSE DIAGNOSTIC: Check for duplicate containers FIRST
+            const allSavedContainers = document.querySelectorAll('#saved-components-container');
+            this.logger.info('RENDER', `Container check: Found ${allSavedContainers.length} saved-components-container elements`);
+            if (allSavedContainers.length > 1) {
+                this.logger.error('RENDER', `CRITICAL: Found ${allSavedContainers.length} saved-components-container elements in DOM!`);
+                // Log details about each container
+                allSavedContainers.forEach((container, index) => {
+                    this.logger.warn('RENDER', `Container ${index + 1}:`, {
+                        parentId: container.parentElement?.id,
+                        parentClass: container.parentElement?.className,
+                        childCount: container.children.length
+                    });
+                });
+            }
+            
+            // Also check for duplicate preview containers
+            const allPreviewContainers = document.querySelectorAll('#media-kit-preview');
+            this.logger.info('RENDER', `Container check: Found ${allPreviewContainers.length} media-kit-preview elements`);
+            if (allPreviewContainers.length > 1) {
+                this.logger.error('RENDER', `CRITICAL: Found ${allPreviewContainers.length} media-kit-preview elements in DOM!`);
+            }
+            
+            this.logger.info('RENDER', `renderSavedComponents: Starting render of ${componentCount} saved components`)
             
             // ROOT CAUSE FIX: Get the correct container and ensure it's visible
             let targetContainer = document.getElementById('saved-components-container');
@@ -1732,13 +1755,19 @@ class EnhancedComponentRenderer {
                                 continue;
                             }
                             
+                            // ROOT CAUSE DEBUG: Check BEFORE appending
+                            const checkBeforeAppend = document.querySelectorAll(`[data-component-id="${componentId}"]`);
+                            if (checkBeforeAppend.length > 0) {
+                                this.logger.warn('RENDER', `WARNING: ${checkBeforeAppend.length} elements with data-component-id="${componentId}" already exist BEFORE appending!`);
+                            }
+                            
                             // Append directly to container
                             targetContainer.appendChild(result.element);
                             
                             // ROOT CAUSE CHECK: Verify element immediately after appending
                             const postAppendCheck = document.getElementById(componentId);
                             if (!postAppendCheck) {
-                            this.logger.error('RENDER', `Failed to append element with ID ${componentId}`);
+                                this.logger.error('RENDER', `Failed to append element with ID ${componentId}`);
                             }
                             
                             // Update our cache
@@ -1748,6 +1777,36 @@ class EnhancedComponentRenderer {
                             const checkAfterAppend = document.querySelectorAll(`[data-component-id="${componentId}"]`);
                             if (checkAfterAppend.length > 1) {
                                 this.logger.error('RENDER', `CRITICAL: After appending ${componentId}, found ${checkAfterAppend.length} elements with same data-component-id!`);
+                                
+                                // ROOT CAUSE ANALYSIS: Get detailed information
+                                const parents = new Set();
+                                checkAfterAppend.forEach((el, index) => {
+                                    const parent = el.parentElement;
+                                    if (parent) {
+                                        parents.add(parent);
+                                    }
+                                    this.logger.warn('RENDER', `Duplicate ${index + 1} details:`, {
+                                        parentId: parent?.id || 'no-id',
+                                        parentClass: parent?.className || 'no-class',
+                                        isOurElement: el === result.element
+                                    });
+                                });
+                                
+                                // Check if all duplicates share the same parent
+                                if (parents.size === 1) {
+                                    this.logger.error('RENDER', `All duplicates are in the SAME parent container!`);
+                                } else {
+                                    this.logger.error('RENDER', `Duplicates are in ${parents.size} DIFFERENT parent containers!`);
+                                    // Log each unique parent
+                                    Array.from(parents).forEach((parent, index) => {
+                                        this.logger.warn('RENDER', `Parent ${index + 1}:`, {
+                                            id: parent.id || 'no-id',
+                                            className: parent.className || 'no-class',
+                                            tagName: parent.tagName
+                                        });
+                                    });
+                                }
+                                
                                 // Something is duplicating our element - investigate
                                 for (let i = 1; i < checkAfterAppend.length; i++) {
                                     checkAfterAppend[i].remove();

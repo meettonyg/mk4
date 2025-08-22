@@ -349,8 +349,8 @@
             const button = document.createElement('button');
             button.className = `component-control ${definition.className}`;
             button.setAttribute('data-action', controlType);
-            button.setAttribute('data-component-id', componentId);
-            button.setAttribute('data-control-component-id', componentId); // ROOT FIX: Backup attribute
+            // ROOT FIX: Use data-controls-for instead of data-component-id to prevent duplicate detection issues
+            button.setAttribute('data-controls-for', componentId);
             button.setAttribute('title', definition.title);
             button.type = 'button';
             
@@ -420,12 +420,12 @@
          * ROOT FIX: Attach event listeners with proper cleanup tracking
          */
         attachEventListeners(controlsContainer, componentId) {
-            // ROOT FIX: Double-check all buttons have component ID set
+            // ROOT FIX: Ensure all buttons use data-controls-for (not data-component-id)
             const buttons = controlsContainer.querySelectorAll('[data-action]');
             buttons.forEach(button => {
-                if (!button.getAttribute('data-component-id')) {
-                    button.setAttribute('data-component-id', componentId);
-                    structuredLogger.debug('CONTROLS', `Fixed missing data-component-id on ${button.getAttribute('data-action')} button for ${componentId}`);
+                if (!button.getAttribute('data-controls-for')) {
+                    button.setAttribute('data-controls-for', componentId);
+                    structuredLogger.debug('CONTROLS', `Set data-controls-for on ${button.getAttribute('data-action')} button for ${componentId}`);
                 }
             });
             
@@ -437,15 +437,8 @@
                 if (!button) return;
                 
                 const action = button.getAttribute('data-action');
-                let targetComponentId = button.getAttribute('data-component-id');
-                
-                // ROOT FIX: If button doesn't have data-component-id, check backup attribute
-                if (!targetComponentId) {
-                    targetComponentId = button.getAttribute('data-control-component-id');
-                    if (targetComponentId) {
-                        structuredLogger.debug('CONTROLS', 'Using backup data-control-component-id attribute', { targetComponentId });
-                    }
-                }
+                // ROOT FIX: Use data-controls-for to get the component ID
+                let targetComponentId = button.getAttribute('data-controls-for');
                 
                 // ROOT FIX: If still no ID, traverse up to find the component
                 if (!targetComponentId) {
@@ -970,21 +963,19 @@
         
         allControlButtons.forEach((button, index) => {
             const action = button.getAttribute('data-action');
-            const componentId = button.getAttribute('data-component-id');
-            const backupId = button.getAttribute('data-control-component-id');
+            const controlsFor = button.getAttribute('data-controls-for');
             const toolbar = button.closest('.component-controls__toolbar');
             const toolbarFor = toolbar?.getAttribute('data-toolbar-for');
             const componentElement = button.closest('[data-component-id]');
             const componentElementId = componentElement?.getAttribute('data-component-id');
             
             console.log(`\nButton ${index + 1} (${action}):`);
-            console.log(`  data-component-id: ${componentId || 'MISSING'} ${!componentId ? '❌' : '✅'}`);
-            console.log(`  data-control-component-id: ${backupId || 'MISSING'} ${!backupId ? '❌' : '✅'}`);
+            console.log(`  data-controls-for: ${controlsFor || 'MISSING'} ${!controlsFor ? '❌' : '✅'}`);
             console.log(`  Toolbar data-toolbar-for: ${toolbarFor || 'MISSING'}`);
             console.log(`  Closest component element ID: ${componentElementId || 'NOT FOUND'}`);
             
-            if (!componentId && !backupId) {
-                console.log(`  ⚠️ PROBLEM: No component ID attributes on button!`);
+            if (!controlsFor) {
+                console.log(`  ⚠️ PROBLEM: No data-controls-for attribute on button!`);
             }
             
             // Check for duplicate data-component-id in the component
@@ -1029,7 +1020,7 @@
         
         return {
             controlButtons: allControlButtons.length,
-            buttonsWithoutId: Array.from(allControlButtons).filter(b => !b.getAttribute('data-component-id')).length,
+            buttonsWithoutId: Array.from(allControlButtons).filter(b => !b.getAttribute('data-controls-for')).length,
             duplicateIds: Array.from(idMap.entries()).filter(([id, els]) => els.length > 1).length
         };
     };
@@ -1195,14 +1186,13 @@
         // Step 1: Fix control buttons without component ID
         const allControlButtons = document.querySelectorAll('.component-control');
         allControlButtons.forEach(button => {
-            if (!button.getAttribute('data-component-id')) {
+            if (!button.getAttribute('data-controls-for')) {
                 // Try to find component ID from toolbar
                 const toolbar = button.closest('.component-controls__toolbar');
                 const toolbarFor = toolbar?.getAttribute('data-toolbar-for');
                 
                 if (toolbarFor) {
-                    button.setAttribute('data-component-id', toolbarFor);
-                    button.setAttribute('data-control-component-id', toolbarFor);
+                    button.setAttribute('data-controls-for', toolbarFor);
                     issuesFixed++;
                     console.log(`✅ Fixed button ${button.getAttribute('data-action')} for component ${toolbarFor}`);
                 } else {
@@ -1210,8 +1200,7 @@
                     const componentElement = button.closest('[data-component-id]');
                     if (componentElement) {
                         const componentId = componentElement.getAttribute('data-component-id');
-                        button.setAttribute('data-component-id', componentId);
-                        button.setAttribute('data-control-component-id', componentId);
+                        button.setAttribute('data-controls-for', componentId);
                         issuesFixed++;
                         console.log(`✅ Fixed button ${button.getAttribute('data-action')} for component ${componentId}`);
                     }

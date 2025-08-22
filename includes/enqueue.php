@@ -641,6 +641,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT CAUSE DEBUG: Simple DOM state checker
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        wp_enqueue_script(
+            'gmkb-dom-state-checker',
+            $plugin_url . 'js/debug/dom-state-checker.js',
+            array(),
+            $version . '-debug',
+            true
+        );
+    }
+    
     // ROOT FIX: Debug utilities for component interaction testing (development only)
     // DISABLED: Test component cleanup script no longer auto-loads to prevent accidental deletions
     // To enable, add ?debug_cleanup=1 to the URL
