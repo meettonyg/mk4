@@ -23,7 +23,7 @@ class GlobalSettings {
         try {
             // Find DOM elements
             this.modal = document.getElementById('global-settings-modal');
-            this.openButton = document.getElementById('global-theme-btn') || document.getElementById('global-settings-button');
+            this.openButton = document.getElementById('global-theme-btn') || document.getElementById('global-settings-button') || document.getElementById('global-settings-btn');
             
             if (!this.modal) {
                 console.warn('⚠️ GMKB: Global Settings modal not found - this is optional');
@@ -32,6 +32,7 @@ class GlobalSettings {
             
             if (!this.openButton) {
                 console.warn('⚠️ GMKB: Global Settings open button not found - this is optional');
+                console.warn('Searched for: #global-theme-btn, #global-settings-button, #global-settings-btn');
                 return Promise.resolve();
             }
             

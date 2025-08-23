@@ -6,221 +6,135 @@
  * ROOT FIX: Enhanced tab switching functionality with better initialization
  */
 function setupTabs() {
-    if (window.GMKBDebug) {
-        window.GMKBDebug.logInit('📋 TABS: Setting up enhanced tab functionality...');
-    } else {
-        console.log('📋 TABS: Setting up enhanced tab functionality...');
-    }
+    console.log('📋 TABS: Setting up tab functionality...');
     
-    // Wait for DOM to be ready
+    // ROOT FIX: Direct initialization without delays
     const initializeTabs = () => {
+        const tabContainer = document.querySelector('.sidebar__tabs');
         const tabs = document.querySelectorAll('.sidebar__tab');
         const contents = document.querySelectorAll('.tab-content');
         
-        if (window.GMKBDebug) {
-            window.GMKBDebug.logInit(`🔍 TABS: Found ${tabs.length} tabs and ${contents.length} content panels`);
-        } else {
-            console.log(`🔍 TABS: Found ${tabs.length} tabs and ${contents.length} content panels`);
-        }
-        
-        // ROOT FIX: Use event delegation with improved error handling
-        const tabContainer = document.querySelector('.sidebar__tabs');
-        
-        if (!tabContainer) {
-            console.error('❌ TABS: Tab container .sidebar__tabs not found!');
-            // Try alternative selectors
-            const altContainer = document.querySelector('.sidebar .tabs, .sidebar nav, .sidebar .navigation');
-            if (altContainer) {
-                console.log('🔄 TABS: Using alternative tab container');
-                setupTabEventHandlers(altContainer);
-            } else {
-                console.error('❌ TABS: No suitable tab container found anywhere');
-            }
+        if (!tabContainer || tabs.length === 0) {
+            console.error('❌ TABS: Tab container or tabs not found');
             return;
         }
         
-        setupTabEventHandlers(tabContainer);
+        console.log(`✅ TABS: Found ${tabs.length} tabs and ${contents.length} content panels`);
         
-        // ROOT FIX: Set initial active tab if none is active
+        // ROOT FIX: Direct event listeners on each tab
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const tabName = this.getAttribute('data-tab');
+                if (!tabName) {
+                    console.warn('⚠️ TABS: Tab missing data-tab attribute');
+                    return;
+                }
+                
+                console.log(`🔄 TABS: Switching to ${tabName} tab`);
+                
+                // Remove active class from all tabs
+                tabs.forEach(t => {
+                    t.classList.remove('sidebar__tab--active', 'active');
+                });
+                
+                // Add active class to clicked tab
+                this.classList.add('sidebar__tab--active', 'active');
+                
+                // Hide all content panels
+                contents.forEach(content => {
+                    content.classList.remove('tab-content--active', 'active');
+                    content.style.display = 'none';
+                });
+                
+                // Show the selected content
+                const targetContent = document.getElementById(`${tabName}-tab`);
+                if (targetContent) {
+                    targetContent.classList.add('tab-content--active', 'active');
+                    targetContent.style.display = 'block';
+                    console.log(`✅ TABS: Activated ${tabName} content`);
+                    
+                    // Emit event for other systems
+                    document.dispatchEvent(new CustomEvent('gmkb:tab-changed', {
+                        detail: {
+                            tabName: tabName,
+                            tabElement: this,
+                            contentElement: targetContent
+                        }
+                    }));
+                } else {
+                    console.error(`❌ TABS: Content not found for ${tabName}`);
+                }
+            });
+        });
+        
+        // ROOT FIX: Ensure initial state is correct
         const activeTab = document.querySelector('.sidebar__tab--active');
-        if (!activeTab && tabs.length > 0) {
-            console.log('📌 TABS: No active tab found, setting first tab as active');
-            activateTab(tabs[0]);
+        if (activeTab) {
+            const activeTabName = activeTab.getAttribute('data-tab');
+            const activeContent = document.getElementById(`${activeTabName}-tab`);
+            if (activeContent) {
+                // Hide all contents first
+                contents.forEach(content => {
+                    content.style.display = 'none';
+                });
+                // Show active content
+                activeContent.style.display = 'block';
+            }
         }
         
-        if (window.GMKBDebug) {
-            window.GMKBDebug.logInit('✅ TABS: Enhanced tabs setup complete');
-        } else {
-            console.log('✅ TABS: Enhanced tabs setup complete');
-        }
+        console.log('✅ TABS: Tab system initialized successfully');
     };
     
-    // ROOT FIX: Delayed initialization to ensure DOM is ready
+    // Initialize immediately if DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initializeTabs);
     } else {
-        // DOM already ready, wait a tick for dynamic content
-        setTimeout(initializeTabs, 100);
+        initializeTabs();
     }
 }
 
 /**
- * ROOT FIX: Setup event handlers for tab container
- * @param {HTMLElement} tabContainer - Tab container element
+ * ROOT FIX: Switch to a specific tab programmatically
  */
-function setupTabEventHandlers(tabContainer) {
-    // Remove any existing listener to prevent duplicates
-    const newContainer = tabContainer.cloneNode(true);
-    tabContainer.parentNode.replaceChild(newContainer, tabContainer);
-    
-    newContainer.addEventListener('click', function(e) {
-        const tab = e.target.closest('.sidebar__tab, .tab, [data-tab]');
-        if (!tab) return;
-        
-        e.preventDefault();
-        e.stopPropagation();
-        
-        activateTab(tab);
-    });
-    
-    if (window.GMKBDebug) {
-        window.GMKBDebug.logInit('✅ TABS: Event handlers attached to tab container');
+function switchToTab(tabName) {
+    const tab = document.querySelector(`[data-tab="${tabName}"]`);
+    if (tab) {
+        tab.click();
+        console.log(`🔄 TABS: Programmatically switched to ${tabName} tab`);
     } else {
-        console.log('✅ TABS: Event handlers attached to tab container');
+        console.error(`❌ TABS: Tab not found: ${tabName}`);
     }
 }
 
-/**
- * ROOT FIX: Activate a specific tab
- * @param {HTMLElement} tab - Tab element to activate
- */
-function activateTab(tab) {
-    const tabName = tab.getAttribute('data-tab') || tab.getAttribute('data-target');
+// ROOT FIX: Listen for component edit requests and switch to design tab
+document.addEventListener('gmkb:component-edit-requested', (event) => {
+    console.log('🔧 TABS: Component edit requested, switching to design tab');
+    const { componentId } = event.detail;
     
-    if (!tabName) {
-        console.warn('⚠️ TABS: Tab element missing data-tab attribute');
-        return;
+    // Switch to design tab
+    switchToTab('design');
+    
+    // Load the component in design panel if available
+    if (window.designPanel && componentId) {
+        // Small delay to ensure tab is switched first
+        setTimeout(() => {
+            console.log(`🎨 TABS: Loading component ${componentId} in design panel`);
+            window.designPanel.load(componentId);
+        }, 100);
     }
-    
-    console.log(`📋 TABS: Activating tab: ${tabName}`);
-    
-    // Remove active class from all tabs
-    document.querySelectorAll('.sidebar__tab, .tab').forEach(t => {
-        t.classList.remove('sidebar__tab--active', 'tab--active', 'active');
-    });
-    
-    // Add active class to clicked tab
-    tab.classList.add('sidebar__tab--active', 'active');
-    
-    // ROOT FIX: Handle tab content visibility
-    // Hide all tab contents
-    document.querySelectorAll('.tab-content, .sidebar__tab-content, [class*="tab-"][class*="content"]').forEach(content => {
-        content.classList.remove('tab-content--active', 'active');
-        content.style.display = 'none';
-    });
-    
-    // ROOT FIX: Enhanced content targeting with multiple strategies
-    let targetContent = findTabContent(tabName);
-    
-    if (targetContent) {
-        targetContent.classList.add('tab-content--active', 'active');
-        targetContent.style.display = 'block';
-        console.log(`✅ TABS: Activated tab content: ${tabName}`);
-        
-        // ROOT FIX: Dispatch tab change event for other systems
-        document.dispatchEvent(new CustomEvent('gmkb:tab-changed', {
-            detail: {
-                tabName: tabName,
-                tabElement: tab,
-                contentElement: targetContent,
-                timestamp: Date.now()
-            }
-        }));
-        
-    } else {
-        console.warn(`⚠️ TABS: Tab content not found for: ${tabName}`);
-        // Enhanced debugging for missing content
-        logAvailableTabContents();
-    }
-}
+});
 
-/**
- * ROOT FIX: Find tab content using multiple strategies
- * @param {string} tabName - Name of the tab
- * @returns {HTMLElement|null} Tab content element
- */
-function findTabContent(tabName) {
-    // Strategy 1: Standard ID patterns (the current structure uses this)
-    let targetContent = document.getElementById(tabName + '-tab');
-    if (targetContent) {
-        console.log(`✅ TABS: Found content using ID: ${tabName}-tab`);
-        return targetContent;
-    }
-    
-    targetContent = document.getElementById(tabName + '-panel');
-    if (targetContent) return targetContent;
-    
-    targetContent = document.getElementById(tabName + '-content');
-    if (targetContent) return targetContent;
-    
-    targetContent = document.getElementById(tabName);
-    if (targetContent) return targetContent;
-    
-    // Strategy 2: Data attribute matching
-    targetContent = document.querySelector(`[data-tab="${tabName}"]`);
-    if (targetContent) return targetContent;
-    
-    targetContent = document.querySelector(`[data-target="${tabName}"]`);
-    if (targetContent) return targetContent;
-    
-    // Strategy 3: Class-based matching
-    targetContent = document.querySelector(`.tab-content.${tabName}, .tab-panel.${tabName}`);
-    if (targetContent) return targetContent;
-    
-    // Strategy 4: Find by partial match in ID
-    const allTabContents = document.querySelectorAll('.tab-content, [id*="tab"]');
-    for (let content of allTabContents) {
-        if (content.id && content.id.toLowerCase().includes(tabName.toLowerCase())) {
-            console.log(`✅ TABS: Found content using partial match: ${content.id}`);
-            return content;
-        }
-    }
-    
-    return null;
-}
-
-/**
- * ROOT FIX: Enhanced debugging for available tab contents
- */
-function logAvailableTabContents() {
-    const availableContents = document.querySelectorAll('.tab-content, [data-tab], [id*="tab"], [id*="panel"]');
-    console.group('🔍 TABS: Available tab contents debugging');
-    console.log('Total elements found:', availableContents.length);
-    
-    availableContents.forEach((el, index) => {
-        console.log(`${index + 1}:`, {
-            id: el.id,
-            classes: el.className,
-            dataTab: el.getAttribute('data-tab'),
-            dataTarget: el.getAttribute('data-target')
-        });
-    });
-    
-    console.groupEnd();
-}
-
-// ROOT FIX: Make tabs system available globally instead of ES6 export
+// ROOT FIX: Make tabs system available globally
 window.setupTabs = setupTabs;
-window.GMKBTabs = {
-    setupTabs,
-    setupTabEventHandlers,
-    activateTab,
-    findTabContent,
-    logAvailableTabContents
-};
+window.switchToTab = switchToTab;
 
-if (window.GMKBDebug) {
-    window.GMKBDebug.logInit('✅ Tabs System: Available globally and ready');
-} else {
-    console.log('✅ Tabs System: Available globally and ready');
-}
+// Auto-initialize when script loads
+setupTabs();
+
+// ROOT FIX: Emit event to signal tabs script is loaded
+document.dispatchEvent(new CustomEvent('gmkb:tabs-loaded'));
+
+console.log('✅ Tabs System: Available globally and auto-initialized');

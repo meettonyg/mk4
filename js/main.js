@@ -370,19 +370,19 @@ function createFallbackLogger() {
  */
 function setupCoreUI() {
     try {
-        // ROOT FIX: Initialize tabs system first
+        // ROOT FIX: Initialize tabs system using event-driven approach
         if (window.setupTabs) {
             window.setupTabs();
             window.structuredLogger.info('MAIN', 'Tabs system initialized');
         } else {
-            console.warn('⚠️ MAIN: Tab setup function not available, will retry later');
-            // Retry after a short delay as scripts might still be loading
-            setTimeout(() => {
+            console.warn('⚠️ MAIN: Tab setup function not available yet');
+            // Listen for tabs script to load
+            document.addEventListener('gmkb:tabs-loaded', () => {
                 if (window.setupTabs) {
                     window.setupTabs();
-                    window.structuredLogger.info('MAIN', 'Tabs system initialized on retry');
+                    window.structuredLogger.info('MAIN', 'Tabs system initialized after load event');
                 }
-            }, 500);
+            });
         }
         
         // ROOT FIX: Initialize toolbar functionality (device preview, button handlers)
