@@ -44,6 +44,11 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 
+// Admin tools for viewing media kit data
+if (is_admin()) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-media-kit-viewer.php';
+}
+
 // SCALABLE ARCHITECTURE: Test suite only loaded on demand via validation script
 // ROOT FIX: Removed automatic test script loading to prevent conflicts with enqueue.php
 // === GEMINI FIX END ===
@@ -968,21 +973,24 @@ class Guestify_Media_Kit_Builder {
         // ROOT FIX: Enhanced save operation with detailed error reporting
         $meta_key = 'gmkb_media_kit_state';
         
-        // CRITICAL FIX: Ensure saved_components array format for template compatibility
-        if (isset($state['components']) && is_object($state['components'])) {
-            // Convert components object to saved_components array for template
+        // CRITICAL FIX: Ensure saved_components array format for template compatibility and respects layout order
+        if (isset($state['layout']) && is_array($state['layout'])) {
             $saved_components = array();
-            foreach ($state['components'] as $component_id => $component_data) {
-                if (is_array($component_data) || is_object($component_data)) {
-                    $component_array = (array) $component_data;
-                    $component_array['id'] = $component_id; // Ensure ID is set
-                    $saved_components[] = $component_array;
+            foreach ($state['layout'] as $component_id) {
+                if (isset($state['components'][$component_id])) {
+                    $component_data = $state['components'][$component_id];
+                    if (is_array($component_data) || is_object($component_data)) {
+                        $component_array = (array) $component_data;
+                        $component_array['id'] = $component_id; // Ensure ID is set
+                        $saved_components[] = $component_array;
+                    }
                 }
             }
             $state['saved_components'] = $saved_components;
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Added saved_components array with ' . count($saved_components) . ' components for template compatibility');
+                error_log('✅ GMKB: Added saved_components array with ' . count($saved_components) . ' components for template compatibility, respecting layout order.');
+                error_log('✅ GMKB: Layout order: ' . implode(', ', $state['layout']));
             }
         }
         

@@ -111,15 +111,25 @@
                 // ROOT FIX: Register in DOM registry for tracking
                 this.domRegistry.set(componentId, newElement);
                 
-                // ROOT FIX: Skip verification - duplicates prevented at source
-                // Templates no longer create duplicates
+                // ROOT FIX: Verify no duplicates after insertion
+                const verification = this.verifyUniqueElement(componentId);
+                if (!verification.isUnique) {
+                    this.logger.warn('DOM_COORDINATOR', `Duplicate elements detected after render for ${componentId}`, verification);
+                    this.emergencyDeduplication(componentId);
+                }
                 
                 // Update stats
                 this.renderStats.totalRenders++;
                 this.renderStats.lastRenderTime = Date.now();
                 
                 // ROOT FIX: Attach component controls immediately after successful render
-                this.attachControlsToComponent(newElement, componentId);
+                // Use the actual element from DOM, not the pre-render element
+                const actualElement = document.getElementById(componentId);
+                if (actualElement) {
+                    this.attachControlsToComponent(actualElement, componentId);
+                } else {
+                    this.logger.error('DOM_COORDINATOR', `Could not find element ${componentId} after render`);
+                }
                 
                 this.logger.info('DOM_COORDINATOR', `Successfully rendered ${componentId}`, {
                     targetContainer: targetContainerId,
@@ -130,7 +140,7 @@
                 document.dispatchEvent(new CustomEvent('gmkb:component-rendered-coordinated', {
                     detail: {
                         componentId,
-                        element: newElement,
+                        element: actualElement || newElement,
                         targetContainer: targetContainerId,
                         renderTime: Date.now(),
                         verification

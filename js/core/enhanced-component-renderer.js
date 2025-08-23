@@ -535,6 +535,18 @@ class EnhancedComponentRenderer {
 
         // 1. Get the initial state directly from the manager
         const initialState = enhancedStateManager.getInitialState();
+        
+        // ROOT FIX: Add comprehensive debug logging for initial state
+        this.logger.info('RENDER', 'Enhanced Component Renderer init() received initial state:', {
+            hasComponents: !!(initialState && initialState.components),
+            componentCount: initialState && initialState.components ? Object.keys(initialState.components).length : 0,
+            hasSavedComponents: !!(initialState && initialState.saved_components && Array.isArray(initialState.saved_components)),
+            savedComponentsLength: initialState && initialState.saved_components ? initialState.saved_components.length : 0,
+            hasLayout: !!(initialState && initialState.layout && Array.isArray(initialState.layout)),
+            layoutLength: initialState && initialState.layout ? initialState.layout.length : 0,
+            stateKeys: initialState ? Object.keys(initialState) : []
+        });
+        
         this.logger.info('RENDER', 'Performing initial render with state:', initialState);
         
         // ROOT CAUSE FIX: Set lastState and lastStateHash BEFORE rendering to prevent duplicate renders
@@ -1429,25 +1441,39 @@ class EnhancedComponentRenderer {
             count: validatedLayout.length
         });
 
-        // ROOT FIX: Check all possible containers
+        // ROOT FIX: Find the correct container that has the components
         let activeContainer = null;
         const savedContainer = document.getElementById('saved-components-container');
         const previewContainer = this.previewContainer;
         
-        // Determine which container has the components
-        if (savedContainer && savedContainer.children.length > 0) {
+        // Check where components actually are
+        const firstComponentId = validatedLayout[0];
+        const firstComponent = document.getElementById(firstComponentId);
+        
+        if (firstComponent && firstComponent.parentElement) {
+            activeContainer = firstComponent.parentElement;
+            this.logger.info('RENDER', `Found components in container: ${activeContainer.id || activeContainer.className}`);
+            
+            // ROOT FIX: If components are in wrong container, move them to correct one
+            if (savedContainer && savedContainer.style.display !== 'none' && activeContainer !== savedContainer) {
+                this.logger.warn('RENDER', 'Components are in wrong container, moving to saved-components-container');
+                
+                // Move all components to saved container
+                validatedLayout.forEach(componentId => {
+                    const component = document.getElementById(componentId);
+                    if (component && component.parentElement !== savedContainer) {
+                        savedContainer.appendChild(component);
+                    }
+                });
+                
+                activeContainer = savedContainer;
+            }
+        } else if (savedContainer && savedContainer.style.display !== 'none') {
             activeContainer = savedContainer;
-            this.logger.debug('RENDER', 'Using saved-components-container for reordering');
-        } else if (previewContainer && previewContainer.children.length > 0) {
+            this.logger.debug('RENDER', 'Using visible saved-components-container for reordering');
+        } else if (previewContainer) {
             activeContainer = previewContainer;
             this.logger.debug('RENDER', 'Using preview container for reordering');
-        } else {
-            // Check if components exist but are in unexpected containers
-            const componentsInDOM = document.querySelectorAll('[data-component-id]');
-            if (componentsInDOM.length > 0 && componentsInDOM[0].parentElement) {
-                activeContainer = componentsInDOM[0].parentElement;
-                this.logger.warn('RENDER', `Using unexpected container for reordering: ${activeContainer.id || activeContainer.className}`);
-            }
         }
         
         if (!activeContainer) {
@@ -1592,14 +1618,15 @@ class EnhancedComponentRenderer {
                 throw new Error('Template produced no element');
             }
             
-            // ROOT FIX: CRITICAL - Attach component controls after successful rendering
-            this.attachComponentControls(element, id);
+            // ROOT FIX: Do NOT attach controls here - they will be attached after DOM insertion
+            // This prevents double attachment when components are rendered
+            // Controls are attached by DOM coordinator or after element is in DOM
             
             this.logger.debug('RENDER', `Successfully rendered component ${id}:`, {
                 elementTagName: element.tagName,
                 elementId: element.id,
                 hasContent: element.innerHTML.length > 0,
-                controlsAttached: true
+                controlsAttached: false // Will be attached later
             });
             
             return {
@@ -1931,6 +1958,17 @@ class EnhancedComponentRenderer {
         try {
             const componentCount = Object.keys(initialState.components).length;
             
+            // ROOT FIX: Debug log the initial state structure
+            this.logger.info('RENDER', 'renderSavedComponents received initialState:', {
+                hasComponents: !!initialState.components,
+                componentCount: componentCount,
+                hasSavedComponents: !!initialState.saved_components,
+                savedComponentsCount: initialState.saved_components ? initialState.saved_components.length : 0,
+                hasLayout: !!initialState.layout,
+                layoutCount: initialState.layout ? initialState.layout.length : 0,
+                stateKeys: Object.keys(initialState)
+            });
+            
             // ROOT CAUSE DIAGNOSTIC: Check for duplicate containers FIRST
             const allSavedContainers = document.querySelectorAll('#saved-components-container');
             this.logger.info('RENDER', `Container check: Found ${allSavedContainers.length} saved-components-container elements`);
@@ -2001,7 +2039,35 @@ class EnhancedComponentRenderer {
                 });
             }
             
-            const componentIdList = Object.keys(initialState.components);
+            // ROOT FIX: Use saved_components array order if available, otherwise fall back to layout order
+            let componentIdList = [];
+            
+            // DEBUG: Log what data we have available
+            this.logger.info('RENDER', 'renderSavedComponents data availability:', {
+                hasSavedComponents: !!(initialState.saved_components && Array.isArray(initialState.saved_components)),
+                savedComponentsLength: initialState.saved_components ? initialState.saved_components.length : 0,
+                hasLayout: !!(initialState.layout && Array.isArray(initialState.layout)),
+                layoutLength: initialState.layout ? initialState.layout.length : 0,
+                hasComponents: !!(initialState.components && typeof initialState.components === 'object'),
+                componentsCount: initialState.components ? Object.keys(initialState.components).length : 0
+            });
+            
+            if (initialState.saved_components && Array.isArray(initialState.saved_components) && initialState.saved_components.length > 0) {
+                // saved_components array is already in the correct order from PHP
+                componentIdList = initialState.saved_components.map(comp => comp.id).filter(id => id);
+                this.logger.info('RENDER', `Using saved_components order (${componentIdList.length} components in layout order)`);
+                this.logger.info('RENDER', `Component order from saved_components: ${componentIdList.join(', ')}`);
+            } else if (initialState.layout && Array.isArray(initialState.layout) && initialState.layout.length > 0) {
+                // Use layout array to determine order
+                componentIdList = initialState.layout.filter(id => initialState.components[id]);
+                this.logger.info('RENDER', `Using layout array order (${componentIdList.length} components)`);
+                this.logger.info('RENDER', `Component order from layout: ${componentIdList.join(', ')}`);
+            } else {
+                // Fall back to components object keys
+                componentIdList = Object.keys(initialState.components);
+                this.logger.warn('RENDER', `No order information found, using component keys (${componentIdList.length} components)`);
+            }
+            
             this.logger.debug('RENDER', `renderSavedComponents: Processing ${componentIdList.length} components STRICTLY SEQUENTIALLY`);
             
             // ROOT CAUSE FIX: Render STRICTLY ONE AT A TIME - NO PARALLEL RENDERING
@@ -2016,7 +2082,27 @@ class EnhancedComponentRenderer {
                         continue;
                     }
                     
-                    const componentState = initialState.components[componentId];
+                    // ROOT FIX: Get component state from saved_components array if using that order
+                    let componentState = null;
+                    
+                    if (initialState.saved_components && Array.isArray(initialState.saved_components)) {
+                        // Find the component in saved_components array
+                        const savedComponent = initialState.saved_components.find(comp => comp.id === componentId);
+                        if (savedComponent) {
+                            componentState = {
+                                type: savedComponent.type,
+                                props: savedComponent.props || savedComponent.data || {},
+                                data: savedComponent.data || savedComponent.props || {},
+                                id: savedComponent.id
+                            };
+                        }
+                    }
+                    
+                    // Fallback to components object if not found in saved_components
+                    if (!componentState && initialState.components[componentId]) {
+                        componentState = initialState.components[componentId];
+                    }
+                    
                     if (!componentState) {
                         this.logger.warn('RENDER', `No state found for saved component: ${componentId}`);
                         continue;
@@ -2073,6 +2159,15 @@ class EnhancedComponentRenderer {
                             const postAppendCheck = document.getElementById(componentId);
                             if (!postAppendCheck) {
                                 this.logger.error('RENDER', `Failed to append element with ID ${componentId}`);
+                            } else {
+                                // ROOT FIX: Log where component was actually appended
+                                const actualParent = postAppendCheck.parentElement;
+                                if (actualParent !== targetContainer) {
+                                    this.logger.error('RENDER', `Component ${componentId} was appended to wrong container!`, {
+                                        expectedContainer: targetContainer.id,
+                                        actualContainer: actualParent?.id || actualParent?.className
+                                    });
+                                }
                             }
                             
                             // Update our cache
@@ -2118,8 +2213,9 @@ class EnhancedComponentRenderer {
                                 }
                             }
                             
-                            // Attach controls immediately
-                            this.attachComponentControls(result.element, componentId);
+                            // ROOT FIX: Do NOT attach controls here - DOM coordinator will do it
+                            // This prevents double attachment
+                            // this.attachComponentControls(result.element, componentId);
                             
                             // Register with UI registry
                             this.registerComponentWithUIRegistry(componentId, result.element, componentState);
@@ -2141,10 +2237,46 @@ class EnhancedComponentRenderer {
                 }
             }
             
-            // Apply layout order if available
-            if (initialState.layout && Array.isArray(initialState.layout)) {
-                this.reorderComponents(initialState.layout);
+            // ROOT FIX: Respect saved_components order from PHP
+            // The PHP backend saves components in the correct order in saved_components array
+            // We should render them in that order instead of relying on separate layout reordering
+            if (initialState.saved_components && Array.isArray(initialState.saved_components) && initialState.saved_components.length > 0) {
+                this.logger.info('RENDER', 'Using saved_components order from PHP (already in correct layout order)', {
+                    componentCount: initialState.saved_components.length,
+                    order: initialState.saved_components.map(c => c.id)
+                });
+                // Components are already rendered in the correct order from saved_components
+                // No reordering needed - the componentIdList above already uses this order
+            } else if (initialState.layout && Array.isArray(initialState.layout) && initialState.layout.length > 0) {
+                // Only reorder if we didn't use saved_components order
+                this.logger.info('RENDER', 'No saved_components found, will apply layout order after rendering', {
+                    layout: initialState.layout,
+                    containerBeforeReorder: targetContainer.id,
+                    childrenBeforeReorder: targetContainer.children.length
+                });
+                
+                // Wait for DOM to stabilize before reordering
+                setTimeout(() => {
+                    this.reorderComponents(initialState.layout);
+                    
+                    // Log state after reordering
+                    this.logger.info('RENDER', 'Layout order applied', {
+                        childrenAfterReorder: targetContainer.children.length,
+                        actualOrder: Array.from(targetContainer.children).map(child => child.id || child.getAttribute('data-component-id'))
+                    });
+                }, 200);
+            } else {
+                this.logger.warn('RENDER', 'No layout array found in initial state - components will use default order');
             }
+            
+            // ROOT FIX: Attach controls to all rendered components AFTER they're in DOM
+            // This ensures controls are only attached once
+            renderedComponents.forEach(componentId => {
+                const element = document.getElementById(componentId);
+                if (element && !element.querySelector('.component-controls--dynamic')) {
+                    this.attachComponentControls(element, componentId);
+                }
+            });
             
             // ROOT CAUSE FIX: Skip final verification - duplicates prevented at source
             

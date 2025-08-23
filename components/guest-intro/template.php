@@ -4,13 +4,8 @@
  * Perfect for podcast hosts to introduce their guests
  */
 ?>
-<div class="content-section guest-intro-component editable-element" data-element="guest-intro" data-component="guest-intro" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="guest-intro">
-    <div class="element-controls">
-        <button class="control-btn" title="Move Up">↑</button>
-        <button class="control-btn" title="Move Down">↓</button>
-        <button class="control-btn" title="Duplicate">⧉</button>
-        <button class="control-btn" title="Delete">×</button>
-    </div>
+<div class="content-section guest-intro-component editable-element" data-element="guest-intro" data-component="guest-intro" data-component-type="guest-intro">
+    <!-- ROOT FIX: Controls removed - ComponentControlsManager handles all control functionality dynamically -->
     <h2 class="section-title"><?php echo esc_html($title ?? 'Guest Introduction'); ?></h2>
     
     <div class="guest-intro-content">

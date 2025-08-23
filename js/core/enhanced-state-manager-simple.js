@@ -90,7 +90,19 @@
                         }
                     });
                     
+                    // ROOT FIX: Log initial state before validation
+                    this.logger.debug('STATE', 'initializeAfterSystems: State before validation', {
+                        hasSavedComponents: !!(initialState.saved_components && Array.isArray(initialState.saved_components)),
+                        savedComponentsLength: initialState.saved_components ? initialState.saved_components.length : 0
+                    });
+                    
                     this.state = this.validateAndNormalizeState(initialState);
+                    
+                    // ROOT FIX: Log state after validation
+                    this.logger.debug('STATE', 'initializeAfterSystems: State after validation', {
+                        hasSavedComponents: !!(this.state.saved_components && Array.isArray(this.state.saved_components)),
+                        savedComponentsLength: this.state.saved_components ? this.state.saved_components.length : 0
+                    });
                     this.notifySubscribers();
                 } else {
                     this.logger.info('STATE', 'No saved state found - starting with empty state');
@@ -239,13 +251,19 @@
          */
         getInitialState() {
             if (this.isInitialized) {
-                return this.getState();
+                const state = this.getState();
+                this.logger.debug('STATE', 'getInitialState: Returning initialized state', {
+                    componentCount: Object.keys(state.components || {}).length,
+                    hasSavedComponents: !!(state.saved_components && Array.isArray(state.saved_components)),
+                    savedComponentsLength: state.saved_components ? state.saved_components.length : 0
+                });
+                return state;
             }
             
             // If not yet initialized, get the state from data sources
             try {
                 const initialState = this.getInitialStateFromSources();
-                return initialState || {
+                const finalState = initialState || {
                     layout: [],
                     components: {},
                     globalSettings: {
@@ -253,6 +271,14 @@
                     },
                     version: this.SAVE_VERSION
                 };
+                
+                this.logger.debug('STATE', 'getInitialState: Returning state from sources', {
+                    componentCount: Object.keys(finalState.components || {}).length,
+                    hasSavedComponents: !!(finalState.saved_components && Array.isArray(finalState.saved_components)),
+                    savedComponentsLength: finalState.saved_components ? finalState.saved_components.length : 0
+                });
+                
+                return finalState;
             } catch (error) {
                 this.logger.warn('STATE', 'Error getting initial state, returning empty state', error);
                 return {
@@ -271,6 +297,17 @@
          */
         getInitialStateFromSources() {
             this.logger.info('STATE', '💾 Initializing state from available data sources...');
+            
+            // ROOT FIX: Log all available global WordPress data
+            this.logger.debug('STATE', 'Global data availability check:', {
+                windowGmkbData: !!window.gmkbData,
+                windowGuestifyData: !!window.guestifyData,
+                windowMKCG: !!window.MKCG,
+                gmkbDataKeys: window.gmkbData ? Object.keys(window.gmkbData) : [],
+                gmkbDataSavedComponents: window.gmkbData ? !!window.gmkbData.saved_components : false,
+                gmkbDataSavedComponentsLength: window.gmkbData && window.gmkbData.saved_components ? window.gmkbData.saved_components.length : 0
+            });
+            
             const wpData = window.gmkbData || window.guestifyData || window.MKCG;
 
             this.logger.debug('STATE', '🔍 Checking WordPress data sources:', {
@@ -279,6 +316,23 @@
                 MKCG: !!window.MKCG,
                 foundData: !!wpData
             });
+            
+            // ROOT FIX: Debug log the actual WordPress data structure
+            if (wpData) {
+                this.logger.debug('STATE', '🔍 WordPress data structure:', {
+                    dataKeys: Object.keys(wpData),
+                    hasSavedComponents: !!wpData.saved_components,
+                    savedComponentsType: Array.isArray(wpData.saved_components) ? 'array' : typeof wpData.saved_components,
+                    savedComponentsLength: wpData.saved_components ? wpData.saved_components.length : 0,
+                    hasSavedState: !!wpData.saved_state,
+                    savedStateType: typeof wpData.saved_state
+                });
+                
+                // Log first few saved_components for debugging
+                if (wpData.saved_components && Array.isArray(wpData.saved_components) && wpData.saved_components.length > 0) {
+                    this.logger.debug('STATE', '🔍 First saved component:', wpData.saved_components[0]);
+                }
+            }
 
             if (wpData) {
                 this.logger.debug('STATE', '🔍 Found WordPress data object.', { data: wpData });
@@ -294,12 +348,47 @@
                     const components = this.mapComponentData(wpData.saved_components);
                     const layout = this.generateLayout(wpData.saved_components);
 
-                    return {
+                    const state = {
                         components: components,
                         globalSettings: wpData.global_settings || {},
                         layout: layout,
+                        saved_components: wpData.saved_components, // ROOT FIX: Preserve saved_components for renderer
                         version: '2.2.0' 
                     };
+                    
+                    // DEBUG: Log the state being returned
+                    this.logger.info('STATE', 'Returning state with saved_components:', {
+                        componentCount: Object.keys(components).length,
+                        layoutLength: layout.length,
+                        savedComponentsLength: wpData.saved_components.length,
+                        hasSavedComponents: true
+                    });
+                    
+                    return state;
+                    
+                } else if (wpData.saved_state && typeof wpData.saved_state === 'object') {
+                    // ROOT FIX: Handle saved_state object which may contain saved_components
+                    this.logger.info('STATE', '💾 Found saved_state object in WordPress data', {
+                        hasSavedComponents: !!wpData.saved_state.saved_components,
+                        hasComponents: !!wpData.saved_state.components,
+                        hasLayout: !!wpData.saved_state.layout
+                    });
+                    
+                    // Merge saved_state into the state object
+                    const state = {
+                        components: wpData.saved_state.components || {},
+                        globalSettings: wpData.saved_state.globalSettings || wpData.global_settings || {},
+                        layout: wpData.saved_state.layout || [],
+                        version: wpData.saved_state.version || '2.2.0'
+                    };
+                    
+                    // Preserve saved_components if it exists
+                    if (wpData.saved_state.saved_components && Array.isArray(wpData.saved_state.saved_components)) {
+                        state.saved_components = wpData.saved_state.saved_components;
+                        this.logger.info('STATE', '✅ Preserved saved_components array with ' + wpData.saved_state.saved_components.length + ' components');
+                    }
+                    
+                    return state;
 
                 } else {
                      // This covers cases where it's a new post or data is only partially loaded
@@ -707,6 +796,14 @@
                 globalSettings: state.globalSettings && typeof state.globalSettings === 'object' ? state.globalSettings : {},
                 version: state.version || this.SAVE_VERSION
             };
+            
+            // ROOT FIX: Preserve saved_components array if it exists
+            if (state.saved_components && Array.isArray(state.saved_components)) {
+                normalized.saved_components = state.saved_components;
+                this.logger.debug('STATE', 'validateAndNormalizeState: Preserved saved_components array', {
+                    length: state.saved_components.length
+                });
+            }
             
             // Ensure all components in layout exist in components object
             normalized.layout = normalized.layout.filter(id => normalized.components[id]);

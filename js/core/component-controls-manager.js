@@ -194,14 +194,27 @@
             // ROOT FIX: AGGRESSIVE deduplication - remove ALL existing controls first
             // This prevents overlapping/stacking controls from multiple attachment attempts
             
-            // Remove ALL control containers (any class variation) including legacy controls
-            const allExistingControls = componentElement.querySelectorAll(
-                '.component-controls, .component-controls--dynamic, .component-controls--legacy,' +
-                ' .control-toolbar, .control-button, [data-controls-type="legacy"], .emergency-controls'
-            );
-            allExistingControls.forEach(controlElement => {
-                controlElement.remove();
-                structuredLogger.debug('CONTROLS', `Aggressively removed existing control element for ${componentId}`);
+            // ROOT CAUSE FIX: Check ALL possible containers, not just the component itself
+            // Controls might be attached to parent containers in some render flows
+            const searchContainers = [componentElement];
+            if (componentElement.parentElement) {
+                searchContainers.push(componentElement.parentElement);
+            }
+            
+            searchContainers.forEach(container => {
+                const allExistingControls = container.querySelectorAll(
+                    '.component-controls, .component-controls--dynamic, .component-controls--legacy,' +
+                    ' .control-toolbar, .control-button, [data-controls-type="legacy"], .emergency-controls'
+                );
+                allExistingControls.forEach(controlElement => {
+                    // Only remove if it's for this component
+                    const controlsFor = controlElement.getAttribute('data-controls-for') || 
+                                      controlElement.querySelector('[data-controls-for]')?.getAttribute('data-controls-for');
+                    if (!controlsFor || controlsFor === componentId) {
+                        controlElement.remove();
+                        structuredLogger.debug('CONTROLS', `Removed existing control element for ${componentId} from ${container === componentElement ? 'component' : 'parent'}`);
+                    }
+                });
             });
             
             // Clean up any old event listeners
@@ -1435,23 +1448,51 @@
      * Ensures components rendered before controls manager was ready get controls
      */
     componentControlsManager.attachControlsToAllExistingComponents = function() {
-        // ROOT FIX: Look for components by ID pattern instead of data-component-id
-        // Since we removed data-component-id from templates to fix duplication
-        const existingComponents = document.querySelectorAll('[id^="component-"]');
+        // ROOT FIX: Look for actual media kit components, not modal UI elements
+        // Exclude modal elements and other UI that shouldn't have controls
+        const existingComponents = document.querySelectorAll(
+            '.media-kit-component, ' +
+            '.content-section, ' + 
+            '.editable-element, ' +
+            '[data-component-type]'
+        );
+        
         let attachedCount = 0;
         
         existingComponents.forEach(element => {
-            const componentId = element.id;
-            if (componentId && !element.querySelector('.component-controls--dynamic')) {
-                // Ensure element has data-component-id for controls to work
-                if (!element.hasAttribute('data-component-id')) {
-                    element.setAttribute('data-component-id', componentId);
-                }
-                const success = componentControlsManager.attachControls(element, componentId);
-                if (success) {
-                    attachedCount++;
-                    structuredLogger.debug('CONTROLS', `Retroactively attached controls to: ${componentId}`);
-                }
+            // Skip if element is inside a modal
+            if (element.closest('.modal, .overlay, #component-library-overlay')) {
+                return;
+            }
+            
+            // Get component ID from element
+            const componentId = element.id || element.getAttribute('data-component-id');
+            
+            // Skip elements without proper component ID or that already have controls
+            if (!componentId || element.querySelector('.component-controls--dynamic')) {
+                return;
+            }
+            
+            // Skip UI elements that look like components but aren't
+            if (componentId.includes('search') || 
+                componentId.includes('grid') || 
+                componentId.includes('loading') ||
+                componentId.includes('overlay')) {
+                return;
+            }
+            
+            // Ensure element has proper attributes
+            if (!element.id) {
+                element.id = componentId;
+            }
+            if (!element.hasAttribute('data-component-id')) {
+                element.setAttribute('data-component-id', componentId);
+            }
+            
+            const success = componentControlsManager.attachControls(element, componentId);
+            if (success) {
+                attachedCount++;
+                structuredLogger.debug('CONTROLS', `Retroactively attached controls to: ${componentId}`);
             }
         });
         

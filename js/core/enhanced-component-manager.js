@@ -323,35 +323,40 @@
         }
 
         /**
-         * Add component HTML to preview area
-         */
+        * Add component HTML to preview area
+        */
         addComponentToPreview(componentId, html) {
-            const previewContainer = document.getElementById('media-kit-preview');
-            const emptyState = document.getElementById('empty-state');
-            
-            if (!previewContainer) {
-                throw new Error('Preview container not found');
-            }
-
-            // Hide empty state if visible
-            if (emptyState) {
-                emptyState.style.display = 'none';
-            }
-
-            // Create component wrapper
-            const componentWrapper = document.createElement('div');
-            componentWrapper.className = 'component-wrapper';
-            componentWrapper.setAttribute('data-component-id', componentId);
-            componentWrapper.innerHTML = html;
-
-            // ROOT FIX: Component controls handled by ComponentControlsManager
-            // Controls will be attached via enhanced-component-renderer integration
-
-            // Add to preview
-            previewContainer.appendChild(componentWrapper);
-
-            logger.debug('COMPONENT', `Component added to preview: ${componentId}`);
+        const previewContainer = document.getElementById('media-kit-preview');
+        const emptyState = document.getElementById('empty-state');
+        
+        if (!previewContainer) {
+        throw new Error('Preview container not found');
         }
+
+        // Hide empty state if visible
+        if (emptyState) {
+        emptyState.style.display = 'none';
+        }
+
+        // ROOT CAUSE FIX: Don't create a wrapper - the component IS the wrapper
+        // The HTML from server already has the component structure
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const componentElement = tempDiv.firstElementChild;
+        
+        if (componentElement) {
+            // Ensure the element has the correct ID
+            componentElement.id = componentId;
+            componentElement.setAttribute('data-component-id', componentId);
+            
+            // Add to preview
+            previewContainer.appendChild(componentElement);
+                
+            logger.debug('COMPONENT', `Component added to preview: ${componentId}`);
+        } else {
+            logger.error('COMPONENT', `No element found in HTML for component: ${componentId}`);
+        }
+    }
 
         /**
          * Remove component from preview area

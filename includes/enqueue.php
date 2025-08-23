@@ -250,10 +250,19 @@ function gmkb_enqueue_assets() {
         }
     }
     
-    // ROOT FIX: Convert saved components to JavaScript-compatible format
+    // ROOT FIX: Pass saved_components array if it exists (already in correct order)
     $saved_components = array();
-    if ( !empty( $saved_state ) && isset( $saved_state['components'] ) && is_array( $saved_state['components'] ) ) {
-        // Convert object format to array format for JavaScript
+    if ( !empty( $saved_state ) && isset( $saved_state['saved_components'] ) && is_array( $saved_state['saved_components'] ) ) {
+        // Use the saved_components array which is already in the correct order
+        $saved_components = $saved_state['saved_components'];
+        
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: Using saved_components array with ' . count( $saved_components ) . ' components in correct order' );
+            $component_ids = array_map(function($c) { return $c['id'] ?? 'unknown'; }, $saved_components);
+            error_log( '✅ GMKB: Order: ' . implode(', ', $component_ids) );
+        }
+    } elseif ( !empty( $saved_state ) && isset( $saved_state['components'] ) && is_array( $saved_state['components'] ) ) {
+        // Fallback: Convert object format to array format for JavaScript
         foreach ( $saved_state['components'] as $component_id => $component_data ) {
             $saved_components[] = array(
                 'id' => $component_id,
@@ -265,7 +274,7 @@ function gmkb_enqueue_assets() {
         }
         
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '✅ GMKB: Converted ' . count( $saved_components ) . ' saved components for JavaScript' );
+            error_log( '⚠️ GMKB: No saved_components array found, converted ' . count( $saved_components ) . ' components from object format' );
         }
     }
 
@@ -708,6 +717,39 @@ function gmkb_enqueue_assets() {
             $version . '-debug',
             true
         );
+        
+        // ROOT CAUSE: Duplicate controls debugger
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'debug/debug-duplicate-controls.js')) {
+            wp_enqueue_script(
+                'gmkb-debug-duplicate-controls',
+                $plugin_url . 'debug/debug-duplicate-controls.js',
+                array('gmkb-main-script'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Saved components diagnostic tool
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'js/debug/diagnostic-saved-components-renderer-fix.js')) {
+            wp_enqueue_script(
+                'gmkb-diagnostic-saved-components',
+                $plugin_url . 'js/debug/diagnostic-saved-components-renderer-fix.js',
+                array('gmkb-main-script'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Saved components order fixer
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'js/debug/fix-saved-components-order.js')) {
+            wp_enqueue_script(
+                'gmkb-fix-saved-components-order',
+                $plugin_url . 'js/debug/fix-saved-components-order.js',
+                array('gmkb-main-script'),
+                $version . '-debug',
+                true
+            );
+        }
     }
     
     // ROOT FIX: Debug utilities for component interaction testing (development only)
