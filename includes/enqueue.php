@@ -521,6 +521,29 @@ function gmkb_enqueue_assets() {
     }
     */
     
+    
+    // 12e. Design Panel - ROOT FIX: CRITICAL for component editing functionality
+    if (!wp_script_is('gmkb-design-panel', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-design-panel',
+            $plugin_url . 'js/ui/design-panel.js',
+            array('gmkb-structured-logger', 'gmkb-helpers', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // 12f. Element Editor - Works with design panel
+    if (!wp_script_is('gmkb-element-editor', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-element-editor',
+            $plugin_url . 'js/ui/element-editor.js',
+            array('gmkb-structured-logger', 'gmkb-design-panel'),
+            $version,
+            true
+        );
+    }
+    
     // 12d. DOM Render Coordinator - ROOT FIX: CRITICAL for preventing duplicate rendering
     if (!wp_script_is('gmkb-dom-render-coordinator', 'enqueued')) {
         wp_enqueue_script(
@@ -610,6 +633,8 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-library-simple',
                 'gmkb-tabs',
                 'gmkb-toolbar',
+                'gmkb-design-panel',
+                'gmkb-element-editor',
                 // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure
                 'gmkb-sortable-integration',
                 'gmkb-drag-drop-manager',

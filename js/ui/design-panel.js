@@ -102,9 +102,9 @@ class DesignPanel {
             formData.append('action', 'guestify_render_design_panel');
             formData.append('component', component.type);
             formData.append('post_id', window.gmkbData.postId); // ✅ UNIFIED: Same context as template
-            formData.append('nonce', window.guestifyData.nonce);
+            formData.append('nonce', window.gmkbData.nonce); // ROOT FIX: Use gmkbData not guestifyData
 
-            const response = await fetch(window.guestifyData.ajaxUrl, {
+            const response = await fetch(window.gmkbData.ajaxUrl, {
                 method: 'POST',
                 body: formData,
                 credentials: 'same-origin' // Include cookies for WordPress authentication
@@ -153,11 +153,11 @@ class DesignPanel {
                 errorMessage = 'Server error occurred';
                 troubleshooting.push('Check the browser console for more details');
                 troubleshooting.push('Contact support if the issue persists');
-            } else if (!window.guestifyData) {
+            } else if (!window.gmkbData) {
                 errorMessage = 'WordPress data not loaded';
                 troubleshooting.push('Ensure the page loaded completely');
                 troubleshooting.push('Try refreshing the page');
-            } else if (!window.guestifyData.ajaxUrl) {
+            } else if (!window.gmkbData.ajaxUrl) {
                 errorMessage = 'WordPress AJAX URL not available';
                 troubleshooting.push('Check WordPress configuration');
                 troubleshooting.push('Ensure plugin is properly activated');
@@ -557,11 +557,11 @@ class DesignPanel {
         
         // Also debug WordPress data availability
         console.log('🔍 DEBUG: WordPress data availability:');
-        console.log('guestifyData exists:', !!window.guestifyData);
-        if (window.guestifyData) {
-            console.log('ajaxUrl:', window.guestifyData.ajaxUrl);
-            console.log('nonce:', window.guestifyData.nonce ? 'Available' : 'Missing');
-            console.log('pluginUrl:', window.guestifyData.pluginUrl);
+        console.log('gmkbData exists:', !!window.gmkbData);
+        if (window.gmkbData) {
+            console.log('ajaxUrl:', window.gmkbData.ajaxUrl);
+            console.log('nonce:', window.gmkbData.nonce ? 'Available' : 'Missing');
+            console.log('pluginUrl:', window.gmkbData.pluginUrl);
         }
     }
 
@@ -669,24 +669,42 @@ class DesignPanel {
      * Shows the design panel (switches to Design tab).
      */
     show() {
-        // Switch to Design tab in sidebar
-        const designTab = document.querySelector('[data-tab="design"]');
-        const designTabContent = document.getElementById('design-tab');
-        
-        if (designTab && designTabContent) {
-            // Remove active from all tabs
-            document.querySelectorAll('.sidebar__tab').forEach(tab => {
-                tab.classList.remove('sidebar__tab--active');
-            });
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('tab-content--active');
-            });
+        // ROOT FIX: Use the global tabs system to properly switch tabs
+        if (window.GMKBTabs && window.GMKBTabs.activateTab) {
+            const designTab = document.querySelector('[data-tab="design"]');
+            if (designTab) {
+                window.GMKBTabs.activateTab(designTab);
+                console.log('📋 ROOT FIX: Switched to Design tab using GMKBTabs system');
+                
+                // Ensure the sidebar is visible
+                const sidebar = document.querySelector('.sidebar, .media-kit-sidebar, #media-kit-sidebar');
+                if (sidebar) {
+                    sidebar.classList.add('sidebar--active', 'show');
+                    sidebar.style.display = 'block';
+                }
+            } else {
+                console.warn('⚠️ ROOT FIX: Design tab not found');
+            }
+        } else {
+            // Fallback to manual tab switching
+            const designTab = document.querySelector('[data-tab="design"]');
+            const designTabContent = document.getElementById('design-tab');
             
-            // Activate design tab
-            designTab.classList.add('sidebar__tab--active');
-            designTabContent.classList.add('tab-content--active');
-            
-            console.log('📋 Switched to Design tab');
+            if (designTab && designTabContent) {
+                // Remove active from all tabs
+                document.querySelectorAll('.sidebar__tab').forEach(tab => {
+                    tab.classList.remove('sidebar__tab--active');
+                });
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('tab-content--active');
+                });
+                
+                // Activate design tab
+                designTab.classList.add('sidebar__tab--active');
+                designTabContent.classList.add('tab-content--active');
+                
+                console.log('📋 ROOT FIX: Switched to Design tab (fallback method)');
+            }
         }
     }
 

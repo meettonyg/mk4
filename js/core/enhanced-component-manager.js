@@ -384,7 +384,7 @@
         // attachComponentEventListeners method removed - ComponentControlsManager handles all control events
 
         /**
-         * ROOT FIX: Edit component - opens design panel
+         * ROOT FIX: Edit component - opens design panel in sidebar
          * CHECKLIST COMPLIANT: Event-driven, no polling, root cause fix
          */
         editComponent(componentId) {
@@ -401,10 +401,29 @@
                     return;
                 }
                 
-                // ROOT FIX: Open design panel for the component
-                this.openDesignPanel(componentId, component.type);
-                
-                logger.info('COMPONENT', `Design panel opened for ${componentId}`);
+                // ROOT FIX: Use the existing design panel in the sidebar
+                if (window.designPanel && typeof window.designPanel.load === 'function') {
+                    // Select the component element first
+                    const componentElement = document.getElementById(componentId);
+                    if (componentElement) {
+                        // Dispatch component selection event
+                        componentElement.click();
+                        
+                        // Small delay to ensure selection is processed
+                        setTimeout(() => {
+                            window.designPanel.load(componentId);
+                            logger.info('COMPONENT', `Sidebar design panel loaded for ${componentId}`);
+                        }, 100);
+                    } else {
+                        // Just load the design panel directly
+                        window.designPanel.load(componentId);
+                        logger.info('COMPONENT', `Sidebar design panel loaded for ${componentId} (no element selection)`);
+                    }
+                } else {
+                    // Fallback to modal approach if design panel not available
+                    logger.warn('COMPONENT', 'Sidebar design panel not available, using modal fallback');
+                    this.openDesignPanel(componentId, component.type);
+                }
                 
             } catch (error) {
                 logger.error('COMPONENT', `Failed to edit component ${componentId}:`, error);
