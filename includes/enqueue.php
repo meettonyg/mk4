@@ -858,8 +858,12 @@ function is_media_kit_builder_page() {
         return true;
     }
 
-    // Strategy 3: Post ID parameter detection
-    if ( isset( $_GET['post_id'] ) && is_numeric( $_GET['post_id'] ) ) {
+    // Strategy 3: Post ID parameter detection (including all supported parameters)
+    if ( ( isset( $_GET['post_id'] ) && is_numeric( $_GET['post_id'] ) ) ||
+         ( isset( $_GET['mkcg_id'] ) && is_numeric( $_GET['mkcg_id'] ) ) ||
+         ( isset( $_GET['p'] ) && is_numeric( $_GET['p'] ) ) ||
+         ( isset( $_GET['page_id'] ) && is_numeric( $_GET['page_id'] ) ) ||
+         ( isset( $_GET['media_kit_id'] ) && is_numeric( $_GET['media_kit_id'] ) ) ) {
         return true;
     }
 
@@ -878,11 +882,21 @@ function is_media_kit_builder_page() {
 function get_current_post_id_safe() {
     $post_id = 0;
 
+    // ROOT FIX: Check all supported URL parameters including mkcg_id
     if ( isset( $_GET['post_id'] ) && is_numeric( $_GET['post_id'] ) ) {
         $post_id = intval( $_GET['post_id'] );
     }
     elseif ( isset( $_GET['p'] ) && is_numeric( $_GET['p'] ) ) {
         $post_id = intval( $_GET['p'] );
+    }
+    elseif ( isset( $_GET['mkcg_id'] ) && is_numeric( $_GET['mkcg_id'] ) ) {
+        $post_id = intval( $_GET['mkcg_id'] );
+    }
+    elseif ( isset( $_GET['page_id'] ) && is_numeric( $_GET['page_id'] ) ) {
+        $post_id = intval( $_GET['page_id'] );
+    }
+    elseif ( isset( $_GET['media_kit_id'] ) && is_numeric( $_GET['media_kit_id'] ) ) {
+        $post_id = intval( $_GET['media_kit_id'] );
     }
     elseif ( function_exists( 'get_the_ID' ) && get_the_ID() ) {
         $post_id = get_the_ID();

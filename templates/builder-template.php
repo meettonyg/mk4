@@ -49,13 +49,17 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 $post_id = 0;
 $has_mkcg_data = false;
 
-// Quick post ID detection
+// Quick post ID detection - ROOT FIX: Added mkcg_id support
 if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
     $post_id = intval($_GET['post_id']);
+} elseif (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
+    $post_id = intval($_GET['mkcg_id']);
 } elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
     $post_id = intval($_GET['p']);
 } elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
     $post_id = intval($_GET['page_id']);
+} elseif (isset($_GET['media_kit_id']) && is_numeric($_GET['media_kit_id'])) {
+    $post_id = intval($_GET['media_kit_id']);
 } elseif (function_exists('get_the_ID') && get_the_ID()) {
     // Try to get current post ID from WordPress context
     $post_id = get_the_ID();
