@@ -44,10 +44,8 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 
-// Admin tools for viewing media kit data
-if (is_admin()) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-media-kit-viewer.php';
-}
+// Admin tools initialization
+require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
 
 // SCALABLE ARCHITECTURE: Test suite only loaded on demand via validation script
 // ROOT FIX: Removed automatic test script loading to prevent conflicts with enqueue.php
@@ -1546,27 +1544,50 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * Detect post ID from URL parameters
+     * ROOT FIX: Enhanced post ID detection with multiple strategies
+     * Supports various URL parameter names for maximum compatibility
      */
     private function detect_mkcg_post_id() {
         $post_id = 0;
         
+        // Strategy 1: Direct URL parameters (highest priority)
         if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
             $post_id = intval($_GET['post_id']);
         }
         elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
             $post_id = intval($_GET['p']);
         }
+        elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
+            $post_id = intval($_GET['page_id']);
+        }
+        elseif (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
+            $post_id = intval($_GET['mkcg_id']);
+        }
+        elseif (isset($_GET['media_kit_id']) && is_numeric($_GET['media_kit_id'])) {
+            $post_id = intval($_GET['media_kit_id']);
+        }
+        // Strategy 2: WordPress context (fallback)
         elseif (function_exists('get_the_ID') && get_the_ID()) {
             $post_id = get_the_ID();
         }
+        // Strategy 3: Global post object
+        elseif (isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
+            $post_id = intval($GLOBALS['post']->ID);
+        }
         
-        // Validate post exists
+        // Validate post exists and is accessible
         if ($post_id > 0) {
             $post = get_post($post_id);
             if (!$post || $post->post_status === 'trash') {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB: Invalid post ID ' . $post_id . ' - post not found or in trash');
+                }
                 return 0;
             }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG && $post_id > 0) {
+            error_log('GMKB: Post ID detected: ' . $post_id . ' via URL parameters');
         }
         
         return $post_id;

@@ -23,7 +23,12 @@ class GMKB_Admin_Media_Kit_Viewer {
     }
     
     private function __construct() {
-        add_action('admin_menu', array($this, 'add_admin_menu'));
+        // Debug: Log initialization
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Admin Media Kit Viewer initialized');
+        }
+        
+        add_action('admin_menu', array($this, 'add_admin_menu'), 999);
         add_action('add_meta_boxes', array($this, 'add_meta_box'));
     }
     
@@ -31,12 +36,29 @@ class GMKB_Admin_Media_Kit_Viewer {
      * Add admin menu item
      */
     public function add_admin_menu() {
+        // Debug: Log menu addition
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Adding admin menu for Media Kit Data Viewer');
+        }
+        
+        // Add to main menu for visibility
+        add_menu_page(
+            'Media Kit Data Viewer',
+            'Media Kit Data',
+            'manage_options',
+            'gmkb-data-viewer',
+            array($this, 'render_admin_page'),
+            'dashicons-database',
+            85
+        );
+        
+        // Also add to Tools menu
         add_submenu_page(
             'tools.php',
             'Media Kit Data Viewer',
             'Media Kit Data',
             'manage_options',
-            'gmkb-data-viewer',
+            'gmkb-data-viewer-tools',
             array($this, 'render_admin_page')
         );
     }
