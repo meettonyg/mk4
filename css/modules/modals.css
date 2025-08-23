@@ -24,6 +24,11 @@
     display: flex !important;
 }
 
+/* ROOT FIX: Ensure modal can be hidden */
+.modal:not(.modal--open), .modal-overlay:not(.modal--open) {
+    display: none !important;
+}
+
 .modal__content, .modal__content--centered {
     background: #2a2a2a;
     border-radius: 8px;
@@ -56,16 +61,36 @@
     background: none;
     border: none;
     color: #94a3b8;
-    font-size: 20px;
+    font-size: 24px;
     cursor: pointer;
-    padding: 4px;
+    padding: 8px;
     border-radius: 4px;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 2001;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .modal__close:hover {
     background: #404040;
     color: #e2e8f0;
+}
+
+.modal__close:focus {
+    outline: 2px solid #0ea5e9;
+    outline-offset: 2px;
+}
+
+/* Ensure close button is always clickable */
+#close-global-settings {
+    position: relative;
+    z-index: 2002;
+    pointer-events: auto;
 }
 
 .modal__body {

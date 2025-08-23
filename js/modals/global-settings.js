@@ -12,16 +12,18 @@ class GlobalSettings {
         this.openButton = null;
         this.closeButton = null;
         this.debouncedUpdate = null;
+        this.isInitialized = false;
     }
 
     async init() {
+        if (this.isInitialized) return Promise.resolve();
+        
         console.log('🗺 GMKB: Initializing Global Settings...');
         
         try {
             // Find DOM elements
-            this.modal = document.getElementById('global-settings-modal') || document.getElementById('global-settings-overlay');
+            this.modal = document.getElementById('global-settings-modal');
             this.openButton = document.getElementById('global-theme-btn') || document.getElementById('global-settings-button');
-            this.closeButton = document.getElementById('close-global-settings');
             
             if (!this.modal) {
                 console.warn('⚠️ GMKB: Global Settings modal not found - this is optional');
@@ -33,16 +35,11 @@ class GlobalSettings {
                 return Promise.resolve();
             }
             
-            // Setup basic event listeners
+            // Setup open button event listener
             if (this.openButton) {
-                this.openButton.addEventListener('click', () => {
+                this.openButton.addEventListener('click', (e) => {
+                    e.preventDefault();
                     this.show();
-                });
-            }
-            
-            if (this.closeButton) {
-                this.closeButton.addEventListener('click', () => {
-                    this.hide();
                 });
             }
             
@@ -52,6 +49,7 @@ class GlobalSettings {
                 this.setupFormListeners();
             }
             
+            this.isInitialized = true;
             console.log('✅ GMKB: Global Settings initialized successfully');
             return Promise.resolve();
             
@@ -89,16 +87,26 @@ class GlobalSettings {
     }
     
     show() {
-        if (this.modal && window.GMKB_Modals && typeof window.GMKB_Modals.show === 'function') {
-            const modalId = this.modal.id || 'global-settings-modal';
-            window.GMKB_Modals.show(modalId);
+        // ROOT FIX: Use modal system as primary method
+        if (window.GMKB_Modals && window.GMKB_Modals.show) {
+            window.GMKB_Modals.show('global-settings-modal');
+        } else if (this.modal) {
+            // Fallback to direct manipulation
+            this.modal.style.display = 'flex';
+            this.modal.classList.add('modal--open');
+            document.body.classList.add('modal-open');
         }
     }
     
     hide() {
-        if (this.modal && window.GMKB_Modals && typeof window.GMKB_Modals.hide === 'function') {
-            const modalId = this.modal.id || 'global-settings-modal';
-            window.GMKB_Modals.hide(modalId);
+        // ROOT FIX: Use modal system as primary method
+        if (window.GMKB_Modals && window.GMKB_Modals.hide) {
+            window.GMKB_Modals.hide('global-settings-modal');
+        } else if (this.modal) {
+            // Fallback to direct manipulation
+            this.modal.style.display = 'none';
+            this.modal.classList.remove('modal--open');
+            document.body.classList.remove('modal-open');
         }
     }
     

@@ -70,10 +70,11 @@
         }
 
         // Set up close triggers within this specific modal
-        const closeButtons = modalElement.querySelectorAll('.modal__close, .library__close, .close-modal, [data-modal-close]');
+        const closeButtons = modalElement.querySelectorAll('.modal__close, .library__close, .close-modal, [data-modal-close], #close-global-settings');
         closeButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 hideModal(modalId);
             });
         });
@@ -107,7 +108,10 @@
             return;
         }
 
-        modal.style.display = 'flex'; // Or use a class like 'is-visible'
+        // ROOT FIX: Clear any inline display:none and use classes
+        modal.style.removeProperty('display');
+        modal.classList.add('modal--open');
+        modal.style.display = 'flex';
         document.body.classList.add('modal-open');
         state.activeModals.add(modalId);
         
@@ -132,6 +136,8 @@
             return;
         }
 
+        // ROOT FIX: Remove class and set display none
+        modal.classList.remove('modal--open');
         modal.style.display = 'none';
         state.activeModals.delete(modalId);
 

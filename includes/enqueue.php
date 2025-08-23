@@ -506,7 +506,18 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 12c. Component interactions (component click handlers, drag and drop)
+    // 12c. UI Init Coordinator - ROOT FIX: Ensures proper UI initialization order
+    if (!wp_script_is('gmkb-ui-init-coordinator', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-ui-init-coordinator',
+            $plugin_url . 'js/core/ui-init-coordinator.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 12d. Component interactions (component click handlers, drag and drop)
     // ROOT FIX: DISABLED on builder pages - legacy control system conflicts with modern component-controls-manager.js
     // The modern dynamic control system (component-controls-manager.js) handles all control functionality
     /*
@@ -633,6 +644,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-library-simple',
                 'gmkb-tabs',
                 'gmkb-toolbar',
+                'gmkb-ui-init-coordinator',
                 'gmkb-design-panel',
                 'gmkb-element-editor',
                 // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure
@@ -656,12 +668,12 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // Global settings modal - ROOT FIX: Added duplicate prevention
+    // Global settings modal - ROOT FIX: Ensure modal-base loads first
     if (!wp_script_is('gmkb-global-settings', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-global-settings',
             $plugin_url . 'js/modals/global-settings.js',
-            array('gmkb-main-script'),
+            array('gmkb-modal-base'),
             $version,
             true
         );

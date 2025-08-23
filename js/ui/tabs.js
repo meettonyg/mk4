@@ -104,22 +104,27 @@ function activateTab(tab) {
     
     console.log(`📋 TABS: Activating tab: ${tabName}`);
     
-    // Remove active class from all tabs and content
+    // Remove active class from all tabs
     document.querySelectorAll('.sidebar__tab, .tab').forEach(t => {
         t.classList.remove('sidebar__tab--active', 'tab--active', 'active');
     });
-    document.querySelectorAll('.tab-content').forEach(c => {
-        c.classList.remove('tab-content--active', 'active');
-    });
     
     // Add active class to clicked tab
-    tab.classList.add('sidebar__tab--active');
+    tab.classList.add('sidebar__tab--active', 'active');
+    
+    // ROOT FIX: Handle tab content visibility
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content, .sidebar__tab-content, [class*="tab-"][class*="content"]').forEach(content => {
+        content.classList.remove('tab-content--active', 'active');
+        content.style.display = 'none';
+    });
     
     // ROOT FIX: Enhanced content targeting with multiple strategies
     let targetContent = findTabContent(tabName);
     
     if (targetContent) {
-        targetContent.classList.add('tab-content--active');
+        targetContent.classList.add('tab-content--active', 'active');
+        targetContent.style.display = 'block';
         console.log(`✅ TABS: Activated tab content: ${tabName}`);
         
         // ROOT FIX: Dispatch tab change event for other systems
@@ -145,9 +150,12 @@ function activateTab(tab) {
  * @returns {HTMLElement|null} Tab content element
  */
 function findTabContent(tabName) {
-    // Strategy 1: Standard ID patterns
+    // Strategy 1: Standard ID patterns (the current structure uses this)
     let targetContent = document.getElementById(tabName + '-tab');
-    if (targetContent) return targetContent;
+    if (targetContent) {
+        console.log(`✅ TABS: Found content using ID: ${tabName}-tab`);
+        return targetContent;
+    }
     
     targetContent = document.getElementById(tabName + '-panel');
     if (targetContent) return targetContent;
@@ -168,6 +176,15 @@ function findTabContent(tabName) {
     // Strategy 3: Class-based matching
     targetContent = document.querySelector(`.tab-content.${tabName}, .tab-panel.${tabName}`);
     if (targetContent) return targetContent;
+    
+    // Strategy 4: Find by partial match in ID
+    const allTabContents = document.querySelectorAll('.tab-content, [id*="tab"]');
+    for (let content of allTabContents) {
+        if (content.id && content.id.toLowerCase().includes(tabName.toLowerCase())) {
+            console.log(`✅ TABS: Found content using partial match: ${content.id}`);
+            return content;
+        }
+    }
     
     return null;
 }

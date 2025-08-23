@@ -375,7 +375,14 @@ function setupCoreUI() {
             window.setupTabs();
             window.structuredLogger.info('MAIN', 'Tabs system initialized');
         } else {
-            setupTabs(); // fallback to local implementation
+            console.warn('⚠️ MAIN: Tab setup function not available, will retry later');
+            // Retry after a short delay as scripts might still be loading
+            setTimeout(() => {
+                if (window.setupTabs) {
+                    window.setupTabs();
+                    window.structuredLogger.info('MAIN', 'Tabs system initialized on retry');
+                }
+            }, 500);
         }
         
         // ROOT FIX: Initialize toolbar functionality (device preview, button handlers)
@@ -411,6 +418,23 @@ function setupCoreUI() {
         
         // Initialize modals
         setupModals();
+        
+        // ROOT FIX: Initialize global settings modal
+        if (window.globalSettings && window.globalSettings.init) {
+            window.globalSettings.init().then(() => {
+                window.structuredLogger.info('MAIN', 'Global settings modal initialized');
+            }).catch(err => {
+                console.warn('⚠️ MAIN: Global settings initialization failed (optional):', err);
+            });
+        } else {
+            console.warn('⚠️ MAIN: Global settings not available yet, will be initialized later');
+            // Listen for modal system ready
+            document.addEventListener('gmkb:modal-base-ready', () => {
+                if (window.globalSettings && window.globalSettings.init) {
+                    window.globalSettings.init();
+                }
+            });
+        }
         
         // Initialize component library
         setupComponentLibrary();

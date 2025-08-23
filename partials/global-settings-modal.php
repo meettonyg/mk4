@@ -1,5 +1,5 @@
 <!-- ROOT FIX: Added modal overlay for proper centering and backdrop clicks -->
-<div class="modal-overlay" id="global-settings-modal" style="display: none;">
+<div class="modal-overlay" id="global-settings-modal">
     <div class="modal__content modal__content--centered">
         <div class="modal__header">
             <div class="modal__title">Global Theme Settings</div>
