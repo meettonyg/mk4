@@ -320,9 +320,10 @@ class GMKB_Topics_Ajax_Handler {
                 // PHASE 1.2 FIX: Simple sanitization - no complex validation to prevent delays
                 $topic_value = is_string($topic_value) ? sanitize_text_field(trim($topic_value)) : '';
                 
-                // PHASE 1.2 FIX: Save to both field formats for maximum compatibility
-                $result1 = update_post_meta($post_id, $topic_key, $topic_value);           // Direct custom field
-                $result2 = update_post_meta($post_id, "mkcg_{$topic_key}", $topic_value);   // MKCG format
+                // ROOT FIX: Save to the correct Pods field format (topic_1, topic_2, etc.)
+                $result1 = update_post_meta($post_id, $topic_key, $topic_value);           // Direct custom field (Pods format)
+                // Also save to mkcg_ format for backward compatibility
+                $result2 = update_post_meta($post_id, "mkcg_{$topic_key}", $topic_value);   // MKCG format backup
                 
                 $save_operations[] = array(
                     'field' => $topic_key,
@@ -500,10 +501,12 @@ class GMKB_Topics_Ajax_Handler {
     
     /**
      * ROOT FIX: Load from custom fields with quality assessment
+     * Updated to use the correct Pods meta key format
      */
     private function load_from_custom_fields($post_id) {
         $result = array('topics' => array(), 'count' => 0, 'quality' => 'empty');
         
+        // ROOT FIX: Based on Pods configuration, the correct format is topic_1, topic_2, etc.
         for ($i = 1; $i <= 5; $i++) {
             $topic_key = "topic_{$i}";
             $topic_value = get_post_meta($post_id, $topic_key, true);
@@ -513,6 +516,10 @@ class GMKB_Topics_Ajax_Handler {
                 if (strlen($cleaned_value) > 0) {
                     $result['topics'][$topic_key] = $cleaned_value;
                     $result['count']++;
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ROOT FIX: Found {$topic_key} = {$cleaned_value} for post {$post_id}");
+                    }
                 }
             }
             
@@ -523,6 +530,10 @@ class GMKB_Topics_Ajax_Handler {
         
         if ($result['count'] > 0) {
             $result['quality'] = $this->assess_topics_quality($result['topics']);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("ROOT FIX: Loaded {$result['count']} topics from custom fields for post {$post_id}");
+            }
         }
         
         return $result;
@@ -673,17 +684,19 @@ class GMKB_Topics_Ajax_Handler {
      * Used by main plugin AJAX handler to pre-load topic data
      */
     public function load_topics_direct($data_source_id = 0) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("load_topics_direct called with post ID: {$data_source_id}");
+        }
+        
         if (empty($data_source_id)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("load_topics_direct: Empty post ID, returning empty array");
+            }
             return [];
         }
 
-        // Tier 1: Try to get data from a dedicated custom field first.
-        $topics = get_post_meta($data_source_id, 'gmkb_topics_data', true);
-        if (!empty($topics) && is_array($topics)) {
-            return $topics;
-        }
-        
-        // Tier 2: Try custom fields (topic_1, topic_2, etc.)
+        // ROOT FIX: Based on Pods configuration, topics are stored as topic_1, topic_2, etc.
+        // Try custom fields (topic_1, topic_2, etc.) - This is the format used by your Pods configuration
         $topics_array = [];
         for ($i = 1; $i <= 5; $i++) {
             $topic_value = get_post_meta($data_source_id, "topic_{$i}", true);
@@ -692,14 +705,43 @@ class GMKB_Topics_Ajax_Handler {
                     'title' => sanitize_text_field(trim($topic_value)),
                     'description' => ''
                 ];
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ROOT FIX: Found topic_{$i}: {$topic_value}");
+                }
             }
         }
         
         if (!empty($topics_array)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("ROOT FIX: Successfully loaded " . count($topics_array) . " topics for post {$data_source_id}");
+            }
             return $topics_array;
         }
         
-        // Add any other fallback tiers here if necessary (e.g., checking other meta keys).
+        // Fallback: Try to get data from a dedicated custom field
+        $topics = get_post_meta($data_source_id, 'gmkb_topics_data', true);
+        if (!empty($topics) && is_array($topics)) {
+            return $topics;
+        }
+        
+        // Debug logging if no topics found
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("ROOT FIX: No topics found for post {$data_source_id}");
+            
+            // Log all meta keys to help debug
+            $all_meta = get_post_meta($data_source_id);
+            $topic_related = array();
+            foreach ($all_meta as $key => $value) {
+                if (stripos($key, 'topic') !== false) {
+                    $topic_related[$key] = $value;
+                }
+            }
+            if (!empty($topic_related)) {
+                error_log("ROOT FIX: Topic-related meta found: " . print_r($topic_related, true));
+            }
+        }
+        
         return []; // Return empty array if no topics are found.
     }
     

@@ -629,6 +629,7 @@ class Guestify_Media_Kit_Builder {
         // ROOT CAUSE DEBUG: Log template request
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log("ajax_render_component: Rendering component {$component_type} with props: " . print_r($props, true));
+            error_log("ajax_render_component: POST data: " . print_r($_POST, true));
         }
         
         if ($component_type === 'topics') {
@@ -662,6 +663,11 @@ class Guestify_Media_Kit_Builder {
                     if (defined('WP_DEBUG') && WP_DEBUG) {
                         error_log("ROOT FIX: Topics data source ID detection: {$data_source_id}");
                         error_log("ROOT FIX: Props keys: " . implode(', ', array_keys($props)));
+                        error_log("ROOT FIX: Props values: " . print_r($props, true));
+                        error_log("ROOT FIX: POST post_id: " . ($_POST['post_id'] ?? 'not set'));
+                        error_log("ROOT FIX: POST media_kit_post_id: " . ($_POST['media_kit_post_id'] ?? 'not set'));
+                        error_log("ROOT FIX: GET post_id: " . ($_GET['post_id'] ?? 'not set'));
+                        error_log("ROOT FIX: GET mkcg_id: " . ($_GET['mkcg_id'] ?? 'not set'));
                     }
                     
                     // Load topics data with the detected ID

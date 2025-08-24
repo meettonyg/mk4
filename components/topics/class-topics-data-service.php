@@ -176,22 +176,25 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             }
         }
         
-        // LEGACY: Method 1 - Custom post fields (topic_1, topic_2, etc.)
-        if (!$success) {
-            for ($i = 1; $i <= 5; $i++) {
-                $topic_value = get_post_meta($post_id, "topic_{$i}", true);
-                $debug_methods['custom_fields']["topic_{$i}"] = $topic_value;
+        // PRIMARY METHOD: Custom post fields (topic_1, topic_2, etc.) - Based on Pods configuration
+        // This should be the first method tried as it's the actual format used
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_value = get_post_meta($post_id, "topic_{$i}", true);
+            $debug_methods['custom_fields']["topic_{$i}"] = $topic_value;
+            
+            if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
+                $topics[] = array(
+                    'title' => sanitize_text_field(trim($topic_value)),
+                    'description' => '',
+                    'index' => $i - 1,
+                    'meta_key' => "topic_{$i}",
+                    'source' => 'custom_fields_pods'
+                );
+                $success = true;
+                $data_source = 'custom_fields_pods';
                 
-                if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
-                    $topics[] = array(
-                        'title' => sanitize_text_field(trim($topic_value)),
-                        'description' => '',
-                        'index' => $i - 1,
-                        'meta_key' => "topic_{$i}",
-                        'source' => 'custom_fields_legacy'
-                    );
-                    $success = true;
-                    $data_source = 'custom_fields_legacy';
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("Topics Data Service: Found topic_{$i} = {$topic_value}");
                 }
             }
         }

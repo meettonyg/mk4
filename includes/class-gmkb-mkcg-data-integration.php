@@ -135,7 +135,7 @@ class GMKB_MKCG_Data_Integration {
     
     /**
      * Extract topics data from MKCG
-     * ROOT FIX: Enhanced to support multiple meta key formats
+     * ROOT FIX: Enhanced to support multiple meta key formats and exact field names from your screenshot
      * 
      * @param int $post_id Post ID
      * @return array Topics data
@@ -143,51 +143,83 @@ class GMKB_MKCG_Data_Integration {
     private function get_topics_data($post_id) {
         $topics = array();
         
-        // Define possible meta key formats
-        $meta_formats = [
-            'mkcg_topic_',    // Original MKCG format
-            'topic_',         // Simple topic format
-            'topics_',        // Plural topics format
-            '_topic_',        // Underscore prefix format
-            'speaking_topic_', // Descriptive format
-            'pod_topic_'      // Pods plugin format
-        ];
-        
-        // Try each format until we find topics
-        $found_format = null;
-        foreach ($meta_formats as $format) {
-            $format_topics = [];
+        // ROOT FIX: Based on Pods configuration JSON, the exact meta keys are: topic_1, topic_2, etc.
+        // First try the Pods format from your WordPress custom fields
+        $pods_topics = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $meta_key = "topic_{$i}";
+            $topic_value = get_post_meta($post_id, $meta_key, true);
             
-            // Extract up to 5 topics for this format
-            for ($i = 1; $i <= 5; $i++) {
-                $meta_key = $format . $i;
-                $topic_value = get_post_meta($post_id, $meta_key, true);
+            if (!empty($topic_value)) {
+                $pods_topics["topic_{$i}"] = sanitize_text_field($topic_value);
                 
-                if (!empty($topic_value)) {
-                    $format_topics["topic_{$i}"] = sanitize_text_field($topic_value);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB MKCG: Found topic in {$meta_key}: {$topic_value}");
                 }
             }
+        }
+        
+        // If we found topics with topic_ format (Pods), use them
+        if (!empty($pods_topics)) {
+            $topics = $pods_topics;
+            $found_format = 'topic_';
             
-            // If we found topics with this format, use them and stop searching
-            if (!empty($format_topics)) {
-                $topics = $format_topics;
-                $found_format = $format;
-                break;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB MKCG: Successfully loaded " . count($topics) . " topics from topic_ fields (Pods) for post {$post_id}");
+                error_log("GMKB MKCG: Topics data: " . print_r($topics, true));
             }
+        } else {
+            // Fallback: Try other possible meta key formats including mkcg_
+            $meta_formats = [
+                'mkcg_topic_',    // MKCG format (legacy)
+                'topics_',        // Plural topics format
+                '_topic_',        // Underscore prefix format
+                'speaking_topic_', // Descriptive format
+                'pod_topic_'      // Pods plugin format (alternative)
+            ];
+            
+            $found_format = null;
+            foreach ($meta_formats as $format) {
+                $format_topics = [];
+                
+                // Extract up to 5 topics for this format
+                for ($i = 1; $i <= 5; $i++) {
+                    $meta_key = $format . $i;
+                    $topic_value = get_post_meta($post_id, $meta_key, true);
+                    
+                    if (!empty($topic_value)) {
+                        $format_topics["topic_{$i}"] = sanitize_text_field($topic_value);
+                    }
+                }
+                
+                // If we found topics with this format, use them and stop searching
+                if (!empty($format_topics)) {
+                    $topics = $format_topics;
+                    $found_format = $format;
+                    break;
+                }
+            }
+        }
+        
+        // Debug: Log all post meta to see what's available
+        if (defined('WP_DEBUG') && WP_DEBUG && empty($topics)) {
+            $all_meta = get_post_meta($post_id);
+            $topic_related_meta = array();
+            foreach ($all_meta as $key => $value) {
+                if (stripos($key, 'topic') !== false || stripos($key, 'mkcg') !== false) {
+                    $topic_related_meta[$key] = $value;
+                }
+            }
+            error_log("GMKB MKCG: No topics found for post {$post_id}. Topic-related meta fields: " . print_r($topic_related_meta, true));
         }
         
         // Add topic metadata if available
         $topics_meta = array(
             'count' => count($topics),
-            'meta_format_used' => $found_format,
+            'meta_format_used' => $found_format ?? 'none',
             'generated_date' => get_post_meta($post_id, 'mkcg_topics_generated_date', true),
             'generator_version' => get_post_meta($post_id, 'mkcg_topics_version', true)
         );
-        
-        // Log successful detection for debugging
-        if (defined('WP_DEBUG') && WP_DEBUG && !empty($topics)) {
-            error_log("GMKB MKCG: Found " . count($topics) . " topics using format '{$found_format}' for post {$post_id}");
-        }
         
         return array(
             'topics' => $topics,

@@ -285,6 +285,7 @@ function gmkb_enqueue_assets() {
         'nonce'         => wp_create_nonce( 'gmkb_nonce' ),
         'restNonce'     => wp_create_nonce( 'wp_rest' ),
         'postId'        => $post_id,
+        'post_id'       => $post_id,  // ROOT FIX: Also include snake_case version
         'pluginUrl'     => $plugin_url,
         'siteUrl'       => home_url(),
         'pluginVersion' => defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : 'unknown',
@@ -625,6 +626,17 @@ function gmkb_enqueue_assets() {
             'gmkb-toolbar-interactions',
             $plugin_url . 'js/ui/toolbar-interactions.js',
             array('gmkb-structured-logger', 'gmkb-event-bus', 'gmkb-state-history', 'gmkb-history-service', 'gmkb-toast-polyfill'),
+            $version,
+            true
+        );
+    }
+    
+    // ROOT FIX: Topics post ID fix - ensure post ID is available for topics AJAX requests
+    if (!wp_script_is('gmkb-fix-topics-post-id', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-fix-topics-post-id',
+            $plugin_url . 'js/fix-topics-post-id.js',
+            array('gmkb-structured-logger'),
             $version,
             true
         );
