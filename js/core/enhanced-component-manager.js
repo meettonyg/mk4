@@ -21,6 +21,7 @@
             this.isInitialized = false;
             this.componentCounter = 0;
             this.cachedWordPressData = null; // ROOT FIX: Cache for WordPress data access
+            this.isCurrentlyRendering = false; // ROOT FIX: Track rendering state to prevent concurrent operations
             
             logger.info('COMPONENT', 'Enhanced Component Manager created');
         }
@@ -82,6 +83,16 @@
                 if (!this.isInitialized) {
                     this.initialize();
                 }
+                
+                // ROOT FIX: Prevent concurrent component additions
+                if (this.isCurrentlyRendering) {
+                    logger.warn('COMPONENT', `Component rendering in progress, queuing ${componentType}`);
+                    // Wait a bit and retry
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    return this.addComponent(componentType, props);
+                }
+                
+                this.isCurrentlyRendering = true;
 
                 // Generate unique component ID
                 const componentId = this.generateComponentId(componentType);
@@ -142,6 +153,9 @@
             } catch (error) {
                 logger.error('COMPONENT', `Failed to add component: ${componentType}`, error);
                 throw error;
+            } finally {
+                // ROOT FIX: Always clear the rendering flag
+                this.isCurrentlyRendering = false;
             }
         }
 
@@ -326,16 +340,35 @@
         * Add component HTML to preview area
         */
         addComponentToPreview(componentId, html) {
-        const previewContainer = document.getElementById('media-kit-preview');
-        const emptyState = document.getElementById('empty-state');
+        // ROOT FIX: Use the correct container - check for saved-components-container first
+        let targetContainer = document.getElementById('saved-components-container');
         
-        if (!previewContainer) {
-        throw new Error('Preview container not found');
+        // If saved container doesn't exist or is hidden, use preview container
+        if (!targetContainer || targetContainer.style.display === 'none') {
+            targetContainer = document.getElementById('media-kit-preview');
         }
+        
+        if (!targetContainer) {
+            throw new Error('No target container found for component');
+        }
+        
+        // ROOT FIX: Check if component already exists to prevent duplicates
+        const existingComponent = document.getElementById(componentId);
+        if (existingComponent) {
+            logger.warn('COMPONENT', `Component ${componentId} already exists in DOM, not adding duplicate`);
+            return;
+        }
+        
+        const emptyState = document.getElementById('empty-state');
 
         // Hide empty state if visible
         if (emptyState) {
         emptyState.style.display = 'none';
+        }
+        
+        // Show the saved components container if it was hidden
+        if (targetContainer.id === 'saved-components-container') {
+            targetContainer.style.display = 'block';
         }
 
         // ROOT CAUSE FIX: Don't create a wrapper - the component IS the wrapper
@@ -349,10 +382,10 @@
             componentElement.id = componentId;
             componentElement.setAttribute('data-component-id', componentId);
             
-            // Add to preview
-            previewContainer.appendChild(componentElement);
+            // Add to the appropriate container
+            targetContainer.appendChild(componentElement);
                 
-            logger.debug('COMPONENT', `Component added to preview: ${componentId}`);
+            logger.debug('COMPONENT', `Component added to ${targetContainer.id}: ${componentId}`);
         } else {
             logger.error('COMPONENT', `No element found in HTML for component: ${componentId}`);
         }

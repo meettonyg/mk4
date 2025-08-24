@@ -2017,9 +2017,22 @@ class EnhancedComponentRenderer {
                 return false;
             }
             
-            // ROOT FIX: Simple, direct container clearing - no complex coordination
-            targetContainer.innerHTML = '';
-            this.logger.info('RENDER', 'Cleared target container for fresh render');
+            // ROOT FIX: Only clear container if it's the initial render (empty state)
+            // Don't clear if components already exist (when adding new components)
+            const existingComponentCount = targetContainer.querySelectorAll('[data-component-id]').length;
+            const hasExistingState = initialState && initialState.components && Object.keys(initialState.components).length > 0;
+            const isAddingNewComponents = existingComponentCount > 0 && hasExistingState;
+            
+            if (isAddingNewComponents) {
+                this.logger.info('RENDER', 'Preserving existing components, will only add missing ones', {
+                    existingCount: existingComponentCount,
+                    stateComponentCount: Object.keys(initialState.components).length
+                });
+            } else {
+                // Only clear for initial render (no existing components)
+                targetContainer.innerHTML = '';
+                this.logger.info('RENDER', 'Cleared target container for initial render');
+            }
             
             // ROOT CAUSE FIX: Ensure DOM Render Coordinator is ready
             if (window.domRenderCoordinator && !window.domRenderCoordinator.isInitialized) {
@@ -2074,11 +2087,23 @@ class EnhancedComponentRenderer {
             let successfulRenders = 0;
             const renderedComponents = new Set(); // Track what we've rendered
             
+            // Pass the isAddingNewComponents flag to the rendering loop
+            this.logger.debug('RENDER', `Rendering mode: ${isAddingNewComponents ? 'INCREMENTAL (preserve existing)' : 'FULL (clear and rebuild)'}`);
+            
             for (const componentId of componentIdList) {
                 try {
-                    // ROOT CAUSE FIX: Skip if already rendered in this session
+                    // ROOT CAUSE FIX: Skip if already rendered in this session OR if it already exists in DOM
                     if (renderedComponents.has(componentId)) {
                         this.logger.debug('RENDER', `Component ${componentId} already rendered in this session, skipping`);
+                        continue;
+                    }
+                    
+                    // ROOT FIX: Skip if component already exists in DOM (when adding new components)
+                    const existingInDOM = document.getElementById(componentId);
+                    if (existingInDOM && isAddingNewComponents) {
+                        this.logger.debug('RENDER', `Component ${componentId} already exists in DOM, skipping render`);
+                        renderedComponents.add(componentId);
+                        successfulRenders++;
                         continue;
                     }
                     

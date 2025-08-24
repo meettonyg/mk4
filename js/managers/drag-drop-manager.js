@@ -709,13 +709,27 @@
             try {
                 // Check if ComponentManager is available
                 if (!window.GMKB || !window.GMKB.systems || !window.GMKB.systems.ComponentManager) {
-                    console.error('🎯 DragDropManager: ComponentManager not available');
-                    this.showDropError('Component system not ready');
-                    return;
+                console.error('🎯 DragDropManager: ComponentManager not available');
+                this.showDropError('Component system not ready');
+                return;
                 }
+        
+        // ROOT FIX: Check if we already have a component being rendered
+        // This prevents duplicate components when drag-drop is faster than state updates
+        if (window.enhancedComponentManager && window.enhancedComponentManager.isCurrentlyRendering) {
+            console.warn('🎯 DragDropManager: Component rendering in progress, deferring drop');
+            setTimeout(() => this.handleComponentDrop(componentType, dropZone, event), 100);
+            return;
+        }
 
                 // Show loading state
                 this.showDropLoading(dropZone);
+                
+                // ROOT FIX: Check if we already have components of this type to prevent conflicts
+                const existingComponents = document.querySelectorAll(`[data-component-type="${componentType}"]`);
+                if (existingComponents.length > 0 && window.gmkbData?.debugMode) {
+                    console.log(`🎯 DragDropManager: Found ${existingComponents.length} existing ${componentType} components`);
+                }
 
                 // Add component using existing ComponentManager
                 const componentId = await window.GMKB.systems.ComponentManager.addComponent(componentType, {

@@ -811,6 +811,15 @@ function gmkb_enqueue_assets() {
             true
         );
         
+        // ROOT FIX: Component overwrite fix test script
+        wp_enqueue_script(
+            'gmkb-test-component-overwrite-fix',
+            $plugin_url . 'test-component-overwrite-fix.js',
+            array('gmkb-main-script'),
+            $version . '-debug',
+            true
+        );
+        
         // ROOT CAUSE: Duplicate controls debugger
         if (file_exists(GUESTIFY_PLUGIN_DIR . 'debug/debug-duplicate-controls.js')) {
             wp_enqueue_script(
