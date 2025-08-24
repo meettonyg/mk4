@@ -1047,13 +1047,20 @@
         if (componentManagerInitialized) return;
         
         if (window.enhancedStateManager && window.enhancedStateManager.isInitialized) {
+            // ROOT FIX: Check if already initialized to prevent double initialization
+            if (window.enhancedComponentManager.isInitialized) {
+                componentManagerInitialized = true;
+                logger.info('COMPONENT', 'Component Manager already initialized, skipping');
+                return;
+            }
+            
             componentManagerInitialized = true;
             window.enhancedComponentManager.initialize();
             logger.info('COMPONENT', 'Component Manager initialized after State Manager ready');
         } else {
             // Listen for state manager ready event
             document.addEventListener('gmkb:state-manager-ready', () => {
-                if (!componentManagerInitialized) {
+                if (!componentManagerInitialized && !window.enhancedComponentManager.isInitialized) {
                     componentManagerInitialized = true;
                     window.enhancedComponentManager.initialize();
                     logger.info('COMPONENT', 'Component Manager initialized via state manager ready event');

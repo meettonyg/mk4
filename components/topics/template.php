@@ -42,7 +42,7 @@ $has_topics = !empty($loaded_topics);
 $topics_to_display = $has_topics ? $loaded_topics : [];
 ?>
 <!-- Topics component template - controls added dynamically by JS -->
-<div class="content-section editable-element topics-component"
+<div class="content-section editable-element topics-component media-kit-component"
      data-element="topics"
      data-component="topics"
      data-component-type="topics"

@@ -320,10 +320,10 @@ class GMKB_Topics_Ajax_Handler {
                 // PHASE 1.2 FIX: Simple sanitization - no complex validation to prevent delays
                 $topic_value = is_string($topic_value) ? sanitize_text_field(trim($topic_value)) : '';
                 
-                // ROOT FIX: Save to the correct Pods field format (topic_1, topic_2, etc.)
-                $result1 = update_post_meta($post_id, $topic_key, $topic_value);           // Direct custom field (Pods format)
-                // Also save to mkcg_ format for backward compatibility
-                $result2 = update_post_meta($post_id, "mkcg_{$topic_key}", $topic_value);   // MKCG format backup
+                // ROOT FIX: Save to MKCG format FIRST as primary storage
+                $result1 = update_post_meta($post_id, "mkcg_{$topic_key}", $topic_value);   // MKCG format (primary)
+                // Also save to direct format for backward compatibility
+                $result2 = update_post_meta($post_id, $topic_key, $topic_value);           // Direct custom field (backup)
                 
                 $save_operations[] = array(
                     'field' => $topic_key,
@@ -443,21 +443,21 @@ class GMKB_Topics_Ajax_Handler {
                 $result['topics']["topic_{$i}"] = '';
             }
             
-            // Strategy 1: Direct custom fields (topic_1, topic_2, etc.)
-            $custom_topics = $this->load_from_custom_fields($post_id);
-            if ($custom_topics['count'] > 0) {
-                $result = array_merge($result, $custom_topics);
-                $result['source'] = 'custom_fields';
-                $result['message'] = "Loaded {$custom_topics['count']} topics from custom fields";
-                return $result;
-            }
-            
-            // Strategy 2: MKCG fields (mkcg_topic_1, etc.)
+            // ROOT FIX: Strategy 1: MKCG fields FIRST (mkcg_topic_1, etc.) - these are the primary fields
             $mkcg_topics = $this->load_from_mkcg_fields($post_id);
             if ($mkcg_topics['count'] > 0) {
                 $result = array_merge($result, $mkcg_topics);
                 $result['source'] = 'mkcg_fields';
                 $result['message'] = "Loaded {$mkcg_topics['count']} topics from MKCG fields";
+                return $result;
+            }
+            
+            // Strategy 2: Direct custom fields (topic_1, topic_2, etc.) - fallback only
+            $custom_topics = $this->load_from_custom_fields($post_id);
+            if ($custom_topics['count'] > 0) {
+                $result = array_merge($result, $custom_topics);
+                $result['source'] = 'custom_fields';
+                $result['message'] = "Loaded {$custom_topics['count']} topics from custom fields";
                 return $result;
             }
             
@@ -695,9 +695,30 @@ class GMKB_Topics_Ajax_Handler {
             return [];
         }
 
-        // ROOT FIX: Based on Pods configuration, topics are stored as topic_1, topic_2, etc.
-        // Try custom fields (topic_1, topic_2, etc.) - This is the format used by your Pods configuration
+        // ROOT FIX: Try MKCG fields FIRST (mkcg_topic_1, mkcg_topic_2, etc.) - these are the primary fields
         $topics_array = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_value = get_post_meta($data_source_id, "mkcg_topic_{$i}", true);
+            if (!empty($topic_value) && is_string($topic_value)) {
+                $topics_array[] = [
+                    'title' => sanitize_text_field(trim($topic_value)),
+                    'description' => ''
+                ];
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ROOT FIX: Found mkcg_topic_{$i}: {$topic_value}");
+                }
+            }
+        }
+        
+        if (!empty($topics_array)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("ROOT FIX: Successfully loaded " . count($topics_array) . " topics from MKCG fields for post {$data_source_id}");
+            }
+            return $topics_array;
+        }
+        
+        // Fallback: Try custom fields (topic_1, topic_2, etc.) if no MKCG fields found
         for ($i = 1; $i <= 5; $i++) {
             $topic_value = get_post_meta($data_source_id, "topic_{$i}", true);
             if (!empty($topic_value) && is_string($topic_value)) {
@@ -707,14 +728,14 @@ class GMKB_Topics_Ajax_Handler {
                 ];
                 
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("ROOT FIX: Found topic_{$i}: {$topic_value}");
+                    error_log("ROOT FIX: Found topic_{$i}: {$topic_value} (fallback)");
                 }
             }
         }
         
         if (!empty($topics_array)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ROOT FIX: Successfully loaded " . count($topics_array) . " topics for post {$data_source_id}");
+                error_log("ROOT FIX: Successfully loaded " . count($topics_array) . " topics from custom fields for post {$data_source_id}");
             }
             return $topics_array;
         }

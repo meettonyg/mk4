@@ -176,30 +176,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             }
         }
         
-        // PRIMARY METHOD: Custom post fields (topic_1, topic_2, etc.) - Based on Pods configuration
-        // This should be the first method tried as it's the actual format used
-        for ($i = 1; $i <= 5; $i++) {
-            $topic_value = get_post_meta($post_id, "topic_{$i}", true);
-            $debug_methods['custom_fields']["topic_{$i}"] = $topic_value;
-            
-            if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
-                $topics[] = array(
-                    'title' => sanitize_text_field(trim($topic_value)),
-                    'description' => '',
-                    'index' => $i - 1,
-                    'meta_key' => "topic_{$i}",
-                    'source' => 'custom_fields_pods'
-                );
-                $success = true;
-                $data_source = 'custom_fields_pods';
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("Topics Data Service: Found topic_{$i} = {$topic_value}");
-                }
-            }
-        }
-        
-        // LEGACY: Method 2 - MKCG meta fields (fallback)
+        // ROOT FIX: PRIMARY METHOD - MKCG meta fields (mkcg_topic_1, etc.) - these are the actual fields used
         if (!$success) {
             for ($i = 1; $i <= 5; $i++) {
                 $topic_value = get_post_meta($post_id, "mkcg_topic_{$i}", true);
@@ -211,10 +188,34 @@ class Topics_Data_Service extends Base_Component_Data_Service {
                         'description' => '',
                         'index' => $i - 1,
                         'meta_key' => "mkcg_topic_{$i}",
-                        'source' => 'mkcg_fields_legacy'
+                        'source' => 'mkcg_fields_primary'
                     );
                     $success = true;
-                    $data_source = 'mkcg_fields_legacy';
+                    $data_source = 'mkcg_fields_primary';
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("Topics Data Service: Found mkcg_topic_{$i} = {$topic_value}");
+                    }
+                }
+            }
+        }
+        
+        // FALLBACK: Custom post fields (topic_1, topic_2, etc.) - fallback only
+        if (!$success) {
+            for ($i = 1; $i <= 5; $i++) {
+                $topic_value = get_post_meta($post_id, "topic_{$i}", true);
+                $debug_methods['custom_fields']["topic_{$i}"] = $topic_value;
+                
+                if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
+                    $topics[] = array(
+                        'title' => sanitize_text_field(trim($topic_value)),
+                        'description' => '',
+                        'index' => $i - 1,
+                        'meta_key' => "topic_{$i}",
+                        'source' => 'custom_fields_fallback'
+                    );
+                    $success = true;
+                    $data_source = 'custom_fields_fallback';
                 }
             }
         }
@@ -295,11 +296,14 @@ class Topics_Data_Service extends Base_Component_Data_Service {
         // BACKWARD COMPATIBILITY: Also save in legacy formats
         $legacy_save = true;
         
-        // Save to custom fields format
+        // ROOT FIX: Save to MKCG fields format as primary
         for ($i = 1; $i <= 5; $i++) {
             $topic_value = isset($topics[$i - 1]['title']) ? $topics[$i - 1]['title'] : '';
-            $result = update_post_meta($post_id, "topic_{$i}", sanitize_text_field($topic_value));
-            if ($result === false) {
+            // Save to MKCG format first (primary)
+            $result1 = update_post_meta($post_id, "mkcg_topic_{$i}", sanitize_text_field($topic_value));
+            // Also save to custom format for backward compatibility
+            $result2 = update_post_meta($post_id, "topic_{$i}", sanitize_text_field($topic_value));
+            if ($result1 === false && $result2 === false) {
                 $legacy_save = false;
             }
         }

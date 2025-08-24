@@ -167,15 +167,15 @@
                 structuredLogger.debug('CONTROLS', `Set data-component-id="${componentId}" on element`);
             }
             
-            // ROOT CAUSE FIX: Verify this is the correct root element (has both id and data-component-id)
-            if (!componentElement.id || componentElement.getAttribute('data-component-id') !== componentId) {
-                structuredLogger.warn('CONTROLS', `Element validation failed for ${componentId} - not the root component element`);
-                return false;
-            }
+            // ROOT CAUSE FIX: Verify this is the correct root element
+            // For topics components, the ID format is "topics-TIMESTAMP-INDEX"
+            // Check if this element has an ID that contains the component type
+            const componentType = componentId.split('-')[0]; // e.g., 'topics' from 'topics-1755999525631-1'
             
-            // ROOT CAUSE FIX: Ensure we're attaching to the actual component root, not a child
-            if (componentElement.id !== componentId) {
-                structuredLogger.warn('CONTROLS', `Element ID mismatch: expected ${componentId}, got ${componentElement.id}`);
+            // Skip ID validation for dynamically generated components
+            // Just ensure the element has the data-component-id attribute
+            if (!componentElement.hasAttribute('data-component-id') || componentElement.getAttribute('data-component-id') !== componentId) {
+                structuredLogger.warn('CONTROLS', `Element validation failed for ${componentId} - data-component-id mismatch`);
                 return false;
             }
             
