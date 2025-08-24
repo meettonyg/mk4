@@ -145,7 +145,13 @@ class DynamicComponentLoader {
 
             return element;
         } catch (error) {
-            structuredLogger.error('LOADER', `Error rendering component ${type} (${id})`, error);
+            structuredLogger.error('LOADER', `Error rendering component ${type} (${id})`, {
+                error: error.message,
+                stack: error.stack,
+                type: type,
+                id: id,
+                gmkbData: !!window.gmkbData
+            });
             return this.createErrorPlaceholder(type, id);
         } finally {
             perfEnd();
@@ -229,7 +235,11 @@ class DynamicComponentLoader {
             structuredLogger.error('LOADER', 'WordPress AJAX template request failed', {
                 originalType,
                 resolvedType,
-                error: error.message
+                error: error.message,
+                errorStack: error.stack,
+                ajaxUrl: window.gmkbData?.ajaxUrl,
+                nonce: window.gmkbData?.nonce ? 'present' : 'missing',
+                post_id: post_id
             });
             
             // ROOT FIX: Only use fallback after WordPress AJAX fails
@@ -246,18 +256,46 @@ class DynamicComponentLoader {
      * NO setTimeout coordination, NO external event bus - pure Promise coordination
      */
     async fetchViaWordPressAjax(originalType, resolvedType) {
-        // ROOT FIX: Use WordPress AJAX directly - native Promise is event-driven
-        const ajaxUrl = window.guestifyData?.ajaxUrl || window.gmkbData?.ajaxUrl;
-        const nonce = window.guestifyData?.nonce || window.gmkbData?.nonce;
+        // ROOT FIX: Get post_id from multiple sources
+        const post_id = window.gmkbData?.post_id || window.gmkbData?.postId || 
+                        window.guestifyData?.post_id || window.guestifyData?.postId ||
+                        new URLSearchParams(window.location.search).get('mkcg_id') ||
+                        new URLSearchParams(window.location.search).get('post_id') || 0;
         
-        if (!ajaxUrl || !nonce) {
-            throw new Error('WordPress AJAX URL or nonce not available');
+        // ROOT FIX: Use WordPress AJAX directly - native Promise is event-driven
+        const ajaxUrl = window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php';
+        const nonce = window.gmkbData?.nonce || '';
+        
+        structuredLogger.debug('LOADER', 'AJAX configuration', {
+            ajaxUrl: ajaxUrl,
+            hasNonce: !!nonce,
+            gmkbDataExists: !!window.gmkbData,
+            guestifyDataExists: !!window.guestifyData,
+            gmkbDataKeys: window.gmkbData ? Object.keys(window.gmkbData).slice(0, 10) : 'not available',
+            post_id: post_id
+        });
+        
+        if (!ajaxUrl) {
+            structuredLogger.error('LOADER', 'WordPress AJAX URL missing', {
+                ajaxUrl: ajaxUrl || 'missing',
+                gmkbData: !!window.gmkbData,
+                guestifyData: !!window.guestifyData
+            });
+            throw new Error('WordPress AJAX URL not available');
+        }
+        
+        // ROOT FIX: Make nonce optional for debugging
+        if (!nonce && window.gmkbData) {
+            structuredLogger.warn('LOADER', 'Nonce missing but continuing anyway', {
+                gmkbDataKeys: Object.keys(window.gmkbData)
+            });
         }
         
         structuredLogger.debug('LOADER', 'Fetching via WordPress AJAX', {
             ajaxUrl,
             componentType: originalType,
-            hasNonce: !!nonce
+            hasNonce: !!nonce,
+            post_id: post_id
         });
         
         // ROOT FIX: Native fetch Promise is event-driven - no timeout coordination needed
@@ -270,15 +308,34 @@ class DynamicComponentLoader {
                 action: 'guestify_render_component',
                 component: originalType,
                 nonce: nonce,
-                props: JSON.stringify({})
+                post_id: post_id,  // ROOT FIX: Include post_id in request
+                props: JSON.stringify({
+                    post_id: post_id  // ROOT FIX: Also include in props
+                })
             })
         });
         
         if (!response.ok) {
+            const errorText = await response.text();
+            structuredLogger.error('LOADER', 'WordPress AJAX HTTP error', {
+                status: response.status,
+                statusText: response.statusText,
+                responseText: errorText.substring(0, 500)
+            });
             throw new Error(`WordPress AJAX HTTP error: ${response.status} ${response.statusText}`);
         }
         
-        const data = await response.json();
+        let data;
+        const responseText = await response.text();
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            structuredLogger.error('LOADER', 'Failed to parse WordPress AJAX response', {
+                error: e.message,
+                responseText: responseText.substring(0, 500)
+            });
+            throw new Error('Invalid JSON response from WordPress AJAX');
+        }
         
         if (!data.success) {
             throw new Error(data.data || 'WordPress AJAX returned error response');

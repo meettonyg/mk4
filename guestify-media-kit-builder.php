@@ -623,14 +623,45 @@ class Guestify_Media_Kit_Builder {
             wp_send_json_error('Component type not provided.');
             return;
         }
+        
+        // ROOT FIX: Extract post_id from multiple sources BEFORE component-specific logic
+        $post_id = 0;
+        
+        // From POST parameters
+        if (isset($_POST['post_id']) && is_numeric($_POST['post_id'])) {
+            $post_id = intval($_POST['post_id']);
+        }
+        
+        // From props if not in POST
+        if (!$post_id && isset($props['post_id']) && is_numeric($props['post_id'])) {
+            $post_id = intval($props['post_id']);
+        }
+        
+        // Fallback to other parameter names
+        if (!$post_id && isset($_POST['media_kit_post_id']) && is_numeric($_POST['media_kit_post_id'])) {
+            $post_id = intval($_POST['media_kit_post_id']);
+        }
+        
+        // From URL parameters via referer
+        if (!$post_id && isset($_SERVER['HTTP_REFERER'])) {
+            $referer = $_SERVER['HTTP_REFERER'];
+            if (preg_match('/[?&]mkcg_id=(\d+)/', $referer, $matches)) {
+                $post_id = intval($matches[1]);
+            } elseif (preg_match('/[?&]post_id=(\d+)/', $referer, $matches)) {
+                $post_id = intval($matches[1]);
+            }
+        }
+        
+        // ROOT FIX: Always add post_id to props for ALL components
+        $props['post_id'] = $post_id;
+        $props['postId'] = $post_id; // Also camelCase for JS compatibility
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("ROOT FIX ajax_render_component: post_id={$post_id} for component {$component_type}");
+        }
 
         // --- ROOT FIX: SINGLE-STEP RENDER LOGIC ---
         // Pre-load data for components that need server-side data loading
-        // ROOT CAUSE DEBUG: Log template request
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("ajax_render_component: Rendering component {$component_type} with props: " . print_r($props, true));
-            error_log("ajax_render_component: POST data: " . print_r($_POST, true));
-        }
         
         if ($component_type === 'topics') {
             $topics_ajax_handler_path = GMKB_PLUGIN_DIR . 'components/topics/ajax-handler.php';
@@ -639,35 +670,11 @@ class Guestify_Media_Kit_Builder {
                 if (class_exists('GMKB_Topics_Ajax_Handler')) {
                     $topics_handler = GMKB_Topics_Ajax_Handler::get_instance();
                     
-                    // CRITICAL FIX: Multiple data source ID detection strategies
-                    $data_source_id = 0;
-                    
-                    // Strategy 1: From props (various parameter names)
-                    $data_source_id = $props['post_id'] ?? $props['dataSourceId'] ?? $props['postId'] ?? $props['data_source_id'] ?? 0;
-                    
-                    // Strategy 2: From POST parameters if not in props
-                    if (!$data_source_id) {
-                        $data_source_id = intval($_POST['post_id'] ?? $_POST['media_kit_post_id'] ?? 0);
-                    }
-                    
-                    // Strategy 3: From URL parameters as fallback
-                    if (!$data_source_id) {
-                        $data_source_id = intval($_GET['post_id'] ?? $_GET['p'] ?? 0);
-                    }
-                    
-                    // Strategy 4: Auto-detect from current context
-                    if (!$data_source_id) {
-                        $data_source_id = $this->detect_mkcg_post_id();
-                    }
+                    // ROOT FIX: Use the already-detected post_id
+                    $data_source_id = $post_id;
                     
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("ROOT FIX: Topics data source ID detection: {$data_source_id}");
-                        error_log("ROOT FIX: Props keys: " . implode(', ', array_keys($props)));
-                        error_log("ROOT FIX: Props values: " . print_r($props, true));
-                        error_log("ROOT FIX: POST post_id: " . ($_POST['post_id'] ?? 'not set'));
-                        error_log("ROOT FIX: POST media_kit_post_id: " . ($_POST['media_kit_post_id'] ?? 'not set'));
-                        error_log("ROOT FIX: GET post_id: " . ($_GET['post_id'] ?? 'not set'));
-                        error_log("ROOT FIX: GET mkcg_id: " . ($_GET['mkcg_id'] ?? 'not set'));
+                        error_log("ROOT FIX: Loading topics for post_id={$data_source_id}");
                     }
                     
                     // Load topics data with the detected ID
@@ -681,7 +688,7 @@ class Guestify_Media_Kit_Builder {
                     }
                     
                     $props['loaded_topics'] = $loaded_topics;
-                    $props['post_id'] = $data_source_id;
+                    // post_id already set above for all components
                     $props['component_id'] = $props['component_id'] ?? 'component-' . round(microtime(true) * 1000);
                     $props['topics_data_source'] = 'single_step_render';
                 }

@@ -7,7 +7,32 @@
 // Set default values from passed props
 $props = $props ?? [];
 $loaded_topics = $props['loaded_topics'] ?? [];
-$post_id = $props['post_id'] ?? 0;
+
+// ROOT FIX: Robust post ID detection with multiple fallbacks
+$post_id = $props['post_id'] ?? $props['postId'] ?? 0;
+
+// Fallback: Try to get from URL parameters if not in props
+if (!$post_id) {
+    $post_id = intval($_GET['mkcg_id'] ?? $_GET['post_id'] ?? $_GET['p'] ?? 0);
+}
+
+// If we have a post_id but no loaded topics, try to load them directly
+if ($post_id > 0 && empty($loaded_topics)) {
+    // Try to load topics using the Topics Data Service
+    $topics_data_service_path = plugin_dir_path(__FILE__) . 'class-topics-data-service.php';
+    if (file_exists($topics_data_service_path)) {
+        require_once $topics_data_service_path;
+        if (class_exists('Topics_Data_Service')) {
+            $topics_data = Topics_Data_Service::get_unified_component_data($post_id, 'template');
+            if (!empty($topics_data['topics'])) {
+                $loaded_topics = $topics_data['topics'];
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("Topics Template: Loaded " . count($loaded_topics) . " topics directly for post {$post_id}");
+                }
+            }
+        }
+    }
+}
 
 // ROOT FIX: Component ID should be passed from parent context
 $componentId = $props['component_id'] ?? $props['componentId'] ?? '';
