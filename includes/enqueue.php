@@ -893,28 +893,10 @@ function gmkb_enqueue_assets() {
         }
     }
     
-    // ROOT FIX: Control issues fix script (debug mode only)
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        wp_enqueue_script(
-            'gmkb-fix-controls',
-            $plugin_url . 'js/test-fixes/fix-controls.js',
-            array('gmkb-component-controls-manager', 'gmkb-main-script'),
-            $version,
-            true
-        );
-        
-        // ROOT FIX: Debug controls attachment
-        wp_enqueue_script(
-            'gmkb-debug-controls-attachment',
-            $plugin_url . 'js/test-fixes/debug-controls-attachment.js',
-            array('gmkb-component-controls-manager'),
-            $version,
-            true
-        );
-        
-        // ROOT FIX: Legacy control cleanup script - REMOVED as it's a patch
-        // The root cause has been fixed in element-editor.js
-    }
+    // ROOT FIX: All control issues have been fixed at the root in:
+    // - element-editor.js (no longer creates legacy controls)
+    // - component-controls-manager.js (handles all control creation)
+    // No patches or fix scripts needed!
 
     // ROOT FIX: Move wp_localize_script BEFORE any debug output
     // This ensures data is available when first scripts run

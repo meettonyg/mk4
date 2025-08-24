@@ -290,12 +290,14 @@
             container.setAttribute('data-controls-type', 'dynamic');
             
             // ROOT FIX: Add CSS for dynamic controls with PROPER visibility behavior
-            // Remove initial hiding - let hover behavior control visibility
+            // Initial state: hidden but ready for hover
             container.style.cssText = `
                 position: absolute;
                 top: 8px;
                 right: 8px;
                 opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
                 transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
                 z-index: 1000;
                 background: rgba(0, 0, 0, 0.9);

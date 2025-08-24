@@ -656,7 +656,9 @@ window.cleanupDuplicateControls = function() {
     };
 };
 
-// ROOT FIX: Auto-run cleanup on page load
+// ROOT FIX: Auto-run cleanup DISABLED - this was removing properly attached controls
+// The cleanup was a patch for a problem that's been fixed at the root
+/*
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
@@ -670,6 +672,7 @@ if (document.readyState === 'loading') {
         window.cleanupDuplicateControls();
     }, 2000);
 }
+*/
 
 // ROOT FIX: MutationObserver to catch duplicate controls being added
 window.setupDuplicateControlsWatcher = function() {

@@ -52,10 +52,16 @@
         
         console.log(`\n📊 Fixed ${fixedCount} component attributes`);
         
-        // Step 2: Remove any existing controls to start fresh (including legacy element-controls)
-        const existingControls = document.querySelectorAll('.component-controls, .element-controls, .control-btn, .control-toolbar');
-        existingControls.forEach(ctrl => ctrl.remove());
-        console.log(`🗑️ Removed ${existingControls.length} existing control elements`);
+        // Step 2: Remove ONLY legacy controls, not the modern dynamic ones
+        const existingControls = document.querySelectorAll('.element-controls:not(.component-controls--dynamic), .control-btn:not(.component-control), .control-toolbar:not(.component-controls__toolbar--dynamic)');
+        existingControls.forEach(ctrl => {
+            // Double-check this is truly a legacy control
+            if (!ctrl.classList.contains('component-controls--dynamic') && 
+                !ctrl.closest('.component-controls--dynamic')) {
+                ctrl.remove();
+            }
+        });
+        console.log(`🗑️ Removed ${existingControls.length} legacy control elements`);
         
         // Step 3: Force attach controls to all components
         let controlsAttachedCount = 0;
