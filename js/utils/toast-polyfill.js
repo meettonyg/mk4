@@ -1,70 +1,150 @@
 /**
- * @file toast-polyfill.js
- * @description A polyfill for showing toast notifications in the Media Kit Builder.
- * This ensures that a notification system is available even if the final environment
- * doesn't provide a global one.
- *
- * This version includes a fix to properly export the 'showToast' function,
- * making it accessible to other ES modules.
+ * Toast Notification Polyfill
+ * Provides a simple toast notification system
+ * 
+ * ROOT FIX: Event-driven toast system with no external dependencies
  */
 
-let toastContainer = null;
-
-/**
- * Creates the container for toast notifications if it doesn't already exist.
- */
-function createToastContainer() {
-    if (document.getElementById('toast-container')) {
-        toastContainer = document.getElementById('toast-container');
-        return;
-    }
-    toastContainer = document.createElement('div');
-    toastContainer.id = 'toast-container';
-    toastContainer.className = 'gmkb-toast-container';
-    document.body.appendChild(toastContainer);
-}
-
-/**
- * Displays a toast notification with a message.
- * @param {string} message - The message to display in the toast.
- * @param {string} [type='info'] - The type of toast ('info', 'success', 'error', 'warning').
- * @param {number} [duration=3000] - The duration in milliseconds for the toast to be visible.
- */
-export function showToast(message, type = 'info', duration = 3000) {
+(function() {
+    'use strict';
+    
+    /**
+     * Show a toast notification
+     * @param {string} message - Message to show
+     * @param {string} type - Toast type: 'info', 'success', 'warning', 'error'
+     * @param {number} duration - Duration in milliseconds (default: 3000)
+     * @param {boolean} dismissible - Whether toast can be dismissed manually (default: false)
+     */
+    function showToast(message, type = 'info', duration = 3000, dismissible = false) {
+    // Check if a toast container exists
+    let toastContainer = document.querySelector('.gmkb-toast-container');
     if (!toastContainer) {
-        createToastContainer();
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'gmkb-toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        `;
+        document.body.appendChild(toastContainer);
     }
-
+    
+    // Create toast element
     const toast = document.createElement('div');
     toast.className = `gmkb-toast gmkb-toast--${type}`;
+    toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'polite');
-    toast.setAttribute('role', 'status');
-    toast.textContent = message;
-
-    toastContainer.appendChild(toast);
-
-    // Animate in
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 10);
-
-    // Animate out and remove
-    setTimeout(() => {
-        toast.classList.add('closing');
-        toast.addEventListener('transitionend', () => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
+    
+    // Style the toast
+    const baseStyle = `
+        background: #1e293b;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 250px;
+        max-width: 400px;
+        font-size: 14px;
+        line-height: 1.5;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+    `;
+    
+    // Type-specific colors
+    const typeColors = {
+        success: '#10b981',
+        error: '#ef4444',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+    };
+    
+    toast.style.cssText = baseStyle + `border-left: 4px solid ${typeColors[type] || typeColors.info};`;
+    
+    // Add icon
+    const icon = document.createElement('span');
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+    icon.textContent = icons[type] || icons.info;
+    icon.style.cssText = `
+        font-weight: bold;
+        font-size: 16px;
+        color: ${typeColors[type] || typeColors.info};
+    `;
+    toast.appendChild(icon);
+    
+    // Add message
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message;
+    messageSpan.style.flex = '1';
+    toast.appendChild(messageSpan);
+    
+    // Add close button if dismissible
+    if (dismissible) {
+        const closeBtn = document.createElement('button');
+        closeBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: white;
+            opacity: 0.7;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            margin-left: 10px;
+        `;
+        closeBtn.innerHTML = '×';
+        closeBtn.setAttribute('aria-label', 'Close notification');
+        closeBtn.addEventListener('click', () => {
+            removeToast(toast);
         });
-    }, duration);
+        toast.appendChild(closeBtn);
+    }
+    
+    // Add to container
+    toastContainer.appendChild(toast);
+    
+    // Trigger animation
+    requestAnimationFrame(() => {
+        toast.style.transform = 'translateX(0)';
+    });
+    
+    // Remove after delay
+    if (duration > 0) {
+        setTimeout(() => {
+            removeToast(toast);
+        }, duration);
+    }
+    
+    return toast;
 }
 
-// Initialize the container on script load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createToastContainer);
-} else {
-    createToastContainer();
-}
-
-// Expose globally for debugging
-window.showToast = showToast;
+    /**
+     * Remove a toast with animation
+     * @param {HTMLElement} toast - Toast element to remove
+     */
+    function removeToast(toast) {
+        if (!toast || !document.body.contains(toast)) return;
+        
+        toast.style.transform = 'translateX(400px)';
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                toast.remove();
+            }
+        }, 300);
+    }
+    
+    // Expose globally for all scripts
+    window.showToast = showToast;
+    
+    console.log('✅ Toast Polyfill: Available globally and ready');
+})();

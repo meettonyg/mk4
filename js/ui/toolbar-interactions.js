@@ -3,36 +3,41 @@
  * @description Handles all toolbar button interactions including save, export, undo/redo, etc.
  * 
  * ROOT FIX: Connects save button to actual save functionality with proper user feedback
+ * ROOT FIX: Converted to WordPress global namespace pattern
  */
 
-import { structuredLogger } from '../utils/structured-logger.js';
-import { eventBus } from '../core/event-bus.js';
-
-// Toast function with fallback
-let showToast = (message, type = 'info', duration = 3000) => {
-    console.log(`[${type.toUpperCase()}] ${message}`);
+(function() {
+    'use strict';
     
-    // For errors, also show browser alert as fallback
-    if (type === 'error') {
-        setTimeout(() => {
-            if (confirm(`Error: ${message}\n\nClick OK to see more details in console.`)) {
-                console.error('Detailed error information available in console.');
+    // Wait for dependencies
+    const waitForDependencies = function(callback) {
+        const checkDependencies = function() {
+            if (window.structuredLogger && window.eventBus) {
+                callback();
+            } else {
+                setTimeout(checkDependencies, 50);
             }
-        }, 100);
-    }
-};
-
-// Try to load the actual toast polyfill
-try {
-    import('../utils/toast-polyfill.js').then(({ showToast: importedShowToast }) => {
-        showToast = importedShowToast;
-        console.log('✅ Toast polyfill loaded successfully');
-    }).catch(error => {
-        console.warn('⚠️ Toast polyfill not available, using fallback', error);
-    });
-} catch (error) {
-    console.warn('⚠️ Failed to load toast polyfill, using fallback');
-}
+        };
+        checkDependencies();
+    };
+    
+    waitForDependencies(function() {
+        const structuredLogger = window.structuredLogger;
+        const eventBus = window.eventBus;
+        
+        // Toast function with fallback
+        let showToast = window.showToast || function(message, type = 'info', duration = 3000) {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            
+            // For errors, also show browser alert as fallback
+            if (type === 'error') {
+                setTimeout(() => {
+                    if (confirm(`Error: ${message}\n\nClick OK to see more details in console.`)) {
+                        console.error('Detailed error information available in console.');
+                    }
+                }, 100);
+            }
+        };
 
 class ToolbarInteractions {
     constructor() {
@@ -1188,13 +1193,17 @@ class ToolbarInteractions {
     }
 }
 
-// Create and export singleton instance
-export const toolbarInteractions = new ToolbarInteractions();
-
-// Expose globally for debugging
-window.toolbarInteractions = toolbarInteractions;
-
-// Export convenience functions
-export const triggerSave = () => toolbarInteractions.handleSaveClick();
-export const triggerExport = () => toolbarInteractions.handleExportClick();
-export const setAutoSave = (enabled) => toolbarInteractions.setAutoSave(enabled);
+        // Create and export singleton instance
+        const toolbarInteractions = new ToolbarInteractions();
+        
+        // Expose globally for debugging
+        window.toolbarInteractions = toolbarInteractions;
+        
+        // Export convenience functions
+        window.triggerSave = () => toolbarInteractions.handleSaveClick();
+        window.triggerExport = () => toolbarInteractions.handleExportClick();
+        window.setAutoSave = (enabled) => toolbarInteractions.setAutoSave(enabled);
+        
+        console.log('✅ Toolbar Interactions: Available globally and ready');
+    });
+})();

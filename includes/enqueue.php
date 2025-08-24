@@ -564,6 +564,72 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 12g. State History - ROOT FIX: For undo/redo functionality
+    if (!wp_script_is('gmkb-state-history', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-state-history',
+            $plugin_url . 'js/core/state-history.js',
+            array('gmkb-event-bus', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 12g2. State History Initializer - ROOT FIX: Ensures initial state is captured
+    if (!wp_script_is('gmkb-state-history-initializer', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-state-history-initializer',
+            $plugin_url . 'js/core/state-history-initializer.js',
+            array('gmkb-state-history', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // 12g3. State History Clear Fix - ROOT FIX: Clear history when all components removed
+    if (!wp_script_is('gmkb-state-history-clear-fix', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-state-history-clear-fix',
+            $plugin_url . 'js/core/state-history-clear-fix.js',
+            array('gmkb-state-history', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // 12h. History Service - ROOT FIX: Manages undo/redo UI
+    if (!wp_script_is('gmkb-history-service', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-history-service',
+            $plugin_url . 'js/services/history-service.js',
+            array('gmkb-state-history', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // 12h2. Toast Polyfill - ROOT FIX: Toast notifications
+    if (!wp_script_is('gmkb-toast-polyfill', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-toast-polyfill',
+            $plugin_url . 'js/utils/toast-polyfill.js',
+            array(),
+            $version,
+            true
+        );
+    }
+    
+    // 12i. Toolbar Interactions - ROOT FIX: Enhanced toolbar with undo/redo
+    if (!wp_script_is('gmkb-toolbar-interactions', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-toolbar-interactions',
+            $plugin_url . 'js/ui/toolbar-interactions.js',
+            array('gmkb-structured-logger', 'gmkb-event-bus', 'gmkb-state-history', 'gmkb-history-service', 'gmkb-toast-polyfill'),
+            $version,
+            true
+        );
+    }
+    
     // 12d. DOM Render Coordinator - ROOT FIX: CRITICAL for preventing duplicate rendering
     if (!wp_script_is('gmkb-dom-render-coordinator', 'enqueued')) {
         wp_enqueue_script(
@@ -653,9 +719,13 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-library-simple',
                 'gmkb-tabs',
                 'gmkb-toolbar',
+                'gmkb-toolbar-interactions',
                 'gmkb-ui-init-coordinator',
                 'gmkb-design-panel',
                 'gmkb-element-editor',
+                'gmkb-state-history',
+                'gmkb-state-history-initializer',
+                'gmkb-history-service',
                 // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure
                 'gmkb-sortable-integration',
                 'gmkb-drag-drop-manager',
@@ -750,6 +820,28 @@ function gmkb_enqueue_assets() {
                 true
             );
         }
+        
+        // ROOT FIX: Undo/Redo diagnostic tool
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'debug/test-undo-redo.js')) {
+            wp_enqueue_script(
+                'gmkb-test-undo-redo',
+                $plugin_url . 'debug/test-undo-redo.js',
+                array('gmkb-main-script', 'gmkb-state-history', 'gmkb-history-service'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Undo/Redo fix test
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'debug/undo-redo-fix-test.js')) {
+            wp_enqueue_script(
+                'gmkb-undo-redo-fix-test',
+                $plugin_url . 'debug/undo-redo-fix-test.js',
+                array('gmkb-main-script', 'gmkb-state-history', 'gmkb-history-service'),
+                $version . '-debug',
+                true
+            );
+        }
     }
     
     // ROOT FIX: Debug utilities for component interaction testing (development only)
@@ -827,6 +919,14 @@ function gmkb_enqueue_assets() {
     wp_enqueue_style(
         'gmkb-component-controls',
         $plugin_url . 'css/modules/component-controls.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // ROOT FIX: Toast notifications CSS
+    wp_enqueue_style(
+        'gmkb-toast-notifications',
+        $plugin_url . 'css/modules/toast-notifications.css',
         array( 'gmkb-main-styles' ),
         $version
     );

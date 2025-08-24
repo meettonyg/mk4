@@ -442,10 +442,28 @@ class DynamicComponentLoader {
                 existingDataIds.forEach(child => child.removeAttribute('data-component-id'));
             }
             
+            // ROOT FIX: Remove ANY existing control elements from template
+            // This prevents duplicate controls from legacy templates
+            const existingControls = element.querySelectorAll('.element-controls, .component-controls, .control-btn, [class*="control"]');
+            if (existingControls.length > 0) {
+                structuredLogger.warn('LOADER', `REMOVING ${existingControls.length} legacy control elements from template`);
+                existingControls.forEach(control => {
+                    // Only remove if it's actually a control element (not just something with 'control' in the class)
+                    const classList = control.className;
+                    if (classList.includes('element-controls') || 
+                        classList.includes('component-controls') || 
+                        classList.includes('control-btn') ||
+                        classList.includes('control-toolbar')) {
+                        control.remove();
+                        structuredLogger.debug('LOADER', `Removed legacy control: ${classList}`);
+                    }
+                });
+            }
+            
             // ROOT FIX: Mark render time for debugging
             element.setAttribute('data-render-time', Date.now().toString());
             
-            structuredLogger.debug('LOADER', `Created element with ID="${id}" and data-component-id="${id}"`);
+            structuredLogger.debug('LOADER', `Created clean element with ID="${id}" and data-component-id="${id}"`);
         }
         return element;
     }
@@ -519,5 +537,139 @@ window.enableDuplicationDebug = function() {
     console.log('🔍 Will track any DOM mutations that add duplicate data-component-id attributes');
     return 'Debug mode enabled - mutations will be logged';
 };
+
+// ROOT FIX: Cleanup function to remove all duplicate/legacy controls
+window.cleanupDuplicateControls = function() {
+    console.log('🧹 Starting duplicate controls cleanup...');
+    
+    let removedCount = 0;
+    
+    // Find all components
+    const allComponents = document.querySelectorAll('[data-component-id]');
+    
+    allComponents.forEach(component => {
+        const componentId = component.getAttribute('data-component-id');
+        
+        // Find ALL control elements within this component
+        const allControls = component.querySelectorAll('.element-controls, .component-controls, .control-btn, [class*="control-toolbar"]');
+        
+        if (allControls.length > 1) {
+            console.warn(`Component ${componentId} has ${allControls.length} control sets!`);
+            
+            // Keep only the first .component-controls--dynamic if it exists
+            let dynamicControlFound = false;
+            allControls.forEach(control => {
+                if (control.classList.contains('component-controls--dynamic') && !dynamicControlFound) {
+                    dynamicControlFound = true;
+                    console.log(`Keeping dynamic controls for ${componentId}`);
+                } else {
+                    control.remove();
+                    removedCount++;
+                    console.log(`Removed control element from ${componentId}:`, control.className);
+                }
+            });
+        } else if (allControls.length === 1) {
+            // Check if it's the old style controls
+            const control = allControls[0];
+            if (control.classList.contains('element-controls') && !control.classList.contains('component-controls--dynamic')) {
+                console.warn(`Found legacy controls in ${componentId}, removing...`);
+                control.remove();
+                removedCount++;
+                
+                // Request dynamic controls to be attached
+                if (window.componentControlsManager) {
+                    window.componentControlsManager.attachControls(component, componentId);
+                    console.log(`Attached new dynamic controls to ${componentId}`);
+                }
+            }
+        }
+    });
+    
+    console.log(`✅ Cleanup complete. Removed ${removedCount} duplicate/legacy control elements.`);
+    
+    // Run controls fix to ensure all components have proper controls
+    if (window.fixControlsNow) {
+        console.log('Running fixControlsNow() to ensure all components have proper controls...');
+        window.fixControlsNow();
+    }
+    
+    return {
+        componentsChecked: allComponents.length,
+        controlsRemoved: removedCount
+    };
+};
+
+// ROOT FIX: Auto-run cleanup on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            console.log('🔧 Auto-running duplicate controls cleanup...');
+            window.cleanupDuplicateControls();
+        }, 2000); // Wait 2 seconds for all components to load
+    });
+} else {
+    setTimeout(() => {
+        console.log('🔧 Auto-running duplicate controls cleanup...');
+        window.cleanupDuplicateControls();
+    }, 2000);
+}
+
+// ROOT FIX: MutationObserver to catch duplicate controls being added
+window.setupDuplicateControlsWatcher = function() {
+    console.log('👀 Setting up duplicate controls watcher...');
+    
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        // Check if it's a control element being added
+                        if (node.classList && (
+                            node.classList.contains('element-controls') ||
+                            node.classList.contains('control-btn') ||
+                            node.querySelector('.element-controls') ||
+                            node.querySelector('.control-btn')
+                        )) {
+                            console.warn('🚨 DUPLICATE CONTROL DETECTED:', {
+                                element: node,
+                                className: node.className,
+                                parent: mutation.target,
+                                stack: new Error().stack
+                            });
+                            
+                            // Check if this component already has dynamic controls
+                            const component = node.closest('[data-component-id]');
+                            if (component) {
+                                const dynamicControls = component.querySelector('.component-controls--dynamic');
+                                if (dynamicControls && node !== dynamicControls && !dynamicControls.contains(node)) {
+                                    console.error('🚫 REMOVING DUPLICATE CONTROLS - component already has dynamic controls');
+                                    node.remove();
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    });
+    
+    // Watch the entire document for changes
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    console.log('✅ Duplicate controls watcher active');
+    return observer;
+};
+
+// Auto-setup watcher when DOM is ready
+if (document.readyState !== 'loading') {
+    window.setupDuplicateControlsWatcher();
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.setupDuplicateControlsWatcher();
+    });
+}
 
 })(); // ROOT FIX: Close IIFE wrapper

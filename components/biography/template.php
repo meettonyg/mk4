@@ -1,18 +1,13 @@
 <?php
 /**
  * Biography Component Template
- * ROOT FIX: Enhanced with proper control attachment support
+ * ROOT FIX: Clean template without any controls - controls added by component-controls-manager.js
  */
 
-// ROOT FIX: Ensure component ID is always available - DO NOT generate new ID here
-// The ID should be passed from the parent context
+// ROOT FIX: Component ID should be passed from parent context
 $finalComponentId = isset($component_id) ? $component_id : (isset($id) ? $id : (isset($componentId) ? $componentId : ''));
-if (empty($finalComponentId)) {
-    // This should not happen if the component is loaded properly
-    error_log('WARNING: Biography template loaded without component ID!');
-    $finalComponentId = 'biography-error-' . uniqid();
-}
 ?>
+<!-- Biography component template - controls added dynamically by JS -->
 <div class="content-section biography-component editable-element" 
      data-element="biography" 
      data-component="biography" 

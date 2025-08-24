@@ -271,7 +271,7 @@ function setupBasicButtonHandlers() {
         }
     }
     
-    // Undo button
+    // Undo button - ROOT FIX: Connect to state history
     const undoBtn = document.getElementById('undo-btn');
     if (undoBtn) {
         undoBtn.addEventListener('click', function(e) {
@@ -279,14 +279,26 @@ function setupBasicButtonHandlers() {
             if (window.gmkbData?.debugMode) {
                 console.log('↶ TOOLBAR: Undo button clicked');
             }
-            // TODO: Implement undo functionality
+            
+            // ROOT FIX: Call state history undo
+            if (window.stateHistory && typeof window.stateHistory.undo === 'function') {
+                const success = window.stateHistory.undo();
+                if (success && window.gmkbData?.debugMode) {
+                    console.log('✅ TOOLBAR: Undo successful');
+                }
+            } else if (window.historyService && typeof window.historyService.undo === 'function') {
+                // Fallback to history service
+                window.historyService.undo();
+            } else {
+                console.warn('⚠️ TOOLBAR: Undo functionality not available');
+            }
         });
         if (window.gmkbData?.debugMode) {
             console.log('✅ TOOLBAR: Undo button handler attached');
         }
     }
     
-    // Redo button
+    // Redo button - ROOT FIX: Connect to state history
     const redoBtn = document.getElementById('redo-btn');
     if (redoBtn) {
         redoBtn.addEventListener('click', function(e) {
@@ -294,7 +306,19 @@ function setupBasicButtonHandlers() {
             if (window.gmkbData?.debugMode) {
                 console.log('↷ TOOLBAR: Redo button clicked');
             }
-            // TODO: Implement redo functionality
+            
+            // ROOT FIX: Call state history redo
+            if (window.stateHistory && typeof window.stateHistory.redo === 'function') {
+                const success = window.stateHistory.redo();
+                if (success && window.gmkbData?.debugMode) {
+                    console.log('✅ TOOLBAR: Redo successful');
+                }
+            } else if (window.historyService && typeof window.historyService.redo === 'function') {
+                // Fallback to history service
+                window.historyService.redo();
+            } else {
+                console.warn('⚠️ TOOLBAR: Redo functionality not available');
+            }
         });
         if (window.gmkbData?.debugMode) {
             console.log('✅ TOOLBAR: Redo button handler attached');
@@ -303,6 +327,123 @@ function setupBasicButtonHandlers() {
     
     if (window.gmkbData?.debugMode) {
         console.log('✅ TOOLBAR: Basic button handlers setup complete');
+    }
+    
+    // ROOT FIX: Setup button state monitoring
+    setupButtonStateMonitoring();
+    
+    // ROOT FIX: Setup keyboard shortcuts
+    setupKeyboardShortcuts();
+}
+
+/**
+ * ROOT FIX: Setup keyboard shortcuts for undo/redo
+ */
+function setupKeyboardShortcuts() {
+    if (window.gmkbData?.debugMode) {
+        console.log('⌨️ TOOLBAR: Setting up keyboard shortcuts...');
+    }
+    
+    document.addEventListener('keydown', function(e) {
+        // Undo: Ctrl/Cmd + Z (without Shift)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            if (window.gmkbData?.debugMode) {
+                console.log('⌨️ TOOLBAR: Undo keyboard shortcut triggered');
+            }
+            
+            // Trigger undo
+            const undoBtn = document.getElementById('undo-btn');
+            if (undoBtn && !undoBtn.disabled) {
+                undoBtn.click();
+            }
+        }
+        
+        // Redo: Ctrl/Cmd + Shift + Z OR Ctrl/Cmd + Y
+        else if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || 
+                 ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+            e.preventDefault();
+            if (window.gmkbData?.debugMode) {
+                console.log('⌨️ TOOLBAR: Redo keyboard shortcut triggered');
+            }
+            
+            // Trigger redo
+            const redoBtn = document.getElementById('redo-btn');
+            if (redoBtn && !redoBtn.disabled) {
+                redoBtn.click();
+            }
+        }
+    });
+    
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ TOOLBAR: Keyboard shortcuts setup complete (Ctrl+Z for undo, Ctrl+Shift+Z or Ctrl+Y for redo)');
+    }
+}
+
+/**
+ * ROOT FIX: Monitor and update button states for undo/redo
+ */
+function setupButtonStateMonitoring() {
+    if (window.gmkbData?.debugMode) {
+        console.log('🔄 TOOLBAR: Setting up button state monitoring...');
+    }
+    
+    // Update button states function
+    const updateButtonStates = function() {
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+        
+        // Update undo button
+        if (undoBtn) {
+            let canUndo = false;
+            
+            if (window.stateHistory && typeof window.stateHistory.canUndo === 'function') {
+                canUndo = window.stateHistory.canUndo();
+            } else if (window.historyService && typeof window.historyService.canUndo === 'function') {
+                canUndo = window.historyService.canUndo();
+            }
+            
+            undoBtn.disabled = !canUndo;
+            undoBtn.classList.toggle('disabled', !canUndo);
+            undoBtn.setAttribute('aria-disabled', !canUndo);
+        }
+        
+        // Update redo button
+        if (redoBtn) {
+            let canRedo = false;
+            
+            if (window.stateHistory && typeof window.stateHistory.canRedo === 'function') {
+                canRedo = window.stateHistory.canRedo();
+            } else if (window.historyService && typeof window.historyService.canRedo === 'function') {
+                canRedo = window.historyService.canRedo();
+            }
+            
+            redoBtn.disabled = !canRedo;
+            redoBtn.classList.toggle('disabled', !canRedo);
+            redoBtn.setAttribute('aria-disabled', !canRedo);
+        }
+        
+        if (window.gmkbData?.debugMode) {
+            console.log('🔄 TOOLBAR: Button states updated');
+        }
+    };
+    
+    // Listen for state changes
+    document.addEventListener('gmkb:state-changed', updateButtonStates);
+    document.addEventListener('history:snapshot-captured', updateButtonStates);
+    document.addEventListener('history:undo', updateButtonStates);
+    document.addEventListener('history:redo', updateButtonStates);
+    document.addEventListener('history-state-changed', updateButtonStates);
+    
+    // Initial update
+    setTimeout(updateButtonStates, 500);
+    
+    // Expose globally for manual updates
+    window.updateUndoRedoButtons = updateButtonStates;
+    window._updateButtonStates = updateButtonStates; // ROOT FIX: Also expose internally
+    
+    if (window.gmkbData?.debugMode) {
+        console.log('✅ TOOLBAR: Button state monitoring setup complete');
     }
 }
 
@@ -527,6 +668,14 @@ window.setupDevicePreviewToggle = setupDevicePreviewToggle;
 window.setupModalCloseHandlers = setupModalCloseHandlers;
 window.setupExistingModalHandlers = setupExistingModalHandlers;
 window.hideModal = hideModal;
+
+// ROOT FIX: Expose updateButtonStates function globally
+window.updateUndoRedoButtons = function() {
+    // Call the internal updateButtonStates if it exists
+    if (window._updateButtonStates) {
+        window._updateButtonStates();
+    }
+};
 
 // ROOT FIX: Global toolbar API for other scripts
 window.GMKBToolbar = {

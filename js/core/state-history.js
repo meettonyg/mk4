@@ -3,14 +3,29 @@
  * Tracks all state changes for debugging and undo/redo functionality
  * Part of Phase 3: Enhanced State Integration
  * 
- * PHASE 3 FIX: Removed circular dependency with enhancedStateManager
+ * ROOT FIX: Converted to WordPress global namespace pattern
  */
 
-// REMOVED: import { enhancedStateManager } from './enhanced-state-manager.js';
-import { eventBus } from './event-bus.js';
-import { structuredLogger } from '../utils/structured-logger.js';
-
-class StateHistory {
+(function() {
+    'use strict';
+    
+    // Wait for dependencies
+    const waitForDependencies = function(callback) {
+        const checkDependencies = function() {
+            if (window.eventBus && window.structuredLogger) {
+                callback();
+            } else {
+                setTimeout(checkDependencies, 50);
+            }
+        };
+        checkDependencies();
+    };
+    
+    waitForDependencies(function() {
+        const eventBus = window.eventBus;
+        const structuredLogger = window.structuredLogger;
+        
+        class StateHistory {
     constructor(maxSize = 50) {
         this.history = [];
         this.currentIndex = -1;
@@ -45,9 +60,17 @@ class StateHistory {
         const subscribeWhenReady = () => {
             const stateManager = getStateManager();
             if (stateManager && stateManager.subscribeGlobal) {
+                // ROOT FIX: Track previous state to detect actual changes
+                let previousStateJSON = '';
+                
                 stateManager.subscribeGlobal((state) => {
                     if (!this.isNavigating && this.isEnabled) {
-                        this.captureSnapshot(state);
+                        // ROOT FIX: Only capture if state actually changed
+                        const currentStateJSON = JSON.stringify(state);
+                        if (currentStateJSON !== previousStateJSON) {
+                            this.captureSnapshot(state);
+                            previousStateJSON = currentStateJSON;
+                        }
                     }
                 });
                 
@@ -140,6 +163,14 @@ class StateHistory {
             } catch (eventError) {
                 this.logger.warn('HISTORY', 'Error emitting snapshot event', eventError);
             }
+            
+            // ROOT FIX: Emit state changed event to update buttons
+            document.dispatchEvent(new CustomEvent('history-state-changed', {
+                detail: {
+                    canUndo: this.canUndo(),
+                    canRedo: this.canRedo()
+                }
+            }));
         } catch (error) {
             this.logger.error('HISTORY', 'Error capturing state snapshot', error);
             // Don't throw - just log and continue
@@ -271,6 +302,14 @@ class StateHistory {
             snapshot,
             index: this.currentIndex
         });
+        
+        // ROOT FIX: Emit state changed event to update buttons
+        document.dispatchEvent(new CustomEvent('history-state-changed', {
+            detail: {
+                canUndo: this.canUndo(),
+                canRedo: this.canRedo()
+            }
+        }));
 
         this.isNavigating = false;
         return true;
@@ -316,6 +355,14 @@ class StateHistory {
             snapshot,
             index: this.currentIndex
         });
+        
+        // ROOT FIX: Emit state changed event to update buttons
+        document.dispatchEvent(new CustomEvent('history-state-changed', {
+            detail: {
+                canUndo: this.canUndo(),
+                canRedo: this.canRedo()
+            }
+        }));
 
         this.isNavigating = false;
         return true;
@@ -524,6 +571,21 @@ class StateHistory {
             enabled: this.isEnabled
         };
     }
+    
+    /**
+     * ROOT FIX: Helper methods for API compatibility
+     */
+    getHistoryLength() {
+        return this.history.length;
+    }
+    
+    getCurrentIndex() {
+        return this.currentIndex;
+    }
+    
+    getMaxSize() {
+        return this.maxSize;
+    }
 
     /**
      * Debug history
@@ -547,16 +609,20 @@ class StateHistory {
         
         console.groupEnd();
     }
-}
-
-// Create singleton instance
-export const stateHistory = new StateHistory();
-
-// Expose globally for debugging
-window.stateHistory = stateHistory;
-
-// Export convenience methods
-export const undo = stateHistory.undo.bind(stateHistory);
-export const redo = stateHistory.redo.bind(stateHistory);
-export const canUndo = stateHistory.canUndo.bind(stateHistory);
-export const canRedo = stateHistory.canRedo.bind(stateHistory);
+        }
+        
+        // Create singleton instance
+        const stateHistory = new StateHistory();
+        
+        // Expose globally for debugging
+        window.stateHistory = stateHistory;
+        
+        // Export convenience methods
+        window.undo = stateHistory.undo.bind(stateHistory);
+        window.redo = stateHistory.redo.bind(stateHistory);
+        window.canUndo = stateHistory.canUndo.bind(stateHistory);
+        window.canRedo = stateHistory.canRedo.bind(stateHistory);
+        
+        console.log('✅ State History: Available globally and ready');
+    });
+})();
