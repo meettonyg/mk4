@@ -57,44 +57,98 @@
         checkForContent();
     }
     
-    // ROOT FIX: Multiple initialization strategies
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeWhenReady);
-    } else {
-        // DOM already loaded, try immediate initialization
-        initializeWhenReady();
+    // ROOT FIX: CRITICAL - Single initialization strategy to prevent conflicts
+    let isInitialized = false;
+    let initializationInProgress = false;
+    
+    // ROOT FIX: CRITICAL - Global flag to prevent multiple setups
+    if (window.TopicsTemplateInitialized) {
+        console.log('⚠️ TEMPLATE TOPICS: Already initialized globally, skipping duplicate initialization');
+        return;
+    }
+    window.TopicsTemplateInitialized = true;
+    
+    function safeInitializeWhenReady() {
+        if (initializationInProgress || isInitialized) {
+            console.log('⚠️ TEMPLATE TOPICS: Initialization already in progress or completed, skipping');
+            return;
+        }
+        
+        initializationInProgress = true;
+        console.log('🔄 TEMPLATE TOPICS: Starting safe initialization...');
+        
+        try {
+            initializeWhenReady();
+            isInitialized = true;
+            console.log('✅ TEMPLATE TOPICS: Safe initialization completed');
+        } catch (error) {
+            console.error('❌ TEMPLATE TOPICS: Initialization failed:', error);
+        } finally {
+            initializationInProgress = false;
+        }
     }
     
-    // ROOT FIX: Also listen for design panel loaded event
+    // ROOT FIX: Single initialization point
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', safeInitializeWhenReady, { once: true });
+    } else {
+        // DOM already loaded, try immediate initialization
+        safeInitializeWhenReady();
+    }
+    
+    // ROOT FIX: Track if we've already initialized for this panel load
+    let lastInitTimestamp = 0;
+    
+    // ROOT FIX: SINGLE design panel loaded event listener
     document.addEventListener('designPanelLoaded', function(e) {
         if (e.detail && e.detail.component === 'topics') {
+            // Prevent multiple initializations for the same panel load
+            if (e.detail.timestamp && e.detail.timestamp === lastInitTimestamp) {
+                console.log('⚠️ TEMPLATE TOPICS: Duplicate design panel event ignored');
+                return;
+            }
+            lastInitTimestamp = e.detail.timestamp || Date.now();
+            
             console.log('✅ TEMPLATE TOPICS: Design panel loaded event received');
-            setTimeout(initializeWhenReady, 50); // Small delay to ensure DOM is updated
+            
+            // Reset initialization flags for new panel load
+            isInitialized = false;
+            initializationInProgress = false;
+            
+            setTimeout(safeInitializeWhenReady, 50); // Small delay to ensure DOM is updated
         }
     });
     
-    // ROOT FIX: Listen for when design panel content changes
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.type === 'childList') {
-                // Check if topics sidebar was added
-                const addedNodes = Array.from(mutation.addedNodes);
-                const hasTopicsSidebar = addedNodes.some(node => 
-                    node.classList && node.classList.contains('topics-sidebar'));
-                    
-                if (hasTopicsSidebar) {
-                    console.log('✅ TEMPLATE TOPICS: Topics sidebar detected in DOM - initializing');
-                    setTimeout(initializeWhenReady, 50);
+    // ROOT FIX: SINGLE mutation observer for sidebar detection
+    let observerActive = false;
+    if (!observerActive) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    // Check if topics sidebar was added
+                    const addedNodes = Array.from(mutation.addedNodes);
+                    const hasTopicsSidebar = addedNodes.some(node => 
+                        node.classList && node.classList.contains('topics-sidebar'));
+                        
+                    if (hasTopicsSidebar) {
+                        console.log('✅ TEMPLATE TOPICS: Topics sidebar detected in DOM - safe initializing');
+                        // Reset flags for new sidebar
+                        isInitialized = false;
+                        setTimeout(safeInitializeWhenReady, 50);
+                    }
                 }
-            }
+            });
         });
-    });
-    
-    // Start observing
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
+        
+        // Start observing
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        observerActive = true;
+        console.log('✅ TEMPLATE TOPICS: Mutation observer activated');
+    }
 
     // ========================================
     // TOPIC INPUT HANDLING
@@ -122,6 +176,9 @@
         }
 
         input.addEventListener('input', function() {
+            // ROOT FIX: Track sidebar edit timing
+            this.setAttribute('data-last-sidebar-edit', Date.now().toString());
+            
             autoExpand(this);
             updateCharacterCounter(this);
             
@@ -251,7 +308,17 @@
                             this.style.background = '#3182ce';
                             this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17,21 17,13 7,13 7,21"></polyline><polyline points="7,3 7,8 15,8"></polyline></svg>Save Changes';
                             this.disabled = false;
-                        }, 2000);
+                        }, 200);
+            }, 200);
+        },
+        
+        // ROOT FIX: Force safe reinitialization  
+        forceClearAndReinitialize: function() {
+            console.log('🧾 FORCE RESET: Clearing initialization state and reinitializing...');
+            isInitialized = false;
+            initializationInProgress = false;
+            safeInitializeWhenReady();
+        }
                     } else {
                         // Show error state
                         this.style.background = '#e53e3e';
@@ -788,7 +855,7 @@
             console.log('🔄 TEMPLATE TOPICS: Updating all character counters');
             document.querySelectorAll('.topics-sidebar__topic-input').forEach(updateCharacterCounter);
         },
-        reinitialize: initializeWhenReady,
+        reinitialize: safeInitializeWhenReady,
         collectData: collectTopicsData,
         saveToState: saveTopicsToState,
         debug: function() {
@@ -803,7 +870,112 @@
                 regular: !!window.stateManager,
                 designPanel: !!window.designPanel
             });
-        }
+            console.log('- Initialization status:', { isInitialized, initializationInProgress });
+        },
+        
+        // ROOT FIX: CRITICAL - Test contenteditable functionality
+        testContentEditable: function() {
+            console.log('🧪 TESTING: Contenteditable functionality...');
+            
+            const editableElements = document.querySelectorAll('.topic-title[contenteditable="true"]');
+            console.log(`Found ${editableElements.length} contenteditable elements`);
+            
+            editableElements.forEach((element, index) => {
+                const topicNumber = index + 1;
+                const hasEvents = element.hasAttribute('data-sync-initialized');
+                const isEditing = element.hasAttribute('data-editing');
+                const isFocused = document.activeElement === element;
+                
+                console.log(`Topic ${topicNumber}:`, {
+                    element: element,
+                    contenteditable: element.getAttribute('contenteditable'),
+                    hasEventListeners: hasEvents,
+                    isEditing: isEditing,
+                    isFocused: isFocused,
+                    textContent: element.textContent.trim(),
+                    lastValue: element.getAttribute('data-last-value')
+                });
+            });
+            
+            // Test focusing the first element
+            if (editableElements.length > 0) {
+                const firstElement = editableElements[0];
+                console.log('🎯 TESTING: Attempting to focus first element...');
+                firstElement.focus();
+                
+                setTimeout(() => {
+                    console.log('🎯 TEST RESULT:', {
+                        activeElement: document.activeElement,
+                        isFirstElement: document.activeElement === firstElement,
+                        canEdit: document.activeElement === firstElement && firstElement.isContentEditable
+                    });
+                }, 100);
+            }
+        },
+        
+        // ROOT FIX: Test sync functionality
+        testSync: function() {
+            console.log('🔄 TESTING: Bi-directional sync functionality...');
+            
+            // Test 1: Check if sidebar and preview elements exist
+            const sidebarInputs = document.querySelectorAll('.topics-sidebar__topic-input');
+            const previewElements = document.querySelectorAll('.topic-title[contenteditable="true"]');
+            
+            console.log(`✅ Found ${sidebarInputs.length} sidebar inputs`);
+            console.log(`✅ Found ${previewElements.length} preview elements`);
+            
+            if (sidebarInputs.length === 0 || previewElements.length === 0) {
+                console.error('❌ Cannot test sync - missing sidebar or preview elements');
+                return false;
+            }
+            
+            // Test 2: Test sidebar to preview sync
+            const testValue1 = `Sidebar Test ${Date.now()}`;
+            const firstSidebarInput = sidebarInputs[0];
+            const firstPreviewElement = previewElements[0];
+            
+            console.log(`🔄 Testing sidebar -> preview sync with: "${testValue1}"`);
+            firstSidebarInput.value = testValue1;
+            firstSidebarInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            setTimeout(() => {
+                const previewText = firstPreviewElement.textContent.trim();
+                const sidebarToPreviewWorks = previewText === testValue1;
+                console.log(`${sidebarToPreviewWorks ? '✅' : '❌'} Sidebar -> Preview: Expected "${testValue1}", got "${previewText}"`);
+                
+                // Test 3: Test preview to sidebar sync
+                const testValue2 = `Preview Test ${Date.now()}`;
+                console.log(`🔄 Testing preview -> sidebar sync with: "${testValue2}"`);
+                
+                firstPreviewElement.textContent = testValue2;
+                firstPreviewElement.dispatchEvent(new Event('input', { bubbles: true }));
+                // Manually trigger blur to simulate user finishing edit
+                firstPreviewElement.blur();
+                
+                setTimeout(() => {
+                    const sidebarValue = firstSidebarInput.value.trim();
+                    const previewToSidebarWorks = sidebarValue === testValue2;
+                    console.log(`${previewToSidebarWorks ? '✅' : '❌'} Preview -> Sidebar: Expected "${testValue2}", got "${sidebarValue}"`);
+                    
+                    // Final result
+                    const syncWorks = sidebarToPreviewWorks && previewToSidebarWorks;
+                    console.log(`
+🎯 SYNC TEST RESULT: ${syncWorks ? 'WORKING ✅' : 'FAILED ❌'}`);
+                    
+                    if (syncWorks) {
+                        console.log('🎉 SUCCESS! Bi-directional sync is working properly.');
+                        console.log('📝 Try editing topics manually - changes should sync between preview and sidebar.');
+                    } else {
+                        console.log('🔧 SYNC ISSUES DETECTED:');
+                        if (!sidebarToPreviewWorks) console.log('- Sidebar to preview sync not working');
+                        if (!previewToSidebarWorks) console.log('- Preview to sidebar sync not working');
+                        console.log('📝 Check console for sync-related error messages');
+                    }
+                    
+                    return syncWorks;
+                }, 200);
+            }, 200);
+        },
     };
     
     // ROOT FIX: Expose enhanced functions globally for troubleshooting and manual operations
@@ -852,32 +1024,43 @@
     function updatePreviewFromSidebar(topicNumber, value) {
         console.log(`🔄 SYNC: Updating preview topic ${topicNumber}: "${value}"`);
         
-        // ROOT FIX: Use correct selectors that match the actual template structure
+        // ROOT FIX: Use correct selectors that match the actual template structure (.topics-container)
         const topicIndex = topicNumber - 1; // Convert to 0-based index
         const selectors = [
             `.topics-container .topic-item[data-topic-index="${topicIndex}"] .topic-title`,
             `.topics-container .topic-item:nth-child(${topicNumber}) .topic-title`,
-            `[data-component="topics"] .topic-item[data-topic-index="${topicIndex}"] .topic-title`,
-            `[data-component="topics"] .topic-item:nth-child(${topicNumber}) .topic-title`,
-            `.media-kit-component[data-component="topics"] .topic-item[data-topic-index="${topicIndex}"] .topic-title`
+            `.topics-container .topic-title[data-topic-number="${topicNumber}"]`,
+            `.media-kit-preview .topics-container .topic-item[data-topic-index="${topicIndex}"] .topic-title`,
+            `.media-kit-preview .topics-container .topic-item:nth-child(${topicNumber}) .topic-title`
         ];
         
         let updated = false;
         for (const selector of selectors) {
             const element = document.querySelector(selector);
             if (element && !updated) {
+                // ROOT FIX: ALLOW updates unless element is currently being actively edited
+                // Only block if user is actively typing (check recent focus time)
+                const lastFocusTime = element.getAttribute('data-last-focus-time');
+                const timeSinceLastFocus = lastFocusTime ? (Date.now() - parseInt(lastFocusTime)) : Infinity;
+                
+                if (element.hasAttribute('data-editing') && document.activeElement === element && timeSinceLastFocus < 2000) {
+                    console.log(`🚫 SYNC BLOCKED: Preview element is actively being edited (focused ${timeSinceLastFocus}ms ago)`);
+                    return;
+                }
+                
                 // Update the text content
                 element.textContent = value || `Topic ${topicNumber}`;
                 console.log(`✅ SYNC: Updated preview via ${selector}`);
                 
-                // Visual feedback
+                // ROOT FIX: Add visual feedback for successful sync
                 element.style.backgroundColor = '#e3f2fd';
                 setTimeout(() => {
                     element.style.backgroundColor = '';
-                }, 300);
+                }, 400);
+                
                 updated = true;
                 
-                // ROOT FIX: Also dispatch change event for other systems
+                // ROOT FIX: Also dispatch change event for other systems (but mark as sync)
                 element.dispatchEvent(new CustomEvent('input', { 
                     detail: { source: 'sidebar-sync', value, topicNumber } 
                 }));
@@ -896,27 +1079,39 @@
     function updateSidebarFromPreview(topicNumber, value) {
         console.log(`🔄 SYNC: Updating sidebar topic ${topicNumber}: "${value}"`);
         
-        // ROOT FIX: Use more accurate selectors for sidebar items
+        // ROOT FIX: Use simple nth-child selector since the inputs are in order 1-5
         const selectors = [
-            `.topics-sidebar__topic-item[data-topic-index="${topicNumber}"] .topics-sidebar__topic-input`,
-            `.topics-sidebar__topic-item:nth-child(${topicNumber}) .topics-sidebar__topic-input`,
-            `#topics-list .topics-sidebar__topic-item:nth-child(${topicNumber}) .topics-sidebar__topic-input`
+            `#topics-list .topics-sidebar__topic-item:nth-child(${topicNumber}) .topics-sidebar__topic-input`,
+            `.topics-sidebar .topics-sidebar__topic-item:nth-child(${topicNumber}) .topics-sidebar__topic-input`,
+            `.topics-sidebar__topic-input:nth-of-type(${topicNumber})`
         ];
         
         let updated = false;
         for (const selector of selectors) {
             const input = document.querySelector(selector);
             if (input && input.value !== value && !updated) {
+                // ROOT FIX: ALLOW sync even if sidebar input has focus (user might be in both places)
+                // Only skip if there's recent typing activity in the sidebar
+                const lastSidebarEdit = input.getAttribute('data-last-sidebar-edit');
+                const timeSinceLastEdit = lastSidebarEdit ? (Date.now() - parseInt(lastSidebarEdit)) : Infinity;
+                
+                if (document.activeElement === input && timeSinceLastEdit < 1000) {
+                    console.log(`🚫 SYNC BLOCKED: Sidebar input was recently edited (${timeSinceLastEdit}ms ago)`);
+                    return;
+                }
+                
                 input.value = value;
                 updateCharacterCounter(input);
                 autoExpand(input);
                 console.log(`✅ SYNC: Updated sidebar topic ${topicNumber} via ${selector}`);
                 
-                // Visual feedback
+                // ROOT FIX: Add visual feedback briefly
                 input.style.borderColor = '#4caf50';
+                input.style.backgroundColor = '#e8f5e8';
                 setTimeout(() => {
                     input.style.borderColor = '';
-                }, 300);
+                    input.style.backgroundColor = '';
+                }, 500);
                 
                 updated = true;
                 
@@ -924,206 +1119,353 @@
                 input.dispatchEvent(new CustomEvent('input', {
                     detail: { source: 'preview-sync', value, topicNumber }
                 }));
+                
+                break; // Exit loop after successful update
+            }
+        }
+        
+        // ROOT FIX: Fallback - direct index access if selectors fail
+        if (!updated) {
+            const allInputs = document.querySelectorAll('.topics-sidebar__topic-input');
+            if (allInputs.length >= topicNumber) {
+                const targetInput = allInputs[topicNumber - 1]; // Convert to 0-based index
+                if (targetInput && targetInput.value !== value) {
+                    targetInput.value = value;
+                    updateCharacterCounter(targetInput);
+                    autoExpand(targetInput);
+                    
+                    // Visual feedback
+                    targetInput.style.borderColor = '#4caf50';
+                    setTimeout(() => {
+                        targetInput.style.borderColor = '';
+                    }, 300);
+                    
+                    // Trigger input event
+                    targetInput.dispatchEvent(new CustomEvent('input', {
+                        detail: { source: 'preview-sync-fallback', value, topicNumber }
+                    }));
+                    
+                    console.log(`✅ SYNC: Updated sidebar topic ${topicNumber} via fallback method (index ${topicNumber - 1})`);
+                    updated = true;
+                }
             }
         }
         
         if (!updated) {
-            console.log(`⚠️ SYNC: No sidebar input found for topic ${topicNumber}`);
+            console.log(`⚠️ SYNC: Failed to update sidebar topic ${topicNumber}`);
             
-            // DEBUG: Log available sidebar elements
+            // Enhanced DEBUG: Log detailed information about sidebar inputs
             const allSidebarInputs = document.querySelectorAll('.topics-sidebar__topic-input');
-            console.log('Available sidebar inputs:', allSidebarInputs);
+            console.log('DEBUG: Sidebar inputs details:');
+            allSidebarInputs.forEach((input, index) => {
+                console.log(`  Input ${index + 1}:`, {
+                    element: input,
+                    value: input.value,
+                    parent: input.closest('.topics-sidebar__topic-item'),
+                    parentData: input.closest('.topics-sidebar__topic-item')?.dataset || {}
+                });
+            });
         }
     }
     
+    // ROOT FIX: Track initialization state per component instance
+    let componentInitialized = new Set();
+    
     function initializePreviewSync() {
-        console.log('🔄 SYNC: Initializing bi-directional sync...');
+        console.log('🎯 ROOT FIX: Initializing bi-directional sync with proper event coordination...');
         
-        // ROOT FIX: Multiple initialization attempts with different timing
-        function tryInitializePreviewSync(attempt = 1) {
-            console.log(`🎯 SYNC: Attempt ${attempt} to initialize preview sync`);
+        // ROOT FIX: Wait for actual topics container to be fully rendered first
+        function waitForPreviewComponent(callback, maxAttempts = 10) {
+            let attempt = 1;
             
-            // Use correct selectors matching the template structure
-            const selectors = [
-                '.topics-container .topic-title[contenteditable="true"]',
-                '[data-component="topics"] .topic-title[contenteditable="true"]',
-                '.media-kit-component[data-component="topics"] .topic-title[contenteditable="true"]',
-                '.topics-component .topic-title[contenteditable="true"]',
-                '.topic-title[data-topic-number]'
-            ];
-            
-            let editableTopics = [];
-            let foundSelector = '';
-            
-            // Try each selector until we find elements
-            for (const selector of selectors) {
-                const elements = document.querySelectorAll(selector);
-                if (elements.length > 0) {
-                    editableTopics = Array.from(elements);
-                    foundSelector = selector;
-                    console.log(`🎯 Found ${elements.length} editable topic elements using: ${selector}`);
-                    break;
-                }
-            }
-            
-            if (editableTopics.length === 0) {
-                // AGGRESSIVE FALLBACK: Find any element with topic-related classes and make it editable
-                const fallbackElements = document.querySelectorAll('.topic-title, .topic-item .topic-title, [data-topic-number]');
-                console.log(`🔍 FALLBACK: Found ${fallbackElements.length} potential topic elements`);
+            const checkForPreviewComponent = () => {
+                console.log(`🔍 ROOT FIX: Checking for topics container (attempt ${attempt}/${maxAttempts})`);
                 
-                fallbackElements.forEach(element => {
-                    if (!element.hasAttribute('contenteditable')) {
-                        element.setAttribute('contenteditable', 'true');
-                        console.log('🔧 Made element contenteditable:', element);
-                    }
-                    if (!element.hasAttribute('data-topic-number')) {
-                        // Try to determine topic number from parent or position
-                        const topicItem = element.closest('.topic-item');
-                        if (topicItem) {
-                            const topicIndex = topicItem.getAttribute('data-topic-index');
-                            const topicNumber = topicItem.getAttribute('data-topic-number');
-                            if (topicNumber) {
-                                element.setAttribute('data-topic-number', topicNumber);
-                            } else if (topicIndex !== null) {
-                                element.setAttribute('data-topic-number', parseInt(topicIndex) + 1);
-                            }
-                        }
-                    }
-                });
+                // ROOT FIX: Look for the actual .topics-container where topics are rendered
+                const topicsContainer = document.querySelector('.topics-container');
                 
-                editableTopics = Array.from(fallbackElements);
-                foundSelector = 'fallback-elements';
-                console.log(`🔧 Created ${editableTopics.length} editable elements via fallback`);
-            }
-            
-            // Set up event listeners for each topic element
-            let setupCount = 0;
-            editableTopics.forEach((element, index) => {
-                // Get topic number from various sources
-                let topicNumber = element.getAttribute('data-topic-number');
-                if (!topicNumber) {
-                    // Try to get from parent
-                    const parent = element.closest('[data-topic-number]');
-                    if (parent) {
-                        topicNumber = parent.getAttribute('data-topic-number');
-                        element.setAttribute('data-topic-number', topicNumber);
-                    } else {
-                        // Use position-based numbering
-                        topicNumber = index + 1;
-                        element.setAttribute('data-topic-number', topicNumber);
+                if (topicsContainer) {
+                    console.log('✅ ROOT FIX: Topics container found:', topicsContainer);
+                    
+                    // ROOT FIX: Look for topic title elements within the container
+                    const topicTitles = topicsContainer.querySelectorAll('.topic-title');
+                    console.log(`📝 ROOT FIX: Found ${topicTitles.length} topic title elements`);
+                    
+                    if (topicTitles.length > 0) {
+                        callback(topicsContainer, Array.from(topicTitles));
+                        return;
                     }
                 }
                 
-                if (topicNumber && topicNumber <= 5) {
-                    // ROOT FIX: Comprehensive event listeners with immediate feedback
-                    const syncHandler = function(eventType) {
-                        const value = element.textContent.trim();
-                        console.log(`🔄 PREVIEW CHANGE [${eventType}]: Topic ${topicNumber} = "${value}"`);
-                        
-                        // Immediate visual feedback
-                        element.style.backgroundColor = '#fff3cd';
-                        setTimeout(() => {
-                            element.style.backgroundColor = '';
-                        }, 200);
-                        
-                        // Update sidebar
-                        updateSidebarFromPreview(topicNumber, value);
-                    };
-                    
-                    // Multiple event types for maximum coverage
-                    element.addEventListener('input', () => syncHandler('input'));
-                    element.addEventListener('blur', () => syncHandler('blur'));
-                    element.addEventListener('focusout', () => syncHandler('focusout'));
-                    element.addEventListener('paste', () => {
-                        setTimeout(() => syncHandler('paste'), 10);
-                    });
-                    element.addEventListener('keyup', (e) => {
-                        if (e.key === 'Enter') {
-                            syncHandler('enter');
-                        }
-                    });
-                    
-                    // ROOT FIX: Store reference for debugging and mark as initialized
-                    element.setAttribute('data-sync-initialized', 'true');
-                    element.setAttribute('data-sync-topic-number', topicNumber);
-                    
-                    setupCount++;
-                    console.log(`✅ Setup sync for topic ${topicNumber} on element:`, element);
+                // ROOT FIX: If not found and attempts remaining, try again
+                if (attempt < maxAttempts) {
+                    attempt++;
+                    setTimeout(checkForPreviewComponent, 500 * attempt); // Exponential backoff
+                } else {
+                    console.log('⚠️ ROOT FIX: Could not find topics container after all attempts');
+                    callback(null, []);
                 }
-            });
+            };
             
-            if (setupCount > 0) {
-                console.log(`✅ SYNC: Successfully set up listeners for ${setupCount} editable elements using ${foundSelector}`);
-                return true;
-            } else {
-                console.log(`⚠️ SYNC: No valid elements found on attempt ${attempt}`);
-                
-                // DEBUG: Show what elements are available in the DOM
-                const debugElements = document.querySelectorAll('*[class*="topic"], *[data*="topic"]');
-                console.log('🔍 DEBUG: Available topic-related elements in DOM:', debugElements);
-                
-                // Try again after a delay if this is not the last attempt
-                if (attempt < 5) {
-                    setTimeout(() => {
-                        tryInitializePreviewSync(attempt + 1);
-                    }, 1000 * attempt); // Exponential backoff
-                }
-                
-                return false;
-            }
+            checkForPreviewComponent();
         }
         
-        // Start initialization attempts
-        setTimeout(() => {
-            tryInitializePreviewSync(1);
-        }, 500);
-        
-        // Also try again after a longer delay in case content loads later
-        setTimeout(() => {
-            const alreadyInitialized = document.querySelectorAll('[data-sync-initialized="true"]').length;
-            if (alreadyInitialized === 0) {
-                console.log('🔄 SYNC: No initialized elements found, trying late initialization...');
-                tryInitializePreviewSync(99); // Special attempt number
+        // ROOT FIX: Setup sync only after topics container is confirmed to exist
+        waitForPreviewComponent((topicsContainer, topicTitleElements) => {
+            if (!topicsContainer || topicTitleElements.length === 0) {
+                console.log('❌ ROOT FIX: No topics container or title elements found - sync not possible');
+                return;
             }
-        }, 5000);
-        
-        // Also try to find and monitor the preview area with MutationObserver
-        setTimeout(() => {
-            const previewArea = document.querySelector('.editable-element[data-component="topics"], .preview-area, .component-preview');
-            if (previewArea) {
-                const observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        if (mutation.type === 'characterData') {
-                            const target = mutation.target;
-                            const element = target.parentElement;
-                            
-                            // Try to detect which topic was changed
-                            const parent = element.closest('li, .topic');
-                            if (parent) {
-                                const topicElements = Array.from(parent.parentElement.children);
-                                const index = topicElements.indexOf(parent);
-                                const topicNumber = index + 1;
-                                
-                                if (topicNumber <= 5) {
-                                    clearTimeout(window.syncDebounce);
-                                    window.syncDebounce = setTimeout(() => {
-                                        updateSidebarFromPreview(topicNumber, target.textContent.trim());
-                                    }, 200);
-                                }
+            
+            console.log(`🎯 ROOT FIX: Setting up sync for ${topicTitleElements.length} topic elements`);
+            
+            // ROOT FIX: Setup event listeners for each topic title element  
+            topicTitleElements.forEach((element, index) => {
+                const topicNumber = index + 1;
+                
+                if (topicNumber > 5) return; // Skip beyond 5 topics
+                
+                // ROOT FIX: Prevent duplicate initialization per element
+                const elementKey = `topic-${topicNumber}-${element.textContent.trim()}`;
+                if (componentInitialized.has(elementKey)) {
+                    console.log(`⚠️ DUPLICATE INIT PREVENTED: Topic ${topicNumber} already initialized`);
+                    return;
+                }
+                
+                console.log(`🔧 ROOT FIX: Setting up sync for topic ${topicNumber}`);
+                componentInitialized.add(elementKey);
+                
+                // ROOT FIX: Ensure element is contenteditable
+                if (!element.hasAttribute('contenteditable')) {
+                    element.setAttribute('contenteditable', 'true');
+                    element.setAttribute('spellcheck', 'false');
+                    element.style.outline = 'none';
+                    console.log(`✅ Made topic ${topicNumber} contenteditable`);
+                }
+                
+                // ROOT FIX: CRITICAL - Prevent focus loss and ensure stable editing
+                element.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    console.log(`📝 MOUSEDOWN: Topic ${topicNumber} - preventing propagation`);
+                }, true);
+                
+                element.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    console.log(`📝 CLICK: Topic ${topicNumber} - focusing element`);
+                    
+                    // ROOT FIX: Record click timestamp
+                    element.setAttribute('data-last-click-time', Date.now().toString());
+                    
+                    // Ensure the element is properly focused
+                    if (document.activeElement !== element) {
+                        element.focus();
+                        
+                        // Set cursor position to end of text
+                        const range = document.createRange();
+                        const selection = window.getSelection();
+                        range.selectNodeContents(element);
+                        range.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
+                }, true);
+                
+                // ROOT FIX: Prevent external DOM manipulation from interrupting editing
+                element.addEventListener('DOMNodeRemoved', (e) => {
+                    if (element.hasAttribute('data-editing')) {
+                        console.log(`⚠️ DOM REMOVAL BLOCKED: Topic ${topicNumber} is being edited`);
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                });
+                
+                // ROOT FIX: Set topic number for identification
+                element.setAttribute('data-topic-number', topicNumber);
+                element.setAttribute('data-sync-initialized', 'true');
+                
+                // ROOT FIX: FIXED - Comprehensive sync handler that allows controlled sync
+                const syncToSidebar = function(eventType) {
+                    // ROOT FIX: CRITICAL - Allow sync for certain events, but prevent during rapid typing
+                    if (element.hasAttribute('data-editing') && eventType === 'blur') {
+                        // Allow sync on blur even if editing (user finished editing)
+                        console.log(`🔄 SYNC ALLOWED: ${eventType} sync permitted on blur`);
+                    } else if (element.hasAttribute('data-editing') && eventType !== 'input') {
+                        console.log(`🚫 SYNC BLOCKED: Element is being edited, blocking ${eventType} sync`);
+                        return;
+                    }
+                    
+                    // ROOT FIX: Don't sync if element is currently focused and it's a blur event (prevents conflict)
+                    if (document.activeElement === element && eventType === 'blur') {
+                        console.log(`🚫 SYNC BLOCKED: Element still has focus, ignoring blur event`);
+                        return;
+                    }
+                    
+                    const currentValue = element.textContent.trim();
+                    const lastValue = element.getAttribute('data-last-value') || '';
+                    
+                    // Only sync if value actually changed
+                    if (currentValue !== lastValue) {
+                        console.log(`🔄 ROOT FIX SYNC [${eventType}]: Topic ${topicNumber} changed from "${lastValue}" to "${currentValue}"`);
+                        
+                        // Store new value
+                        element.setAttribute('data-last-value', currentValue);
+                        
+                        // ROOT FIX: CRITICAL - Sync to sidebar without interfering with editing
+                        clearTimeout(element._syncTimeout);
+                        element._syncTimeout = setTimeout(() => {
+                            // Only sync if element is not currently focused (prevents interference)
+                            if (document.activeElement !== element) {
+                                updateSidebarFromPreview(topicNumber, currentValue);
+                            } else {
+                                console.log(`🚫 SYNC DELAYED: Element still focused, will sync later`);
                             }
+                        }, eventType === 'input' ? 300 : 50); // Shorter delay for blur events
+                    }
+                };
+                
+                // ROOT FIX: Set initial value for comparison
+                element.setAttribute('data-last-value', element.textContent.trim());
+                
+                // ROOT FIX: Remove existing event listeners by checking if already initialized
+                if (element.hasAttribute('data-sync-initialized')) {
+                    console.log(`⚠️ DUPLICATE SETUP PREVENTED: Topic ${topicNumber} already has sync initialized`);
+                    return; // Skip if already initialized
+                }
+                
+                const newElement = element; // Don't clone, just use original element
+                
+                // ROOT FIX: Track sync state to prevent loops
+                let lastSyncTime = 0;
+                const MIN_SYNC_INTERVAL = 500; // Minimum time between syncs
+                
+                // ROOT FIX: FIXED - Track if element is being edited
+                let isEditing = false;
+                let editStartTime = 0;
+                
+                // ROOT FIX: FIXED - Add event listeners that don't interfere with editing
+                newElement.addEventListener('focus', (e) => {
+                    isEditing = true;
+                    editStartTime = Date.now();
+                    newElement.setAttribute('data-editing', 'true');
+                    newElement.setAttribute('data-last-focus-time', Date.now().toString());
+                    console.log(`🎯 EDIT START: Topic ${topicNumber} focus - editing mode active`);
+                    
+                    // ROOT FIX: CRITICAL - Ensure the element stays focused
+                    e.stopPropagation();
+                });
+                
+                // ROOT FIX: FIXED - Input handling that syncs during longer edit sessions
+                newElement.addEventListener('input', (e) => {
+                    // Sync input changes but with longer delay to allow continuous typing
+                    const editDuration = Date.now() - editStartTime;
+                    if (editDuration > 800) { // Sync after 800ms of editing
+                        clearTimeout(newElement._inputTimeout);
+                        newElement._inputTimeout = setTimeout(() => {
+                            if (isEditing) { // Double-check still editing
+                                console.log(`🔄 INPUT SYNC: Topic ${topicNumber} - syncing during long edit session`);
+                                syncToSidebar('input');
+                            }
+                        }, 800); // Longer delay for input to allow typing
+                    }
+                });
+                
+                // ROOT FIX: CRITICAL - FIXED blur handling that syncs when editing is complete
+                newElement.addEventListener('blur', (e) => {
+                    // ROOT FIX: CRITICAL - Check if blur is caused by clicking outside or switching to another element
+                    const editDuration = Date.now() - editStartTime;
+                    
+                    console.log(`🎯 BLUR EVENT: Topic ${topicNumber} - edit duration: ${editDuration}ms`);
+                    
+                    // If edit duration is very short, user might have just clicked to start editing
+                    if (editDuration < 500) {
+                        console.log(`🎯 QUICK BLUR IGNORED: Topic ${topicNumber} - edit session too short (${editDuration}ms), keeping edit mode active`);
+                        
+                        // ROOT FIX: CRITICAL - Keep editing mode active and re-focus if needed
+                        if (!newElement.hasAttribute('data-editing')) {
+                            newElement.setAttribute('data-editing', 'true');
                         }
-                    });
+                        
+                        // Re-focus the element if it's not focused
+                        setTimeout(() => {
+                            if (document.activeElement !== newElement) {
+                                console.log(`🎯 RE-FOCUSING: Topic ${topicNumber} after quick blur`);
+                                newElement.focus();
+                            }
+                        }, 10);
+                        
+                        return;
+                    }
+                    
+                    // Clear pending timeouts
+                    clearTimeout(newElement._inputTimeout);
+                    
+                    // ROOT FIX: CRITICAL - Sync immediately when user finishes editing
+                    console.log(`🔄 BLUR SYNC: Topic ${topicNumber} - user finished editing, syncing now`);
+                    
+                    // Sync only if there was actual content change
+                    const currentValue = newElement.textContent.trim();
+                    const lastValue = newElement.getAttribute('data-last-value') || '';
+                    
+                    if (currentValue !== lastValue) {
+                        syncToSidebar('blur');
+                    }
+                    
+                    // Mark as not editing after a short delay
+                    setTimeout(() => {
+                        isEditing = false;
+                        newElement.removeAttribute('data-editing');
+                        console.log(`🎯 EDIT END: Topic ${topicNumber} - editing mode deactivated`);
+                    }, 100); // Small delay to ensure sync completes first
                 });
                 
-                observer.observe(previewArea, {
-                    childList: true,
-                    subtree: true,
-                    characterData: true
+                // ROOT FIX: REMOVED focusout handler to prevent conflicts
+                // The blur handler is sufficient
+                
+                // ROOT FIX: FIXED - Enhanced keyboard handling that syncs on Enter
+                newElement.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        console.log(`🎯 ENTER KEY: Topic ${topicNumber} - syncing and completing edit`);
+                        
+                        // Immediate sync on Enter
+                        const currentValue = newElement.textContent.trim();
+                        syncToSidebar('enter');
+                        
+                        // Blur the element to complete editing
+                        newElement.blur();
+                    }
+                    if (e.key === 'Tab') {
+                        console.log(`🎯 TAB KEY: Topic ${topicNumber} - natural tab navigation will trigger blur`);
+                        // Let tab proceed naturally - blur will handle sync
+                    }
+                    if (e.key === 'Escape') {
+                        console.log(`🎯 ESCAPE KEY: Topic ${topicNumber} - cancelling edit`);
+                        // Restore original value
+                        const originalValue = newElement.getAttribute('data-original-value') || newElement.getAttribute('data-last-value') || '';
+                        newElement.textContent = originalValue;
+                        newElement.blur();
+                    }
                 });
                 
-                console.log('✅ SYNC: MutationObserver set up for preview area');
-            }
-        }, 3000);
+                // ROOT FIX: Paste event handling
+                newElement.addEventListener('paste', () => {
+                    setTimeout(() => syncToSidebar('paste'), 50);
+                });
+                
+                console.log(`✅ ROOT FIX: Sync setup complete for topic ${topicNumber}`);
+            });
+            
+            console.log('✅ ROOT FIX: Bi-directional sync initialization complete with proper event coordination');
+            
+            // ROOT FIX: Dispatch event to notify other systems that sync is ready
+            document.dispatchEvent(new CustomEvent('topicsPreviewSyncReady', {
+                detail: {
+                    topicsContainer,
+                    syncElements: topicTitleElements.length,
+                    timestamp: Date.now()
+                }
+            }));
+        });
     }
     
     // ========================================
@@ -1271,6 +1613,53 @@
                 const testValue2 = `Test sync ${Date.now()}`;
                 updateSidebarFromPreview(2, testValue2);
             }, 1000);
+        },
+        
+        // ROOT FIX: Manual setup for contenteditable elements
+        manualSetup: function() {
+            console.log('🔧 MANUALLY SETTING UP PREVIEW SYNC...');
+            
+            const topicsContainer = document.querySelector('.topics-container');
+            if (!topicsContainer) {
+                console.log('❌ No topics container found');
+                return;
+            }
+            
+            const topicTitles = topicsContainer.querySelectorAll('.topic-title');
+            console.log(`Found ${topicTitles.length} topic title elements`);
+            
+            topicTitles.forEach((element, index) => {
+                const topicNumber = index + 1;
+                
+                // Make sure it's contenteditable
+                element.setAttribute('contenteditable', 'true');
+                element.setAttribute('data-topic-number', topicNumber);
+                
+                // Remove existing listeners by cloning
+                const newElement = element.cloneNode(true);
+                element.parentNode.replaceChild(newElement, element);
+                
+                // Add comprehensive event listeners
+                const syncToSidebar = () => {
+                    const value = newElement.textContent.trim();
+                    console.log(`🔄 MANUAL SYNC: Topic ${topicNumber} = "${value}"`);
+                    updateSidebarFromPreview(topicNumber, value);
+                };
+                
+                newElement.addEventListener('blur', syncToSidebar);
+                newElement.addEventListener('focusout', syncToSidebar);
+                newElement.addEventListener('input', syncToSidebar);
+                newElement.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        newElement.blur();
+                    }
+                });
+                
+                console.log(`✅ MANUAL: Set up topic ${topicNumber} sync`);
+            });
+            
+            console.log('✅ MANUAL PREVIEW SYNC SETUP COMPLETE');
         },
         
         // Expose internal functions for debugging

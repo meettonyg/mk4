@@ -888,12 +888,34 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Undo/Redo fix test
-        if (file_exists(GUESTIFY_PLUGIN_DIR . 'debug/undo-redo-fix-test.js')) {
+        // ROOT FIX: Edit boxes test script for verifying the fix
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'test-edit-boxes-fix.js')) {
             wp_enqueue_script(
-                'gmkb-undo-redo-fix-test',
-                $plugin_url . 'debug/undo-redo-fix-test.js',
-                array('gmkb-main-script', 'gmkb-state-history', 'gmkb-history-service'),
+                'gmkb-test-edit-boxes-fix',
+                $plugin_url . 'test-edit-boxes-fix.js',
+                array('gmkb-main-script'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Immediate sync test (smaller, simpler test)
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'immediate-edit-test.js')) {
+            wp_enqueue_script(
+                'gmkb-immediate-edit-test',
+                $plugin_url . 'immediate-edit-test.js',
+                array(),  // No dependencies for immediate test
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Immediate sync test specifically for sync functionality
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'immediate-sync-test.js')) {
+            wp_enqueue_script(
+                'gmkb-immediate-sync-test',
+                $plugin_url . 'immediate-sync-test.js',
+                array(),  // No dependencies for immediate test
                 $version . '-debug',
                 true
             );
