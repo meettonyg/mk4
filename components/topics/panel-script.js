@@ -308,18 +308,9 @@
                             this.style.background = '#3182ce';
                             this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17,21 17,13 7,13 7,21"></polyline><polyline points="7,3 7,8 15,8"></polyline></svg>Save Changes';
                             this.disabled = false;
-                        }, 200);
-            }, 200);
-        },
-        
-        // ROOT FIX: Force safe reinitialization  
-        forceClearAndReinitialize: function() {
-            console.log('🧾 FORCE RESET: Clearing initialization state and reinitializing...');
-            isInitialized = false;
-            initializationInProgress = false;
-            safeInitializeWhenReady();
-        }
-                    } else {
+                        }, 2000);
+                    }
+                } else {
                         // Show error state
                         this.style.background = '#e53e3e';
                         this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>Save Failed';
@@ -858,6 +849,12 @@
         reinitialize: safeInitializeWhenReady,
         collectData: collectTopicsData,
         saveToState: saveTopicsToState,
+        forceClearAndReinitialize: function() {
+            console.log('🧾 FORCE RESET: Clearing initialization state and reinitializing...');
+            isInitialized = false;
+            initializationInProgress = false;
+            safeInitializeWhenReady();
+        },
         debug: function() {
             console.log('🔍 TEMPLATE TOPICS DEBUG:');
             console.log('- Topic inputs found:', document.querySelectorAll('.topics-sidebar__topic-input').length);
@@ -980,6 +977,7 @@
     
     // ROOT FIX: Expose enhanced functions globally for troubleshooting and manual operations
     window.debugTopicsSidebar = window.TopicsTemplate.debug;
+    window.initializeManualSync = window.TopicsSync.initializeManualSync; // CRITICAL FIX: Expose for manual initialization
     window.saveTopicsSidebar = function() {
         console.log('💾 Manual save triggered from console - using WordPress post meta save');
         const topicsData = collectTopicsData();
@@ -1615,7 +1613,43 @@
             }, 1000);
         },
         
-        // ROOT FIX: Manual setup for contenteditable elements
+        // CRITICAL FIX: Initialize manual sync with proper event scope
+        initializeManualSync: function() {
+            console.log('🔧 MANUAL SYNC: Forcing re-initialization of preview sync...');
+            const previewTopics = document.querySelectorAll('.media-kit-preview .topic-title');
+
+            previewTopics.forEach((element, index) => {
+                const topicNumber = index + 1;
+                element.setAttribute('contenteditable', 'true');
+                element.setAttribute('data-topic-number', topicNumber);
+
+                // Remove existing listeners by cloning to avoid duplicates
+                const newElement = element.cloneNode(true);
+                element.parentNode.replaceChild(newElement, element);
+
+                // CRITICAL FIX: Handler directly references the element via event.currentTarget
+                const syncHandler = (event) => {
+                    const el = event.currentTarget;
+                    const value = el.textContent.trim();
+                    const currentTopicNumber = el.getAttribute('data-topic-number');
+                    console.log(`🔄 SYNC TO SIDEBAR: Topic ${currentTopicNumber} = "${value}"`);
+                    updateSidebarFromPreview(currentTopicNumber, value);
+                };
+
+                newElement.addEventListener('blur', syncHandler);
+                newElement.addEventListener('input', syncHandler);
+                newElement.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.currentTarget.blur(); // Trigger the blur event to sync
+                    }
+                });
+            });
+
+            console.log('✅ Preview sync re-initialized');
+        },
+        
+        // ROOT FIX: Manual setup for contenteditable elements - FIXED SCOPE ISSUE
         manualSetup: function() {
             console.log('🔧 MANUALLY SETTING UP PREVIEW SYNC...');
             
@@ -1639,20 +1673,22 @@
                 const newElement = element.cloneNode(true);
                 element.parentNode.replaceChild(newElement, element);
                 
-                // Add comprehensive event listeners
-                const syncToSidebar = () => {
-                    const value = newElement.textContent.trim();
-                    console.log(`🔄 MANUAL SYNC: Topic ${topicNumber} = "${value}"`);
-                    updateSidebarFromPreview(topicNumber, value);
+                // CRITICAL FIX: Use event.currentTarget instead of closure variable
+                const syncHandler = (event) => {
+                    const el = event.currentTarget;
+                    const value = el.textContent.trim();
+                    const currentTopicNumber = el.getAttribute('data-topic-number');
+                    console.log(`🔄 MANUAL SYNC: Topic ${currentTopicNumber} = "${value}"`);
+                    updateSidebarFromPreview(currentTopicNumber, value);
                 };
                 
-                newElement.addEventListener('blur', syncToSidebar);
-                newElement.addEventListener('focusout', syncToSidebar);
-                newElement.addEventListener('input', syncToSidebar);
+                newElement.addEventListener('blur', syncHandler);
+                newElement.addEventListener('focusout', syncHandler);
+                newElement.addEventListener('input', syncHandler);
                 newElement.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        newElement.blur();
+                        e.currentTarget.blur(); // FIXED: Use e.currentTarget instead of newElement
                     }
                 });
                 
