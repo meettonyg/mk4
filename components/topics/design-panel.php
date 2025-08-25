@@ -3,6 +3,9 @@
  * Topics Component Design Panel - BEM COMPLIANT MODERN UI
  * BEM-compliant version with enhanced drag & drop, smart placeholders, and improved UX
  * 
+ * ROOT FIX: Added data-property attributes to all form elements for JavaScript binding
+ * This fixes the topic edit sync issue between sidebar and preview
+ * 
  * @package Guestify/Components/Topics
  * @version 6.0.0-bem-compliant
  */
@@ -38,6 +41,28 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 }
 ?>
 
+<!-- ROOT FIX: Add section title control -->
+<div class="element-editor__title">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+    </svg>
+    Topics Component
+</div>
+<div class="element-editor__subtitle">Manage your speaking topics and display settings</div>
+
+<div class="form-section">
+    <h4 class="form-section__title">Section Settings</h4>
+    
+    <div class="form-group">
+        <label class="form-label">Section Title</label>
+        <input type="text" class="form-input" data-property="title" placeholder="Speaking Topics" value="Speaking Topics">
+        <p class="form-help-text">The main heading for your topics section</p>
+    </div>
+</div>
+
 <!-- BEM COMPLIANT TEMPLATE MATCHING DESIGN -->
 <div class="topics-sidebar">
     <!-- LIVE EDITOR SECTION (NO MAIN HEADER) -->
@@ -72,6 +97,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                         </div>
                         <div class="topics-sidebar__input-container">
                             <textarea class="topics-sidebar__topic-input" 
+                                      data-property="topic_<?php echo $index + 1; ?>"
                                       placeholder="<?php echo esc_attr($smart_placeholders[$index + 1] ?? 'Enter your speaking topic...'); ?>" 
                                       aria-label="Topic <?php echo $index + 1; ?> input"><?php echo esc_textarea($topic['title']); ?></textarea>
                         </div>
@@ -116,11 +142,19 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                         </div>
                     </div>
                 <?php endforeach; ?>
+                
+                <!-- ROOT FIX: Add hidden inputs for unused topic slots -->
+                <?php 
+                $topicsCount = count($topicsList);
+                for ($i = $topicsCount + 1; $i <= 5; $i++): 
+                ?>
+                    <input type="hidden" data-property="topic_<?php echo $i; ?>" value="">
+                <?php endfor; ?>
             <?php else: ?>
-                <!-- TEMPLATE MATCHING EMPTY STATE -->
+                <!-- TEMPLATE MATCHING EMPTY STATE WITH FORM INPUTS -->
                 <div class="topics-sidebar__empty-state">
                     <div class="topics-sidebar__empty-message">No topics yet. Add your first topic to get started.</div>
-                    <button class="topics-sidebar__add-first-btn">
+                    <button class="topics-sidebar__add-first-btn" data-action="add-first-topic">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -128,6 +162,11 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                         Add First Topic
                     </button>
                 </div>
+                
+                <!-- ROOT FIX: Add hidden form inputs for all topics to ensure data-property binding -->
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <input type="hidden" data-property="topic_<?php echo $i; ?>" value="">
+                <?php endfor; ?>
             <?php endif; ?>
         </div>
     </div>
@@ -146,16 +185,18 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
         
         <div class="topics-sidebar__option-row">
             <span class="topics-sidebar__option-label">Enable numbering</span>
-            <div class="topics-sidebar__toggle topics-sidebar__toggle--active">
+            <label class="topics-sidebar__toggle topics-sidebar__toggle--active">
+                <input type="checkbox" data-property="show_numbering" checked>
                 <div class="topics-sidebar__toggle-slider"></div>
-            </div>
+            </label>
         </div>
         
         <div class="topics-sidebar__option-row">
             <span class="topics-sidebar__option-label">Drag & drop reordering</span>
-            <div class="topics-sidebar__toggle topics-sidebar__toggle--active">
+            <label class="topics-sidebar__toggle topics-sidebar__toggle--active">
+                <input type="checkbox" data-property="enable_drag_drop" checked>
                 <div class="topics-sidebar__toggle-slider"></div>
-            </div>
+            </label>
         </div>
         
         <div class="topics-sidebar__option-row">
@@ -170,16 +211,37 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
         </div>
         
         <div class="topics-sidebar__style-grid">
-            <div class="topics-sidebar__style-option topics-sidebar__style-option--active">List View</div>
-            <div class="topics-sidebar__style-option">Grid View</div>
-            <div class="topics-sidebar__style-option">Tag Style</div>
-            <div class="topics-sidebar__style-option">Card Layout</div>
+            <label class="topics-sidebar__style-option topics-sidebar__style-option--active">
+                <input type="radio" name="layout_style" data-property="layout_style" value="list" checked style="display: none;">
+                List View
+            </label>
+            <label class="topics-sidebar__style-option">
+                <input type="radio" name="layout_style" data-property="layout_style" value="grid" style="display: none;">
+                Grid View
+            </label>
+            <label class="topics-sidebar__style-option">
+                <input type="radio" name="layout_style" data-property="layout_style" value="pills" style="display: none;">
+                Tag Style
+            </label>
+            <label class="topics-sidebar__style-option">
+                <input type="radio" name="layout_style" data-property="layout_style" value="cards" style="display: none;">
+                Card Layout
+            </label>
+        </div>
+        
+        <div class="topics-sidebar__option-row">
+            <span class="topics-sidebar__option-label">Number of Columns</span>
+            <select class="form-select" data-property="columns" style="min-width: 80px; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                <option value="1">1 Column</option>
+                <option value="2" selected>2 Columns</option>
+                <option value="3">3 Columns</option>
+            </select>
         </div>
     </div>
     
     <!-- ADD NEW TOPIC SECTION -->
     <div class="topics-sidebar__add-section">
-        <button class="topics-sidebar__add-btn">
+        <button class="topics-sidebar__add-btn" id="add-topic-btn" data-action="add-topic">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -195,7 +257,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     
     <!-- ACTION BUTTONS -->
     <div class="topics-sidebar__bottom-actions">
-        <button class="topics-sidebar__save-btn">
+        <button class="topics-sidebar__save-btn" data-action="save-topics">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                 <polyline points="17,21 17,13 7,13 7,21"></polyline>
@@ -203,7 +265,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
             </svg>
             Save Changes
         </button>
-        <button class="topics-sidebar__reset-btn">
+        <button class="topics-sidebar__reset-btn" data-action="reset-topics">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="1 4 1 10 7 10"></polyline>
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>

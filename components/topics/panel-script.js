@@ -23,6 +23,9 @@
         "Round out your expertise with a final topic..."
     ];
 
+    // ROOT FIX: Track initialization state per component instance - MOVED TO TOP LEVEL
+    let componentInitialized = new Set();
+
     console.log('✅ TEMPLATE TOPICS: Panel script loaded with template matching functionality');
 
     // ROOT FIX: Enhanced initialization to handle dynamic design panel loading
@@ -309,8 +312,7 @@
                             this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17,21 17,13 7,13 7,21"></polyline><polyline points="7,3 7,8 15,8"></polyline></svg>Save Changes';
                             this.disabled = false;
                         }, 2000);
-                    }
-                } else {
+                    } else {
                         // Show error state
                         this.style.background = '#e53e3e';
                         this.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>Save Failed';
@@ -1166,9 +1168,6 @@
         }
     }
     
-    // ROOT FIX: Track initialization state per component instance
-    let componentInitialized = new Set();
-    
     function initializePreviewSync() {
         console.log('🎯 ROOT FIX: Initializing bi-directional sync with proper event coordination...');
         
@@ -1217,6 +1216,10 @@
             
             console.log(`🎯 ROOT FIX: Setting up sync for ${topicTitleElements.length} topic elements`);
             
+            // ROOT FIX: Clear any existing initialization tracking
+            componentInitialized.clear();
+            console.log('🧹 ROOT FIX: Cleared previous initialization tracking');
+            
             // ROOT FIX: Setup event listeners for each topic title element  
             topicTitleElements.forEach((element, index) => {
                 const topicNumber = index + 1;
@@ -1224,7 +1227,7 @@
                 if (topicNumber > 5) return; // Skip beyond 5 topics
                 
                 // ROOT FIX: Prevent duplicate initialization per element
-                const elementKey = `topic-${topicNumber}-${element.textContent.trim()}`;
+                const elementKey = `topic-${topicNumber}-${element.id || element.className}`;
                 if (componentInitialized.has(elementKey)) {
                     console.log(`⚠️ DUPLICATE INIT PREVENTED: Topic ${topicNumber} already initialized`);
                     return;
@@ -1323,12 +1326,6 @@
                 
                 // ROOT FIX: Set initial value for comparison
                 element.setAttribute('data-last-value', element.textContent.trim());
-                
-                // ROOT FIX: Remove existing event listeners by checking if already initialized
-                if (element.hasAttribute('data-sync-initialized')) {
-                    console.log(`⚠️ DUPLICATE SETUP PREVENTED: Topic ${topicNumber} already has sync initialized`);
-                    return; // Skip if already initialized
-                }
                 
                 const newElement = element; // Don't clone, just use original element
                 

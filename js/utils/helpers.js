@@ -75,24 +75,51 @@ console.log('✅ GMKBHelpers: Available globally and ready');
 /**
  * ROOT FIX: Global component property update function
  * Used by dynamic component loader to update component properties
- * @param {HTMLElement} element - The component element
+ * @param {string|HTMLElement} elementOrId - The component element or component ID
  * @param {Object} props - The properties to apply
  */
-window.updateComponentProps = function(element, props) {
-    if (!element || !props || typeof props !== 'object') {
+window.updateComponentProps = function(elementOrId, props) {
+    if (!elementOrId || !props || typeof props !== 'object') {
+        console.warn('updateComponentProps: Invalid parameters', { elementOrId, props });
         return;
     }
     
     try {
+        // ROOT FIX: Handle both element and ID inputs
+        let element;
+        
+        if (typeof elementOrId === 'string') {
+            // Find element by ID
+            element = document.getElementById(elementOrId);
+            if (!element) {
+                // Try finding by data-component-id
+                element = document.querySelector(`[data-component-id="${elementOrId}"]`);
+            }
+            if (!element) {
+                console.warn(`updateComponentProps: Element not found for ID: ${elementOrId}`);
+                return;
+            }
+        } else if (elementOrId.nodeType === Node.ELEMENT_NODE) {
+            // Direct element passed
+            element = elementOrId;
+        } else {
+            console.warn('updateComponentProps: Invalid element or ID type', elementOrId);
+            return;
+        }
+        
+        console.log(`🔄 ROOT FIX: Updating component props for element:`, element.id || element.className);
+        
         // Update data attributes for component properties
         Object.keys(props).forEach(key => {
-            if (key && props[key] !== undefined) {
-                element.setAttribute(`data-${key}`, String(props[key]));
+            if (key && props[key] !== undefined && props[key] !== null) {
+                const value = String(props[key]);
+                element.setAttribute(`data-${key}`, value);
+                console.log(`📝 ROOT FIX: Set data-${key} = "${value}"`);
             }
         });
         
         // Update component ID if provided
-        if (props.id) {
+        if (props.id && props.id !== element.id) {
             element.id = props.id;
             element.setAttribute('data-component-id', props.id);
         }
@@ -100,13 +127,34 @@ window.updateComponentProps = function(element, props) {
         // Update component type if provided
         if (props.type) {
             element.setAttribute('data-component-type', props.type);
+            element.setAttribute('data-component', props.type);
         }
         
         // Store props on element for later reference
-        element._componentProps = props;
+        element._componentProps = { ...element._componentProps, ...props };
+        
+        // ROOT FIX: Trigger component update event for state managers
+        const updateEvent = new CustomEvent('componentPropsUpdated', {
+            detail: {
+                componentId: element.id,
+                props: props,
+                element: element
+            },
+            bubbles: true
+        });
+        
+        element.dispatchEvent(updateEvent);
+        
+        console.log(`✅ ROOT FIX: Component props updated successfully for ${element.id}`);
         
     } catch (error) {
-        console.warn('Failed to update component props:', error);
+        console.error('Failed to update component props:', error);
+        console.log('Debug info:', {
+            elementOrId: elementOrId,
+            props: props,
+            elementType: typeof elementOrId,
+            isElement: elementOrId && elementOrId.nodeType === Node.ELEMENT_NODE
+        });
     }
 };
 

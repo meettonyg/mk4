@@ -618,14 +618,44 @@ class DesignPanel {
         console.log(`🔗 ROOT FIX: Binding ${inputs.length} controls to component properties:`, props);
         
         const debouncedUpdate = (window.debounce || quickDebounce)((id, newProps) => {
-            if (window.enhancedComponentManager && typeof window.enhancedComponentManager.updateComponent === 'function') {
-                window.enhancedComponentManager.updateComponent(id, newProps);
-                console.log(`🔄 ROOT FIX: Updated via enhanced manager: ${id}`);
+            // ROOT FIX: Use the correct component manager reference
+            let componentManager = null;
+            
+            // Try different manager references in priority order
+            if (window.GMKB && window.GMKB.componentManager && typeof window.GMKB.componentManager.updateComponent === 'function') {
+                componentManager = window.GMKB.componentManager;
+                console.log(`🔄 ROOT FIX: Using GMKB.componentManager for update`);
+            } else if (window.enhancedComponentManager && typeof window.enhancedComponentManager.updateComponent === 'function') {
+                componentManager = window.enhancedComponentManager;
+                console.log(`🔄 ROOT FIX: Using enhancedComponentManager for update`);
             } else if (window.componentManager && typeof window.componentManager.updateComponent === 'function') {
-                window.componentManager.updateComponent(id, newProps);
-                console.log(`🔄 ROOT FIX: Updated via regular manager: ${id}`);
+                componentManager = window.componentManager;
+                console.log(`🔄 ROOT FIX: Using componentManager for update`);
+            } else if (window.updateComponentProps && typeof window.updateComponentProps === 'function') {
+                // Use the global updateComponentProps function
+                window.updateComponentProps(id, newProps);
+                console.log(`🔄 ROOT FIX: Updated via updateComponentProps: ${id}`);
+                return;
+            }
+            
+            if (componentManager) {
+                componentManager.updateComponent(id, newProps);
+                console.log(`🔄 ROOT FIX: Component updated via manager: ${id}`);
             } else {
-                console.warn('ROOT FIX: No component manager available for updates');
+                // ROOT FIX: Fallback to direct state manager update
+                if (window.enhancedStateManager && typeof window.enhancedStateManager.updateComponent === 'function') {
+                    window.enhancedStateManager.updateComponent(id, newProps);
+                    console.log(`🔄 ROOT FIX: Updated via enhancedStateManager: ${id}`);
+                } else {
+                    console.error('ROOT FIX: No component manager available for updates');
+                    console.log('🔍 Available global objects:', {
+                        GMKB: !!window.GMKB,
+                        enhancedComponentManager: !!window.enhancedComponentManager,
+                        componentManager: !!window.componentManager,
+                        updateComponentProps: !!window.updateComponentProps,
+                        enhancedStateManager: !!window.enhancedStateManager
+                    });
+                }
             }
             
             // ROOT FIX: Trigger topics sync if this is a topics component
@@ -828,15 +858,31 @@ window.debugDesignPanel = function() {
             previewTopics: document.querySelectorAll('.topic-item').length,
             topicInputs: document.querySelectorAll('.topics-sidebar__topic-input').length,
             inSync: document.querySelectorAll('.topics-sidebar__topic-item').length === document.querySelectorAll('.topic-item').length
+        },
+        availableManagers: {
+            GMKB: !!window.GMKB,
+            'GMKB.componentManager': !!(window.GMKB && window.GMKB.componentManager),
+            'GMKB.componentManager.updateComponent': !!(window.GMKB && window.GMKB.componentManager && window.GMKB.componentManager.updateComponent),
+            enhancedComponentManager: !!window.enhancedComponentManager,
+            componentManager: !!window.componentManager,
+            updateComponentProps: !!window.updateComponentProps,
+            enhancedStateManager: !!window.enhancedStateManager,
+            'enhancedStateManager.updateComponent': !!(window.enhancedStateManager && window.enhancedStateManager.updateComponent)
         }
     };
     
     console.table(debugInfo.topicsEnhancements);
     console.table(debugInfo.counters);
+    console.table(debugInfo.availableManagers);
     
     if (designPanel.currentComponentId) {
         const component = designPanel.getComponent(designPanel.currentComponentId);
         console.log('Current component data:', component);
+    }
+    
+    // Test component manager access
+    if (window.GMKB && window.GMKB.componentManager) {
+        console.log('GMKB.componentManager methods:', Object.getOwnPropertyNames(window.GMKB.componentManager));
     }
     
     return debugInfo;
@@ -863,9 +909,60 @@ window.testDesignPanelSync = function() {
     }
 };
 
+// ROOT FIX: Manual test for component manager
+window.testComponentManagerAccess = function() {
+    console.log('🧪 ROOT FIX: Testing component manager access...');
+    
+    const testComponentId = 'topics-1755999525631-1'; // Use current topics component
+    const testProps = { title: 'TEST UPDATE - ' + Date.now() };
+    
+    // Try each manager method
+    const methods = [
+        () => {
+            if (window.GMKB && window.GMKB.componentManager && window.GMKB.componentManager.updateComponent) {
+                window.GMKB.componentManager.updateComponent(testComponentId, testProps);
+                return 'GMKB.componentManager';
+            }
+            return null;
+        },
+        () => {
+            if (window.updateComponentProps) {
+                window.updateComponentProps(testComponentId, testProps);
+                return 'updateComponentProps';
+            }
+            return null;
+        },
+        () => {
+            if (window.enhancedStateManager && window.enhancedStateManager.updateComponent) {
+                window.enhancedStateManager.updateComponent(testComponentId, testProps);
+                return 'enhancedStateManager.updateComponent';
+            }
+            return null;
+        }
+    ];
+    
+    for (const method of methods) {
+        try {
+            const result = method();
+            if (result) {
+                console.log(`✅ SUCCESS: Updated component using ${result}`);
+                return result;
+            }
+        } catch (error) {
+            console.log(`❌ ERROR with method: ${error.message}`);
+        }
+    }
+    
+    console.log('❌ No working component manager found');
+    return null;
+};
+
 console.log('✅ ROOT FIX: Enhanced Design Panel with bidirectional topics sync ready');
 console.log('📊 ROOT FIX: Debug commands available:');
-console.log('   debugDesignPanel() - Show design panel debug info');
+console.log('   debugDesignPanel() - Show design panel debug info and manager availability');
 console.log('   testDesignPanelSync() - Test topics counter sync');
+console.log('   testComponentManagerAccess() - Test component update functionality');
 console.log('   debugTopicsSidebar() - Debug topics sidebar functionality');
 console.log('   window.TopicsTemplate.reinitialize() - Reinitialize topics sidebar');
+console.log('📋 ROOT CAUSE FIXED: Topics edit sync now works - data-property attributes added to PHP');
+console.log('🔧 COMPONENT MANAGER: Enhanced to find correct manager reference automatically');
