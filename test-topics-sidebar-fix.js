@@ -1,4 +1,133 @@
-/**
+    /**
+     * Test 6: Save Functionality
+     */
+    function testSaveFunction() {
+        console.log('💾 Testing Save Functionality...');
+        
+        const saveButton = document.querySelector('.topics-sidebar__save-btn');
+        
+        if (!saveButton) {
+            testResults.saveFunction.failed++;
+            testResults.saveFunction.details.push('❌ No save button found');
+            console.log('❌ FAIL: No save button found');
+            return;
+        }
+        
+        console.log('🔍 Found save button, testing functionality...');
+        
+        try {
+            // Test button attributes and styling
+            if (saveButton.textContent.includes('Save')) {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push('✅ Save button has correct text');
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push('❌ Save button text incorrect');
+            }
+            
+            // Test button icon
+            const svg = saveButton.querySelector('svg');
+            if (svg) {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push('✅ Save button has save icon');
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push('❌ Save button missing save icon');
+            }
+            
+            // Test if save functionality is connected
+            if (window.TopicsTemplate && typeof window.TopicsTemplate.collectData === 'function') {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push('✅ Data collection function available');
+                
+                // Test data collection
+                const testData = window.TopicsTemplate.collectData();
+                console.log(`📋 Collected topics data:`, testData);
+                
+                if (Array.isArray(testData)) {
+                    testResults.saveFunction.passed++;
+                    testResults.saveFunction.details.push(`✅ Data collection works (${testData.length} topics)`);
+                } else {
+                    testResults.saveFunction.failed++;
+                    testResults.saveFunction.details.push('❌ Data collection returns invalid format');
+                }
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push('❌ Data collection function not available');
+            }
+            
+            // Test WordPress save functionality
+            if (window.TopicsTemplate && typeof window.TopicsTemplate.saveToState === 'function') {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push('✅ WordPress save integration available');
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push('❌ WordPress save integration not available');
+            }
+            
+            // Test WordPress AJAX endpoint availability
+            const hasAjaxUrl = !!(window.gmkbData?.ajaxUrl || window.ajaxurl);
+            const hasNonce = !!(window.gmkbData?.nonce);
+            const hasPostId = !!(window.gmkbData?.postId || window.gmkbData?.post_id);
+            
+            if (hasAjaxUrl) {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push('✅ WordPress AJAX URL available');
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push('❌ WordPress AJAX URL not available');
+            }
+            
+            if (hasNonce) {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push('✅ Security nonce available');
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push('❌ Security nonce not available');
+            }
+            
+            if (hasPostId) {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push('✅ Post ID available for save');
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push('❌ Post ID not available for save');
+            }
+            
+            // Test test save function
+            if (typeof window.testTopicsWordPressSave === 'function') {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push('✅ WordPress save test function available');
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push('❌ WordPress save test function not available');
+            }
+            
+            // Check for WordPress environment
+            const wpEnvironment = {
+                ajaxUrl: !!(window.gmkbData?.ajaxUrl || window.ajaxurl),
+                nonce: !!(window.gmkbData?.nonce),
+                postId: !!(window.gmkbData?.postId || window.gmkbData?.post_id),
+                wpData: !!window.gmkbData
+            };
+            
+            const availableWpFeatures = Object.keys(wpEnvironment).filter(key => wpEnvironment[key]);
+            
+            if (availableWpFeatures.length >= 3) {
+                testResults.saveFunction.passed++;
+                testResults.saveFunction.details.push(`✅ WordPress environment ready: ${availableWpFeatures.join(', ')}`);
+            } else {
+                testResults.saveFunction.failed++;
+                testResults.saveFunction.details.push(`❌ WordPress environment incomplete: missing ${Object.keys(wpEnvironment).filter(key => !wpEnvironment[key]).join(', ')}`);
+            }
+            
+            console.log(`💾 Save function test complete - WordPress environment:`, wpEnvironment);
+            
+        } catch (error) {
+            testResults.saveFunction.failed++;
+            testResults.saveFunction.details.push(`❌ Save function error: ${error.message}`);
+        }
+    }/**
  * ROOT FIX: Topics Sidebar Functionality Test Script
  * 
  * This script tests and verifies that all topics sidebar functionality is working:
@@ -23,7 +152,8 @@
         deleteFunction: { passed: 0, failed: 0, details: [] },
         copyFunction: { passed: 0, failed: 0, details: [] },
         displayOptions: { passed: 0, failed: 0, details: [] },
-        addFunction: { passed: 0, failed: 0, details: [] }
+        addFunction: { passed: 0, failed: 0, details: [] },
+        saveFunction: { passed: 0, failed: 0, details: [] }
     };
     
     /**
@@ -406,6 +536,7 @@
             setTimeout(() => testCopyFunctionality(), 600);
             setTimeout(() => testDisplayOptions(), 900);
             setTimeout(() => testAddFunctionality(), 1200);
+            setTimeout(() => testSaveFunction(), 1500);
             
             // Generate report after all tests
             setTimeout(() => {
@@ -417,7 +548,7 @@
                 console.log('\nℹ️ Test results saved to window.topicsTestResults for further inspection.');
                 console.log('ℹ️ Run debugTopicsSidebar() for additional debugging information.');
                 
-            }, 1800);
+            }, 2100);
         };
         
         checkSidebar();
@@ -434,3 +565,6 @@
 console.log('🧪 Topics Sidebar Test Script Loaded');
 console.log('💡 Run testTopicsSidebar() to execute all tests');
 console.log('💡 Run debugTopicsSidebar() for debugging information');
+console.log('💡 Run saveTopicsSidebar() to manually save topics data to WordPress');
+console.log('💡 Run collectTopicsData() to see current topics data');
+console.log('💡 Run testTopicsWordPressSave() to test WordPress save functionality');

@@ -59,13 +59,16 @@ $topics_to_display = $has_topics ? $loaded_topics : [];
     <div class="topics-container">
         <?php if ($has_topics): ?>
             <?php foreach ($topics_to_display as $index => $topic): ?>
-                <div class="topic-item" data-topic-index="<?php echo esc_attr($index); ?>">
+                <?php 
+                $topic_title = is_array($topic) && isset($topic['title']) ? $topic['title'] : $topic;
+                ?>
+                <div class="topic-item" data-topic-index="<?php echo esc_attr($index); ?>" data-topic-number="<?php echo esc_attr($index + 1); ?>">
                     <div class="topic-content">
-                        <div class="topic-title" contenteditable="true">
-                            <?php 
-                            $topic_title = is_array($topic) && isset($topic['title']) ? $topic['title'] : $topic;
-                            echo esc_html($topic_title); 
-                            ?>
+                        <div class="topic-title" 
+                             contenteditable="true" 
+                             data-topic-number="<?php echo esc_attr($index + 1); ?>"
+                             data-original-value="<?php echo esc_attr($topic_title); ?>">
+                            <?php echo esc_html($topic_title); ?>
                         </div>
                     </div>
                 </div>

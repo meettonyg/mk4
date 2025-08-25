@@ -303,27 +303,38 @@ class GMKB_Topics_Ajax_Handler {
             $saved_count = 0;
             $save_operations = array();
             
-            // PHASE 1.2 FIX: Save to both custom fields and MKCG fields for maximum compatibility
+            // PHASE 1.2 FIX: Direct save with multiple format handling
             for ($i = 1; $i <= 5; $i++) {
-                $topic_key = "topic_{$i}";
-                $topic_value = '';
-                
-                // PHASE 1.2 FIX: Extract topic value with flexible key matching
-                if (isset($topics_data[$topic_key])) {
-                    $topic_value = $topics_data[$topic_key];
-                } elseif (isset($topics_data[$i - 1])) {
+            $topic_key = "topic_{$i}";
+            $mkcg_key = "mkcg_topic_{$i}";
+            $topic_value = '';
+            
+            // ROOT FIX: Handle multiple input formats from different sources
+            if (isset($topics_data[$topic_key])) {
+                // Direct format: topic_1, topic_2, etc.
+            $topic_value = $topics_data[$topic_key];
+            } elseif (isset($topics_data[$mkcg_key])) {
+            // MKCG format: mkcg_topic_1, mkcg_topic_2, etc.
+                $topic_value = $topics_data[$mkcg_key];
+            } elseif (isset($topics_data[$i - 1])) {
+                // Array index format: 0, 1, 2, etc.
+                if (is_array($topics_data[$i - 1])) {
+                    $topic_value = $topics_data[$i - 1]['title'] ?? $topics_data[$i - 1];
+                } else {
                     $topic_value = $topics_data[$i - 1];
-                } elseif (isset($topics_data["topic{$i}"])) {
-                    $topic_value = $topics_data["topic{$i}"];
                 }
-                
-                // PHASE 1.2 FIX: Simple sanitization - no complex validation to prevent delays
-                $topic_value = is_string($topic_value) ? sanitize_text_field(trim($topic_value)) : '';
-                
-                // ROOT FIX: Save to MKCG format FIRST as primary storage
-                $result1 = update_post_meta($post_id, "mkcg_{$topic_key}", $topic_value);   // MKCG format (primary)
-                // Also save to direct format for backward compatibility
-                $result2 = update_post_meta($post_id, $topic_key, $topic_value);           // Direct custom field (backup)
+            } elseif (isset($topics_data["topic{$i}"])) {
+                // Concatenated format: topic1, topic2, etc.
+                $topic_value = $topics_data["topic{$i}"];
+            }
+            
+            // PHASE 1.2 FIX: Simple sanitization - no complex validation to prevent delays
+            $topic_value = is_string($topic_value) ? sanitize_text_field(trim($topic_value)) : '';
+            
+            // ROOT FIX: Save to MKCG format FIRST as primary storage
+            $result1 = update_post_meta($post_id, $mkcg_key, $topic_value);   // MKCG format (primary)
+            // Also save to direct format for backward compatibility
+            $result2 = update_post_meta($post_id, $topic_key, $topic_value);           // Direct custom field (backup)
                 
                 $save_operations[] = array(
                     'field' => $topic_key,
