@@ -28,36 +28,70 @@
 
     console.log('✅ TEMPLATE TOPICS: Panel script loaded with template matching functionality');
 
-    // ROOT FIX: Enhanced initialization to handle dynamic design panel loading
+    // ROOT FIX: Event-driven initialization that waits for proper events instead of polling
     function initializeWhenReady() {
-        console.log('✅ TEMPLATE TOPICS: Initializing template matching functionality');
+        console.log('✅ TEMPLATE TOPICS: Starting event-driven initialization');
         
-        // ROOT FIX: Wait for design panel content to be fully loaded
-        const checkForContent = () => {
-            const topicInputs = document.querySelectorAll('.topics-sidebar__topic-input');
-            if (topicInputs.length > 0) {
-                console.log('✅ TEMPLATE TOPICS: Found ' + topicInputs.length + ' topic inputs - initializing');
-                
-                // Initialize core functionality only
-                initializeTopicInputs();
-                initializeActionButtons();
-                initializePreviewSync(); // ROOT FIX: Initialize bi-directional sync
-                setupAutoSaveListener(); // ROOT FIX: Listen for preview auto-save events
-                
-                // Auto-expand existing textareas and fix character counters
-                topicInputs.forEach(input => {
-                autoExpand(input);
-                    updateCharacterCounter(input); // ROOT FIX: Recalculate based on actual content
-                });
-                
-        console.log('✅ TEMPLATE TOPICS: Initialization complete with bi-directional sync and auto-save listener');
-            } else {
-                console.log('⏳ TEMPLATE TOPICS: No topic inputs found yet, retrying...');
-                setTimeout(checkForContent, 100);
+        // ROOT FIX: Check if elements already exist (immediate initialization)
+        const existingTopicInputs = document.querySelectorAll('.topics-sidebar__topic-input');
+        if (existingTopicInputs.length > 0) {
+            console.log('✅ TEMPLATE TOPICS: Found ' + existingTopicInputs.length + ' existing topic inputs - initializing immediately');
+            performInitialization(existingTopicInputs);
+            return;
+        }
+        
+        // ROOT FIX: Set up MutationObserver to watch for topic inputs being added to DOM
+        let initializationCompleted = false;
+        const initObserver = new MutationObserver(function(mutations) {
+            if (initializationCompleted) return;
+            
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    const topicInputs = document.querySelectorAll('.topics-sidebar__topic-input');
+                    if (topicInputs.length > 0) {
+                        console.log('✅ TEMPLATE TOPICS: Topic inputs detected via MutationObserver - initializing');
+                        performInitialization(topicInputs);
+                        initializationCompleted = true;
+                        initObserver.disconnect();
+                    }
+                }
+            });
+        });
+        
+        // Start observing the document body for changes
+        initObserver.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        console.log('✅ TEMPLATE TOPICS: MutationObserver set up to watch for topic inputs');
+        
+        // ROOT FIX: Fallback timeout that disconnects observer if initialization takes too long
+        setTimeout(() => {
+            if (!initializationCompleted) {
+                console.log('⚠️ TEMPLATE TOPICS: Initialization timeout reached, disconnecting observer');
+                initObserver.disconnect();
             }
-        };
+        }, 10000); // 10 second timeout
+    }
+    
+    // ROOT FIX: Extracted initialization logic to avoid duplication
+    function performInitialization(topicInputs) {
+        console.log('🎯 TEMPLATE TOPICS: Performing initialization with ' + topicInputs.length + ' topic inputs');
         
-        checkForContent();
+        // Initialize core functionality only
+        initializeTopicInputs();
+        initializeActionButtons();
+        initializePreviewSync();
+        setupAutoSaveListener();
+        
+        // Auto-expand existing textareas and fix character counters
+        topicInputs.forEach(input => {
+            autoExpand(input);
+            updateCharacterCounter(input);
+        });
+        
+        console.log('✅ TEMPLATE TOPICS: Initialization complete with bi-directional sync and auto-save listener');
     }
     
     // ROOT FIX: CRITICAL - Single initialization strategy to prevent conflicts
@@ -122,36 +156,7 @@
         }
     });
     
-    // ROOT FIX: SINGLE mutation observer for sidebar detection
-    let observerActive = false;
-    if (!observerActive) {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList') {
-                    // Check if topics sidebar was added
-                    const addedNodes = Array.from(mutation.addedNodes);
-                    const hasTopicsSidebar = addedNodes.some(node => 
-                        node.classList && node.classList.contains('topics-sidebar'));
-                        
-                    if (hasTopicsSidebar) {
-                        console.log('✅ TEMPLATE TOPICS: Topics sidebar detected in DOM - safe initializing');
-                        // Reset flags for new sidebar
-                        isInitialized = false;
-                        setTimeout(safeInitializeWhenReady, 50);
-                    }
-                }
-            });
-        });
-        
-        // Start observing
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-        
-        observerActive = true;
-        console.log('✅ TEMPLATE TOPICS: Mutation observer activated');
-    }
+    // ROOT FIX: Removed redundant MutationObserver - now handled by event-driven initializeWhenReady()
 
     // ========================================
     // TOPIC INPUT HANDLING
@@ -1220,40 +1225,51 @@
     function initializePreviewSync() {
         console.log('🎯 ROOT FIX: Initializing bi-directional sync with proper event coordination...');
         
-        // ROOT FIX: Wait for actual topics container to be fully rendered first
-        function waitForPreviewComponent(callback, maxAttempts = 10) {
-            let attempt = 1;
+        // ROOT FIX: Event-driven waiting for preview component using MutationObserver
+        function waitForPreviewComponent(callback) {
+            console.log('🔍 ROOT FIX: Setting up event-driven wait for topics container');
             
-            const checkForPreviewComponent = () => {
-                console.log(`🔍 ROOT FIX: Checking for topics container (attempt ${attempt}/${maxAttempts})`);
+            // Check if it already exists
+            const existingContainer = document.querySelector('.topics-container');
+            if (existingContainer) {
+                const existingTitles = existingContainer.querySelectorAll('.topic-title');
+                if (existingTitles.length > 0) {
+                    console.log('✅ ROOT FIX: Topics container already exists with ' + existingTitles.length + ' titles');
+                    callback(existingContainer, Array.from(existingTitles));
+                    return;
+                }
+            }
+            
+            // Set up MutationObserver to watch for the container
+            let observerCompleted = false;
+            const containerObserver = new MutationObserver(function(mutations) {
+                if (observerCompleted) return;
                 
-                // ROOT FIX: Look for the actual .topics-container where topics are rendered
                 const topicsContainer = document.querySelector('.topics-container');
-                
                 if (topicsContainer) {
-                    console.log('✅ ROOT FIX: Topics container found:', topicsContainer);
-                    
-                    // ROOT FIX: Look for topic title elements within the container
                     const topicTitles = topicsContainer.querySelectorAll('.topic-title');
-                    console.log(`📝 ROOT FIX: Found ${topicTitles.length} topic title elements`);
-                    
                     if (topicTitles.length > 0) {
+                        console.log('✅ ROOT FIX: Topics container detected via MutationObserver with ' + topicTitles.length + ' titles');
+                        observerCompleted = true;
+                        containerObserver.disconnect();
                         callback(topicsContainer, Array.from(topicTitles));
-                        return;
                     }
                 }
-                
-                // ROOT FIX: If not found and attempts remaining, try again
-                if (attempt < maxAttempts) {
-                    attempt++;
-                    setTimeout(checkForPreviewComponent, 500 * attempt); // Exponential backoff
-                } else {
-                    console.log('⚠️ ROOT FIX: Could not find topics container after all attempts');
+            });
+            
+            containerObserver.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
+            // Timeout fallback
+            setTimeout(() => {
+                if (!observerCompleted) {
+                    console.log('⚠️ ROOT FIX: Preview component timeout - proceeding without container');
+                    containerObserver.disconnect();
                     callback(null, []);
                 }
-            };
-            
-            checkForPreviewComponent();
+            }, 5000); // 5 second timeout
         }
         
         // ROOT FIX: Setup sync only after topics container is confirmed to exist
