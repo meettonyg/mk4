@@ -79,6 +79,10 @@ class DesignPanel {
                     <p class="form-help-text">Component ID: ${componentId}</p>
                     <p class="form-help-text">Try refreshing the page or selecting a different component.</p>
                 </div>
+                <div class="form-section">
+                    <h4 class="form-section__title">Debug Information</h4>
+                    <button type="button" class="btn btn--secondary btn--small" onclick="window.debugDesignPanel && window.debugDesignPanel()">Debug Design Panel</button>
+                </div>
             `;
             this.show();
             return;
@@ -125,12 +129,27 @@ class DesignPanel {
             console.log(`✅ ROOT FIX: Design panel loaded for ${component.type}`);
             
             this.panel.innerHTML = html;
-            this.bindControls(component.props || component.data || {});
             
-            // ROOT FIX: Setup component-specific enhancements
-            if (component.type === 'topics') {
-                this.setupTopicsSpecificEnhancements(componentId);
-            }
+            // ROOT FIX: Dispatch design panel loaded event for component scripts
+            document.dispatchEvent(new CustomEvent('designPanelLoaded', {
+                detail: {
+                    component: component.type,
+                    componentId: componentId,
+                    timestamp: Date.now()
+                }
+            }));
+            
+            // ROOT FIX: Wait for panel content to be inserted into DOM before binding controls
+            setTimeout(() => {
+                this.bindControls(component.props || component.data || {});
+                
+                // ROOT FIX: Setup component-specific enhancements
+                if (component.type === 'topics') {
+                    this.setupTopicsSpecificEnhancements(componentId);
+                }
+                
+                console.log(`✅ ROOT FIX: Design panel binding complete for ${component.type}`);
+            }, 100);
             
             this.show();
             
@@ -824,3 +843,5 @@ console.log('✅ ROOT FIX: Enhanced Design Panel with bidirectional topics sync 
 console.log('📊 ROOT FIX: Debug commands available:');
 console.log('   debugDesignPanel() - Show design panel debug info');
 console.log('   testDesignPanelSync() - Test topics counter sync');
+console.log('   debugTopicsSidebar() - Debug topics sidebar functionality');
+console.log('   window.TopicsTemplate.reinitialize() - Reinitialize topics sidebar');

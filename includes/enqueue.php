@@ -653,6 +653,30 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ENHANCED TOPICS: Panel script with drag & drop functionality
+    if (!wp_script_is('gmkb-topics-panel-enhanced', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-topics-panel-enhanced',
+            $plugin_url . 'components/topics/panel-script.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // ENHANCED TOPICS: Validation script (debug mode only)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        if (!wp_script_is('gmkb-topics-validation', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-topics-validation',
+                $plugin_url . 'components/topics/validation-script.js',
+                array('gmkb-topics-panel-enhanced'),
+                $version . '-debug',
+                true
+            );
+        }
+    }
+    
     // 12d. DOM Render Coordinator - ROOT FIX: CRITICAL for preventing duplicate rendering
     if (!wp_script_is('gmkb-dom-render-coordinator', 'enqueued')) {
         wp_enqueue_script(
@@ -956,6 +980,14 @@ function gmkb_enqueue_assets() {
     wp_enqueue_style(
         'gmkb-component-controls',
         $plugin_url . 'css/modules/component-controls.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // ENHANCED TOPICS: Component-specific CSS with drag & drop styles
+    wp_enqueue_style(
+        'gmkb-topics-enhanced',
+        $plugin_url . 'components/topics/styles.css',
         array( 'gmkb-main-styles' ),
         $version
     );
