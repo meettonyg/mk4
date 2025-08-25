@@ -977,9 +977,58 @@
         },
     };
     
+    // ROOT FIX: CRITICAL FIX - Expose initializeManualSync FIRST before TopicsSync object is defined
+    window.initializeManualSync = function() {
+        console.log('🔧 GLOBAL INIT: Initializing manual sync...');
+        
+        // CRITICAL: Create inline implementation to prevent undefined errors
+        const previewTopics = document.querySelectorAll('.media-kit-preview .topic-title, .topics-container .topic-title');
+        console.log(`🔧 MANUAL SYNC: Found ${previewTopics.length} preview elements`);
+
+        previewTopics.forEach((element, index) => {
+            const topicNumber = index + 1;
+            element.setAttribute('contenteditable', 'true');
+            element.setAttribute('data-topic-number', topicNumber);
+
+            // Remove existing listeners by cloning to avoid duplicates
+            const newElement = element.cloneNode(true);
+            element.parentNode.replaceChild(newElement, element);
+
+            // CRITICAL FIX: Handler directly references the element via event.currentTarget
+            const syncHandler = (event) => {
+                const el = event.currentTarget;
+                const value = el.textContent.trim();
+                const currentTopicNumber = el.getAttribute('data-topic-number');
+                console.log(`🔄 SYNC TO SIDEBAR: Topic ${currentTopicNumber} = "${value}"`);
+                
+                // Inline sidebar sync to prevent dependencies
+                if (window.TopicsSync && window.TopicsSync.updateSidebar) {
+                    window.TopicsSync.updateSidebar(currentTopicNumber, value);
+                } else {
+                    // Fallback direct sync
+                    const sidebarInput = document.querySelector(`#topics-list .topics-sidebar__topic-item:nth-child(${currentTopicNumber}) .topics-sidebar__topic-input`);
+                    if (sidebarInput) {
+                        sidebarInput.value = value;
+                        console.log(`✅ FALLBACK SYNC: Updated sidebar topic ${currentTopicNumber}`);
+                    }
+                }
+            };
+
+            newElement.addEventListener('blur', syncHandler);
+            newElement.addEventListener('input', syncHandler);
+            newElement.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.currentTarget.blur(); // Trigger the blur event to sync
+                }
+            });
+        });
+
+        console.log('✅ GLOBAL Manual sync initialized');
+    };
+    
     // ROOT FIX: Expose enhanced functions globally for troubleshooting and manual operations
     window.debugTopicsSidebar = window.TopicsTemplate.debug;
-    window.initializeManualSync = window.TopicsSync.initializeManualSync; // CRITICAL FIX: Expose for manual initialization
     window.saveTopicsSidebar = function() {
         console.log('💾 Manual save triggered from console - using WordPress post meta save');
         const topicsData = collectTopicsData();
@@ -1525,6 +1574,40 @@
     
     // Export sync functions globally for debugging
     window.TopicsSync = {
+        initializeManualSync: function() {
+            console.log('🔧 MANUAL SYNC: Forcing re-initialization of preview sync...');
+            const previewTopics = document.querySelectorAll('.media-kit-preview .topic-title');
+
+            previewTopics.forEach((element, index) => {
+                const topicNumber = index + 1;
+                element.setAttribute('contenteditable', 'true');
+                element.setAttribute('data-topic-number', topicNumber);
+
+                // Remove existing listeners by cloning to avoid duplicates
+                const newElement = element.cloneNode(true);
+                element.parentNode.replaceChild(newElement, element);
+
+                // CRITICAL FIX: Handler directly references the element via event.currentTarget
+                const syncHandler = (event) => {
+                    const el = event.currentTarget;
+                    const value = el.textContent.trim();
+                    const currentTopicNumber = el.getAttribute('data-topic-number');
+                    console.log(`🔄 SYNC TO SIDEBAR: Topic ${currentTopicNumber} = "${value}"`);
+                    updateSidebarFromPreview(currentTopicNumber, value);
+                };
+
+                newElement.addEventListener('blur', syncHandler);
+                newElement.addEventListener('input', syncHandler);
+                newElement.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.currentTarget.blur(); // Trigger the blur event to sync
+                    }
+                });
+            });
+
+            console.log('✅ Preview sync re-initialized');
+        },
         updatePreview: updatePreviewFromSidebar,
         updateSidebar: updateSidebarFromPreview,
         initialize: initializePreviewSync,
@@ -1609,42 +1692,7 @@
                 updateSidebarFromPreview(2, testValue2);
             }, 1000);
         },
-        
-        // CRITICAL FIX: Initialize manual sync with proper event scope
-        initializeManualSync: function() {
-            console.log('🔧 MANUAL SYNC: Forcing re-initialization of preview sync...');
-            const previewTopics = document.querySelectorAll('.media-kit-preview .topic-title');
 
-            previewTopics.forEach((element, index) => {
-                const topicNumber = index + 1;
-                element.setAttribute('contenteditable', 'true');
-                element.setAttribute('data-topic-number', topicNumber);
-
-                // Remove existing listeners by cloning to avoid duplicates
-                const newElement = element.cloneNode(true);
-                element.parentNode.replaceChild(newElement, element);
-
-                // CRITICAL FIX: Handler directly references the element via event.currentTarget
-                const syncHandler = (event) => {
-                    const el = event.currentTarget;
-                    const value = el.textContent.trim();
-                    const currentTopicNumber = el.getAttribute('data-topic-number');
-                    console.log(`🔄 SYNC TO SIDEBAR: Topic ${currentTopicNumber} = "${value}"`);
-                    updateSidebarFromPreview(currentTopicNumber, value);
-                };
-
-                newElement.addEventListener('blur', syncHandler);
-                newElement.addEventListener('input', syncHandler);
-                newElement.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        e.currentTarget.blur(); // Trigger the blur event to sync
-                    }
-                });
-            });
-
-            console.log('✅ Preview sync re-initialized');
-        },
         
         // ROOT FIX: Manual setup for contenteditable elements - FIXED SCOPE ISSUE
         manualSetup: function() {
