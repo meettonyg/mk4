@@ -10,22 +10,53 @@
  * @version 6.0.0-bem-compliant
  */
 
-// SCALABLE ARCHITECTURE: Load base service and topics service
-if (!class_exists('Base_Component_Data_Service')) {
-    require_once(GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php');
-}
-if (!class_exists('Topics_Data_Service')) {
-    require_once(__DIR__ . '/class-topics-data-service.php');
+// FIXED: Get post_id from request parameters instead of hard-coding
+$post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+
+if ($post_id <= 0) {
+    // Fallback: try to get from URL or other sources
+    $post_id = isset($_GET['post_id']) ? intval($_GET['post_id']) : 0;
+    
+    if ($post_id <= 0) {
+        $post_id = get_the_ID();
+    }
 }
 
-// Get post_id from context
-$preview_post_id = 32372; // Working post_id
-$sidebar_data = Topics_Data_Service::get_sidebar_data($preview_post_id, 'design-panel');
+// Use the AJAX handler directly for topics data instead of complex service
+$topicsList = array();
+$topicsFound = false;
+$current_post_id = $post_id;
+$sidebar_message = 'No topics found';
 
-$topicsList = $sidebar_data['topics'];
-$topicsFound = $sidebar_data['found'];
-$current_post_id = $sidebar_data['post_id'];
-$sidebar_message = $sidebar_data['message'];
+// Load topics using the same method as the AJAX handler
+if ($post_id > 0) {
+    // PHASE 1 FIX: Load from Pods fields only (topic_1, topic_2, etc.) - single source of truth
+    for ($i = 1; $i <= 5; $i++) {
+        $topic_value = get_post_meta($post_id, "topic_{$i}", true);
+        
+        if (!empty($topic_value) && is_string($topic_value)) {
+            $cleaned_value = sanitize_text_field(trim($topic_value));
+            if (strlen($cleaned_value) > 0) {
+                $topicsList[] = array(
+                    'title' => $cleaned_value,
+                    'description' => '',
+                    'index' => $i - 1
+                );
+                $topicsFound = true;
+            }
+        }
+    }
+    
+    if ($topicsFound) {
+        $sidebar_message = count($topicsList) . ' topics loaded from Pods fields';
+    } else {
+        $sidebar_message = 'No topics found for post ' . $post_id;
+    }
+} else {
+    $sidebar_message = 'No valid post ID provided';
+}
+
+// Data already loaded above
 
 // Smart placeholders for different topic positions
 $smart_placeholders = [
@@ -37,7 +68,7 @@ $smart_placeholders = [
 ];
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log("BEM TOPICS: Using post_id {$preview_post_id} - Result: " . count($topicsList) . " topics");
+    error_log("BEM TOPICS: Using post_id {$post_id} - Result: " . count($topicsList) . " topics");
 }
 ?>
 
