@@ -449,6 +449,9 @@ function gmkb_enqueue_assets() {
             $version,
             true
         );
+        
+        // ROOT FIX: Provide WordPress data to component manager for AJAX calls
+        wp_localize_script( 'gmkb-enhanced-component-manager', 'gmkbData', $wp_data );
     }
     
     // 6. Event bus (handles global events) - ROOT FIX: Added missing script
@@ -1044,10 +1047,16 @@ function gmkb_enqueue_assets() {
 
     // ROOT FIX: Move wp_localize_script BEFORE any debug output
     // This ensures data is available when first scripts run
+    if ( wp_script_is( 'gmkb-enhanced-state-manager', 'enqueued' ) ) {
+        wp_localize_script( 'gmkb-enhanced-state-manager', 'gmkbData', $wp_data );
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: wp_localize_script completed successfully for gmkbData on state manager' );
+        }
+    }
     if ( wp_script_is( 'gmkb-main-script', 'enqueued' ) ) {
         wp_localize_script( 'gmkb-main-script', 'gmkbData', $wp_data );
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '✅ GMKB: wp_localize_script completed successfully for gmkbData' );
+            error_log( '✅ GMKB: wp_localize_script completed successfully for gmkbData on main script' );
         }
     } else {
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
