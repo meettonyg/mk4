@@ -209,8 +209,9 @@ class BidirectionalSyncManager {
             componentId: componentId,
             componentType: 'topics',
             sidebarSelectors: [
+                '.topics-sidebar__topic-input[data-property^="topic_"]',
                 '.topics-sidebar__topic-input',
-                '[data-property^=\"topic_\"]',
+                '[data-property^="topic_"]',
                 '.topic-input'
             ],
             previewSelectors: [
@@ -372,18 +373,29 @@ class BidirectionalSyncManager {
         if (!property) {
             // Try to infer property from topic number or index
             const topicNumber = previewElement.dataset.topicNumber || 
-                               previewElement.getAttribute('data-topic-number');
+            previewElement.getAttribute('data-topic-number');
             
             if (topicNumber) {
-                property = `topic_${topicNumber}`;
+            property = `topic_${topicNumber}`;
             } else {
-                // Try to find by position
-                const allTopicTitles = document.querySelectorAll('.topic-title');
-                const index = Array.from(allTopicTitles).indexOf(previewElement);
-                if (index >= 0) {
-                    property = `topic_${index + 1}`;
-                }
+            // Try to find by position
+            const allTopicTitles = document.querySelectorAll('.topic-title');
+            const index = Array.from(allTopicTitles).indexOf(previewElement);
+            if (index >= 0) {
+            property = `topic_${index + 1}`;
             }
+            }
+                
+                // ROOT FIX: Also check parent topic-item for data attributes
+                if (!property) {
+                    const parentItem = previewElement.closest('.topic-item');
+                    if (parentItem) {
+                        const topicIndex = parentItem.dataset.topicIndex;
+                        if (topicIndex !== undefined) {
+                            property = `topic_${parseInt(topicIndex) + 1}`;
+                        }
+                    }
+                }
         }
         
         if (!property) {

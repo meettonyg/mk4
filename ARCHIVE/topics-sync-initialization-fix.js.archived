@@ -1,0 +1,354 @@
+/**
+ * Topics Sync Initialization Fix
+ * ROOT FIX: Ensures proper initialization of bidirectional sync for topics component
+ * 
+ * This fix ensures that:
+ * 1. Sidebar inputs have proper data-property attributes
+ * 2. Preview elements have proper data-topic-number attributes
+ * 3. Sync listeners are properly attached
+ * 4. Sync works in both directions without loops
+ */
+
+(function() {
+    'use strict';
+
+    console.log('🔧 TOPICS SYNC FIX: Initialization script loaded');
+
+    /**
+     * ROOT FIX: Wait for both sidebar and preview to be ready
+     */
+    function waitForTopicsReady() {
+        return new Promise((resolve) => {
+            const checkReady = () => {
+                const sidebarInputs = document.querySelectorAll('.topics-sidebar__topic-input');
+                const previewElements = document.querySelectorAll('.topic-title[contenteditable="true"]');
+                
+                if (sidebarInputs.length > 0 && previewElements.length > 0) {
+                    console.log(`✅ TOPICS SYNC FIX: Found ${sidebarInputs.length} sidebar inputs and ${previewElements.length} preview elements`);
+                    resolve({ sidebarInputs, previewElements });
+                } else {
+                    console.log('⏳ TOPICS SYNC FIX: Waiting for topics elements...', {
+                        sidebar: sidebarInputs.length,
+                        preview: previewElements.length
+                    });
+                    setTimeout(checkReady, 100);
+                }
+            };
+            
+            checkReady();
+        });
+    }
+
+    /**
+     * ROOT FIX: Ensure sidebar inputs have proper data-property attributes
+     */
+    function fixSidebarAttributes() {
+        console.log('🔧 TOPICS SYNC FIX: Fixing sidebar data-property attributes...');
+        
+        const sidebarInputs = document.querySelectorAll('.topics-sidebar__topic-input');
+        let fixedCount = 0;
+        
+        sidebarInputs.forEach((input, index) => {
+            const topicNumber = index + 1;
+            const currentProperty = input.getAttribute('data-property');
+            const expectedProperty = `topic_${topicNumber}`;
+            
+            if (currentProperty !== expectedProperty) {
+                input.setAttribute('data-property', expectedProperty);
+                console.log(`✅ Fixed sidebar input ${topicNumber}: data-property="${expectedProperty}"`);
+                fixedCount++;
+            } else {
+                console.log(`✓ Sidebar input ${topicNumber} already has correct data-property`);
+            }
+        });
+        
+        console.log(`✅ TOPICS SYNC FIX: Fixed ${fixedCount} sidebar attributes`);
+        return fixedCount > 0;
+    }
+
+    /**
+     * ROOT FIX: Ensure preview elements have proper data-topic-number attributes
+     */
+    function fixPreviewAttributes() {
+        console.log('🔧 TOPICS SYNC FIX: Fixing preview data-topic-number attributes...');
+        
+        const previewElements = document.querySelectorAll('.topic-title');
+        let fixedCount = 0;
+        
+        previewElements.forEach((element, index) => {
+            const topicNumber = index + 1;
+            const currentNumber = element.getAttribute('data-topic-number');
+            
+            if (currentNumber !== topicNumber.toString()) {
+                element.setAttribute('data-topic-number', topicNumber);
+                console.log(`✅ Fixed preview element ${topicNumber}: data-topic-number="${topicNumber}"`);
+                fixedCount++;
+            } else {
+                console.log(`✓ Preview element ${topicNumber} already has correct data-topic-number`);
+            }
+            
+            // Also ensure contenteditable is set
+            if (element.getAttribute('contenteditable') !== 'true') {
+                element.setAttribute('contenteditable', 'true');
+                console.log(`✅ Fixed preview element ${topicNumber}: contenteditable="true"`);
+            }
+        });
+        
+        console.log(`✅ TOPICS SYNC FIX: Fixed ${fixedCount} preview attributes`);
+        return fixedCount > 0;
+    }
+
+    /**
+     * ROOT FIX: Force re-registration of topics sync
+     */
+    function forceTopicsSyncRegistration() {
+        console.log('🔧 TOPICS SYNC FIX: Force re-registering topics sync...');
+        
+        // Find topics component ID
+        const topicsComponent = document.querySelector('[data-component-type="topics"][data-component-id]');
+        if (!topicsComponent) {
+            console.warn('⚠️ TOPICS SYNC FIX: No topics component found');
+            return false;
+        }
+        
+        const componentId = topicsComponent.getAttribute('data-component-id');
+        console.log(`🎯 TOPICS SYNC FIX: Found topics component: ${componentId}`);
+        
+        // Check if bidirectional sync manager exists
+        if (!window.bidirectionalSyncManager) {
+            console.error('❌ TOPICS SYNC FIX: Bidirectional sync manager not found');
+            return false;
+        }
+        
+        // Unregister if already registered
+        if (window.bidirectionalSyncManager.syncRegistry.has(componentId)) {
+            console.log('🔄 TOPICS SYNC FIX: Unregistering existing sync...');
+            window.bidirectionalSyncManager.unregisterSync(componentId);
+        }
+        
+        // Re-register with proper configuration
+        console.log('🔄 TOPICS SYNC FIX: Re-registering topics sync...');
+        const registered = window.bidirectionalSyncManager.registerTopicsSync(componentId);
+        
+        if (registered) {
+            console.log('✅ TOPICS SYNC FIX: Topics sync re-registered successfully');
+            
+            // Perform initial sync
+            setTimeout(() => {
+                console.log('🔄 TOPICS SYNC FIX: Performing initial full sync...');
+                window.bidirectionalSyncManager.performFullSync(componentId);
+            }, 200);
+            
+            return true;
+        } else {
+            console.log('⚠️ TOPICS SYNC FIX: Sync already registered or registration failed');
+            return false;
+        }
+    }
+
+    /**
+     * ROOT FIX: Manual sync setup as fallback
+     */
+    function setupManualSync() {
+        console.log('🔧 TOPICS SYNC FIX: Setting up manual sync fallback...');
+        
+        const sidebarInputs = document.querySelectorAll('.topics-sidebar__topic-input[data-property]');
+        const previewElements = document.querySelectorAll('.topic-title[contenteditable="true"][data-topic-number]');
+        
+        console.log(`📊 Manual sync setup: ${sidebarInputs.length} sidebar inputs, ${previewElements.length} preview elements`);
+        
+        // Sidebar to preview sync
+        sidebarInputs.forEach(input => {
+            const property = input.getAttribute('data-property');
+            const topicNumber = property ? property.replace('topic_', '') : null;
+            
+            if (!topicNumber) return;
+            
+            // Remove existing listeners to prevent duplicates
+            const newInput = input.cloneNode(true);
+            input.parentNode.replaceChild(newInput, input);
+            
+            newInput.addEventListener('input', function(e) {
+                const value = e.target.value;
+                console.log(`🔄 MANUAL SYNC: Sidebar → Preview topic ${topicNumber}: "${value}"`);
+                
+                const previewElement = document.querySelector(`[data-topic-number="${topicNumber}"]`);
+                if (previewElement && previewElement.textContent !== value) {
+                    previewElement.textContent = value;
+                    console.log(`✅ Updated preview topic ${topicNumber}`);
+                }
+            });
+            
+            console.log(`✅ Manual sync listener added to sidebar topic ${topicNumber}`);
+        });
+        
+        // Preview to sidebar sync
+        previewElements.forEach(element => {
+            const topicNumber = element.getAttribute('data-topic-number');
+            if (!topicNumber) return;
+            
+            // Remove existing listeners to prevent duplicates
+            const newElement = element.cloneNode(true);
+            element.parentNode.replaceChild(newElement, element);
+            
+            const syncToSidebar = function() {
+                const value = newElement.textContent.trim();
+                console.log(`🔄 MANUAL SYNC: Preview → Sidebar topic ${topicNumber}: "${value}"`);
+                
+                const sidebarInput = document.querySelector(`[data-property="topic_${topicNumber}"]`);
+                if (sidebarInput && sidebarInput.value !== value) {
+                    sidebarInput.value = value;
+                    sidebarInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    console.log(`✅ Updated sidebar topic ${topicNumber}`);
+                }
+            };
+            
+            newElement.addEventListener('blur', syncToSidebar);
+            newElement.addEventListener('input', syncToSidebar);
+            
+            console.log(`✅ Manual sync listener added to preview topic ${topicNumber}`);
+        });
+        
+        console.log('✅ TOPICS SYNC FIX: Manual sync setup complete');
+    }
+
+    /**
+     * ROOT FIX: Main initialization function
+     */
+    async function initializeTopicsSyncFix() {
+        console.log('🚀 TOPICS SYNC FIX: Starting comprehensive sync fix...');
+        
+        try {
+            // Wait for topics to be ready
+            const { sidebarInputs, previewElements } = await waitForTopicsReady();
+            
+            // Fix attributes
+            const sidebarFixed = fixSidebarAttributes();
+            const previewFixed = fixPreviewAttributes();
+            
+            // Wait a bit for DOM to settle
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Try to use bidirectional sync manager
+            if (window.bidirectionalSyncManager) {
+                const registered = forceTopicsSyncRegistration();
+                
+                if (!registered) {
+                    console.log('⚠️ TOPICS SYNC FIX: Falling back to manual sync');
+                    setupManualSync();
+                }
+            } else {
+                console.log('⚠️ TOPICS SYNC FIX: No bidirectional sync manager, using manual sync');
+                setupManualSync();
+            }
+            
+            console.log('✅ TOPICS SYNC FIX: Comprehensive sync fix complete!');
+            
+            // Dispatch event to notify other systems
+            document.dispatchEvent(new CustomEvent('topicsSyncFixed', {
+                detail: {
+                    sidebarCount: sidebarInputs.length,
+                    previewCount: previewElements.length,
+                    timestamp: Date.now()
+                }
+            }));
+            
+        } catch (error) {
+            console.error('❌ TOPICS SYNC FIX: Error during initialization:', error);
+        }
+    }
+
+    /**
+     * ROOT FIX: Debug function for testing sync
+     */
+    window.debugTopicsSync = function() {
+        console.group('🔍 TOPICS SYNC DEBUG');
+        
+        // Check sidebar
+        const sidebarInputs = document.querySelectorAll('.topics-sidebar__topic-input');
+        console.log(`Sidebar inputs: ${sidebarInputs.length}`);
+        sidebarInputs.forEach((input, i) => {
+            const property = input.getAttribute('data-property');
+            const value = input.value;
+            console.log(`  Input ${i + 1}: data-property="${property}", value="${value}"`);
+        });
+        
+        // Check preview
+        const previewElements = document.querySelectorAll('.topic-title');
+        console.log(`Preview elements: ${previewElements.length}`);
+        previewElements.forEach((element, i) => {
+            const topicNumber = element.getAttribute('data-topic-number');
+            const contenteditable = element.getAttribute('contenteditable');
+            const value = element.textContent.trim();
+            console.log(`  Element ${i + 1}: data-topic-number="${topicNumber}", contenteditable="${contenteditable}", value="${value}"`);
+        });
+        
+        // Check sync manager
+        if (window.bidirectionalSyncManager) {
+            console.log('Bidirectional Sync Manager:', window.bidirectionalSyncManager.debug());
+        } else {
+            console.log('❌ Bidirectional Sync Manager not found');
+        }
+        
+        console.groupEnd();
+    };
+
+    /**
+     * ROOT FIX: Test sync function
+     */
+    window.testTopicsSync = function() {
+        console.log('🧪 TESTING TOPICS SYNC...');
+        
+        // Test sidebar to preview
+        const firstInput = document.querySelector('.topics-sidebar__topic-input[data-property="topic_1"]');
+        if (firstInput) {
+            const testValue = `Test Sync ${Date.now()}`;
+            console.log(`Setting sidebar topic 1 to: "${testValue}"`);
+            firstInput.value = testValue;
+            firstInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        
+        // Test preview to sidebar after delay
+        setTimeout(() => {
+            const firstPreview = document.querySelector('[data-topic-number="1"]');
+            if (firstPreview) {
+                const testValue = `Preview Test ${Date.now()}`;
+                console.log(`Setting preview topic 1 to: "${testValue}"`);
+                firstPreview.textContent = testValue;
+                firstPreview.dispatchEvent(new Event('blur', { bubbles: true }));
+            }
+        }, 1000);
+    };
+
+    // Initialize on multiple events to ensure it runs
+    const initEvents = ['DOMContentLoaded', 'designPanelLoaded', 'gmkb:sync-manager-ready'];
+    
+    initEvents.forEach(eventName => {
+        document.addEventListener(eventName, function(e) {
+            // Only initialize for topics components
+            if (eventName === 'designPanelLoaded' && e.detail && e.detail.component !== 'topics') {
+                return;
+            }
+            
+            console.log(`🎯 TOPICS SYNC FIX: Triggered by ${eventName} event`);
+            
+            // Delay to ensure everything is loaded
+            setTimeout(() => {
+                initializeTopicsSyncFix();
+            }, 500);
+        });
+    });
+    
+    // Also try immediate initialization if DOM is ready
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(() => {
+            console.log('🎯 TOPICS SYNC FIX: Immediate initialization attempt');
+            initializeTopicsSyncFix();
+        }, 1000);
+    }
+    
+    console.log('✅ TOPICS SYNC FIX: Script loaded and ready');
+    console.log('🧪 Debug functions available:');
+    console.log('  - debugTopicsSync() - Show current sync state');
+    console.log('  - testTopicsSync() - Test bidirectional sync');
+})();

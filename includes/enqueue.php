@@ -920,17 +920,6 @@ function gmkb_enqueue_assets() {
         true
         );
         }
-    
-    // ROOT FIX: Bidirectional Sync Manager - Handles sidebar-to-preview sync
-    if (!wp_script_is('gmkb-bidirectional-sync-manager', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-bidirectional-sync-manager',
-            $plugin_url . 'js/sync/bidirectional-sync-manager.js',
-            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager', 'gmkb-design-panel'),
-            $version,
-            true
-        );
-    }
         
         // ROOT FIX: Comprehensive edit boxes root fix test
         if (file_exists(GUESTIFY_PLUGIN_DIR . 'test-edit-boxes-root-fix.js')) {

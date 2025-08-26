@@ -146,6 +146,7 @@
     document.addEventListener('gmkb:components-rendered', function(event) {
         console.log('🎯 TEMPLATE TOPICS: Components rendered, ensuring preview sync is initialized');
         setTimeout(() => {
+            initializePreviewSync();
             if (window.TopicsTemplate && window.TopicsTemplate.testContentEditable) {
                 console.log('🧪 TEMPLATE TOPICS: Testing contenteditable after components rendered...');
                 window.TopicsTemplate.testContentEditable();
@@ -177,6 +178,18 @@
     });
     
     // ROOT FIX: Removed redundant MutationObserver - now handled by event-driven initializeWhenReady()
+    
+    // ROOT FIX: Initialize preview sync when render is complete
+    document.addEventListener('renderComplete', function(event) {
+        console.log('🎯 TEMPLATE TOPICS: Render complete event received, initializing preview sync');
+        setTimeout(() => {
+            const topicTitles = document.querySelectorAll('.topic-title');
+            if (topicTitles.length > 0) {
+                console.log(`🎯 TEMPLATE TOPICS: Found ${topicTitles.length} topic titles after render`);
+                initializePreviewSync();
+            }
+        }, 100);
+    });
 
     // ========================================
     // TOPIC INPUT HANDLING
@@ -202,6 +215,20 @@
         if (smartPlaceholders[index]) {
             input.placeholder = smartPlaceholders[index];
         }
+        
+        // ROOT FIX: Set data-property attribute for bidirectional sync
+        const topicNumber = index + 1;
+        input.setAttribute('data-property', `topic_${topicNumber}`);
+        console.log(`🔧 SYNC: Set data-property="topic_${topicNumber}" on input`);
+        
+        // ROOT FIX: Trim the initial value to remove any whitespace from PHP
+        input.value = input.value.trim();
+        if (input.value !== input.defaultValue) {
+            console.log(`🔧 SYNC: Trimmed initial value for topic ${topicNumber}`);
+            // Update character counter with trimmed value
+            updateCharacterCounter(input);
+            autoExpand(input);
+        }
 
         input.addEventListener('input', function() {
             // ROOT FIX: Track sidebar edit timing
@@ -218,9 +245,8 @@
                 // Debounced sync to prevent excessive updates
                 clearTimeout(this.syncTimeout);
                 this.syncTimeout = setTimeout(() => {
-                    if (window.updatePreviewFromSidebar && value) {
-                        updatePreviewFromSidebar(topicNumber, value);
-                    }
+                    // Always call updatePreviewFromSidebar, even for empty values
+                    updatePreviewFromSidebar(topicNumber, value);
                 }, 300);
             }
         });
@@ -395,17 +421,18 @@
                 // Only add event listener if not already attached
                 if (!toggle.hasAttribute('data-toggle-initialized')) {
                     toggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('🎛️ TEMPLATE TOPICS: Toggle switch clicked');
-                    this.classList.toggle('topics-sidebar__toggle--active');
-                    
-                    // Dispatch custom event for other systems to listen
-                    document.dispatchEvent(new CustomEvent('topicsDisplayOptionChanged', {
-                        detail: {
-                            toggle: this,
-                            active: this.classList.contains('topics-sidebar__toggle--active')
-                        }
-                    }));
+                        e.preventDefault();
+                        console.log('🎛️ TEMPLATE TOPICS: Toggle switch clicked');
+                        this.classList.toggle('topics-sidebar__toggle--active');
+                        
+                        // Dispatch custom event for other systems to listen
+                        document.dispatchEvent(new CustomEvent('topicsDisplayOptionChanged', {
+                            detail: {
+                                toggle: this,
+                                active: this.classList.contains('topics-sidebar__toggle--active')
+                            }
+                        }));
+                    });
                     toggle.setAttribute('data-toggle-initialized', 'true');
                 }
             });
@@ -423,24 +450,25 @@
                 // Only add event listener if not already attached
                 if (!option.hasAttribute('data-style-option-initialized')) {
                     option.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log(`🎨 TEMPLATE TOPICS: Style option clicked: ${this.textContent}`);
-                    
-                    // Remove active class from all options
-                    document.querySelectorAll('.topics-sidebar__style-option').forEach(opt => {
-                        opt.classList.remove('topics-sidebar__style-option--active');
+                        e.preventDefault();
+                        console.log(`🎨 TEMPLATE TOPICS: Style option clicked: ${this.textContent}`);
+                        
+                        // Remove active class from all options
+                        document.querySelectorAll('.topics-sidebar__style-option').forEach(opt => {
+                            opt.classList.remove('topics-sidebar__style-option--active');
+                        });
+                        
+                        // Add active class to clicked option
+                        this.classList.add('topics-sidebar__style-option--active');
+                        
+                        // Dispatch custom event for other systems to listen
+                        document.dispatchEvent(new CustomEvent('topicsStyleChanged', {
+                            detail: {
+                                style: this.textContent.trim(),
+                                element: this
+                            }
+                        }));
                     });
-                    
-                    // Add active class to clicked option
-                    this.classList.add('topics-sidebar__style-option--active');
-                    
-                    // Dispatch custom event for other systems to listen
-                    document.dispatchEvent(new CustomEvent('topicsStyleChanged', {
-                        detail: {
-                            style: this.textContent.trim(),
-                            element: this
-                        }
-                    }));
                     option.setAttribute('data-style-option-initialized', 'true');
                 }
             });
@@ -716,6 +744,7 @@
             </div>
             <div class="topics-sidebar__input-container">
                 <textarea class="topics-sidebar__topic-input" 
+                          data-property="topic_${number}"
                           placeholder="${smartPlaceholders[number - 1] || 'Enter your speaking topic...'}"
                           aria-label="Topic ${number} input"></textarea>
             </div>
@@ -1181,7 +1210,8 @@
             `#topics-list .topics-sidebar__topic-item:nth-child(${topicNumber}) .topics-sidebar__topic-input`,
             `.topics-sidebar .topics-sidebar__topic-item:nth-child(${topicNumber}) .topics-sidebar__topic-input`,
             `.topics-sidebar__topic-input:nth-of-type(${topicNumber})`,
-            `.topics-sidebar__topic-item[data-topic-index="${topicNumber}"] .topics-sidebar__topic-input`
+            `.topics-sidebar__topic-item[data-topic-index="${topicNumber}"] .topics-sidebar__topic-input`,
+            `.topics-sidebar__topic-input[data-property="topic_${topicNumber}"]`
         ];
         
         let updated = false;
