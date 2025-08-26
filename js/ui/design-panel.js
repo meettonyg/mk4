@@ -256,10 +256,15 @@ class DesignPanel {
     setupTopicsCounterMonitoring() {
         console.log('📊 ROOT FIX: Setting up topics counter monitoring...');
         
-        // ROOT FIX: Since there's no counter element in the sidebar, monitor topic count directly
-        const topicsList = document.getElementById('topics-list');
+        // ROOT FIX: Find topics list with multiple possible selectors
+        const topicsList = document.getElementById('topics-list') || 
+                          document.querySelector('.topics-sidebar__topics-list') ||
+                          document.querySelector('.topics-list') ||
+                          document.querySelector('[data-topics-list]');
+        
         if (!topicsList) {
-            console.warn('⚠️ ROOT FIX: Topics list element not found');
+            console.warn('⚠️ ROOT FIX: Topics list element not found - attempting direct monitoring fallback');
+            this.setupDirectTopicMonitoring();
             return;
         }
         
@@ -288,6 +293,63 @@ class DesignPanel {
         this.topicsCounterObserver = counterObserver;
         
         console.log('✅ ROOT FIX: Topics list monitoring active');
+    }
+    
+    /**
+     * ROOT FIX: Direct topic monitoring as fallback when topics-list element not found
+     * Monitors topic items directly in the design panel
+     */
+    setupDirectTopicMonitoring() {
+        console.log('📊 ROOT FIX: Setting up direct topic monitoring fallback...');
+        
+        // Monitor the entire design panel container for topic changes
+        const designPanelContainer = document.querySelector('.topics-sidebar') ||
+                                   document.querySelector('#element-editor') ||
+                                   this.panel;
+        
+        if (!designPanelContainer) {
+            console.warn('⚠️ ROOT FIX: No container found for direct monitoring');
+            return;
+        }
+        
+        // Monitor topic items directly with MutationObserver
+        const directObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    // Look for topic item changes
+                    const hasTopicChanges = Array.from(mutation.addedNodes).some(node => 
+                        node.classList && (node.classList.contains('topics-sidebar__topic-item') ||
+                                         node.querySelector && node.querySelector('.topics-sidebar__topic-item')
+                        )
+                    ) || Array.from(mutation.removedNodes).some(node => 
+                        node.classList && (node.classList.contains('topics-sidebar__topic-item') ||
+                                         node.querySelector && node.querySelector('.topics-sidebar__topic-item')
+                        )
+                    );
+                    
+                    if (hasTopicChanges) {
+                        const topicItems = designPanelContainer.querySelectorAll('.topics-sidebar__topic-item');
+                        const actualCount = topicItems.length;
+                        console.log(`🔄 ROOT FIX: Direct topic count changed to: ${actualCount}`);
+                        
+                        // Dispatch count update event
+                        document.dispatchEvent(new CustomEvent('topicsCountUpdated', {
+                            detail: { count: actualCount, source: 'direct_monitoring' }
+                        }));
+                    }
+                }
+            });
+        });
+        
+        directObserver.observe(designPanelContainer, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Store observer for cleanup
+        this.topicsDirectObserver = directObserver;
+        
+        console.log('✅ ROOT FIX: Direct topic monitoring active');
     }
     
     /**
@@ -825,6 +887,12 @@ class DesignPanel {
                 this.topicsPreviewObserver.disconnect();
                 this.topicsPreviewObserver = null;
                 console.log('✅ ROOT FIX: Topics preview observer cleaned up');
+            }
+            
+            if (this.topicsDirectObserver) {
+                this.topicsDirectObserver.disconnect();
+                this.topicsDirectObserver = null;
+                console.log('✅ ROOT FIX: Topics direct observer cleaned up');
             }
             
             console.log('✅ ROOT FIX: Topics enhancements cleanup complete');

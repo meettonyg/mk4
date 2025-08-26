@@ -912,10 +912,32 @@ function gmkb_enqueue_assets() {
         
         // ROOT FIX: Immediate sync test specifically for sync functionality
         if (file_exists(GUESTIFY_PLUGIN_DIR . 'immediate-sync-test.js')) {
+        wp_enqueue_script(
+        'gmkb-immediate-sync-test',
+        $plugin_url . 'immediate-sync-test.js',
+        array(),  // No dependencies for immediate test
+        $version . '-debug',
+        true
+        );
+        }
+    
+    // ROOT FIX: Bidirectional Sync Manager - Handles sidebar-to-preview sync
+    if (!wp_script_is('gmkb-bidirectional-sync-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-bidirectional-sync-manager',
+            $plugin_url . 'js/sync/bidirectional-sync-manager.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager', 'gmkb-design-panel'),
+            $version,
+            true
+        );
+    }
+        
+        // ROOT FIX: Comprehensive edit boxes root fix test
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'test-edit-boxes-root-fix.js')) {
             wp_enqueue_script(
-                'gmkb-immediate-sync-test',
-                $plugin_url . 'immediate-sync-test.js',
-                array(),  // No dependencies for immediate test
+                'gmkb-test-edit-boxes-root-fix',
+                $plugin_url . 'test-edit-boxes-root-fix.js',
+                array('gmkb-topics-panel-enhanced'),  // Depends on topics panel script
                 $version . '-debug',
                 true
             );

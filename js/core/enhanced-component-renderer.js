@@ -888,8 +888,8 @@ class EnhancedComponentRenderer {
                     break;
                     
                 case 'add-components':
-                    // Queue additions with appropriate priority
-                    await this.queueComponentAdditions(changes.added, newState);
+                    // ROOT FIX: DISABLED queue - use direct rendering to prevent blank screen
+                    await this.renderNewComponents(changes.added, newState);
                     // Reorder after additions to ensure correct position
                     if (newState.layout && newState.layout.length > 0) {
                         setTimeout(() => this.reorderComponents(newState.layout), 100);
@@ -897,8 +897,8 @@ class EnhancedComponentRenderer {
                     break;
                     
                 case 'update-components':
-                    // Queue updates with high priority
-                    await this.queueComponentUpdates(changes.updated, newState);
+                    // ROOT FIX: DISABLED queue - use direct rendering to prevent blank screen
+                    await this.updateComponents(changes.updated, newState);
                     break;
                     
                 default:
@@ -907,10 +907,10 @@ class EnhancedComponentRenderer {
                         this.removeComponents(changes.removed);
                     }
                     if (changes.added.size > 0) {
-                        await this.queueComponentAdditions(changes.added, newState);
+                        await this.renderNewComponents(changes.added, newState);
                     }
                     if (changes.updated.size > 0) {
-                        await this.queueComponentUpdates(changes.updated, newState);
+                        await this.updateComponents(changes.updated, newState);
                     }
                     // Always reorder when we have moves or any layout changes
                     if (newState.layout && newState.layout.length > 0) {

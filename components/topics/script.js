@@ -14,6 +14,76 @@
     // Auto-save debouncer
     let autoSaveTimeout;
     
+    // ROOT FIX: CRITICAL - Direct contenteditable initialization
+    function initializeContentEditableElements() {
+        console.log('🎯 DIRECT INIT: Setting up contenteditable elements...');
+        
+        const topicTitles = document.querySelectorAll('.topic-title');
+        console.log(`🎯 DIRECT INIT: Found ${topicTitles.length} topic title elements`);
+        
+        topicTitles.forEach((element, index) => {
+            const topicNumber = index + 1;
+            
+            // CRITICAL: Ensure contenteditable is set
+            element.setAttribute('contenteditable', 'true');
+            element.setAttribute('data-topic-number', topicNumber);
+            element.setAttribute('spellcheck', 'false');
+            element.style.outline = 'none';
+            element.style.cursor = 'text';
+            
+            // Store original value
+            if (!element.hasAttribute('data-original-value')) {
+                element.setAttribute('data-original-value', element.textContent.trim());
+            }
+            
+            // CRITICAL: Remove existing listeners to prevent conflicts
+            const newElement = element.cloneNode(true);
+            element.parentNode.replaceChild(newElement, element);
+            
+            // CRITICAL: Set up simple, reliable event handlers
+            newElement.addEventListener('focus', function() {
+                console.log(`🎯 FOCUS: Topic ${topicNumber} - editing mode activated`);
+                this.setAttribute('data-editing', 'true');
+                this.style.backgroundColor = '#fff3cd';
+                this.style.borderColor = '#856404';
+                this.style.border = '1px solid #856404';
+            });
+            
+            newElement.addEventListener('blur', function() {
+                console.log(`🎯 BLUR: Topic ${topicNumber} - editing mode deactivated`);
+                this.removeAttribute('data-editing');
+                this.style.backgroundColor = '';
+                this.style.borderColor = '';
+                this.style.border = '';
+                
+                const newValue = this.textContent.trim();
+                const originalValue = this.getAttribute('data-original-value') || '';
+                
+                if (newValue !== originalValue) {
+                    console.log(`📝 VALUE CHANGED: Topic ${topicNumber}: "${originalValue}" → "${newValue}"`);
+                    this.setAttribute('data-original-value', newValue);
+                    
+                    // Auto-save
+                    debouncedAutoSave();
+                }
+            });
+            
+            newElement.addEventListener('input', function() {
+                console.log(`🔤 INPUT: Topic ${topicNumber} - text changed`);
+            });
+            
+            newElement.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    console.log(`⏎ ENTER: Topic ${topicNumber} - finishing edit`);
+                    this.blur();
+                }
+            });
+            
+            console.log(`✅ DIRECT INIT: Topic ${topicNumber} contenteditable setup complete`);
+        });
+    }
+    
     // Simple initialization to ensure any loading states are resolved
     document.addEventListener('DOMContentLoaded', function() {
         const topicsElements = document.querySelectorAll('.topics-component, [data-component="topics"]');
@@ -33,8 +103,23 @@
             setupPreviewAutoSave(element);
         });
         
+        // CRITICAL: Initialize contenteditable elements directly
+        initializeContentEditableElements();
+        
+        // Also try after a short delay to catch dynamically loaded content
+        setTimeout(initializeContentEditableElements, 500);
+        
         console.log('✅ ROOT FIX: Topics single-step render verification complete');
     });
+    
+    // ROOT FIX: Also try immediate initialization if DOM is already ready
+    if (document.readyState === 'loading') {
+        // DOM still loading, wait for DOMContentLoaded
+    } else {
+        // DOM already loaded, initialize immediately
+        initializeContentEditableElements();
+        setTimeout(initializeContentEditableElements, 100);
+    }
     
     // ROOT FIX: Auto-save functionality for preview editing + MutationObserver for dynamic content
     function setupPreviewAutoSave(topicsComponent) {
@@ -364,7 +449,14 @@
             } else {
                 console.log('⚠️ No first topic element found for testing');
             }
-        }
+        },
+        
+        // ROOT FIX: Direct contenteditable initialization function
+        initializeContentEditableNow: initializeContentEditableElements
     };
+    
+    // ROOT FIX: Expose the direct initialization globally for manual triggering
+    window.initializeTopicsContentEditable = initializeContentEditableElements;
+    window.initTopicsEditing = initializeContentEditableElements; // Short alias
     
 })();
