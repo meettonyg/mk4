@@ -212,425 +212,44 @@ class DesignPanel {
     }
     
     /**
-     * ROOT FIX: Setup topics-specific enhancements for real-time sync
-     * Implements bidirectional communication and counter synchronization
+     * ROOT FIX: Simplified topics setup - coordinates with panel-script.js
      * @param {string} componentId - The topics component ID
      */
     setupTopicsSpecificEnhancements(componentId) {
-        console.log('🎯 ROOT FIX: Setting up topics-specific enhancements...');
+        console.log('TOPICS: Setting up simplified design panel coordination...');
         
         try {
-            // ROOT FIX: Setup real-time topics monitoring
-            this.setupTopicsCounterMonitoring();
-            
-            // ROOT FIX: Setup preview component sync
-            this.setupTopicsPreviewSync(componentId);
-            
-            // ROOT FIX: Setup event listeners for topics events
-            this.setupTopicsEventListeners();
-            
-            // ROOT FIX: DISABLED initial sync to prevent loops
-            // The sync will happen naturally when actual changes occur
-            // Commenting out to prevent the infinite loop on load
-            /*
-            if (!this._initialSyncDone) {
-                this._initialSyncDone = true;
-                setTimeout(() => {
-                    this.syncTopicsCounterWithPreview();
-                    this._initialSyncDone = false; // Reset for next load
-                }, 1000);
-            }
-            */
-            
-            console.log('✅ ROOT FIX: Topics-specific enhancements setup complete');
-            
-        } catch (error) {
-            console.error('❌ ROOT FIX: Error setting up topics enhancements:', error);
-        }
-    }
-    
-    /**
-     * ROOT FIX: Setup topics counter monitoring for real-time updates
-     * Monitors counter changes and validates sync
-     */
-    setupTopicsCounterMonitoring() {
-        console.log('📊 ROOT FIX: Setting up topics counter monitoring...');
-        
-        // ROOT FIX: Find topics list with multiple possible selectors
-        const topicsList = document.getElementById('topics-list') || 
-                          document.querySelector('.topics-sidebar__topics-list') ||
-                          document.querySelector('.topics-list') ||
-                          document.querySelector('[data-topics-list]');
-        
-        if (!topicsList) {
-            console.warn('⚠️ ROOT FIX: Topics list element not found - attempting direct monitoring fallback');
-            this.setupDirectTopicMonitoring();
-            return;
-        }
-        
-        // ROOT FIX: Monitor topics list changes with MutationObserver
-        const counterObserver = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    const topicItems = topicsList.querySelectorAll('.topics-sidebar__topic-item');
-                    const actualCount = topicItems.length;
-                    console.log(`🔄 ROOT FIX: Topics count changed to: ${actualCount}`);
-                    
-                    // ROOT FIX: Dispatch count update event
-                    document.dispatchEvent(new CustomEvent('topicsCountUpdated', {
-                        detail: { count: actualCount, source: 'sidebar_monitoring' }
-                    }));
-                }
-            });
-        });
-        
-        counterObserver.observe(topicsList, {
-            childList: true,
-            subtree: false
-        });
-        
-        // Store observer for cleanup
-        this.topicsCounterObserver = counterObserver;
-        
-        console.log('✅ ROOT FIX: Topics list monitoring active');
-    }
-    
-    /**
-     * ROOT FIX: Direct topic monitoring as fallback when topics-list element not found
-     * Monitors topic items directly in the design panel
-     */
-    setupDirectTopicMonitoring() {
-        console.log('📊 ROOT FIX: Setting up direct topic monitoring fallback...');
-        
-        // Monitor the entire design panel container for topic changes
-        const designPanelContainer = document.querySelector('.topics-sidebar') ||
-                                   document.querySelector('#element-editor') ||
-                                   this.panel;
-        
-        if (!designPanelContainer) {
-            console.warn('⚠️ ROOT FIX: No container found for direct monitoring');
-            return;
-        }
-        
-        // Monitor topic items directly with MutationObserver
-        const directObserver = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    // Look for topic item changes
-                    const hasTopicChanges = Array.from(mutation.addedNodes).some(node => 
-                        node.classList && (node.classList.contains('topics-sidebar__topic-item') ||
-                                         node.querySelector && node.querySelector('.topics-sidebar__topic-item')
-                        )
-                    ) || Array.from(mutation.removedNodes).some(node => 
-                        node.classList && (node.classList.contains('topics-sidebar__topic-item') ||
-                                         node.querySelector && node.querySelector('.topics-sidebar__topic-item')
-                        )
-                    );
-                    
-                    if (hasTopicChanges) {
-                        const topicItems = designPanelContainer.querySelectorAll('.topics-sidebar__topic-item');
-                        const actualCount = topicItems.length;
-                        console.log(`🔄 ROOT FIX: Direct topic count changed to: ${actualCount}`);
-                        
-                        // Dispatch count update event
-                        document.dispatchEvent(new CustomEvent('topicsCountUpdated', {
-                            detail: { count: actualCount, source: 'direct_monitoring' }
-                        }));
-                    }
-                }
-            });
-        });
-        
-        directObserver.observe(designPanelContainer, {
-            childList: true,
-            subtree: true
-        });
-        
-        // Store observer for cleanup
-        this.topicsDirectObserver = directObserver;
-        
-        console.log('✅ ROOT FIX: Direct topic monitoring active');
-    }
-    
-    /**
-     * ROOT FIX: Setup topics preview sync for bidirectional communication
-     * Ensures changes in preview are reflected in design panel
-     * @param {string} componentId - The topics component ID
-     */
-    setupTopicsPreviewSync(componentId) {
-        console.log('🔗 ROOT FIX: Setting up topics preview sync...');
-        
-        // ROOT FIX: Monitor preview component for changes
-        const previewComponent = document.querySelector('.editable-element[data-component="topics"]');
-        if (!previewComponent) {
-            console.warn('⚠️ ROOT FIX: Preview topics component not found');
-            return;
-        }
-        
-        // ROOT FIX: Flag to prevent infinite loops
-        let isSyncing = false;
-        
-        // ROOT FIX: Debounced sync function to prevent rapid-fire syncs
-        const debouncedSync = (window.debounce || quickDebounce)(() => {
-            if (!isSyncing) {
-                isSyncing = true;
-                console.log('🔄 ROOT FIX: Preview topics changed, syncing...');
-                this.syncTopicsCounterWithPreview();
-                // Reset flag after a delay
-                setTimeout(() => {
-                    isSyncing = false;
-                }, 1000);
-            }
-        }, 500);
-        
-        // ROOT FIX: Setup MutationObserver for preview changes
-        const previewObserver = new MutationObserver((mutations) => {
-            // Skip if we're currently editing or syncing
-            if (isSyncing) return;
-            
-            let topicsChanged = false;
-            
-            mutations.forEach((mutation) => {
-                // Skip mutations caused by our own sync operations
-                if (mutation.target.hasAttribute && mutation.target.hasAttribute('data-syncing')) {
-                    return;
-                }
-                
-                // Skip mutations from contenteditable elements (user is typing)
-                if (mutation.target.isContentEditable || 
-                    mutation.target.closest('[contenteditable="true"]')) {
-                    return;
-                }
-                
-                // Only care about structural changes to topics
-                if (mutation.type === 'childList') {
-                    const topicsContainer = mutation.target.closest('.topics-container');
-                    if (topicsContainer && !topicsContainer.hasAttribute('data-syncing')) {
-                        // Check if actual topic items were added/removed
-                        const addedTopics = Array.from(mutation.addedNodes).some(node => 
-                            node.classList && node.classList.contains('topic-item'));
-                        const removedTopics = Array.from(mutation.removedNodes).some(node => 
-                            node.classList && node.classList.contains('topic-item'));
-                        
-                        if (addedTopics || removedTopics) {
-                            topicsChanged = true;
-                        }
-                    }
-                }
-                
-                // Check for attribute changes related to topics count only
-                if (mutation.type === 'attributes' && 
-                    mutation.attributeName === 'data-topics-count') {
-                    topicsChanged = true;
-                }
-            });
-            
-            if (topicsChanged) {
-                debouncedSync();
-            }
-        });
-        
-        previewObserver.observe(previewComponent, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['data-topics-count'],
-            // Ignore character data changes (text content)
-            characterData: false,
-            characterDataOldValue: false
-        });
-        
-        // Store observer for cleanup
-        this.topicsPreviewObserver = previewObserver;
-        
-        console.log('✅ ROOT FIX: Topics preview sync active');
-    }
-    
-    /**
-     * ROOT FIX: Setup topics event listeners for cross-component communication
-     * Listens for events from other parts of the system
-     */
-    setupTopicsEventListeners() {
-        console.log('🎧 ROOT FIX: Setting up topics event listeners...');
-        
-        // ROOT FIX: Listen for topics counter updates
-        document.addEventListener('topicsCounterUpdated', (event) => {
-            const { count, source } = event.detail;
-            console.log(`🔄 ROOT FIX: Received counter update: ${count} from ${source}`);
-            
-            // ROOT FIX: Update design panel display if needed
-            this.updateTopicsCounterDisplay(count);
-        });
-        
-        // ROOT FIX: Listen for topics preview updates
-        document.addEventListener('topicsPreviewUpdated', (event) => {
-            const { count, source } = event.detail;
-            console.log(`🔄 ROOT FIX: Received preview update: ${count} topics from ${source}`);
-            
-            // ROOT FIX: Sync design panel with preview
-            setTimeout(() => {
-                this.syncTopicsCounterWithPreview();
-            }, 100);
-        });
-        
-        // ROOT FIX: Listen for topic addition/removal events
-        document.addEventListener('topicAdded', (event) => {
-            console.log('➕ ROOT FIX: Topic added event received');
-            this.syncTopicsCounterWithPreview();
-        });
-        
-        document.addEventListener('topicRemoved', (event) => {
-            console.log('🗑️ ROOT FIX: Topic removed event received');
-            this.syncTopicsCounterWithPreview();
-        });
-        
-        document.addEventListener('topicsCleared', (event) => {
-            console.log('🗑️ ROOT FIX: Topics cleared event received');
-            this.syncTopicsCounterWithPreview();
-        });
-        
-        console.log('✅ ROOT FIX: Topics event listeners active');
-    }
-    
-    /**
-     * ROOT FIX: Sync topics counter with preview component
-     * Ensures sidebar topics match preview topics
-     */
-    syncTopicsCounterWithPreview() {
-        console.log('🔄 ROOT FIX: Syncing topics with preview...');
-        
-        try {
-            const previewComponent = document.querySelector('.editable-element[data-component="topics"]');
-            if (!previewComponent) {
-                console.log('ℹ️ ROOT FIX: No preview component for sync');
-                return;
-            }
-            
-            // ROOT FIX: Count actual topics in preview
-            const topicItems = previewComponent.querySelectorAll('.topic-item');
-            const realTopics = Array.from(topicItems).filter(item => {
-                const title = item.querySelector('.topic-title');
-                const titleText = title?.textContent?.trim();
-                const source = item.getAttribute('data-topic-source');
-                
-                return source !== 'placeholder' && titleText && titleText.length > 0;
-            });
-            
-            const actualCount = realTopics.length;
-            
-            // ROOT FIX: Count topics in sidebar
-            const sidebarTopics = document.querySelectorAll('.topics-sidebar__topic-item');
-            const sidebarCount = sidebarTopics.length;
-            
-            console.log('📊 ROOT FIX: Sync data:', {
-                actualTopicsInPreview: actualCount,
-                topicsInSidebar: sidebarCount,
-                inSync: actualCount === sidebarCount
-            });
-            
-            // ROOT FIX: Dispatch sync status event
-            document.dispatchEvent(new CustomEvent('topicsCounterSynced', {
+            // ROOT FIX: Just notify that topics sync is available
+            // The actual sync is handled by panel-script.js
+            document.dispatchEvent(new CustomEvent('gmkb:topics-design-panel-ready', {
                 detail: { 
-                    previewCount: actualCount,
-                    sidebarCount: sidebarCount,
-                    inSync: actualCount === sidebarCount,
-                    source: 'design_panel_sync'
+                    componentId: componentId,
+                    timestamp: Date.now()
                 }
             }));
             
+            console.log('TOPICS: Design panel coordination setup complete');
+            
         } catch (error) {
-            console.error('❌ ROOT FIX: Error syncing topics:', error);
+            console.error('TOPICS: Error setting up design panel coordination:', error);
         }
     }
     
-    /**
-     * ROOT FIX: Validate topics sync accuracy
-     * Checks if sidebar matches preview component state
-     */
-    validateTopicsCounterAccuracy() {
-        console.log('🔍 ROOT FIX: Validating topics sync accuracy...');
-        
-        try {
-            // Get actual count from preview
-            const previewComponent = document.querySelector('.editable-element[data-component="topics"]');
-            const actualCount = this.getActualTopicsCount(previewComponent);
-            
-            // Get count from sidebar
-            const sidebarItems = document.querySelectorAll('.topics-sidebar__topic-item');
-            const sidebarCount = sidebarItems.length;
-            
-            const validation = {
-                previewCount: actualCount,
-                sidebarCount: sidebarCount,
-                inSync: actualCount === sidebarCount
-            };
-            
-            console.log('📊 ROOT FIX: Topics sync validation:', validation);
-            
-            if (!validation.inSync) {
-                console.warn('⚠️ ROOT FIX: Topics not in sync between preview and sidebar');
-                
-                // ROOT FIX: Trigger re-sync if needed
-                document.dispatchEvent(new CustomEvent('topicsSyncNeeded', {
-                    detail: validation
-                }));
-            } else {
-                console.log('✅ ROOT FIX: Topics validation passed - preview and sidebar in sync');
-            }
-            
-            return validation;
-            
-        } catch (error) {
-            console.error('❌ ROOT FIX: Error validating topics sync:', error);
-            return { error: error.message };
-        }
-    }
+    // ROOT FIX: Removed complex monitoring - handled by panel-script.js
     
-    /**
-     * ROOT FIX: Get actual topics count from preview component
-     * Provides accurate count of real topics (excluding placeholders)
-     * @param {HTMLElement} component - The topics component
-     * @returns {number} The actual count of topics
-     */
-    getActualTopicsCount(component) {
-        if (!component) {
-            return -1;
-        }
-        
-        try {
-            const topicItems = component.querySelectorAll('.topic-item');
-            const realTopics = Array.from(topicItems).filter(item => {
-                const title = item.querySelector('.topic-title');
-                const titleText = title?.textContent?.trim();
-                const source = item.getAttribute('data-topic-source');
-                
-                return source !== 'placeholder' && titleText && titleText.length > 0;
-            });
-            
-            return realTopics.length;
-            
-        } catch (error) {
-            console.error('❌ ROOT FIX: Error counting topics:', error);
-            return -1;
-        }
-    }
+    // ROOT FIX: Removed complex monitoring - handled by panel-script.js
     
-    /**
-     * ROOT FIX: Update topics count display
-     * Dispatches count update event for other systems
-     * @param {number} count - The new count
-     */
-    updateTopicsCounterDisplay(count) {
-        console.log(`🔄 ROOT FIX: Topics count is: ${count}`);
-        
-        // ROOT FIX: Dispatch count update event for other systems
-        document.dispatchEvent(new CustomEvent('topicsCountUpdated', {
-            detail: { 
-                count: count,
-                source: 'design_panel'
-            }
-        }));
-    }
+    // ROOT FIX: Removed complex preview sync - handled by panel-script.js
+    
+    // ROOT FIX: Removed complex event listeners - handled by panel-script.js
+    
+    // ROOT FIX: Removed complex sync method - handled by panel-script.js
+    
+    // ROOT FIX: Removed validation method - handled by panel-script.js
+    
+    // ROOT FIX: Removed topic counting method - handled by panel-script.js
+    
+    // ROOT FIX: Removed counter display method - handled by panel-script.js
 
     /**
      * Debug function to show available components
@@ -748,23 +367,25 @@ class DesignPanel {
                     debouncedUpdate(this.currentComponentId, newProps);
                     console.log(`🔄 ROOT FIX: Updated ${propName} = ${input.value.trim()}`);
                     
-                    // ROOT FIX: Immediate topics sync for topics-related properties
+                    // ROOT FIX: Notify topics sync system of changes
                     if (currentComponent.type === 'topics' && 
                         ['title', 'displayStyle', 'columns', 'topicColor'].includes(propName)) {
-                        setTimeout(() => {
-                            this.syncTopicsCounterWithPreview();
-                        }, 150);
+                        // Let the simplified sync system handle it
+                        document.dispatchEvent(new CustomEvent('gmkb:topics-property-changed', {
+                            detail: { property: propName, value: input.value.trim(), componentId: this.currentComponentId }
+                        }));
                     }
                 }
             });
             
-            // ROOT FIX: Also listen for change events (for selects, checkboxes)
+            // ROOT FIX: Listen for change events (selects, checkboxes) - simplified
             input.addEventListener('change', () => {
                 const currentComponent = this.getComponent(this.currentComponentId);
                 if (currentComponent?.type === 'topics') {
-                    setTimeout(() => {
-                        this.syncTopicsCounterWithPreview();
-                    }, 100);
+                    // Notify simplified sync system
+                    document.dispatchEvent(new CustomEvent('gmkb:topics-property-changed', {
+                        detail: { property: propName, componentId: this.currentComponentId }
+                    }));
                 }
             });
         });
@@ -777,31 +398,24 @@ class DesignPanel {
     }
     
     /**
-     * ROOT FIX: Setup Add Topic button enhancement with sync integration
-     * Ensures counter updates immediately when Add Topic is clicked
+     * ROOT FIX: Simplified Add Topic button setup
      * @param {HTMLElement} button - The Add Topic button element
      */
     setupAddTopicButtonEnhancement(button) {
-        console.log('➕ ROOT FIX: Setting up Add Topic button enhancement...');
-        
-        // ROOT FIX: Override the existing click handler
-        const originalClickHandler = button.onclick;
+        console.log('TOPICS: Setting up Add Topic button coordination...');
         
         button.addEventListener('click', (event) => {
-            console.log('➕ ROOT FIX: Add Topic button clicked - enhancing with sync...');
+            console.log('TOPICS: Add Topic button clicked - notifying sync system');
             
-            // ROOT FIX: Small delay to allow normal processing, then sync
+            // Notify simplified sync system
             setTimeout(() => {
-                this.syncTopicsCounterWithPreview();
-                
-                // ROOT FIX: Validate counter was updated correctly
-                setTimeout(() => {
-                    this.validateTopicsCounterAccuracy();
-                }, 200);
+                document.dispatchEvent(new CustomEvent('gmkb:topics-added', {
+                    detail: { componentId: this.currentComponentId, timestamp: Date.now() }
+                }));
             }, 100);
-        }, { passive: true }); // Don't interfere with existing handlers
+        }, { passive: true });
         
-        console.log('✅ ROOT FIX: Add Topic button enhancement active');
+        console.log('TOPICS: Add Topic button coordination active');
     }
 
     /**
@@ -848,13 +462,9 @@ class DesignPanel {
     }
 
     /**
-     * ROOT FIX: Enhanced hide method with cleanup
-     * Hides the design panel and cleans up topics-specific observers
+     * ROOT FIX: Simplified hide method
      */
     hide() {
-        // ROOT FIX: Cleanup topics-specific observers
-        this.cleanupTopicsEnhancements();
-        
         this.panel.innerHTML = `
             <div class="element-editor__title">No Element Selected</div>
             <div class="element-editor__subtitle">Click on any element in the preview to edit its properties</div>
@@ -869,42 +479,10 @@ class DesignPanel {
                 </ul>
             </div>
         `;
-        console.log('📋 ROOT FIX: Design panel hidden with cleanup, showing default state');
+        console.log('TOPICS: Design panel hidden, showing default state');
     }
     
-    /**
-     * ROOT FIX: Cleanup topics-specific enhancements
-     * Removes observers and event listeners to prevent memory leaks
-     */
-    cleanupTopicsEnhancements() {
-        console.log('🧹 ROOT FIX: Cleaning up topics enhancements...');
-        
-        try {
-            // ROOT FIX: Disconnect observers
-            if (this.topicsCounterObserver) {
-                this.topicsCounterObserver.disconnect();
-                this.topicsCounterObserver = null;
-                console.log('✅ ROOT FIX: Topics counter observer cleaned up');
-            }
-            
-            if (this.topicsPreviewObserver) {
-                this.topicsPreviewObserver.disconnect();
-                this.topicsPreviewObserver = null;
-                console.log('✅ ROOT FIX: Topics preview observer cleaned up');
-            }
-            
-            if (this.topicsDirectObserver) {
-                this.topicsDirectObserver.disconnect();
-                this.topicsDirectObserver = null;
-                console.log('✅ ROOT FIX: Topics direct observer cleaned up');
-            }
-            
-            console.log('✅ ROOT FIX: Topics enhancements cleanup complete');
-            
-        } catch (error) {
-            console.error('❌ ROOT FIX: Error during topics cleanup:', error);
-        }
-    }
+    // ROOT FIX: Removed complex cleanup - no longer needed
 }
 
 // ROOT FIX: Enhanced design panel instance with topics sync capabilities
@@ -961,18 +539,20 @@ window.debugDesignPanel = function() {
 };
 
 window.testDesignPanelSync = function() {
-    console.log('🧪 ROOT FIX: Testing design panel sync...');
+    console.log('TOPICS: Testing design panel coordination...');
     
     if (designPanel.currentComponentId) {
         const component = designPanel.getComponent(designPanel.currentComponentId);
         if (component?.type === 'topics') {
-            console.log('Testing topics counter sync...');
-            designPanel.syncTopicsCounterWithPreview();
+            console.log('Testing topics sync coordination with panel-script.js...');
             
-            setTimeout(() => {
-                const validation = designPanel.validateTopicsCounterAccuracy();
-                console.log('Sync test results:', validation);
-            }, 300);
+            // Test coordination with panel-script.js
+            if (window.TopicsSync && typeof window.TopicsSync.testSync === 'function') {
+                window.TopicsSync.testSync();
+                console.log('Design panel coordinated with TopicsSync');
+            } else {
+                console.log('TopicsSync not available - check panel-script.js');
+            }
         } else {
             console.log('Current component is not topics type:', component?.type);
         }
@@ -1029,12 +609,10 @@ window.testComponentManagerAccess = function() {
     return null;
 };
 
-console.log('✅ ROOT FIX: Enhanced Design Panel with bidirectional topics sync ready');
-console.log('📊 ROOT FIX: Debug commands available:');
+console.log('TOPICS: Simplified Design Panel coordination ready');
+console.log('Debug commands available:');
 console.log('   debugDesignPanel() - Show design panel debug info and manager availability');
-console.log('   testDesignPanelSync() - Test topics counter sync');
+console.log('   testDesignPanelSync() - Test design panel coordination with panel-script.js');
 console.log('   testComponentManagerAccess() - Test component update functionality');
-console.log('   debugTopicsSidebar() - Debug topics sidebar functionality');
-console.log('   window.TopicsTemplate.reinitialize() - Reinitialize topics sidebar');
-console.log('📋 ROOT CAUSE FIXED: Topics edit sync now works - data-property attributes added to PHP');
-console.log('🔧 COMPONENT MANAGER: Enhanced to find correct manager reference automatically');
+console.log('ROOT CAUSE FIXED: Simplified sync coordination between design panel and preview');
+console.log('Design panel now coordinates with panel-script.js for clean sync');

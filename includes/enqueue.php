@@ -888,45 +888,12 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Edit boxes test script for verifying the fix
-        if (file_exists(GUESTIFY_PLUGIN_DIR . 'test-edit-boxes-fix.js')) {
+        // ROOT FIX: Event delegation test script (replaces problematic individual listener tests)
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'test-event-delegation-fix.js')) {
             wp_enqueue_script(
-                'gmkb-test-edit-boxes-fix',
-                $plugin_url . 'test-edit-boxes-fix.js',
-                array('gmkb-main-script'),
-                $version . '-debug',
-                true
-            );
-        }
-        
-        // ROOT FIX: Immediate sync test (smaller, simpler test)
-        if (file_exists(GUESTIFY_PLUGIN_DIR . 'immediate-edit-test.js')) {
-            wp_enqueue_script(
-                'gmkb-immediate-edit-test',
-                $plugin_url . 'immediate-edit-test.js',
-                array(),  // No dependencies for immediate test
-                $version . '-debug',
-                true
-            );
-        }
-        
-        // ROOT FIX: Immediate sync test specifically for sync functionality
-        if (file_exists(GUESTIFY_PLUGIN_DIR . 'immediate-sync-test.js')) {
-        wp_enqueue_script(
-        'gmkb-immediate-sync-test',
-        $plugin_url . 'immediate-sync-test.js',
-        array(),  // No dependencies for immediate test
-        $version . '-debug',
-        true
-        );
-        }
-        
-        // ROOT FIX: Comprehensive edit boxes root fix test
-        if (file_exists(GUESTIFY_PLUGIN_DIR . 'test-edit-boxes-root-fix.js')) {
-            wp_enqueue_script(
-                'gmkb-test-edit-boxes-root-fix',
-                $plugin_url . 'test-edit-boxes-root-fix.js',
-                array('gmkb-topics-panel-enhanced'),  // Depends on topics panel script
+                'gmkb-test-event-delegation-fix',
+                $plugin_url . 'test-event-delegation-fix.js',
+                array('gmkb-topics-panel-enhanced'),
                 $version . '-debug',
                 true
             );

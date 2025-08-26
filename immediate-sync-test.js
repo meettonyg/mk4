@@ -6,24 +6,18 @@
 console.log('🔄 SYNC TEST: Loading immediate sync test...');
 
 window.testSyncNow = function() {
-    console.log('🔄 TESTING SYNC: Starting bi-directional sync test...');
+    console.log('TESTING SYNC: Starting bi-directional sync test with simplified system...');
     
-    // Find elements with multiple selectors - try each selector until we find elements
-    let sidebarInputs = document.querySelectorAll('.topics-sidebar__topic-input');
-    if (sidebarInputs.length === 0) {
-        sidebarInputs = document.querySelectorAll('.topic-input');
-    }
-    if (sidebarInputs.length === 0) {
-        sidebarInputs = document.querySelectorAll('[data-property^="topic_"]');
+    // ROOT FIX: Use TopicsSync API if available
+    if (window.TopicsSync && typeof window.TopicsSync.testSync === 'function') {
+        console.log('Using TopicsSync.testSync() from panel-script.js...');
+        window.TopicsSync.testSync();
+        return;
     }
     
+    // Fallback: Find elements with simplified selectors
+    let sidebarInputs = document.querySelectorAll('textarea[data-property^="topic_"], input[data-property^="topic_"]');
     let previewElements = document.querySelectorAll('.topic-title[contenteditable="true"]');
-    if (previewElements.length === 0) {
-        previewElements = document.querySelectorAll('.topic-title');
-    }
-    if (previewElements.length === 0) {
-        previewElements = document.querySelectorAll('[data-topic-title]');
-    }
     
     console.log(`Found ${sidebarInputs.length} sidebar inputs`);
     console.log(`Found ${previewElements.length} preview elements`);
@@ -211,11 +205,17 @@ function testAlternativeSync(inputs, editables) {
     console.log('ℹ️ Note: For full sync testing, ensure topics component is loaded with proper elements');
 }
 
-// Auto-run test
+// ROOT FIX: Auto-run test with coordination check
 setTimeout(() => {
-    console.log('🚀 AUTO-RUNNING SYNC TEST...');
+    console.log('AUTO-RUNNING SIMPLIFIED SYNC TEST...');
     if (typeof window.testSyncNow === 'function') {
         window.testSyncNow();
+    }
+    
+    // Also test TopicsSync if available
+    if (window.TopicsSync && typeof window.TopicsSync.debug === 'function') {
+        console.log('Running TopicsSync debug...');
+        window.TopicsSync.debug();
     }
 }, 2000);
 
