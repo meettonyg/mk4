@@ -1,0 +1,518 @@
+/**
+ * Sections Module CSS
+ * Phase 3: Section Layer System
+ * 
+ * Section-level styling and responsive behavior
+ * Following checklist: WordPress Integration, No Inline Clutter
+ * 
+ * @version 3.0.0-phase3
+ * @package GMKB/CSS/Modules
+ */
+
+/* =====================================
+   BASE SECTION STYLES
+   ===================================== */
+
+.gmkb-section {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    /* Default spacing from layout configuration will be applied inline */
+}
+
+.gmkb-section__container {
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+}
+
+.gmkb-section__content {
+    position: relative;
+    z-index: 1;
+}
+
+/* =====================================
+   SECTION TYPE SPECIFIC STYLES
+   ===================================== */
+
+/* Full Width Section */
+.gmkb-section--full-width .gmkb-section__container {
+    max-width: 100%;
+}
+
+.gmkb-section--full-width .gmkb-section__content {
+    display: block;
+}
+
+/* Two Column Section */
+.gmkb-section--two-column .gmkb-section__container {
+    max-width: 1200px;
+}
+
+.gmkb-section--two-column .gmkb-section__content--two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+/* Three Column Section */
+.gmkb-section--three-column .gmkb-section__container {
+    max-width: 1200px;
+}
+
+.gmkb-section--three-column .gmkb-section__content--three-column {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+/* Grid Section */
+.gmkb-section--grid .gmkb-section__container {
+    max-width: 1200px;
+}
+
+.gmkb-section--grid .gmkb-section__content--grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+/* Hero Section */
+.gmkb-section--hero {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.gmkb-section--hero .gmkb-section__hero-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+
+.gmkb-section--hero .gmkb-section__hero-content {
+    text-align: center;
+    color: white;
+    max-width: 800px;
+    padding: 0 20px;
+}
+
+.gmkb-section--hero .gmkb-section__hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1;
+}
+
+/* =====================================
+   COLUMN LAYOUTS
+   ===================================== */
+
+.gmkb-section__column {
+    position: relative;
+    min-height: 100px;
+}
+
+.gmkb-section__column--1,
+.gmkb-section__column--2,
+.gmkb-section__column--3 {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Grid Items */
+.gmkb-section__grid-item {
+    position: relative;
+}
+
+/* =====================================
+   COMPONENT CONTAINERS
+   ===================================== */
+
+.gmkb-section__component {
+    position: relative;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.gmkb-section__component:last-child {
+    margin-bottom: 0;
+}
+
+/* Hero specific component styling */
+.gmkb-section__hero-component {
+    margin-bottom: 30px;
+}
+
+/* Grid specific component styling */
+.gmkb-section__grid-item {
+    margin-bottom: 0; /* Grid handles spacing */
+}
+
+/* =====================================
+   EMPTY STATES & DROP ZONES
+   ===================================== */
+
+.gmkb-section__empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    width: 100%;
+}
+
+.gmkb-section__drop-zone {
+    border: 2px dashed #e1e5e9;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    background: rgba(248, 249, 250, 0.5);
+    transition: all 0.3s ease;
+    width: 100%;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gmkb-section__drop-zone:hover {
+    border-color: #295cff;
+    background: rgba(41, 92, 255, 0.05);
+}
+
+.gmkb-section__drop-zone.gmkb-drop-zone--active {
+    border-color: #295cff;
+    background: rgba(41, 92, 255, 0.1);
+    transform: scale(1.02);
+}
+
+.gmkb-section__drop-text {
+    font-size: 14px;
+    color: #666666;
+    font-weight: 500;
+}
+
+/* Hero Drop Zone Styling */
+.gmkb-section__hero-drop-zone {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.gmkb-section__hero-placeholder {
+    color: white;
+    text-align: center;
+}
+
+.gmkb-section__hero-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.gmkb-section__hero-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: white;
+}
+
+.gmkb-section__hero-drop-zone .gmkb-section__drop-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+}
+
+/* Grid Empty State */
+.gmkb-section__grid-empty {
+    grid-column: 1 / -1; /* Span all columns */
+}
+
+/* =====================================
+   SPACING SYSTEM
+   ===================================== */
+
+/* Spacing utilities that can be applied via section options */
+.gmkb-section--spacing-top-none { margin-top: 0; }
+.gmkb-section--spacing-top-small { margin-top: 20px; }
+.gmkb-section--spacing-top-medium { margin-top: 40px; }
+.gmkb-section--spacing-top-large { margin-top: 80px; }
+
+.gmkb-section--spacing-bottom-none { margin-bottom: 0; }
+.gmkb-section--spacing-bottom-small { margin-bottom: 20px; }
+.gmkb-section--spacing-bottom-medium { margin-bottom: 40px; }
+.gmkb-section--spacing-bottom-large { margin-bottom: 80px; }
+
+/* =====================================
+   RESPONSIVE BEHAVIOR
+   ===================================== */
+
+/* Tablet Breakpoint */
+@media (max-width: 1024px) {
+    .gmkb-section--two-column .gmkb-section__content--two-column {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+    
+    .gmkb-section--three-column .gmkb-section__content--three-column {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px;
+    }
+    
+    .gmkb-section--grid .gmkb-section__content--grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+    }
+    
+    .gmkb-section--hero {
+        min-height: 60vh;
+    }
+    
+    .gmkb-section__container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 768px) {
+    .gmkb-section--two-column .gmkb-section__content--two-column,
+    .gmkb-section--three-column .gmkb-section__content--three-column {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .gmkb-section--grid .gmkb-section__content--grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .gmkb-section--hero {
+        min-height: 50vh;
+        padding: 60px 0;
+    }
+    
+    .gmkb-section__container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .gmkb-section__drop-zone {
+        padding: 30px 15px;
+        min-height: 100px;
+    }
+    
+    .gmkb-section__hero-icon {
+        font-size: 36px;
+    }
+    
+    .gmkb-section__hero-title {
+        font-size: 20px;
+    }
+    
+    .gmkb-section__component {
+        margin-bottom: 15px;
+    }
+}
+
+/* Small Mobile Breakpoint */
+@media (max-width: 480px) {
+    .gmkb-section--hero {
+        min-height: 40vh;
+    }
+    
+    .gmkb-section__hero-content {
+        padding: 0 15px;
+    }
+    
+    .gmkb-section__drop-zone {
+        padding: 25px 10px;
+        min-height: 80px;
+    }
+    
+    .gmkb-section__drop-text {
+        font-size: 13px;
+    }
+}
+
+/* =====================================
+   SECTION CONTROLS (EDITING MODE)
+   ===================================== */
+
+.gmkb-section__controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.gmkb-section:hover .gmkb-section__controls {
+    opacity: 1;
+}
+
+.gmkb-section__control-btn {
+    background: white;
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.gmkb-section__control-btn:hover {
+    background: #f8f9fa;
+    border-color: #295cff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.gmkb-section__control-btn--primary {
+    background: #295cff;
+    color: white;
+    border-color: #295cff;
+}
+
+.gmkb-section__control-btn--primary:hover {
+    background: #1e4bd6;
+    border-color: #1e4bd6;
+}
+
+/* =====================================
+   DEBUG STYLES
+   ===================================== */
+
+.gmkb-section__debug {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: rgba(0, 0, 255, 0.1);
+    padding: 3px 6px;
+    font-size: 10px;
+    border-radius: 2px;
+    z-index: 1000;
+    font-family: monospace;
+    border: 1px solid rgba(0, 0, 255, 0.2);
+}
+
+/* =====================================
+   ANIMATIONS & TRANSITIONS
+   ===================================== */
+
+.gmkb-section {
+    transition: all 0.3s ease;
+}
+
+.gmkb-section__component {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gmkb-section__component:hover {
+    transform: translateY(-2px);
+}
+
+/* Section reordering animations */
+.gmkb-section.gmkb-section--reordering {
+    transform: scale(0.98);
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.gmkb-section.gmkb-section--moving {
+    transform: scale(1.02);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+/* =====================================
+   ACCESSIBILITY
+   ===================================== */
+
+.gmkb-section[role="region"] {
+    outline: none;
+}
+
+.gmkb-section:focus-within {
+    outline: 2px solid #295cff;
+    outline-offset: 2px;
+}
+
+.gmkb-section__drop-zone[role="button"]:focus {
+    outline: 2px solid #295cff;
+    outline-offset: 2px;
+}
+
+/* =====================================
+   PRINT STYLES
+   ===================================== */
+
+@media print {
+    .gmkb-section__controls,
+    .gmkb-section__debug,
+    .gmkb-section__drop-zone {
+        display: none !important;
+    }
+    
+    .gmkb-section--hero {
+        min-height: auto;
+    }
+    
+    .gmkb-section__hero-overlay {
+        display: none;
+    }
+}
+
+/* =====================================
+   SIDEBAR INTEGRATION STYLES
+   ===================================== */
+
+/* Section button feedback */
+.layout-option--feedback {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(41, 92, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.gmkb-section--newly-added {
+    animation: gmkb-section-highlight 2s ease;
+    border: 2px solid #295cff;
+}
+
+@keyframes gmkb-section-highlight {
+    0% {
+        transform: scale(1.02);
+        box-shadow: 0 0 20px rgba(41, 92, 255, 0.5);
+    }
+    50% {
+        transform: scale(1.01);
+        box-shadow: 0 0 15px rgba(41, 92, 255, 0.3);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: none;
+        border: none;
+    }
+}
+
+.section-btn--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}

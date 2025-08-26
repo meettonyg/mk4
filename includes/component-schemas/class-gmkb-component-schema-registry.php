@@ -1,2 +1,430 @@
 <?php
-/**\n * Component Schema Registry\n * Phase 2: Component Layer Architecture - Schema definitions for all component types\n * \n * This file provides server-side component schema definitions that can be used by\n * both PHP and JavaScript systems for validation, configuration, and data binding.\n * \n * @package Guestify\n * @version 2.0.0-phase2\n */\n\n// Exit if accessed directly.\nif (!defined('ABSPATH')) {\n    exit;\n}\n\nclass GMKB_Component_Schema_Registry {\n    \n    /**\n     * Component schemas cache\n     */\n    private static $schemas = null;\n    \n    /**\n     * Get all component schemas\n     * \n     * @return array Component schemas\n     */\n    public static function get_schemas() {\n        if (self::$schemas === null) {\n            self::$schemas = self::load_schemas();\n        }\n        return self::$schemas;\n    }\n    \n    /**\n     * Get schema for specific component type\n     * \n     * @param string $component_type Component type\n     * @return array|null Component schema or null if not found\n     */\n    public static function get_schema($component_type) {\n        $schemas = self::get_schemas();\n        return $schemas[$component_type] ?? null;\n    }\n    \n    /**\n     * Load all component schemas\n     * \n     * @return array Component schemas\n     */\n    private static function load_schemas() {\n        return array(\n            'hero' => array(\n                'name' => 'Hero Section',\n                'description' => 'Main hero section with profile image and introduction',\n                'category' => 'essential',\n                'dataBindings' => array(\n                    'title' => 'full_name',\n                    'subtitle' => 'guest_title',\n                    'description' => 'biography_short',\n                    'image' => 'guest_headshot'\n                ),\n                'componentOptions' => array(\n                    'layout' => array(\n                        'type' => 'select',\n                        'label' => 'Layout Style',\n                        'default' => 'left_aligned',\n                        'options' => array(\n                            'left_aligned' => 'Left Aligned',\n                            'center_aligned' => 'Center Aligned',\n                            'right_aligned' => 'Right Aligned'\n                        ),\n                        'section' => 'layout'\n                    ),\n                    'imageStyle' => array(\n                        'type' => 'select',\n                        'label' => 'Image Style',\n                        'default' => 'rounded',\n                        'options' => array(\n                            'rounded' => 'Rounded',\n                            'circle' => 'Circle',\n                            'square' => 'Square'\n                        ),\n                        'section' => 'appearance'\n                    ),\n                    'showSocialLinks' => array(\n                        'type' => 'boolean',\n                        'label' => 'Show Social Links',\n                        'default' => true,\n                        'section' => 'content'\n                    ),\n                    'backgroundColor' => array(\n                        'type' => 'color',\n                        'label' => 'Background Color',\n                        'default' => '#ffffff',\n                        'section' => 'appearance'\n                    ),\n                    'textColor' => array(\n                        'type' => 'color',\n                        'label' => 'Text Color',\n                        'default' => '#333333',\n                        'section' => 'appearance'\n                    )\n                ),\n                'responsiveBehavior' => array(\n                    'mobile' => 'stack_vertical',\n                    'tablet' => 'maintain_layout'\n                ),\n                'sections' => array(\n                    'content' => array(\n                        'title' => 'Content',\n                        'order' => 1\n                    ),\n                    'layout' => array(\n                        'title' => 'Layout',\n                        'order' => 2\n                    ),\n                    'appearance' => array(\n                        'title' => 'Appearance',\n                        'order' => 3\n                    )\n                )\n            ),\n            \n            'biography' => array(\n                'name' => 'Biography',\n                'description' => 'Professional biography and background information',\n                'category' => 'essential',\n                'dataBindings' => array(\n                    'content' => 'biography_full',\n                    'shortBio' => 'biography_short',\n                    'name' => 'full_name'\n                ),\n                'componentOptions' => array(\n                    'length' => array(\n                        'type' => 'select',\n                        'label' => 'Bio Length',\n                        'default' => 'medium',\n                        'options' => array(\n                            'short' => 'Short (100-200 words)',\n                            'medium' => 'Medium (200-400 words)',\n                            'long' => 'Long (400+ words)'\n                        ),\n                        'section' => 'content'\n                    ),\n                    'showReadMore' => array(\n                        'type' => 'boolean',\n                        'label' => 'Show Read More Button',\n                        'default' => true,\n                        'section' => 'content'\n                    ),\n                    'includePhoto' => array(\n                        'type' => 'boolean',\n                        'label' => 'Include Photo',\n                        'default' => false,\n                        'section' => 'content'\n                    )\n                ),\n                'sections' => array(\n                    'content' => array(\n                        'title' => 'Content Options',\n                        'order' => 1\n                    )\n                )\n            ),\n            \n            'contact' => array(\n                'name' => 'Contact Information',\n                'description' => 'Contact details and communication methods',\n                'category' => 'essential',\n                'dataBindings' => array(\n                    'email' => 'email',\n                    'phone' => 'phone',\n                    'website' => 'website',\n                    'location' => 'location'\n                ),\n                'componentOptions' => array(\n                    'layout' => array(\n                        'type' => 'select',\n                        'label' => 'Layout Style',\n                        'default' => 'vertical',\n                        'options' => array(\n                            'vertical' => 'Vertical List',\n                            'horizontal' => 'Horizontal Row',\n                            'grid' => 'Grid Layout'\n                        ),\n                        'section' => 'layout'\n                    ),\n                    'showIcons' => array(\n                        'type' => 'boolean',\n                        'label' => 'Show Icons',\n                        'default' => true,\n                        'section' => 'appearance'\n                    ),\n                    'showLabels' => array(\n                        'type' => 'boolean',\n                        'label' => 'Show Field Labels',\n                        'default' => true,\n                        'section' => 'appearance'\n                    )\n                ),\n                'sections' => array(\n                    'layout' => array(\n                        'title' => 'Layout Options',\n                        'order' => 1\n                    ),\n                    'appearance' => array(\n                        'title' => 'Appearance',\n                        'order' => 2\n                    )\n                )\n            ),\n            \n            'topics' => array(\n                'name' => 'Speaking Topics',\n                'description' => 'Areas of expertise and speaking topics',\n                'category' => 'essential',\n                'dataBindings' => array(\n                    'topics' => 'speaking_topics',\n                    'expertise' => 'areas_of_expertise'\n                ),\n                'componentOptions' => array(\n                    'layout' => array(\n                        'type' => 'select',\n                        'label' => 'Display Layout',\n                        'default' => 'grid',\n                        'options' => array(\n                            'list' => 'Vertical List',\n                            'grid' => 'Grid Layout',\n                            'tags' => 'Tag Cloud'\n                        ),\n                        'section' => 'layout'\n                    ),\n                    'maxTopics' => array(\n                        'type' => 'number',\n                        'label' => 'Maximum Topics to Show',\n                        'default' => 6,\n                        'min' => 1,\n                        'max' => 20,\n                        'section' => 'content'\n                    ),\n                    'showPriority' => array(\n                        'type' => 'boolean',\n                        'label' => 'Show Priority Indicators',\n                        'default' => false,\n                        'section' => 'content'\n                    ),\n                    'columnsDesktop' => array(\n                        'type' => 'select',\n                        'label' => 'Desktop Columns',\n                        'default' => '3',\n                        'options' => array(\n                            '2' => '2 Columns',\n                            '3' => '3 Columns',\n                            '4' => '4 Columns'\n                        ),\n                        'section' => 'layout'\n                    )\n                ),\n                'sections' => array(\n                    'content' => array(\n                        'title' => 'Content Options',\n                        'order' => 1\n                    ),\n                    'layout' => array(\n                        'title' => 'Layout Settings',\n                        'order' => 2\n                    )\n                )\n            ),\n            \n            'social' => array(\n                'name' => 'Social Media',\n                'description' => 'Social media links and profiles',\n                'category' => 'engagement',\n                'dataBindings' => array(\n                    'platforms' => 'social_media_links'\n                ),\n                'componentOptions' => array(\n                    'style' => array(\n                        'type' => 'select',\n                        'label' => 'Display Style',\n                        'default' => 'icons',\n                        'options' => array(\n                            'icons' => 'Icons Only',\n                            'buttons' => 'Button Style',\n                            'text' => 'Text Links'\n                        ),\n                        'section' => 'appearance'\n                    ),\n                    'size' => array(\n                        'type' => 'select',\n                        'label' => 'Icon Size',\n                        'default' => 'medium',\n                        'options' => array(\n                            'small' => 'Small',\n                            'medium' => 'Medium',\n                            'large' => 'Large'\n                        ),\n                        'section' => 'appearance'\n                    ),\n                    'alignment' => array(\n                        'type' => 'select',\n                        'label' => 'Alignment',\n                        'default' => 'center',\n                        'options' => array(\n                            'left' => 'Left',\n                            'center' => 'Center',\n                            'right' => 'Right'\n                        ),\n                        'section' => 'layout'\n                    )\n                ),\n                'sections' => array(\n                    'appearance' => array(\n                        'title' => 'Appearance',\n                        'order' => 1\n                    ),\n                    'layout' => array(\n                        'title' => 'Layout',\n                        'order' => 2\n                    )\n                )\n            ),\n            \n            'testimonials' => array(\n                'name' => 'Testimonials',\n                'description' => 'Client testimonials and reviews',\n                'category' => 'social-proof',\n                'dataBindings' => array(\n                    'testimonials' => 'client_testimonials'\n                ),\n                'componentOptions' => array(\n                    'layout' => array(\n                        'type' => 'select',\n                        'label' => 'Layout Style',\n                        'default' => 'carousel',\n                        'options' => array(\n                            'list' => 'Vertical List',\n                            'grid' => 'Grid Layout',\n                            'carousel' => 'Carousel/Slider'\n                        ),\n                        'section' => 'layout'\n                    ),\n                    'maxTestimonials' => array(\n                        'type' => 'number',\n                        'label' => 'Maximum Testimonials',\n                        'default' => 3,\n                        'min' => 1,\n                        'max' => 10,\n                        'section' => 'content'\n                    ),\n                    'showPhotos' => array(\n                        'type' => 'boolean',\n                        'label' => 'Show Client Photos',\n                        'default' => true,\n                        'section' => 'content'\n                    )\n                ),\n                'sections' => array(\n                    'content' => array(\n                        'title' => 'Content Options',\n                        'order' => 1\n                    ),\n                    'layout' => array(\n                        'title' => 'Layout Settings',\n                        'order' => 2\n                    )\n                )\n            )\n        );\n    }\n    \n    /**\n     * Get component options for specific component type\n     * \n     * @param string $component_type Component type\n     * @return array Component options\n     */\n    public static function get_component_options($component_type) {\n        $schema = self::get_schema($component_type);\n        return $schema['componentOptions'] ?? array();\n    }\n    \n    /**\n     * Get data bindings for specific component type\n     * \n     * @param string $component_type Component type\n     * @return array Data bindings\n     */\n    public static function get_data_bindings($component_type) {\n        $schema = self::get_schema($component_type);\n        return $schema['dataBindings'] ?? array();\n    }\n    \n    /**\n     * Validate component configuration against schema\n     * \n     * @param string $component_type Component type\n     * @param array $configuration Component configuration\n     * @return array Validation result\n     */\n    public static function validate_configuration($component_type, $configuration) {\n        $schema = self::get_schema($component_type);\n        if (!$schema) {\n            return array(\n                'valid' => false,\n                'errors' => array(\"Unknown component type: {$component_type}\")\n            );\n        }\n        \n        $errors = array();\n        $componentOptions = $configuration['componentOptions'] ?? array();\n        \n        // Validate component options\n        foreach ($componentOptions as $optionKey => $optionValue) {\n            $optionSchema = $schema['componentOptions'][$optionKey] ?? null;\n            if (!$optionSchema) {\n                $errors[] = \"Unknown option: {$optionKey}\";\n                continue;\n            }\n            \n            $validationResult = self::validate_option_value($optionValue, $optionSchema);\n            if (!$validationResult['valid']) {\n                $errors[] = \"Invalid value for {$optionKey}: \" . implode(', ', $validationResult['errors']);\n            }\n        }\n        \n        return array(\n            'valid' => empty($errors),\n            'errors' => $errors\n        );\n    }\n    \n    /**\n     * Validate individual option value\n     * \n     * @param mixed $value Option value\n     * @param array $optionSchema Option schema\n     * @return array Validation result\n     */\n    private static function validate_option_value($value, $optionSchema) {\n        $errors = array();\n        $type = $optionSchema['type'];\n        \n        switch ($type) {\n            case 'select':\n                $validOptions = array_keys($optionSchema['options']);\n                if (!in_array($value, $validOptions)) {\n                    $errors[] = 'Must be one of: ' . implode(', ', $validOptions);\n                }\n                break;\n                \n            case 'boolean':\n                if (!is_bool($value) && !in_array($value, array(0, 1, '0', '1', 'true', 'false'))) {\n                    $errors[] = 'Must be a boolean value';\n                }\n                break;\n                \n            case 'number':\n                if (!is_numeric($value)) {\n                    $errors[] = 'Must be a number';\n                } else {\n                    $numValue = (float)$value;\n                    if (isset($optionSchema['min']) && $numValue < $optionSchema['min']) {\n                        $errors[] = \"Must be at least {$optionSchema['min']}\";\n                    }\n                    if (isset($optionSchema['max']) && $numValue > $optionSchema['max']) {\n                        $errors[] = \"Must be at most {$optionSchema['max']}\";\n                    }\n                }\n                break;\n                \n            case 'color':\n                if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {\n                    $errors[] = 'Must be a valid hex color (e.g., #ffffff)';\n                }\n                break;\n                \n            case 'string':\n            case 'text':\n            case 'textarea':\n                if (!is_string($value)) {\n                    $errors[] = 'Must be a string';\n                }\n                break;\n        }\n        \n        return array(\n            'valid' => empty($errors),\n            'errors' => $errors\n        );\n    }\n    \n    /**\n     * Get default configuration for component type\n     * \n     * @param string $component_type Component type\n     * @return array Default configuration\n     */\n    public static function get_default_configuration($component_type) {\n        $schema = self::get_schema($component_type);\n        if (!$schema) {\n            return array();\n        }\n        \n        $config = array(\n            'dataBindings' => $schema['dataBindings'] ?? array(),\n            'componentOptions' => array(),\n            'responsiveBehavior' => $schema['responsiveBehavior'] ?? array()\n        );\n        \n        // Extract default values from component options\n        foreach ($schema['componentOptions'] ?? array() as $key => $optionDef) {\n            if (isset($optionDef['default'])) {\n                $config['componentOptions'][$key] = $optionDef['default'];\n            }\n        }\n        \n        return $config;\n    }\n    \n    /**\n     * Get JavaScript-compatible schema data\n     * \n     * @return array Schema data formatted for JavaScript\n     */\n    public static function get_js_schemas() {\n        $schemas = self::get_schemas();\n        \n        // Convert PHP arrays to format expected by JavaScript\n        foreach ($schemas as $componentType => &$schema) {\n            // Convert options arrays to JavaScript format\n            if (isset($schema['componentOptions'])) {\n                foreach ($schema['componentOptions'] as $optionKey => &$option) {\n                    if (isset($option['options']) && is_array($option['options'])) {\n                        // Convert associative array to indexed array for JavaScript\n                        $jsOptions = array();\n                        foreach ($option['options'] as $value => $label) {\n                            $jsOptions[] = array(\n                                'value' => $value,\n                                'label' => $label\n                            );\n                        }\n                        $option['options'] = $jsOptions;\n                    }\n                }\n            }\n        }\n        \n        return $schemas;\n    }\n}\n\n/**\n * Initialize schema registry\n */\nfunction gmkb_init_component_schemas() {\n    // Make schemas available to JavaScript\n    if (!wp_script_is('gmkb-main', 'enqueued')) {\n        return;\n    }\n    \n    wp_localize_script('gmkb-main', 'gmkbComponentSchemas', array(\n        'schemas' => GMKB_Component_Schema_Registry::get_js_schemas(),\n        'version' => '2.0.0-phase2',\n        'timestamp' => time()\n    ));\n}\n\n// Hook to make schemas available to frontend\nadd_action('wp_enqueue_scripts', 'gmkb_init_component_schemas', 20);\nadd_action('admin_enqueue_scripts', 'gmkb_init_component_schemas', 20);
+/**
+ * Component Schema Registry
+ * Phase 2: Component Layer Architecture - Schema definitions for all component types
+ * 
+ * This file provides server-side component schema definitions that can be used by
+ * both PHP and JavaScript systems for validation, configuration, and data binding.
+ * 
+ * @package Guestify
+ * @version 2.0.0-phase2
+ */
+
+// Exit if accessed directly.
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class GMKB_Component_Schema_Registry {
+    
+    /**
+     * Component schemas cache
+     */
+    private static $schemas = null;
+    
+    /**
+     * Get all component schemas
+     * 
+     * @return array Component schemas
+     */
+    public static function get_schemas() {
+        if (self::$schemas === null) {
+            self::$schemas = self::load_schemas();
+        }
+        return self::$schemas;
+    }
+    
+    /**
+     * Get schema for specific component type
+     * 
+     * @param string $component_type Component type
+     * @return array|null Component schema or null if not found
+     */
+    public static function get_schema($component_type) {
+        $schemas = self::get_schemas();
+        return isset($schemas[$component_type]) ? $schemas[$component_type] : null;
+    }
+    
+    /**
+     * Load all component schemas
+     * 
+     * @return array Component schemas
+     */
+    private static function load_schemas() {
+        return array(
+            'hero' => array(
+                'name' => 'Hero Section',
+                'description' => 'Main hero section with profile image and introduction',
+                'category' => 'essential',
+                'dataBindings' => array(
+                    'title' => 'full_name',
+                    'subtitle' => 'guest_title',
+                    'description' => 'biography_short',
+                    'image' => 'guest_headshot'
+                ),
+                'componentOptions' => array(
+                    'layout' => array(
+                        'type' => 'select',
+                        'label' => 'Layout Style',
+                        'default' => 'left_aligned',
+                        'options' => array(
+                            'left_aligned' => 'Left Aligned',
+                            'center_aligned' => 'Center Aligned',
+                            'right_aligned' => 'Right Aligned'
+                        ),
+                        'section' => 'layout'
+                    ),
+                    'imageStyle' => array(
+                        'type' => 'select',
+                        'label' => 'Image Style',
+                        'default' => 'rounded',
+                        'options' => array(
+                            'rounded' => 'Rounded',
+                            'circle' => 'Circle',
+                            'square' => 'Square'
+                        ),
+                        'section' => 'appearance'
+                    ),
+                    'showSocialLinks' => array(
+                        'type' => 'boolean',
+                        'label' => 'Show Social Links',
+                        'default' => true,
+                        'section' => 'content'
+                    ),
+                    'backgroundColor' => array(
+                        'type' => 'color',
+                        'label' => 'Background Color',
+                        'default' => '#ffffff',
+                        'section' => 'appearance'
+                    ),
+                    'textColor' => array(
+                        'type' => 'color',
+                        'label' => 'Text Color',
+                        'default' => '#333333',
+                        'section' => 'appearance'
+                    )
+                ),
+                'responsiveBehavior' => array(
+                    'mobile' => 'stack_vertical',
+                    'tablet' => 'maintain_layout'
+                ),
+                'sections' => array(
+                    'content' => array(
+                        'title' => 'Content',
+                        'order' => 1
+                    ),
+                    'layout' => array(
+                        'title' => 'Layout',
+                        'order' => 2
+                    ),
+                    'appearance' => array(
+                        'title' => 'Appearance',
+                        'order' => 3
+                    )
+                )
+            ),
+            
+            'topics' => array(
+                'name' => 'Speaking Topics',
+                'description' => 'Areas of expertise and speaking topics',
+                'category' => 'essential',
+                'dataBindings' => array(
+                    'topics' => 'speaking_topics',
+                    'expertise' => 'areas_of_expertise'
+                ),
+                'componentOptions' => array(
+                    'layout' => array(
+                        'type' => 'select',
+                        'label' => 'Display Layout',
+                        'default' => 'grid',
+                        'options' => array(
+                            'list' => 'Vertical List',
+                            'grid' => 'Grid Layout',
+                            'tags' => 'Tag Cloud'
+                        ),
+                        'section' => 'layout'
+                    ),
+                    'maxTopics' => array(
+                        'type' => 'number',
+                        'label' => 'Maximum Topics to Show',
+                        'default' => 6,
+                        'min' => 1,
+                        'max' => 20,
+                        'section' => 'content'
+                    ),
+                    'showPriority' => array(
+                        'type' => 'boolean',
+                        'label' => 'Show Priority Indicators',
+                        'default' => false,
+                        'section' => 'content'
+                    ),
+                    'columnsDesktop' => array(
+                        'type' => 'select',
+                        'label' => 'Desktop Columns',
+                        'default' => '3',
+                        'options' => array(
+                            '2' => '2 Columns',
+                            '3' => '3 Columns',
+                            '4' => '4 Columns'
+                        ),
+                        'section' => 'layout'
+                    )
+                ),
+                'sections' => array(
+                    'content' => array(
+                        'title' => 'Content Options',
+                        'order' => 1
+                    ),
+                    'layout' => array(
+                        'title' => 'Layout Settings',
+                        'order' => 2
+                    )
+                )
+            ),
+            
+            'contact' => array(
+                'name' => 'Contact Information',
+                'description' => 'Contact details and communication methods',
+                'category' => 'essential',
+                'dataBindings' => array(
+                    'email' => 'email',
+                    'phone' => 'phone',
+                    'website' => 'website',
+                    'location' => 'location'
+                ),
+                'componentOptions' => array(
+                    'layout' => array(
+                        'type' => 'select',
+                        'label' => 'Layout Style',
+                        'default' => 'vertical',
+                        'options' => array(
+                            'vertical' => 'Vertical List',
+                            'horizontal' => 'Horizontal Row',
+                            'grid' => 'Grid Layout'
+                        ),
+                        'section' => 'layout'
+                    ),
+                    'showIcons' => array(
+                        'type' => 'boolean',
+                        'label' => 'Show Icons',
+                        'default' => true,
+                        'section' => 'appearance'
+                    ),
+                    'showLabels' => array(
+                        'type' => 'boolean',
+                        'label' => 'Show Field Labels',
+                        'default' => true,
+                        'section' => 'appearance'
+                    )
+                ),
+                'sections' => array(
+                    'layout' => array(
+                        'title' => 'Layout Options',
+                        'order' => 1
+                    ),
+                    'appearance' => array(
+                        'title' => 'Appearance',
+                        'order' => 2
+                    )
+                )
+            )
+        );
+    }
+    
+    /**
+     * Get component options for specific component type
+     * 
+     * @param string $component_type Component type
+     * @return array Component options
+     */
+    public static function get_component_options($component_type) {
+        $schema = self::get_schema($component_type);
+        return isset($schema['componentOptions']) ? $schema['componentOptions'] : array();
+    }
+    
+    /**
+     * Get data bindings for specific component type
+     * 
+     * @param string $component_type Component type
+     * @return array Data bindings
+     */
+    public static function get_data_bindings($component_type) {
+        $schema = self::get_schema($component_type);
+        return isset($schema['dataBindings']) ? $schema['dataBindings'] : array();
+    }
+    
+    /**
+     * Validate component configuration against schema
+     * 
+     * @param string $component_type Component type
+     * @param array $configuration Component configuration
+     * @return array Validation result
+     */
+    public static function validate_configuration($component_type, $configuration) {
+        $schema = self::get_schema($component_type);
+        if (!$schema) {
+            return array(
+                'valid' => false,
+                'errors' => array("Unknown component type: {$component_type}")
+            );
+        }
+        
+        $errors = array();
+        $componentOptions = isset($configuration['componentOptions']) ? $configuration['componentOptions'] : array();
+        
+        // Validate component options
+        foreach ($componentOptions as $optionKey => $optionValue) {
+            $optionSchema = isset($schema['componentOptions'][$optionKey]) ? $schema['componentOptions'][$optionKey] : null;
+            if (!$optionSchema) {
+                $errors[] = "Unknown option: {$optionKey}";
+                continue;
+            }
+            
+            $validationResult = self::validate_option_value($optionValue, $optionSchema);
+            if (!$validationResult['valid']) {
+                $errors[] = "Invalid value for {$optionKey}: " . implode(', ', $validationResult['errors']);
+            }
+        }
+        
+        return array(
+            'valid' => empty($errors),
+            'errors' => $errors
+        );
+    }
+    
+    /**
+     * Validate individual option value
+     * 
+     * @param mixed $value Option value
+     * @param array $optionSchema Option schema
+     * @return array Validation result
+     */
+    private static function validate_option_value($value, $optionSchema) {
+        $errors = array();
+        $type = $optionSchema['type'];
+        
+        switch ($type) {
+            case 'select':
+                $validOptions = array_keys($optionSchema['options']);
+                if (!in_array($value, $validOptions)) {
+                    $errors[] = 'Must be one of: ' . implode(', ', $validOptions);
+                }
+                break;
+                
+            case 'boolean':
+                if (!is_bool($value) && !in_array($value, array(0, 1, '0', '1', 'true', 'false'))) {
+                    $errors[] = 'Must be a boolean value';
+                }
+                break;
+                
+            case 'number':
+                if (!is_numeric($value)) {
+                    $errors[] = 'Must be a number';
+                } else {
+                    $numValue = (float)$value;
+                    if (isset($optionSchema['min']) && $numValue < $optionSchema['min']) {
+                        $errors[] = "Must be at least {$optionSchema['min']}";
+                    }
+                    if (isset($optionSchema['max']) && $numValue > $optionSchema['max']) {
+                        $errors[] = "Must be at most {$optionSchema['max']}";
+                    }
+                }
+                break;
+                
+            case 'color':
+                if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {
+                    $errors[] = 'Must be a valid hex color (e.g., #ffffff)';
+                }
+                break;
+                
+            case 'string':
+            case 'text':
+            case 'textarea':
+                if (!is_string($value)) {
+                    $errors[] = 'Must be a string';
+                }
+                break;
+        }
+        
+        return array(
+            'valid' => empty($errors),
+            'errors' => $errors
+        );
+    }
+    
+    /**
+     * Get default configuration for component type
+     * 
+     * @param string $component_type Component type
+     * @return array Default configuration
+     */
+    public static function get_default_configuration($component_type) {
+        $schema = self::get_schema($component_type);
+        if (!$schema) {
+            return array();
+        }
+        
+        $config = array(
+            'dataBindings' => isset($schema['dataBindings']) ? $schema['dataBindings'] : array(),
+            'componentOptions' => array(),
+            'responsiveBehavior' => isset($schema['responsiveBehavior']) ? $schema['responsiveBehavior'] : array()
+        );
+        
+        // Extract default values from component options
+        foreach (isset($schema['componentOptions']) ? $schema['componentOptions'] : array() as $key => $optionDef) {
+            if (isset($optionDef['default'])) {
+                $config['componentOptions'][$key] = $optionDef['default'];
+            }
+        }
+        
+        return $config;
+    }
+    
+    /**
+     * Get schemas formatted for JavaScript consumption
+     * This is the method being called by enqueue.php
+     * 
+     * @return array JavaScript-formatted schemas
+     */
+    public static function get_js_schemas() {
+        $schemas = self::get_schemas();
+        
+        // Format for JavaScript - ensure proper JSON serialization
+        $js_schemas = array();
+        
+        foreach ($schemas as $type => $schema) {
+            $js_schemas[$type] = array(
+                'name' => $schema['name'],
+                'description' => $schema['description'],
+                'category' => $schema['category'],
+                'dataBindings' => isset($schema['dataBindings']) ? $schema['dataBindings'] : array(),
+                'componentOptions' => isset($schema['componentOptions']) ? $schema['componentOptions'] : array(),
+                'responsiveBehavior' => isset($schema['responsiveBehavior']) ? $schema['responsiveBehavior'] : array(),
+                'sections' => isset($schema['sections']) ? $schema['sections'] : array(),
+                'version' => '2.0.0-phase2'
+            );
+        }
+        
+        return $js_schemas;
+    }
+}
+
+/**
+ * Initialize schema registry
+ */
+function gmkb_init_component_schemas() {
+    // Make schemas available to JavaScript
+    if (!wp_script_is('gmkb-main', 'enqueued')) {
+        return;
+    }
+    
+    wp_localize_script('gmkb-main', 'gmkbComponentSchemas', array(
+        'schemas' => GMKB_Component_Schema_Registry::get_schemas(),
+        'version' => '2.0.0-phase2',
+        'timestamp' => time()
+    ));
+}
+
+// Hook to make schemas available to frontend
+add_action('wp_enqueue_scripts', 'gmkb_init_component_schemas', 20);
+add_action('admin_enqueue_scripts', 'gmkb_init_component_schemas', 20);

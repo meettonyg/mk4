@@ -418,19 +418,23 @@ if ($post_id > 0) {
                 <?php endif; ?>
                 
                 <?php if ($template_instructions['show_saved_components']): ?>
-                    <!-- ROOT FIX: Saved Components Container - VISIBLE when we have saved components -->
+                    <!-- PHASE 3: Section-Aware Saved Components Container -->
                     <div class="saved-components-container" id="saved-components-container" style="display: block;">
-                        <!-- Components will be rendered here by JavaScript -->
+                        <!-- Sections will be rendered here by SectionLayoutManager -->
+                        <div class="gmkb-sections-container" id="gmkb-sections-container">
+                            <!-- Dynamic section rendering will happen here via JavaScript -->
+                        </div>
+                        
                         <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
                             <!-- Debug info for saved components -->
                             <div class="debug-saved-components" style="position: absolute; top: 5px; right: 5px; background: rgba(0,255,0,0.1); padding: 5px; font-size: 10px; border-radius: 3px; z-index: 1000;">
-                                <?php echo count($saved_state['components']); ?> saved components
+                                PHASE 3: Section-based rendering - <?php echo count($saved_state['components']); ?> components
                             </div>
                         <?php endif; ?>
                     </div>
                     <?php 
                         if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log('✅ GMKB Template: RENDERED saved-components-container in DOM');
+                            error_log('✅ GMKB Template: RENDERED section-aware saved-components-container in DOM');
                         }
                     ?>
                 <?php endif; ?>

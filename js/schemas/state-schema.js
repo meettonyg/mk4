@@ -68,6 +68,94 @@ const stateSchema = {
             },
             additionalProperties: false
         },
+        sections: {
+            type: "array",
+            description: "Array of section configurations for Phase 3",
+            items: {
+                type: "object",
+                required: ["section_id", "section_type"],
+                properties: {
+                    section_id: {
+                        type: "string",
+                        pattern: "^[a-zA-Z0-9_-]+$"
+                    },
+                    section_type: {
+                        type: "string",
+                        enum: ["full_width", "two_column", "three_column", "grid", "hero"]
+                    },
+                    layout: {
+                        type: "object",
+                        properties: {
+                            width: { type: "string" },
+                            max_width: { type: "string" },
+                            padding: { type: "string" },
+                            columns: { type: "integer", minimum: 1, maximum: 12 },
+                            column_gap: { type: "string" },
+                            row_gap: { type: "string" },
+                            display: { type: "string" },
+                            align_items: { type: "string" },
+                            justify_content: { type: "string" },
+                            grid_template_columns: { type: "string" },
+                            min_height: { type: "string" }
+                        }
+                    },
+                    section_options: {
+                        type: "object",
+                        properties: {
+                            background_type: {
+                                type: "string",
+                                enum: ["none", "color", "gradient"]
+                            },
+                            background_color: {
+                                type: "string",
+                                pattern: "^(#[0-9A-Fa-f]{6}|transparent)$"
+                            },
+                            spacing_top: {
+                                type: "string",
+                                enum: ["none", "small", "medium", "large"]
+                            },
+                            spacing_bottom: {
+                                type: "string",
+                                enum: ["none", "small", "medium", "large"]
+                            }
+                        }
+                    },
+                    responsive: {
+                        type: "object",
+                        properties: {
+                            mobile: { type: "object" },
+                            tablet: { type: "object" }
+                        }
+                    },
+                    components: {
+                        type: "array",
+                        description: "Components assigned to this section",
+                        items: {
+                            type: "object",
+                            required: ["component_id"],
+                            properties: {
+                                component_id: {
+                                    type: "string",
+                                    pattern: "^[a-zA-Z0-9_-]+$"
+                                },
+                                column: {
+                                    type: "integer",
+                                    minimum: 1
+                                },
+                                order: {
+                                    type: "integer",
+                                    minimum: 0
+                                },
+                                assigned_at: { type: "number" }
+                            }
+                        }
+                    },
+                    created_at: { type: "number" },
+                    updated_at: { type: "number" }
+                },
+                additionalProperties: false
+            }
+        },
         globalSettings: {
             type: "object",
             properties: {
@@ -223,6 +311,67 @@ const transactionSchemas = {
             type: { const: "UPDATE_GLOBAL_SETTINGS" },
             payload: { type: "object" }
         }
+    },
+    
+    // PHASE 3: Section operation schemas
+    UPDATE_SECTIONS: {
+        type: "object",
+        required: ["type", "payload"],
+        properties: {
+            type: { const: "UPDATE_SECTIONS" },
+            payload: {
+                type: "array",
+                items: {
+                    type: "object",
+                    required: ["section_id", "section_type"],
+                    properties: {
+                        section_id: { type: "string" },
+                        section_type: { type: "string" }
+                    }
+                }
+            }
+        }
+    },
+    
+    ADD_SECTION: {
+        type: "object",
+        required: ["type", "payload"],
+        properties: {
+            type: { const: "ADD_SECTION" },
+            payload: {
+                type: "object",
+                required: ["section_id", "section_type"],
+                properties: {
+                    section_id: { type: "string" },
+                    section_type: { type: "string" }
+                }
+            }
+        }
+    },
+    
+    REMOVE_SECTION: {
+        type: "object",
+        required: ["type", "payload"],
+        properties: {
+            type: { const: "REMOVE_SECTION" },
+            payload: { type: "string" }
+        }
+    },
+    
+    UPDATE_SECTION: {
+        type: "object",
+        required: ["type", "payload"],
+        properties: {
+            type: { const: "UPDATE_SECTION" },
+            payload: {
+                type: "object",
+                required: ["sectionId", "updates"],
+                properties: {
+                    sectionId: { type: "string" },
+                    updates: { type: "object" }
+                }
+            }
+        }
     }
 };
 
@@ -262,6 +411,7 @@ const validationConstraints = {
 const defaultState = {
     layout: [],
     components: {},
+    sections: [],
     globalSettings: {
         theme: {
             primaryColor: "#2196F3",
@@ -279,7 +429,7 @@ const defaultState = {
             customJS: ""
         }
     },
-    version: "2.0.0"
+    version: "3.0.0"
 };
 
 // ROOT FIX: Make schemas available globally instead of ES6 exports

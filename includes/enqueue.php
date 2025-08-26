@@ -415,6 +415,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 3a. Core Systems Coordinator - ROOT FIX: Dispatch core-systems-ready event
+    if (!wp_script_is('gmkb-core-systems-coordinator', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-core-systems-coordinator',
+            $plugin_url . 'js/core/core-systems-coordinator.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
     // ROOT FIX: PHASE 2 - Essential UI Systems Only
     // Simplified dependency chain - load only what's needed
     
@@ -655,6 +666,61 @@ function gmkb_enqueue_assets() {
         );
     }
 
+    // PHASE 3: Section Layout Manager
+    if (!wp_script_is('gmkb-section-layout-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-layout-manager',
+            $plugin_url . 'system/SectionLayoutManager.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 3: Section Controls UI
+    if (!wp_script_is('gmkb-section-controls-ui', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-controls-ui',
+            $plugin_url . 'js/ui/section-controls.js',
+            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 3: Sidebar Section Integration
+    if (!wp_script_is('gmkb-sidebar-section-integration', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-sidebar-section-integration',
+            $plugin_url . 'js/ui/sidebar-section-integration.js',
+            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 3: Section Renderer
+    if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-renderer',
+            $plugin_url . 'js/core/section-renderer.js',
+            array('gmkb-section-layout-manager', 'gmkb-enhanced-component-renderer', 'gmkb-section-templates', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 3: Dynamic Section Templates
+    if (!wp_script_is('gmkb-section-templates', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-templates',
+            $plugin_url . 'js/templates/section-templates.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+
     // 12h2. Toast Polyfill - ROOT FIX: Toast notifications
     if (!wp_script_is('gmkb-toast-polyfill', 'enqueued')) {
         wp_enqueue_script(
@@ -788,6 +854,7 @@ function gmkb_enqueue_assets() {
                 'sortable-js', // Include SortableJS
                 'gmkb-structured-logger',
                 'gmkb-enhanced-state-manager',
+                'gmkb-core-systems-coordinator',
                 'gmkb-enhanced-component-manager',
                 'gmkb-event-bus',
                 'gmkb-ui-registry',
@@ -802,6 +869,12 @@ function gmkb_enqueue_assets() {
                 // PHASE 2: Configuration and data binding systems
                 'gmkb-component-configuration-manager',
                 'gmkb-data-binding-engine',
+                // PHASE 3: Section layer systems
+                'gmkb-section-layout-manager',
+                'gmkb-section-controls-ui',
+                'gmkb-sidebar-section-integration',
+                'gmkb-section-templates',
+                'gmkb-section-renderer',
                 'gmkb-tabs',
                 'gmkb-toolbar',
                 'gmkb-toolbar-interactions',
@@ -1034,6 +1107,14 @@ function gmkb_enqueue_assets() {
     wp_enqueue_style(
         'gmkb-toast-notifications',
         $plugin_url . 'css/modules/toast-notifications.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // PHASE 3: Sections CSS
+    wp_enqueue_style(
+        'gmkb-sections',
+        $plugin_url . 'css/modules/sections.css',
         array( 'gmkb-main-styles' ),
         $version
     );
