@@ -35,6 +35,9 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 // SCALABLE ARCHITECTURE: Load base component service before specific components
 require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 
+// PHASE 2: Component schema registry
+require_once GUESTIFY_PLUGIN_DIR . 'includes/component-schemas/class-gmkb-component-schema-registry.php';
+
 // Component system files
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';

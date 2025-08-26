@@ -278,6 +278,12 @@ function gmkb_enqueue_assets() {
         }
     }
 
+    // Load component schemas for Phase 2
+    $component_schemas = array();
+    if (class_exists('GMKB_Component_Schema_Registry')) {
+        $component_schemas = GMKB_Component_Schema_Registry::get_js_schemas();
+    }
+
     // ROOT FIX: Create WordPress data array early so it can be used by multiple scripts
     $wp_data = array(
         'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
@@ -289,7 +295,7 @@ function gmkb_enqueue_assets() {
         'pluginUrl'     => $plugin_url,
         'siteUrl'       => home_url(),
         'pluginVersion' => defined('GUESTIFY_VERSION') ? GUESTIFY_VERSION : 'unknown',
-        'architecture'  => 'wordpress-global-namespace',
+        'architecture'  => 'wordpress-global-namespace-phase2',
         'timestamp'     => time(),
         'builderPage'   => true,
         'isBuilderPage' => true,
@@ -311,13 +317,20 @@ function gmkb_enqueue_assets() {
         'layout' => $saved_state['layout'] ?? array(),
         'hasSavedData' => !empty( $saved_state ),
         'autoSaveEnabled' => true,
+        // PHASE 2: Component schemas and configuration data
+        'componentSchemas' => $component_schemas,
+        'phase2Enabled' => true,
+        'configurationDriven' => true,
+        'dataBindingEnabled' => true,
         'debugInfo' => array(
             'timestamp' => time(),
             'componentsFound' => count($components_data),
             'categoriesFound' => count($categories_data),
             'sampleComponent' => !empty($components_data) ? $components_data[0] : null,
             'savedComponentsCount' => count($saved_components),
-            'hasSavedState' => !empty($saved_state)
+            'hasSavedState' => !empty($saved_state),
+            'schemaCount' => count($component_schemas),
+            'phase2Features' => array('configuration-manager', 'data-binding', 'schema-validation')
         )
     );
 
@@ -620,6 +633,28 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // PHASE 2: Component Configuration Manager
+    if (!wp_script_is('gmkb-component-configuration-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-configuration-manager',
+            $plugin_url . 'system/ComponentConfigurationManager.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 2: Data Binding Engine
+    if (!wp_script_is('gmkb-data-binding-engine', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-data-binding-engine',
+            $plugin_url . 'system/DataBindingEngine.js',
+            array('gmkb-component-configuration-manager'),
+            $version,
+            true
+        );
+    }
+
     // 12h2. Toast Polyfill - ROOT FIX: Toast notifications
     if (!wp_script_is('gmkb-toast-polyfill', 'enqueued')) {
         wp_enqueue_script(
@@ -764,6 +799,9 @@ function gmkb_enqueue_assets() {
                 'gmkb-enhanced-component-renderer',
                 'gmkb-empty-state-handlers',
                 'gmkb-component-library-simple',
+                // PHASE 2: Configuration and data binding systems
+                'gmkb-component-configuration-manager',
+                'gmkb-data-binding-engine',
                 'gmkb-tabs',
                 'gmkb-toolbar',
                 'gmkb-toolbar-interactions',

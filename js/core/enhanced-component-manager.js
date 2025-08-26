@@ -73,12 +73,13 @@
         }
 
         /**
-         * ROOT FIX: Add component to preview and state
+         * PHASE 2: Enhanced add component with configuration and data binding
          * @param {string} componentType - Type of component to add
          * @param {Object} props - Component properties
+         * @param {Object} podsData - Optional Pods data for binding
          * @returns {Promise<string>} Component ID
          */
-        async addComponent(componentType, props = {}) {
+        async addComponent(componentType, props = {}, podsData = null) {
             try {
                 if (!this.isInitialized) {
                     this.initialize();
@@ -97,17 +98,39 @@
                 // Generate unique component ID
                 const componentId = this.generateComponentId(componentType);
                 
-                logger.info('COMPONENT', `Adding component: ${componentType}`, { componentId, props });
+                logger.info('COMPONENT', `Phase 2: Adding component with configuration: ${componentType}`, { componentId, props, hasPodsData: !!podsData });
+
+                // PHASE 2: Register component configuration
+                let componentConfiguration = null;
+                if (window.componentConfigurationManager && window.componentConfigurationManager.isReady()) {
+                    componentConfiguration = window.componentConfigurationManager.registerConfiguration(
+                        componentId, 
+                        componentType, 
+                        { componentOptions: props }
+                    );
+                    logger.debug('COMPONENT', 'Phase 2: Component configuration registered', { componentId, componentType });
+                }
+
+                // PHASE 2: Bind data if available
+                let boundProps = { ...this.getDefaultProps(componentType), ...props };
+                if (podsData && window.dataBindingEngine && window.dataBindingEngine.isReady()) {
+                    const bindingResult = window.dataBindingEngine.bindData(componentId, podsData, componentConfiguration);
+                    boundProps = { ...boundProps, ...bindingResult };
+                    logger.debug('COMPONENT', 'Phase 2: Data binding applied', { componentId, boundProps: Object.keys(bindingResult) });
+                }
 
                 // Create component data
                 const componentData = {
                     id: componentId,
                     type: componentType,
-                    props: {
-                        ...this.getDefaultProps(componentType),
-                        ...props
-                    },
-                    timestamp: Date.now()
+                    props: boundProps,
+                    timestamp: Date.now(),
+                    // PHASE 2: Add configuration metadata
+                    phase2: {
+                        hasConfiguration: !!componentConfiguration,
+                        hasDataBinding: !!podsData,
+                        architecture: 'configuration-driven'
+                    }
                 };
 
                 // ROOT FIX: Render component via AJAX to get actual HTML
@@ -128,6 +151,14 @@
                 // Store component reference
                 this.components.set(componentId, componentData);
 
+                // PHASE 2: Set up data binding watchers
+                if (podsData && window.dataBindingEngine && window.dataBindingEngine.isReady()) {
+                    window.dataBindingEngine.watchBinding(componentId, (updatedProps) => {
+                        logger.debug('COMPONENT', 'Phase 2: Auto-updating component from data binding', { componentId, updatedProps });
+                        this.updateComponentVisual(componentId, updatedProps);
+                    });
+                }
+
                 // ROOT FIX: AUTO-SAVE to database immediately after component addition
                 try {
                     await this.autoSaveState('component_added', { componentId, componentType });
@@ -137,12 +168,16 @@
                     // Don't fail component addition if save fails - user can manually save
                 }
 
-                // Emit event
+                // PHASE 2: Enhanced event with configuration metadata
                 document.dispatchEvent(new CustomEvent('componentAdded', {
                     detail: { 
                         componentId, 
                         componentType, 
-                        props: componentData.props 
+                        props: componentData.props,
+                        // PHASE 2: Include architecture metadata
+                        phase2: componentData.phase2,
+                        hasConfiguration: !!componentConfiguration,
+                        hasDataBinding: !!podsData
                     }
                 }));
 
@@ -190,6 +225,14 @@
                 // Update state manager
                 if (window.enhancedStateManager) {
                     window.enhancedStateManager.removeComponent(componentId);
+                }
+
+                // PHASE 2: Clean up configuration and data binding
+                if (window.componentConfigurationManager) {
+                    window.componentConfigurationManager.removeConfiguration(componentId);
+                }
+                if (window.dataBindingEngine) {
+                    window.dataBindingEngine.removeBinding(componentId);
                 }
 
                 // Remove from local storage
@@ -844,6 +887,65 @@
         }
 
         /**
+         * PHASE 2: Update component visual representation
+         * @param {string} componentId - Component ID
+         * @param {Object} updatedProps - Updated properties
+         */
+        async updateComponentVisual(componentId, updatedProps) {
+            try {
+                const componentElement = document.getElementById(componentId);
+                if (!componentElement) {
+                    logger.warn('COMPONENT', `Component element not found for visual update: ${componentId}`);
+                    return;
+                }
+
+                const component = this.getComponent(componentId);
+                if (!component) {
+                    logger.warn('COMPONENT', `Component data not found for visual update: ${componentId}`);
+                    return;
+                }
+
+                // Update component props
+                component.props = { ...component.props, ...updatedProps };
+                this.components.set(componentId, component);
+
+                // Re-render component with updated props
+                const updatedHtml = await this.renderComponentOnServer(
+                    component.type, 
+                    component.props, 
+                    componentId
+                );
+
+                if (updatedHtml) {
+                    // Replace component content
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = updatedHtml;
+                    const newElement = tempDiv.firstElementChild;
+                    
+                    if (newElement) {
+                        componentElement.parentNode.replaceChild(newElement, componentElement);
+                        logger.debug('COMPONENT', `Visual updated for component: ${componentId}`);
+                        
+                        // Emit visual update event
+                        document.dispatchEvent(new CustomEvent('gmkb:component-visual-updated', {
+                            detail: {
+                                componentId,
+                                componentType: component.type,
+                                updatedProps,
+                                timestamp: Date.now()
+                            }
+                        }));
+                    }
+                } else {
+                    logger.warn('COMPONENT', `Failed to re-render component for visual update: ${componentId}`);
+                }
+
+            } catch (error) {
+                logger.error('COMPONENT', `Failed to update component visual: ${componentId}`, error);
+            }
+        }
+
+        /**
          * ROOT FIX: Direct WordPress data access (CHECKLIST COMPLIANT)
          * Uses WordPress global namespace pattern - no race conditions, no timeouts
          * @returns {Object} WordPress data object
@@ -1110,26 +1212,51 @@
         initializeComponentManager();
     }
     
-    // ROOT FIX: Listen for component addition events from component library
+    // PHASE 2: Enhanced component addition with data binding support
     document.addEventListener('gmkb:add-component', async (event) => {
-        const { componentType, props, source } = event.detail;
+        const { componentType, props, source, podsData } = event.detail;
         
-        logger.info('COMPONENT', `Received add-component event from ${source}`, {
+        logger.info('COMPONENT', `Phase 2: Received add-component event from ${source}`, {
             componentType,
-            props
+            props,
+            hasPodsData: !!podsData
         });
         
         try {
             if (window.enhancedComponentManager.isReady()) {
-                await window.enhancedComponentManager.addComponent(componentType, props);
-                logger.info('COMPONENT', `Successfully added component via event: ${componentType}`);
+                await window.enhancedComponentManager.addComponent(componentType, props, podsData);
+                logger.info('COMPONENT', `Phase 2: Successfully added component via event: ${componentType}`);
             } else {
                 logger.warn('COMPONENT', 'Component manager not ready, initializing...');
                 window.enhancedComponentManager.initialize();
-                await window.enhancedComponentManager.addComponent(componentType, props);
+                await window.enhancedComponentManager.addComponent(componentType, props, podsData);
             }
         } catch (error) {
             logger.error('COMPONENT', `Failed to add component via event: ${componentType}`, error);
+        }
+    });
+
+    // PHASE 2: Listen for data binding updates
+    document.addEventListener('gmkb:binding-updated', (event) => {
+        const { componentId, newProps } = event.detail;
+        
+        if (window.enhancedComponentManager.isReady()) {
+            window.enhancedComponentManager.updateComponentVisual(componentId, newProps);
+        }
+    });
+
+    // PHASE 2: Listen for configuration updates
+    document.addEventListener('gmkb:component-config-updated', async (event) => {
+        const { componentId, updates } = event.detail;
+        
+        if (window.enhancedComponentManager.isReady()) {
+            // Get current component
+            const component = window.enhancedComponentManager.getComponent(componentId);
+            if (component) {
+                // Apply configuration updates to props
+                const updatedProps = { ...component.props, ...updates };
+                await window.enhancedComponentManager.updateComponentVisual(componentId, updatedProps);
+            }
         }
     });
     
