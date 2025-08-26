@@ -157,8 +157,8 @@ $mkcg_data = null;
 $dashboard_data = null;
 
 if ($post_id > 0) {
-    // Enhanced MKCG data availability check
-    $has_mkcg_data = get_post_meta($post_id, 'mkcg_topic_1', true) || 
+    // PHASE 1 FIX: Enhanced Pods data availability check - single source of truth
+    $has_mkcg_data = get_post_meta($post_id, 'topic_1', true) || 
                      get_post_meta($post_id, 'mkcg_biography_short', true) ||
                      get_post_meta($post_id, 'mkcg_authority_hook_who', true);
     
@@ -168,7 +168,7 @@ if ($post_id > 0) {
         $dashboard_data = array(
             'post_id' => $post_id,
             'post_title' => get_the_title($post_id) ?: "Post #{$post_id}",
-            'has_topics' => !empty(get_post_meta($post_id, 'mkcg_topic_1', true)),
+            'has_topics' => !empty(get_post_meta($post_id, 'topic_1', true)),
             'has_biography' => !empty(get_post_meta($post_id, 'mkcg_biography_short', true)),
             'has_authority_hook' => !empty(get_post_meta($post_id, 'mkcg_authority_hook_who', true)),
             'has_questions' => !empty(get_post_meta($post_id, 'mkcg_questions_1', true)),
@@ -207,7 +207,7 @@ if ($post_id > 0) {
         $dashboard_data['quality_score'] = min(100, $available_count * 20);
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Optimized: Dashboard data prepared for post ' . $post_id . ' with ' . $available_count . ' components');
+            error_log('PHASE 1 GMKB: Dashboard data prepared for post ' . $post_id . ' with ' . $available_count . ' components (Pods data)');
         }
     }
 } else {

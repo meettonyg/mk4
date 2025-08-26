@@ -14,9 +14,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load base service if not already loaded
-if (!class_exists('Base_Component_Data_Service')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
+// Load component-specific integration if not already loaded
+if (!class_exists('Topics_Pods_Integration')) {
+    require_once __DIR__ . '/Topics_Pods_Integration.php';
 }
 
 class Topics_Data_Service extends Base_Component_Data_Service {
@@ -53,22 +53,23 @@ class Topics_Data_Service extends Base_Component_Data_Service {
         
         $current_post_id = $validation['post_id'];
         
-        // Load topics data using component-specific logic
-        $topics_result = self::load_topics_data($current_post_id);
+        // PHASE 1 FIX: Use component-specific Pods integration
+        $pods_result = Topics_Pods_Integration::load_topics_data($current_post_id);
         
         // EVENT-DRIVEN result
         $result = array(
-            'topics' => $topics_result['topics'],
+            'topics' => $pods_result['topics'],
             'post_id' => $current_post_id,
             'post_title' => $validation['post_title'],
-            'data_source' => $topics_result['source'],
-            'success' => $topics_result['success'],
-            'message' => $topics_result['message'],
+            'data_source' => $pods_result['source'],
+            'success' => $pods_result['success'],
+            'message' => $pods_result['message'],
             'context' => $context,
             'component_type' => self::$component_type,
             'timestamp' => current_time('mysql'),
             'event_driven' => true,
-            'debug_info' => $topics_result['debug']
+            'quality' => $pods_result['quality'],
+            'count' => $pods_result['count']
         );
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -139,8 +140,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
         $message = 'No topics found';
         
         $debug_methods = array(
-            'custom_fields' => array(),
-            'mkcg_fields' => array(),
+            'pods_fields' => array(),
             'json_data' => null,
             'post_meta_all' => array(),
             'component_data' => null
@@ -176,35 +176,11 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             }
         }
         
-        // ROOT FIX: PRIMARY METHOD - MKCG meta fields (mkcg_topic_1, etc.) - these are the actual fields used
-        if (!$success) {
-            for ($i = 1; $i <= 5; $i++) {
-                $topic_value = get_post_meta($post_id, "mkcg_topic_{$i}", true);
-                $debug_methods['mkcg_fields']["mkcg_topic_{$i}"] = $topic_value;
-                
-                if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
-                    $topics[] = array(
-                        'title' => trim(sanitize_text_field(trim($topic_value))),
-                        'description' => '',
-                        'index' => $i - 1,
-                        'meta_key' => "mkcg_topic_{$i}",
-                        'source' => 'mkcg_fields_primary'
-                    );
-                    $success = true;
-                    $data_source = 'mkcg_fields_primary';
-                    
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("Topics Data Service: Found mkcg_topic_{$i} = {$topic_value}");
-                    }
-                }
-            }
-        }
-        
-        // FALLBACK: Custom post fields (topic_1, topic_2, etc.) - fallback only
+        // PHASE 1 FIX: PODS FIELDS ONLY - Single source of truth (topic_1, topic_2, etc.)
         if (!$success) {
             for ($i = 1; $i <= 5; $i++) {
                 $topic_value = get_post_meta($post_id, "topic_{$i}", true);
-                $debug_methods['custom_fields']["topic_{$i}"] = $topic_value;
+                $debug_methods['pods_fields']["topic_{$i}"] = $topic_value;
                 
                 if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
                     $topics[] = array(
@@ -212,13 +188,19 @@ class Topics_Data_Service extends Base_Component_Data_Service {
                         'description' => '',
                         'index' => $i - 1,
                         'meta_key' => "topic_{$i}",
-                        'source' => 'custom_fields_fallback'
+                        'source' => 'pods_fields_primary'
                     );
                     $success = true;
-                    $data_source = 'custom_fields_fallback';
+                    $data_source = 'pods_fields_primary';
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("PHASE 1 Topics Data Service: Found topic_{$i} = {$topic_value}");
+                    }
                 }
             }
         }
+        
+        // PHASE 1 REMOVED: No fallback chains - Pods fields only
         
         // LEGACY: Method 3 - JSON topics data (final fallback)
         if (!$success) {
@@ -245,10 +227,10 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             }
         }
         
-        // Debug: Get all post meta for analysis
+        // Debug: Get Pods-related post meta for analysis
         $all_meta = get_post_meta($post_id);
         foreach ($all_meta as $key => $values) {
-            if (strpos($key, 'topic') !== false || strpos($key, 'mkcg') !== false || strpos($key, 'component') !== false) {
+            if (strpos($key, 'topic') !== false || strpos($key, 'component') !== false) {
                 $debug_methods['post_meta_all'][$key] = $values;
             }
         }
@@ -282,47 +264,21 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             return false;
         }
         
-        // Prepare data in scalable component format
-        $component_data = array(
-            'topics' => $topics,
-            'total_count' => count($topics),
-            'last_updated' => current_time('mysql'),
-            'source' => 'scalable_topics_service'
-        );
+        // PHASE 1 FIX: Use component-specific Pods integration for save
+        $save_result = Topics_Pods_Integration::save_topics_data($post_id, $topics);
         
-        // Use base class save method
-        $scalable_save = parent::save_component_data($post_id, $component_data, $options);
-        
-        // BACKWARD COMPATIBILITY: Also save in legacy formats
-        $legacy_save = true;
-        
-        // ROOT FIX: Save to MKCG fields format as primary
-        for ($i = 1; $i <= 5; $i++) {
-            $topic_value = isset($topics[$i - 1]['title']) ? trim($topics[$i - 1]['title']) : '';
-            // Save to MKCG format first (primary)
-            $result1 = update_post_meta($post_id, "mkcg_topic_{$i}", sanitize_text_field(trim($topic_value)));
-            // Also save to custom format for backward compatibility
-            $result2 = update_post_meta($post_id, "topic_{$i}", sanitize_text_field(trim($topic_value)));
-            if ($result1 === false && $result2 === false) {
-                $legacy_save = false;
-            }
+        // Also use base class for additional metadata if needed
+        if ($save_result['success']) {
+            $component_data = array(
+                'topics' => $topics,
+                'total_count' => count($topics),
+                'last_updated' => current_time('mysql'),
+                'source' => 'component_pods_integration'
+            );
+            parent::save_component_data($post_id, $component_data, $options);
         }
         
-        // Save as JSON backup
-        $json_data = json_encode($topics);
-        update_post_meta($post_id, 'topics_data', $json_data);
-        update_post_meta($post_id, 'topics_data_timestamp', current_time('mysql'));
-        
-        $overall_success = $scalable_save && $legacy_save;
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log("SCALABLE TOPICS: Saved " . count($topics) . " topics to post {$post_id}");
-            error_log("  Scalable save: " . ($scalable_save ? 'SUCCESS' : 'FAILED'));
-            error_log("  Legacy save: " . ($legacy_save ? 'SUCCESS' : 'FAILED'));
-            error_log("  Overall: " . ($overall_success ? 'SUCCESS' : 'FAILED'));
-        }
-        
-        return $overall_success;
+        return $save_result['success'];
     }
     
     /**

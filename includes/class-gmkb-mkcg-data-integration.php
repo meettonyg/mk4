@@ -1,12 +1,12 @@
 <?php
 /**
- * GMKB MKCG Data Integration Service
+ * GMKB Post Data Manager (Refactored from MKCG Data Integration)
  * 
- * Handles extraction and processing of Media Content Generator data
- * for integration with Media Kit Builder components.
+ * PHASE 1 ARCHITECTURAL FIX: Post-level data operations only
+ * Component-specific operations moved to individual component integrations
  * 
  * @package Guestify
- * @version 1.0.0-phase1
+ * @version 2.0.0-phase1-post-level-only
  */
 
 // Exit if accessed directly.
@@ -14,12 +14,18 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Load Component Integration Registry
+if (!class_exists('Component_Integration_Registry')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/Component_Integration_Registry.php';
+}
+
 /**
- * GMKB MKCG Data Integration Service Class
+ * GMKB Post Data Manager Class
  * 
- * Provides comprehensive data extraction and processing for MKCG integration
+ * PHASE 1 REFACTOR: Handles post-level operations and cross-component coordination
+ * Individual component data operations delegated to component-specific integrations
  */
-class GMKB_MKCG_Data_Integration {
+class GMKB_Post_Data_Manager {
     
     /**
      * Singleton instance
@@ -60,7 +66,8 @@ class GMKB_MKCG_Data_Integration {
     }
     
     /**
-     * PHASE 2.3 - TASK 5: Enhanced MKCG data extraction with freshness support
+     * PHASE 1 REFACTOR: Get post data using component integrations
+     * Delegates to individual component integrations instead of handling directly
      * @param int $post_id Post ID
      * @return array|null Enhanced data with metadata
      */
@@ -85,20 +92,19 @@ class GMKB_MKCG_Data_Integration {
                 return null;
             }
             
-            // Extract all MKCG data
-            $mkcg_data = array(
+            // PHASE 1 REFACTOR: Use Component Integration Registry instead of direct extraction
+            $comprehensive_data = Component_Integration_Registry::get_post_data_comprehensive($post_id);
+            
+            // Transform to legacy format for backward compatibility
+            $post_data = array(
                 'post_info' => $this->get_post_info($post),
-                'topics' => $this->get_topics_data($post_id),
-                'biography' => $this->get_biography_data($post_id),
-                'authority_hook' => $this->get_authority_hook_data($post_id),
-                'questions' => $this->get_questions_data($post_id),
-                'offers' => $this->get_offers_data($post_id),
-                'social_media' => $this->get_social_media_data($post_id),
+                'components' => $comprehensive_data['components'],
+                'availability' => $comprehensive_data['availability'],
                 'meta_info' => $this->get_meta_info($post_id)
             );
             
             // Validate extracted data
-            $validated_data = $this->validate_and_sanitize_data($mkcg_data);
+            $validated_data = $this->validate_and_sanitize_data($post_data);
             
             // TASK 5: Add freshness metadata
             $validated_data['freshness'] = $this->get_freshness_metadata($post_id);
@@ -133,278 +139,17 @@ class GMKB_MKCG_Data_Integration {
         );
     }
     
-    /**
-     * Extract topics data from MKCG
-     * ROOT FIX: Enhanced to support multiple meta key formats and exact field names from your screenshot
-     * 
-     * @param int $post_id Post ID
-     * @return array Topics data
-     */
-    private function get_topics_data($post_id) {
-        $topics = array();
-        
-        // ROOT FIX: Based on Pods configuration JSON, the exact meta keys are: topic_1, topic_2, etc.
-        // First try the Pods format from your WordPress custom fields
-        $pods_topics = [];
-        for ($i = 1; $i <= 5; $i++) {
-            $meta_key = "topic_{$i}";
-            $topic_value = get_post_meta($post_id, $meta_key, true);
-            
-            if (!empty($topic_value)) {
-                $pods_topics["topic_{$i}"] = sanitize_text_field($topic_value);
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("GMKB MKCG: Found topic in {$meta_key}: {$topic_value}");
-                }
-            }
-        }
-        
-        // If we found topics with topic_ format (Pods), use them
-        if (!empty($pods_topics)) {
-            $topics = $pods_topics;
-            $found_format = 'topic_';
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("GMKB MKCG: Successfully loaded " . count($topics) . " topics from topic_ fields (Pods) for post {$post_id}");
-                error_log("GMKB MKCG: Topics data: " . print_r($topics, true));
-            }
-        } else {
-            // Fallback: Try other possible meta key formats including mkcg_
-            $meta_formats = [
-                'mkcg_topic_',    // MKCG format (legacy)
-                'topics_',        // Plural topics format
-                '_topic_',        // Underscore prefix format
-                'speaking_topic_', // Descriptive format
-                'pod_topic_'      // Pods plugin format (alternative)
-            ];
-            
-            $found_format = null;
-            foreach ($meta_formats as $format) {
-                $format_topics = [];
-                
-                // Extract up to 5 topics for this format
-                for ($i = 1; $i <= 5; $i++) {
-                    $meta_key = $format . $i;
-                    $topic_value = get_post_meta($post_id, $meta_key, true);
-                    
-                    if (!empty($topic_value)) {
-                        $format_topics["topic_{$i}"] = sanitize_text_field($topic_value);
-                    }
-                }
-                
-                // If we found topics with this format, use them and stop searching
-                if (!empty($format_topics)) {
-                    $topics = $format_topics;
-                    $found_format = $format;
-                    break;
-                }
-            }
-        }
-        
-        // Debug: Log all post meta to see what's available
-        if (defined('WP_DEBUG') && WP_DEBUG && empty($topics)) {
-            $all_meta = get_post_meta($post_id);
-            $topic_related_meta = array();
-            foreach ($all_meta as $key => $value) {
-                if (stripos($key, 'topic') !== false || stripos($key, 'mkcg') !== false) {
-                    $topic_related_meta[$key] = $value;
-                }
-            }
-            error_log("GMKB MKCG: No topics found for post {$post_id}. Topic-related meta fields: " . print_r($topic_related_meta, true));
-        }
-        
-        // Add topic metadata if available
-        $topics_meta = array(
-            'count' => count($topics),
-            'meta_format_used' => $found_format ?? 'none',
-            'generated_date' => get_post_meta($post_id, 'mkcg_topics_generated_date', true),
-            'generator_version' => get_post_meta($post_id, 'mkcg_topics_version', true)
-        );
-        
-        return array(
-            'topics' => $topics,
-            'meta' => array_filter($topics_meta) // Remove empty values
-        );
-    }
+    // PHASE 1 REMOVED: Component-specific methods moved to individual integrations
     
-    /**
-     * Extract biography data from MKCG
-     * 
-     * @param int $post_id Post ID
-     * @return array Biography data
-     */
-    private function get_biography_data($post_id) {
-        $biography = array();
-        
-        // Standard MKCG biography fields
-        $bio_fields = array(
-            'name' => 'mkcg_biography_name',
-            'title' => 'mkcg_biography_title',
-            'organization' => 'mkcg_biography_organization',
-            'short' => 'mkcg_biography_short',
-            'medium' => 'mkcg_biography_medium',
-            'long' => 'mkcg_biography_long',
-            'tone' => 'mkcg_biography_tone',
-            'expertise' => 'mkcg_biography_expertise',
-            'achievements' => 'mkcg_biography_achievements'
-        );
-        
-        foreach ($bio_fields as $key => $meta_key) {
-            $value = get_post_meta($post_id, $meta_key, true);
-            if (!empty($value)) {
-                $biography[$key] = sanitize_textarea_field($value);
-            }
-        }
-        
-        // Add biography metadata
-        $bio_meta = array(
-            'generated_date' => get_post_meta($post_id, 'mkcg_biography_generated_date', true),
-            'word_count' => isset($biography['long']) ? str_word_count($biography['long']) : 0,
-            'tone_style' => get_post_meta($post_id, 'mkcg_biography_tone_style', true)
-        );
-        
-        return array(
-            'biography' => $biography,
-            'meta' => array_filter($bio_meta)
-        );
-    }
+    // PHASE 1 REMOVED: Biography methods moved to Biography_Pods_Integration
     
-    /**
-     * Extract authority hook data from MKCG
-     * 
-     * @param int $post_id Post ID
-     * @return array Authority hook data
-     */
-    private function get_authority_hook_data($post_id) {
-        $authority_hook = array();
-        
-        // Standard MKCG authority hook components
-        $hook_fields = array(
-            'who' => 'mkcg_authority_hook_who',
-            'what' => 'mkcg_authority_hook_what',
-            'when' => 'mkcg_authority_hook_when',
-            'where' => 'mkcg_authority_hook_where',
-            'why' => 'mkcg_authority_hook_why',
-            'how' => 'mkcg_authority_hook_how'
-        );
-        
-        foreach ($hook_fields as $key => $meta_key) {
-            $value = get_post_meta($post_id, $meta_key, true);
-            if (!empty($value)) {
-                $authority_hook[$key] = sanitize_textarea_field($value);
-            }
-        }
-        
-        // Add authority hook metadata
-        $hook_meta = array(
-            'generated_date' => get_post_meta($post_id, 'mkcg_authority_hook_generated_date', true),
-            'style' => get_post_meta($post_id, 'mkcg_authority_hook_style', true),
-            'complete' => count($authority_hook) >= 4 // At least 4 components for complete hook
-        );
-        
-        return array(
-            'authority_hook' => $authority_hook,
-            'meta' => array_filter($hook_meta)
-        );
-    }
+    // PHASE 1 REMOVED: Authority hook methods moved to Authority_Hook_Pods_Integration
     
-    /**
-     * Extract questions data from MKCG
-     * 
-     * @param int $post_id Post ID
-     * @return array Questions data
-     */
-    private function get_questions_data($post_id) {
-        $questions = array();
-        
-        // Extract up to 10 questions (standard MKCG structure)
-        for ($i = 1; $i <= 10; $i++) {
-            $question_value = get_post_meta($post_id, "mkcg_question_{$i}", true);
-            if (!empty($question_value)) {
-                $questions["question_{$i}"] = sanitize_text_field($question_value);
-            }
-        }
-        
-        // Add questions metadata
-        $questions_meta = array(
-            'count' => count($questions),
-            'generated_date' => get_post_meta($post_id, 'mkcg_questions_generated_date', true),
-            'category' => get_post_meta($post_id, 'mkcg_questions_category', true)
-        );
-        
-        return array(
-            'questions' => $questions,
-            'meta' => array_filter($questions_meta)
-        );
-    }
+    // PHASE 1 REMOVED: Questions methods moved to Questions_Pods_Integration
     
-    /**
-     * Extract offers data from MKCG
-     * 
-     * @param int $post_id Post ID
-     * @return array Offers data
-     */
-    private function get_offers_data($post_id) {
-        $offers = array();
-        
-        // Extract up to 5 offers (standard MKCG structure)
-        for ($i = 1; $i <= 5; $i++) {
-            $offer_title = get_post_meta($post_id, "mkcg_offer_{$i}_title", true);
-            $offer_description = get_post_meta($post_id, "mkcg_offer_{$i}_description", true);
-            $offer_price = get_post_meta($post_id, "mkcg_offer_{$i}_price", true);
-            
-            if (!empty($offer_title)) {
-                $offers["offer_{$i}"] = array(
-                    'title' => sanitize_text_field($offer_title),
-                    'description' => sanitize_textarea_field($offer_description),
-                    'price' => sanitize_text_field($offer_price)
-                );
-            }
-        }
-        
-        // Add offers metadata
-        $offers_meta = array(
-            'count' => count($offers),
-            'generated_date' => get_post_meta($post_id, 'mkcg_offers_generated_date', true),
-            'style' => get_post_meta($post_id, 'mkcg_offers_style', true)
-        );
-        
-        return array(
-            'offers' => $offers,
-            'meta' => array_filter($offers_meta)
-        );
-    }
+    // PHASE 1 REMOVED: Offers methods moved to component integration (future)
     
-    /**
-     * Extract social media data from MKCG
-     * 
-     * @param int $post_id Post ID
-     * @return array Social media data
-     */
-    private function get_social_media_data($post_id) {
-        $social_media = array();
-        
-        // Standard social media platforms
-        $social_platforms = array(
-            'twitter' => 'mkcg_social_twitter',
-            'linkedin' => 'mkcg_social_linkedin',
-            'instagram' => 'mkcg_social_instagram',
-            'facebook' => 'mkcg_social_facebook',
-            'youtube' => 'mkcg_social_youtube',
-            'tiktok' => 'mkcg_social_tiktok',
-            'website' => 'mkcg_social_website',
-            'podcast' => 'mkcg_social_podcast'
-        );
-        
-        foreach ($social_platforms as $platform => $meta_key) {
-            $value = get_post_meta($post_id, $meta_key, true);
-            if (!empty($value)) {
-                $social_media[$platform] = esc_url_raw($value);
-            }
-        }
-        
-        return $social_media;
-    }
+    // PHASE 1 REMOVED: Social media methods moved to Social_Pods_Integration
     
     /**
      * Get meta information about MKCG data
@@ -550,6 +295,7 @@ class GMKB_MKCG_Data_Integration {
     
     /**
      * TASK 5: Calculate content hash for change detection
+     * PHASE 1 REFACTOR: Use component integrations for hash calculation
      * 
      * @param int $post_id Post ID
      * @return string Content hash
@@ -557,19 +303,11 @@ class GMKB_MKCG_Data_Integration {
     private function calculate_content_hash($post_id) {
         $content_parts = array();
         
-        // Include all MKCG meta fields in hash calculation
-        $meta_keys = array(
-            'mkcg_topic_1', 'mkcg_topic_2', 'mkcg_topic_3', 'mkcg_topic_4', 'mkcg_topic_5',
-            'mkcg_biography_name', 'mkcg_biography_title', 'mkcg_biography_short', 'mkcg_biography_medium', 'mkcg_biography_long',
-            'mkcg_authority_hook_who', 'mkcg_authority_hook_what', 'mkcg_authority_hook_when', 'mkcg_authority_hook_how',
-            'mkcg_question_1', 'mkcg_question_2', 'mkcg_question_3', 'mkcg_question_4', 'mkcg_question_5',
-            'mkcg_offer_1_title', 'mkcg_offer_1_description', 'mkcg_offer_2_title', 'mkcg_offer_2_description'
-        );
-        
-        foreach ($meta_keys as $key) {
-            $value = get_post_meta($post_id, $key, true);
-            if (!empty($value)) {
-                $content_parts[] = $key . ':' . $value;
+        // PHASE 1 REFACTOR: Get hashes from all component integrations
+        foreach (Component_Integration_Registry::get_component_types() as $component_type) {
+            $component_hash = Component_Integration_Registry::calculate_component_hash($component_type, $post_id);
+            if (!empty($component_hash)) {
+                $content_parts[] = $component_type . ':' . $component_hash;
             }
         }
         
@@ -643,6 +381,7 @@ class GMKB_MKCG_Data_Integration {
     
     /**
      * Get available MKCG data for a post (quick check)
+     * PHASE 1 REFACTOR: Use component integrations for availability checks
      * 
      * @param int $post_id Post ID
      * @return array Availability flags
@@ -652,15 +391,15 @@ class GMKB_MKCG_Data_Integration {
             return array();
         }
         
-        return array(
-            'has_topics' => !empty(get_post_meta($post_id, 'mkcg_topic_1', true)),
-            'has_biography' => !empty(get_post_meta($post_id, 'mkcg_biography_short', true)),
-            'has_authority_hook' => !empty(get_post_meta($post_id, 'mkcg_authority_hook_who', true)),
-            'has_questions' => !empty(get_post_meta($post_id, 'mkcg_question_1', true)),
-            'has_offers' => !empty(get_post_meta($post_id, 'mkcg_offer_1_title', true)),
-            'has_social_media' => !empty(get_post_meta($post_id, 'mkcg_social_twitter', true)) || 
-                                !empty(get_post_meta($post_id, 'mkcg_social_linkedin', true))
-        );
+        // PHASE 1 REFACTOR: Use Component Integration Registry
+        $availability = array();
+        
+        foreach (Component_Integration_Registry::get_component_types() as $component_type) {
+            $component_availability = Component_Integration_Registry::get_component_availability($component_type, $post_id);
+            $availability["has_{$component_type}"] = $component_availability['has_data'];
+        }
+        
+        return $availability;
     }
     
     // =======================
@@ -709,12 +448,12 @@ class GMKB_MKCG_Data_Integration {
         // If hashes are different, assume all components with data might have changed
         if ($stored_hash !== $current_hash) {
             $component_checks = array(
-                'topics' => 'mkcg_topic_1',
-                'biography' => 'mkcg_biography_short',
-                'authority_hook' => 'mkcg_authority_hook_who',
-                'questions' => 'mkcg_question_1',
-                'offers' => 'mkcg_offer_1_title',
-                'social_media' => 'mkcg_social_twitter'
+                'topics' => 'topic_1',
+                'biography' => 'biography_short',
+                'authority_hook' => 'authority_hook_who',
+                'questions' => 'question_1',
+                'offers' => 'offer_1_title',
+                'social_media' => 'social_twitter'
             );
             
             foreach ($component_checks as $component_type => $meta_key) {

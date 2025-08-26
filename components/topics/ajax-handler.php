@@ -303,49 +303,42 @@ class GMKB_Topics_Ajax_Handler {
             $saved_count = 0;
             $save_operations = array();
             
-            // PHASE 1.2 FIX: Direct save with multiple format handling
+            // PHASE 1 FIX: Save to Pods fields only - single source of truth
             for ($i = 1; $i <= 5; $i++) {
-            $topic_key = "topic_{$i}";
-            $mkcg_key = "mkcg_topic_{$i}";
-            $topic_value = '';
-            
-            // ROOT FIX: Handle multiple input formats from different sources
-            if (isset($topics_data[$topic_key])) {
-                // Direct format: topic_1, topic_2, etc.
-            $topic_value = $topics_data[$topic_key];
-            } elseif (isset($topics_data[$mkcg_key])) {
-            // MKCG format: mkcg_topic_1, mkcg_topic_2, etc.
-                $topic_value = $topics_data[$mkcg_key];
-            } elseif (isset($topics_data[$i - 1])) {
-                // Array index format: 0, 1, 2, etc.
-                if (is_array($topics_data[$i - 1])) {
-                    $topic_value = $topics_data[$i - 1]['title'] ?? $topics_data[$i - 1];
-                } else {
-                    $topic_value = $topics_data[$i - 1];
-                }
-            } elseif (isset($topics_data["topic{$i}"])) {
-                // Concatenated format: topic1, topic2, etc.
-                $topic_value = $topics_data["topic{$i}"];
-            }
-            
-            // PHASE 1.2 FIX: Simple sanitization - no complex validation to prevent delays
-            $topic_value = is_string($topic_value) ? sanitize_text_field(trim($topic_value)) : '';
-            
-            // ROOT FIX: Save to MKCG format FIRST as primary storage
-            $result1 = update_post_meta($post_id, $mkcg_key, $topic_value);   // MKCG format (primary)
-            // Also save to direct format for backward compatibility
-            $result2 = update_post_meta($post_id, $topic_key, $topic_value);           // Direct custom field (backup)
+                $topic_key = "topic_{$i}";
+                $topic_value = '';
                 
-                $save_operations[] = array(
-                    'field' => $topic_key,
-                    'value' => $topic_value,
-                    'custom_field_result' => $result1,
-                    'mkcg_field_result' => $result2
-                );
-                
-                if (!empty($topic_value)) {
-                    $saved_count++;
+                // PHASE 1 FIX: Handle input formats for Pods fields only
+                if (isset($topics_data[$topic_key])) {
+                    // Pods format: topic_1, topic_2, etc.
+                    $topic_value = $topics_data[$topic_key];
+                } elseif (isset($topics_data[$i - 1])) {
+                    // Array index format: 0, 1, 2, etc.
+                    if (is_array($topics_data[$i - 1])) {
+                        $topic_value = $topics_data[$i - 1]['title'] ?? $topics_data[$i - 1];
+                    } else {
+                        $topic_value = $topics_data[$i - 1];
+                    }
+                } elseif (isset($topics_data["topic{$i}"])) {
+                    // Concatenated format: topic1, topic2, etc.
+                    $topic_value = $topics_data["topic{$i}"];
                 }
+                
+                // PHASE 1 FIX: Simple sanitization - no complex validation to prevent delays
+                $topic_value = is_string($topic_value) ? sanitize_text_field(trim($topic_value)) : '';
+                
+                // PHASE 1 FIX: Save to Pods format only - single source of truth
+                $result = update_post_meta($post_id, $topic_key, $topic_value);
+                    
+                    $save_operations[] = array(
+                        'field' => $topic_key,
+                        'value' => $topic_value,
+                        'pods_field_result' => $result
+                    );
+                    
+                    if (!empty($topic_value)) {
+                        $saved_count++;
+                    }
             }
             
             // PHASE 1.2 FIX: Save minimal metadata
@@ -454,21 +447,12 @@ class GMKB_Topics_Ajax_Handler {
                 $result['topics']["topic_{$i}"] = '';
             }
             
-            // ROOT FIX: Strategy 1: MKCG fields FIRST (mkcg_topic_1, etc.) - these are the primary fields
-            $mkcg_topics = $this->load_from_mkcg_fields($post_id);
-            if ($mkcg_topics['count'] > 0) {
-                $result = array_merge($result, $mkcg_topics);
-                $result['source'] = 'mkcg_fields';
-                $result['message'] = "Loaded {$mkcg_topics['count']} topics from MKCG fields";
-                return $result;
-            }
-            
-            // Strategy 2: Direct custom fields (topic_1, topic_2, etc.) - fallback only
-            $custom_topics = $this->load_from_custom_fields($post_id);
-            if ($custom_topics['count'] > 0) {
-                $result = array_merge($result, $custom_topics);
-                $result['source'] = 'custom_fields';
-                $result['message'] = "Loaded {$custom_topics['count']} topics from custom fields";
+                // PHASE 1 FIX: Pods fields ONLY - Single source of truth (topic_1, topic_2, etc.)
+            $pods_topics = $this->load_from_pods_fields($post_id);
+            if ($pods_topics['count'] > 0) {
+                $result = array_merge($result, $pods_topics);
+                $result['source'] = 'pods_fields';
+                $result['message'] = "Loaded {$pods_topics['count']} topics from Pods fields";
                 return $result;
             }
             
@@ -511,13 +495,13 @@ class GMKB_Topics_Ajax_Handler {
     }
     
     /**
-     * ROOT FIX: Load from custom fields with quality assessment
-     * Updated to use the correct Pods meta key format
+     * PHASE 1 FIX: Load from Pods fields with quality assessment
+     * Single source of truth - topic_1, topic_2, etc.
      */
-    private function load_from_custom_fields($post_id) {
+    private function load_from_pods_fields($post_id) {
         $result = array('topics' => array(), 'count' => 0, 'quality' => 'empty');
         
-        // ROOT FIX: Based on Pods configuration, the correct format is topic_1, topic_2, etc.
+        // PHASE 1 FIX: Load from Pods fields only - topic_1, topic_2, etc.
         for ($i = 1; $i <= 5; $i++) {
             $topic_key = "topic_{$i}";
             $topic_value = get_post_meta($post_id, $topic_key, true);
@@ -529,7 +513,7 @@ class GMKB_Topics_Ajax_Handler {
                     $result['count']++;
                     
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("ROOT FIX: Found {$topic_key} = {$cleaned_value} for post {$post_id}");
+                    error_log("PHASE 1 FIX: Found {$topic_key} = {$cleaned_value} for post {$post_id}");
                     }
                 }
             }
@@ -543,43 +527,14 @@ class GMKB_Topics_Ajax_Handler {
             $result['quality'] = $this->assess_topics_quality($result['topics']);
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ROOT FIX: Loaded {$result['count']} topics from custom fields for post {$post_id}");
+                error_log("PHASE 1 FIX: Loaded {$result['count']} topics from Pods fields for post {$post_id}");
             }
         }
         
         return $result;
     }
     
-    /**
-     * ROOT FIX: Load from MKCG fields with quality assessment
-     */
-    private function load_from_mkcg_fields($post_id) {
-        $result = array('topics' => array(), 'count' => 0, 'quality' => 'empty');
-        
-        for ($i = 1; $i <= 5; $i++) {
-            $topic_key = "topic_{$i}";
-            $mkcg_key = "mkcg_{$topic_key}";
-            $topic_value = get_post_meta($post_id, $mkcg_key, true);
-            
-            if (!empty($topic_value) && is_string($topic_value)) {
-                $cleaned_value = sanitize_text_field(trim($topic_value));
-                if (strlen($cleaned_value) > 0) {
-                    $result['topics'][$topic_key] = $cleaned_value;
-                    $result['count']++;
-                }
-            }
-            
-            if (empty($result['topics'][$topic_key])) {
-                $result['topics'][$topic_key] = '';
-            }
-        }
-        
-        if ($result['count'] > 0) {
-            $result['quality'] = $this->assess_topics_quality($result['topics']);
-        }
-        
-        return $result;
-    }
+    // PHASE 1 REMOVED: MKCG fields method eliminated - Pods fields only
     
     /**
      * ROOT FIX: Load from JSON data with quality assessment
@@ -706,38 +661,12 @@ class GMKB_Topics_Ajax_Handler {
             return [];
         }
 
-        // ROOT FIX: Try MKCG fields FIRST (mkcg_topic_1, mkcg_topic_2, etc.) - these are the primary fields
+        // PHASE 1 FIX: Load from Pods fields only (topic_1, topic_2, etc.) - single source of truth
         $topics_array = [];
-        for ($i = 1; $i <= 5; $i++) {
-            $topic_value = get_post_meta($data_source_id, "mkcg_topic_{$i}", true);
-            if (!empty($topic_value) && is_string($topic_value)) {
-                // ROOT FIX: Ensure all whitespace is properly trimmed
-                $cleaned_value = trim(sanitize_text_field(trim($topic_value)));
-                if (strlen($cleaned_value) > 0) {
-                    $topics_array[] = [
-                        'title' => $cleaned_value,
-                        'description' => ''
-                    ];
-                    
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("ROOT FIX: Found mkcg_topic_{$i}: {$topic_value}");
-                    }
-                }
-            }
-        }
-        
-        if (!empty($topics_array)) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ROOT FIX: Successfully loaded " . count($topics_array) . " topics from MKCG fields for post {$data_source_id}");
-            }
-            return $topics_array;
-        }
-        
-        // Fallback: Try custom fields (topic_1, topic_2, etc.) if no MKCG fields found
         for ($i = 1; $i <= 5; $i++) {
             $topic_value = get_post_meta($data_source_id, "topic_{$i}", true);
             if (!empty($topic_value) && is_string($topic_value)) {
-                // ROOT FIX: Ensure all whitespace is properly trimmed
+                // PHASE 1 FIX: Load from Pods fields with proper sanitization
                 $cleaned_value = trim(sanitize_text_field(trim($topic_value)));
                 if (strlen($cleaned_value) > 0) {
                     $topics_array[] = [
@@ -746,7 +675,7 @@ class GMKB_Topics_Ajax_Handler {
                     ];
                     
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("ROOT FIX: Found topic_{$i}: {$topic_value} (fallback)");
+                        error_log("PHASE 1 FIX: Found topic_{$i}: {$topic_value} from Pods fields");
                     }
                 }
             }
@@ -754,7 +683,7 @@ class GMKB_Topics_Ajax_Handler {
         
         if (!empty($topics_array)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ROOT FIX: Successfully loaded " . count($topics_array) . " topics from custom fields for post {$data_source_id}");
+                error_log("PHASE 1 FIX: Successfully loaded " . count($topics_array) . " topics from Pods fields for post {$data_source_id}");
             }
             return $topics_array;
         }
