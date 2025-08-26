@@ -732,17 +732,21 @@ class DesignPanel {
         inputs.forEach(input => {
             const propName = input.dataset.property;
             if (props.hasOwnProperty(propName)) {
-                input.value = props[propName];
-                console.log(`📝 ROOT FIX: Bound property ${propName} = ${props[propName]}`);
+                // ROOT FIX: Trim whitespace from property values before binding
+                const rawValue = props[propName];
+                const trimmedValue = (typeof rawValue === 'string') ? rawValue.trim() : rawValue;
+                input.value = trimmedValue;
+                console.log(`📝 ROOT FIX: Bound property ${propName} = ${trimmedValue}`);
             }
 
             input.addEventListener('input', () => {
                 const currentComponent = this.getComponent(this.currentComponentId);
                 if (currentComponent) {
                     const newProps = { ...(currentComponent.props || currentComponent.data || {}) };
-                    newProps[propName] = input.value;
+                    // ROOT FIX: Trim input values before saving
+                    newProps[propName] = input.value.trim();
                     debouncedUpdate(this.currentComponentId, newProps);
-                    console.log(`🔄 ROOT FIX: Updated ${propName} = ${input.value}`);
+                    console.log(`🔄 ROOT FIX: Updated ${propName} = ${input.value.trim()}`);
                     
                     // ROOT FIX: Immediate topics sync for topics-related properties
                     if (currentComponent.type === 'topics' && 

@@ -60,7 +60,7 @@ $topics_to_display = $has_topics ? $loaded_topics : [];
         <?php if ($has_topics): ?>
             <?php foreach ($topics_to_display as $index => $topic): ?>
                 <?php 
-                $topic_title = is_array($topic) && isset($topic['title']) ? $topic['title'] : $topic;
+                $topic_title = is_array($topic) && isset($topic['title']) ? trim($topic['title']) : trim($topic);
                 ?>
                 <div class="topic-item" data-topic-index="<?php echo esc_attr($index); ?>" data-topic-number="<?php echo esc_attr($index + 1); ?>">
                     <div class="topic-content">

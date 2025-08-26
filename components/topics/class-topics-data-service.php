@@ -164,8 +164,8 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             foreach ($component_data['topics'] as $index => $topic) {
                 if (!empty($topic['title'])) {
                     $topics[] = array(
-                        'title' => sanitize_text_field(trim($topic['title'])),
-                        'description' => sanitize_text_field(trim($topic['description'] ?? '')),
+                        'title' => trim(sanitize_text_field(trim($topic['title']))),
+                        'description' => trim(sanitize_text_field(trim($topic['description'] ?? ''))),
                         'index' => $index,
                         'meta_key' => 'component_data',
                         'source' => 'component_data_scalable'
@@ -184,7 +184,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
                 
                 if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
                     $topics[] = array(
-                        'title' => sanitize_text_field(trim($topic_value)),
+                        'title' => trim(sanitize_text_field(trim($topic_value))),
                         'description' => '',
                         'index' => $i - 1,
                         'meta_key' => "mkcg_topic_{$i}",
@@ -208,7 +208,7 @@ class Topics_Data_Service extends Base_Component_Data_Service {
                 
                 if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
                     $topics[] = array(
-                        'title' => sanitize_text_field(trim($topic_value)),
+                        'title' => trim(sanitize_text_field(trim($topic_value))),
                         'description' => '',
                         'index' => $i - 1,
                         'meta_key' => "topic_{$i}",
@@ -231,8 +231,8 @@ class Topics_Data_Service extends Base_Component_Data_Service {
                     foreach ($decoded_topics as $index => $topic_data) {
                         if (!empty($topic_data['title'])) {
                             $topics[] = array(
-                                'title' => sanitize_text_field(trim($topic_data['title'])),
-                                'description' => sanitize_text_field(trim($topic_data['description'] ?? '')),
+                                'title' => trim(sanitize_text_field(trim($topic_data['title']))),
+                                'description' => trim(sanitize_text_field(trim($topic_data['description'] ?? ''))),
                                 'index' => $index,
                                 'meta_key' => 'topics_data',
                                 'source' => 'json_data_legacy'
@@ -298,11 +298,11 @@ class Topics_Data_Service extends Base_Component_Data_Service {
         
         // ROOT FIX: Save to MKCG fields format as primary
         for ($i = 1; $i <= 5; $i++) {
-            $topic_value = isset($topics[$i - 1]['title']) ? $topics[$i - 1]['title'] : '';
+            $topic_value = isset($topics[$i - 1]['title']) ? trim($topics[$i - 1]['title']) : '';
             // Save to MKCG format first (primary)
-            $result1 = update_post_meta($post_id, "mkcg_topic_{$i}", sanitize_text_field($topic_value));
+            $result1 = update_post_meta($post_id, "mkcg_topic_{$i}", sanitize_text_field(trim($topic_value)));
             // Also save to custom format for backward compatibility
-            $result2 = update_post_meta($post_id, "topic_{$i}", sanitize_text_field($topic_value));
+            $result2 = update_post_meta($post_id, "topic_{$i}", sanitize_text_field(trim($topic_value)));
             if ($result1 === false && $result2 === false) {
                 $legacy_save = false;
             }
@@ -350,8 +350,8 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             }
             
             $validated_topics[] = array(
-                'title' => sanitize_text_field($topic['title']),
-                'description' => sanitize_text_field($topic['description'] ?? ''),
+                'title' => trim(sanitize_text_field($topic['title'])),
+                'description' => trim(sanitize_text_field($topic['description'] ?? '')),
                 'index' => intval($index),
                 'source' => sanitize_text_field($topic['source'] ?? 'validated')
             );

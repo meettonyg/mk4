@@ -47,6 +47,14 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 // Admin tools initialization
 require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
 
+// ROOT FIX: Topics data cleanup script for removing whitespace
+if (is_admin()) {
+    $cleanup_file = GUESTIFY_PLUGIN_DIR . 'admin/topics-data-cleanup.php';
+    if (file_exists($cleanup_file)) {
+        require_once $cleanup_file;
+    }
+}
+
 // SCALABLE ARCHITECTURE: Test suite only loaded on demand via validation script
 // ROOT FIX: Removed automatic test script loading to prevent conflicts with enqueue.php
 // === GEMINI FIX END ===

@@ -99,7 +99,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
                             <textarea class="topics-sidebar__topic-input" 
                                       data-property="topic_<?php echo $index + 1; ?>"
                                       placeholder="<?php echo esc_attr($smart_placeholders[$index + 1] ?? 'Enter your speaking topic...'); ?>" 
-                                      aria-label="Topic <?php echo $index + 1; ?> input"><?php echo esc_textarea($topic['title']); ?></textarea>
+                                      aria-label="Topic <?php echo $index + 1; ?> input"><?php echo esc_textarea(trim($topic['title'])); ?></textarea>
                         </div>
                         <div class="topics-sidebar__input-feedback">
                             <?php 

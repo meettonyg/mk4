@@ -112,7 +112,9 @@ window.updateComponentProps = function(elementOrId, props) {
         // Update data attributes for component properties
         Object.keys(props).forEach(key => {
             if (key && props[key] !== undefined && props[key] !== null) {
-                const value = String(props[key]);
+                // ROOT FIX: Trim whitespace from values to prevent display issues
+                const rawValue = String(props[key]);
+                const value = rawValue.trim();
                 element.setAttribute(`data-${key}`, value);
                 console.log(`📝 ROOT FIX: Set data-${key} = "${value}"`);
             }

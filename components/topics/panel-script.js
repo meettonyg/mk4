@@ -103,6 +103,15 @@
     // ROOT FIX: CRITICAL - Global flag to prevent multiple setups
     if (window.TopicsTemplateInitialized) {
         console.log('⚠️ TEMPLATE TOPICS: Already initialized globally, skipping duplicate initialization');
+        
+        // ROOT FIX: Even if already initialized, ensure sync handlers are attached to new elements
+        setTimeout(() => {
+            const topicTitles = document.querySelectorAll('.topic-title');
+            if (topicTitles.length > 0) {
+                console.log('🔄 TEMPLATE TOPICS: Re-attaching sync to new topic elements');
+                initializePreviewSync();
+            }
+        }, 500);
         return;
     }
     window.TopicsTemplateInitialized = true;
@@ -1299,6 +1308,16 @@
     function initializePreviewSync() {
         console.log('🎯 ROOT FIX: Comprehensive contenteditable initialization...');
         
+        // ROOT FIX: Prevent duplicate initialization with timestamp check
+        const lastInitTime = window.lastPreviewSyncInit || 0;
+        const timeSinceLastInit = Date.now() - lastInitTime;
+        
+        if (timeSinceLastInit < 1000) {
+            console.log('⚠️ TEMPLATE TOPICS: Preview sync recently initialized, skipping to prevent duplicates');
+            return;
+        }
+        window.lastPreviewSyncInit = Date.now();
+        
         // ROOT FIX: More aggressive selector strategy to find topic elements
         function setupContentEditableElements() {
             // ROOT FIX: Try multiple selectors to find topic title elements
@@ -1487,14 +1506,18 @@
                 };
                 
                 // ROOT FIX: Track event listeners on the element itself
-                if (!element.hasAttribute('data-events-attached')) {
-                    // Attach event listeners directly without cloning
-                    element.addEventListener('focus', focusHandler, { passive: true });
-                    element.addEventListener('blur', blurHandler, { passive: true });
-                    element.addEventListener('input', inputHandler, { passive: true });
-                    element.addEventListener('keydown', keydownHandler);
-                    element.addEventListener('mouseenter', mouseenterHandler, { passive: true });
-                    element.addEventListener('mouseleave', mouseleaveHandler, { passive: true });
+                if (element.hasAttribute('data-events-attached')) {
+                    console.log(`⚠️ Topic ${topicNumber} already has event listeners, skipping to prevent duplicates`);
+                    continue; // Skip this element, it already has event handlers
+                }
+                
+                // Attach event listeners directly
+                element.addEventListener('focus', focusHandler, { passive: true });
+                element.addEventListener('blur', blurHandler, { passive: true });
+                element.addEventListener('input', inputHandler, { passive: true });
+                element.addEventListener('keydown', keydownHandler);
+                element.addEventListener('mouseenter', mouseenterHandler, { passive: true });
+                element.addEventListener('mouseleave', mouseleaveHandler, { passive: true });
                     
                     // Mark element as having event listeners attached
                     element.setAttribute('data-events-attached', 'true');
@@ -1563,6 +1586,29 @@
      * ROOT FIX: Listen for auto-save events from preview and update sidebar accordingly
      */
     function setupAutoSaveListener() {
+        // ROOT FIX: Prevent duplicate listener setup
+        if (window.topicsAutoSaveListenerSetup) {
+            console.log('⚠️ TEMPLATE TOPICS: Auto-save listener already setup, skipping');
+            return;
+        }
+        window.topicsAutoSaveListenerSetup = true;
+        
+        // ROOT FIX: Debounced save function to prevent multiple saves
+        let saveTimeout = null;
+        const debouncedSave = function(topicsData) {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveTopicsToState(topicsData).then((success) => {
+                    if (success) {
+                        console.log('✅ AUTO-SAVE: Topic changes saved successfully');
+                    } else {
+                        console.error('❌ AUTO-SAVE: Failed to save topic changes');
+                    }
+                }).catch(error => {
+                    console.error('❌ AUTO-SAVE: Error saving topic changes:', error);
+                });
+            }, 1000); // 1 second debounce
+        };
         document.addEventListener('topicsAutoSaved', function(event) {
             console.log('🔄 SIDEBAR: Received auto-save event from preview:', event.detail);
             
@@ -1597,6 +1643,13 @@
         
         // ROOT FIX: Listen for individual topic changes from contenteditable elements
         document.addEventListener('topicChanged', function(event) {
+            // ROOT FIX: Check if we've already processed this event to prevent duplicates
+            if (event.processedTimestamp && (Date.now() - event.processedTimestamp) < 500) {
+                console.log('⚠️ DUPLICATE EVENT: Skipping already processed topic change');
+                return;
+            }
+            event.processedTimestamp = Date.now();
+            
             console.log('📝 PREVIEW EDIT: Topic changed via contenteditable:', event.detail);
             
             const { topicNumber, newValue, oldValue } = event.detail;
@@ -1625,26 +1678,9 @@
                     }
                 });
                 
-                // Save to WordPress if we have valid data
+                // Save to WordPress using debounced save
                 if (topicsData.length > 0) {
-                    saveTopicsToState(topicsData).then((success) => {
-                        if (success) {
-                            console.log('✅ AUTO-SAVE: Topic changes saved successfully');
-                            
-                            // Show brief success indicator
-                            const element = event.detail.element;
-                            if (element) {
-                                element.style.borderColor = '#28a745';
-                                setTimeout(() => {
-                                    element.style.borderColor = '';
-                                }, 800);
-                            }
-                        } else {
-                            console.error('❌ AUTO-SAVE: Failed to save topic changes');
-                        }
-                    }).catch(error => {
-                        console.error('❌ AUTO-SAVE: Error saving topic changes:', error);
-                    });
+                    debouncedSave(topicsData);
                 }
             }
         });

@@ -711,13 +711,17 @@ class GMKB_Topics_Ajax_Handler {
         for ($i = 1; $i <= 5; $i++) {
             $topic_value = get_post_meta($data_source_id, "mkcg_topic_{$i}", true);
             if (!empty($topic_value) && is_string($topic_value)) {
-                $topics_array[] = [
-                    'title' => sanitize_text_field(trim($topic_value)),
-                    'description' => ''
-                ];
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("ROOT FIX: Found mkcg_topic_{$i}: {$topic_value}");
+                // ROOT FIX: Ensure all whitespace is properly trimmed
+                $cleaned_value = trim(sanitize_text_field(trim($topic_value)));
+                if (strlen($cleaned_value) > 0) {
+                    $topics_array[] = [
+                        'title' => $cleaned_value,
+                        'description' => ''
+                    ];
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ROOT FIX: Found mkcg_topic_{$i}: {$topic_value}");
+                    }
                 }
             }
         }
@@ -733,13 +737,17 @@ class GMKB_Topics_Ajax_Handler {
         for ($i = 1; $i <= 5; $i++) {
             $topic_value = get_post_meta($data_source_id, "topic_{$i}", true);
             if (!empty($topic_value) && is_string($topic_value)) {
-                $topics_array[] = [
-                    'title' => sanitize_text_field(trim($topic_value)),
-                    'description' => ''
-                ];
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("ROOT FIX: Found topic_{$i}: {$topic_value} (fallback)");
+                // ROOT FIX: Ensure all whitespace is properly trimmed
+                $cleaned_value = trim(sanitize_text_field(trim($topic_value)));
+                if (strlen($cleaned_value) > 0) {
+                    $topics_array[] = [
+                        'title' => $cleaned_value,
+                        'description' => ''
+                    ];
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ROOT FIX: Found topic_{$i}: {$topic_value} (fallback)");
+                    }
                 }
             }
         }
