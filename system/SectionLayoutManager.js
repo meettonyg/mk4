@@ -30,6 +30,11 @@ class SectionLayoutManager {
             this.onCoreSystemsReady();
         });
         
+        // ROOT FIX: Also try immediate initialization if systems are already ready
+        if (window.enhancedStateManager && typeof window.enhancedStateManager.dispatch === 'function') {
+            this.onCoreSystemsReady();
+        }
+        
         // Listen for component events
         document.addEventListener('gmkb:component-added', (event) => {
             this.onComponentAdded(event.detail);
@@ -56,12 +61,17 @@ class SectionLayoutManager {
      * Following checklist: Centralized State, Dependency-Awareness
      */
     onCoreSystemsReady() {
-        if (window.enhancedStateManager) {
-            this.stateManager = window.enhancedStateManager;
-            this.loadSectionsFromState();
-        }
+        // ROOT FIX: Ensure state manager is available before proceeding
+        this.stateManager = window.enhancedStateManager;
         
-        this.logger.info('🎯 PHASE 3: Core systems ready - sections loaded');
+        if (this.stateManager && typeof this.stateManager.dispatch === 'function') {
+            this.loadSectionsFromState();
+            this.logger.info('🎯 PHASE 3: Core systems ready - sections loaded with state manager');
+        } else {
+            this.logger.error('❌ PHASE 3: State manager not available or missing dispatch method');
+            // Try to initialize without state manager for now
+            this.logger.info('🎯 PHASE 3: Core systems ready - sections initialized without state manager');
+        }
     }
     
     /**
@@ -453,14 +463,25 @@ class SectionLayoutManager {
      * Following checklist: Centralized State, No Direct Manipulation
      */
     updateSectionsInState() {
-        if (!this.stateManager) return;
+        if (!this.stateManager || typeof this.stateManager.dispatch !== 'function') {
+            this.logger.warn('⚠️ PHASE 3: Cannot update sections in state - state manager not available');
+            return;
+        }
         
         const sectionsArray = this.sectionOrder.map(sectionId => this.sections.get(sectionId));
         
-        this.stateManager.dispatch({
-            type: 'UPDATE_SECTIONS',
-            payload: sectionsArray
-        });
+        try {
+            this.stateManager.dispatch({
+                type: 'UPDATE_SECTIONS',
+                payload: sectionsArray
+            });
+            
+            this.logger.debug('💾 PHASE 3: Updated sections in state', {
+                sectionCount: sectionsArray.length
+            });
+        } catch (error) {
+            this.logger.error('❌ PHASE 3: Error updating sections in state', error);
+        }
     }
     
     /**

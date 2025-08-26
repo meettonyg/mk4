@@ -24,6 +24,7 @@
             this.state = {
                 layout: [],
                 components: {},
+                sections: [], // PHASE 3: Section Layer Support
                 globalSettings: {
                     layout: 'vertical' // ROOT FIX: Default to vertical layout from start
                 },
@@ -109,6 +110,7 @@
                     this.state = initialState || {
                         layout: [],
                         components: {},
+                        sections: [], // PHASE 3: Section Layer Support
                         globalSettings: {
                             layout: 'vertical' // ROOT FIX: Ensure empty state defaults to vertical layout
                         },
@@ -284,6 +286,7 @@
                 return {
                     layout: [],
                     components: {},
+                    sections: [], // PHASE 3: Section Layer Support
                     globalSettings: {
                         layout: 'vertical'
                     },
@@ -395,6 +398,7 @@
                      this.logger.info('STATE', '💾 WordPress data found, but no `saved_components` array. Starting with a clean state.');
                      return {
                         components: {},
+                        sections: [], // PHASE 3: Section Layer Support
                         globalSettings: {
                             layout: 'vertical'
                         },
@@ -421,6 +425,7 @@
             this.logger.info('STATE', '💾 No valid data source found. Starting with a completely empty state.');
             return { 
                 components: {}, 
+                sections: [], // PHASE 3: Section Layer Support
                 globalSettings: {
                     layout: 'vertical'
                 }, 
@@ -550,6 +555,9 @@
                         ...transaction.payload
                     };
                     break;
+                case 'UPDATE_SECTIONS':
+                    this.state.sections = transaction.payload;
+                    break;
             }
         }
 
@@ -625,6 +633,25 @@
             this.applyTransaction({
                 type: 'UPDATE_GLOBAL_SETTINGS',
                 payload: newSettings
+            });
+        }
+
+        /**
+         * Generic dispatch method for Phase 3 systems
+         * Following checklist: Centralized State, Schema Compliance
+         */
+        dispatch(action) {
+            this.applyTransaction(action);
+        }
+
+        /**
+         * Update sections in state
+         * Following checklist: Phase 3 Section Layer Support
+         */
+        updateSections(sections) {
+            this.applyTransaction({
+                type: 'UPDATE_SECTIONS',
+                payload: sections
             });
         }
 
@@ -781,18 +808,20 @@
         validateAndNormalizeState(state) {
             if (!state || typeof state !== 'object') {
                 return {
-                    layout: [],
-                    components: {},
-                    globalSettings: {
-                        layout: 'vertical' // ROOT FIX: Ensure normalized state defaults to vertical layout
-                    },
+                layout: [],
+                components: {},
+                sections: [], // PHASE 3: Section Layer Support
+                globalSettings: {
+                    layout: 'vertical' // ROOT FIX: Ensure normalized state defaults to vertical layout
+                },
                     version: this.SAVE_VERSION
-                };
+            };
             }
             
             const normalized = {
                 layout: Array.isArray(state.layout) ? state.layout : [],
                 components: state.components && typeof state.components === 'object' ? state.components : {},
+                sections: Array.isArray(state.sections) ? state.sections : [], // PHASE 3: Section Layer Support
                 globalSettings: state.globalSettings && typeof state.globalSettings === 'object' ? state.globalSettings : {},
                 version: state.version || this.SAVE_VERSION
             };
