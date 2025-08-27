@@ -606,7 +606,11 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 12f. Element Editor - Works with design panel
+    // ROOT FIX: DISABLED LEGACY UI CONTROL SYSTEMS
+    // Only component-controls-manager.js should handle all component controls
+    
+    // DISABLED: Element Editor (creates duplicate/legacy controls)
+    /*
     if (!wp_script_is('gmkb-element-editor', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-element-editor',
@@ -616,6 +620,7 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
     
     // 12g. State History - ROOT FIX: For undo/redo functionality
     if (!wp_script_is('gmkb-state-history', 'enqueued')) {
@@ -925,8 +930,11 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ROOT FIX: PHASE 2B - Drag & Drop Integration (Uses SortableJS)
-    // Sortable integration (depends on SortableJS from CDN)
+    // ROOT FIX: DISABLED ALL CONFLICTING DRAG SYSTEMS
+    // ONLY section-component-integration.js handles drag and drop now
+    
+    // DISABLED: Sortable integration (conflicts with section integration) 
+    /*
     if (!wp_script_is('gmkb-sortable-integration', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-sortable-integration',
@@ -936,11 +944,17 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
     
     // ROOT CAUSE FIX: Sortable circuit breaker removed - GMKB core system now loads properly
     // SortableJS integration will work correctly once GMKB namespace is available
     
-    // Drag and drop manager (coordinates with sortable integration)
+    // ROOT FIX: DISABLED CONFLICTING DRAG SYSTEMS
+    // These systems conflict with section-component-integration.js
+    // Only section-component-integration.js handles drag and drop now
+    
+    // DISABLED: Drag and drop manager (conflicts with section integration)
+    /*
     if (!wp_script_is('gmkb-drag-drop-manager', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-drag-drop-manager',
@@ -950,8 +964,10 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
     
-    // Vanilla JS drag and drop (NO jQuery)
+    // DISABLED: Vanilla JS drag and drop (conflicts with section integration)
+    /*
     if (!wp_script_is('gmkb-dnd', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-dnd',
@@ -961,6 +977,7 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
     
     // ROOT FIX: PHASE 3 - Main Application (simplified dependencies) - ROOT FIX: Added duplicate prevention
     if (!wp_script_is('gmkb-main-script', 'enqueued')) {
@@ -999,14 +1016,15 @@ function gmkb_enqueue_assets() {
                 'gmkb-toolbar-interactions',
                 'gmkb-ui-init-coordinator',
                 'gmkb-design-panel',
-                'gmkb-element-editor',
+                // 'gmkb-element-editor', // DISABLED: Legacy control system
                 'gmkb-state-history',
                 'gmkb-state-history-initializer',
                 'gmkb-history-service',
                 // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure
-                'gmkb-sortable-integration',
-                'gmkb-drag-drop-manager',
-                'gmkb-dnd'
+                // DISABLED: All conflicting drag systems - only section-component-integration handles drag/drop
+                // 'gmkb-sortable-integration', // DISABLED: Conflicts with section integration
+                // 'gmkb-drag-drop-manager', // DISABLED: Conflicts with section integration
+                // 'gmkb-dnd' // DISABLED: Conflicts with section integration
             ),
             $version,
             true

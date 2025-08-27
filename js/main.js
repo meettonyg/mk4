@@ -410,11 +410,16 @@ function setupCoreUI() {
             window.structuredLogger.info('MAIN', 'Form controls initialized');
         }
         
-        // Initialize element controls
+        // ROOT FIX: DISABLED LEGACY CONTROL SYSTEMS
+        // Only component-controls-manager.js should create controls
+        
+        // DISABLED: Legacy element controls (creates duplicate controls)
+        /*
         if (window.elementControls) {
             window.elementControls.setup();
             window.structuredLogger.info('MAIN', 'Element controls initialized');
         }
+        */
         
         // Initialize modals
         setupModals();

@@ -674,36 +674,61 @@ if (document.readyState === 'loading') {
 }
 */
 
-// ROOT FIX: MutationObserver to catch duplicate controls being added
+// ROOT FIX: Enhanced duplicate controls watcher with better detection
 window.setupDuplicateControlsWatcher = function() {
-    console.log('👀 Setting up duplicate controls watcher...');
+    if (window.duplicateControlsWatcherActive) {
+        return window.duplicateControlsObserver;
+    }
+    
+    console.log('👀 Setting up enhanced duplicate controls watcher...');
     
     const observer = new MutationObserver((mutations) => {
         mutations.forEach(mutation => {
             if (mutation.type === 'childList') {
                 mutation.addedNodes.forEach(node => {
                     if (node.nodeType === Node.ELEMENT_NODE) {
-                        // Check if it's a control element being added
-                        if (node.classList && (
+                        // ROOT FIX: More precise control detection
+                        const isControlElement = node.classList && (
                             node.classList.contains('element-controls') ||
+                            node.classList.contains('component-controls') ||
                             node.classList.contains('control-btn') ||
-                            node.querySelector('.element-controls') ||
-                            node.querySelector('.control-btn')
-                        )) {
-                            console.warn('🚨 DUPLICATE CONTROL DETECTED:', {
-                                element: node,
-                                className: node.className,
-                                parent: mutation.target,
-                                stack: new Error().stack
-                            });
-                            
-                            // Check if this component already has dynamic controls
+                            node.querySelector('.element-controls, .component-controls, .control-btn')
+                        );
+                        
+                        if (isControlElement) {
                             const component = node.closest('[data-component-id]');
                             if (component) {
-                                const dynamicControls = component.querySelector('.component-controls--dynamic');
-                                if (dynamicControls && node !== dynamicControls && !dynamicControls.contains(node)) {
-                                    console.error('🚫 REMOVING DUPLICATE CONTROLS - component already has dynamic controls');
-                                    node.remove();
+                                const componentId = component.getAttribute('data-component-id');
+                                const existingControls = component.querySelectorAll('.component-controls, .element-controls');
+                                
+                                if (existingControls.length > 1) {
+                                    console.warn('🚨 DUPLICATE CONTROL DETECTED:', {
+                                        componentId: componentId,
+                                        element: node,
+                                        className: node.className,
+                                        existingCount: existingControls.length,
+                                        parent: mutation.target,
+                                        stack: new Error().stack
+                                    });
+                                    
+                                    // ROOT FIX: Keep only the most recent dynamic controls
+                                    const dynamicControls = component.querySelector('.component-controls--dynamic');
+                                    const legacyControls = component.querySelectorAll('.element-controls, .component-controls:not(.component-controls--dynamic)');
+                                    
+                                    if (dynamicControls && legacyControls.length > 0) {
+                                        console.log('🧹 Removing legacy controls, keeping dynamic controls for:', componentId);
+                                        legacyControls.forEach(control => {
+                                            if (control !== dynamicControls) {
+                                                control.remove();
+                                            }
+                                        });
+                                    } else if (!dynamicControls && existingControls.length > 1) {
+                                        // Keep only the first control if no dynamic controls exist
+                                        console.log('🧹 Removing duplicate controls, keeping first control for:', componentId);
+                                        for (let i = 1; i < existingControls.length; i++) {
+                                            existingControls[i].remove();
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -719,16 +744,23 @@ window.setupDuplicateControlsWatcher = function() {
         subtree: true
     });
     
-    console.log('✅ Duplicate controls watcher active');
+    window.duplicateControlsWatcherActive = true;
+    window.duplicateControlsObserver = observer;
+    
+    console.log('✅ Enhanced duplicate controls watcher active');
     return observer;
 };
 
-// Auto-setup watcher when DOM is ready
+// ROOT FIX: Auto-setup watcher with delay to avoid false positives during initialization
 if (document.readyState !== 'loading') {
-    window.setupDuplicateControlsWatcher();
+    setTimeout(() => {
+        window.setupDuplicateControlsWatcher();
+    }, 2000); // Wait 2 seconds for initial components to load
 } else {
     document.addEventListener('DOMContentLoaded', () => {
-        window.setupDuplicateControlsWatcher();
+        setTimeout(() => {
+            window.setupDuplicateControlsWatcher();
+        }, 2000); // Wait 2 seconds after DOM ready
     });
 }
 

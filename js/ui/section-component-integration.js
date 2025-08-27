@@ -56,10 +56,10 @@ class SectionComponentIntegration {
     }
     
     /**
-     * Setup drop zones for sections
+     * Setup drop zones for sections and main preview area
      */
     setupSectionDropZones() {
-        // Use event delegation for section drop zones
+        // Use event delegation for section drop zones and main preview
         document.addEventListener('dragover', (e) => {
             // Robust event target validation - prevent closest() errors
             if (!e || !e.target) return;
@@ -68,6 +68,7 @@ class SectionComponentIntegration {
             
             const section = e.target.closest('.gmkb-section');
             const column = e.target.closest('.gmkb-section__column, .gmkb-section__content');
+            const previewContainer = e.target.closest('#media-kit-preview, #saved-components-container, .preview-container');
             
             if (section && column) {
                 e.preventDefault();
@@ -75,6 +76,13 @@ class SectionComponentIntegration {
                 
                 // Add visual feedback
                 column.classList.add('gmkb-section__column--drag-over');
+            } else if (previewContainer && !section) {
+                // ROOT FIX: Also handle drops on main preview container
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                // Add visual feedback to main container
+                previewContainer.classList.add('gmkb-preview--drag-over');
             }
         });
         
@@ -85,8 +93,13 @@ class SectionComponentIntegration {
             if (!e.target.closest || typeof e.target.closest !== 'function') return;
             
             const column = e.target.closest('.gmkb-section__column, .gmkb-section__content');
+            const previewContainer = e.target.closest('#media-kit-preview, #saved-components-container, .preview-container');
+            
             if (column) {
                 column.classList.remove('gmkb-section__column--drag-over');
+            } else if (previewContainer) {
+                // ROOT FIX: Remove drag-over state from main container
+                previewContainer.classList.remove('gmkb-preview--drag-over');
             }
         });
         
@@ -98,6 +111,7 @@ class SectionComponentIntegration {
             
             const section = e.target.closest('.gmkb-section');
             const column = e.target.closest('.gmkb-section__column, .gmkb-section__content');
+            const previewContainer = e.target.closest('#media-kit-preview, #saved-components-container, .preview-container');
             
             if (section && column) {
                 e.preventDefault();
@@ -122,15 +136,24 @@ class SectionComponentIntegration {
                 
                 // Handle the drop
                 this.handleComponentDropInSection(sectionId, columnNumber, e);
+            } else if (previewContainer && !section) {
+                // ROOT FIX: Handle drops on main preview container (outside sections)
+                e.preventDefault();
+                previewContainer.classList.remove('gmkb-preview--drag-over');
+                
+                this.logger.info('🎯 Drop detected in main preview container');
+                
+                // Handle the drop in main container
+                this.handleComponentDropInMainContainer(e);
             }
         });
         
-        this.logger.info('📦 Drop zones configured for sections');
+        this.logger.info('📦 Drop zones configured for sections and main preview');
     }
     
     /**
      * Setup component dragging
-     * ROOT FIX: Enhanced to support dragging from main container to sections
+     * ROOT FIX: Enhanced to support dragging from main container to sections and component library
      */
     setupComponentDragging() {
         // ROOT FIX: Make ALL components draggable, including those in saved-components-container
@@ -144,24 +167,40 @@ class SectionComponentIntegration {
             });
         };
         
+        // ROOT FIX: Also make component library items draggable
+        const makeComponentLibraryDraggable = () => {
+            const libraryItems = document.querySelectorAll('.component-card, .component-item');
+            libraryItems.forEach(item => {
+                if (!item.hasAttribute('draggable')) {
+                    item.setAttribute('draggable', 'true');
+                    item.style.cursor = 'move';
+                }
+            });
+        };
+        
         // Initial setup
         makeComponentsDraggable();
+        makeComponentLibraryDraggable();
         
         // Watch for new components via mutation observer
         const observer = new MutationObserver(() => {
             makeComponentsDraggable();
+            makeComponentLibraryDraggable();
         });
         
         const containers = [
             document.getElementById('saved-components-container'),
-            document.getElementById('gmkb-sections-container')
+            document.getElementById('gmkb-sections-container'),
+            document.getElementById('component-grid'), // ROOT FIX: Watch component library too
+            document.querySelector('.component-library'), // Alternative component library selector
+            document.getElementById('component-library-overlay') // Modal content
         ].filter(Boolean);
         
         containers.forEach(container => {
             observer.observe(container, { childList: true, subtree: true });
         });
         
-        // ROOT CAUSE FIX: Component drag start - properly set data for ALL components
+        // ROOT CAUSE FIX: Component drag start - properly set data for ALL components and library items
         document.addEventListener('dragstart', (e) => {
             // Robust event target validation - prevent closest() errors
             if (!e || !e.target) return;
@@ -169,6 +208,8 @@ class SectionComponentIntegration {
             
             // ROOT FIX: Check for component by data attribute, not class
             const component = e.target.closest('[data-component-id]');
+            const libraryItem = e.target.closest('.component-card, .component-item');
+            
             if (component) {
                 const componentId = component.dataset.componentId;
                 const componentType = component.dataset.componentType || '';
@@ -192,16 +233,40 @@ class SectionComponentIntegration {
                 document.dispatchEvent(new CustomEvent('gmkb:component-drag-start', {
                     detail: { componentId, componentType }
                 }));
+            } else if (libraryItem) {
+                // ROOT FIX: Handle component library items being dragged
+                const componentType = libraryItem.dataset.componentType || libraryItem.dataset.component || '';
+                
+                if (componentType) {
+                    // Visual feedback for library item
+                    libraryItem.classList.add('gmkb-component--dragging');
+                    libraryItem.style.opacity = '0.5';
+                    
+                    // Set transfer data for new component creation
+                    e.dataTransfer.effectAllowed = 'copy';
+                    e.dataTransfer.setData('text/plain', componentType);
+                    e.dataTransfer.setData('component-type', componentType);
+                    e.dataTransfer.setData('new-component', 'true');
+                    
+                    this.logger.info(`🎯 Started dragging library item: ${componentType}`);
+                    
+                    // Dispatch event
+                    document.dispatchEvent(new CustomEvent('gmkb:library-drag-start', {
+                        detail: { componentType }
+                    }));
+                }
             }
         });
         
-        // ROOT CAUSE FIX: Component drag end - cleanup for ALL components
+        // ROOT CAUSE FIX: Component drag end - cleanup for ALL components and library items
         document.addEventListener('dragend', (e) => {
             // Robust event target validation
             if (!e || !e.target) return;
             if (!e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) return;
             
             const component = e.target.closest('[data-component-id]');
+            const libraryItem = e.target.closest('.component-card, .component-item');
+            
             if (component) {
                 // Remove visual feedback
                 component.classList.remove('gmkb-component--dragging');
@@ -220,6 +285,19 @@ class SectionComponentIntegration {
                 document.dispatchEvent(new CustomEvent('gmkb:component-drag-end', {
                     detail: { componentId: component.dataset.componentId }
                 }));
+            } else if (libraryItem) {
+                // Remove visual feedback from library item
+                libraryItem.classList.remove('gmkb-component--dragging');
+                libraryItem.style.opacity = '';
+                
+                // Clean up any drag-over classes
+                document.querySelectorAll('.gmkb-section__column--drag-over').forEach(col => {
+                    col.classList.remove('gmkb-section__column--drag-over');
+                });
+                
+                this.logger.info(`🎯 Finished dragging library item`);
+                
+                document.dispatchEvent(new CustomEvent('gmkb:library-drag-end', {}));
             }
         });
         
@@ -241,6 +319,7 @@ class SectionComponentIntegration {
             // ROOT CAUSE FIX: Use only HTML5 dataTransfer as single source of truth
             let componentId = event.dataTransfer?.getData('text/plain');
             let componentType = event.dataTransfer?.getData('component-type');
+            const isNewComponent = event.dataTransfer?.getData('new-component') === 'true';
             
             // Fallback to DOM data attributes if dataTransfer fails
             if (!componentId && !componentType) {
@@ -251,7 +330,7 @@ class SectionComponentIntegration {
                 }
             }
             
-            if (componentType && !componentId) {
+            if ((componentType && !componentId) || isNewComponent) {
                 // This is a new component from library - create atomically
                 this.logger.info(`Creating new ${componentType} component in section ${sectionId}`);
                 const newComponentId = await this.createComponentInSection(componentType, sectionId, columnNumber);
@@ -259,7 +338,7 @@ class SectionComponentIntegration {
                 return;
             }
             
-            if (!componentId) {
+            if (!componentId && !componentType) {
                 this.logger.warn('No component ID or type found for drop');
                 return;
             }
@@ -350,6 +429,79 @@ class SectionComponentIntegration {
     }
     
     /**
+     * ROOT FIX: Handle component drop in main container (outside sections)
+     */
+    async handleComponentDropInMainContainer(event) {
+        try {
+            // Get component data from drag event
+            let componentId = event.dataTransfer?.getData('text/plain');
+            let componentType = event.dataTransfer?.getData('component-type');
+            const isNewComponent = event.dataTransfer?.getData('new-component') === 'true';
+            
+            if ((componentType && !componentId) || isNewComponent) {
+                // This is a new component from library - create in main container
+                this.logger.info(`Creating new ${componentType} component in main container`);
+                
+                if (this.componentManager && this.componentManager.addComponent) {
+                    const newComponentId = await this.componentManager.addComponent(componentType, {
+                        // No section targeting for main container
+                        dragDropCreated: true,
+                        timestamp: Date.now()
+                    });
+                    this.logger.info(`New component created successfully: ${newComponentId}`);
+                }
+                return;
+            }
+            
+            if (componentId) {
+                // This is an existing component being moved to main container
+                this.logger.info(`Moving existing component ${componentId} to main container`);
+                
+                // Update component to remove section targeting
+                if (this.componentManager && this.componentManager.getComponent) {
+                    const component = this.componentManager.getComponent(componentId);
+                    if (component && component.props) {
+                        // Clear section targeting
+                        delete component.props.targetSectionId;
+                        delete component.props.targetColumn;
+                    }
+                }
+                
+                // Move component element to main container
+                this.moveComponentToMainContainer(componentId);
+            }
+            
+        } catch (error) {
+            this.logger.error('Component drop in main container failed:', error);
+        }
+    }
+    
+    /**
+     * Move component element to main container
+     */
+    moveComponentToMainContainer(componentId) {
+        const component = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (!component) {
+            this.logger.warn(`⚠️ Component element not found: ${componentId}`);
+            return;
+        }
+        
+        const mainContainer = document.getElementById('saved-components-container') || 
+                             document.getElementById('media-kit-preview') ||
+                             document.querySelector('.preview-container');
+        
+        if (mainContainer) {
+            // Move component to main container
+            mainContainer.appendChild(component);
+            
+            this.logger.info(`🔄 Moved component ${componentId} to main container`);
+            
+            // Update state
+            this.updateComponentState(componentId, null, null);
+        }
+    }
+    
+    /**
      * Move component element to section column
      */
     moveComponentToSectionColumn(componentId, sectionId, columnNumber) {
@@ -397,7 +549,8 @@ class SectionComponentIntegration {
      */
     updateComponentState(componentId, sectionId, columnNumber) {
         // Dispatch event for state update
-        document.dispatchEvent(new CustomEvent('gmkb:component-moved-to-section', {
+        const eventName = sectionId ? 'gmkb:component-moved-to-section' : 'gmkb:component-moved-to-main';
+        document.dispatchEvent(new CustomEvent(eventName, {
             detail: {
                 componentId,
                 sectionId,
