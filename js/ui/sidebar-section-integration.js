@@ -54,6 +54,13 @@ class SidebarSectionIntegration {
      * Following checklist: Event-Driven, No Polling
      */
     setupSidebarHandlers() {
+        // Prevent duplicate event listener setup
+        if (this.handlersSetup) {
+            this.logger.warn('⚠️ PHASE 3: Sidebar handlers already setup, skipping duplicate setup');
+            return;
+        }
+        this.handlersSetup = true;
+        
         // Layout option selection
         document.addEventListener('click', (event) => {
             // Layout option clicks
@@ -79,7 +86,7 @@ class SidebarSectionIntegration {
                 this.handleDuplicateSection();
                 return;
             }
-        });
+        }, { once: false }); // Use event delegation but prevent duplicate setup
         
         // Global settings changes
         const maxWidthInput = document.getElementById('global-max-width');
@@ -173,9 +180,17 @@ class SidebarSectionIntegration {
      * Following checklist: Integration with Section Manager
      */
     handleAddSection() {
+        // Prevent rapid duplicate clicks
+        if (this.isAddingSection) {
+            this.logger.warn('⚠️ PHASE 3: Section creation already in progress, ignoring duplicate click');
+            return;
+        }
+        this.isAddingSection = true;
+        
         if (!this.sectionLayoutManager) {
             this.logger.error('❌ PHASE 3: SectionLayoutManager not available');
             this.showError('Section manager not ready. Please try again.');
+            this.isAddingSection = false;
             return;
         }
         
@@ -189,11 +204,46 @@ class SidebarSectionIntegration {
             // Show success feedback
             this.showSuccess(`Added ${this.getLayoutDisplayName(this.selectedLayout)} section!`);
             
-            // Scroll to new section (if visible)
-            this.scrollToNewSection(sectionId);
+            // Check if section was rendered visually
+            setTimeout(() => {
+                this.verifySectionVisualRendering(sectionId);
+                this.scrollToNewSection(sectionId);
+                this.isAddingSection = false;
+            }, 100);
         } else {
             this.logger.error(`❌ PHASE 3: Failed to create section with layout ${this.selectedLayout}`);
             this.showError('Failed to create section. Please try again.');
+            this.isAddingSection = false;
+        }
+    }
+    
+    /**
+     * Verify that the section was visually rendered in the DOM
+     * Following checklist: Visual Verification, Diagnostic Logging
+     */
+    verifySectionVisualRendering(sectionId) {
+        const sectionElement = document.getElementById(`section-${sectionId}`) || 
+                             document.querySelector(`[data-section-id="${sectionId}"]`) ||
+                             document.querySelector(`[id="${sectionId}"]`);
+        
+        if (sectionElement) {
+            this.logger.info(`✅ PHASE 3: Section ${sectionId} successfully rendered in DOM`);
+        } else {
+            this.logger.warn(`⚠️ PHASE 3: Section ${sectionId} was created but not found in DOM - possible rendering issue`);
+            
+            // Try to find any section elements for debugging
+            const allSections = document.querySelectorAll('[class*="section"], [id*="section"], [data-section]');
+            this.logger.debug(`🔍 PHASE 3: Found ${allSections.length} section-related elements in DOM`);
+            
+            // Check if section is in state manager
+            if (this.sectionLayoutManager) {
+                const sectionInState = this.sectionLayoutManager.getSection(sectionId);
+                if (sectionInState) {
+                    this.logger.debug(`📊 PHASE 3: Section ${sectionId} exists in state manager:`, sectionInState);
+                } else {
+                    this.logger.warn(`⚠️ PHASE 3: Section ${sectionId} not found in state manager either`);
+                }
+            }
         }
     }
     

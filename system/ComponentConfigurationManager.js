@@ -72,6 +72,37 @@ class ComponentConfigurationManager {
                     }
                 }
             },
+            biography: {
+                name: 'Biography Section',
+                dataBindings: {
+                    bio: 'biography',
+                    name: 'full_name',
+                    title: 'guest_title',
+                    image: 'guest_headshot'
+                },
+                componentOptions: {
+                    layout: {
+                        type: 'select',
+                        default: 'text_only',
+                        options: {
+                            text_only: 'Text Only',
+                            with_image: 'With Image',
+                            image_left: 'Image Left',
+                            image_right: 'Image Right'
+                        }
+                    },
+                    showTitle: {
+                        type: 'boolean',
+                        default: true
+                    },
+                    maxLength: {
+                        type: 'number',
+                        default: 500,
+                        min: 100,
+                        max: 2000
+                    }
+                }
+            },
             topics: {
                 name: 'Speaking Topics',
                 dataBindings: {
@@ -92,6 +123,30 @@ class ComponentConfigurationManager {
                         default: 6,
                         min: 1,
                         max: 20
+                    }
+                }
+            },
+            contact: {
+                name: 'Contact Information',
+                dataBindings: {
+                    email: 'email',
+                    phone: 'phone',
+                    website: 'website',
+                    social: 'social_links'
+                },
+                componentOptions: {
+                    layout: {
+                        type: 'select',
+                        default: 'horizontal',
+                        options: {
+                            horizontal: 'Horizontal Layout',
+                            vertical: 'Vertical Layout',
+                            cards: 'Card Layout'
+                        }
+                    },
+                    showSocial: {
+                        type: 'boolean',
+                        default: true
                     }
                 }
             }
