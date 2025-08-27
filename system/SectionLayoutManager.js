@@ -97,20 +97,48 @@ class SectionLayoutManager {
     
     /**
      * Register a new section
-     * Following checklist: Schema Compliance, Event-Driven
+     * Following checklist: Schema Compliance, Event-Driven, Root Cause Fix
      */
     registerSection(sectionId, sectionType, configuration = {}) {
+        // ROOT CAUSE FIX: Validate inputs and provide defaults
+        if (!sectionId) {
+            sectionId = `section_${Date.now()}`;
+            this.logger.warn(`⚠️ PHASE 3: No section ID provided, generated: ${sectionId}`);
+        }
+        
+        if (!sectionType) {
+            sectionType = 'full_width';
+            this.logger.warn(`⚠️ PHASE 3: No section type provided, using default: ${sectionType}`);
+        }
+        
         const defaultConfig = this.getDefaultSectionConfiguration(sectionType);
         
+        // ROOT CAUSE FIX: Deep merge configuration with defaults to ensure all properties exist
         const sectionConfig = {
             section_id: sectionId,
             section_type: sectionType,
-            ...defaultConfig,
-            ...configuration,
+            layout: {
+                ...defaultConfig.layout,
+                ...(configuration.layout || {})
+            },
+            section_options: {
+                ...defaultConfig.section_options,
+                ...(configuration.section_options || {})
+            },
+            responsive: {
+                ...defaultConfig.responsive,
+                ...(configuration.responsive || {})
+            },
             components: configuration.components || [],
             created_at: configuration.created_at || Date.now(),
             updated_at: Date.now()
         };
+        
+        // ROOT CAUSE FIX: Final validation to ensure required properties
+        if (!sectionConfig.layout.columns) {
+            sectionConfig.layout.columns = 1;
+            this.logger.warn(`⚠️ PHASE 3: Section ${sectionId} missing columns, defaulted to 1`);
+        }
         
         this.sections.set(sectionId, sectionConfig);
         

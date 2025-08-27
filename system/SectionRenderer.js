@@ -227,20 +227,45 @@ class SectionRenderer {
     
     /**
      * Create section DOM element
-     * Following checklist: DOM Creation, Semantic HTML
+     * Following checklist: DOM Creation, Semantic HTML, Graceful Failure
      */
     createSectionElement(section) {
+        // ROOT CAUSE FIX: Validate section structure before processing
+        if (!section || !section.section_id) {
+            this.logger.error('❌ PHASE 3: Invalid section object - missing required properties', section);
+            return null;
+        }
+        
+        // ROOT CAUSE FIX: Ensure section has proper structure with defaults
+        if (!section.layout) {
+            this.logger.warn(`⚠️ PHASE 3: Section ${section.section_id} missing layout - applying defaults`);
+            
+            // Get defaults from SectionLayoutManager if available
+            const sectionType = section.section_type || 'full_width';
+            if (this.sectionLayoutManager) {
+                const defaults = this.sectionLayoutManager.getDefaultSectionConfiguration(sectionType);
+                section.layout = defaults.layout || { columns: 1 };
+                section.section_options = section.section_options || defaults.section_options || {};
+                section.responsive = section.responsive || defaults.responsive || {};
+            } else {
+                // Fallback minimal defaults
+                section.layout = { columns: 1 };
+                section.section_options = section.section_options || {};
+                section.responsive = section.responsive || {};
+            }
+        }
+        
         const sectionElement = document.createElement('section');
         
         // Set identifiers
         sectionElement.id = `section-${section.section_id}`;
         sectionElement.dataset.sectionId = section.section_id;
-        sectionElement.dataset.sectionType = section.section_type;
+        sectionElement.dataset.sectionType = section.section_type || 'full_width';
         
         // Add classes
         sectionElement.className = [
             'gmkb-section',
-            `gmkb-section--${section.section_type}`,
+            `gmkb-section--${section.section_type || 'full_width'}`,
             section.section_options?.custom_class || ''
         ].filter(Boolean).join(' ');
         
@@ -248,9 +273,10 @@ class SectionRenderer {
         const innerContainer = document.createElement('div');
         innerContainer.className = 'gmkb-section__inner';
         
-        // Handle column layouts
-        if (section.layout.columns > 1) {
-            for (let i = 1; i <= section.layout.columns; i++) {
+        // Handle column layouts - with defensive check
+        const columnCount = section.layout?.columns || 1;
+        if (columnCount > 1) {
+            for (let i = 1; i <= columnCount; i++) {
                 const column = document.createElement('div');
                 column.className = `gmkb-section__column gmkb-section__column--${i}`;
                 column.dataset.column = i;

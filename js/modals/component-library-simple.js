@@ -434,14 +434,29 @@ function addSelectedComponents() {
         // Method 1: Enhanced component manager with section targeting
         if (window.enhancedComponentManager?.isReady()) {
             try {
-                // Check if there are sections available to target
-                const availableSections = window.sectionLayoutManager?.getAllSections() || [];
+                // ROOT CAUSE FIX: Ensure at least one section exists before adding components
+                let targetSectionId = null;
+                
+                if (window.sectionLayoutManager) {
+                    const availableSections = window.sectionLayoutManager.getAllSections() || [];
+                    
+                    // If no sections exist, create a default one
+                    if (availableSections.length === 0) {
+                        logger.info('COMPONENT_LIBRARY', 'No sections found, creating default section');
+                        const newSectionId = `section_default_${Date.now()}`;
+                        window.sectionLayoutManager.registerSection(newSectionId, 'full_width');
+                        targetSectionId = newSectionId;
+                    } else {
+                        // Use the first available section
+                        targetSectionId = availableSections[0].section_id;
+                    }
+                }
                 
                 const componentOptions = {};
                 
-                // If sections exist, allow targeting the first available section
-                if (availableSections.length > 0 && window.sectionLayoutManager) {
-                    componentOptions.targetSectionId = availableSections[0].section_id;
+                // Set target section if available
+                if (targetSectionId) {
+                    componentOptions.targetSectionId = targetSectionId;
                     componentOptions.targetColumn = 1;
                 }
                 

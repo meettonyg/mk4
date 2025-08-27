@@ -186,10 +186,9 @@ async function testSectionCreationAndIntegration() {
         
         const testSectionId = `test_section_${Date.now()}`;
         
-        // Create section via API
+        // ROOT CAUSE FIX: Create section with proper method signature
+        // registerSection(sectionId, sectionType, configuration)
         const sectionConfig = {
-            section_id: testSectionId,
-            section_type: 'two_column',
             layout: {
                 width: 'full_width',
                 columns: 2,
@@ -198,11 +197,19 @@ async function testSectionCreationAndIntegration() {
             components: []
         };
         
-        // Register section
-        window.sectionLayoutManager.registerSection(sectionConfig);
+        // Register section with proper parameters
+        window.sectionLayoutManager.registerSection(testSectionId, 'two_column', sectionConfig);
         
-        // Render section
-        window.sectionRenderer.renderSection(testSectionId);
+        // Get the properly created section for rendering
+        const createdSection = window.sectionLayoutManager.getSection(testSectionId);
+        
+        // Render section with complete section object
+        if (createdSection) {
+            window.sectionRenderer.renderSection(createdSection);
+        } else {
+            testLogger.fail('Section was not properly created');
+            return false;
+        }
         
         // Check if section was rendered in DOM
         await new Promise(resolve => setTimeout(resolve, 500)); // Allow render time
@@ -288,18 +295,26 @@ async function testComponentLibraryIntegration() {
             return false;
         }
         
-        // Create a test section first
+        // ROOT CAUSE FIX: Create a test section with proper parameters
         const testSectionId = `lib_test_section_${Date.now()}`;
         const sectionConfig = {
-            section_id: testSectionId,
-            section_type: 'full_width',
-            layout: { width: 'full_width' },
+            layout: { width: 'full_width', columns: 1 },
             components: []
         };
         
         if (window.sectionLayoutManager) {
-            window.sectionLayoutManager.registerSection(sectionConfig);
-            window.sectionRenderer.renderSection(testSectionId);
+            // Register section with correct method signature
+            window.sectionLayoutManager.registerSection(testSectionId, 'full_width', sectionConfig);
+            
+            // Get the properly created section for rendering
+            const createdSection = window.sectionLayoutManager.getSection(testSectionId);
+            
+            if (createdSection) {
+                window.sectionRenderer.renderSection(createdSection);
+            } else {
+                testLogger.fail('Test section was not properly created');
+                return false;
+            }
             
             // Wait for section rendering
             await new Promise(resolve => setTimeout(resolve, 300));
