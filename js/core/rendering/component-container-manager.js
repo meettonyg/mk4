@@ -181,6 +181,34 @@
          * Get the appropriate target container for rendering
          */
         getTargetContainer(options = {}) {
+                // ROOT FIX: Check which container should be used based on current state
+            const emptyState = document.getElementById('empty-state');
+            const savedContainer = document.getElementById('saved-components-container');
+            const directContainer = document.getElementById('components-direct-container');
+            
+            // If empty state is showing, use preview container
+            if (emptyState && emptyState.style.display !== 'none') {
+                const previewContainer = this.getContainer('preview');
+                if (previewContainer) {
+                    this.logger.debug('CONTAINER', 'Using preview container (empty state active)');
+                    return {
+                        container: previewContainer,
+                        reason: 'empty_state_active',
+                        name: 'preview'
+                    };
+                }
+            }
+            
+            // If saved components container exists and is visible, use direct container
+            if (savedContainer && savedContainer.style.display !== 'none' && directContainer) {
+                this.logger.debug('CONTAINER', 'Using components-direct-container for saved components');
+                return {
+                    container: directContainer,
+                    reason: 'direct_components_container',
+                    name: 'direct'
+                };
+            }
+            
             // Check if saved-components-container should be used
             const savedContainer = this.getContainer('saved');
             if (savedContainer && savedContainer.style.display !== 'none') {
@@ -211,17 +239,21 @@
          * Switch to saved components view
          */
         showSavedComponentsContainer() {
-            const savedContainer = this.getContainer('saved');
-            const emptyState = this.getContainer('empty-state');
+            // ROOT FIX: Find containers by ID since they might not be registered
+            const savedContainer = document.getElementById('saved-components-container');
+            const emptyState = document.getElementById('empty-state');
             
             if (savedContainer) {
                 savedContainer.style.display = 'block';
                 this.setActiveContainer('saved');
                 this.logger.info('CONTAINER', 'Switched to saved components container');
+            } else {
+                this.logger.warn('CONTAINER', 'Saved components container not found');
             }
             
             if (emptyState) {
                 emptyState.style.display = 'none';
+                this.logger.debug('CONTAINER', 'Hid empty-state element');
             }
             
             // Emit container switch event
@@ -260,15 +292,20 @@
          * Show empty state
          */
         showEmptyState() {
-            const emptyState = this.getContainer('empty-state');
-            const savedContainer = this.getContainer('saved');
+            // ROOT FIX: Find empty state by ID since it might not be registered
+            const emptyState = document.getElementById('empty-state');
+            const savedContainer = document.getElementById('saved-components-container');
             
             if (emptyState) {
                 emptyState.style.display = 'block';
+                this.logger.debug('CONTAINER', 'Showed empty-state element');
+            } else {
+                this.logger.warn('CONTAINER', 'Empty state element not found');
             }
             
             if (savedContainer) {
                 savedContainer.style.display = 'none';
+                this.logger.debug('CONTAINER', 'Hid saved-components-container');
             }
             
             this.setActiveContainer('empty-state');
@@ -280,6 +317,11 @@
          */
         updateContainerDisplay(state) {
             const hasComponents = state && state.components && Object.keys(state.components).length > 0;
+            
+            this.logger.info('CONTAINER', 'Updating container display', {
+                hasComponents,
+                componentCount: hasComponents ? Object.keys(state.components).length : 0
+            });
             
             if (hasComponents) {
                 this.showSavedComponentsContainer();

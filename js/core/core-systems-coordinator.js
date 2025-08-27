@@ -61,8 +61,21 @@ class CoreSystemsCoordinator {
         // Check component renderer
         this.systemsReady.componentRenderer = !!(window.enhancedComponentRenderer && window.enhancedComponentRenderer.renderComponent);
         
-        // Check UI systems (tabs, toolbar, etc.)
-        this.systemsReady.uiSystems = !!(window.tabs && document.querySelector('.sidebar__tab'));
+        // ROOT FIX: Check UI systems (tabs, toolbar, modals, etc.)
+        const hasModals = !!(window.GMKB_Modals || window.modalSystem);
+        const hasTabs = !!(window.GMKBTabs || window.tabs || document.querySelector('.sidebar__tab[data-tab]'));
+        const hasToolbar = !!(document.querySelector('#save-btn') && document.querySelector('#undo-btn'));
+        
+        this.systemsReady.uiSystems = hasModals && hasTabs && hasToolbar;
+        
+        if (forceDispatch) {
+            this.logger.info('PHASE 3: UI systems debug check:', {
+                hasModals,
+                hasTabs, 
+                hasToolbar,
+                uiSystemsReady: this.systemsReady.uiSystems
+            });
+        }
         
         // ROOT FIX: All systems must be ready AND GMKB must be available
         const allReady = gmkbReady && Object.values(this.systemsReady).every(ready => ready);

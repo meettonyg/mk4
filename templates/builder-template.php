@@ -435,7 +435,12 @@ if ($post_id > 0) {
                 <?php if ($template_instructions['show_saved_components']): ?>
                     <!-- PHASE 3: Section-Aware Saved Components Container -->
                     <!-- ROOT CAUSE FIX: Conditional rendering prevents container conflicts -->
-                    <div class="saved-components-container" id="saved-components-container" style="display: block;">
+                    <div class="saved-components-container" id="saved-components-container" style="display: block; min-height: 400px;">
+                        <!-- Direct component rendering area - fallback for when sections are not used -->
+                        <div class="components-direct-container" id="components-direct-container">
+                            <!-- Components will be rendered here directly by EnhancedComponentRenderer -->
+                        </div>
+                        
                         <!-- Sections will be rendered here by SectionLayoutManager -->
                         <div class="gmkb-sections-container" id="gmkb-sections-container">
                             <!-- Dynamic section rendering will happen here via JavaScript -->
