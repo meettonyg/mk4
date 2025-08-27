@@ -1216,6 +1216,28 @@ function gmkb_enqueue_assets() {
                 true
             );
         }
+        
+        // ROOT FIX: Quick Section Fix Test
+        if (!wp_script_is('gmkb-test-section-fix', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-test-section-fix',
+                $plugin_url . 'debug/test-section-fix.js',
+                array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-enhanced-component-manager'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Section Rendering QuickFix - Ensures sections always have proper structure
+        if (!wp_script_is('gmkb-section-rendering-quickfix', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-section-rendering-quickfix',
+                $plugin_url . 'debug/section-rendering-quickfix.js',
+                array('gmkb-section-layout-manager', 'gmkb-section-renderer'),
+                $version . '-debug-' . time(), // Force refresh
+                true
+            );
+        }
     }
     
     // ROOT FIX: Debug utilities for component interaction testing (development only)

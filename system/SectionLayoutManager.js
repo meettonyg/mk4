@@ -582,10 +582,30 @@ class SectionLayoutManager {
     
     /**
      * Get section information
-     * Following checklist: No Redundant Logic
+     * Following checklist: No Redundant Logic, Root Cause Fix
      */
     getSection(sectionId) {
-        return this.sections.get(sectionId) || null;
+        const section = this.sections.get(sectionId);
+        
+        // ROOT CAUSE FIX: Log if section is not found for debugging
+        if (!section) {
+            this.logger.debug(`📊 PHASE 3: Section ${sectionId} not found in map. Available sections: ${Array.from(this.sections.keys()).join(', ')}`);
+            return null;
+        }
+        
+        // ROOT CAUSE FIX: Ensure section has all required properties
+        if (!section.layout) {
+            this.logger.warn(`⚠️ PHASE 3: Section ${sectionId} missing layout, applying defaults`);
+            const defaults = this.getDefaultSectionConfiguration(section.section_type || 'full_width');
+            section.layout = defaults.layout;
+            section.section_options = section.section_options || defaults.section_options;
+            section.responsive = section.responsive || defaults.responsive;
+            
+            // Update the stored section
+            this.sections.set(sectionId, section);
+        }
+        
+        return section;
     }
     
     getAllSections() {

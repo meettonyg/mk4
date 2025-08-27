@@ -164,28 +164,48 @@ class SectionRenderer {
     
     /**
      * Handle section registered event
-     * Following checklist: Event-Driven, Real-time Updates
+     * Following checklist: Event-Driven, Real-time Updates, Root Cause Fix
      */
     onSectionRegistered(detail) {
         const { sectionId, configuration } = detail;
         
         this.logger.info(`📐 PHASE 3: Rendering newly registered section ${sectionId}`);
         
-        // Get full section data from manager
-        const section = this.sectionLayoutManager?.getSection(sectionId) || configuration;
-        
-        if (section) {
-            this.renderSection(section);
-        }
+        // ROOT CAUSE FIX: Always use section ID for consistency
+        // renderSection will fetch the proper section object internally
+        this.renderSection(sectionId);
     }
     
     /**
      * Render a section to DOM
-     * Following checklist: DOM Manipulation, Visual Consistency
+     * Following checklist: DOM Manipulation, Visual Consistency, Root Cause Fix
      */
-    renderSection(section) {
+    renderSection(sectionOrId) {
         if (!this.containerElement) {
             this.logger.error('❌ PHASE 3: Cannot render section - no container element');
+            return;
+        }
+        
+        // ROOT CAUSE FIX: Handle both section object and section ID
+        let section = sectionOrId;
+        
+        // If a string ID was passed, fetch the actual section object
+        if (typeof sectionOrId === 'string') {
+            if (this.sectionLayoutManager) {
+                section = this.sectionLayoutManager.getSection(sectionOrId);
+                if (!section) {
+                    this.logger.error(`❌ PHASE 3: Section not found: ${sectionOrId}`);
+                    return;
+                }
+            } else {
+                this.logger.error('❌ PHASE 3: Cannot fetch section - SectionLayoutManager not available');
+                return;
+            }
+        }
+        
+        // Validate section object
+        if (!section || typeof section !== 'object') {
+            this.logger.error('❌ PHASE 3: Invalid section parameter', sectionOrId);
             return;
         }
         
