@@ -13,7 +13,11 @@ class SidebarSectionIntegration {
     constructor() {
         this.logger = window.StructuredLogger || console;
         this.sectionLayoutManager = null;
+        this.sectionRenderer = null; // ROOT FIX: Add section renderer reference
         this.selectedLayout = 'full_width'; // Default
+        this.initialized = false; // ROOT FIX: Prevent duplicate initialization
+        this.coreSystemsHandled = false; // ROOT FIX: Prevent duplicate core systems handling
+        this.handlersSetup = false; // Already present, keeping for clarity
         
         this.logger.info('🎛️ PHASE 3: SidebarSectionIntegration initializing');
         this.initializeIntegration();
@@ -24,14 +28,26 @@ class SidebarSectionIntegration {
      * Following checklist: Event-Driven Initialization, Dependency-Awareness
      */
     initializeIntegration() {
+        // ROOT FIX: Prevent duplicate event listeners with flag
+        if (this.initialized) {
+            this.logger.warn('⚠️ PHASE 3: SidebarSectionIntegration already initialized, skipping');
+            return;
+        }
+        this.initialized = true;
+        
         // Wait for core systems to be ready
-        document.addEventListener('gmkb:core-systems-ready', () => {
-            this.onCoreSystemsReady();
+        document.addEventListener('gmkb:core-systems-ready', (event) => {
+            // ROOT FIX: Prevent duplicate handler calls
+            if (!this.coreSystemsHandled) {
+                this.coreSystemsHandled = true;
+                this.onCoreSystemsReady();
+            }
         });
         
         // Initialize immediately if systems are already ready
-        if (window.sectionLayoutManager) {
+        if (window.sectionLayoutManager && !this.coreSystemsHandled) {
             this.sectionLayoutManager = window.sectionLayoutManager;
+            this.coreSystemsHandled = true;
             this.setupSidebarHandlers();
         }
         
@@ -43,10 +59,15 @@ class SidebarSectionIntegration {
      * Following checklist: Dependency-Awareness, No Global Object Sniffing
      */
     onCoreSystemsReady() {
+        // ROOT FIX: Get both manager and renderer
         this.sectionLayoutManager = window.sectionLayoutManager;
-        this.setupSidebarHandlers();
+        this.sectionRenderer = window.sectionRenderer;
         
-        this.logger.info('🎯 PHASE 3: Sidebar integration ready - section manager connected');
+        if (!this.handlersSetup) {
+            this.setupSidebarHandlers();
+        }
+        
+        this.logger.info('🎯 PHASE 3: Sidebar integration ready - section manager and renderer connected');
     }
     
     /**

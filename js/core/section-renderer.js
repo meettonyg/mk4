@@ -156,10 +156,17 @@ class SectionRenderer {
     renderAllSections() {
         if (!this.sectionLayoutManager || !this.stateManager) return;
         
-        const sectionsContainer = document.getElementById('gmkb-sections-container');
+        // ROOT FIX: Find or create sections container
+        let sectionsContainer = document.getElementById('gmkb-sections-container');
+        
         if (!sectionsContainer) {
-            this.logger.warn('⚠️ PHASE 3: Sections container not found - cannot render sections');
-            return;
+            // ROOT FIX: Create sections container if it doesn't exist
+            sectionsContainer = this.createSectionsContainer();
+            
+            if (!sectionsContainer) {
+                this.logger.error('❌ PHASE 3: Could not create or find sections container');
+                return;
+            }
         }
         
         const sections = this.sectionLayoutManager.getSectionsInOrder();
@@ -181,6 +188,42 @@ class SectionRenderer {
         });
         
         this.logger.info(`🎨 PHASE 3: Rendered ${sections.length} sections`);
+    }
+    
+    /**
+     * ROOT FIX: Create or find sections container
+     * Following checklist: Graceful Fallback, DOM Integration
+     */
+    createSectionsContainer() {
+        // Strategy 1: Try to find existing preview container
+        let parentContainer = document.getElementById('media-kit-preview') ||
+                             document.getElementById('saved-components-container') ||
+                             document.querySelector('.media-kit-preview') ||
+                             document.querySelector('.gmkb-preview');
+        
+        if (!parentContainer) {
+            // Strategy 2: Try to find any main content container
+            parentContainer = document.querySelector('main') ||
+                             document.querySelector('.main-content') ||
+                             document.querySelector('#content');
+        }
+        
+        if (!parentContainer) {
+            // Strategy 3: Use body as last resort
+            parentContainer = document.body;
+            this.logger.warn('⚠️ PHASE 3: No suitable parent container found, using body');
+        }
+        
+        // Create the sections container
+        const sectionsContainer = document.createElement('div');
+        sectionsContainer.id = 'gmkb-sections-container';
+        sectionsContainer.className = 'gmkb-sections-container';
+        
+        // Insert at the beginning of parent container
+        parentContainer.insertBefore(sectionsContainer, parentContainer.firstChild);
+        
+        this.logger.info('✅ PHASE 3: Created sections container in', parentContainer.tagName.toLowerCase());
+        return sectionsContainer;
     }
     
     /**
@@ -217,8 +260,15 @@ class SectionRenderer {
      */
     renderSection(section, container = null) {
         if (!container) {
+            // ROOT FIX: Use same container finding logic as renderAllSections
             container = document.getElementById('gmkb-sections-container');
-            if (!container) return null;
+            if (!container) {
+                container = this.createSectionsContainer();
+                if (!container) {
+                    this.logger.error('❌ PHASE 3: No container available for section rendering');
+                    return null;
+                }
+            }
         }
         
         // Remove existing section element if it exists
@@ -229,7 +279,7 @@ class SectionRenderer {
         
         // Use dynamic section templates instead of hardcoded rendering
         if (!window.sectionTemplates) {
-            this.logger.error('❌ PHASE 3: SectionTemplates not available - falling back to basic rendering');
+            this.logger.warn('⚠️ PHASE 3: SectionTemplates not available - falling back to basic rendering');
             return this.createSectionManually(section, container);
         }
         

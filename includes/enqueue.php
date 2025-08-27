@@ -716,27 +716,19 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 3: Section Renderer
+    // PHASE 3: Section Renderer - ROOT FIX: Updated path to system folder
     if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-renderer',
-            $plugin_url . 'js/core/section-renderer.js',
-            array('gmkb-section-layout-manager', 'gmkb-section-templates', 'gmkb-structured-logger'),
+            $plugin_url . 'system/SectionRenderer.js',
+            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
             $version,
             true
         );
     }
 
-    // PHASE 3: Dynamic Section Templates
-    if (!wp_script_is('gmkb-section-templates', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-section-templates',
-            $plugin_url . 'js/templates/section-templates.js',
-            array('gmkb-structured-logger'),
-            $version,
-            true
-        );
-    }
+    // PHASE 3: Dynamic Section Templates - ROOT FIX: Removed as it doesn't exist yet
+    // We'll create this if needed, but for now SectionRenderer handles its own templates
 
     // 12h2. Toast Polyfill - ROOT FIX: Toast notifications
     if (!wp_script_is('gmkb-toast-polyfill', 'enqueued')) {
@@ -977,7 +969,6 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-layout-manager',
                 'gmkb-section-controls-ui',
                 'gmkb-sidebar-section-integration',
-                'gmkb-section-templates',
                 'gmkb-section-renderer',
                 'gmkb-tabs',
                 'gmkb-toolbar',
@@ -1243,10 +1234,10 @@ function gmkb_enqueue_assets() {
         $version
     );
     
-    // PHASE 3: Sections CSS
+    // PHASE 3: Sections CSS - ROOT FIX: Updated path
     wp_enqueue_style(
         'gmkb-sections',
-        $plugin_url . 'css/modules/sections.css',
+        $plugin_url . 'css/sections.css',
         array( 'gmkb-main-styles' ),
         $version
     );

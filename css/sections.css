@@ -1,0 +1,286 @@
+/**
+ * Section Styles
+ * Phase 3: Section Layer System - Visual Styles
+ * 
+ * Styles for the section container system
+ * 
+ * @version 3.0.0-phase3
+ * @package GMKB/CSS
+ */
+
+/* Section Container */
+.gmkb-sections-container {
+    width: 100%;
+    min-height: 400px;
+    position: relative;
+}
+
+/* Base Section Styles */
+.gmkb-section {
+    position: relative;
+    margin-bottom: 2px;
+    background: var(--gmkb-surface-color, #ffffff);
+    border: 1px solid var(--gmkb-border-color, #e1e5e9);
+    transition: all 0.3s ease;
+}
+
+.gmkb-section:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Section Inner Container */
+.gmkb-section__inner {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Section Content (single column) */
+.gmkb-section__content {
+    width: 100%;
+    min-height: 100px;
+    position: relative;
+}
+
+/* Section Columns */
+.gmkb-section__column {
+    min-height: 100px;
+    position: relative;
+    padding: 10px;
+}
+
+/* Section Controls */
+.gmkb-section__controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 5px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.gmkb-section:hover .gmkb-section__controls {
+    opacity: 1;
+}
+
+.gmkb-section__control {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.gmkb-section__control:hover {
+    background: #f0f0f0;
+    border-color: #999;
+}
+
+.gmkb-section__control--move {
+    cursor: move;
+}
+
+.gmkb-section__control .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Empty Section Placeholder */
+.gmkb-section__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    padding: 40px;
+    text-align: center;
+    border: 2px dashed #d0d5dd;
+    border-radius: 8px;
+    background: rgba(248, 249, 250, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.gmkb-section__empty:hover {
+    border-color: #295cff;
+    background: rgba(41, 92, 255, 0.05);
+}
+
+.gmkb-section__empty-icon {
+    font-size: 48px;
+    color: #d0d5dd;
+    margin-bottom: 10px;
+}
+
+.gmkb-section__empty-text {
+    color: #666;
+    font-size: 14px;
+}
+
+/* Section Type Specific Styles */
+
+/* Full Width Section */
+.gmkb-section--full_width .gmkb-section__inner {
+    max-width: 100%;
+}
+
+/* Two Column Section */
+.gmkb-section--two_column .gmkb-section__inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gmkb-column-gap, 40px);
+}
+
+/* Three Column Section */
+.gmkb-section--three_column .gmkb-section__inner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gmkb-column-gap, 30px);
+}
+
+/* Main + Sidebar Section */
+.gmkb-section--main_sidebar .gmkb-section__inner {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--gmkb-column-gap, 40px);
+}
+
+/* Grid Section */
+.gmkb-section--grid .gmkb-section__inner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--gmkb-column-gap, 30px);
+}
+
+/* Hero Section */
+.gmkb-section--hero {
+    min-height: 70vh;
+}
+
+.gmkb-section--hero .gmkb-section__inner {
+    min-height: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Newly Added Section Animation */
+.gmkb-section--newly-added {
+    animation: sectionHighlight 2s ease;
+}
+
+@keyframes sectionHighlight {
+    0% {
+        background: rgba(41, 92, 255, 0.1);
+        transform: scale(1.02);
+    }
+    50% {
+        background: rgba(41, 92, 255, 0.05);
+    }
+    100% {
+        background: transparent;
+        transform: scale(1);
+    }
+}
+
+/* Component Placeholder in Sections */
+.gmkb-component-placeholder {
+    padding: 20px;
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+}
+
+/* Drag and Drop States */
+.gmkb-section--drag-over {
+    background: rgba(41, 92, 255, 0.05);
+    border-color: #295cff;
+}
+
+.gmkb-section--dragging {
+    opacity: 0.5;
+}
+
+.gmkb-section__column--drag-over {
+    background: rgba(41, 92, 255, 0.1);
+    border: 2px dashed #295cff;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    /* Mobile: All sections become single column */
+    .gmkb-section--two_column .gmkb-section__inner,
+    .gmkb-section--three_column .gmkb-section__inner,
+    .gmkb-section--main_sidebar .gmkb-section__inner {
+        grid-template-columns: 1fr;
+    }
+    
+    .gmkb-section--grid .gmkb-section__inner {
+        grid-template-columns: 1fr;
+    }
+    
+    .gmkb-section--hero {
+        min-height: 50vh;
+    }
+    
+    .gmkb-section__controls {
+        opacity: 1; /* Always visible on mobile */
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* Tablet: Adjust columns */
+    .gmkb-section--three_column .gmkb-section__inner {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .gmkb-section--grid .gmkb-section__inner {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .gmkb-section--hero {
+        min-height: 60vh;
+    }
+}
+
+/* Section Layout Visual Feedback (for sidebar buttons) */
+.layout-option--feedback {
+    animation: layoutSelected 0.3s ease;
+}
+
+@keyframes layoutSelected {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Integration with existing component styles */
+.gmkb-section .gmkb-component {
+    margin-bottom: 0; /* Remove default margin within sections */
+}
+
+.gmkb-section__column .gmkb-component:last-child,
+.gmkb-section__content .gmkb-component:last-child {
+    margin-bottom: 0;
+}
