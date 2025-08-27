@@ -721,7 +721,7 @@ function gmkb_enqueue_assets() {
         wp_enqueue_script(
             'gmkb-section-renderer',
             $plugin_url . 'js/core/section-renderer.js',
-            array('gmkb-section-layout-manager', 'gmkb-enhanced-component-renderer', 'gmkb-section-templates', 'gmkb-structured-logger'),
+            array('gmkb-section-layout-manager', 'gmkb-section-templates', 'gmkb-structured-logger'),
             $version,
             true
         );
