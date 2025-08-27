@@ -287,6 +287,17 @@
                 this.lastStateHash = null;
                 this.logger.debug('STATE', 'State tracking reset');
             }
+            
+            /**
+             * Get component state manager statistics
+             */
+            getStats() {
+                return {
+                    lastStateHash: this.lastStateHash,
+                    hasLastState: !!this.lastState,
+                    lastStateComponentCount: this.lastState && this.lastState.components ? Object.keys(this.lastState.components).length : 0
+                };
+            }
         }
 
         // Export to global scope for WordPress compatibility

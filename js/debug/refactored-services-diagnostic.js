@@ -3,6 +3,59 @@
  * @description Debug script to check if refactored services are loading
  */
 
+console.log('🔧 Refactored Services Diagnostic: Loading...');
+
+// Make diagnostic functions available immediately
+window.testRefactoredServices = function() {
+    console.log('🧪 Manual Service Test:');
+    
+    if (window.componentStateManager) {
+        console.log('✅ Testing ComponentStateManager...');
+        try {
+            const testState = { components: { test: { type: 'hero' } }, layout: ['test'] };
+            const hash = window.componentStateManager.generateStateHash(testState);
+            console.log('  Generated hash:', hash);
+        } catch (error) {
+            console.log('  Error:', error);
+        }
+    } else {
+        console.log('❌ ComponentStateManager not available');
+    }
+    
+    if (window.componentDOMManager) {
+        console.log('✅ Testing ComponentDOMManager...');
+        try {
+            const stats = window.componentDOMManager.getStats();
+            console.log('  DOM Manager stats:', stats);
+        } catch (error) {
+            console.log('  Error:', error);
+        }
+    } else {
+        console.log('❌ ComponentDOMManager not available');
+    }
+    
+    if (window.enhancedComponentRenderer) {
+        console.log('✅ Testing Enhanced Component Renderer...');
+        try {
+            const health = window.enhancedComponentRenderer.generateHealthReport();
+            console.log('  Health report:', health);
+        } catch (error) {
+            console.log('  Error:', error);
+        }
+    } else {
+        console.log('❌ Enhanced Component Renderer not available');
+    }
+    
+    console.log('🔧 Service availability summary:');
+    console.log('  ComponentStateManager:', !!window.componentStateManager);
+    console.log('  ComponentDOMManager:', !!window.componentDOMManager);  
+    console.log('  ComponentRenderEngine:', !!window.componentRenderEngine);
+    console.log('  ComponentUIIntegration:', !!window.componentUIIntegration);
+    console.log('  ComponentPerformanceMonitor:', !!window.componentPerformanceMonitor);
+    console.log('  ComponentContainerManager:', !!window.componentContainerManager);
+    console.log('  EnhancedComponentRenderer:', !!window.enhancedComponentRenderer);
+};
+
 (function() {
     'use strict';
     
@@ -65,38 +118,20 @@
             if (window.enhancedComponentRenderer) {
                 if (window.enhancedComponentRenderer.initialized) {
                     console.log('✅ Enhanced Component Renderer is initialized');
-                    console.log('📊 Renderer stats:', window.enhancedComponentRenderer.getStats());
+                    try {
+                        console.log('📊 Renderer stats:', window.enhancedComponentRenderer.getStats());
+                    } catch (error) {
+                        console.log('❌ Error getting renderer stats:', error);
+                    }
                 } else {
                     console.log('⚠️ Enhanced Component Renderer exists but not initialized');
                 }
+            } else {
+                console.log('❌ Enhanced Component Renderer not found');
             }
         }, 5000);
         
     }, 2000);
-    
-    // Manual test function
-    window.testRefactoredServices = () => {
-        console.log('🧪 Manual Service Test:');
-        
-        if (window.componentStateManager) {
-            console.log('✅ Testing ComponentStateManager...');
-            const testState = { components: { test: { type: 'hero' } }, layout: ['test'] };
-            const hash = window.componentStateManager.generateStateHash(testState);
-            console.log('  Generated hash:', hash);
-        }
-        
-        if (window.componentDOMManager) {
-            console.log('✅ Testing ComponentDOMManager...');
-            const stats = window.componentDOMManager.getStats();
-            console.log('  DOM Manager stats:', stats);
-        }
-        
-        if (window.enhancedComponentRenderer) {
-            console.log('✅ Testing Enhanced Component Renderer...');
-            const health = window.enhancedComponentRenderer.generateHealthReport();
-            console.log('  Health report:', health);
-        }
-    };
     
     console.log('🔧 Diagnostic script loaded. Run testRefactoredServices() to manually test services.');
     

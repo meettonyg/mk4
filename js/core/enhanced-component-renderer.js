@@ -71,7 +71,45 @@
             
             this.logger.info('RENDER', `Setting up service coordination - waiting for ${totalServices} services`);
             
+            // Check if services are already loaded (missed events)
+            const checkExistingServices = () => {
+                const serviceMap = {
+                    'gmkb:component-state-manager-ready': window.componentStateManager,
+                    'gmkb:component-dom-manager-ready': window.componentDOMManager,
+                    'gmkb:component-render-engine-ready': window.componentRenderEngine,
+                    'gmkb:component-ui-integration-ready': window.componentUIIntegration,
+                    'gmkb:component-performance-monitor-ready': window.componentPerformanceMonitor,
+                    'gmkb:component-container-manager-ready': window.componentContainerManager
+                };
+                
+                requiredServices.forEach(eventType => {
+                    const service = serviceMap[eventType];
+                    if (service && !this.getServiceByEventType(eventType)) {
+                        readyServices++;
+                        this.logger.info('RENDER', `Found existing service (${readyServices}/${totalServices}): ${eventType}`);
+                        this.setServiceReference(eventType, { manager: service, monitor: service, engine: service, integration: service });
+                    }
+                });
+                
+                if (readyServices === totalServices) {
+                    this.logger.info('RENDER', 'All services already loaded, initializing immediately');
+                    setTimeout(() => this.init(), 0);
+                    return true;
+                }
+                return false;
+            };
+            
+            // Check existing services first
+            if (checkExistingServices()) {
+                return; // All services already loaded
+            }
+            
             const onServiceReady = (event) => {
+                if (this.getServiceByEventType(event.type)) {
+                    this.logger.debug('RENDER', `Service already registered: ${event.type}`);
+                    return;
+                }
+                
                 readyServices++;
                 this.logger.info('RENDER', `Service ready (${readyServices}/${totalServices}): ${event.type}`);
                 
@@ -96,7 +134,7 @@
             // Add timeout fallback in case some services don't load
             setTimeout(() => {
                 if (readyServices < totalServices) {
-                    this.logger.warn('RENDER', `Only ${readyServices}/${totalServices} services ready after 10 seconds`);
+                    this.logger.warn('RENDER', `Only ${readyServices}/${totalServices} services ready after 5 seconds`);
                     this.logger.warn('RENDER', 'Available services:', {
                         stateManager: !!this.stateManager,
                         domManager: !!this.domManager,
@@ -114,7 +152,7 @@
                         this.logger.error('RENDER', 'Too few services loaded, cannot initialize Enhanced Component Renderer');
                     }
                 }
-            }, 10000);
+            }, 5000); // Reduced timeout to 5 seconds
             
             this.logger.debug('RENDER', `Waiting for ${totalServices} rendering services to initialize`);
         }
@@ -142,6 +180,28 @@
                 case 'gmkb:component-container-manager-ready':
                     this.containerManager = detail.manager || window.componentContainerManager;
                     break;
+            }
+        }
+        
+        /**
+         * Get service reference by event type
+         */
+        getServiceByEventType(eventType) {
+            switch (eventType) {
+                case 'gmkb:component-state-manager-ready':
+                    return this.stateManager;
+                case 'gmkb:component-dom-manager-ready':
+                    return this.domManager;
+                case 'gmkb:component-render-engine-ready':
+                    return this.renderEngine;
+                case 'gmkb:component-ui-integration-ready':
+                    return this.uiIntegration;
+                case 'gmkb:component-performance-monitor-ready':
+                    return this.performanceMonitor;
+                case 'gmkb:component-container-manager-ready':
+                    return this.containerManager;
+                default:
+                    return null;
             }
         }
 
