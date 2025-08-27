@@ -64,21 +64,35 @@ class SectionRenderer {
         this.sectionLayoutManager = window.sectionLayoutManager;
         this.componentRenderer = window.enhancedComponentRenderer;
         
-        // Find container element
-        this.containerElement = this.findContainerElement();
+        // ROOT FIX: Ensure DOM is ready before looking for container
+        const tryFindContainer = () => {
+            this.containerElement = this.findContainerElement();
+            
+            if (!this.containerElement) {
+                // Try again after a short delay if DOM not ready
+                if (this.containerRetries < 5) {
+                    this.containerRetries++;
+                    this.logger.warn(`⏳ PHASE 3: Container not found, retry ${this.containerRetries}/5`);
+                    setTimeout(tryFindContainer, 100);
+                } else {
+                    this.logger.error('❌ PHASE 3: No container element found for sections after retries');
+                }
+                return;
+            }
+            
+            this.logger.info('🎯 PHASE 3: Section renderer ready - container found:', {
+                containerId: this.containerElement.id,
+                containerClass: this.containerElement.className,
+                parent: this.containerElement.parentElement?.id
+            });
+            
+            // Render any existing sections
+            this.renderExistingSections();
+        };
         
-        if (!this.containerElement) {
-            this.logger.error('❌ PHASE 3: No container element found for sections');
-            return;
-        }
-        
-        this.logger.info('🎯 PHASE 3: Section renderer ready - container found:', {
-            containerId: this.containerElement.id,
-            containerClass: this.containerElement.className
-        });
-        
-        // Render any existing sections
-        this.renderExistingSections();
+        // Start looking for container
+        this.containerRetries = 0;
+        tryFindContainer();
     }
     
     /**
@@ -86,31 +100,43 @@ class SectionRenderer {
      * Following checklist: Root Cause Fix
      */
     findContainerElement() {
-        // Look for dedicated section container first
+        // ROOT FIX: Look for the container that exists in the PHP template
         let container = document.getElementById('gmkb-sections-container');
         
-        // Fall back to component preview container
         if (!container) {
-            container = document.getElementById('component-preview-container');
+            // Try alternate selectors
+            container = document.querySelector('.gmkb-sections-container');
         }
         
-        // Fall back to generic preview container
         if (!container) {
-            container = document.querySelector('.gmkb-preview__container');
+            // Fall back to saved components container
+            const savedComponentsContainer = document.getElementById('saved-components-container');
+            if (savedComponentsContainer) {
+                // Find or create sections container within saved components container
+                container = savedComponentsContainer.querySelector('#gmkb-sections-container');
+                
+                if (!container) {
+                    // The container should exist from PHP template, but create if missing
+                    container = document.createElement('div');
+                    container.id = 'gmkb-sections-container';
+                    container.className = 'gmkb-sections-container';
+                    savedComponentsContainer.appendChild(container);
+                    
+                    this.logger.info('📦 PHASE 3: Created sections container in saved-components-container');
+                }
+            }
         }
         
-        // Create container if it doesn't exist
         if (!container) {
-            const previewArea = document.querySelector('.gmkb-preview') || 
-                               document.querySelector('#gmkb-preview-area');
-            
-            if (previewArea) {
+            // Last resort: create in media kit preview
+            const mediaKitPreview = document.getElementById('media-kit-preview');
+            if (mediaKitPreview) {
                 container = document.createElement('div');
                 container.id = 'gmkb-sections-container';
                 container.className = 'gmkb-sections-container';
-                previewArea.appendChild(container);
+                mediaKitPreview.appendChild(container);
                 
-                this.logger.info('📦 PHASE 3: Created sections container');
+                this.logger.info('📦 PHASE 3: Created sections container in media-kit-preview');
             }
         }
         

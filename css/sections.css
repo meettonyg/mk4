@@ -278,9 +278,88 @@
 /* Integration with existing component styles */
 .gmkb-section .gmkb-component {
     margin-bottom: 0; /* Remove default margin within sections */
+    position: relative;
 }
 
 .gmkb-section__column .gmkb-component:last-child,
 .gmkb-section__content .gmkb-component:last-child {
     margin-bottom: 0;
+}
+
+/* Component Drag Handle */
+.gmkb-component__drag-handle {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: move;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.gmkb-component:hover .gmkb-component__drag-handle {
+    opacity: 1;
+}
+
+.gmkb-component__drag-handle:hover {
+    background: #f0f0f0;
+    border-color: #999;
+}
+
+.gmkb-component--dragging {
+    opacity: 0.5;
+    cursor: move;
+}
+
+/* Section Column Drag Over State */
+.gmkb-section__column--drag-over,
+.gmkb-section__content--drag-over {
+    background: rgba(41, 92, 255, 0.05);
+    border: 2px dashed #295cff;
+    position: relative;
+}
+
+.gmkb-section__column--drag-over::before,
+.gmkb-section__content--drag-over::before {
+    content: 'Drop component here';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #295cff;
+    font-size: 14px;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Save Status Indicators */
+.toolbar__status-dot--saving {
+    background-color: #f59e0b;
+    animation: pulse 1s infinite;
+}
+
+.toolbar__status-dot--saved {
+    background-color: #10b981;
+}
+
+.toolbar__status-dot--error {
+    background-color: #ef4444;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }

@@ -715,6 +715,28 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    
+    // PHASE 3: Section-Component Integration
+    if (!wp_script_is('gmkb-section-component-integration', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-component-integration',
+            $plugin_url . 'js/ui/section-component-integration.js',
+            array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-enhanced-component-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 3: Section State Persistence
+    if (!wp_script_is('gmkb-section-state-persistence', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-state-persistence',
+            $plugin_url . 'js/services/section-state-persistence.js',
+            array('gmkb-enhanced-state-manager', 'gmkb-section-layout-manager'),
+            $version,
+            true
+        );
+    }
 
     // PHASE 3: Section Renderer - ROOT FIX: Updated path to system folder
     if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
@@ -969,6 +991,8 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-layout-manager',
                 'gmkb-section-controls-ui',
                 'gmkb-sidebar-section-integration',
+                'gmkb-section-component-integration',
+                'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
                 'gmkb-tabs',
                 'gmkb-toolbar',
@@ -1100,6 +1124,39 @@ function gmkb_enqueue_assets() {
                 'gmkb-test-event-delegation-fix',
                 $plugin_url . 'test-event-delegation-fix.js',
                 array('gmkb-topics-panel-enhanced'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // PHASE INTEGRATION TEST: Test all phases working together
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'tests/test-phase-integration.js')) {
+            wp_enqueue_script(
+                'gmkb-test-phase-integration',
+                $plugin_url . 'tests/test-phase-integration.js',
+                array('gmkb-main-script', 'gmkb-section-layout-manager', 'gmkb-section-renderer'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // PHASE 3 FIX: Section rendering fix script
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'js/debug/fix-section-rendering.js')) {
+            wp_enqueue_script(
+                'gmkb-fix-section-rendering',
+                $plugin_url . 'js/debug/fix-section-rendering.js',
+                array('gmkb-section-renderer', 'gmkb-section-layout-manager'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // SECTION INTEGRATION TEST: Complete integration testing
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'tests/test-section-integration.js')) {
+            wp_enqueue_script(
+                'gmkb-test-section-integration',
+                $plugin_url . 'tests/test-section-integration.js',
+                array('gmkb-section-component-integration', 'gmkb-section-state-persistence'),
                 $version . '-debug',
                 true
             );
