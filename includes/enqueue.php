@@ -437,16 +437,8 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ROOT CAUSE FIX: Core Systems Coordinator detection logic fix
-    if (!wp_script_is('gmkb-core-systems-coordinator-detection-fix', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-core-systems-coordinator-detection-fix',
-            $plugin_url . 'js/core/core-systems-coordinator-detection-fix.js',
-            array('gmkb-core-systems-coordinator'),
-            $version,
-            true
-        );
-    }
+    // ROOT CAUSE FIX: Detection logic integrated directly into core-systems-coordinator.js
+    // No separate detection fix file needed
     
     // ROOT FIX: PHASE 2 - Essential UI Systems Only
     // Simplified dependency chain - load only what's needed
