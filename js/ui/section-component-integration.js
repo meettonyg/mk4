@@ -116,65 +116,82 @@ class SectionComponentIntegration {
     
     /**
      * Setup component dragging
+     * ROOT FIX: Enhanced to support dragging from main container to sections
      */
     setupComponentDragging() {
-        // Make existing components draggable
-        document.addEventListener('mouseenter', (e) => {
-            // Robust event target validation - prevent closest() errors
-            if (!e || !e.target) return;
-            if (!e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) return;
-            if (!e.target.closest || typeof e.target.closest !== 'function') return;
-            
-            const component = e.target.closest('.gmkb-component');
-            if (component && !component.hasAttribute('draggable')) {
-                component.setAttribute('draggable', 'true');
-                
-                // Add drag handle if not present
-                if (!component.querySelector('.gmkb-component__drag-handle')) {
-                    const handle = document.createElement('div');
-                    handle.className = 'gmkb-component__drag-handle';
-                    handle.innerHTML = '<span class="dashicons dashicons-move"></span>';
-                    handle.title = 'Drag to move';
-                    component.appendChild(handle);
+        // ROOT FIX: Make ALL components draggable, including those in saved-components-container
+        const makeComponentsDraggable = () => {
+            const components = document.querySelectorAll('[data-component-id]');
+            components.forEach(component => {
+                if (!component.hasAttribute('draggable')) {
+                    component.setAttribute('draggable', 'true');
+                    component.style.cursor = 'move';
                 }
-            }
-        }, true);
+            });
+        };
         
-        // ROOT CAUSE FIX: Component drag start - single data source approach
+        // Initial setup
+        makeComponentsDraggable();
+        
+        // Watch for new components via mutation observer
+        const observer = new MutationObserver(() => {
+            makeComponentsDraggable();
+        });
+        
+        const containers = [
+            document.getElementById('saved-components-container'),
+            document.getElementById('gmkb-sections-container')
+        ].filter(Boolean);
+        
+        containers.forEach(container => {
+            observer.observe(container, { childList: true, subtree: true });
+        });
+        
+        // ROOT CAUSE FIX: Component drag start - properly set data for ALL components
         document.addEventListener('dragstart', (e) => {
             // Robust event target validation - prevent closest() errors
             if (!e || !e.target) return;
             if (!e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) return;
-            if (!e.target.closest || typeof e.target.closest !== 'function') return;
             
-            const component = e.target.closest('.gmkb-component');
+            // ROOT FIX: Check for component by data attribute, not class
+            const component = e.target.closest('[data-component-id]');
             if (component) {
-                // ROOT CAUSE FIX: Use only HTML5 dataTransfer - no separate draggedComponent property
-                component.classList.add('gmkb-component--dragging');
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', component.dataset.componentId);
-                e.dataTransfer.setData('component-type', component.dataset.componentType || '');
+                const componentId = component.dataset.componentId;
+                const componentType = component.dataset.componentType || '';
                 
-                // Store additional data in DOM attributes for fallback
+                // Visual feedback
+                component.classList.add('gmkb-component--dragging');
+                component.style.opacity = '0.5';
+                
+                // Set transfer data
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', componentId);
+                e.dataTransfer.setData('component-id', componentId);
+                e.dataTransfer.setData('component-type', componentType);
+                
+                // Store in dataset for fallback
                 component.dataset.dragStartTime = Date.now();
+                
+                this.logger.info(`🎯 Started dragging component: ${componentId}`);
                 
                 // Dispatch event
                 document.dispatchEvent(new CustomEvent('gmkb:component-drag-start', {
-                    detail: { componentId: component.dataset.componentId }
+                    detail: { componentId, componentType }
                 }));
             }
         });
         
-        // ROOT CAUSE FIX: Component drag end - cleanup only
+        // ROOT CAUSE FIX: Component drag end - cleanup for ALL components
         document.addEventListener('dragend', (e) => {
-            // Robust event target validation - prevent closest() errors
+            // Robust event target validation
             if (!e || !e.target) return;
             if (!e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) return;
-            if (!e.target.closest || typeof e.target.closest !== 'function') return;
             
-            const component = e.target.closest('.gmkb-component');
+            const component = e.target.closest('[data-component-id]');
             if (component) {
+                // Remove visual feedback
                 component.classList.remove('gmkb-component--dragging');
+                component.style.opacity = '';
                 
                 // Clean up drag data
                 delete component.dataset.dragStartTime;
@@ -184,13 +201,15 @@ class SectionComponentIntegration {
                     col.classList.remove('gmkb-section__column--drag-over');
                 });
                 
+                this.logger.info(`🎯 Finished dragging component: ${component.dataset.componentId}`);
+                
                 document.dispatchEvent(new CustomEvent('gmkb:component-drag-end', {
                     detail: { componentId: component.dataset.componentId }
                 }));
             }
         });
         
-        this.logger.info('🎯 Component dragging configured');
+        this.logger.info('🎯 Component dragging configured for all components');
     }
     
     /**
