@@ -382,12 +382,23 @@ function gmkb_enqueue_assets() {
     // ROOT FIX: COMPREHENSIVE DUPLICATE PREVENTION FOR ALL SCRIPTS
     // Prevents infinite initialization loops by ensuring each script loads only once
     
-    // 1. Structured logger FIRST (prevents all undefined errors) - with duplicate prevention
+    // 0. GMKB Core System FIRST (provides global namespace and events)
+    if (!wp_script_is('gmkb', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb',
+            $plugin_url . 'js/core/gmkb.js',
+            array(), // ZERO dependencies - must load first
+            $version,
+            true
+        );
+    }
+    
+    // 1. Structured logger SECOND (prevents all undefined errors) - with duplicate prevention
     if (!wp_script_is('gmkb-structured-logger', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-structured-logger',
             $plugin_url . 'js/utils/structured-logger.js',
-            array(), // ZERO dependencies
+            array('gmkb'), // Depends on GMKB core
             $version,
             true
         );
@@ -420,7 +431,18 @@ function gmkb_enqueue_assets() {
         wp_enqueue_script(
             'gmkb-core-systems-coordinator',
             $plugin_url . 'js/core/core-systems-coordinator.js',
-            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            array('gmkb', 'gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // ROOT CAUSE FIX: Core Systems Coordinator detection logic fix
+    if (!wp_script_is('gmkb-core-systems-coordinator-detection-fix', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-core-systems-coordinator-detection-fix',
+            $plugin_url . 'js/core/core-systems-coordinator-detection-fix.js',
+            array('gmkb-core-systems-coordinator'),
             $version,
             true
         );
@@ -746,6 +768,9 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT CAUSE FIX: Circuit breaker removed - GMKB core system now loads properly
+    // No longer needed since GMKB namespace is available from the start
+    
     // ROOT FIX: Topics post ID fix - ensure post ID is available for topics AJAX requests
     if (!wp_script_is('gmkb-fix-topics-post-id', 'enqueued')) {
         wp_enqueue_script(
@@ -803,6 +828,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT CAUSE FIX: Enhanced component renderer global exposure patch
+    if (!wp_script_is('gmkb-enhanced-component-renderer-global-fix', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-enhanced-component-renderer-global-fix',
+            $plugin_url . 'js/core/enhanced-component-renderer-global-fix.js',
+            array('gmkb-enhanced-component-renderer'),
+            $version,
+            true
+        );
+    }
+    
     // 14. Component library (SIMPLIFIED VERSION - fixes infinite loops and race conditions)
     if (!wp_script_is('gmkb-component-library-simple', 'enqueued')) {
         wp_enqueue_script(
@@ -825,6 +861,9 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    
+    // ROOT CAUSE FIX: Sortable circuit breaker removed - GMKB core system now loads properly
+    // SortableJS integration will work correctly once GMKB namespace is available
     
     // Drag and drop manager (coordinates with sortable integration)
     if (!wp_script_is('gmkb-drag-drop-manager', 'enqueued')) {
@@ -854,6 +893,7 @@ function gmkb_enqueue_assets() {
             'gmkb-main-script',
             $plugin_url . 'js/main.js',
             array(
+                'gmkb', // GMKB Core System FIRST
                 'sortable-js', // Include SortableJS
                 'gmkb-structured-logger',
                 'gmkb-enhanced-state-manager',
@@ -1008,6 +1048,17 @@ function gmkb_enqueue_assets() {
                 'gmkb-test-event-delegation-fix',
                 $plugin_url . 'test-event-delegation-fix.js',
                 array('gmkb-topics-panel-enhanced'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT CAUSE FIX: System verification and recovery script for debugging
+        if (!wp_script_is('gmkb-system-verification-recovery', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-system-verification-recovery',
+                $plugin_url . 'js/core/system-verification-recovery.js',
+                array('gmkb-main-script'),
                 $version . '-debug',
                 true
             );

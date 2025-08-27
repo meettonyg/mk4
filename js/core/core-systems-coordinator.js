@@ -49,6 +49,9 @@ class CoreSystemsCoordinator {
      * Following checklist: Dependency-Awareness, No Global Object Sniffing
      */
     checkSystemReadiness(forceDispatch = false) {
+        // ROOT FIX: Check GMKB core system first
+        const gmkbReady = !!(window.GMKB && typeof window.GMKB.dispatch === 'function');
+        
         // Check state manager
         this.systemsReady.stateManager = !!(window.enhancedStateManager && window.enhancedStateManager.getState);
         
@@ -61,12 +64,19 @@ class CoreSystemsCoordinator {
         // Check UI systems (tabs, toolbar, etc.)
         this.systemsReady.uiSystems = !!(window.tabs && document.querySelector('.sidebar__tab'));
         
-        const allReady = Object.values(this.systemsReady).every(ready => ready);
+        // ROOT FIX: All systems must be ready AND GMKB must be available
+        const allReady = gmkbReady && Object.values(this.systemsReady).every(ready => ready);
         
-        this.logger.info('🔍 PHASE 3: System readiness check:', this.systemsReady, 'All ready:', allReady);
+        this.logger.info('🔍 PHASE 3: System readiness check:', {
+            gmkbReady,
+            ...this.systemsReady,
+            allReady
+        });
         
         if ((allReady || forceDispatch) && !this.hasDispatchedReady) {
             this.dispatchCoreSystemsReady();
+        } else if (!gmkbReady) {
+            this.logger.warn('⚠️ PHASE 3: GMKB core system not available - waiting for initialization');
         }
     }
     
@@ -152,13 +162,19 @@ class CoreSystemsCoordinator {
             systemsReady: this.systemsReady,
             hasDispatchedReady: this.hasDispatchedReady,
             availableGlobals: {
+                GMKB: !!window.GMKB,
                 stateManager: !!window.enhancedStateManager,
                 componentManager: !!window.enhancedComponentManager,
                 componentRenderer: !!window.enhancedComponentRenderer,
                 sectionLayoutManager: !!window.sectionLayoutManager,
                 sectionRenderer: !!window.sectionRenderer,
                 sectionTemplates: !!window.sectionTemplates
-            }
+            },
+            gmkbMethods: window.GMKB ? {
+                dispatch: typeof window.GMKB.dispatch,
+                subscribe: typeof window.GMKB.subscribe,
+                systems: Object.keys(window.GMKB.systems || {})
+            } : null
         };
     }
 }

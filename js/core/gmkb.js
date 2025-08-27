@@ -326,4 +326,15 @@ const GMKB = {
 // ROOT FIX: Make GMKB available globally instead of using ES6 export
 window.GMKB = GMKB;
 
+// ROOT FIX: Initialize global action listeners immediately when GMKB loads
+// This ensures toolbar auto-save and other systems can use GMKB immediately
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        GMKB.initializeGlobalActionListeners();
+    });
+} else {
+    // DOM already loaded, initialize immediately
+    GMKB.initializeGlobalActionListeners();
+}
+
 console.log('✅ GMKB Core: Global namespace established and ready');

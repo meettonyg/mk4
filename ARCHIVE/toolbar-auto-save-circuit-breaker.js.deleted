@@ -1,0 +1,18 @@
+/**
+ * DELETED: This was a problematic patch that violated the project checklist
+ * 
+ * VIOLATIONS:
+ * - Used setInterval polling (Phase 1 violation)  
+ * - Patched symptoms instead of root cause (Phase 1 violation)
+ * - Added 150+ lines of complex code instead of simple fix (Phase 2 violation)
+ * - Used console method overriding and setTimeout fallbacks
+ * 
+ * ROOT CAUSE FIX IMPLEMENTED INSTEAD:
+ * - Added missing gmkb.js to enqueue.php
+ * - GMKB system now loads properly, eliminating need for circuit breaker
+ * - Event-driven initialization works correctly
+ * 
+ * DELETED: 2024-08-26 - Replaced with proper root cause fix
+ */
+
+// File archived - see git history for original content
