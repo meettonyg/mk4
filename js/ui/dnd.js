@@ -13,6 +13,86 @@
 let draggedItem = null;
 
 /**
+ * ROOT CAUSE FIX: Get available sections for smart targeting
+ * @returns {Array} Array of available sections with capacity information
+ */
+function getAvailableSectionsForTargeting() {
+    try {
+        if (!window.sectionLayoutManager) {
+            return [];
+        }
+        
+        const allSections = window.sectionLayoutManager.getAllSections() || [];
+        
+        // Filter sections with available capacity and add metadata
+        const availableSections = allSections.map(section => {
+            const maxComponents = section.layout?.columns || 1;
+            const currentComponents = section.components?.length || 0;
+            const hasCapacity = currentComponents < maxComponents;
+            
+            return {
+                section_id: section.section_id,
+                section_type: section.section_type,
+                maxColumns: maxComponents,
+                currentComponents: currentComponents,
+                hasCapacity: hasCapacity,
+                availableColumns: maxComponents - currentComponents,
+                priority: hasCapacity ? 1 : 0
+            };
+        }).sort((a, b) => b.priority - a.priority);
+        
+        return availableSections;
+        
+    } catch (error) {
+        console.error('DND: Error getting available sections:', error);
+        return [];
+    }
+}
+
+/**
+ * ROOT CAUSE FIX: Determine smart section targeting for component
+ * @param {Array} availableSections - Available sections with capacity info
+ * @param {number} componentIndex - Index of component being added
+ * @returns {Object} Section targeting information
+ */
+function determineSectionTargeting(availableSections, componentIndex = 0) {
+    try {
+        // If no sections available, return empty targeting
+        if (!availableSections || availableSections.length === 0) {
+            return {};
+        }
+        
+        // Strategy 1: Find section with available capacity
+        const sectionsWithCapacity = availableSections.filter(s => s.hasCapacity);
+        
+        if (sectionsWithCapacity.length > 0) {
+            // Use round-robin distribution for multiple components
+            const targetSection = sectionsWithCapacity[componentIndex % sectionsWithCapacity.length];
+            
+            // Determine target column
+            const targetColumn = (targetSection.currentComponents % targetSection.maxColumns) + 1;
+            
+            return {
+                targetSectionId: targetSection.section_id,
+                targetColumn: targetColumn
+            };
+        }
+        
+        // Strategy 2: Use first section as fallback
+        const fallbackSection = availableSections[0];
+        
+        return {
+            targetSectionId: fallbackSection.section_id,
+            targetColumn: 1
+        };
+        
+    } catch (error) {
+        console.error('DND: Error determining section targeting:', error);
+        return {};
+    }
+}
+
+/**
  * Initializes all drag and drop event listeners.
  */
 function initializeDragAndDrop() {
@@ -73,6 +153,9 @@ function handleDragLeave(e) {
     }
 }
 
+/**
+ * ROOT CAUSE FIX: Enhanced drop handler with smart section targeting
+ */
 function handleDrop(e) {
     e.preventDefault();
     const previewContainer = e.target.closest('#media-kit-preview');
@@ -83,10 +166,28 @@ function handleDrop(e) {
     const componentType = e.dataTransfer.getData('text/plain');
 
     if (componentType) {
-        // ROOT FIX: Use global enhancedComponentManager to add the component
+        // ROOT FIX: Use global enhancedComponentManager with smart section targeting
         if (window.enhancedComponentManager && window.enhancedComponentManager.addComponent) {
-            window.enhancedComponentManager.addComponent(componentType);
-            console.log(`✅ DND: Component ${componentType} added via enhancedComponentManager`);
+            
+            // ROOT CAUSE FIX: Get available sections for smart targeting
+            const availableSections = getAvailableSectionsForTargeting();
+            const sectionTargeting = determineSectionTargeting(availableSections, 0);
+            
+            // Add component with section targeting if available
+            const componentOptions = {
+                ...(sectionTargeting.targetSectionId && {
+                    targetSectionId: sectionTargeting.targetSectionId,
+                    targetColumn: sectionTargeting.targetColumn
+                })
+            };
+            
+            window.enhancedComponentManager.addComponent(componentType, componentOptions);
+            
+            if (sectionTargeting.targetSectionId) {
+                console.log(`✅ DND: Component ${componentType} added to section ${sectionTargeting.targetSectionId} via enhancedComponentManager`);
+            } else {
+                console.log(`✅ DND: Component ${componentType} added via enhancedComponentManager`);
+            }
         } else {
             console.error('❌ DND: enhancedComponentManager not available globally');
         }
@@ -101,7 +202,10 @@ window.dragAndDropSystem = {
     handleDragOver: handleDragOver,
     handleDragEnter: handleDragEnter,
     handleDragLeave: handleDragLeave,
-    handleDrop: handleDrop
+    handleDrop: handleDrop,
+    // ROOT CAUSE FIX: Expose section targeting functions
+    getAvailableSectionsForTargeting: getAvailableSectionsForTargeting,
+    determineSectionTargeting: determineSectionTargeting
 };
 
 // ROOT FIX: Auto-initialize on DOM ready

@@ -87,6 +87,7 @@
 
         /**
          * PHASE 2: Enhanced add component with configuration and data binding
+         * ROOT CAUSE FIX: Atomic component creation with section assignment
          * @param {string} componentType - Type of component to add
          * @param {Object} props - Component properties
          * @param {Object} podsData - Optional Pods data for binding
@@ -103,10 +104,22 @@
                     logger.warn('COMPONENT', `Component rendering in progress, queuing ${componentType}`);
                     // Wait a bit and retry
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    return this.addComponent(componentType, props);
+                    return this.addComponent(componentType, props, podsData);
                 }
                 
                 this.isCurrentlyRendering = true;
+
+                // ROOT CAUSE FIX: Validate section BEFORE component creation
+                const targetSectionId = props.targetSectionId;
+                const targetColumn = props.targetColumn || 1;
+                
+                if (targetSectionId) {
+                    const sectionValidation = await this.validateSectionForComponent(targetSectionId, targetColumn);
+                    if (!sectionValidation.isValid) {
+                        throw new Error(`Section assignment failed: ${sectionValidation.reason}`);
+                    }
+                    logger.info('COMPONENT', `Section validated for component: ${targetSectionId}, column ${targetColumn}`);
+                }
 
                 // Generate unique component ID
                 const componentId = this.generateComponentId(componentType);
@@ -156,26 +169,25 @@
                     throw new Error(`Failed to render component: ${componentType}`);
                 }
 
-                // Add to preview area (with section targeting if specified)
-                this.addComponentToPreview(componentId, html, componentData.sectionId, componentData.columnNumber);
-
-                // Update state manager
-                if (window.enhancedStateManager) {
-                    window.enhancedStateManager.addComponent(componentData);
+                // ROOT CAUSE FIX: Atomic section assignment BEFORE adding to preview
+                if (componentData.sectionId && window.sectionLayoutManager) {
+                    const assignmentSuccess = window.sectionLayoutManager.assignComponentToSection(
+                        componentId, 
+                        componentData.sectionId, 
+                        componentData.columnNumber || 1
+                    );
+                    if (!assignmentSuccess) {
+                        throw new Error(`Failed to assign component to section ${componentData.sectionId}`);
+                    }
+                    logger.info('COMPONENT', `Component atomically assigned to section: ${componentData.sectionId}`);
                 }
                 
-                // PHASE 3: Assign to section if specified
-                if (componentData.sectionId && window.sectionLayoutManager) {
-                    try {
-                        window.sectionLayoutManager.assignComponentToSection(
-                            componentId, 
-                            componentData.sectionId, 
-                            componentData.columnNumber || 1
-                        );
-                        logger.info('COMPONENT', `Component assigned to section: ${componentData.sectionId}`);
-                    } catch (sectionError) {
-                        logger.warn('COMPONENT', 'Failed to assign component to section:', sectionError.message);
-                    }
+                // Add to preview area (section assignment already completed)
+                this.addComponentToPreview(componentId, html, componentData.sectionId, componentData.columnNumber);
+
+                // Update state manager (only after successful section assignment)
+                if (window.enhancedStateManager) {
+                    window.enhancedStateManager.addComponent(componentData);
                 }
 
                 // Store component reference
@@ -217,6 +229,35 @@
 
             } catch (error) {
                 logger.error('COMPONENT', `Failed to add component: ${componentType}`, error);
+                
+                // ROOT CAUSE FIX: Rollback any partial state changes on failure
+                try {
+                    if (componentId) {
+                        // Remove from component manager if added
+                        this.components.delete(componentId);
+                        
+                        // Remove from state manager if added
+                        if (window.enhancedStateManager) {
+                            window.enhancedStateManager.removeComponent(componentId);
+                        }
+                        
+                        // Remove from section if assigned
+                        if (targetSectionId && window.sectionLayoutManager) {
+                            window.sectionLayoutManager.removeComponentFromAllSections(componentId);
+                        }
+                        
+                        // Remove from DOM if added
+                        const domElement = document.getElementById(componentId);
+                        if (domElement) {
+                            domElement.remove();
+                        }
+                        
+                        logger.info('COMPONENT', `Rolled back failed component creation: ${componentId}`);
+                    }
+                } catch (rollbackError) {
+                    logger.error('COMPONENT', 'Rollback failed:', rollbackError);
+                }
+                
                 throw error;
             } finally {
                 // ROOT FIX: Always clear the rendering flag
@@ -819,6 +860,78 @@
             return `${componentType}-${Date.now()}-${this.componentCounter}`;
         }
 
+        /**
+         * ROOT CAUSE FIX: Validate section exists and has capacity for new component
+         * @param {string} sectionId - Target section ID
+         * @param {number} columnNumber - Target column number
+         * @returns {Promise<Object>} Validation result
+         */
+        async validateSectionForComponent(sectionId, columnNumber = 1) {
+            try {
+                // Check if section layout manager exists
+                if (!window.sectionLayoutManager) {
+                    return {
+                        isValid: false,
+                        reason: 'Section layout manager not available'
+                    };
+                }
+                
+                // Get section data
+                const section = window.sectionLayoutManager.getSection(sectionId);
+                if (!section) {
+                    return {
+                        isValid: false,
+                        reason: `Section ${sectionId} does not exist`
+                    };
+                }
+                
+                // Validate column number
+                const maxColumns = section.layout?.columns || 1;
+                if (columnNumber > maxColumns) {
+                    return {
+                        isValid: false,
+                        reason: `Column ${columnNumber} exceeds section capacity (${maxColumns})`
+                    };
+                }
+                
+                // Check if section DOM element exists
+                const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
+                if (!sectionElement) {
+                    // Try to render the section if it doesn't exist in DOM
+                    if (window.sectionRenderer) {
+                        try {
+                            await window.sectionRenderer.renderSection(sectionId);
+                            logger.info('COMPONENT', `Section ${sectionId} rendered for component assignment`);
+                        } catch (renderError) {
+                            return {
+                                isValid: false,
+                                reason: `Section ${sectionId} could not be rendered: ${renderError.message}`
+                            };
+                        }
+                    } else {
+                        return {
+                            isValid: false,
+                            reason: `Section ${sectionId} not found in DOM and section renderer not available`
+                        };
+                    }
+                }
+                
+                logger.debug('COMPONENT', `Section validation passed: ${sectionId}, column ${columnNumber}`);
+                return {
+                    isValid: true,
+                    section: section,
+                    maxColumns: maxColumns
+                };
+                
+            } catch (error) {
+                logger.error('COMPONENT', `Section validation failed for ${sectionId}:`, error);
+                return {
+                    isValid: false,
+                    reason: `Validation error: ${error.message}`
+                };
+            }
+        }
+        
         /**
          * Get default props for component type
          */

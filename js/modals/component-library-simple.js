@@ -393,9 +393,158 @@ function hideModal() {
 }
 
 /**
- * SIMPLE ARCHITECTURE: Add selected components
+ * ROOT CAUSE FIX: Get available sections for smart targeting
+ * @returns {Array} Array of available sections with capacity information
  */
-function addSelectedComponents() {
+function getAvailableSectionsForTargeting() {
+    try {
+        if (!window.sectionLayoutManager) {
+            logger.info('COMPONENT_LIBRARY', 'Section layout manager not available');
+            return [];
+        }
+        
+        const allSections = window.sectionLayoutManager.getAllSections() || [];
+        
+        // Filter sections with available capacity and add metadata
+        const availableSections = allSections.map(section => {
+            const maxComponents = section.layout?.columns || 1;
+            const currentComponents = section.components?.length || 0;
+            const hasCapacity = currentComponents < maxComponents;
+            
+            return {
+                section_id: section.section_id,
+                section_type: section.section_type,
+                maxColumns: maxComponents,
+                currentComponents: currentComponents,
+                hasCapacity: hasCapacity,
+                availableColumns: maxComponents - currentComponents,
+                priority: hasCapacity ? 1 : 0 // Sections with capacity get priority
+            };
+        }).sort((a, b) => b.priority - a.priority); // Sort by priority (capacity first)
+        
+        logger.debug('COMPONENT_LIBRARY', `Found ${availableSections.length} sections for targeting`, {
+            total: allSections.length,
+            withCapacity: availableSections.filter(s => s.hasCapacity).length
+        });
+        
+        return availableSections;
+        
+    } catch (error) {
+        logger.error('COMPONENT_LIBRARY', 'Error getting available sections:', error);
+        return [];
+    }
+}
+
+/**
+ * ROOT CAUSE FIX: Determine smart section targeting for component
+ * @param {Array} availableSections - Available sections with capacity info
+ * @param {number} componentIndex - Index of component being added (for distribution)
+ * @returns {Object} Section targeting information
+ */
+function determineSectionTargeting(availableSections, componentIndex = 0) {
+    try {
+        // If no sections available, return empty targeting (will add to main container)
+        if (!availableSections || availableSections.length === 0) {
+            logger.debug('COMPONENT_LIBRARY', 'No sections available, using main container');
+            return {};
+        }
+        
+        // Strategy 1: Find section with available capacity
+        const sectionsWithCapacity = availableSections.filter(s => s.hasCapacity);
+        
+        if (sectionsWithCapacity.length > 0) {
+            // Use round-robin distribution for multiple components
+            const targetSection = sectionsWithCapacity[componentIndex % sectionsWithCapacity.length];
+            
+            // Determine target column (distribute across available columns)
+            const targetColumn = (targetSection.currentComponents % targetSection.maxColumns) + 1;
+            
+            logger.debug('COMPONENT_LIBRARY', `Targeting section with capacity: ${targetSection.section_id}, column ${targetColumn}`);
+            
+            return {
+                targetSectionId: targetSection.section_id,
+                targetColumn: targetColumn
+            };
+        }
+        
+        // Strategy 2: If no sections have capacity, target the first section (will expand or overlay)
+        const fallbackSection = availableSections[0];
+        
+        logger.debug('COMPONENT_LIBRARY', `Using fallback section: ${fallbackSection.section_id}`);
+        
+        return {
+            targetSectionId: fallbackSection.section_id,
+            targetColumn: 1
+        };
+        
+    } catch (error) {
+        logger.error('COMPONENT_LIBRARY', 'Error determining section targeting:', error);
+        return {};
+    }
+}
+
+/**
+ * ROOT CAUSE FIX: Create default section if none exist
+ * Ensures components always have a section to target
+ * @returns {Promise<string|null>} Created section ID or null if failed
+ */
+async function ensureDefaultSectionExists() {
+    try {
+        if (!window.sectionLayoutManager) {
+            logger.warn('COMPONENT_LIBRARY', 'Section layout manager not available for default section creation');
+            return null;
+        }
+        
+        const existingSections = window.sectionLayoutManager.getAllSections() || [];
+        
+        if (existingSections.length > 0) {
+            // Sections already exist, no need to create default
+            return existingSections[0].section_id;
+        }
+        
+        // Create a default full-width section
+        const defaultSectionId = `section_default_${Date.now()}`;
+        
+        try {
+            const createdSection = window.sectionLayoutManager.registerSection(defaultSectionId, 'full_width', {
+                layout: {
+                    width: 'full_width',
+                    max_width: '100%',
+                    padding: '40px 20px',
+                    columns: 1
+                },
+                section_options: {
+                    background_type: 'none',
+                    spacing_top: 'medium',
+                    spacing_bottom: 'medium'
+                }
+            });
+            
+            // Render the section in DOM
+            if (window.sectionRenderer) {
+                await window.sectionRenderer.renderSection(defaultSectionId);
+            }
+            
+            logger.info('COMPONENT_LIBRARY', `Created default section: ${defaultSectionId}`);
+            return defaultSectionId;
+            
+        } catch (sectionError) {
+            logger.error('COMPONENT_LIBRARY', 'Failed to create default section:', sectionError);
+            return null;
+        }
+        
+    } catch (error) {
+        logger.error('COMPONENT_LIBRARY', 'Error ensuring default section exists:', error);
+        return null;
+    }
+}
+
+/**
+ * ROOT CAUSE FIX: Enhanced section-aware component addition
+ * Automatically targets available sections when adding components
+ * FIXED: Proper async/await handling for reliable component addition
+ */
+async function addSelectedComponents() {
     const selectedCards = componentGrid.querySelectorAll('.component-card.selected');
     
     if (selectedCards.length === 0) {
@@ -417,107 +566,142 @@ function addSelectedComponents() {
     }
     
     if (window.gmkbData?.debugMode) {
-        console.log(`➕ Component Library: Adding ${selectedCards.length} selected components`);
+        console.log(`➕ Component Library Modal: Adding ${selectedCards.length} selected components with section targeting`);
     }
     
     let addedCount = 0;
+    const errors = [];
     
-    selectedCards.forEach(card => {
+    // ROOT CAUSE FIX: Get available sections for smart targeting
+    const availableSections = getAvailableSectionsForTargeting();
+    
+    if (window.gmkbData?.debugMode) {
+        console.log(`📊 Available sections:`, availableSections);
+    }
+    
+    // ROOT CAUSE FIX: Use proper async loop instead of forEach
+    const selectedCardsArray = Array.from(selectedCards);
+    
+    for (const [index, card] of selectedCardsArray.entries()) {
         const componentType = card.dataset.component;
+        
         if (window.gmkbData?.debugMode) {
-            console.log(`➕ Adding component: ${componentType}`);
+            console.log(`➕ Component Library Modal: Adding component ${index + 1}/${selectedCardsArray.length}: ${componentType}`);
         }
         
-        // ROOT FIX: Try multiple methods to add components with section support
-        let added = false;
+        // ROOT CAUSE FIX: Smart section targeting
+        const sectionTargeting = determineSectionTargeting(availableSections, index);
         
-        // Method 1: Enhanced component manager with section targeting
-        if (window.enhancedComponentManager?.isReady()) {
-            try {
-                // ROOT CAUSE FIX: Ensure at least one section exists before adding components
-                let targetSectionId = null;
+        if (window.gmkbData?.debugMode && sectionTargeting.targetSectionId) {
+            console.log(`🎯 Component Library Modal: Targeting ${componentType} to section ${sectionTargeting.targetSectionId}:${sectionTargeting.targetColumn}`);
+        }
+        
+        try {
+            let added = false;
+            
+            // Method 1: Enhanced component manager with atomic section targeting
+            if (window.enhancedComponentManager?.isReady()) {
+                const componentOptions = {
+                    // Add section targeting if available
+                    ...(sectionTargeting.targetSectionId && {
+                        targetSectionId: sectionTargeting.targetSectionId,
+                        targetColumn: sectionTargeting.targetColumn
+                    })
+                };
                 
-                if (window.sectionLayoutManager) {
-                    const availableSections = window.sectionLayoutManager.getAllSections() || [];
-                    
-                    // If no sections exist, create a default one
-                    if (availableSections.length === 0) {
-                        logger.info('COMPONENT_LIBRARY', 'No sections found, creating default section');
-                        const newSectionId = `section_default_${Date.now()}`;
-                        window.sectionLayoutManager.registerSection(newSectionId, 'full_width');
-                        targetSectionId = newSectionId;
-                    } else {
-                        // Use the first available section
-                        targetSectionId = availableSections[0].section_id;
+                if (window.gmkbData?.debugMode) {
+                    console.log(`➕ Component Library Modal: Adding ${componentType} with options:`, componentOptions);
+                }
+                
+                // ROOT CAUSE FIX: Properly await the async operation
+                await window.enhancedComponentManager.addComponent(componentType, componentOptions);
+                added = true;
+                addedCount++;
+                
+                // Show section targeting feedback
+                if (sectionTargeting.targetSectionId) {
+                    console.log(`✅ Component Library Modal: ${componentType} targeted to section ${sectionTargeting.targetSectionId}`);
+                } else {
+                    console.log(`✅ Component Library Modal: ${componentType} added to main container`);
+                }
+            }
+            
+            // Method 2: Fallback to GMKB global
+            if (!added && window.GMKB?.addComponent) {
+                window.GMKB.addComponent(componentType, sectionTargeting);
+                added = true;
+                addedCount++;
+                
+                if (window.gmkbData?.debugMode) {
+                    console.log(`✅ Component Library Modal: ${componentType} added via GMKB fallback`);
+                }
+            }
+            
+            // Method 3: Dispatch custom event as fallback
+            if (!added) {
+                const addComponentEvent = new CustomEvent('gmkb:add-component', {
+                    detail: { 
+                        componentType: componentType,
+                        props: sectionTargeting,
+                        source: 'component-library-modal-with-section-targeting'
                     }
+                });
+                document.dispatchEvent(addComponentEvent);
+                
+                if (window.gmkbData?.debugMode) {
+                    console.log(`✅ Component Library Modal: Dispatched add-component event for ${componentType} with targeting:`, sectionTargeting);
                 }
-                
-                const componentOptions = {};
-                
-                // Set target section if available
-                if (targetSectionId) {
-                    componentOptions.targetSectionId = targetSectionId;
-                    componentOptions.targetColumn = 1;
-                }
-                
-                window.enhancedComponentManager.addComponent(componentType, componentOptions);
-                added = true;
                 addedCount++;
-            } catch (error) {
-                console.error('Error adding component via enhancedComponentManager:', error);
             }
+            
+        } catch (error) {
+            console.error(`Component Library Modal: Error adding component ${componentType}:`, error);
+            errors.push({ componentType, error: error.message });
         }
-        
-        // Method 2: Fallback to GMKB global
-        if (!added && window.GMKB?.addComponent) {
-            try {
-                window.GMKB.addComponent(componentType, {});
-                added = true;
-                addedCount++;
-            } catch (error) {
-                console.error('Error adding component via GMKB:', error);
-            }
-        }
-        
-        // Method 3: Dispatch custom event as fallback
-        if (!added) {
-            const addComponentEvent = new CustomEvent('gmkb:add-component', {
-                detail: { 
-                    componentType: componentType,
-                    props: {},
-                    source: 'component-library'
-                }
-            });
-            document.dispatchEvent(addComponentEvent);
-            if (window.gmkbData?.debugMode) {
-                console.log(`➕ Dispatched add-component event for: ${componentType}`);
-            }
-            addedCount++;
-        }
-    });
+    }
     
-    // ROOT FIX: Show success feedback
+    // ROOT FIX: Show comprehensive feedback after all operations complete
     if (addedCount > 0) {
+        const sectionInfo = availableSections.length > 0 ? ' to sections' : '';
         const message = addedCount === 1 
-            ? 'Component added successfully'
-            : `${addedCount} components added successfully`;
+            ? `Component added successfully${sectionInfo}`
+            : `${addedCount} components added successfully${sectionInfo}`;
             
         if (window.GMKB_Toast) {
             window.GMKB_Toast.show({
                 message: message,
-                type: 'success',
+                type: errors.length > 0 ? 'warning' : 'success',
                 duration: 3000
             });
         }
         
         if (window.gmkbData?.debugMode) {
-            console.log(`✅ Component Library: Successfully added ${addedCount} components`);
+            console.log(`✅ Component Library Modal: Successfully added ${addedCount} components with section targeting`);
         }
     }
     
-    // Clear selection and hide modal
+    // Show errors if any
+    if (errors.length > 0) {
+        const errorMessage = `Failed to add ${errors.length} component(s): ${errors.map(e => e.componentType).join(', ')}`;
+        
+        if (window.GMKB_Toast) {
+            window.GMKB_Toast.show({
+                message: errorMessage,
+                type: 'error',
+                duration: 5000
+            });
+        } else {
+            console.error('Component Library Modal:', errorMessage, errors);
+        }
+    }
+    
+    // Clear selection and hide modal only after all operations complete
     selectedCards.forEach(card => card.classList.remove('selected'));
     hideModal();
+    
+    if (window.gmkbData?.debugMode) {
+        console.log(`🏁 Component Library Modal: Operation complete - added ${addedCount}, errors: ${errors.length}`);
+    }
 }
 
 // =============================================================================
@@ -536,9 +720,7 @@ function checkDependencies() {
     return { modalReady, dataReady, domReady, allReady: modalReady && dataReady && domReady };
 }
 
-/**
- * ROOT FIX: Single initialization trigger
- */
+// ROOT FIX: Single initialization path - no multiple retry mechanisms
 function tryInitialization() {
     if (isInitialized) {
         return;
@@ -553,6 +735,89 @@ function tryInitialization() {
     if (allReady) {
         logger.info('COMPONENT_LIBRARY', 'All dependencies ready, initializing');
         initializeComponentLibrary();
+    } else {
+        // Instead of setTimeout fallbacks, listen for specific events
+        setupDependencyListeners();
+    }
+}
+
+/**
+ * ROOT CAUSE FIX: Setup event listeners for missing dependencies instead of timeouts
+ */
+function setupDependencyListeners() {
+    const { modalReady, dataReady, domReady } = checkDependencies();
+    
+    // Listen for modal system ready
+    if (!modalReady && !document.querySelector('[data-modal-ready]')) {
+        document.addEventListener('gmkb:modal-base-ready', () => {
+            logger.debug('COMPONENT_LIBRARY', 'Modal system ready event received');
+            tryInitialization();
+        }, { once: true });
+        
+        document.body.setAttribute('data-modal-ready', 'waiting');
+    }
+    
+    // Listen for data ready events
+    if (!dataReady && !document.querySelector('[data-component-data-ready]')) {
+        const dataEvents = ['wordpressDataReady', 'gmkb:wordpress-data-ready', 'gmkb:ready'];
+        
+        dataEvents.forEach(eventName => {
+            document.addEventListener(eventName, () => {
+                logger.debug('COMPONENT_LIBRARY', `Data ready event received: ${eventName}`);
+                tryInitialization();
+            }, { once: true });
+        });
+        
+        document.body.setAttribute('data-component-data-ready', 'waiting');
+    }
+    
+    // Listen for section systems ready (crucial for section targeting)
+    if (!document.querySelector('[data-section-systems-ready]')) {
+        document.addEventListener('gmkb:section-systems-ready', () => {
+            logger.info('COMPONENT_LIBRARY', 'Section systems ready - component library can now do section targeting');
+            
+            // Force re-initialization to ensure section awareness
+            if (isInitialized) {
+                setupSectionAwareness();
+            } else {
+                tryInitialization();
+            }
+        }, { once: true });
+        
+        document.body.setAttribute('data-section-systems-ready', 'waiting');
+    }
+}
+
+/**
+ * ROOT CAUSE FIX: Setup section awareness after section systems are ready
+ */
+function setupSectionAwareness() {
+    try {
+        logger.info('COMPONENT_LIBRARY', 'Setting up section awareness for component library');
+        
+        // Verify section systems are available
+        const sectionSystemsReady = !!window.sectionLayoutManager && !!window.sectionRenderer;
+        
+        if (sectionSystemsReady) {
+            logger.info('COMPONENT_LIBRARY', 'Section systems confirmed ready - component library is now section-aware');
+            
+            // Update component library status to indicate section awareness
+            window.componentLibrarySystem.sectionAware = true;
+            window.componentLibrarySystem.lastSectionCheck = Date.now();
+            
+            // Emit event to notify other systems
+            document.dispatchEvent(new CustomEvent('gmkb:component-library-section-ready', {
+                detail: {
+                    timestamp: Date.now(),
+                    sectionSystemsAvailable: true
+                }
+            }));
+        } else {
+            logger.warn('COMPONENT_LIBRARY', 'Section systems not available despite ready event');
+        }
+        
+    } catch (error) {
+        logger.error('COMPONENT_LIBRARY', 'Error setting up section awareness:', error);
     }
 }
 
@@ -565,67 +830,69 @@ document.addEventListener('gmkb:wordpress-data-ready', tryInitialization);
 document.addEventListener('gmkb:ready', tryInitialization);
 document.addEventListener('gmkb:application-ready', tryInitialization);
 
+// ROOT CAUSE FIX: Listen for section systems ready
+document.addEventListener('gmkb:section-systems-ready', () => {
+    logger.info('COMPONENT_LIBRARY', 'Section systems ready - enabling section targeting');
+    setupSectionAwareness();
+});
+
 // ROOT FIX: Try immediately if DOM is already ready
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
     tryInitialization();
 }
 
-// ROOT FIX: Additional retry mechanism for resilient initialization
-setTimeout(() => {
-    if (!isInitialized) {
-        logger.info('COMPONENT_LIBRARY', 'Delayed initialization attempt - ensuring system is ready');
-        tryInitialization();
-    }
-}, 1000);
-
-// ROOT FIX: Emergency fallback - try to attach event listeners even without full initialization
-setTimeout(() => {
-    if (!isInitialized) {
-        logger.info('COMPONENT_LIBRARY', 'Emergency fallback - attempting basic button attachment');
-        
-        // Try to find modal elements
-        componentLibraryModal = document.getElementById('component-library-overlay');
-        componentGrid = document.getElementById('component-grid');
-        
-        if (componentLibraryModal && componentGrid) {
-            // Try basic event listener attachment
-            const emergencyButtons = document.querySelectorAll('#add-component-btn, #add-first-component');
-            emergencyButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    logger.info('COMPONENT_LIBRARY', 'Emergency button clicked, attempting manual modal display');
-                    componentLibraryModal.style.display = 'flex';
-                    
-                    // Try to populate components if not done
-                    if (componentGrid.children.length <= 1) {
-                        populateComponents();
-                    }
-                });
-            });
-            
-            logger.info('COMPONENT_LIBRARY', 'Emergency fallback initialized');
-        }
-    }
-}, 2000);
-
 // =============================================================================
 // GLOBAL API (SIMPLIFIED)
 // =============================================================================
 
-// ROOT FIX: Simplified global API
+// ROOT FIX: Enhanced global API with section awareness
 window.componentLibrarySystem = {
     isReady: () => isInitialized,
+    sectionAware: false, // Will be set to true when section systems are ready
+    lastSectionCheck: null,
     show: showModal,
     hide: hideModal,
     forceInit: () => {
         isInitialized = false;
         initializeComponentLibrary();
     },
+    // ROOT CAUSE FIX: Add section targeting methods
+    getAvailableSections: () => {
+        try {
+            return getAvailableSectionsForTargeting();
+        } catch (error) {
+            logger.error('COMPONENT_LIBRARY', 'Error getting sections:', error);
+            return [];
+        }
+    },
+    addComponentToSection: async (componentType, sectionId, column = 1) => {
+        try {
+            if (!window.enhancedComponentManager?.isReady()) {
+                throw new Error('Enhanced component manager not ready');
+            }
+            
+            const componentId = await window.enhancedComponentManager.addComponent(componentType, {
+                targetSectionId: sectionId,
+                targetColumn: column
+            });
+            
+            logger.info('COMPONENT_LIBRARY', `Added ${componentType} to section ${sectionId}:${column} -> ${componentId}`);
+            return componentId;
+            
+        } catch (error) {
+            logger.error('COMPONENT_LIBRARY', `Failed to add ${componentType} to section:`, error);
+            throw error;
+        }
+    },
+    ensureDefaultSection: ensureDefaultSectionExists,
     getStatus: () => ({
         initialized: isInitialized,
+        sectionAware: window.componentLibrarySystem.sectionAware,
         modalReady: !!window.GMKB_Modals,
         dataReady: !!(window.gmkbData?.components || window.guestifyData?.components),
         domReady: !!(document.getElementById('component-library-overlay')),
+        sectionSystemsReady: !!(window.sectionLayoutManager && window.sectionRenderer),
+        lastSectionCheck: window.componentLibrarySystem.lastSectionCheck,
         timestamp: Date.now()
     })
 };

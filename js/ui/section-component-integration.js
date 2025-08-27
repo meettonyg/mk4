@@ -12,9 +12,9 @@ class SectionComponentIntegration {
         this.sectionLayoutManager = null;
         this.sectionRenderer = null;
         this.componentManager = null;
-        this.draggedComponent = null;
+        // ROOT CAUSE FIX: Removed draggedComponent property to eliminate dual data sources
         
-        this.logger.info('🔗 Section-Component Integration initializing');
+        this.logger.info('Section-Component Integration initializing');
         this.initializeIntegration();
     }
     
@@ -140,7 +140,7 @@ class SectionComponentIntegration {
             }
         }, true);
         
-        // Component drag start
+        // ROOT CAUSE FIX: Component drag start - single data source approach
         document.addEventListener('dragstart', (e) => {
             // Robust event target validation - prevent closest() errors
             if (!e || !e.target) return;
@@ -149,16 +149,14 @@ class SectionComponentIntegration {
             
             const component = e.target.closest('.gmkb-component');
             if (component) {
-                this.draggedComponent = {
-                    id: component.dataset.componentId,
-                    element: component,
-                    originalParent: component.parentElement,
-                    originalSection: component.closest('.gmkb-section')?.dataset.sectionId
-                };
-                
+                // ROOT CAUSE FIX: Use only HTML5 dataTransfer - no separate draggedComponent property
                 component.classList.add('gmkb-component--dragging');
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', component.dataset.componentId);
+                e.dataTransfer.setData('component-type', component.dataset.componentType || '');
+                
+                // Store additional data in DOM attributes for fallback
+                component.dataset.dragStartTime = Date.now();
                 
                 // Dispatch event
                 document.dispatchEvent(new CustomEvent('gmkb:component-drag-start', {
@@ -167,7 +165,7 @@ class SectionComponentIntegration {
             }
         });
         
-        // Component drag end
+        // ROOT CAUSE FIX: Component drag end - cleanup only
         document.addEventListener('dragend', (e) => {
             // Robust event target validation - prevent closest() errors
             if (!e || !e.target) return;
@@ -178,6 +176,9 @@ class SectionComponentIntegration {
             if (component) {
                 component.classList.remove('gmkb-component--dragging');
                 
+                // Clean up drag data
+                delete component.dataset.dragStartTime;
+                
                 // Clean up any drag-over classes
                 document.querySelectorAll('.gmkb-section__column--drag-over').forEach(col => {
                     col.classList.remove('gmkb-section__column--drag-over');
@@ -186,8 +187,6 @@ class SectionComponentIntegration {
                 document.dispatchEvent(new CustomEvent('gmkb:component-drag-end', {
                     detail: { componentId: component.dataset.componentId }
                 }));
-                
-                this.draggedComponent = null;
             }
         });
         
@@ -195,68 +194,106 @@ class SectionComponentIntegration {
     }
     
     /**
-     * Handle component drop in section
+     * ROOT CAUSE FIX: Handle component drop in section with single data source
+     * Eliminates race condition between dataTransfer and draggedComponent
      */
-    handleComponentDropInSection(sectionId, columnNumber, event) {
-        // Get component ID from drag data or current drag state
-        let componentId = event.dataTransfer.getData('text/plain');
-        
-        if (!componentId && this.draggedComponent) {
-            componentId = this.draggedComponent.id;
-        }
-        
-        if (!componentId) {
-            // Check if this is a new component from library
-            const componentType = event.dataTransfer.getData('component-type');
-            if (componentType) {
-                // Create new component directly in section
-                this.createComponentInSection(componentType, sectionId, columnNumber);
+    async handleComponentDropInSection(sectionId, columnNumber, event) {
+        try {
+            // ROOT CAUSE FIX: Use only HTML5 dataTransfer as single source of truth
+            let componentId = event.dataTransfer?.getData('text/plain');
+            let componentType = event.dataTransfer?.getData('component-type');
+            
+            // Fallback to DOM data attributes if dataTransfer fails
+            if (!componentId && !componentType) {
+                const draggedElement = document.querySelector('.gmkb-component--dragging');
+                if (draggedElement) {
+                    componentId = draggedElement.dataset.componentId;
+                    componentType = draggedElement.dataset.componentType;
+                }
+            }
+            
+            if (componentType && !componentId) {
+                // This is a new component from library - create atomically
+                this.logger.info(`Creating new ${componentType} component in section ${sectionId}`);
+                const newComponentId = await this.createComponentInSection(componentType, sectionId, columnNumber);
+                this.logger.info(`New component created successfully: ${newComponentId}`);
                 return;
             }
             
-            this.logger.warn('⚠️ No component ID found for drop');
-            return;
-        }
-        
-        // Assign component to section
-        const success = this.sectionLayoutManager.assignComponentToSection(
-            componentId,
-            sectionId,
-            columnNumber
-        );
-        
-        if (success) {
-            this.logger.info(`✅ Component ${componentId} assigned to section ${sectionId}, column ${columnNumber}`);
+            if (!componentId) {
+                this.logger.warn('No component ID or type found for drop');
+                return;
+            }
             
-            // Move component element to section column
-            this.moveComponentToSectionColumn(componentId, sectionId, columnNumber);
+            // This is an existing component being moved
+            this.logger.info(`Moving existing component ${componentId} to section ${sectionId}`);
             
-            // Update state
-            this.updateComponentState(componentId, sectionId, columnNumber);
-        } else {
-            this.logger.error(`❌ Failed to assign component ${componentId} to section ${sectionId}`);
+            // ROOT CAUSE FIX: Use enhanced component manager for atomic move
+            if (this.componentManager && this.componentManager.addComponent) {
+                // Update component props to reflect new section assignment
+                const component = this.componentManager.getComponent(componentId);
+                if (component) {
+                    // Update component with new section targeting
+                    component.props.targetSectionId = sectionId;
+                    component.props.targetColumn = columnNumber;
+                }
+            }
+            
+            // Assign component to section
+            const success = this.sectionLayoutManager.assignComponentToSection(
+                componentId,
+                sectionId,
+                columnNumber
+            );
+            
+            if (success) {
+                this.logger.info(`Component ${componentId} assigned to section ${sectionId}, column ${columnNumber}`);
+                
+                // Move component element to section column
+                this.moveComponentToSectionColumn(componentId, sectionId, columnNumber);
+                
+                // Update state
+                this.updateComponentState(componentId, sectionId, columnNumber);
+            } else {
+                this.logger.error(`Failed to assign component ${componentId} to section ${sectionId}`);
+            }
+            
+        } catch (error) {
+            this.logger.error('Component drop handling failed:', error);
+            
+            // Show user-friendly error message
+            if (window.showToast) {
+                window.showToast('Failed to add component to section', 'error', 3000);
+            }
         }
     }
     
     /**
-     * Create new component directly in section
+     * ROOT CAUSE FIX: Create new component atomically in section
+     * Uses the enhanced component manager's atomic creation method
      */
-    createComponentInSection(componentType, sectionId, columnNumber) {
+    async createComponentInSection(componentType, sectionId, columnNumber) {
         if (!this.componentManager) {
             this.logger.error('❌ Component manager not available');
-            return;
+            throw new Error('Component manager not available');
         }
         
-        // Create component with section assignment
-        const componentId = `${componentType}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        
-        // Add component via component manager
-        this.componentManager.addComponent(componentType, {
-            targetSectionId: sectionId,
-            targetColumn: columnNumber
-        });
-        
-        this.logger.info(`📦 Creating new ${componentType} component in section ${sectionId}`);
+        try {
+            this.logger.info(`📦 Creating new ${componentType} component atomically in section ${sectionId}`);
+            
+            // ROOT CAUSE FIX: Use atomic component creation with section validation
+            const componentId = await this.componentManager.addComponent(componentType, {
+                targetSectionId: sectionId,
+                targetColumn: columnNumber
+            });
+            
+            this.logger.info(`✅ Component ${componentId} created atomically in section ${sectionId}`);
+            return componentId;
+            
+        } catch (error) {
+            this.logger.error(`❌ Failed to create component ${componentType} in section ${sectionId}:`, error);
+            throw error;
+        }
     }
     
     /**
@@ -326,14 +363,14 @@ class SectionComponentIntegration {
      * Handle component drag start
      */
     onComponentDragStart(detail) {
-        this.logger.debug('🎯 Component drag started:', detail);
+        this.logger.debug('Component drag started:', detail);
     }
     
     /**
      * Handle component drag end
      */
     onComponentDragEnd(detail) {
-        this.logger.debug('🎯 Component drag ended:', detail);
+        this.logger.debug('Component drag ended:', detail);
     }
     
     /**
@@ -353,7 +390,7 @@ class SectionComponentIntegration {
         return {
             sectionsAvailable: !!this.sectionLayoutManager,
             componentsAvailable: !!this.componentManager,
-            draggedComponent: this.draggedComponent,
+            currentlyDragging: document.querySelector('.gmkb-component--dragging')?.dataset.componentId || null,
             sectionsWithComponents: this.sectionLayoutManager ? 
                 this.sectionLayoutManager.getAllSections().map(s => ({
                     id: s.section_id,
