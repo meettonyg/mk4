@@ -103,8 +103,22 @@ class SectionComponentIntegration {
                 e.preventDefault();
                 column.classList.remove('gmkb-section__column--drag-over');
                 
-                const sectionId = section.dataset.sectionId;
-                const columnNumber = parseInt(column.dataset.column) || 1;
+                // ROOT FIX: Handle both camelCase and hyphenated data attributes
+                const sectionId = section.dataset.sectionId || section.getAttribute('data-section-id');
+                const columnNumber = parseInt(column.dataset.column) || parseInt(column.getAttribute('data-column')) || 1;
+                
+                // ROOT FIX: Validate section ID before proceeding
+                if (!sectionId) {
+                    this.logger.error('❌ No section ID found on drop target', {
+                        element: section.outerHTML.substring(0, 200),
+                        availableDataset: Object.keys(section.dataset),
+                        attributes: section.getAttributeNames(),
+                        classList: section.className
+                    });
+                    return;
+                }
+                
+                this.logger.info(`🎯 Drop detected in section: ${sectionId}, column: ${columnNumber}`);
                 
                 // Handle the drop
                 this.handleComponentDropInSection(sectionId, columnNumber, e);
@@ -218,6 +232,12 @@ class SectionComponentIntegration {
      */
     async handleComponentDropInSection(sectionId, columnNumber, event) {
         try {
+            // ROOT FIX: Additional validation
+            if (!sectionId) {
+                this.logger.error('❌ handleComponentDropInSection called with undefined sectionId');
+                return;
+            }
+            
             // ROOT CAUSE FIX: Use only HTML5 dataTransfer as single source of truth
             let componentId = event.dataTransfer?.getData('text/plain');
             let componentType = event.dataTransfer?.getData('component-type');
@@ -258,6 +278,20 @@ class SectionComponentIntegration {
                 }
             }
             
+            // ROOT FIX: Validate section exists before assignment
+            if (!this.sectionLayoutManager) {
+                this.logger.error('❌ SectionLayoutManager not available');
+                return;
+            }
+            
+            // ROOT FIX: Check if section exists before attempting assignment
+            const sectionExists = this.sectionLayoutManager.getSection(sectionId);
+            if (!sectionExists) {
+                this.logger.error(`❌ Section ${sectionId} does not exist. Available sections:`, 
+                    this.sectionLayoutManager.getAllSections().map(s => s.section_id));
+                return;
+            }
+            
             // Assign component to section
             const success = this.sectionLayoutManager.assignComponentToSection(
                 componentId,
@@ -266,7 +300,7 @@ class SectionComponentIntegration {
             );
             
             if (success) {
-                this.logger.info(`Component ${componentId} assigned to section ${sectionId}, column ${columnNumber}`);
+                this.logger.info(`✅ Component ${componentId} successfully assigned to section ${sectionId}, column ${columnNumber}`);
                 
                 // Move component element to section column
                 this.moveComponentToSectionColumn(componentId, sectionId, columnNumber);
@@ -274,7 +308,7 @@ class SectionComponentIntegration {
                 // Update state
                 this.updateComponentState(componentId, sectionId, columnNumber);
             } else {
-                this.logger.error(`Failed to assign component ${componentId} to section ${sectionId}`);
+                this.logger.error(`❌ Failed to assign component ${componentId} to section ${sectionId}`);
             }
             
         } catch (error) {

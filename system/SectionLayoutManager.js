@@ -279,7 +279,26 @@ class SectionLayoutManager {
     assignComponentToSection(componentId, sectionId, column = 1) {
         const section = this.sections.get(sectionId);
         if (!section) {
-            this.logger.warn(`⚠️ PHASE 3: Cannot assign component - section ${sectionId} not found`);
+            // ROOT FIX: Enhanced error logging to help debug section ID mismatches
+            const availableSections = Array.from(this.sections.keys());
+            this.logger.warn(`⚠️ PHASE 3: Cannot assign component - section "${sectionId}" not found`, {
+                requestedId: sectionId,
+                availableSections: availableSections,
+                totalSections: this.sections.size,
+                sectionIdType: typeof sectionId,
+                componentId: componentId
+            });
+            
+            // Check for similar section IDs (might help identify format mismatches)
+            const similarIds = availableSections.filter(id => 
+                id.toLowerCase().includes(sectionId?.toLowerCase?.() || '') || 
+                sectionId?.toLowerCase?.().includes(id.toLowerCase())
+            );
+            
+            if (similarIds.length > 0) {
+                this.logger.info('💡 PHASE 3: Found similar section IDs:', similarIds);
+            }
+            
             return false;
         }
         

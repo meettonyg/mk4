@@ -1228,6 +1228,17 @@ function gmkb_enqueue_assets() {
             );
         }
         
+        // ROOT FIX: Drag-Drop Section Fix Test Script
+        if (!wp_script_is('gmkb-test-drag-drop-section-fix', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-test-drag-drop-section-fix',
+                $plugin_url . 'test-drag-drop-section-fix.js',
+                array('gmkb-section-component-integration', 'gmkb-section-layout-manager'),
+                $version . '-debug-' . time(),
+                true
+            );
+        }
+        
         // ROOT FIX: Section Rendering QuickFix - Ensures sections always have proper structure
         if (!wp_script_is('gmkb-section-rendering-quickfix', 'enqueued')) {
             wp_enqueue_script(
