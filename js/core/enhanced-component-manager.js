@@ -42,9 +42,22 @@
                     throw new Error('Enhanced state manager not available');
                 }
                 
-                // Ensure state manager is initialized
-                if (!window.enhancedStateManager.isInitialized) {
-                    throw new Error('Enhanced state manager not initialized yet');
+                // ROOT FIX: Check state manager readiness with multiple methods
+                const stateManagerReady = window.enhancedStateManager.isInitialized || 
+                                         (window.enhancedStateManager.getState && 
+                                          typeof window.enhancedStateManager.getState === 'function');
+                
+                if (!stateManagerReady) {
+                    // Try to get state to verify it's working
+                    try {
+                        const testState = window.enhancedStateManager.getState();
+                        if (!testState) {
+                            throw new Error('State manager returned no state');
+                        }
+                        logger.debug('COMPONENT', 'State manager verified via getState() call');
+                    } catch (stateError) {
+                        throw new Error('Enhanced state manager not ready: ' + stateError.message);
+                    }
                 }
 
                 // ROOT FIX: Synchronize with existing state components
@@ -1181,7 +1194,13 @@
     const initializeComponentManager = () => {
         if (componentManagerInitialized) return;
         
-        if (window.enhancedStateManager && window.enhancedStateManager.isInitialized) {
+        // ROOT FIX: More robust state manager readiness check
+        const isStateManagerReady = window.enhancedStateManager && 
+                                   (window.enhancedStateManager.isInitialized || 
+                                    (window.enhancedStateManager.getState && 
+                                     typeof window.enhancedStateManager.getState === 'function'));
+        
+        if (isStateManagerReady) {
             // ROOT FIX: Check if already initialized to prevent double initialization
             if (window.enhancedComponentManager.isInitialized) {
                 componentManagerInitialized = true;
@@ -1189,18 +1208,33 @@
                 return;
             }
             
-            componentManagerInitialized = true;
-            window.enhancedComponentManager.initialize();
-            logger.info('COMPONENT', 'Component Manager initialized after State Manager ready');
+            try {
+                componentManagerInitialized = true;
+                window.enhancedComponentManager.initialize();
+                logger.info('COMPONENT', 'Component Manager initialized successfully');
+            } catch (error) {
+                // Reset flag on error to allow retry
+                componentManagerInitialized = false;
+                logger.error('COMPONENT', 'Failed to initialize component manager:', error);
+                // Don't throw - let other systems continue working
+            }
         } else {
-            // Listen for state manager ready event
-            document.addEventListener('gmkb:state-manager-ready', () => {
-                if (!componentManagerInitialized && !window.enhancedComponentManager.isInitialized) {
-                    componentManagerInitialized = true;
-                    window.enhancedComponentManager.initialize();
-                    logger.info('COMPONENT', 'Component Manager initialized via state manager ready event');
-                }
-            }, { once: true });
+            logger.debug('COMPONENT', 'State manager not ready, waiting for event or retry');
+            // Listen for state manager ready event if not already listening
+            if (!componentManagerInitialized) {
+                document.addEventListener('gmkb:state-manager-ready', () => {
+                    if (!componentManagerInitialized && !window.enhancedComponentManager.isInitialized) {
+                        try {
+                            componentManagerInitialized = true;
+                            window.enhancedComponentManager.initialize();
+                            logger.info('COMPONENT', 'Component Manager initialized via state manager ready event');
+                        } catch (error) {
+                            componentManagerInitialized = false;
+                            logger.error('COMPONENT', 'Failed to initialize component manager via event:', error);
+                        }
+                    }
+                }, { once: true });
+            }
         }
     };
     

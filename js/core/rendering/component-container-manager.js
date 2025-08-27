@@ -181,7 +181,7 @@
          * Get the appropriate target container for rendering
          */
         getTargetContainer(options = {}) {
-                // ROOT FIX: Check which container should be used based on current state
+            // ROOT FIX: Check which container should be used based on current state
             const emptyState = document.getElementById('empty-state');
             const savedContainer = document.getElementById('saved-components-container');
             const directContainer = document.getElementById('components-direct-container');
@@ -209,13 +209,12 @@
                 };
             }
             
-            // Check if saved-components-container should be used
-            const savedContainer = this.getContainer('saved');
+            // Check if saved-components-container should be used as fallback
             if (savedContainer && savedContainer.style.display !== 'none') {
-                this.logger.debug('CONTAINER', 'Using saved-components-container');
+                this.logger.debug('CONTAINER', 'Using saved-components-container as fallback');
                 return {
                     container: savedContainer,
-                    reason: 'saved_components_container',
+                    reason: 'saved_components_container_fallback',
                     name: 'saved'
                 };
             }
@@ -223,10 +222,10 @@
             // Fall back to preview container
             const previewContainer = this.getContainer('preview');
             if (previewContainer) {
-                this.logger.debug('CONTAINER', 'Using preview container');
+                this.logger.debug('CONTAINER', 'Using preview container as final fallback');
                 return {
                     container: previewContainer,
-                    reason: 'preview_container',
+                    reason: 'preview_container_fallback',
                     name: 'preview'
                 };
             }
