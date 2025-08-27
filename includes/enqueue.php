@@ -1205,6 +1205,17 @@ function gmkb_enqueue_assets() {
                 true
             );
         }
+        
+        // ROOT FIX: Section Component Integration Fix Test (comprehensive validation)
+        if (!wp_script_is('gmkb-section-component-integration-fix-test', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-section-component-integration-fix-test',
+                $plugin_url . 'debug/section-component-integration-fix-test.js',
+                array('gmkb-section-component-integration', 'gmkb-section-layout-manager', 'gmkb-enhanced-component-manager', 'gmkb-component-library-simple'),
+                $version . '-debug',
+                true
+            );
+        }
     }
     
     // ROOT FIX: Debug utilities for component interaction testing (development only)

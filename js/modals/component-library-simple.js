@@ -428,13 +428,24 @@ function addSelectedComponents() {
             console.log(`➕ Adding component: ${componentType}`);
         }
         
-        // ROOT FIX: Try multiple methods to add components
+        // ROOT FIX: Try multiple methods to add components with section support
         let added = false;
         
-        // Method 1: Enhanced component manager
+        // Method 1: Enhanced component manager with section targeting
         if (window.enhancedComponentManager?.isReady()) {
             try {
-                window.enhancedComponentManager.addComponent(componentType, {});
+                // Check if there are sections available to target
+                const availableSections = window.sectionLayoutManager?.getAllSections() || [];
+                
+                const componentOptions = {};
+                
+                // If sections exist, allow targeting the first available section
+                if (availableSections.length > 0 && window.sectionLayoutManager) {
+                    componentOptions.targetSectionId = availableSections[0].section_id;
+                    componentOptions.targetColumn = 1;
+                }
+                
+                window.enhancedComponentManager.addComponent(componentType, componentOptions);
                 added = true;
                 addedCount++;
             } catch (error) {

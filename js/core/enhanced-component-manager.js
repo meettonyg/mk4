@@ -143,7 +143,10 @@
                         hasConfiguration: !!componentConfiguration,
                         hasDataBinding: !!podsData,
                         architecture: 'configuration-driven'
-                    }
+                    },
+                    // PHASE 3: Add section assignment if provided
+                    sectionId: props.targetSectionId || null,
+                    columnNumber: props.targetColumn || null
                 };
 
                 // ROOT FIX: Render component via AJAX to get actual HTML
@@ -153,12 +156,26 @@
                     throw new Error(`Failed to render component: ${componentType}`);
                 }
 
-                // Add to preview area
-                this.addComponentToPreview(componentId, html);
+                // Add to preview area (with section targeting if specified)
+                this.addComponentToPreview(componentId, html, componentData.sectionId, componentData.columnNumber);
 
                 // Update state manager
                 if (window.enhancedStateManager) {
                     window.enhancedStateManager.addComponent(componentData);
+                }
+                
+                // PHASE 3: Assign to section if specified
+                if (componentData.sectionId && window.sectionLayoutManager) {
+                    try {
+                        window.sectionLayoutManager.assignComponentToSection(
+                            componentId, 
+                            componentData.sectionId, 
+                            componentData.columnNumber || 1
+                        );
+                        logger.info('COMPONENT', `Component assigned to section: ${componentData.sectionId}`);
+                    } catch (sectionError) {
+                        logger.warn('COMPONENT', 'Failed to assign component to section:', sectionError.message);
+                    }
                 }
 
                 // Store component reference
@@ -394,18 +411,45 @@
 
         /**
         * Add component HTML to preview area
+        * @param {string} componentId - Component ID
+        * @param {string} html - Component HTML
+        * @param {string|null} sectionId - Target section ID
+        * @param {number|null} columnNumber - Target column number
         */
-        addComponentToPreview(componentId, html) {
-        // ROOT FIX: Use the correct container - check for saved-components-container first
-        let targetContainer = document.getElementById('saved-components-container');
+        addComponentToPreview(componentId, html, sectionId = null, columnNumber = null) {
+        // PHASE 3: If section targeting is specified, use section container
+        let targetContainer = null;
         
-        // If saved container doesn't exist or is hidden, use preview container
-        if (!targetContainer || targetContainer.style.display === 'none') {
-            targetContainer = document.getElementById('media-kit-preview');
+        if (sectionId && window.sectionRenderer) {
+            const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+            if (section) {
+                const sectionInner = section.querySelector('.gmkb-section__inner');
+                if (sectionInner) {
+                    // Find specific column or use first available
+                    const columns = sectionInner.querySelectorAll('.gmkb-section__column');
+                    if (columns.length > 0 && columnNumber) {
+                        targetContainer = columns[Math.min(columnNumber - 1, columns.length - 1)];
+                    } else {
+                        targetContainer = sectionInner.querySelector('.gmkb-section__content') || sectionInner;
+                    }
+                }
+                logger.info('COMPONENT', `Targeting section ${sectionId}, column ${columnNumber || 1}`);
+            }
         }
         
+        // Fallback to default containers if no section targeting
         if (!targetContainer) {
-            throw new Error('No target container found for component');
+            // Use saved-components-container first
+            targetContainer = document.getElementById('saved-components-container');
+            
+            // If saved container doesn't exist or is hidden, use preview container
+            if (!targetContainer || targetContainer.style.display === 'none') {
+                targetContainer = document.getElementById('media-kit-preview');
+            }
+            
+            if (!targetContainer) {
+                throw new Error('No target container found for component');
+            }
         }
         
         // ROOT FIX: Check if component already exists to prevent duplicates
@@ -420,6 +464,15 @@
         // Hide empty state if visible
         if (emptyState) {
         emptyState.style.display = 'none';
+        }
+        
+        // PHASE 3: Remove section empty placeholder if component is being added to a section
+        if (sectionId && targetContainer.classList.contains('gmkb-section__column') || targetContainer.classList.contains('gmkb-section__content')) {
+            const emptyPlaceholder = targetContainer.querySelector('.gmkb-section__empty');
+            if (emptyPlaceholder) {
+                emptyPlaceholder.remove();
+                logger.debug('COMPONENT', 'Removed section empty placeholder');
+            }
         }
         
         // Show the saved components container if it was hidden
