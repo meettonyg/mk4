@@ -40,6 +40,14 @@ class DataBindingEngine {
     }
     
     /**
+     * Check if the data binding engine is ready
+     * @returns {boolean} True if engine is initialized and ready to use
+     */
+    isReady() {
+        return true; // Engine is ready when instantiated
+    }
+    
+    /**
      * Bind Pods field data to component properties
      */
     bindComponentData(componentId, componentType, dataBindings, sourceData = null) {
@@ -85,6 +93,49 @@ class DataBindingEngine {
         
         this.logger.info(`✅ PHASE 2: Data bound for ${componentType} (${componentId})`, boundData);
         return boundData;
+    }
+    
+    /**
+     * Alias for bindComponentData (backward compatibility)
+     * This is the method called by enhanced-component-manager.js
+     */
+    bindData(componentId, podsData, componentConfiguration) {
+        if (!componentConfiguration || !componentConfiguration.component_type) {
+            this.logger.warn(`⚠️ PHASE 2: Invalid configuration for bindData: ${componentId}`);
+            return {};
+        }
+        
+        return this.bindComponentData(
+            componentId, 
+            componentConfiguration.component_type, 
+            componentConfiguration.dataBindings,
+            podsData
+        );
+    }
+    
+    /**
+     * Watch for binding changes (sets up automatic updates)
+     * This is called by enhanced-component-manager.js
+     */
+    watchBinding(componentId, callback) {
+        // Store the callback for this component
+        const bindingInfo = this.bindings.get(componentId);
+        if (bindingInfo) {
+            bindingInfo.watchCallback = callback;
+            this.bindings.set(componentId, bindingInfo);
+            
+            this.logger.info(`👁️ PHASE 2: Watching binding changes for ${componentId}`);
+        } else {
+            this.logger.warn(`⚠️ PHASE 2: Cannot watch - no binding found for ${componentId}`);
+        }
+    }
+    
+    /**
+     * Alias for removeComponentBindings (backward compatibility)  
+     * This is the method called by enhanced-component-manager.js
+     */
+    removeBinding(componentId) {
+        return this.removeComponentBindings(componentId);
     }
     
     /**
@@ -266,6 +317,17 @@ class DataBindingEngine {
      * Dispatch data binding update event
      */
     dispatchDataBindingUpdate(componentId, boundData) {
+        // Trigger watch callback if exists
+        const bindingInfo = this.bindings.get(componentId);
+        if (bindingInfo && bindingInfo.watchCallback) {
+            try {
+                bindingInfo.watchCallback(boundData);
+                this.logger.debug(`👁️ PHASE 2: Watch callback triggered for ${componentId}`);
+            } catch (error) {
+                this.logger.warn(`⚠️ PHASE 2: Watch callback error for ${componentId}:`, error);
+            }
+        }
+        
         const event = new CustomEvent('gmkb:data-binding-updated', {
             detail: {
                 componentId,

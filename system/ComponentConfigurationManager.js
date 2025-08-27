@@ -20,6 +20,14 @@ class ComponentConfigurationManager {
     }
     
     /**
+     * Check if the configuration manager is ready
+     * @returns {boolean} True if manager is initialized and ready to use
+     */
+    isReady() {
+        return this.schemas && Object.keys(this.schemas).length > 0;
+    }
+    
+    /**
      * Initialize component schemas from WordPress data
      */
     initializeSchemas() {
@@ -94,6 +102,7 @@ class ComponentConfigurationManager {
     
     /**
      * Register a component configuration
+     * (Also aliased as registerConfiguration for backward compatibility)
      */
     registerComponentConfiguration(componentId, componentType, configuration = {}) {
         const schema = this.getSchema(componentType);
@@ -117,6 +126,26 @@ class ComponentConfigurationManager {
         
         this.logger.info(`✅ PHASE 2: Registered configuration for ${componentType} (${componentId})`);
         return finalConfig;
+    }
+    
+    /**
+     * Alias for registerComponentConfiguration (backward compatibility)
+     * This is the method called by enhanced-component-manager.js
+     */
+    registerConfiguration(componentId, componentType, configuration = {}) {
+        return this.registerComponentConfiguration(componentId, componentType, configuration);
+    }
+    
+    /**
+     * Remove component configuration (for cleanup)
+     */
+    removeConfiguration(componentId) {
+        if (this.configurations.has(componentId)) {
+            this.configurations.delete(componentId);
+            this.logger.info(`🗑️ PHASE 2: Removed configuration for ${componentId}`);
+            return true;
+        }
+        return false;
     }
     
     /**
