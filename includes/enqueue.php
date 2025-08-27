@@ -809,12 +809,91 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 13. Enhanced component renderer (CRITICAL: renders components on screen) - ROOT FIX: Added missing script
+    // ROOT FIX: REFACTORED RENDERING SERVICES
+    // Load new modular rendering services
+    
+    // Component State Manager - handles state diffing and validation
+    if (!wp_script_is('gmkb-component-state-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-state-manager',
+            $plugin_url . 'js/core/rendering/component-state-manager.js',
+            array('gmkb-structured-logger', 'gmkb-event-bus'),
+            $version,
+            true
+        );
+    }
+    
+    // Component DOM Manager - handles DOM operations and cleanup
+    if (!wp_script_is('gmkb-component-dom-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-dom-manager',
+            $plugin_url . 'js/core/rendering/component-dom-manager.js',
+            array('gmkb-structured-logger', 'gmkb-event-bus', 'gmkb-performance-monitor'),
+            $version,
+            true
+        );
+    }
+    
+    // Component Render Engine - core rendering logic
+    if (!wp_script_is('gmkb-component-render-engine', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-render-engine',
+            $plugin_url . 'js/core/rendering/component-render-engine.js',
+            array('gmkb-structured-logger', 'gmkb-dynamic-component-loader', 'gmkb-performance-monitor'),
+            $version,
+            true
+        );
+    }
+    
+    // Component UI Integration - UI registry and events
+    if (!wp_script_is('gmkb-component-ui-integration', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-ui-integration',
+            $plugin_url . 'js/core/rendering/component-ui-integration.js',
+            array('gmkb-structured-logger', 'gmkb-event-bus', 'gmkb-ui-registry'),
+            $version,
+            true
+        );
+    }
+    
+    // Component Performance Monitor - stats and health checks
+    if (!wp_script_is('gmkb-component-performance-monitor-service', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-performance-monitor-service',
+            $plugin_url . 'js/core/rendering/component-performance-monitor.js',
+            array('gmkb-structured-logger', 'gmkb-performance-monitor'),
+            $version,
+            true
+        );
+    }
+    
+    // Component Container Manager - container logic and saved components
+    if (!wp_script_is('gmkb-component-container-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-container-manager',
+            $plugin_url . 'js/core/rendering/component-container-manager.js',
+            array('gmkb-structured-logger', 'gmkb-event-bus'),
+            $version,
+            true
+        );
+    }
+    
+    
+    // Enhanced Component Renderer - now loads refactored modular version
     if (!wp_script_is('gmkb-enhanced-component-renderer', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-enhanced-component-renderer',
             $plugin_url . 'js/core/enhanced-component-renderer.js',
-            array('gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-dynamic-component-loader', 'gmkb-component-controls-manager', 'gmkb-event-bus', 'gmkb-ui-registry', 'gmkb-helpers', 'gmkb-template-cache', 'gmkb-performance-monitor', 'gmkb-dom-render-coordinator', 'gmkb-structured-logger'),
+            array(
+                'gmkb-component-state-manager',
+                'gmkb-component-dom-manager',
+                'gmkb-component-render-engine',
+                'gmkb-component-ui-integration',
+                'gmkb-component-performance-monitor-service',
+                'gmkb-component-container-manager',
+                'gmkb-enhanced-state-manager',
+                'gmkb-event-bus'
+            ),
             $version,
             true
         );
