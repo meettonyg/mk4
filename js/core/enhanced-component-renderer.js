@@ -16,25 +16,18 @@
 (function() {
     'use strict';
     
-    // Fallback utilities
-    const structuredLogger = window.structuredLogger || {
-        info: console.log,
-        warn: console.warn,
-        error: console.error,
-        debug: console.debug
-    };
-    
-    const enhancedStateManager = window.enhancedStateManager || {
-        getState: () => ({ components: {}, layout: [] }),
-        subscribeGlobal: () => () => {},
-        getInitialState: () => ({ components: {}, layout: [] })
-    };
-    
-    const eventBus = window.eventBus || {
-        emit: () => {},
-        on: () => {},
-        off: () => {}
-    };
+    // Wait for dependencies to be available
+    const initWhenReady = () => {
+        if (!window.structuredLogger || !window.enhancedStateManager || !window.eventBus) {
+            setTimeout(initWhenReady, 100);
+            return;
+        }
+        
+        const structuredLogger = window.structuredLogger;
+        const enhancedStateManager = window.enhancedStateManager;
+        const eventBus = window.eventBus;
+        
+        structuredLogger.info('RENDER', 'EnhancedComponentRenderer (refactored) initializing...');
 
     class EnhancedComponentRenderer {
         constructor() {
@@ -87,13 +80,16 @@
                 
                 // Initialize when all services are ready
                 if (readyServices === totalServices) {
-                    this.logger.info('RENDER', 'All rendering services ready, initializing');
+                    this.logger.info('RENDER', 'All rendering services ready, initializing Enhanced Component Renderer');
                     setTimeout(() => this.init(), 0); // Next tick initialization
+                } else {
+                    this.logger.info('RENDER', `Still waiting for ${totalServices - readyServices} more services`);
                 }
             };
             
             // Listen for service ready events
             requiredServices.forEach(eventType => {
+                this.logger.info('RENDER', `Listening for event: ${eventType}`);
                 document.addEventListener(eventType, onServiceReady, { once: true });
             });
             
@@ -114,6 +110,8 @@
                     if (readyServices >= 3) { // Need at least core services
                         this.logger.warn('RENDER', 'Proceeding with partial service initialization');
                         this.init();
+                    } else {
+                        this.logger.error('RENDER', 'Too few services loaded, cannot initialize Enhanced Component Renderer');
                     }
                 }
             }, 10000);
@@ -666,9 +664,15 @@
     }
 
     // Export to global scope for WordPress compatibility
-    window.EnhancedComponentRendererRefactored = EnhancedComponentRenderer;
+    window.EnhancedComponentRenderer = EnhancedComponentRenderer;
     
-    // Create singleton instance
+    // Create singleton instance - maintain backward compatibility
+    if (!window.enhancedComponentRenderer) {
+        window.enhancedComponentRenderer = new EnhancedComponentRenderer();
+    }
+    
+    // Also maintain the refactored name
+    window.EnhancedComponentRendererRefactored = EnhancedComponentRenderer;
     if (!window.enhancedComponentRendererRefactored) {
         window.enhancedComponentRendererRefactored = new EnhancedComponentRenderer();
     }
@@ -680,5 +684,23 @@
             timestamp: Date.now()
         }
     }));
+    
+    // Also emit the legacy event for compatibility
+    document.dispatchEvent(new CustomEvent('gmkb:enhanced-component-renderer-ready', {
+        detail: { 
+            renderer: window.enhancedComponentRenderer,
+            timestamp: Date.now()
+        }
+    }));
 
+        structuredLogger.info('RENDER', 'EnhancedComponentRenderer refactored ready and event emitted');
+    };
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWhenReady);
+    } else {
+        initWhenReady();
+    }
+    
 })();

@@ -10,25 +10,20 @@
 (function() {
     'use strict';
     
-    // Fallback utilities
-    const structuredLogger = window.structuredLogger || {
-        info: console.log,
-        warn: console.warn,
-        error: console.error,
-        debug: console.debug
-    };
-    
-    const dynamicComponentLoader = window.dynamicComponentLoader || {
-        renderComponent: async () => {
-            const div = document.createElement('div');
-            div.textContent = 'Component loading...';
-            return div;
+    // Wait for dependencies to be available
+    const initWhenReady = () => {
+        if (!window.structuredLogger || !window.dynamicComponentLoader) {
+            setTimeout(initWhenReady, 100);
+            return;
         }
-    };
-    
-    const performanceMonitor = window.performanceMonitor || {
-        start: () => () => {}
-    };
+        
+        const structuredLogger = window.structuredLogger;
+        const dynamicComponentLoader = window.dynamicComponentLoader;
+        const performanceMonitor = window.performanceMonitor || {
+            start: () => () => {}
+        };
+        
+        structuredLogger.info('RENDER_ENGINE', 'ComponentRenderEngine initializing...');
 
     class ComponentRenderEngine {
         constructor() {
@@ -352,4 +347,14 @@
         }
     }));
 
+        structuredLogger.info('RENDER_ENGINE', 'ComponentRenderEngine ready and event emitted');
+    };
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWhenReady);
+    } else {
+        initWhenReady();
+    }
+    
 })();

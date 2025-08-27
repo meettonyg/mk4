@@ -10,29 +10,25 @@
 (function() {
     'use strict';
     
-    // Fallback utilities
-    const structuredLogger = window.structuredLogger || {
-        info: console.log,
-        warn: console.warn,
-        error: console.error,
-        debug: console.debug
-    };
-    
-    const eventBus = window.eventBus || {
-        emit: () => {},
-        on: () => {},
-        off: () => {}
-    };
-    
-    const uiRegistry = window.uiRegistry || {
-        register: () => () => {},
-        unregister: () => {},
-        forceUpdate: () => {}
-    };
-    
-    const showToast = window.showToast || function(message, type, duration) {
-        console.log(`Toast [${type}]: ${message}`);
-    };
+    // Wait for dependencies to be available
+    const initWhenReady = () => {
+        if (!window.structuredLogger || !window.eventBus) {
+            setTimeout(initWhenReady, 100);
+            return;
+        }
+        
+        const structuredLogger = window.structuredLogger;
+        const eventBus = window.eventBus;
+        const uiRegistry = window.uiRegistry || {
+            register: () => () => {},
+            unregister: () => {},
+            forceUpdate: () => {}
+        };
+        const showToast = window.showToast || function(message, type, duration) {
+            console.log(`Toast [${type}]: ${message}`);
+        };
+        
+        structuredLogger.info('UI_INTEGRATION', 'ComponentUIIntegration initializing...');
 
     class ComponentUIIntegration {
         constructor() {
@@ -443,4 +439,14 @@
         }
     }));
 
+        structuredLogger.info('UI_INTEGRATION', 'ComponentUIIntegration ready and event emitted');
+    };
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWhenReady);
+    } else {
+        initWhenReady();
+    }
+    
 })();

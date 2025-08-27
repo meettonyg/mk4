@@ -10,23 +10,24 @@
 (function() {
     'use strict';
     
-    // Fallback utilities
-    const structuredLogger = window.structuredLogger || {
-        info: console.log,
-        warn: console.warn,
-        error: console.error,
-        debug: console.debug
-    };
-    
-    const eventBus = window.eventBus || {
-        emit: () => {},
-        on: () => {},
-        off: () => {}
-    };
-    
-    const performanceMonitor = window.performanceMonitor || {
-        start: () => () => {}
-    };
+    // Wait for dependencies to be available
+    const initWhenReady = () => {
+        if (!window.structuredLogger) {
+            setTimeout(initWhenReady, 100);
+            return;
+        }
+        
+        const structuredLogger = window.structuredLogger;
+        const eventBus = window.eventBus || {
+            emit: () => {},
+            on: () => {},
+            off: () => {}
+        };
+        const performanceMonitor = window.performanceMonitor || {
+            start: () => () => {}
+        };
+        
+        structuredLogger.info('DOM', 'ComponentDOMManager initializing...');
 
     class ComponentDOMManager {
         constructor() {
@@ -513,4 +514,14 @@
         }
     }));
 
+        structuredLogger.info('DOM', 'ComponentDOMManager ready and event emitted');
+    };
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWhenReady);
+    } else {
+        initWhenReady();
+    }
+    
 })();

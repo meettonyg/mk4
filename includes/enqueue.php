@@ -879,7 +879,7 @@ function gmkb_enqueue_assets() {
     }
     
     
-    // Enhanced Component Renderer - now loads refactored modular version
+    // Enhanced component renderer (CRITICAL: renders components on screen) - ROOT FIX: Added missing script
     if (!wp_script_is('gmkb-enhanced-component-renderer', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-enhanced-component-renderer',
@@ -1130,6 +1130,17 @@ function gmkb_enqueue_assets() {
                 'gmkb-system-verification-recovery',
                 $plugin_url . 'js/core/system-verification-recovery.js',
                 array('gmkb-main-script'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Refactored services diagnostic tool
+        if (!wp_script_is('gmkb-refactored-services-diagnostic', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-refactored-services-diagnostic',
+                $plugin_url . 'js/debug/refactored-services-diagnostic.js',
+                array('gmkb-enhanced-component-renderer'),
                 $version . '-debug',
                 true
             );
