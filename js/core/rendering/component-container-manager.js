@@ -54,30 +54,92 @@
 
         /**
          * Setup container references and event listeners
+         * ROOT FIX: Event-driven setup with periodic container detection
          */
         setupContainers() {
-            // Find and register containers
-            this.registerContainer('preview', document.getElementById('media-kit-preview'));
+            // ROOT FIX: Always register core preview container first
+            const previewRegistered = this.registerContainer('preview', document.getElementById('media-kit-preview'));
+            
+            // ROOT FIX: Register conditional containers - may not exist initially
             this.registerContainer('saved', document.getElementById('saved-components-container'));
             this.registerContainer('empty-state', document.getElementById('empty-state'));
+            
+            // ROOT FIX: Set up periodic container detection for conditional containers
+            this.setupConditionalContainerDetection();
             
             // Setup empty state listeners
             this.setupEmptyStateListeners();
             
             this.initialized = true;
-            this.logger.debug('CONTAINER', 'Container manager initialized');
+            this.logger.info('CONTAINER', `✅ Container manager initialized - ${this.containers.size} containers registered`);
             
             // Emit ready event
             document.dispatchEvent(new CustomEvent('gmkb:container-manager-ready', {
                 detail: { 
                     manager: this,
+                    registeredContainers: Array.from(this.containers.keys()),
                     timestamp: Date.now()
                 }
             }));
         }
 
         /**
+         * ROOT FIX: Set up detection for containers that may appear later
+         * Event-driven approach - no polling, just mutation observation
+         */
+        setupConditionalContainerDetection() {
+            // Use MutationObserver to detect when conditional containers are added
+            if (typeof MutationObserver !== 'undefined') {
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList') {
+                            // Check for newly added containers
+                            const savedContainer = document.getElementById('saved-components-container');
+                            const emptyStateContainer = document.getElementById('empty-state');
+                            
+                            if (savedContainer && !this.containers.has('saved')) {
+                                this.registerContainer('saved', savedContainer);
+                                this.logger.info('CONTAINER', '🆕 Detected and registered saved-components-container');
+                            }
+                            
+                            if (emptyStateContainer && !this.containers.has('empty-state')) {
+                                this.registerContainer('empty-state', emptyStateContainer);
+                                this.logger.info('CONTAINER', '🆕 Detected and registered empty-state');
+                            }
+                        }
+                    });
+                });
+                
+                // Observe the preview container for changes
+                const previewContainer = document.getElementById('media-kit-preview');
+                if (previewContainer) {
+                    observer.observe(previewContainer, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+                
+                this.logger.debug('CONTAINER', '👁️ Set up container mutation observer');
+            } else {
+                // Fallback for older browsers - single retry after delay
+                setTimeout(() => {
+                    const savedContainer = document.getElementById('saved-components-container');
+                    const emptyStateContainer = document.getElementById('empty-state');
+                    
+                    if (savedContainer && !this.containers.has('saved')) {
+                        this.registerContainer('saved', savedContainer);
+                    }
+                    
+                    if (emptyStateContainer && !this.containers.has('empty-state')) {
+                        this.registerContainer('empty-state', emptyStateContainer);
+                    }
+                }, 1000);
+            }
+        }
+
+        /**
          * Register a container
+         * ROOT FIX: Fault-tolerant registration - containers may not exist initially
          */
         registerContainer(name, element) {
             if (element) {
@@ -86,10 +148,25 @@
                     name,
                     isActive: false
                 });
-                this.logger.debug('CONTAINER', `Registered container: ${name}`);
+                this.logger.debug('CONTAINER', `✅ Registered container: ${name}`);
+                return true;
             } else {
-                this.logger.warn('CONTAINER', `Container not found: ${name}`);
+                // ROOT FIX: Don't warn for conditionally rendered containers
+                if (this.isConditionalContainer(name)) {
+                    this.logger.debug('CONTAINER', `📋 Conditional container not yet available: ${name}`);
+                } else {
+                    this.logger.warn('CONTAINER', `⚠️ Container not found: ${name}`);
+                }
+                return false;
             }
+        }
+
+        /**
+         * ROOT FIX: Check if container is conditionally rendered
+         */
+        isConditionalContainer(name) {
+            const conditionalContainers = ['saved', 'empty-state'];
+            return conditionalContainers.includes(name);
         }
 
         /**

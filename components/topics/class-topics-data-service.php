@@ -127,119 +127,76 @@ class Topics_Data_Service extends Base_Component_Data_Service {
     }
     
     /**
-     * TOPICS-SPECIFIC: Load topics data from multiple sources
-     * Enhanced version of previous logic with better error handling
+     * PHASE 1 FIX: Load topics data from Pods fields ONLY - Single source of truth
+     * Eliminates all fallback chains and multiple data sources
      * 
      * @param int $post_id Post ID to load topics from
      * @return array Topics data result
      */
     private static function load_topics_data($post_id) {
         $topics = array();
-        $data_source = 'none';
+        $data_source = 'pods_fields_primary';
         $success = false;
         $message = 'No topics found';
-        
-        $debug_methods = array(
-            'pods_fields' => array(),
-            'json_data' => null,
-            'post_meta_all' => array(),
-            'component_data' => null
-        );
+        $quality = 'empty';
+        $count = 0;
         
         if ($post_id <= 0) {
             return array(
                 'topics' => $topics,
-                'source' => $data_source,
-                'success' => $success,
+                'source' => 'none',
+                'success' => false,
                 'message' => 'No valid post ID detected',
-                'debug' => $debug_methods
+                'quality' => 'error',
+                'count' => 0
             );
         }
         
-        // SCALABLE: Try to load from base class component data first
-        $component_data = self::load_component_data($post_id);
-        if (!empty($component_data) && isset($component_data['topics'])) {
-            $debug_methods['component_data'] = $component_data;
-            
-            foreach ($component_data['topics'] as $index => $topic) {
-                if (!empty($topic['title'])) {
-                    $topics[] = array(
-                        'title' => trim(sanitize_text_field(trim($topic['title']))),
-                        'description' => trim(sanitize_text_field(trim($topic['description'] ?? ''))),
-                        'index' => $index,
-                        'meta_key' => 'component_data',
-                        'source' => 'component_data_scalable'
-                    );
-                    $success = true;
-                    $data_source = 'component_data_scalable';
-                }
-            }
-        }
-        
         // PHASE 1 FIX: PODS FIELDS ONLY - Single source of truth (topic_1, topic_2, etc.)
-        if (!$success) {
-            for ($i = 1; $i <= 5; $i++) {
-                $topic_value = get_post_meta($post_id, "topic_{$i}", true);
-                $debug_methods['pods_fields']["topic_{$i}"] = $topic_value;
-                
-                if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
-                    $topics[] = array(
-                        'title' => trim(sanitize_text_field(trim($topic_value))),
-                        'description' => '',
-                        'index' => $i - 1,
-                        'meta_key' => "topic_{$i}",
-                        'source' => 'pods_fields_primary'
-                    );
-                    $success = true;
-                    $data_source = 'pods_fields_primary';
-                    
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("PHASE 1 Topics Data Service: Found topic_{$i} = {$topic_value}");
-                    }
-                }
-            }
-        }
-        
-        // PHASE 1 REMOVED: No fallback chains - Pods fields only
-        
-        // LEGACY: Method 3 - JSON topics data (final fallback)
-        if (!$success) {
-            $json_topics = get_post_meta($post_id, 'topics_data', true);
-            $debug_methods['json_data'] = $json_topics;
+        // NO FALLBACK CHAINS - This is the architectural requirement
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_value = get_post_meta($post_id, "topic_{$i}", true);
             
-            if (!empty($json_topics)) {
-                $decoded_topics = json_decode($json_topics, true);
-                if (is_array($decoded_topics)) {
-                    foreach ($decoded_topics as $index => $topic_data) {
-                        if (!empty($topic_data['title'])) {
-                            $topics[] = array(
-                                'title' => trim(sanitize_text_field(trim($topic_data['title']))),
-                                'description' => trim(sanitize_text_field(trim($topic_data['description'] ?? ''))),
-                                'index' => $index,
-                                'meta_key' => 'topics_data',
-                                'source' => 'json_data_legacy'
-                            );
-                            $success = true;
-                            $data_source = 'json_data_legacy';
-                        }
-                    }
+            if (!empty($topic_value) && strlen(trim($topic_value)) > 0) {
+                $topics[] = array(
+                    'title' => trim(sanitize_text_field(trim($topic_value))),
+                    'description' => '',
+                    'index' => $i - 1,
+                    'meta_key' => "topic_{$i}",
+                    'source' => 'pods_fields_primary'
+                );
+                $count++;
+                $success = true;
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("✅ PHASE 1 Topics Data Service: Found topic_{$i} = {$topic_value} (Pods only)");
                 }
             }
         }
         
-        // Debug: Get Pods-related post meta for analysis
-        $all_meta = get_post_meta($post_id);
-        foreach ($all_meta as $key => $values) {
-            if (strpos($key, 'topic') !== false || strpos($key, 'component') !== false) {
-                $debug_methods['post_meta_all'][$key] = $values;
-            }
+        // PHASE 1 ARCHITECTURAL REQUIREMENT: NO OTHER DATA SOURCES
+        // All MKCG fallbacks, JSON fallbacks, and component_data fallbacks REMOVED
+        
+        // Calculate quality based on Pods data only
+        if ($count >= 4) {
+            $quality = 'excellent';
+        } elseif ($count >= 2) {
+            $quality = 'good';
+        } elseif ($count >= 1) {
+            $quality = 'fair';
+        } else {
+            $quality = 'empty';
         }
         
         // Update message
         if ($success) {
-            $message = count($topics) . " topics loaded from {$data_source}";
+            $message = "{$count} topics loaded from Pods fields (single source of truth)";
         } else {
-            $message = "No topics found in post {$post_id}";
+            $message = "No topics found in Pods fields for post {$post_id}";
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("✅ PHASE 1 ARCHITECTURAL FIX: Topics loaded from Pods ONLY - {$count} topics, quality: {$quality}");
         }
         
         return array(
@@ -247,7 +204,8 @@ class Topics_Data_Service extends Base_Component_Data_Service {
             'source' => $data_source,
             'success' => $success,
             'message' => $message,
-            'debug' => $debug_methods
+            'quality' => $quality,
+            'count' => $count
         );
     }
     

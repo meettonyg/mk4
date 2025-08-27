@@ -447,39 +447,33 @@ class GMKB_Topics_Ajax_Handler {
                 $result['topics']["topic_{$i}"] = '';
             }
             
-                // PHASE 1 FIX: Pods fields ONLY - Single source of truth (topic_1, topic_2, etc.)
+                // PHASE 1 ARCHITECTURAL FIX: PODS FIELDS ONLY - Single source of truth
+            // NO FALLBACK CHAINS - This enforces the architectural requirement
             $pods_topics = $this->load_from_pods_fields($post_id);
+            
             if ($pods_topics['count'] > 0) {
                 $result = array_merge($result, $pods_topics);
-                $result['source'] = 'pods_fields';
-                $result['message'] = "Loaded {$pods_topics['count']} topics from Pods fields";
+                $result['source'] = 'pods_fields_primary';
+                $result['message'] = "Loaded {$pods_topics['count']} topics from Pods fields (single source of truth)";
+                $result['quality'] = $pods_topics['quality'];
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("✅ PHASE 1 AJAX: Topics loaded from Pods ONLY - {$pods_topics['count']} topics");
+                }
+                
                 return $result;
             }
             
-            // Strategy 3: JSON stored data
-            $json_topics = $this->load_from_json_data($post_id);
-            if ($json_topics['count'] > 0) {
-                $result = array_merge($result, $json_topics);
-                $result['source'] = 'json_data';
-                $result['message'] = "Loaded {$json_topics['count']} topics from JSON data";
-                return $result;
-            }
+            // PHASE 1 ARCHITECTURAL REQUIREMENT: NO OTHER DATA SOURCES
+            // All JSON, backup, and alternative source strategies REMOVED
             
-            // Strategy 4: WordPress post meta backup
-            $meta_topics = $this->load_from_post_meta_backup($post_id);
-            if ($meta_topics['count'] > 0) {
-                $result = array_merge($result, $meta_topics);
-                $result['source'] = 'post_meta_backup';
-                $result['message'] = "Loaded {$meta_topics['count']} topics from post meta backup";
-                return $result;
-            }
-            
-            // No topics found from any source
-            $result['message'] = 'No topics found in any data source';
+            // No topics found in Pods fields
+            $result['message'] = 'No topics found in Pods fields (single source of truth)';
             $result['quality'] = 'empty';
+            $result['source'] = 'pods_fields_primary';
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("ROOT FIX: No topics found for post {$post_id} in any data source");
+                error_log("✅ PHASE 1 AJAX: No topics found in Pods fields for post {$post_id} - single source of truth enforced");
             }
             
         } catch (Exception $e) {
@@ -534,7 +528,7 @@ class GMKB_Topics_Ajax_Handler {
         return $result;
     }
     
-    // PHASE 1 REMOVED: MKCG fields method eliminated - Pods fields only
+    // PHASE 1 ARCHITECTURAL REQUIREMENT: MKCG fields method eliminated - Pods fields only
     
     /**
      * ROOT FIX: Load from JSON data with quality assessment

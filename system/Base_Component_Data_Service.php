@@ -336,21 +336,25 @@ abstract class Base_Component_Data_Service {
     
     /**
      * UNIVERSAL: Debug information
+     * PHASE 1 FIX: Removed deprecated detect_post_id method - explicit post ID required
      * 
+     * @param int $post_id Explicit post ID (required)
      * @param string $context Debug context
      * @return array Debug information
      */
-    public static function get_debug_info($context = 'unknown') {
-        $post_id_result = static::detect_post_id($context);
+    public static function get_debug_info($post_id, $context = 'unknown') {
+        $validation = static::validate_explicit_post_id($post_id, $context);
         $cache_stats = static::get_cache_stats();
         
         return array(
             'component_type' => static::$component_type ?? 'unknown',
             'context' => $context,
-            'post_id_detection' => $post_id_result,
+            'post_id' => $post_id,
+            'post_id_validation' => $validation,
             'cache_statistics' => $cache_stats,
             'class_name' => get_called_class(),
-            'timestamp' => current_time('mysql')
+            'timestamp' => current_time('mysql'),
+            'event_driven' => true
         );
     }
 }

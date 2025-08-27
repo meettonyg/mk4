@@ -137,18 +137,33 @@ if ($has_saved_components) {
     }
 }
 
-// CRITICAL FIX: Ensure at least one container is always shown
-if (!$template_instructions['show_saved_components'] && !$template_instructions['show_empty_state']) {
-    // Fallback: if neither container is shown, default to empty state
+// ROOT CAUSE FIX: Ensure EXACTLY one container is shown - never both
+if ($template_instructions['show_saved_components'] && $template_instructions['show_empty_state']) {
+    // CONFLICT RESOLUTION: If both are set to show, prioritize saved components
+    $template_instructions['show_empty_state'] = false;
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('⚠️ GMKB Template: CONFLICT RESOLVED - Both containers were set to show! Prioritizing saved components.');
+    }
+} elseif (!$template_instructions['show_saved_components'] && !$template_instructions['show_empty_state']) {
+    // FALLBACK: If neither container is shown, default to empty state
     $template_instructions['show_empty_state'] = true;
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('😨 GMKB Template: CRITICAL FIX - Neither container was set to show! Defaulting to empty state.');
-        error_log('🔧 GMKB Template: Corrected template_instructions: ' . print_r($template_instructions, true));
+        error_log('😨 GMKB Template: FALLBACK ACTIVATED - Neither container was set to show! Defaulting to empty state.');
+    }
+}
+
+// VALIDATION: Ensure exactly one container will render
+$containers_to_show = ($template_instructions['show_saved_components'] ? 1 : 0) + 
+                      ($template_instructions['show_empty_state'] ? 1 : 0);
+
+if ($containers_to_show === 1) {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB Template: Container logic VALID - will show exactly one container: ' . 
+                   ($template_instructions['show_saved_components'] ? 'SAVED COMPONENTS' : 'EMPTY STATE'));
     }
 } else {
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB Template: Container logic OK - will show: ' . 
-                   ($template_instructions['show_saved_components'] ? 'SAVED COMPONENTS' : 'EMPTY STATE'));
+        error_log('🚨 GMKB Template: CRITICAL LOGIC ERROR - ' . $containers_to_show . ' containers set to show!');
     }
 }
 
@@ -419,6 +434,7 @@ if ($post_id > 0) {
                 
                 <?php if ($template_instructions['show_saved_components']): ?>
                     <!-- PHASE 3: Section-Aware Saved Components Container -->
+                    <!-- ROOT CAUSE FIX: Conditional rendering prevents container conflicts -->
                     <div class="saved-components-container" id="saved-components-container" style="display: block;">
                         <!-- Sections will be rendered here by SectionLayoutManager -->
                         <div class="gmkb-sections-container" id="gmkb-sections-container">
@@ -428,19 +444,20 @@ if ($post_id > 0) {
                         <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
                             <!-- Debug info for saved components -->
                             <div class="debug-saved-components" style="position: absolute; top: 5px; right: 5px; background: rgba(0,255,0,0.1); padding: 5px; font-size: 10px; border-radius: 3px; z-index: 1000;">
-                                PHASE 3: Section-based rendering - <?php echo count($saved_state['components']); ?> components
+                                ✅ PHASE 3: Section-based rendering - <?php echo isset($saved_state['components']) ? count($saved_state['components']) : 0; ?> components
                             </div>
                         <?php endif; ?>
                     </div>
                     <?php 
                         if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log('✅ GMKB Template: RENDERED section-aware saved-components-container in DOM');
+                            error_log('✅ GMKB Template: RENDERED saved-components-container (exclusive) - empty state HIDDEN');
                         }
                     ?>
                 <?php endif; ?>
                 
                 <?php if ($template_instructions['show_empty_state']): ?>
                     <!-- ROOT FIX: Enhanced Empty State with Auto-Loading Support -->
+                    <!-- ROOT CAUSE FIX: Conditional rendering prevents container conflicts -->
                     <div class="empty-state-optimized" id="empty-state" data-allow-js-control="true">
                     <?php if ($dashboard_data): ?>
                         <!-- MKCG Data Auto-Loading State -->
@@ -530,7 +547,7 @@ if ($post_id > 0) {
                 </div>
                 <?php 
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('✅ GMKB Template: RENDERED empty-state-optimized in DOM');
+                        error_log('✅ GMKB Template: RENDERED empty-state-optimized (exclusive) - saved components HIDDEN');
                     }
                 ?>
                 <?php endif; // end show_empty_state ?>
