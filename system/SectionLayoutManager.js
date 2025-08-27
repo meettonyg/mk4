@@ -277,7 +277,7 @@ class SectionLayoutManager {
      * Following checklist: Centralized State, Event-Driven
      */
     assignComponentToSection(componentId, sectionId, column = 1) {
-        const section = this.sections.get(sectionId);
+        let section = this.sections.get(sectionId);
         if (!section) {
             // ROOT FIX: Enhanced error logging to help debug section ID mismatches
             const availableSections = Array.from(this.sections.keys());
@@ -299,7 +299,31 @@ class SectionLayoutManager {
                 this.logger.info('💡 PHASE 3: Found similar section IDs:', similarIds);
             }
             
-            return false;
+            // ROOT CAUSE FIX: Try to recover by looking for section in DOM and auto-registering
+            this.logger.info(`🔧 PHASE 3: Attempting to auto-register section ${sectionId} from DOM`);
+            const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
+            
+            if (sectionElement) {
+                const sectionType = sectionElement.dataset.sectionType || 'full_width';
+                this.logger.info(`🔧 PHASE 3: Found section ${sectionId} in DOM with type ${sectionType}, registering...`);
+                
+                try {
+                    section = this.registerSection(sectionId, sectionType, {
+                        section_id: sectionId,
+                        section_type: sectionType,
+                        created_at: Date.now(),
+                        recovered_from_dom: true
+                    });
+                    
+                    this.logger.info(`✅ PHASE 3: Successfully recovered and registered section ${sectionId}`);
+                } catch (error) {
+                    this.logger.error(`❌ PHASE 3: Failed to recover section ${sectionId}:`, error);
+                    return false;
+                }
+            } else {
+                this.logger.error(`❌ PHASE 3: Section ${sectionId} not found in DOM either - cannot recover`);
+                return false;
+            }
         }
         
         // Remove component from other sections first

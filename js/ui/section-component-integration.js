@@ -117,19 +117,32 @@ class SectionComponentIntegration {
                 e.preventDefault();
                 column.classList.remove('gmkb-section__column--drag-over');
                 
+                // ROOT FIX: Enhanced validation inspired by Gemini feedback
+                // Validate we have a proper section element
+                if (!section.classList.contains('gmkb-section')) {
+                    this.logger.warn('⚠️ Drop target does not have gmkb-section class');
+                    return;
+                }
+                
                 // ROOT FIX: Handle both camelCase and hyphenated data attributes
                 const sectionId = section.dataset.sectionId || section.getAttribute('data-section-id');
                 const columnNumber = parseInt(column.dataset.column) || parseInt(column.getAttribute('data-column')) || 1;
                 
-                // ROOT FIX: Validate section ID before proceeding
-                if (!sectionId) {
-                    this.logger.error('❌ No section ID found on drop target', {
+                // ROOT FIX: Enhanced validation - ensure we have valid section ID and column
+                if (!sectionId || sectionId.trim() === '') {
+                    this.logger.error('❌ No valid section ID found on drop target', {
                         element: section.outerHTML.substring(0, 200),
                         availableDataset: Object.keys(section.dataset),
                         attributes: section.getAttributeNames(),
-                        classList: section.className
+                        classList: section.className,
+                        sectionId: sectionId
                     });
                     return;
+                }
+                
+                if (isNaN(columnNumber) || columnNumber < 1) {
+                    this.logger.warn(`⚠️ Invalid column number (${columnNumber}), defaulting to 1`);
+                    columnNumber = 1;
                 }
                 
                 this.logger.info(`🎯 Drop detected in section: ${sectionId}, column: ${columnNumber}`);
@@ -357,18 +370,55 @@ class SectionComponentIntegration {
                 }
             }
             
-            // ROOT FIX: Validate section exists before assignment
+            // ROOT FIX: Validate section exists before assignment with retry mechanism
             if (!this.sectionLayoutManager) {
                 this.logger.error('❌ SectionLayoutManager not available');
                 return;
             }
             
-            // ROOT FIX: Check if section exists before attempting assignment
-            const sectionExists = this.sectionLayoutManager.getSection(sectionId);
+            // ROOT CAUSE FIX: Implement section lookup with fallback and retry mechanism
+            let sectionExists = this.sectionLayoutManager.getSection(sectionId);
+            
+            // If section doesn't exist, try to find it by DOM or wait briefly for registration
             if (!sectionExists) {
-                this.logger.error(`❌ Section ${sectionId} does not exist. Available sections:`, 
-                    this.sectionLayoutManager.getAllSections().map(s => s.section_id));
-                return;
+                this.logger.warn(`⚠️ Section ${sectionId} not found in manager, attempting recovery...`);
+                
+                // Try to find section in DOM to verify it exists
+                const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
+                if (sectionElement) {
+                    this.logger.info(`🔍 Found section ${sectionId} in DOM, attempting to register it`);
+                    
+                    // Try to extract section data from DOM and register it
+                    const sectionType = sectionElement.dataset.sectionType || 'full_width';
+                    
+                    // Register section in layout manager if it's missing
+                    try {
+                        const registeredSection = this.sectionLayoutManager.registerSection(sectionId, sectionType, {
+                            section_id: sectionId,
+                            section_type: sectionType,
+                            created_at: Date.now()
+                        });
+                        
+                        if (registeredSection) {
+                            this.logger.info(`✅ Successfully registered section ${sectionId} from DOM`);
+                            sectionExists = registeredSection;
+                        }
+                    } catch (regError) {
+                        this.logger.error(`❌ Failed to register section ${sectionId} from DOM:`, regError);
+                    }
+                }
+                
+                // Final check after recovery attempt
+                if (!sectionExists) {
+                    const availableSections = this.sectionLayoutManager.getAllSections().map(s => s.section_id);
+                    this.logger.error(`❌ Section ${sectionId} still not found after recovery. Available sections:`, availableSections);
+                    
+                    // Show user-friendly error message
+                    if (window.showToast) {
+                        window.showToast(`Section not found. Please try refreshing the page.`, 'error', 5000);
+                    }
+                    return;
+                }
             }
             
             // Assign component to section
@@ -386,6 +436,11 @@ class SectionComponentIntegration {
                 
                 // Update state
                 this.updateComponentState(componentId, sectionId, columnNumber);
+                
+                // ROOT FIX: Refresh section to ensure proper display
+                if (window.sectionRenderer && window.sectionRenderer.refreshSection) {
+                    window.sectionRenderer.refreshSection(sectionId);
+                }
             } else {
                 this.logger.error(`❌ Failed to assign component ${componentId} to section ${sectionId}`);
             }
