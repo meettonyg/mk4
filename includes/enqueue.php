@@ -899,17 +899,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ROOT CAUSE FIX: Enhanced component renderer global exposure patch
-    if (!wp_script_is('gmkb-enhanced-component-renderer-global-fix', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-enhanced-component-renderer-global-fix',
-            $plugin_url . 'js/core/enhanced-component-renderer-global-fix.js',
-            array('gmkb-enhanced-component-renderer'),
-            $version,
-            true
-        );
-    }
-    
+
     // 14. Component library (SIMPLIFIED VERSION - fixes infinite loops and race conditions)
     if (!wp_script_is('gmkb-component-library-simple', 'enqueued')) {
         wp_enqueue_script(
