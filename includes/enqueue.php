@@ -716,6 +716,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // PHASE 3: Section Renderer - ROOT FIX: Must be enqueued BEFORE section-component-integration
+    if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-renderer',
+            $plugin_url . 'system/SectionRenderer.js',
+            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // PHASE 3: Section-Component Integration
     if (!wp_script_is('gmkb-section-component-integration', 'enqueued')) {
         wp_enqueue_script(
@@ -733,17 +744,6 @@ function gmkb_enqueue_assets() {
             'gmkb-section-state-persistence',
             $plugin_url . 'js/services/section-state-persistence.js',
             array('gmkb-enhanced-state-manager', 'gmkb-section-layout-manager'),
-            $version,
-            true
-        );
-    }
-
-    // PHASE 3: Section Renderer - ROOT FIX: Updated path to system folder
-    if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-section-renderer',
-            $plugin_url . 'system/SectionRenderer.js',
-            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
             $version,
             true
         );
@@ -1190,6 +1190,17 @@ function gmkb_enqueue_assets() {
                 'gmkb-refactored-services-diagnostic',
                 $plugin_url . 'js/debug/refactored-services-diagnostic.js',
                 array('gmkb-enhanced-component-renderer'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Section Component Integration test script
+        if (!wp_script_is('gmkb-section-component-integration-test', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-section-component-integration-test',
+                $plugin_url . 'debug/section-component-integration-test.js',
+                array('gmkb-section-component-integration'),
                 $version . '-debug',
                 true
             );

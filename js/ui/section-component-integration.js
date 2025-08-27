@@ -61,6 +61,14 @@ class SectionComponentIntegration {
     setupSectionDropZones() {
         // Use event delegation for section drop zones
         document.addEventListener('dragover', (e) => {
+            // Robust event target validation
+            if (!e || !e.target || !e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            if (typeof e.target.closest !== 'function') {
+                return;
+            }
+            
             const section = e.target.closest('.gmkb-section');
             const column = e.target.closest('.gmkb-section__column, .gmkb-section__content');
             
@@ -74,6 +82,14 @@ class SectionComponentIntegration {
         });
         
         document.addEventListener('dragleave', (e) => {
+            // Robust event target validation
+            if (!e || !e.target || !e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            if (typeof e.target.closest !== 'function') {
+                return;
+            }
+            
             const column = e.target.closest('.gmkb-section__column, .gmkb-section__content');
             if (column) {
                 column.classList.remove('gmkb-section__column--drag-over');
@@ -81,6 +97,14 @@ class SectionComponentIntegration {
         });
         
         document.addEventListener('drop', (e) => {
+            // Robust event target validation
+            if (!e || !e.target || !e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            if (typeof e.target.closest !== 'function') {
+                return;
+            }
+            
             const section = e.target.closest('.gmkb-section');
             const column = e.target.closest('.gmkb-section__column, .gmkb-section__content');
             
@@ -105,6 +129,14 @@ class SectionComponentIntegration {
     setupComponentDragging() {
         // Make existing components draggable
         document.addEventListener('mouseenter', (e) => {
+            // Robust event target validation
+            if (!e || !e.target || !e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            if (typeof e.target.closest !== 'function') {
+                return;
+            }
+            
             const component = e.target.closest('.gmkb-component');
             if (component && !component.hasAttribute('draggable')) {
                 component.setAttribute('draggable', 'true');
@@ -122,6 +154,14 @@ class SectionComponentIntegration {
         
         // Component drag start
         document.addEventListener('dragstart', (e) => {
+            // Robust event target validation
+            if (!e || !e.target || !e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            if (typeof e.target.closest !== 'function') {
+                return;
+            }
+            
             const component = e.target.closest('.gmkb-component');
             if (component) {
                 this.draggedComponent = {
@@ -144,6 +184,14 @@ class SectionComponentIntegration {
         
         // Component drag end
         document.addEventListener('dragend', (e) => {
+            // Robust event target validation
+            if (!e || !e.target || !e.target.nodeType || e.target.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            if (typeof e.target.closest !== 'function') {
+                return;
+            }
+            
             const component = e.target.closest('.gmkb-component');
             if (component) {
                 component.classList.remove('gmkb-component--dragging');
