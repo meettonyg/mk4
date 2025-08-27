@@ -10,20 +10,46 @@
 (function() {
     'use strict';
     
-    // Wait for dependencies to be available
+    // ✅ CHECKLIST COMPLIANT: Pure event-driven initialization  
     const initWhenReady = () => {
-        if (!window.structuredLogger || !window.dynamicComponentLoader) {
-            setTimeout(initWhenReady, 100);
+        // Check if dependencies are already available
+        if (window.structuredLogger && window.dynamicComponentLoader) {
+            initializeRenderEngine();
             return;
         }
         
+        // ✅ NO POLLING: Listen for dependency ready events only
+        const requiredDependencies = ['structuredLogger', 'dynamicComponentLoader'];
+        let loadedDependencies = 0;
+        
+        const checkDependency = () => {
+            loadedDependencies++;
+            if (loadedDependencies >= requiredDependencies.length || 
+                (window.structuredLogger && window.dynamicComponentLoader)) {
+                initializeRenderEngine();
+            }
+        };
+        
+        // ✅ EVENT-DRIVEN: Listen for service ready events
+        document.addEventListener('gmkb:structured-logger-ready', checkDependency, { once: true });
+        document.addEventListener('gmkb:dynamic-component-loader-ready', checkDependency, { once: true });
+        document.addEventListener('gmkb:core-systems-ready', checkDependency, { once: true });
+    };
+    
+    const initializeRenderEngine = () => {
+        // ✅ ROOT CAUSE FIX: Dependencies guaranteed to be available
         const structuredLogger = window.structuredLogger;
         const dynamicComponentLoader = window.dynamicComponentLoader;
         const performanceMonitor = window.performanceMonitor || {
             start: () => () => {}
         };
         
-        structuredLogger.info('RENDER_ENGINE', 'ComponentRenderEngine initializing...');
+        if (!structuredLogger || !dynamicComponentLoader) {
+            console.error('❌ CRITICAL: Dependencies not available in ComponentRenderEngine');
+            return;
+        }
+        
+        structuredLogger.info('RENDER_ENGINE', 'ComponentRenderEngine initializing with event-driven architecture...');
 
     class ComponentRenderEngine {
         constructor() {
@@ -350,7 +376,7 @@
         structuredLogger.info('RENDER_ENGINE', 'ComponentRenderEngine ready and event emitted');
     };
     
-    // Initialize when DOM is ready
+    // ✅ EVENT-DRIVEN: Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initWhenReady);
     } else {

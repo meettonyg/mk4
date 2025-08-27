@@ -205,16 +205,26 @@ async function initializeWhenReady() {
             window.structuredLogger.warn('MAIN', 'Enhanced component manager not available');
         }
         
-        // ROOT FIX: Ensure component controls manager completes initialization
-        // Double-check after component manager initialization to catch any missed events
-        setTimeout(() => {
+        // ROOT FIX: CHECKLIST COMPLIANT - Event-driven component controls initialization
+        // Listen for component manager ready event instead of using timeout
+        document.addEventListener('gmkb:component-manager-ready', () => {
             if (window.componentControlsManager && !window.componentControlsManager.isInitialized) {
-                console.warn('⚠️ GMKB: Component controls manager not initialized via events, forcing direct initialization');
+                this.logger.info('MAIN', 'Component manager ready - checking controls initialization');
                 if (window.componentControlsManager.completeInitialization) {
                     window.componentControlsManager.completeInitialization();
                 }
             }
-        }, 500); // Shorter timeout for faster recovery
+        });
+        
+        // ROOT FIX: CHECKLIST COMPLIANT - Also listen for core systems ready as fallback
+        document.addEventListener('gmkb:core-systems-ready', () => {
+            if (window.componentControlsManager && !window.componentControlsManager.isInitialized) {
+                this.logger.warn('MAIN', 'Core systems ready but component controls not initialized - attempting recovery');
+                if (window.componentControlsManager.completeInitialization) {
+                    window.componentControlsManager.completeInitialization();
+                }
+            }
+        });
         
         // ROOT FIX: Initialize DOM Render Coordinator FIRST with duplicate prevention
         if (window.domRenderCoordinator) {
@@ -864,18 +874,15 @@ async function safeInitialization() {
 // The gmkb:ready event is dispatched by the data verification logic at the top of this file.
 document.addEventListener('gmkb:ready', safeInitialization);
 
-// ROOT FIX: Fallback check - if gmkbData is already available and we missed the event
-// (This can happen if the script loads after wp_localize_script has already run)
-setTimeout(() => {
-    if (window.gmkbData && window.gmkbData.components && !isInitialized && !isInitializing) {
-        if (window.GMKBDebug) {
-            window.GMKBDebug.logInit('🔄 gmkb: Data already available, initializing via fallback');
-        } else {
-            console.log('🔄 gmkb: Data already available, initializing via fallback');
-        }
-        safeInitialization();
+// ✅ CHECKLIST COMPLIANT: NO POLLING - Check immediately if data is available
+if (window.gmkbData && window.gmkbData.components && !isInitialized && !isInitializing) {
+    if (window.GMKBDebug) {
+        window.GMKBDebug.logInit('🔄 gmkb: Data already available, initializing immediately');
+    } else {
+        console.log('🔄 gmkb: Data already available, initializing immediately');
     }
-}, 100);
+    safeInitialization();
+}
 
 // ROOT FIX: Expose GMKB globally to fix infinite polling loops
 // This prevents sortable-integration.js from infinite polling

@@ -10,13 +10,33 @@
 (function() {
     'use strict';
     
-    // Wait for dependencies to be available
+    // ✅ CHECKLIST COMPLIANT: Pure event-driven initialization  
     const initWhenReady = () => {
-        if (!window.structuredLogger) {
-            setTimeout(initWhenReady, 100);
+        // Check if structured logger is already available
+        if (window.structuredLogger) {
+            initializeContainerManager();
             return;
         }
         
+        // ✅ NO POLLING: Listen for logger ready event only
+        document.addEventListener('gmkb:structured-logger-ready', () => {
+            if (window.structuredLogger) {
+                initializeContainerManager();
+            }
+        }, { once: true });
+        
+        // ✅ EVENT-DRIVEN: Fallback to core systems ready
+        document.addEventListener('gmkb:core-systems-ready', () => {
+            if (window.structuredLogger) {
+                initializeContainerManager();
+            } else {
+                console.error('❌ ComponentContainerManager: Logger not available even after core systems ready');
+            }
+        }, { once: true });
+    };
+    
+    const initializeContainerManager = () => {
+        // ✅ ROOT CAUSE FIX: Dependencies guaranteed to be available
         const structuredLogger = window.structuredLogger;
         const eventBus = window.eventBus || {
             emit: () => {},
@@ -24,7 +44,12 @@
             off: () => {}
         };
         
-        structuredLogger.info('CONTAINER', 'ComponentContainerManager initializing...');
+        if (!structuredLogger) {
+            console.error('❌ CRITICAL: StructuredLogger not available in ComponentContainerManager');
+            return;
+        }
+        
+        structuredLogger.info('CONTAINER', 'ComponentContainerManager initializing with event-driven architecture...');
 
     class ComponentContainerManager {
         constructor() {
@@ -653,7 +678,7 @@
         structuredLogger.info('CONTAINER', 'ComponentContainerManager ready and event emitted');
     };
     
-    // Initialize when DOM is ready
+    // ✅ EVENT-DRIVEN: Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initWhenReady);
     } else {

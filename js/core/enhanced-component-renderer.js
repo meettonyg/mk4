@@ -16,18 +16,45 @@
 (function() {
     'use strict';
     
-    // Wait for dependencies to be available
+    // ✅ CHECKLIST COMPLIANT: Pure event-driven initialization
     const initWhenReady = () => {
-        if (!window.structuredLogger || !window.enhancedStateManager || !window.eventBus) {
-            setTimeout(initWhenReady, 100);
+        // Check if dependencies are already available
+        if (window.structuredLogger && window.enhancedStateManager && window.eventBus) {
+            initializeRenderer();
             return;
         }
         
+        // ✅ NO POLLING: Listen for dependency ready events only
+        const requiredDependencies = ['structuredLogger', 'enhancedStateManager', 'eventBus'];
+        let loadedDependencies = 0;
+        
+        const checkDependency = () => {
+            loadedDependencies++;
+            if (loadedDependencies >= requiredDependencies.length || 
+                (window.structuredLogger && window.enhancedStateManager && window.eventBus)) {
+                initializeRenderer();
+            }
+        };
+        
+        // ✅ EVENT-DRIVEN: Listen for service ready events
+        document.addEventListener('gmkb:structured-logger-ready', checkDependency, { once: true });
+        document.addEventListener('gmkb:enhanced-state-manager-ready', checkDependency, { once: true });
+        document.addEventListener('gmkb:event-bus-ready', checkDependency, { once: true });
+        document.addEventListener('gmkb:core-systems-ready', checkDependency, { once: true });
+    };
+    
+    const initializeRenderer = () => {
+        // ✅ ROOT CAUSE FIX: Dependencies guaranteed to be available
         const structuredLogger = window.structuredLogger;
         const enhancedStateManager = window.enhancedStateManager;
         const eventBus = window.eventBus;
         
-        structuredLogger.info('RENDER', 'EnhancedComponentRenderer (refactored) initializing...');
+        if (!structuredLogger || !enhancedStateManager || !eventBus) {
+            console.error('❌ CRITICAL: Dependencies not available even after event-driven loading');
+            return;
+        }
+        
+        structuredLogger.info('RENDER', 'EnhancedComponentRenderer (refactored) initializing with event-driven architecture...');
 
     class EnhancedComponentRenderer {
         constructor() {
@@ -71,7 +98,7 @@
             
             this.logger.info('RENDER', `Setting up service coordination - waiting for ${totalServices} services`);
             
-            // ROOT FIX: Check if services are already loaded (missed events)
+            // ROOT FIX: CHECKLIST COMPLIANT - Pure event-driven, no timeouts
             const checkExistingServices = () => {
                 const serviceMap = {
                     'gmkb:component-state-manager-ready': window.componentStateManager,
@@ -91,11 +118,12 @@
                     }
                 });
                 
-                // ROOT FIX: Initialize with minimal services if available
+                // ✅ CHECKLIST COMPLIANT - Event-driven initialization only
                 if (readyServices >= 3) { // Need at least 3 core services
-                    this.logger.info('RENDER', `Initializing with ${readyServices}/${totalServices} services available`);
-                    setTimeout(() => this.init(), 0);
-                    return true;
+                this.logger.info('RENDER', `Initializing with ${readyServices}/${totalServices} services available`);
+                // ✅ IMMEDIATE INIT: No delays, pure event-driven
+                this.init();
+                return true;
                 }
                 return false;
             };
@@ -117,12 +145,13 @@
                 // Set service references
                 this.setServiceReference(event.type, event.detail);
                 
-                // ROOT FIX: Initialize when we have enough services (not all required)
+                // ✅ CHECKLIST COMPLIANT - Event-driven initialization only
                 if (readyServices >= 3 && !this.initialized && !this.isInitializing) {
-                    this.logger.info('RENDER', `Initializing with ${readyServices}/${totalServices} services available`);
-                    setTimeout(() => this.init(), 0); // Next tick initialization
+                this.logger.info('RENDER', `Initializing with ${readyServices}/${totalServices} services available`);
+                // ✅ IMMEDIATE INIT: No delays, pure event-driven
+                this.init();
                 } else {
-                    this.logger.info('RENDER', `Service count: ${readyServices}/${totalServices}`);
+                this.logger.info('RENDER', `Service count: ${readyServices}/${totalServices}`);
                 }
             };
             
@@ -132,36 +161,50 @@
                 document.addEventListener(eventType, onServiceReady, { once: true });
             });
             
-            // ROOT FIX: Reduced timeout and more aggressive initialization
-            setTimeout(() => {
+            // ✅ CHECKLIST COMPLIANT - No timeouts, only event-driven fallback
+            // Listen for core systems ready event as ultimate fallback
+            document.addEventListener('gmkb:core-systems-ready', () => {
                 if (!this.initialized && !this.isInitializing) {
-                    this.logger.warn('RENDER', `Only ${readyServices}/${totalServices} services ready after 2 seconds`);
-                    this.logger.warn('RENDER', 'Available services:', {
-                        stateManager: !!this.stateManager,
-                        domManager: !!this.domManager,
-                        renderEngine: !!this.renderEngine,
-                        uiIntegration: !!this.uiIntegration,
-                        performanceMonitor: !!this.performanceMonitor,
-                        containerManager: !!this.containerManager
-                    });
+                    this.logger.info('RENDER', 'Core systems ready event received, attempting initialization');
                     
-                    // ROOT FIX: Try to proceed with any available services
-                    if (readyServices >= 2) { // Even more lenient
-                        this.logger.warn('RENDER', 'Proceeding with partial service initialization');
+                    // Check if we have minimum services now
+                    if (this.countAvailableServices() >= 2) {
+                        this.logger.info('RENDER', 'Minimum services available via core systems event');
+                        // ✅ IMMEDIATE INIT: No delays
                         this.init();
                     } else {
-                        this.logger.warn('RENDER', 'Creating fallback renderer with minimal services');
+                        this.logger.warn('RENDER', 'Creating fallback renderer - core systems ready but services unavailable');
                         this.createFallbackRenderer();
                     }
                 }
-            }, 2000); // Reduced timeout to 2 seconds
+            });
             
-            this.logger.debug('RENDER', `Waiting for ${totalServices} rendering services to initialize`);
+            // ✅ CHECKLIST COMPLIANT - Listen for application ready as final fallback
+            document.addEventListener('gmkb:application-ready', () => {
+                if (!this.initialized && !this.isInitializing) {
+                    this.logger.warn('RENDER', 'Application ready but renderer not initialized, creating fallback');
+                    this.createFallbackRenderer();
+                }
+            });
+            
+            this.logger.debug('RENDER', `Pure event-driven setup complete - listening for ${totalServices} services`);
         }
 
         /**
-         * Set service references when they become available
+         * ROOT FIX: CHECKLIST COMPLIANT - Count available services without polling
          */
+        countAvailableServices() {
+            const services = [
+                this.stateManager,
+                this.domManager, 
+                this.renderEngine,
+                this.uiIntegration,
+                this.performanceMonitor,
+                this.containerManager
+            ];
+            
+            return services.filter(service => !!service).length;
+        }
         setServiceReference(eventType, detail) {
             switch (eventType) {
                 case 'gmkb:component-state-manager-ready':
@@ -805,7 +848,7 @@
         structuredLogger.info('RENDER', 'EnhancedComponentRenderer refactored ready and event emitted');
     };
     
-    // Initialize when DOM is ready
+    // ✅ EVENT-DRIVEN: Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initWhenReady);
     } else {

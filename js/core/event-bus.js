@@ -545,6 +545,14 @@ window.gmkbEventOff = eventBus.off.bind(eventBus);
 window.gmkbEventEmit = eventBus.emit.bind(eventBus);
 window.gmkbEventOnce = eventBus.once.bind(eventBus);
 
-console.log('✅ ROOT FIX: Event Bus exposed globally (WordPress-compatible)');
+// ✅ CHECKLIST COMPLIANT: Emit ready event for event-driven architecture
+document.dispatchEvent(new CustomEvent('gmkb:event-bus-ready', {
+    detail: { 
+        eventBus: eventBus,
+        timestamp: Date.now()
+    }
+}));
+
+console.log('✅ ROOT FIX: Event Bus exposed globally and ready event emitted');
 
 })(); // ROOT FIX: Close IIFE wrapper

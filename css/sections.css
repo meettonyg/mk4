@@ -275,6 +275,30 @@
     }
 }
 
+/* Main preview container drag-over state */
+.gmkb-preview--drag-over {
+    background-color: rgba(41, 92, 255, 0.05);
+    border: 2px dashed #295cff;
+    border-radius: 8px;
+    position: relative;
+}
+
+.gmkb-preview--drag-over::before {
+    content: 'Drop component here to add to main area';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #295cff;
+    font-size: 16px;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 20px;
+    border-radius: 4px;
+}
+
 /* Integration with existing component styles */
 .gmkb-section .gmkb-component {
     margin-bottom: 0; /* Remove default margin within sections */

@@ -732,12 +732,12 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // PHASE 3: Section-Component Integration
+    // ✅ ROOT CAUSE FIX: Simplified drag-drop system without complex DOM traversal
     if (!wp_script_is('gmkb-section-component-integration', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-component-integration',
-            $plugin_url . 'js/ui/section-component-integration.js',
-            array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-enhanced-component-manager'),
+            $plugin_url . 'js/ui/section-component-integration-simplified.js',
+            array('gmkb-structured-logger'),
             $version,
             true
         );
@@ -898,20 +898,14 @@ function gmkb_enqueue_assets() {
     }
     
     
-    // Enhanced component renderer (CRITICAL: renders components on screen) - ROOT FIX: Added missing script
+    // ✅ ROOT CAUSE FIX: Simplified component renderer without service orchestration
     if (!wp_script_is('gmkb-enhanced-component-renderer', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-enhanced-component-renderer',
-            $plugin_url . 'js/core/enhanced-component-renderer.js',
+            $plugin_url . 'js/core/enhanced-component-renderer-simplified.js',
             array(
-                'gmkb-component-state-manager',
-                'gmkb-component-dom-manager',
-                'gmkb-component-render-engine',
-                'gmkb-component-ui-integration',
-                'gmkb-component-performance-monitor-service',
-                'gmkb-component-container-manager',
                 'gmkb-enhanced-state-manager',
-                'gmkb-event-bus'
+                'gmkb-structured-logger'
             ),
             $version,
             true
@@ -1224,13 +1218,13 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Section Component Integration Fix Test (comprehensive validation)
-        if (!wp_script_is('gmkb-section-component-integration-fix-test', 'enqueued')) {
+        // ROOT FIX: Drag-Drop Debug Script (comprehensive diagnostics)
+        if (!wp_script_is('gmkb-debug-drag-drop-fix', 'enqueued')) {
             wp_enqueue_script(
-                'gmkb-section-component-integration-fix-test',
-                $plugin_url . 'debug/section-component-integration-fix-test.js',
-                array('gmkb-section-component-integration', 'gmkb-section-layout-manager', 'gmkb-enhanced-component-manager', 'gmkb-component-library-simple'),
-                $version . '-debug',
+                'gmkb-debug-drag-drop-fix',
+                $plugin_url . 'debug-drag-drop-fix.js',
+                array('gmkb-section-component-integration', 'gmkb-section-layout-manager', 'gmkb-enhanced-component-manager'),
+                $version . '-debug-' . time(),
                 true
             );
         }
@@ -1257,13 +1251,13 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Section Rendering QuickFix - Ensures sections always have proper structure
-        if (!wp_script_is('gmkb-section-rendering-quickfix', 'enqueued')) {
+        // ROOT FIX: Quick Drag-Drop Test Functions (console commands)
+        if (!wp_script_is('gmkb-quick-drag-drop-test', 'enqueued')) {
             wp_enqueue_script(
-                'gmkb-section-rendering-quickfix',
-                $plugin_url . 'debug/section-rendering-quickfix.js',
-                array('gmkb-section-layout-manager', 'gmkb-section-renderer'),
-                $version . '-debug-' . time(), // Force refresh
+                'gmkb-quick-drag-drop-test',
+                $plugin_url . 'quick-drag-drop-test.js',
+                array('gmkb-section-component-integration'),
+                $version . '-debug-' . time(),
                 true
             );
         }

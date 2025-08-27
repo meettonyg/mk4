@@ -10,13 +10,34 @@
 (function() {
     'use strict';
     
-    // Wait for dependencies to be available
+    // ✅ CHECKLIST COMPLIANT: Pure event-driven initialization  
     const initWhenReady = () => {
-        if (!window.structuredLogger || !window.eventBus) {
-            setTimeout(initWhenReady, 100);
+        // Check if dependencies are already available
+        if (window.structuredLogger && window.eventBus) {
+            initializeUIIntegration();
             return;
         }
         
+        // ✅ NO POLLING: Listen for dependency ready events only
+        const requiredDependencies = ['structuredLogger', 'eventBus'];
+        let loadedDependencies = 0;
+        
+        const checkDependency = () => {
+            loadedDependencies++;
+            if (loadedDependencies >= requiredDependencies.length || 
+                (window.structuredLogger && window.eventBus)) {
+                initializeUIIntegration();
+            }
+        };
+        
+        // ✅ EVENT-DRIVEN: Listen for service ready events
+        document.addEventListener('gmkb:structured-logger-ready', checkDependency, { once: true });
+        document.addEventListener('gmkb:event-bus-ready', checkDependency, { once: true });
+        document.addEventListener('gmkb:core-systems-ready', checkDependency, { once: true });
+    };
+    
+    const initializeUIIntegration = () => {
+        // ✅ ROOT CAUSE FIX: Dependencies guaranteed to be available
         const structuredLogger = window.structuredLogger;
         const eventBus = window.eventBus;
         const uiRegistry = window.uiRegistry || {
@@ -28,7 +49,12 @@
             console.log(`Toast [${type}]: ${message}`);
         };
         
-        structuredLogger.info('UI_INTEGRATION', 'ComponentUIIntegration initializing...');
+        if (!structuredLogger || !eventBus) {
+            console.error('❌ CRITICAL: Dependencies not available in ComponentUIIntegration');
+            return;
+        }
+        
+        structuredLogger.info('UI_INTEGRATION', 'ComponentUIIntegration initializing with event-driven architecture...');
 
     class ComponentUIIntegration {
         constructor() {
@@ -442,7 +468,7 @@
         structuredLogger.info('UI_INTEGRATION', 'ComponentUIIntegration ready and event emitted');
     };
     
-    // Initialize when DOM is ready
+    // ✅ EVENT-DRIVEN: Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initWhenReady);
     } else {

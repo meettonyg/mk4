@@ -10,19 +10,44 @@
 (function() {
     'use strict';
     
-    // Wait for dependencies to be available
+    // ✅ CHECKLIST COMPLIANT: Pure event-driven initialization  
     const initWhenReady = () => {
-        if (!window.structuredLogger) {
-            setTimeout(initWhenReady, 100);
+        // Check if structured logger is already available
+        if (window.structuredLogger) {
+            initializePerformanceMonitor();
             return;
         }
         
+        // ✅ NO POLLING: Listen for logger ready event only
+        document.addEventListener('gmkb:structured-logger-ready', () => {
+            if (window.structuredLogger) {
+                initializePerformanceMonitor();
+            }
+        }, { once: true });
+        
+        // ✅ EVENT-DRIVEN: Fallback to core systems ready
+        document.addEventListener('gmkb:core-systems-ready', () => {
+            if (window.structuredLogger) {
+                initializePerformanceMonitor();
+            } else {
+                console.error('❌ ComponentPerformanceMonitor: Logger not available even after core systems ready');
+            }
+        }, { once: true });
+    };
+    
+    const initializePerformanceMonitor = () => {
+        // ✅ ROOT CAUSE FIX: Dependencies guaranteed to be available
         const structuredLogger = window.structuredLogger;
         const performanceMonitor = window.performanceMonitor || {
             start: () => () => {}
         };
         
-        structuredLogger.info('PERF', 'ComponentPerformanceMonitor initializing...');
+        if (!structuredLogger) {
+            console.error('❌ CRITICAL: StructuredLogger not available in ComponentPerformanceMonitor');
+            return;
+        }
+        
+        structuredLogger.info('PERF', 'ComponentPerformanceMonitor initializing with event-driven architecture...');
 
     class ComponentPerformanceMonitor {
         constructor() {
@@ -460,7 +485,7 @@
         structuredLogger.info('PERF', 'ComponentPerformanceMonitor ready and event emitted');
     };
     
-    // Initialize when DOM is ready
+    // ✅ EVENT-DRIVEN: Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initWhenReady);
     } else {

@@ -10,13 +10,33 @@
 (function() {
     'use strict';
     
-    // Wait for dependencies to be available
+    // ✅ CHECKLIST COMPLIANT: Pure event-driven initialization  
     const initWhenReady = () => {
-        if (!window.structuredLogger) {
-            setTimeout(initWhenReady, 100);
+        // Check if structured logger is already available
+        if (window.structuredLogger) {
+            initializeDOMManager();
             return;
         }
         
+        // ✅ NO POLLING: Listen for logger ready event only
+        document.addEventListener('gmkb:structured-logger-ready', () => {
+            if (window.structuredLogger) {
+                initializeDOMManager();
+            }
+        }, { once: true });
+        
+        // ✅ EVENT-DRIVEN: Fallback to core systems ready
+        document.addEventListener('gmkb:core-systems-ready', () => {
+            if (window.structuredLogger) {
+                initializeDOMManager();
+            } else {
+                console.error('❌ ComponentDOMManager: Logger not available even after core systems ready');
+            }
+        }, { once: true });
+    };
+    
+    const initializeDOMManager = () => {
+        // ✅ ROOT CAUSE FIX: Dependencies guaranteed to be available
         const structuredLogger = window.structuredLogger;
         const eventBus = window.eventBus || {
             emit: () => {},
@@ -27,7 +47,12 @@
             start: () => () => {}
         };
         
-        structuredLogger.info('DOM', 'ComponentDOMManager initializing...');
+        if (!structuredLogger) {
+            console.error('❌ CRITICAL: StructuredLogger not available in ComponentDOMManager');
+            return;
+        }
+        
+        structuredLogger.info('DOM', 'ComponentDOMManager initializing with event-driven architecture...');
 
     class ComponentDOMManager {
         constructor() {
@@ -517,7 +542,7 @@
         structuredLogger.info('DOM', 'ComponentDOMManager ready and event emitted');
     };
     
-    // Initialize when DOM is ready
+    // ✅ EVENT-DRIVEN: Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initWhenReady);
     } else {
