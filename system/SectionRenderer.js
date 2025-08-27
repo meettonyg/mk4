@@ -669,6 +669,107 @@ class SectionRenderer {
     }
     
     /**
+     * ROOT FIX: Refresh section to properly display components
+     * This ensures components added via the component library modal are visible
+     * @param {string} sectionId - Section ID to refresh
+     */
+    refreshSection(sectionId) {
+        if (!sectionId) {
+            this.logger.warn('⚠️ PHASE 3: Cannot refresh section - no sectionId provided');
+            return;
+        }
+        
+        this.logger.info(`🔄 PHASE 3: Refreshing section ${sectionId}`);
+        
+        // Get the section data
+        if (!this.sectionLayoutManager) {
+            this.logger.error('❌ PHASE 3: Cannot refresh - SectionLayoutManager not available');
+            return;
+        }
+        
+        const section = this.sectionLayoutManager.getSection(sectionId);
+        if (!section) {
+            this.logger.error(`❌ PHASE 3: Section ${sectionId} not found for refresh`);
+            return;
+        }
+        
+        // Find the section element in DOM
+        const sectionElement = document.getElementById(`section-${sectionId}`) || 
+                              document.querySelector(`[data-section-id="${sectionId}"]`);
+        
+        if (!sectionElement) {
+            this.logger.warn(`⚠️ PHASE 3: Section element not found in DOM, re-rendering section ${sectionId}`);
+            // Section not in DOM, render it fresh
+            this.renderSection(section);
+            return;
+        }
+        
+        // ROOT FIX: Clear and re-render components in the section
+        const innerElement = sectionElement.querySelector('.gmkb-section__inner');
+        if (!innerElement) {
+            this.logger.warn(`⚠️ PHASE 3: No inner element in section ${sectionId}`);
+            return;
+        }
+        
+        // Get all columns or content area
+        const columns = innerElement.querySelectorAll('.gmkb-section__column');
+        const contentArea = innerElement.querySelector('.gmkb-section__content');
+        
+        // ROOT FIX: Remove empty placeholders if components exist
+        if (section.components && section.components.length > 0) {
+            const emptyPlaceholders = innerElement.querySelectorAll('.gmkb-section__empty');
+            emptyPlaceholders.forEach(placeholder => placeholder.remove());
+        }
+        
+        // ROOT FIX: Move any orphaned components to their correct positions
+        if (section.components && section.components.length > 0) {
+            section.components.forEach(componentAssignment => {
+                const { component_id, column } = componentAssignment;
+                
+                // Find the component element
+                const componentElement = document.querySelector(`[data-component-id="${component_id}"]`);
+                
+                if (componentElement) {
+                    // Determine target container based on layout
+                    let targetContainer;
+                    
+                    if (columns.length > 0) {
+                        // Multi-column layout
+                        const targetColumn = Math.min(column || 1, columns.length) - 1;
+                        targetContainer = columns[targetColumn];
+                    } else if (contentArea) {
+                        // Single column layout
+                        targetContainer = contentArea;
+                    } else {
+                        // Fallback to inner element
+                        targetContainer = innerElement;
+                    }
+                    
+                    // Move component if it's not already in the correct container
+                    if (componentElement.parentElement !== targetContainer) {
+                        targetContainer.appendChild(componentElement);
+                        this.logger.debug(`🔄 PHASE 3: Moved component ${component_id} to correct position in section ${sectionId}`);
+                    }
+                }
+            });
+        } else {
+            // No components, ensure placeholder is shown
+            this.addEmptySectionPlaceholder(sectionElement);
+        }
+        
+        // Update styles
+        this.applySectionStyles(sectionElement, section);
+        
+        this.logger.info(`✅ PHASE 3: Section ${sectionId} refreshed successfully`);
+        
+        // Dispatch refresh event
+        this.dispatchSectionEvent('gmkb:section-refreshed', {
+            sectionId,
+            componentCount: section.components?.length || 0
+        });
+    }
+    
+    /**
      * Debug method - get current state
      * Following checklist: Diagnostic Logging
      */

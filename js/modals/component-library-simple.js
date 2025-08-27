@@ -572,8 +572,16 @@ async function addSelectedComponents() {
     let addedCount = 0;
     const errors = [];
     
+    // ROOT CAUSE FIX: Check if a specific section requested components (click to add)
+    let targetSectionId = window.componentLibrarySystem.targetSectionId;
+    let targetColumn = window.componentLibrarySystem.targetColumn || 1;
+    
     // ROOT CAUSE FIX: Get available sections for smart targeting
-    const availableSections = getAvailableSectionsForTargeting();
+    const availableSections = targetSectionId ? 
+        // If a specific section requested, only target that section
+        [{ section_id: targetSectionId, hasCapacity: true, availableColumns: 1, priority: 1 }] : 
+        // Otherwise use smart targeting
+        getAvailableSectionsForTargeting();
     
     if (window.gmkbData?.debugMode) {
         console.log(`📊 Available sections:`, availableSections);
@@ -590,7 +598,11 @@ async function addSelectedComponents() {
         }
         
         // ROOT CAUSE FIX: Smart section targeting
-        const sectionTargeting = determineSectionTargeting(availableSections, index);
+        const sectionTargeting = targetSectionId ? 
+            // If targeting specific section, add to it (distribute across columns if multi-column)
+            { targetSectionId, targetColumn: targetColumn + index } : 
+            // Otherwise use smart targeting
+            determineSectionTargeting(availableSections, index);
         
         if (window.gmkbData?.debugMode && sectionTargeting.targetSectionId) {
             console.log(`🎯 Component Library Modal: Targeting ${componentType} to section ${sectionTargeting.targetSectionId}:${sectionTargeting.targetColumn}`);
@@ -697,6 +709,11 @@ async function addSelectedComponents() {
     
     // Clear selection and hide modal only after all operations complete
     selectedCards.forEach(card => card.classList.remove('selected'));
+    
+    // Clear any specific section targeting after use
+    window.componentLibrarySystem.targetSectionId = null;
+    window.componentLibrarySystem.targetColumn = null;
+    
     hideModal();
     
     if (window.gmkbData?.debugMode) {
@@ -836,6 +853,21 @@ document.addEventListener('gmkb:section-systems-ready', () => {
     setupSectionAwareness();
 });
 
+// ROOT FIX: Listen for section requesting component addition (click to add)
+document.addEventListener('gmkb:add-component-to-section', (event) => {
+    logger.info('COMPONENT_LIBRARY', 'Section requesting component addition', event.detail);
+    
+    // Store the requesting section ID
+    if (event.detail && event.detail.sectionId) {
+        window.componentLibrarySystem.targetSectionId = event.detail.sectionId;
+        window.componentLibrarySystem.targetColumn = event.detail.column || 1;
+        logger.debug('COMPONENT_LIBRARY', `Will target section ${event.detail.sectionId} for next component addition`);
+    }
+    
+    // Open the component library modal
+    showModal();
+});
+
 // ROOT FIX: Try immediately if DOM is already ready
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
     tryInitialization();
@@ -850,6 +882,8 @@ window.componentLibrarySystem = {
     isReady: () => isInitialized,
     sectionAware: false, // Will be set to true when section systems are ready
     lastSectionCheck: null,
+    targetSectionId: null, // Track which section requested component addition (click to add)
+    targetColumn: null, // Track which column to target
     show: showModal,
     hide: hideModal,
     forceInit: () => {

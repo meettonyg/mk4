@@ -452,6 +452,7 @@
 
         /**
         * Add component HTML to preview area
+        * ROOT FIX: Properly render component in section with visual update
         * @param {string} componentId - Component ID
         * @param {string} html - Component HTML
         * @param {string|null} sectionId - Target section ID
@@ -461,20 +462,64 @@
         // PHASE 3: If section targeting is specified, use section container
         let targetContainer = null;
         
-        if (sectionId && window.sectionRenderer) {
+        if (sectionId) {
+            // ROOT FIX: More robust section finding with better logging
             const section = document.querySelector(`[data-section-id="${sectionId}"]`);
+            
             if (section) {
+                logger.debug('COMPONENT', `Found section element for ${sectionId}`);
+                
+                // Look for the section inner container
                 const sectionInner = section.querySelector('.gmkb-section__inner');
+                
                 if (sectionInner) {
-                    // Find specific column or use first available
+                    // Find columns within the section
                     const columns = sectionInner.querySelectorAll('.gmkb-section__column');
-                    if (columns.length > 0 && columnNumber) {
-                        targetContainer = columns[Math.min(columnNumber - 1, columns.length - 1)];
+                    
+                    if (columns.length > 0) {
+                        // Use the specified column or default to first column
+                        const targetColumnIndex = Math.min((columnNumber || 1) - 1, columns.length - 1);
+                        targetContainer = columns[targetColumnIndex];
+                        logger.info('COMPONENT', `Targeting section ${sectionId}, column ${columnNumber || 1} (index ${targetColumnIndex})`);
                     } else {
+                        // No columns found, use the content area directly
                         targetContainer = sectionInner.querySelector('.gmkb-section__content') || sectionInner;
+                        logger.info('COMPONENT', `No columns in section ${sectionId}, using content area directly`);
+                    }
+                } else {
+                    // No inner container, use section directly
+                    targetContainer = section;
+                    logger.warn('COMPONENT', `No inner container in section ${sectionId}, using section element directly`);
+                }
+            } else {
+                logger.warn('COMPONENT', `Section ${sectionId} not found in DOM`);
+                
+                // ROOT FIX: Try to render the section if it exists in state but not DOM
+                if (window.sectionRenderer && window.sectionLayoutManager) {
+                    const sectionData = window.sectionLayoutManager.getSection(sectionId);
+                    if (sectionData) {
+                        logger.info('COMPONENT', `Section ${sectionId} exists in state, attempting to render...`);
+                        try {
+                            window.sectionRenderer.renderSection(sectionId);
+                            // Try again after rendering
+                            const renderedSection = document.querySelector(`[data-section-id="${sectionId}"]`);
+                            if (renderedSection) {
+                                const sectionInner = renderedSection.querySelector('.gmkb-section__inner');
+                                if (sectionInner) {
+                                    const columns = sectionInner.querySelectorAll('.gmkb-section__column');
+                                    if (columns.length > 0) {
+                                        targetContainer = columns[Math.min((columnNumber || 1) - 1, columns.length - 1)];
+                                    } else {
+                                        targetContainer = sectionInner.querySelector('.gmkb-section__content') || sectionInner;
+                                    }
+                                }
+                                logger.info('COMPONENT', `Section ${sectionId} rendered, component will be added`);
+                            }
+                        } catch (renderError) {
+                            logger.error('COMPONENT', `Failed to render section ${sectionId}:`, renderError);
+                        }
                     }
                 }
-                logger.info('COMPONENT', `Targeting section ${sectionId}, column ${columnNumber || 1}`);
             }
         }
         
@@ -535,7 +580,45 @@
             // Add to the appropriate container
             targetContainer.appendChild(componentElement);
                 
-            logger.debug('COMPONENT', `Component added to ${targetContainer.id}: ${componentId}`);
+            // ROOT FIX: Log more details about where component was added
+            const containerInfo = {
+                id: targetContainer.id || 'no-id',
+                className: targetContainer.className,
+                isSection: targetContainer.closest('[data-section-id]') !== null,
+                sectionId: targetContainer.closest('[data-section-id]')?.dataset?.sectionId || 'none',
+                parentId: targetContainer.parentElement?.id || 'no-parent-id'
+            };
+            logger.info('COMPONENT', `Component ${componentId} added to container`, containerInfo);
+            
+            // ROOT FIX: Force visual update if in section
+            if (sectionId) {
+                // Dispatch event to notify section system of new component
+                document.dispatchEvent(new CustomEvent('gmkb:component-added-to-section', {
+                    detail: {
+                        componentId,
+                        sectionId,
+                        columnNumber: columnNumber || 1,
+                        timestamp: Date.now()
+                    }
+                }));
+                
+                // ROOT FIX: Force re-render of section to ensure proper display
+                if (window.sectionRenderer && window.sectionRenderer.refreshSection) {
+                    setTimeout(() => {
+                        window.sectionRenderer.refreshSection(sectionId);
+                        logger.debug('COMPONENT', `Triggered section refresh for ${sectionId}`);
+                    }, 100);
+                }
+            }
+            
+            // ROOT FIX: Request control attachment after DOM insertion
+            setTimeout(() => {
+                if (window.componentControlsManager && window.componentControlsManager.attachControlsToComponent) {
+                    window.componentControlsManager.attachControlsToComponent(componentId);
+                    logger.debug('COMPONENT', `Requested control attachment for ${componentId}`);
+                }
+            }, 50);
+            
         } else {
             logger.error('COMPONENT', `No element found in HTML for component: ${componentId}`);
         }
