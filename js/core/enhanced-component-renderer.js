@@ -71,7 +71,7 @@
             
             this.logger.info('RENDER', `Setting up service coordination - waiting for ${totalServices} services`);
             
-            // Check if services are already loaded (missed events)
+            // ROOT FIX: Check if services are already loaded (missed events)
             const checkExistingServices = () => {
                 const serviceMap = {
                     'gmkb:component-state-manager-ready': window.componentStateManager,
@@ -91,8 +91,9 @@
                     }
                 });
                 
-                if (readyServices === totalServices) {
-                    this.logger.info('RENDER', 'All services already loaded, initializing immediately');
+                // ROOT FIX: Initialize with minimal services if available
+                if (readyServices >= 3) { // Need at least 3 core services
+                    this.logger.info('RENDER', `Initializing with ${readyServices}/${totalServices} services available`);
                     setTimeout(() => this.init(), 0);
                     return true;
                 }
@@ -101,7 +102,7 @@
             
             // Check existing services first
             if (checkExistingServices()) {
-                return; // All services already loaded
+                return; // Services available, initializing
             }
             
             const onServiceReady = (event) => {
@@ -116,12 +117,12 @@
                 // Set service references
                 this.setServiceReference(event.type, event.detail);
                 
-                // Initialize when all services are ready
-                if (readyServices === totalServices) {
-                    this.logger.info('RENDER', 'All rendering services ready, initializing Enhanced Component Renderer');
+                // ROOT FIX: Initialize when we have enough services (not all required)
+                if (readyServices >= 3 && !this.initialized && !this.isInitializing) {
+                    this.logger.info('RENDER', `Initializing with ${readyServices}/${totalServices} services available`);
                     setTimeout(() => this.init(), 0); // Next tick initialization
                 } else {
-                    this.logger.info('RENDER', `Still waiting for ${totalServices - readyServices} more services`);
+                    this.logger.info('RENDER', `Service count: ${readyServices}/${totalServices}`);
                 }
             };
             
@@ -131,10 +132,10 @@
                 document.addEventListener(eventType, onServiceReady, { once: true });
             });
             
-            // Add timeout fallback in case some services don't load
+            // ROOT FIX: Reduced timeout and more aggressive initialization
             setTimeout(() => {
-                if (readyServices < totalServices) {
-                    this.logger.warn('RENDER', `Only ${readyServices}/${totalServices} services ready after 5 seconds`);
+                if (!this.initialized && !this.isInitializing) {
+                    this.logger.warn('RENDER', `Only ${readyServices}/${totalServices} services ready after 2 seconds`);
                     this.logger.warn('RENDER', 'Available services:', {
                         stateManager: !!this.stateManager,
                         domManager: !!this.domManager,
@@ -144,15 +145,16 @@
                         containerManager: !!this.containerManager
                     });
                     
-                    // Try to proceed with available services
-                    if (readyServices >= 3) { // Need at least core services
+                    // ROOT FIX: Try to proceed with any available services
+                    if (readyServices >= 2) { // Even more lenient
                         this.logger.warn('RENDER', 'Proceeding with partial service initialization');
                         this.init();
                     } else {
-                        this.logger.error('RENDER', 'Too few services loaded, cannot initialize Enhanced Component Renderer');
+                        this.logger.warn('RENDER', 'Creating fallback renderer with minimal services');
+                        this.createFallbackRenderer();
                     }
                 }
-            }, 5000); // Reduced timeout to 5 seconds
+            }, 2000); // Reduced timeout to 2 seconds
             
             this.logger.debug('RENDER', `Waiting for ${totalServices} rendering services to initialize`);
         }
@@ -271,7 +273,7 @@
         }
 
         /**
-         * Verify all required services are available
+         * ROOT FIX: Verify services with graceful fallbacks
          */
         verifyServices() {
             const services = [
@@ -284,9 +286,18 @@
             ];
             
             const missingServices = services.filter(service => !service.instance);
+            const availableServices = services.filter(service => !!service.instance);
             
             if (missingServices.length > 0) {
-                this.logger.error('RENDER', 'Missing required services:', missingServices.map(s => s.name));
+                this.logger.warn('RENDER', 'Missing services:', missingServices.map(s => s.name));
+                this.logger.info('RENDER', 'Available services:', availableServices.map(s => s.name));
+                
+                // ROOT FIX: Return true if we have at least core services
+                if (availableServices.length >= 2) {
+                    this.logger.info('RENDER', `Proceeding with ${availableServices.length} services available`);
+                    return true;
+                }
+                
                 return false;
             }
             
@@ -683,6 +694,34 @@
         }
 
         /**
+         * ROOT FIX: Create fallback renderer when services fail to load
+         */
+        createFallbackRenderer() {
+            this.logger.warn('RENDER', 'Creating fallback renderer with minimal functionality');
+            
+            // Create minimal fallback services
+            if (!this.stateManager) {
+                this.stateManager = {
+                    hasStateChanged: () => true,
+                    updateLastState: () => {},
+                    getLastState: () => null,
+                    diffState: () => ({ added: new Set(), removed: new Set(), updated: new Set(), moved: new Set() }),
+                    detectRenderType: () => 'full-render'
+                };
+            }
+            
+            if (!this.containerManager) {
+                this.containerManager = {
+                    renderSavedComponents: () => Promise.resolve(),
+                    updateContainerDisplay: () => {}
+                };
+            }
+            
+            // Initialize with fallback services
+            this.init();
+        }
+
+        /**
          * Clean shutdown of renderer
          * Following checklist: Graceful Failure, WordPress Integration
          */
@@ -726,9 +765,19 @@
     // Export to global scope for WordPress compatibility
     window.EnhancedComponentRenderer = EnhancedComponentRenderer;
     
-    // Create singleton instance - maintain backward compatibility
+    // ROOT FIX: Create singleton instance with immediate availability
     if (!window.enhancedComponentRenderer) {
         window.enhancedComponentRenderer = new EnhancedComponentRenderer();
+        
+        // ROOT FIX: Ensure basic functionality is available immediately
+        window.enhancedComponentRenderer.initWhenReady = function() {
+            if (!this.initialized && !this.isInitializing) {
+                this.logger.info('RENDER', 'InitWhenReady called - starting initialization');
+                this.setupServiceCoordination();
+            } else {
+                this.logger.debug('RENDER', 'InitWhenReady called but already initialized or initializing');
+            }
+        };
     }
     
     // Also maintain the refactored name

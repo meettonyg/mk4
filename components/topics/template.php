@@ -46,6 +46,7 @@ $topics_to_display = $has_topics ? $loaded_topics : [];
      data-element="topics"
      data-component="topics"
      data-component-type="topics"
+     data-component-id="<?php echo esc_attr($componentId ?: 'topics-' . time()); ?>"
      data-controls-enabled="true"
      style="position: relative; cursor: pointer;"
      tabindex="0">

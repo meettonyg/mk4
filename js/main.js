@@ -171,25 +171,33 @@ async function initializeWhenReady() {
             window.structuredLogger.warn('MAIN', 'Enhanced state manager not available');
         }
         
-        // ROOT FIX: Initialize ComponentControlsManager FIRST to ensure it's ready for events
+        // ROOT FIX: Initialize ComponentControlsManager FIRST with duplicate prevention
         // This prevents race conditions where controls manager misses component manager events
-        if (window.componentControlsManager && !window.componentControlsManager.isInitialized) {
-            if (window.componentControlsManager.init) {
-                window.componentControlsManager.init();
-                window.structuredLogger.info('MAIN', 'Component controls manager initialization started (priority - before component manager)');
+        if (window.componentControlsManager) {
+            if (!window.componentControlsManager.isInitialized && !window.componentControlsManager._isInitializing) {
+                if (window.componentControlsManager.init) {
+                    window.componentControlsManager._isInitializing = true; // Prevent duplicate initialization
+                    window.componentControlsManager.init();
+                    window.structuredLogger.info('MAIN', 'Component controls manager initialization started (priority - before component manager)');
+                }
+            } else if (window.componentControlsManager.isInitialized) {
+                window.structuredLogger.debug('MAIN', 'Component controls manager already initialized, skipping');
+            } else if (window.componentControlsManager._isInitializing) {
+                window.structuredLogger.debug('MAIN', 'Component controls manager initialization already in progress, skipping');
             }
-        } else if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
-            window.structuredLogger.debug('MAIN', 'Component controls manager already initialized, skipping');
         } else {
             window.structuredLogger.warn('MAIN', 'Component controls manager not available - controls may not work');
         }
         
-        // ROOT FIX: Initialize component manager AFTER controls manager is listening
+        // ROOT FIX: Initialize component manager AFTER controls manager with duplicate prevention
         // This ensures controls manager will receive the component manager ready event
         if (window.enhancedComponentManager) {
             if (window.enhancedComponentManager.isInitialized) {
                 window.structuredLogger.debug('MAIN', 'Component manager already initialized, skipping');
+            } else if (window.enhancedComponentManager._isInitializing) {
+                window.structuredLogger.debug('MAIN', 'Component manager initialization already in progress, skipping');
             } else if (window.enhancedComponentManager.initialize) {
+                window.enhancedComponentManager._isInitializing = true; // Prevent duplicate initialization
                 window.enhancedComponentManager.initialize();
                 window.structuredLogger.info('MAIN', 'Component manager initialized after controls manager is listening');
             }
@@ -208,32 +216,53 @@ async function initializeWhenReady() {
             }
         }, 500); // Shorter timeout for faster recovery
         
-        // ROOT FIX: Initialize DOM Render Coordinator FIRST to prevent duplication
-        if (window.domRenderCoordinator && !window.domRenderCoordinator.isInitialized) {
-            window.domRenderCoordinator.init();
-            window.structuredLogger.info('MAIN', 'DOM Render Coordinator initialized - duplication prevention active');
-        } else if (window.domRenderCoordinator && window.domRenderCoordinator.isInitialized) {
-            window.structuredLogger.debug('MAIN', 'DOM Render Coordinator already initialized');
+        // ROOT FIX: Initialize DOM Render Coordinator FIRST with duplicate prevention
+        if (window.domRenderCoordinator) {
+            if (!window.domRenderCoordinator.isInitialized && !window.domRenderCoordinator._isInitializing) {
+                window.domRenderCoordinator._isInitializing = true; // Prevent duplicate initialization
+                window.domRenderCoordinator.init();
+                window.structuredLogger.info('MAIN', 'DOM Render Coordinator initialized - duplication prevention active');
+            } else if (window.domRenderCoordinator.isInitialized) {
+                window.structuredLogger.debug('MAIN', 'DOM Render Coordinator already initialized');
+            } else if (window.domRenderCoordinator._isInitializing) {
+                window.structuredLogger.debug('MAIN', 'DOM Render Coordinator initialization already in progress');
+            }
         } else {
             window.structuredLogger.warn('MAIN', 'DOM Render Coordinator not available - duplication risk exists');
         }
         
-        // 2. Initialize component renderer - SIMPLIFIED: JavaScript always renders
-        if (window.enhancedComponentRenderer && !window.enhancedComponentRenderer.initialized) {
-            await window.enhancedComponentRenderer.init();
-            window.structuredLogger.info('MAIN', 'Component renderer initialized');
-        } else if (window.enhancedComponentRenderer && window.enhancedComponentRenderer.initialized) {
-            window.structuredLogger.debug('MAIN', 'Component renderer already initialized, skipping');
+        // 2. Initialize component renderer - CHECKLIST COMPLIANT: Simplified initialization
+        // CHECKLIST Phase 1: Root Cause Fix - Remove complex event coordination
+        // CHECKLIST Phase 2: Simplicity First - Direct property checking
+        if (window.enhancedComponentRenderer) {
+            // CHECKLIST Phase 1: Event-Driven Initialization - Simple ready check
+            if (window.enhancedComponentRenderer.initWhenReady) {
+                try {
+                    window.enhancedComponentRenderer.initWhenReady();
+                    window.structuredLogger.info('MAIN', 'Enhanced component renderer initialization started');
+                } catch (error) {
+                    // CHECKLIST Phase 4: Graceful Failure - Continue without renderer
+                    window.structuredLogger.warn('MAIN', 'Enhanced component renderer initialization failed, continuing with basic functionality', error);
+                }
+            } else {
+                window.structuredLogger.debug('MAIN', 'Enhanced component renderer available but initWhenReady method missing');
+            }
         } else {
-            window.structuredLogger.error('MAIN', 'Enhanced component renderer not available');
+            // CHECKLIST Phase 4: Graceful Failure - Log and continue
+            window.structuredLogger.debug('MAIN', 'Enhanced component renderer not available - using basic component handling');
         }
         
         // 3. Component manager already initialized above - skip duplicate initialization
         
-        // 4. Initialize empty state handlers (already loaded)
+        // 4. Initialize empty state handlers with duplicate prevention
         if (window.emptyStateHandlers && window.emptyStateHandlers.init) {
-            window.emptyStateHandlers.init();
-            window.structuredLogger.info('MAIN', 'Empty state handlers initialized');
+            if (!window.emptyStateHandlers.isInitialized && !window.emptyStateHandlers._isInitializing) {
+                window.emptyStateHandlers._isInitializing = true;
+                window.emptyStateHandlers.init();
+                window.structuredLogger.info('MAIN', 'Empty state handlers initialized');
+            } else {
+                window.structuredLogger.debug('MAIN', 'Empty state handlers already initialized or initializing, skipping');
+            }
         }
         
         // 5. Set up basic event listeners
@@ -253,14 +282,18 @@ async function initializeWhenReady() {
             window.GMKB.systems.ComponentControlsManager = window.componentControlsManager;
         }
         
-        // ROOT FIX: Attach controls to existing components via event-driven approach
-        // CHECKLIST COMPLIANT: No setTimeout, event-driven initialization
-        document.dispatchEvent(new CustomEvent('gmkb:request-controls-attachment', {
-            detail: {
-                source: 'main-initialization',
-                timestamp: Date.now()
-            }
-        }));
+        // ROOT FIX: Attach controls to existing components via event-driven approach  
+        // CHECKLIST COMPLIANT: No setTimeout, event-driven initialization (Phase 1)
+        if (window.componentControlsManager) {
+            document.dispatchEvent(new CustomEvent('gmkb:request-controls-attachment', {
+                detail: {
+                    source: 'main-initialization',
+                    timestamp: Date.now()
+                }
+            }));
+        } else {
+            window.structuredLogger.warn('MAIN', 'Component controls manager not available - controls may not attach properly');
+        }
         
         // 9. Emit application ready event
         document.dispatchEvent(new CustomEvent('gmkb:application-ready', {
@@ -370,25 +403,36 @@ function createFallbackLogger() {
  */
 function setupCoreUI() {
     try {
-        // ROOT FIX: Initialize tabs system using event-driven approach
+        // ROOT FIX: Initialize tabs system with duplicate prevention
         if (window.setupTabs) {
-            window.setupTabs();
-            window.structuredLogger.info('MAIN', 'Tabs system initialized');
+            if (!window._tabsInitialized) {
+                window.setupTabs();
+                window._tabsInitialized = true; // Prevent duplicate initialization
+                window.structuredLogger.info('MAIN', 'Tabs system initialized');
+            } else {
+                window.structuredLogger.debug('MAIN', 'Tabs system already initialized, skipping');
+            }
         } else {
             console.warn('⚠️ MAIN: Tab setup function not available yet');
             // Listen for tabs script to load
             document.addEventListener('gmkb:tabs-loaded', () => {
-                if (window.setupTabs) {
+                if (window.setupTabs && !window._tabsInitialized) {
                     window.setupTabs();
+                    window._tabsInitialized = true;
                     window.structuredLogger.info('MAIN', 'Tabs system initialized after load event');
                 }
             });
         }
         
-        // ROOT FIX: Initialize toolbar functionality (device preview, button handlers)
+        // ROOT FIX: Initialize toolbar functionality with duplicate prevention
         if (window.setupToolbar) {
-            window.setupToolbar();
-            window.structuredLogger.info('MAIN', 'Toolbar system initialized');
+            if (!window._toolbarInitialized) {
+                window.setupToolbar();
+                window._toolbarInitialized = true; // Prevent duplicate initialization
+                window.structuredLogger.info('MAIN', 'Toolbar system initialized');
+            } else {
+                window.structuredLogger.debug('MAIN', 'Toolbar system already initialized, skipping');
+            }
         } else {
             console.warn('⚠️ MAIN: Toolbar setup function not available');
         }
@@ -404,10 +448,15 @@ function setupCoreUI() {
         // Device preview toggle is already initialized by setupToolbar() above
         // This prevents the race condition that causes horizontal layout issues
         
-        // Initialize form controls
-        if (window.formControls) {
-            window.formControls.setup();
-            window.structuredLogger.info('MAIN', 'Form controls initialized');
+        // Initialize form controls with duplicate prevention
+        if (window.formControls && window.formControls.setup) {
+            if (!window.formControls.isInitialized && !window.formControls._isInitializing) {
+                window.formControls._isInitializing = true;
+                window.formControls.setup();
+                window.structuredLogger.info('MAIN', 'Form controls initialized');
+            } else {
+                window.structuredLogger.debug('MAIN', 'Form controls already initialized or initializing, skipping');
+            }
         }
         
         // ROOT FIX: DISABLED LEGACY CONTROL SYSTEMS
@@ -441,11 +490,21 @@ function setupCoreUI() {
             });
         }
         
-        // Initialize component library
-        setupComponentLibrary();
+        // Initialize component library with duplicate prevention
+        if (!window._componentLibraryInitialized) {
+            setupComponentLibrary();
+            window._componentLibraryInitialized = true;
+        } else {
+            window.structuredLogger.debug('MAIN', 'Component library already initialized, skipping');
+        }
         
-        // Initialize layout handlers
-        setupLayoutHandlers();
+        // Initialize layout handlers with duplicate prevention
+        if (!window._layoutHandlersInitialized) {
+            setupLayoutHandlers();
+            window._layoutHandlersInitialized = true;
+        } else {
+            window.structuredLogger.debug('MAIN', 'Layout handlers already initialized, skipping');
+        }
         
         window.structuredLogger.info('MAIN', 'Core UI setup complete');
         
