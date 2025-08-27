@@ -995,14 +995,35 @@
             mutations.forEach(mutation => {
                 // Check added nodes
                 mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === Node.ELEMENT_NODE && node.id && node.id.startsWith('component-')) {
-                        // This is a component, ensure it has controls
-                        setTimeout(() => {
-                            if (!node.querySelector('.component-controls--dynamic')) {
-                                structuredLogger.debug('CONTROLS', `MutationObserver: Attaching controls to ${node.id}`);
-                                this.attachControls(node, node.id);
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        // ROOT FIX: Check for any component by data-component-id or data-component-type
+                        const isComponent = node.hasAttribute('data-component-id') || 
+                                          node.hasAttribute('data-component-type') ||
+                                          node.classList.contains('editable-element') ||
+                                          node.classList.contains('media-kit-component') ||
+                                          node.id && (node.id.includes('-component-') || node.id.match(/^[a-z-]+-\d{13}-\d+$/));
+                        
+                        if (isComponent) {
+                            const componentId = node.id || node.getAttribute('data-component-id');
+                            if (componentId && !node.querySelector('.component-controls--dynamic')) {
+                                structuredLogger.debug('CONTROLS', `MutationObserver: Attaching controls to ${componentId}`);
+                                setTimeout(() => {
+                                    this.attachControls(node, componentId);
+                                }, 50); // Small delay to let DOM settle
                             }
-                        }, 50); // Small delay to let DOM settle
+                        }
+                        
+                        // Also check child nodes recursively for nested components
+                        const childComponents = node.querySelectorAll('[data-component-id], [data-component-type], .editable-element');
+                        childComponents.forEach(childComponent => {
+                            const childId = childComponent.id || childComponent.getAttribute('data-component-id');
+                            if (childId && !childComponent.querySelector('.component-controls--dynamic')) {
+                                structuredLogger.debug('CONTROLS', `MutationObserver: Attaching controls to nested ${childId}`);
+                                setTimeout(() => {
+                                    this.attachControls(childComponent, childId);
+                                }, 100);
+                            }
+                        });
                     }
                 });
             });
@@ -1450,45 +1471,55 @@
      * Ensures components rendered before controls manager was ready get controls
      */
     componentControlsManager.attachControlsToAllExistingComponents = function() {
-        // ROOT FIX: Look for actual media kit components, not modal UI elements
-        // Exclude modal elements and other UI that shouldn't have controls
+        // ROOT FIX: Look for ALL components with proper attributes, not just specific classes
         const existingComponents = document.querySelectorAll(
+            '[data-component-id], ' +
+            '[data-component-type], ' + 
             '.media-kit-component, ' +
             '.content-section, ' + 
-            '.editable-element, ' +
-            '[data-component-type]'
+            '.editable-element'
         );
         
         let attachedCount = 0;
         
         existingComponents.forEach(element => {
-            // Skip if element is inside a modal
-            if (element.closest('.modal, .overlay, #component-library-overlay')) {
+            // Skip if element is inside a modal or overlay
+            if (element.closest('.modal, .overlay, #component-library-overlay, .component-library, .gmkb-modal')) {
                 return;
             }
             
             // Get component ID from element
-            const componentId = element.id || element.getAttribute('data-component-id');
+            let componentId = element.id || element.getAttribute('data-component-id');
             
             // Skip elements without proper component ID or that already have controls
             if (!componentId || element.querySelector('.component-controls--dynamic')) {
                 return;
             }
             
-            // Skip UI elements that look like components but aren't
-            if (componentId.includes('search') || 
-                componentId.includes('grid') || 
-                componentId.includes('loading') ||
-                componentId.includes('overlay')) {
+            // Skip UI elements that look like components but aren't (more comprehensive check)
+            const skipPatterns = ['search', 'grid', 'loading', 'overlay', 'modal', 'library', 'toolbar', 'button'];
+            if (skipPatterns.some(pattern => componentId.toLowerCase().includes(pattern))) {
                 return;
             }
             
             // Ensure element has proper attributes
-            if (!element.id) {
+            if (!element.id && componentId) {
                 element.id = componentId;
             }
             if (!element.hasAttribute('data-component-id')) {
                 element.setAttribute('data-component-id', componentId);
+            }
+            
+            // ROOT FIX: Set component-type if missing but can be inferred from ID or classes
+            if (!element.hasAttribute('data-component-type')) {
+                let componentType = element.getAttribute('data-component') || element.getAttribute('data-element');
+                if (!componentType && componentId) {
+                    // Extract type from ID (e.g., 'booking-calendar-123456-1' -> 'booking-calendar')
+                    componentType = componentId.split('-').slice(0, -2).join('-');
+                }
+                if (componentType) {
+                    element.setAttribute('data-component-type', componentType);
+                }
             }
             
             const success = componentControlsManager.attachControls(element, componentId);
