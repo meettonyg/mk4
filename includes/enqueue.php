@@ -1162,6 +1162,17 @@ function gmkb_enqueue_assets() {
             );
         }
         
+        // PHASE 3 TEST: Comprehensive section system testing
+        if (file_exists(GUESTIFY_PLUGIN_DIR . 'js/test-section-system.js')) {
+            wp_enqueue_script(
+                'gmkb-test-section-system',
+                $plugin_url . 'js/test-section-system.js',
+                array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-sidebar-section-integration', 'gmkb-section-state-persistence'),
+                $version . '-debug',
+                true
+            );
+        }
+        
         // ROOT CAUSE FIX: System verification and recovery script for debugging
         if (!wp_script_is('gmkb-system-verification-recovery', 'enqueued')) {
             wp_enqueue_script(

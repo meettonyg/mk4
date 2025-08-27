@@ -181,6 +181,10 @@ class Guestify_Media_Kit_Builder {
         add_action( 'wp_ajax_nopriv_guestify_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
         add_action( 'wp_ajax_guestify_load_media_kit', array( $this, 'ajax_load_media_kit' ) );
         add_action( 'wp_ajax_nopriv_guestify_load_media_kit', array( $this, 'ajax_load_media_kit' ) );
+        
+        // ROOT FIX: Add gmkb_ prefixed handlers for section persistence compatibility
+        add_action( 'wp_ajax_gmkb_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
+        add_action( 'wp_ajax_nopriv_gmkb_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
     }
 
     /**

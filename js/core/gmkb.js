@@ -123,25 +123,56 @@ const GMKB = {
             return;
         }
         
-        const container = componentElement.closest('.media-kit, #media-kit-preview');
+        // ROOT FIX: Find the actual container - check multiple possible containers
+        let container = componentElement.closest('#saved-components-container');
         if (!container) {
-            console.error('Media kit container not found');
+            container = componentElement.closest('.saved-components-container');
+        }
+        if (!container) {
+            container = componentElement.closest('#components-container');
+        }
+        if (!container) {
+            container = componentElement.closest('.media-kit, #media-kit-preview');
+        }
+        
+        if (!container) {
+            console.error('Component container not found - tried multiple selectors');
             return;
         }
         
-        const allComponents = Array.from(container.querySelectorAll('[data-component-id]'));
+        // Get all components in the same container
+        const allComponents = Array.from(container.querySelectorAll(':scope > [data-component-id]'));
         const currentIndex = allComponents.indexOf(componentElement);
+        
+        if (currentIndex === -1) {
+            console.error('Component not found in container children');
+            return;
+        }
         
         if (direction === 'up' && currentIndex > 0) {
             // Move up
             const previousComponent = allComponents[currentIndex - 1];
             container.insertBefore(componentElement, previousComponent);
             console.log(`✅ Moved ${componentId} up`);
+            
+            // Update state if available
+            if (window.enhancedStateManager) {
+                window.enhancedStateManager.moveComponent(componentId, 'up');
+            }
         } else if (direction === 'down' && currentIndex < allComponents.length - 1) {
             // Move down
             const nextComponent = allComponents[currentIndex + 1];
-            container.insertBefore(componentElement, nextComponent.nextSibling);
+            if (nextComponent.nextSibling) {
+                container.insertBefore(componentElement, nextComponent.nextSibling);
+            } else {
+                container.appendChild(componentElement);
+            }
             console.log(`✅ Moved ${componentId} down`);
+            
+            // Update state if available
+            if (window.enhancedStateManager) {
+                window.enhancedStateManager.moveComponent(componentId, 'down');
+            }
         } else {
             console.log(`⚠️ Cannot move ${componentId} ${direction} - already at ${direction === 'up' ? 'top' : 'bottom'}`);
         }
