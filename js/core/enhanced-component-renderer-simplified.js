@@ -561,12 +561,12 @@
             }
         }
         
-        // ✅ EXPORT: Create and expose globally
+        // ✅ ROOT CAUSE FIX: Single instance only - no duplicate compatibility aliases
         window.SimplifiedComponentRenderer = SimplifiedComponentRenderer;
         window.enhancedComponentRenderer = new SimplifiedComponentRenderer();
         
-        // ✅ COMPATIBILITY: Also expose as the original name for existing code
-        window.enhancedComponentRendererRefactored = window.enhancedComponentRenderer;
+        // ❌ PHASE 2 CLEANUP: Removed duplicate aliases that were causing console duplicates
+        // Removed: window.enhancedComponentRendererRefactored (was creating duplicate)
         
         structuredLogger.info('RENDER', 'Simplified Component Renderer ready and exposed globally');
     };
