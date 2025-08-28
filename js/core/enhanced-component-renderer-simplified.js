@@ -140,7 +140,8 @@
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Simple state processing without service coordination
+             * ✅ SIMPLIFIED: Direct state processing without service coordination
+             * ANTI-DUPLICATION: Respect section-managed components
              */
             async processStateChange(newState) {
                 const components = newState.components || {};
@@ -152,20 +153,25 @@
                     return;
                 }
                 
-                // ✅ SIMPLIFIED: Clear and re-render approach
+                // ✅ SIMPLIFIED: Clear and re-render approach - but respect sections
                 const currentComponents = Array.from(this.componentCache.keys());
                 
-                // Remove components that no longer exist in state
+                // Remove components that no longer exist in state (unless in sections)
                 for (const componentId of currentComponents) {
-                    if (!components[componentId]) {
+                    if (!components[componentId] && !this.isComponentInSection(componentId)) {
                         this.removeComponent(componentId);
                     }
                 }
                 
-                // Add or update components
+                // Add or update components (unless handled by sections)
                 for (const componentId of componentIds) {
                     const componentData = components[componentId];
                     if (componentData && componentData.type) {
+                        // Skip if component is managed by sections
+                        if (this.isComponentInSection(componentId)) {
+                            continue;
+                        }
+                        
                         if (this.componentCache.has(componentId)) {
                             await this.updateComponent(componentId, componentData);
                         } else {
@@ -174,8 +180,9 @@
                     }
                 }
                 
-                // ✅ SIMPLIFIED: Direct layout ordering
-                this.applyLayout(newState.layout || componentIds);
+                // ✅ SIMPLIFIED: Direct layout ordering (only for non-section components)
+                const nonSectionComponents = componentIds.filter(id => !this.isComponentInSection(id));
+                this.applyLayout(newState.layout || nonSectionComponents);
                 this.updateContainerDisplay(newState);
             }
             
@@ -381,8 +388,25 @@
             
             /**
              * ✅ ROOT CAUSE FIX: Direct component addition without complex service calls
+             * ANTI-DUPLICATION: Skip if component already exists in DOM
              */
             async addComponent(componentId, componentData) {
+                // ROOT FIX: Check if component already exists in DOM (from section system)
+                const existingInDOM = document.getElementById(componentId) || 
+                                     document.querySelector(`[data-component-id="${componentId}"]`);
+                
+                if (existingInDOM) {
+                    this.logger.debug('RENDER', `Component ${componentId} already exists in DOM - skipping duplicate creation`);
+                    this.componentCache.set(componentId, existingInDOM);
+                    return;
+                }
+                
+                // ROOT FIX: Check if this is a section-targeted component
+                if (this.isComponentInSection(componentId)) {
+                    this.logger.debug('RENDER', `Component ${componentId} handled by section system - skipping`);
+                    return;
+                }
+                
                 const container = this.getOrCreateContainer();
                 if (!container) {
                     this.logger.error('RENDER', 'Cannot add component - container not available');
@@ -398,9 +422,34 @@
             }
             
             /**
+             * ROOT FIX: Check if component is handled by section system
+             */
+            isComponentInSection(componentId) {
+                // Check if component exists within any section
+                const sectionElements = document.querySelectorAll('[data-section-id]');
+                
+                for (const section of sectionElements) {
+                    const componentInSection = section.querySelector(`[data-component-id="${componentId}"]`);
+                    if (componentInSection) {
+                        this.logger.debug('RENDER', `Component ${componentId} found in section ${section.dataset.sectionId}`);
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            
+            /**
              * ✅ ROOT CAUSE FIX: Direct component update without complex diffing
+             * ANTI-DUPLICATION: Only update if not handled by sections
              */
             async updateComponent(componentId, componentData) {
+                // ROOT FIX: Check if component is in a section first
+                if (this.isComponentInSection(componentId)) {
+                    this.logger.debug('RENDER', `Component ${componentId} is in section - skipping update`);
+                    return;
+                }
+                
                 const existingElement = this.componentCache.get(componentId);
                 if (!existingElement) {
                     this.logger.debug('RENDER', `Component ${componentId} not in cache, adding instead`);
@@ -472,40 +521,88 @@
             
             /**
              * ✅ ROOT CAUSE FIX: Direct container management without complex states
+             * Enhanced to find the correct nested container structure
              */
             getOrCreateContainer() {
-                let container = document.getElementById('saved-components-container');
+                // First try to find the direct container inside saved-components-container
+                let container = document.getElementById('components-direct-container');
                 
-                if (!container) {
-                    const preview = document.getElementById('media-kit-preview');
-                    if (preview) {
-                        container = document.createElement('div');
-                        container.id = 'saved-components-container';
-                        container.className = 'gmkb-components-container';
-                        preview.appendChild(container);
-                    }
+                if (container) {
+                    this.logger.debug('RENDER', 'Found components-direct-container');
+                    return container;
                 }
                 
-                return container;
+                // Fallback to saved-components-container
+                container = document.getElementById('saved-components-container');
+                
+                if (container) {
+                    this.logger.debug('RENDER', 'Found saved-components-container');
+                    return container;
+                }
+                
+                // Create container if none exists
+                const preview = document.getElementById('media-kit-preview');
+                if (preview) {
+                    container = document.createElement('div');
+                    container.id = 'saved-components-container';
+                    container.className = 'gmkb-components-container';
+                    container.style.display = 'block';
+                    container.style.minHeight = '400px';
+                    
+                    // Create nested structure
+                    const directContainer = document.createElement('div');
+                    directContainer.id = 'components-direct-container';
+                    directContainer.className = 'components-direct-container';
+                    container.appendChild(directContainer);
+                    
+                    const sectionsContainer = document.createElement('div');
+                    sectionsContainer.id = 'gmkb-sections-container';
+                    sectionsContainer.className = 'gmkb-sections-container';
+                    container.appendChild(sectionsContainer);
+                    
+                    preview.appendChild(container);
+                    
+                    this.logger.info('RENDER', 'Created new saved-components-container with nested structure');
+                    return directContainer; // Return the direct container for components
+                }
+                
+                return null;
             }
             
             /**
              * ✅ SIMPLIFIED: Direct empty state management
+             * Enhanced to work with nested container structure and consider sections
              */
             updateContainerDisplay(state) {
-                const container = this.getOrCreateContainer();
+                const savedContainer = document.getElementById('saved-components-container');
                 const emptyState = document.getElementById('empty-state');
                 const hasComponents = state.components && Object.keys(state.components).length > 0;
+                const hasSections = state.sections && Array.isArray(state.sections) && state.sections.length > 0;
+                const hasContent = hasComponents || hasSections;
                 
-                if (container) {
-                    container.style.display = hasComponents ? 'block' : 'none';
+                this.logger.debug('RENDER', `Updating container display - hasComponents: ${hasComponents}, hasSections: ${hasSections}, hasContent: ${hasContent}`);
+                
+                if (hasContent) {
+                    // Show saved components container, hide empty state
+                    if (savedContainer) {
+                        savedContainer.style.display = 'block';
+                        this.logger.debug('RENDER', 'Showing saved-components-container (has content)');
+                    }
+                    if (emptyState) {
+                        emptyState.style.display = 'none';
+                        this.logger.debug('RENDER', 'Hiding empty-state (has content)');
+                    }
+                } else {
+                    // Show empty state, hide saved components container
+                    if (savedContainer) {
+                        savedContainer.style.display = 'none';
+                        this.logger.debug('RENDER', 'Hiding saved-components-container (no content)');
+                    }
+                    if (emptyState) {
+                        emptyState.style.display = 'block';
+                        this.logger.debug('RENDER', 'Showing empty-state (no content)');
+                    }
                 }
-                
-                if (emptyState) {
-                    emptyState.style.display = hasComponents ? 'none' : 'block';
-                }
-                
-                this.logger.debug('RENDER', `Container display updated - hasComponents: ${hasComponents}`);
             }
             
             /**

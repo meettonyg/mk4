@@ -245,6 +245,25 @@ class EmptyStateHandlers {
             this.activeButtons.add('connect-data-btn');
         }
         
+        // NEW: Handle "Add Section" buttons
+        const addSectionBtn = document.getElementById('add-first-section');
+        if (addSectionBtn) {
+            addSectionBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleAddSection(e.target);
+            });
+            this.activeButtons.add('add-first-section');
+        }
+        
+        const addSectionBtn2 = document.getElementById('add-first-section-2');
+        if (addSectionBtn2) {
+            addSectionBtn2.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleAddSection(e.target);
+            });
+            this.activeButtons.add('add-first-section-2');
+        }
+        
         structuredLogger.info('EMPTY_STATE', 'Manual addition buttons setup complete');
     }
     
@@ -524,6 +543,78 @@ class EmptyStateHandlers {
     }
     
     /**
+     * NEW: Handle add section button clicks
+     * 
+     * @param {HTMLElement} button - Clicked button element
+     */
+    handleAddSection(button) {
+        try {
+            this.trackInteraction('add_section_started');
+            
+            // Check if section system is available
+            if (!window.SectionLayoutManager || !window.sidebarSectionIntegration) {
+                this.showError('Section system is not available. Please refresh the page.');
+                structuredLogger.error('EMPTY_STATE', 'Section system not available for add section');
+                return;
+            }
+            
+            // Set loading state
+            this.setButtonLoadingState(button, true, 'Creating Section...');
+            
+            // Create a default full-width section
+            const sectionType = 'full_width';
+            const sectionId = `section_${Date.now()}`;
+            
+            structuredLogger.info('EMPTY_STATE', `Creating section: ${sectionId} of type: ${sectionType}`);
+            
+            // Use sidebar section integration to create section
+            if (window.sidebarSectionIntegration && typeof window.sidebarSectionIntegration.createSection === 'function') {
+                const success = window.sidebarSectionIntegration.createSection(sectionType, sectionId);
+                
+                if (success) {
+                    this.showSuccess('Section created successfully!');
+                    this.trackInteraction('add_section_success', { sectionType, sectionId });
+                    structuredLogger.info('EMPTY_STATE', 'Section created successfully', { sectionType, sectionId });
+                } else {
+                    throw new Error('Section creation returned false');
+                }
+            } else {
+                // Fallback: try to create section directly via SectionLayoutManager
+                if (window.SectionLayoutManager && typeof window.SectionLayoutManager.createSection === 'function') {
+                    const sectionConfig = {
+                        id: sectionId,
+                        type: sectionType,
+                        layout: {
+                            width: 'full_width',
+                            padding: '40px 20px',
+                            maxWidth: '100%'
+                        }
+                    };
+                    
+                    const success = window.SectionLayoutManager.createSection(sectionConfig);
+                    
+                    if (success) {
+                        this.showSuccess('Section created successfully!');
+                        this.trackInteraction('add_section_success', { sectionType, sectionId });
+                        structuredLogger.info('EMPTY_STATE', 'Section created via fallback', { sectionType, sectionId });
+                    } else {
+                        throw new Error('SectionLayoutManager creation returned false');
+                    }
+                } else {
+                    throw new Error('No available section creation method');
+                }
+            }
+            
+        } catch (error) {
+            structuredLogger.error('EMPTY_STATE', 'Add section failed', error);
+            this.showError('Failed to create section: ' + error.message);
+            this.trackInteraction('add_section_failed', { error: error.message });
+        } finally {
+            this.setButtonLoadingState(button, false);
+        }
+    }
+    
+    /**
      * ROOT FIX: Handle dashboard toggle clicks
      * 
      * @param {HTMLElement} trigger - Clicked trigger element
@@ -697,22 +788,25 @@ class EmptyStateHandlers {
     /**
      * ROOT FIX: Handle state changes from state manager
      * Respects PHP template rendering decisions
+     * Enhanced to consider both components and sections
      * 
      * @param {Object} state - New state object
      */
     handleStateChange(state) {
         try {
             const componentCount = Object.keys(state.components || {}).length;
+            const sectionCount = Array.isArray(state.sections) ? state.sections.length : 0;
+            const hasContent = componentCount > 0 || sectionCount > 0;
             
             // ROOT FIX: Check if template already decided to show saved components
             const emptyStateElement = document.getElementById('empty-state');
             const savedComponentsContainer = document.getElementById('saved-components-container');
             
             // ROOT FIX: Never manipulate container or empty state display - let PHP template control everything
-            structuredLogger.info('EMPTY_STATE', 'State change observed but not manipulating display', { componentCount });
+            structuredLogger.info('EMPTY_STATE', 'State change observed but not manipulating display', { componentCount, sectionCount, hasContent });
             structuredLogger.debug('EMPTY_STATE', 'PHP template controls all display logic - JavaScript is non-invasive');
             
-            structuredLogger.info('EMPTY_STATE', 'State change handled (respecting template)', { componentCount, note: 'PHP template controls initial display' });
+            structuredLogger.info('EMPTY_STATE', 'State change handled (respecting template)', { componentCount, sectionCount, hasContent, note: 'PHP template controls initial display' });
             
         } catch (error) {
             structuredLogger.error('EMPTY_STATE', 'State change handling failed', error);

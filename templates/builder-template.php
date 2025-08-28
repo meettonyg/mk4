@@ -80,6 +80,7 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 // ROOT FIX: Load saved media kit state FIRST to determine template behavior
 $saved_state = array();
 $has_saved_components = false;
+$has_saved_sections = false;
 
 if ($post_id > 0) {
     $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
@@ -97,15 +98,44 @@ if ($post_id > 0) {
                 error_log('GMKB Template: Found ' . $component_count . ' components in saved_components array for post ' . $post_id);
             }
         }
-        // Fallback check: components object (legacy format)
+        // Fallback check: components object (legacy format) - CHECK FOR OBJECT FORMAT
         elseif (isset($saved_state['components']) && is_array($saved_state['components'])) {
             $component_count = count($saved_state['components']);
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Template: Found ' . $component_count . ' components in components object for post ' . $post_id);
+                error_log('GMKB Template: Found ' . $component_count . ' components in components object (array) for post ' . $post_id);
+            }
+        }
+        // ALSO CHECK FOR OBJECT FORMAT components (non-array)
+        elseif (isset($saved_state['components']) && is_object($saved_state['components'])) {
+            $component_count = count((array)$saved_state['components']);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Template: Found ' . $component_count . ' components in components object (object) for post ' . $post_id);
+            }
+        }
+        // FINAL CHECK: Try to count properties if components exists but isn't countable
+        elseif (isset($saved_state['components'])) {
+            $components_data = $saved_state['components'];
+            if (is_object($components_data) || is_array($components_data)) {
+                $component_count = count((array)$components_data);
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Template: Found ' . $component_count . ' components via fallback counting for post ' . $post_id);
+                    error_log('GMKB Template: Components data type: ' . gettype($components_data));
+                }
             }
         }
         
         $has_saved_components = $component_count > 0;
+        
+        // NEW: Check for sections as well
+        $section_count = 0;
+        if (isset($saved_state['sections']) && is_array($saved_state['sections'])) {
+            $section_count = count($saved_state['sections']);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Template: Found ' . $section_count . ' sections for post ' . $post_id);
+            }
+        }
+        
+        $has_saved_sections = $section_count > 0;
     } else {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('🔧 GMKB Template: No valid saved state found for post ' . $post_id);
@@ -118,22 +148,25 @@ if ($post_id > 0) {
 }
     
 // ROOT FIX: CORRECTED LOGIC - Update template instructions based on saved state
-if ($has_saved_components) {
-    $template_instructions['show_empty_state'] = false; // HIDE empty state when we have components
+// Consider both components AND sections when determining display state
+$has_saved_content = $has_saved_components || $has_saved_sections;
+
+if ($has_saved_content) {
+    $template_instructions['show_empty_state'] = false; // HIDE empty state when we have content
     $template_instructions['show_loading_state'] = false;
-    $template_instructions['show_saved_components'] = true; // SHOW saved components
+    $template_instructions['show_saved_components'] = true; // SHOW saved components (includes sections)
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB Template: Has saved components - hiding empty state, showing saved components');
-        error_log('🔧 GMKB Template: Final template_instructions (HAS COMPONENTS): ' . print_r($template_instructions, true));
+        error_log('GMKB Template: Has saved content (components: ' . ($has_saved_components ? 'YES' : 'NO') . ', sections: ' . ($has_saved_sections ? 'YES' : 'NO') . ') - hiding empty state, showing saved container');
+        error_log('🔧 GMKB Template: Final template_instructions (HAS CONTENT): ' . print_r($template_instructions, true));
     }
 } else {
-    $template_instructions['show_empty_state'] = true; // SHOW empty state when no components
+    $template_instructions['show_empty_state'] = true; // SHOW empty state when no content
     $template_instructions['show_saved_components'] = false; // HIDE saved components container
     
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB Template: No saved components - showing empty state');
-        error_log('🔧 GMKB Template: Final template_instructions (NO COMPONENTS): ' . print_r($template_instructions, true));
+        error_log('GMKB Template: No saved content - showing empty state');
+        error_log('🔧 GMKB Template: Final template_instructions (NO CONTENT): ' . print_r($template_instructions, true));
     }
 }
 
@@ -435,7 +468,14 @@ if ($post_id > 0) {
                 <?php if ($template_instructions['show_saved_components']): ?>
                     <!-- PHASE 3: Section-Aware Saved Components Container -->
                     <!-- ROOT CAUSE FIX: Conditional rendering prevents container conflicts -->
-                    <div class="saved-components-container" id="saved-components-container" style="display: block; min-height: 400px;">
+                    <?php 
+                        // ROOT CAUSE FIX: Make display logic bulletproof
+                        $container_display = $template_instructions['show_saved_components'] ? 'block' : 'none';
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('GMKB Template: Container display will be: ' . $container_display . ' (show_saved_components=' . ($template_instructions['show_saved_components'] ? 'true' : 'false') . ')');
+                        }
+                    ?>
+                    <div class="saved-components-container" id="saved-components-container" style="display: <?php echo $container_display; ?>; min-height: 400px;">
                         <!-- Direct component rendering area - fallback for when sections are not used -->
                         <div class="components-direct-container" id="components-direct-container">
                             <!-- Components will be rendered here directly by EnhancedComponentRenderer -->
@@ -502,6 +542,14 @@ if ($post_id > 0) {
                                 </svg>
                                 Add Component Manually
                             </button>
+                            <button class="btn btn--outline" id="add-first-section" data-action="add-section">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                                Add Section
+                            </button>
                             <button class="btn btn--outline" id="selective-generate-btn" data-post-id="<?php echo $post_id; ?>" data-action="selective-generate" style="display: none;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h4l2 3 2-3h4a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-4l-2-3z"></path>
@@ -546,6 +594,14 @@ if ($post_id > 0) {
                                     <circle cx="4" cy="4" r="2"></circle>
                                 </svg>
                                 Connect MKCG Data
+                            </button>
+                            <button class="btn btn--outline" id="add-first-section-2" data-action="add-section">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                                Add Section
                             </button>
                         </div>
                     <?php endif; ?>
