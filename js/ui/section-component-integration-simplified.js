@@ -233,7 +233,7 @@
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Simple drag over without complex DOM traversal
+             * ✅ ROOT CAUSE FIX: Simple drag over with enhanced section detection
              */
             handleDragOver(e) {
                 if (!this.dragData) return;
@@ -245,14 +245,20 @@
                     e.preventDefault();
                     e.dataTransfer.dropEffect = this.dragData.isNewComponent ? 'copy' : 'move';
                     
-                    // ✅ SIMPLIFIED: Visual feedback
+                    // ROOT FIX: Enhanced visual feedback for sections
+                    const sectionElement = e.target.closest('[data-section-id]') || dropTarget.closest('[data-section-id]');
+                    if (sectionElement) {
+                        sectionElement.classList.add('gmkb-section-drag-over');
+                        this.logger.debug('DRAG', `Section drag over: ${sectionElement.dataset.sectionId}`);
+                    }
+                    
+                    // ✅ SIMPLIFIED: General drop target feedback
                     dropTarget.classList.add('gmkb-drop-zone-active');
                     
-                    this.logger.debug('DRAG', 'Valid drop zone found');
                 } else {
                     // ✅ SIMPLIFIED: Remove feedback from non-drop zones
-                    document.querySelectorAll('.gmkb-drop-zone-active').forEach(zone => {
-                        zone.classList.remove('gmkb-drop-zone-active');
+                    document.querySelectorAll('.gmkb-drop-zone-active, .gmkb-section-drag-over').forEach(zone => {
+                        zone.classList.remove('gmkb-drop-zone-active', 'gmkb-section-drag-over');
                     });
                 }
             }
@@ -284,18 +290,24 @@
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Simple drag leave cleanup
+             * ✅ ROOT CAUSE FIX: Simple drag leave with section cleanup
              */
             handleDragLeave(e) {
-                // ✅ SIMPLIFIED: Remove visual feedback when leaving drop zones
+                // ROOT FIX: Remove visual feedback when leaving drop zones or sections
                 const relatedTarget = e.relatedTarget;
                 if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
-                    e.currentTarget.classList.remove('gmkb-drop-zone-active');
+                    e.currentTarget.classList.remove('gmkb-drop-zone-active', 'gmkb-section-drag-over');
+                    
+                    // Also remove from parent section if applicable
+                    const sectionElement = e.currentTarget.closest('[data-section-id]');
+                    if (sectionElement) {
+                        sectionElement.classList.remove('gmkb-section-drag-over');
+                    }
                 }
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Direct drop handling without complex processing
+             * ✅ ROOT CAUSE FIX: Direct drop handling with section targeting
              */
             handleDrop(e) {
                 e.preventDefault();
@@ -311,25 +323,52 @@
                     return;
                 }
                 
+                // ROOT CAUSE FIX: Detect section targeting from actual drop target
+                let targetSectionId = null;
+                let targetColumn = 1;
+                
+                // Check if we dropped directly on a section element or its children
+                const sectionElement = e.target.closest('[data-section-id]') || dropTarget.closest('[data-section-id]');
+                if (sectionElement) {
+                    targetSectionId = sectionElement.getAttribute('data-section-id');
+                    
+                    // Check if dropped on a specific column
+                    const columnElement = e.target.closest('.gmkb-section__column');
+                    if (columnElement) {
+                        targetColumn = parseInt(columnElement.getAttribute('data-column')) || 1;
+                    }
+                    
+                    this.logger.info('DRAG', `Targeting section ${targetSectionId}, column ${targetColumn}`);
+                } else {
+                    // Check if the drop target itself is a section or section container
+                    if (dropTarget.id && dropTarget.id.includes('section-')) {
+                        targetSectionId = dropTarget.id.replace('section-', '');
+                        this.logger.info('DRAG', `Targeting section from drop target ID: ${targetSectionId}`);
+                    } else if (dropTarget.dataset && dropTarget.dataset.sectionId) {
+                        targetSectionId = dropTarget.dataset.sectionId;
+                        this.logger.info('DRAG', `Targeting section from dataset: ${targetSectionId}`);
+                    }
+                }
+                
                 // ✅ SIMPLIFIED: Clean up visual feedback immediately
-                document.querySelectorAll('.gmkb-drop-zone-active').forEach(zone => {
-                    zone.classList.remove('gmkb-drop-zone-active');
+                document.querySelectorAll('.gmkb-drop-zone-active, .gmkb-section-drag-over').forEach(zone => {
+                    zone.classList.remove('gmkb-drop-zone-active', 'gmkb-section-drag-over');
                 });
                 
                 this.logger.info('DRAG', `Processing drop: ${this.dragData.type} on ${dropTarget.id || dropTarget.className}`);
                 
-                // ✅ ROOT CAUSE FIX: Handle drop based on type
+                // ✅ ROOT CAUSE FIX: Handle drop based on type with section targeting
                 if (this.dragData.isNewComponent) {
-                    this.handleNewComponentDrop(this.dragData.componentType);
+                    this.handleNewComponentDrop(this.dragData.componentType, targetSectionId, targetColumn);
                 } else if (this.dragData.componentId) {
-                    this.handleExistingComponentDrop(this.dragData.componentId, dropTarget);
+                    this.handleExistingComponentDrop(this.dragData.componentId, dropTarget, targetSectionId, targetColumn);
                 }
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Direct new component creation without complex services
+             * ✅ ROOT CAUSE FIX: New component creation with section targeting
              */
-            async handleNewComponentDrop(componentType) {
+            async handleNewComponentDrop(componentType, targetSectionId = null, targetColumn = 1) {
                 if (!componentType) {
                     this.logger.error('DRAG', 'Cannot create component - no type specified');
                     this.showUserMessage('Invalid component type', 'error');
@@ -337,12 +376,21 @@
                 }
                 
                 try {
-                    // ✅ SIMPLIFIED: Direct component manager call
+                    // ✅ ROOT CAUSE FIX: Pass section targeting to component manager
+                    const props = {
+                        dragDropCreated: true,
+                        timestamp: Date.now()
+                    };
+                    
+                    if (targetSectionId) {
+                        props.targetSectionId = targetSectionId;
+                        props.targetColumn = targetColumn;
+                        this.logger.info('DRAG', `Creating ${componentType} in section ${targetSectionId}, column ${targetColumn}`);
+                    }
+                    
+                    // ✅ SIMPLIFIED: Direct component manager call with section data
                     if (window.enhancedComponentManager && window.enhancedComponentManager.addComponent) {
-                        const componentId = await window.enhancedComponentManager.addComponent(componentType, {
-                            dragDropCreated: true,
-                            timestamp: Date.now()
-                        });
+                        const componentId = await window.enhancedComponentManager.addComponent(componentType, props);
                         
                         this.logger.info('DRAG', `Successfully created component: ${componentId}`);
                         this.showUserMessage(`${componentType} component added!`, 'success');
@@ -358,21 +406,49 @@
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Direct component move without complex section logic
+             * ✅ ROOT CAUSE FIX: Component move with section targeting
              */
-            handleExistingComponentDrop(componentId, dropTarget) {
+            handleExistingComponentDrop(componentId, dropTarget, targetSectionId = null, targetColumn = 1) {
                 this.logger.info('DRAG', `Moving component ${componentId} to new location`);
                 
-                // ✅ SIMPLIFIED: Just trigger a re-render - let the state manager handle positioning
-                document.dispatchEvent(new CustomEvent('gmkb:component-moved', {
-                    detail: {
-                        componentId,
-                        targetContainer: dropTarget.id || 'main-container',
-                        timestamp: Date.now()
+                // ROOT CAUSE FIX: Handle section-specific moves
+                if (targetSectionId && window.sectionLayoutManager) {
+                    try {
+                        const success = window.sectionLayoutManager.assignComponentToSection(
+                            componentId,
+                            targetSectionId,
+                            targetColumn
+                        );
+                        
+                        if (success) {
+                            this.logger.info('DRAG', `Component ${componentId} moved to section ${targetSectionId}`);
+                            this.showUserMessage('Component moved to section!', 'success');
+                            
+                            // Trigger component manager move for DOM updates
+                            if (window.enhancedComponentManager && window.enhancedComponentManager.moveComponentToCorrectSection) {
+                                setTimeout(() => {
+                                    window.enhancedComponentManager.moveComponentToCorrectSection(componentId, targetSectionId, targetColumn);
+                                }, 50);
+                            }
+                        } else {
+                            throw new Error('Section assignment failed');
+                        }
+                    } catch (error) {
+                        this.logger.error('DRAG', `Failed to move to section: ${error.message}`);
+                        this.showUserMessage('Failed to move component', 'error');
                     }
-                }));
-                
-                this.showUserMessage('Component moved!', 'success');
+                } else {
+                    // ✅ SIMPLIFIED: General move without section targeting
+                    document.dispatchEvent(new CustomEvent('gmkb:component-moved', {
+                        detail: {
+                            componentId,
+                            targetContainer: dropTarget.id || 'main-container',
+                            timestamp: Date.now()
+                        }
+                    }));
+                    
+                    this.showUserMessage('Component moved!', 'success');
+                }
             }
             
             /**

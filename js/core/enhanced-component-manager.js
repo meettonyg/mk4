@@ -133,44 +133,30 @@
                     throw new Error(`Failed to render component: ${componentType}`);
                 }
 
-                // ROOT CAUSE FIX: Smart section assignment with fallback
-                let sectionAssigned = false;
-                if (componentData.sectionId && window.sectionLayoutManager) {
-                    try {
-                        const assignmentSuccess = window.sectionLayoutManager.assignComponentToSection(
-                            componentId, 
-                            componentData.sectionId, 
-                            componentData.columnNumber || 1
-                        );
-                        if (assignmentSuccess) {
-                            sectionAssigned = true;
-                            logger.info('COMPONENT', `Component assigned to section: ${componentData.sectionId}`);
-                        }
-                    } catch (assignmentError) {
-                        logger.warn('COMPONENT', `Section assignment error:`, assignmentError.message);
-                    }
-                }
-                
-                // Add to preview with section targeting
+                // ROOT CAUSE FIX: Add to preview first, then handle section assignment
                 this.addComponentToPreview(componentId, html, componentData.sectionId, componentData.columnNumber);
                 
-                // Retry section assignment if needed
-                if (componentData.sectionId && !sectionAssigned && window.sectionLayoutManager) {
-                    setTimeout(() => {
-                        try {
-                            const retrySuccess = window.sectionLayoutManager.assignComponentToSection(
-                                componentId, 
-                                componentData.sectionId, 
-                                componentData.columnNumber || 1
-                            );
-                            if (retrySuccess) {
-                                logger.info('COMPONENT', `Post-render section assignment successful`);
+                // ROOT CAUSE FIX: Smart section assignment with proper timing
+                if (componentData.sectionId && window.sectionLayoutManager) {
+                // Wait for DOM to be ready before section assignment
+                setTimeout(() => {
+                try {
+                    const assignmentSuccess = window.sectionLayoutManager.assignComponentToSection(
+                        componentId, 
+                    componentData.sectionId, 
+                    componentData.columnNumber || 1
+                    );
+                        if (assignmentSuccess) {
+                        logger.info('COMPONENT', `Component assigned to section: ${componentData.sectionId}`);
+                            // Move component to correct container after assignment
                                 this.moveComponentToCorrectSection(componentId, componentData.sectionId, componentData.columnNumber || 1);
+                            } else {
+                                logger.warn('COMPONENT', `Section assignment failed for ${componentData.sectionId}`);
                             }
-                        } catch (retryError) {
-                            logger.warn('COMPONENT', `Post-render section assignment failed:`, retryError.message);
+                        } catch (assignmentError) {
+                            logger.warn('COMPONENT', `Section assignment error:`, assignmentError.message);
                         }
-                    }, 200);
+                }, 100);
                 }
 
                 // Update state and internal tracking
@@ -324,39 +310,47 @@
                 }
             }
             
-            // ROOT CAUSE FIX: Smart fallback selection
+            // ROOT CAUSE FIX: Smart fallback selection - avoid duplication when targeting sections
             if (!targetContainer) {
-                // Try to find existing sections to use instead of saved-components-container
-                if (window.sectionLayoutManager) {
-                    const availableSections = window.sectionLayoutManager.getAllSections() || [];
-                    
-                    for (const section of availableSections) {
-                        const sectionElement = document.querySelector(`[data-section-id="${section.section_id}"]`);
-                        if (sectionElement) {
-                            const sectionInner = sectionElement.querySelector('.gmkb-section__inner');
-                            if (sectionInner) {
-                                const columns = sectionInner.querySelectorAll('.gmkb-section__column');
-                                if (columns.length > 0) {
-                                    targetContainer = columns[0];
-                                    containerType = 'fallback-section-first-column';
-                                    logger.info('COMPONENT', `Using fallback section ${section.section_id}`);
-                                    break;
-                                } else {
+            // ROOT FIX: If we have a target section ID, don't use fallback - create proper section targeting
+            if (sectionId && window.sectionLayoutManager) {
+            this.logger.info('COMPONENT', `No container found for section ${sectionId}, will retry after DOM update`);
+            // Let the component be added to saved-components-container temporarily
+            // The section assignment will move it to the correct location
+            targetContainer = document.getElementById('saved-components-container');
+            containerType = 'temporary-for-section-assignment';
+            } else {
+            // Try to find existing sections to use instead of saved-components-container
+            if (window.sectionLayoutManager) {
+            const availableSections = window.sectionLayoutManager.getAllSections() || [];
+            
+            for (const section of availableSections) {
+            const sectionElement = document.querySelector(`[data-section-id="${section.section_id}"]`);
+            if (sectionElement) {
+            const sectionInner = sectionElement.querySelector('.gmkb-section__inner');
+            if (sectionInner) {
+            const columns = sectionInner.querySelectorAll('.gmkb-section__column');
+            if (columns.length > 0) {
+                targetContainer = columns[0];
+                    containerType = 'fallback-section-first-column';
+                        logger.info('COMPONENT', `Using fallback section ${section.section_id}`);
+                            break;
+                            } else {
                                     targetContainer = sectionInner.querySelector('.gmkb-section__content') || sectionInner;
                                     containerType = 'fallback-section-content';
                                     logger.info('COMPONENT', `Using fallback section ${section.section_id} content`);
                                     break;
-                                }
                             }
-                        }
+            }
                     }
                 }
-                
-                // Final fallback to saved-components-container
-                if (!targetContainer) {
-                    targetContainer = document.getElementById('saved-components-container') || 
+            }
+            
+            // Final fallback to saved-components-container
+            if (!targetContainer) {
+                targetContainer = document.getElementById('saved-components-container') || 
                                     document.getElementById('media-kit-preview');
-                    containerType = targetContainer.id === 'saved-components-container' ? 'saved-components' : 'media-kit-preview';
+                        containerType = targetContainer.id === 'saved-components-container' ? 'saved-components' : 'media-kit-preview';
                     
                     if (!targetContainer) {
                         throw new Error('No target container found for component');
@@ -365,6 +359,7 @@
                     logger.info('COMPONENT', `Using final fallback: ${containerType}`);
                 }
             }
+        }
             
             // Check for existing component
             const existingComponent = document.getElementById(componentId);

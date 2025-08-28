@@ -199,6 +199,7 @@ class SidebarSectionIntegration {
     /**
      * Handle add section button click
      * Following checklist: Integration with Section Manager
+     * ROOT FIX: Allow section creation regardless of existing components
      */
     handleAddSection() {
         // Prevent rapid duplicate clicks
@@ -215,8 +216,14 @@ class SidebarSectionIntegration {
             return;
         }
         
-        // Create new section with selected layout
+        // ROOT FIX: Ensure containers are visible before creating section
+        this.ensureContainersVisible();
+        
+        // ROOT FIX: Create new section regardless of existing components or preview state
         const sectionId = `section_${Date.now()}`;
+        
+        this.logger.info(`🛠️ PHASE 3: Creating ${this.selectedLayout} section (ID: ${sectionId})`);
+        
         const section = this.sectionLayoutManager.registerSection(sectionId, this.selectedLayout);
         
         if (section) {
@@ -225,10 +232,14 @@ class SidebarSectionIntegration {
             // Show success feedback
             this.showSuccess(`Added ${this.getLayoutDisplayName(this.selectedLayout)} section!`);
             
-            // Check if section was rendered visually
+            // ROOT FIX: Ensure section is visible and scrollable
             setTimeout(() => {
                 this.verifySectionVisualRendering(sectionId);
                 this.scrollToNewSection(sectionId);
+                
+                // ROOT FIX: Make section available for drag-drop immediately
+                this.enableSectionForDragDrop(sectionId);
+                
                 this.isAddingSection = false;
             }, 100);
         } else {
@@ -460,6 +471,93 @@ class SidebarSectionIntegration {
     }
     
     /**
+     * ROOT FIX: Ensure all necessary containers are visible
+     */
+    ensureContainersVisible() {
+        // Show the main saved components container
+        const savedComponentsContainer = document.getElementById('saved-components-container');
+        if (savedComponentsContainer && savedComponentsContainer.style.display === 'none') {
+            savedComponentsContainer.style.display = 'block';
+            this.logger.info('📦 PHASE 3: Made saved-components-container visible for sections');
+        }
+        
+        // Show the sections container
+        const sectionsContainer = document.getElementById('gmkb-sections-container');
+        if (sectionsContainer && sectionsContainer.style.display === 'none') {
+            sectionsContainer.style.display = 'block';
+            this.logger.info('📦 PHASE 3: Made gmkb-sections-container visible');
+        }
+        
+        // Hide empty state if it exists
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState && emptyState.style.display !== 'none') {
+            emptyState.style.display = 'none';
+            this.logger.info('🚫 PHASE 3: Hidden empty state for sections');
+        }
+        
+        // Show the main preview container
+        const previewContainer = document.getElementById('media-kit-preview');
+        if (previewContainer && previewContainer.style.display === 'none') {
+            previewContainer.style.display = 'block';
+            this.logger.info('📦 PHASE 3: Made media-kit-preview visible');
+        }
+    }
+    
+    /**
+     * ROOT FIX: Enable section for drag-drop immediately after creation
+     */
+    enableSectionForDragDrop(sectionId) {
+        const sectionElement = document.getElementById(`section-${sectionId}`) || 
+                               document.querySelector(`[data-section-id="${sectionId}"]`);
+        
+        if (sectionElement) {
+            // Make section a drop target
+            sectionElement.addEventListener('dragover', this.handleSectionDragOver.bind(this));
+            sectionElement.addEventListener('drop', this.handleSectionDrop.bind(this));
+            sectionElement.classList.add('gmkb-section-drop-enabled');
+            
+            this.logger.info(`🎯 PHASE 3: Section ${sectionId} enabled for drag-drop`);
+        } else {
+            // Retry after a short delay if section not found
+            setTimeout(() => {
+                this.enableSectionForDragDrop(sectionId);
+            }, 200);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Handle drag over section
+     */
+    handleSectionDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        
+        const section = e.currentTarget;
+        section.classList.add('gmkb-section-drag-over');
+    }
+    
+    /**
+    * ROOT FIX: Handle drop on section - capture section info before component creation
+    */
+    handleSectionDrop(e) {
+    e.preventDefault();
+    
+    const section = e.currentTarget;
+    section.classList.remove('gmkb-section-drag-over');
+    
+    const sectionId = section.getAttribute('data-section-id');
+    this.logger.info(`🎯 PHASE 3: Component dropped directly on section ${sectionId}`);
+    
+    // ROOT FIX: Store section targeting information for drag-drop system
+    if (window.sectionComponentIntegration && window.sectionComponentIntegration.dragData) {
+            // Inject section targeting into the current drag data
+                    window.sectionComponentIntegration.dragData.targetSectionId = sectionId;
+                    window.sectionComponentIntegration.dragData.targetColumn = 1;
+                    this.logger.info(`📌 PHASE 3: Injected section targeting: ${sectionId}`);
+                }
+            }
+    
+    /**
      * Debug method - get current state
      * Following checklist: Diagnostic Logging
      */
@@ -468,7 +566,9 @@ class SidebarSectionIntegration {
             selectedLayout: this.selectedLayout,
             sectionLayoutManagerAvailable: !!this.sectionLayoutManager,
             layoutOptionsCount: document.querySelectorAll('.layout-option').length,
-            addButtonAvailable: !!document.getElementById('add-section-btn')
+            addButtonAvailable: !!document.getElementById('add-section-btn'),
+            sectionsCount: document.querySelectorAll('[data-section-id]').length,
+            dragDropEnabledSections: document.querySelectorAll('.gmkb-section-drop-enabled').length
         };
     }
 }

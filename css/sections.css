@@ -206,7 +206,24 @@
     font-size: 12px;
 }
 
-/* Drag and Drop States */
+/* Drag and Drop States - ROOT FIX: Enhanced section targeting */
+.gmkb-section-drag-over {
+    background: rgba(41, 92, 255, 0.08) !important;
+    border: 2px solid #295cff !important;
+    box-shadow: 0 0 15px rgba(41, 92, 255, 0.3) !important;
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}
+
+.gmkb-section-drop-enabled {
+    transition: all 0.2s ease;
+    cursor: copy;
+}
+
+.gmkb-section-drop-enabled:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
 .gmkb-section--drag-over {
     background: rgba(41, 92, 255, 0.05);
     border-color: #295cff;
@@ -219,6 +236,53 @@
 .gmkb-section__column--drag-over {
     background: rgba(41, 92, 255, 0.1);
     border: 2px dashed #295cff;
+}
+
+/* ROOT FIX: Visual feedback when components can be dropped in sections */
+.gmkb-section-drag-over .gmkb-section__empty {
+    border-color: #295cff;
+    background: rgba(41, 92, 255, 0.1);
+    color: #295cff;
+}
+
+.gmkb-section-drag-over .gmkb-section__empty::after {
+    content: '✨ Drop component here';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 600;
+    color: #295cff;
+    border: 2px solid #295cff;
+    animation: pulse 1.5s infinite;
+}
+
+.gmkb-section-drag-over .gmkb-section__column,
+.gmkb-section-drag-over .gmkb-section__content {
+    border: 2px dashed #295cff;
+    background: rgba(41, 92, 255, 0.05);
+    position: relative;
+}
+
+.gmkb-section-drag-over .gmkb-section__column::after,
+.gmkb-section-drag-over .gmkb-section__content::after {
+    content: 'Drop here';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #295cff;
+    border: 1px solid #295cff;
+    pointer-events: none;
+    z-index: 10;
 }
 
 /* Responsive Styles */
@@ -382,8 +446,10 @@
 @keyframes pulse {
     0%, 100% {
         opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
     }
     50% {
-        opacity: 0.5;
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1.05);
     }
 }

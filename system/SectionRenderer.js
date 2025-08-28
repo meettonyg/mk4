@@ -217,6 +217,9 @@ class SectionRenderer {
             return;
         }
         
+        // ROOT FIX: Ensure containers are visible when rendering sections
+        this.ensureContainersVisible();
+        
         // Check if section already rendered
         if (this.renderedSections.has(section.section_id)) {
             this.logger.debug(`🔄 PHASE 3: Section ${section.section_id} already rendered, updating`);
@@ -456,7 +459,7 @@ class SectionRenderer {
     
     /**
      * Add placeholder for empty sections
-     * Following checklist: User Experience, Visual Feedback
+     * Following checklist: User Experience, Visual Feedback, ROOT FIX: Click functionality
      */
     addEmptySectionPlaceholder(sectionElement) {
         const innerElement = sectionElement.querySelector('.gmkb-section__inner, .gmkb-section__content');
@@ -473,12 +476,19 @@ class SectionRenderer {
                 </div>
             `;
             
-            // Make clickable to add components
-            placeholder.addEventListener('click', () => {
+            // ROOT FIX: Make clickable to add components via modal
+            placeholder.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 this.handleAddComponentToSection(sectionElement.dataset.sectionId);
             });
             
+            // ROOT FIX: Add cursor pointer for click affordance
+            placeholder.style.cursor = 'pointer';
+            
             innerElement.appendChild(placeholder);
+            
+            this.logger.debug('PHASE 3: Added clickable placeholder to section');
         }
     }
     
@@ -597,15 +607,35 @@ class SectionRenderer {
     
     /**
      * Handle add component to section
-     * Following checklist: Component Management, User Experience
+     * Following checklist: Component Management, User Experience, ROOT FIX: Use modal system
      */
     handleAddComponentToSection(sectionId) {
         this.logger.info(`➕ PHASE 3: Adding component to section ${sectionId}`);
         
-        // Dispatch event for component library
-        this.dispatchSectionEvent('gmkb:add-component-to-section', {
-            sectionId
-        });
+        // ROOT FIX: Open component library modal with section targeting
+        if (window.modalBase && window.modalBase.openModal) {
+            // Store the target section ID for the modal
+            window.targetSectionForComponent = sectionId;
+            window.modalBase.openModal('component-library');
+            this.logger.info(`🎨 PHASE 3: Opened component library for section ${sectionId}`);
+        } else if (window.enhancedComponentManager) {
+            // Fallback: Add a default component directly
+            const availableTypes = ['hero', 'biography', 'topics', 'contact'];
+            const randomType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+            
+            window.enhancedComponentManager.addComponent(randomType, {
+                targetSectionId: sectionId,
+                targetColumn: 1,
+                clickToAdd: true
+            });
+            
+            this.logger.info(`🎲 PHASE 3: Added random ${randomType} component to section ${sectionId}`);
+        } else {
+            // Last resort: dispatch event
+            this.dispatchSectionEvent('gmkb:add-component-to-section', {
+                sectionId
+            });
+        }
     }
     
     /**
@@ -778,6 +808,38 @@ class SectionRenderer {
     }
     
     /**
+     * ROOT FIX: Ensure all necessary containers are visible for sections
+     */
+    ensureContainersVisible() {
+        // Show the main saved components container
+        const savedComponentsContainer = document.getElementById('saved-components-container');
+        if (savedComponentsContainer && savedComponentsContainer.style.display === 'none') {
+            savedComponentsContainer.style.display = 'block';
+            this.logger.info('📦 PHASE 3: Made saved-components-container visible for sections');
+        }
+        
+        // Show the sections container (this.containerElement)
+        if (this.containerElement && this.containerElement.style.display === 'none') {
+            this.containerElement.style.display = 'block';
+            this.logger.info('📦 PHASE 3: Made sections container visible');
+        }
+        
+        // Show the main preview container
+        const previewContainer = document.getElementById('media-kit-preview');
+        if (previewContainer && previewContainer.style.display === 'none') {
+            previewContainer.style.display = 'block';
+            this.logger.info('📦 PHASE 3: Made media-kit-preview visible');
+        }
+        
+        // Hide empty state if it exists
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState && emptyState.style.display !== 'none') {
+            emptyState.style.display = 'none';
+            this.logger.info('🚫 PHASE 3: Hidden empty state for sections');
+        }
+    }
+    
+    /**
      * Debug method - get current state
      * Following checklist: Diagnostic Logging
      */
@@ -788,7 +850,9 @@ class SectionRenderer {
             renderedSectionCount: this.renderedSections.size,
             domSectionCount: document.querySelectorAll('.gmkb-section').length,
             sectionLayoutManagerAvailable: !!this.sectionLayoutManager,
-            componentRendererAvailable: !!this.componentRenderer
+            componentRendererAvailable: !!this.componentRenderer,
+            containerVisible: this.containerElement ? this.containerElement.style.display !== 'none' : false,
+            savedComponentsContainerVisible: document.getElementById('saved-components-container')?.style.display !== 'none'
         };
     }
 }
