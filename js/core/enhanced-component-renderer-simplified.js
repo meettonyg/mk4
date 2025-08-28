@@ -511,7 +511,7 @@
             /**
              * ✅ PUBLIC API: Render single component (for external use)
              */
-            async renderComponent(componentConfig) {
+            async renderSingleComponent(componentConfig) {
                 const componentId = componentConfig.id || `component_${Date.now()}`;
                 const componentData = {
                     type: componentConfig.type,

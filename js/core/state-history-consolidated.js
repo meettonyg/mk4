@@ -452,10 +452,7 @@
                 }
             }));
             
-            // Also call global function if it exists
-            if (window.updateUndoRedoButtons) {
-                window.updateUndoRedoButtons();
-            }
+            // Removed circular call - this IS the global function
         }
 
         /**
