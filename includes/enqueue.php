@@ -616,13 +616,14 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 12b. Toolbar interactions (device preview toggle, toolbar buttons)
+    // 12b. CONSOLIDATED Toolbar System - ROOT FIX: All toolbar functionality
+    // PHASE 2 OPTIMIZATION: Consolidated 2 files into 1 (toolbar + toolbar-interactions)
     if (!wp_script_is('gmkb-toolbar', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-toolbar',
-            $plugin_url . 'js/ui/toolbar.js',
+            $plugin_url . 'js/ui/toolbar-consolidated.js',
             array('gmkb-structured-logger'),
-            $version,
+            $version . '-consolidated',
             true
         );
     }
@@ -806,16 +807,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 12i. Toolbar Interactions - ROOT FIX: Enhanced toolbar with undo/redo
-    if (!wp_script_is('gmkb-toolbar-interactions', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-toolbar-interactions',
-            $plugin_url . 'js/ui/toolbar-interactions.js',
-            array('gmkb-structured-logger', 'gmkb-event-bus', 'gmkb-state-history', 'gmkb-history-service', 'gmkb-toast-polyfill'),
-            $version,
-            true
-        );
-    }
+    // REMOVED: toolbar-interactions.js - now consolidated into toolbar-consolidated.js
     
     // ROOT CAUSE FIX: Circuit breaker removed - GMKB core system now loads properly
     // No longer needed since GMKB namespace is available from the start
@@ -993,8 +985,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
                 'gmkb-tabs',
-                'gmkb-toolbar',
-                'gmkb-toolbar-interactions',
+                'gmkb-toolbar', // CONSOLIDATED: Now includes toolbar-interactions
                 'gmkb-ui-init-coordinator',
                 'gmkb-design-panel',
                 // 'gmkb-element-editor', // DISABLED: Legacy control system
