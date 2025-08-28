@@ -681,35 +681,14 @@ function gmkb_enqueue_assets() {
     }
     */
     
-    // 12g. State History - ROOT FIX: For undo/redo functionality
+    // 12g. CONSOLIDATED State History - ROOT FIX: For undo/redo functionality
+    // PHASE 1 OPTIMIZATION: Consolidated 3 files into 1 (state-history, initializer, clear-fix)
     if (!wp_script_is('gmkb-state-history', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-state-history',
-            $plugin_url . 'js/core/state-history.js',
-            array('gmkb-event-bus', 'gmkb-structured-logger'),
-            $version,
-            true
-        );
-    }
-    
-    // 12g2. State History Initializer - ROOT FIX: Ensures initial state is captured
-    if (!wp_script_is('gmkb-state-history-initializer', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-state-history-initializer',
-            $plugin_url . 'js/core/state-history-initializer.js',
-            array('gmkb-state-history', 'gmkb-enhanced-state-manager'),
-            $version,
-            true
-        );
-    }
-    
-    // 12g3. State History Clear Fix - ROOT FIX: Clear history when all components removed
-    if (!wp_script_is('gmkb-state-history-clear-fix', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-state-history-clear-fix',
-            $plugin_url . 'js/core/state-history-clear-fix.js',
-            array('gmkb-state-history', 'gmkb-enhanced-state-manager'),
-            $version,
+            $plugin_url . 'js/core/state-history-consolidated.js',
+            array('gmkb-event-bus', 'gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version . '-consolidated',
             true
         );
     }
@@ -1019,8 +998,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-ui-init-coordinator',
                 'gmkb-design-panel',
                 // 'gmkb-element-editor', // DISABLED: Legacy control system
-                'gmkb-state-history',
-                'gmkb-state-history-initializer',
+                'gmkb-state-history', // CONSOLIDATED: Now includes initializer and clear-fix
                 'gmkb-history-service',
                 // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure
                 // DISABLED: All conflicting drag systems - only section-component-integration handles drag/drop
