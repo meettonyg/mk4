@@ -708,9 +708,7 @@
     // Expose globally
     window.consolidatedToolbar = toolbar;
     
-    // Legacy compatibility exports
-    window.setupToolbar = () => toolbar.init();
-    window.toolbarInteractions = toolbar;
+    // Clean exports only (no legacy)
     window.triggerSave = () => toolbar.handleSaveClick();
     window.triggerExport = () => toolbar.handleExportClick();
     window.setAutoSave = (enabled) => toolbar.setAutoSave(enabled);

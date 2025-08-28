@@ -412,42 +412,14 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ROOT FIX: PHASE 0.5 - Debug Control System
-    // Load debug control before all other scripts
-    if (!wp_script_is('gmkb-debug-control', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-debug-control',
-            $plugin_url . 'js/core/debug-control.js',
-            array(), // No dependencies
-            $version,
-            true
-        );
-    }
-    
-    // ROOT FIX: Disable legacy controls at the root
-    if (!wp_script_is('gmkb-disable-legacy-controls', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-disable-legacy-controls',
-            $plugin_url . 'js/core/disable-legacy-controls.js',
-            array(), // Load early to prevent any legacy control creation
-            $version,
-            true
-        );
-    }
-    
-    // ROOT FIX: PHASE 1 - Core Dependencies Only (CRITICAL)
-    // Load only essential scripts to prevent circular dependencies with duplicate checks
-    
-    // ROOT FIX: COMPREHENSIVE DUPLICATE PREVENTION FOR ALL SCRIPTS
-    // Prevents infinite initialization loops by ensuring each script loads only once
-    
-    // 0. GMKB Core System FIRST (provides global namespace and events)
+    // 0. GMKB Core System FIRST - CONSOLIDATED (provides global namespace, debug control, and events)
+    // PHASE 4 OPTIMIZATION: Consolidated 3 files into 1 (gmkb + debug-control + disable-legacy-controls)
     if (!wp_script_is('gmkb', 'enqueued')) {
         wp_enqueue_script(
             'gmkb',
-            $plugin_url . 'js/core/gmkb.js',
+            $plugin_url . 'js/core/gmkb-init.js',
             array(), // ZERO dependencies - must load first
-            $version,
+            $version . '-consolidated',
             true
         );
     }

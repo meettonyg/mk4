@@ -622,7 +622,7 @@
     // Expose globally
     window.stateHistory = stateHistory;
     
-    // Export convenience methods for backward compatibility
+    // Export convenience methods
     window.undo = stateHistory.undo.bind(stateHistory);
     window.redo = stateHistory.redo.bind(stateHistory);
     window.canUndo = stateHistory.canUndo.bind(stateHistory);
