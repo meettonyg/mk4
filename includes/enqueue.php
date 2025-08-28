@@ -435,13 +435,14 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 2. Modal base system (needed by component library) - ROOT FIX: Added duplicate prevention
-    if (!wp_script_is('gmkb-modal-base', 'enqueued')) {
+    // 2. CONSOLIDATED Modal System - ROOT FIX: All modal functionality
+    // PHASE 5 OPTIMIZATION: Consolidated 5 files into 2 (modal-base + component-library → modal-system)
+    if (!wp_script_is('gmkb-modal-system', 'enqueued')) {
         wp_enqueue_script(
-            'gmkb-modal-base',
-            $plugin_url . 'js/modals/modal-base.js',
+            'gmkb-modal-system',
+            $plugin_url . 'js/modals/modal-system.js',
             array('gmkb-structured-logger'),
-            $version,
+            $version . '-consolidated',
             true
         );
     }
@@ -864,16 +865,7 @@ function gmkb_enqueue_assets() {
     }
     
 
-    // 14. Component library (SIMPLIFIED VERSION - fixes infinite loops and race conditions)
-    if (!wp_script_is('gmkb-component-library-simple', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-component-library-simple',
-            $plugin_url . 'js/modals/component-library-simple.js',
-            array('gmkb-modal-base', 'gmkb-enhanced-state-manager', 'gmkb-enhanced-component-manager', 'gmkb-structured-logger'),
-            $version,
-            true
-        );
-    }
+    // REMOVED: component-library-simple.js - now consolidated into modal-system.js
     
     // ROOT FIX: DISABLED ALL CONFLICTING DRAG SYSTEMS
     // ONLY section-component-integration.js handles drag and drop now
@@ -945,7 +937,8 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-controls-manager',
                 'gmkb-enhanced-component-renderer-simplified', // ✅ PHASE 5 FIX: Use simplified renderer only
                 'gmkb-empty-state-handlers',
-                'gmkb-component-library-simple',
+                'gmkb-modal-system', // CONSOLIDATED: Includes modal-base + component-library
+                'gmkb-modal-extras', // CONSOLIDATED: Includes template, settings, export modals
                 // PHASE 2: Configuration and data binding systems
                 'gmkb-component-configuration-manager',
                 'gmkb-data-binding-engine',
@@ -974,38 +967,22 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // Template library modal - ROOT FIX: Added missing script
-    if (!wp_script_is('gmkb-template-library', 'enqueued')) {
+    // 14b. CONSOLIDATED Modal Extras - ROOT FIX: Template, Settings, Export modals
+    // PHASE 5 OPTIMIZATION: Consolidated 3 files into 1 (template-library + global-settings + export)
+    if (!wp_script_is('gmkb-modal-extras', 'enqueued')) {
         wp_enqueue_script(
-            'gmkb-template-library',
-            $plugin_url . 'js/modals/template-library.js',
-            array('gmkb-main-script'),
-            $version,
+            'gmkb-modal-extras',
+            $plugin_url . 'js/modals/modal-extras.js',
+            array('gmkb-modal-system'),
+            $version . '-consolidated',
             true
         );
     }
     
-    // Global settings modal - ROOT FIX: Ensure modal-base loads first
-    if (!wp_script_is('gmkb-global-settings', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-global-settings',
-            $plugin_url . 'js/modals/global-settings.js',
-            array('gmkb-modal-base'),
-            $version,
-            true
-        );
-    }
-    
-    // Export modal - ROOT FIX: Added missing script
-    if (!wp_script_is('gmkb-export-modal', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-export-modal',
-            $plugin_url . 'js/modals/export.js',
-            array('gmkb-main-script'),
-            $version,
-            true
-        );
-    }
+    // REMOVED: Individual modal files now consolidated into modal-extras.js
+    // - template-library.js
+    // - global-settings.js
+    // - export.js
     
     // ✅ PHASE 3 OPTIMIZATION: Conditional debug script loading (only when explicitly requested)
     // ✅ ROOT CAUSE: Debug scripts were causing 66 total scripts - now load only when needed
