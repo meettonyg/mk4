@@ -117,7 +117,14 @@ document.addEventListener('gmkb:component-edit-requested', (event) => {
     // Switch to design tab
     switchToTab('design');
     
-    // Load the component in design panel if available
+    // ROOT FIX: Check if Phase 2 Component Options UI is active
+    if (window.componentOptionsUI) {
+        console.log('🚀 TABS: Phase 2 Component Options UI is active, not loading old design panel');
+        // Phase 2 will handle the component configuration display
+        return;
+    }
+    
+    // Load the component in design panel if available (old system fallback)
     if (window.designPanel && componentId) {
         // Small delay to ensure tab is switched first
         setTimeout(() => {

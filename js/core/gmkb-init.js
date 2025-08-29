@@ -241,6 +241,47 @@
                 return;
             }
             
+            // ROOT FIX: Check if Phase 2 Component Options UI is available
+            console.log('🔍 PHASE 2 CHECK:', {
+                componentSelectionManager: !!window.componentSelectionManager,
+                componentOptionsUI: !!window.componentOptionsUI,
+                ComponentSelectionManager: !!window.ComponentSelectionManager,
+                ComponentOptionsUI: !!window.ComponentOptionsUI
+            });
+            
+            if (window.componentSelectionManager && window.componentOptionsUI) {
+                console.log('🚀 PHASE 2: Using Component Options UI for', componentId);
+                
+                // Get component type
+                const componentType = componentElement.dataset.componentType || 
+                    componentElement.className.match(/gmkb-component--(\w+)/)?.[1];
+                
+                // Select component using Phase 2 system
+                window.componentSelectionManager.selectComponentById(componentId);
+                
+                // Trigger Phase 2 Component Options UI
+                document.dispatchEvent(new CustomEvent('gmkb:component-selected', {
+                    detail: {
+                        componentId,
+                        componentType,
+                        element: componentElement,
+                        timestamp: Date.now()
+                    }
+                }));
+                
+                // Switch to Design tab
+                const designTab = document.querySelector('[data-tab="design"]');
+                if (designTab) {
+                    designTab.click();
+                }
+                
+                console.log(`✅ Phase 2 Component Options opened for ${componentId}`);
+                return;
+            }
+            
+            console.log('⚠️ PHASE 2: Not available, falling back to old system');
+            
+            // Fallback to old system if Phase 2 not available
             // For now, make the component directly editable
             const editableElements = componentElement.querySelectorAll('[contenteditable], input, textarea, select');
             if (editableElements.length > 0) {

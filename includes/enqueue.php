@@ -719,6 +719,38 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    
+    // PHASE 2: Component Editor System - Base class and registry
+    if (!wp_script_is('gmkb-base-component-editor', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-base-component-editor',
+            $plugin_url . 'system/editors/BaseComponentEditor.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    if (!wp_script_is('gmkb-component-editor-registry', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-editor-registry',
+            $plugin_url . 'system/editors/ComponentEditorRegistry.js',
+            array('gmkb-base-component-editor'),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 2: Component-specific editors (only Topics for now)
+    if (!wp_script_is('gmkb-topics-editor', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-topics-editor',
+            $plugin_url . 'components/topics/TopicsEditor.js',
+            array('gmkb-base-component-editor', 'gmkb-component-editor-registry'),
+            $version,
+            true
+        );
+    }
 
     // PHASE 2: Component Selection Manager
     if (!wp_script_is('gmkb-component-selection-manager', 'enqueued')) {
