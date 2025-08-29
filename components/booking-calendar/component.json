@@ -4,125 +4,130 @@
   "icon": "calendar.svg",
   "description": "Allow visitors to book appointments or sessions",
   "isPremium": true,
-  "dependencies": [],
-  "version": "1.0.0",
+  "version": "2.0.0-phase2",
   "order": 3,
-  "settings": {
-    "title": {
-      "type": "text",
-      "label": "Section Title",
-      "default": "Book a Session",
-      "placeholder": "Enter section title",
-      "previewSelector": ".section-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "meta_info.section_title"
-    },
-    "booking_type": {
-      "type": "select",
-      "label": "Booking Type",
-      "default": "consultation",
-      "options": [
-        {"value": "consultation", "label": "Consultation"},
-        {"value": "interview", "label": "Interview"},
-        {"value": "speaking", "label": "Speaking Engagement"},
-        {"value": "session", "label": "Coaching Session"},
-        {"value": "meeting", "label": "General Meeting"}
-      ],
-      "previewSelector": ".booking-type",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "booking.booking_type"
-    },
-    "booking_description": {
-      "type": "textarea",
-      "label": "Booking Description",
-      "default": "Schedule a time to connect and discuss your needs.",
-      "rows": 3,
-      "placeholder": "Describe what visitors can book",
-      "previewSelector": ".booking-description",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "booking.description"
-    },
-    "calendar_url": {
-      "type": "url",
-      "label": "Calendar Booking URL",
-      "default": "",
-      "placeholder": "Enter your Calendly, Acuity, or other booking URL",
-      "previewSelector": ".booking-button",
-      "updateMethod": "href",
-      "section": "content",
-      "helpText": "Link to your external booking system",
-      "mkcgMapping": "contact.booking_url"
-    },
-    "button_text": {
-      "type": "text",
-      "label": "Button Text",
-      "default": "Schedule Now",
-      "placeholder": "Enter button text",
-      "previewSelector": ".booking-button",
-      "updateMethod": "textContent",
-      "section": "content"
-    },
-    "show_availability": {
-      "type": "checkbox",
-      "label": "Show Availability Info",
-      "default": true,
-      "previewSelector": ".availability-info",
-      "updateMethod": "visibility",
-      "section": "appearance"
-    },
-    "availability_text": {
-      "type": "text",
-      "label": "Availability Text",
-      "default": "Typically responds within 24 hours",
-      "placeholder": "Enter availability information",
-      "previewSelector": ".availability-text",
-      "updateMethod": "textContent",
-      "section": "content"
-    },
-    "calendar_style": {
+  
+  "dataBindings": {
+    "title": "booking_section_title",
+    "bookingType": "booking_type",
+    "description": "booking_description",
+    "calendarUrl": "booking_url",
+    "availabilityText": "availability_info"
+  },
+  
+  "componentOptions": {
+    "calendarStyle": {
       "type": "select",
       "label": "Calendar Style",
+      "description": "Choose how the calendar is displayed",
       "default": "embedded",
-      "options": [
-        {"value": "embedded", "label": "Embedded Calendar"},
-        {"value": "popup", "label": "Popup Modal"},
-        {"value": "redirect", "label": "External Redirect"}
-      ],
-      "previewSelector": ".calendar-container",
-      "updateMethod": "class",
-      "classPrefix": "style-",
-      "section": "appearance"
+      "options": {
+        "embedded": "Embedded Calendar",
+        "popup": "Popup Modal",
+        "redirect": "External Redirect"
+      },
+      "section": "layout",
+      "preview": true
     },
-    "timezone_display": {
-      "type": "checkbox",
+    "buttonText": {
+      "type": "text",
+      "label": "Button Text",
+      "description": "Customize the booking button text",
+      "default": "Schedule Now",
+      "section": "content"
+    },
+    "showAvailability": {
+      "type": "boolean",
+      "label": "Show Availability Info",
+      "description": "Display availability information",
+      "default": true,
+      "section": "content"
+    },
+    "showTimezone": {
+      "type": "boolean",
       "label": "Show Timezone",
+      "description": "Display timezone information",
       "default": false,
-      "previewSelector": ".timezone-info",
-      "updateMethod": "visibility",
-      "section": "appearance"
+      "section": "content"
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "description": "Choose the visual theme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Success Green",
+        "orange": "Warm Orange",
+        "purple": "Creative Purple"
+      },
+      "section": "appearance",
+      "preview": true
+    },
+    "buttonStyle": {
+      "type": "select",
+      "label": "Button Style",
+      "description": "Choose button appearance",
+      "default": "solid",
+      "options": {
+        "solid": "Solid Button",
+        "outline": "Outline Button",
+        "minimal": "Minimal Link"
+      },
+      "section": "appearance",
+      "preview": true
     }
   },
+  
   "sections": {
     "content": {
       "title": "Booking Content",
-      "order": 1
+      "description": "Configure booking information and text",
+      "order": 1,
+      "icon": "edit"
+    },
+    "layout": {
+      "title": "Calendar Layout",
+      "description": "Choose how calendar is displayed",
+      "order": 2,
+      "icon": "layout"
     },
     "appearance": {
-      "title": "Calendar Appearance",
-      "order": 2
+      "title": "Appearance",
+      "description": "Customize colors and styling",
+      "order": 3,
+      "icon": "palette"
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["calendar_url"],
-    "dataSource": "contact",
-    "validationRules": {
-      "urlRequired": true,
-      "descriptionMinLength": 10
+  
+  "presets": {
+    "professional": {
+      "name": "Professional Booking",
+      "options": {
+        "calendarStyle": "embedded",
+        "showAvailability": true,
+        "colorScheme": "blue",
+        "buttonStyle": "solid"
+      }
     },
-    "priority": "medium"
+    "minimal": {
+      "name": "Minimal Booking",
+      "options": {
+        "calendarStyle": "redirect",
+        "showAvailability": false,
+        "colorScheme": "blue",
+        "buttonStyle": "minimal"
+      }
+    },
+    "premium": {
+      "name": "Premium Experience",
+      "options": {
+        "calendarStyle": "popup",
+        "showAvailability": true,
+        "showTimezone": true,
+        "colorScheme": "purple",
+        "buttonStyle": "solid"
+      }
+    }
   }
 }

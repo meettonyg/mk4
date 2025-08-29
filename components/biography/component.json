@@ -1,142 +1,166 @@
 {
-  "name": "Biography",
+  "name": "Professional Biography",
   "category": "essential",
-  "icon": "bio-standard.svg",
-  "description": "Biography section for your media kit",
+  "description": "Professional biography section with flexible layouts",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
+  "version": "2.0.0-phase2",
   "order": 2,
-  "settings": {
-    "title": {
-      "type": "text",
-      "label": "Section Title",
-      "default": "About Me",
-      "placeholder": "Enter section title",
-      "previewSelector": ".section-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "meta_info.section_title"
-    },
-    "bio_text": {
-      "type": "textarea",
-      "label": "Biography Text",
-      "default": "Add your full biography and professional background here. This is where you can share your story, expertise, and what makes you unique as a speaker or expert in your field.",
-      "rows": 6,
-      "placeholder": "Enter your biography",
-      "previewSelector": ".biography-content p",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.medium"
-    },
-    "long_bio": {
-      "type": "textarea",
-      "label": "Extended Biography",
-      "default": "",
-      "rows": 8,
-      "placeholder": "Enter extended biography (optional)",
-      "previewSelector": ".biography-extended",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.long",
-      "helpText": "Longer form biography for detailed media kits"
-    },
-    "short_bio": {
-      "type": "textarea",
-      "label": "Short Bio",
-      "default": "",
-      "rows": 3,
-      "placeholder": "Enter short bio (optional)",
-      "previewSelector": ".biography-short",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.short",
-      "helpText": "Brief bio for social media and quick introductions"
-    },
-    "achievements": {
-      "type": "textarea",
-      "label": "Key Achievements",
-      "default": "",
-      "rows": 4,
-      "placeholder": "List key achievements (optional)",
-      "previewSelector": ".biography-achievements",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.achievements"
-    },
-    "expertise": {
-      "type": "text",
-      "label": "Areas of Expertise",
-      "default": "",
-      "placeholder": "Enter areas of expertise",
-      "previewSelector": ".biography-expertise",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.expertise"
-    },
-    "bio_layout": {
+  
+  "dataBindings": {
+    "bio": "biography",
+    "name": "full_name",
+    "title": "guest_title",
+    "image": "guest_headshot",
+    "shortBio": "biography_short",
+    "longBio": "biography_long"
+  },
+  
+  "componentOptions": {
+    "layout": {
       "type": "select",
-      "label": "Biography Layout",
-      "default": "standard",
-      "options": [
-        {"value": "standard", "label": "Standard Layout"},
-        {"value": "two-column", "label": "Two Column Layout"},
-        {"value": "highlight", "label": "Highlight Box"},
-        {"value": "timeline", "label": "Timeline Style"}
-      ],
-      "previewSelector": ".biography-component",
-      "updateMethod": "class",
-      "classPrefix": "layout-",
+      "label": "Layout Style",
+      "description": "Choose how biography content is arranged",
+      "default": "text_only",
+      "options": {
+        "text_only": "Text Only",
+        "with_image": "With Image",
+        "image_left": "Image Left, Text Right",
+        "image_right": "Image Right, Text Left"
+      },
+      "section": "layout",
+      "preview": true
+    },
+    "bioLength": {
+      "type": "select",
+      "label": "Biography Length",
+      "description": "Choose which biography field to use",
+      "default": "biography",
+      "options": {
+        "biography_short": "Short Bio",
+        "biography": "Standard Bio",
+        "biography_long": "Long Bio"
+      },
+      "section": "content"
+    },
+    "showTitle": {
+      "type": "boolean",
+      "label": "Show Section Title",
+      "description": "Display 'Biography' heading above content",
+      "default": true,
+      "section": "content"
+    },
+    "showJobTitle": {
+      "type": "boolean",
+      "label": "Show Job Title",
+      "description": "Display professional title/role",
+      "default": true,
+      "section": "content"
+    },
+    "maxLength": {
+      "type": "number",
+      "label": "Maximum Character Length",
+      "description": "Truncate biography after this many characters",
+      "default": 500,
+      "min": 100,
+      "max": 2000,
+      "section": "content"
+    },
+    "fontStyle": {
+      "type": "select",
+      "label": "Font Style",
+      "description": "Choose typography style for biography",
+      "default": "normal",
+      "options": {
+        "normal": "Normal",
+        "italic": "Italic",
+        "bold": "Bold",
+        "large": "Large Text"
+      },
       "section": "appearance"
     },
-    "show_achievements": {
-      "type": "checkbox",
-      "label": "Show Achievements Section",
-      "default": false,
-      "previewSelector": ".biography-achievements",
-      "updateMethod": "visibility",
-      "section": "appearance"
-    },
-    "show_expertise": {
-      "type": "checkbox",
-      "label": "Show Expertise Section",
-      "default": false,
-      "previewSelector": ".biography-expertise",
-      "updateMethod": "visibility",
-      "section": "appearance"
-    },
-    "text_alignment": {
+    "textAlignment": {
       "type": "select",
       "label": "Text Alignment",
+      "description": "Set text alignment for biography content",
       "default": "left",
-      "options": [
-        {"value": "left", "label": "Left Aligned"},
-        {"value": "center", "label": "Center Aligned"},
-        {"value": "justify", "label": "Justified"}
-      ],
-      "previewSelector": ".biography-content",
-      "updateMethod": "class",
-      "classPrefix": "text-",
+      "options": {
+        "left": "Left Aligned",
+        "center": "Center Aligned",
+        "justify": "Justified"
+      },
       "section": "appearance"
     }
   },
-  "sections": {
-    "content": {
-      "title": "Biography Content",
-      "order": 1
+  
+  "responsiveBehavior": {
+    "mobile": {
+      "layout": "text_only",
+      "textAlignment": "left",
+      "maxLength": 300
     },
-    "appearance": {
-      "title": "Layout & Appearance",
-      "order": 2
+    "tablet": {
+      "layout": "with_image",
+      "maxLength": 400
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["bio_text"],
-    "dataSource": "biography",
-    "validationRules": {
-      "minLength": 50,
-      "maxLength": 2000
+  
+  "sections": {
+    "content": {
+      "title": "Content Settings",
+      "description": "Configure biography content and length",
+      "order": 1,
+      "icon": "edit"
+    },
+    "layout": {
+      "title": "Layout Options",
+      "description": "Choose how biography and image are arranged",
+      "order": 2,
+      "icon": "layout"
+    },
+    "appearance": {
+      "title": "Typography & Style",
+      "description": "Customize text styling and appearance",
+      "order": 3,
+      "icon": "typography"
+    }
+  },
+  
+  "presets": {
+    "executive": {
+      "name": "Executive Profile",
+      "options": {
+        "layout": "image_left",
+        "bioLength": "biography",
+        "showTitle": true,
+        "showJobTitle": true,
+        "fontStyle": "normal",
+        "textAlignment": "left",
+        "maxLength": 600
+      }
+    },
+    "speaker": {
+      "name": "Speaker Profile",
+      "options": {
+        "layout": "with_image",
+        "bioLength": "biography_long",
+        "showTitle": true,
+        "showJobTitle": true,
+        "fontStyle": "large",
+        "textAlignment": "justify",
+        "maxLength": 800
+      }
+    },
+    "minimal": {
+      "name": "Minimal Bio",
+      "options": {
+        "layout": "text_only",
+        "bioLength": "biography_short",
+        "showTitle": false,
+        "showJobTitle": false,
+        "fontStyle": "normal",
+        "textAlignment": "center",
+        "maxLength": 250
+      }
     }
   }
 }

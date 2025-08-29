@@ -38,6 +38,19 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 // PHASE 2: Component schema registry
 require_once GUESTIFY_PLUGIN_DIR . 'includes/component-schemas/class-gmkb-component-schema-registry.php';
 
+// ROOT FIX: Initialize schema registry for Phase 2
+add_action('init', function() {
+    if (class_exists('GMKB_Component_Schema_Registry')) {
+        // Force initialization to ensure schemas are available
+        GMKB_Component_Schema_Registry::get_schemas();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $schemas = GMKB_Component_Schema_Registry::get_js_schemas();
+            error_log('GMKB PHASE 2 ROOT FIX: Schema registry initialized with ' . count($schemas) . ' schemas');
+        }
+    }
+}, 5);
+
 // Component system files
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';

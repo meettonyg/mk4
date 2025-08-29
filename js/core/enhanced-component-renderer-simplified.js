@@ -1,10 +1,10 @@
 /**
  * @file enhanced-component-renderer-simplified.js
- * @description ROOT FIX: Simplified Direct Component Renderer
+ * @description ROOT FIX: Simplified Direct Component Renderer with Phase 2 Integration
  * 
  * ✅ CHECKLIST COMPLIANT:
  * - Phase 1: No polling, event-driven initialization, root cause fix
- * - Phase 2: Simplicity first, code reduction, no redundant logic
+ * - Phase 2: Configuration-driven rendering with data binding
  * - Phase 3: Centralized state through state manager only
  * - Phase 4: Graceful failure, actionable errors
  * - Phase 5: Correct WordPress integration
@@ -37,7 +37,7 @@
             return;
         }
         
-        structuredLogger.info('RENDER', 'Simplified Component Renderer initializing...');
+        structuredLogger.info('RENDER', '🎨 [PHASE 2] Simplified Component Renderer initializing...');
 
         class SimplifiedComponentRenderer {
             constructor() {
@@ -48,8 +48,25 @@
                 this.renderQueue = new Set();
                 this.isProcessingQueue = false;
                 
-                this.logger.info('RENDER', 'Simplified renderer constructor complete');
+                this.logger.info('RENDER', '🎨 [PHASE 2] Simplified renderer constructor complete');
                 this.init();
+            }
+            
+            /**
+             * ✅ PHASE 2: Handle forced component rerender from options UI
+             */
+            async handleForceRerender(detail) {
+                const { componentId, componentData } = detail;
+                
+                if (!componentId) {
+                    this.logger.warn('RENDER', '⚠️ [PHASE 2] Force rerender: no component ID provided');
+                    return;
+                }
+                
+                this.logger.debug('RENDER', `🔄 [PHASE 2] Force rerender requested for ${componentId}`);
+                
+                // Force update the component
+                await this.updateComponent(componentId, componentData);
             }
             
             /**
@@ -65,28 +82,34 @@
                     // ✅ SIMPLIFIED: Direct state subscription without complex coordination
                     this.stateUnsubscribe = this.stateManager.subscribeGlobal((state) => {
                         this.onStateChange(state);
-                    });
-                    
-                    // ✅ ROOT CAUSE FIX: Render initial state immediately
+                        });
+                        
+                        // PHASE 2: Listen for forced component rerenders from options UI
+                document.addEventListener('gmkb:force-component-rerender', (event) => {
+                    this.handleForceRerender(event.detail);
+                });
+                
+                // ✅ ROOT CAUSE FIX: Render initial state immediately
                     const initialState = this.stateManager.getState();
                     if (initialState && initialState.components) {
                         await this.renderInitialComponents(initialState);
                     }
                     
                     this.initialized = true;
-                    this.logger.info('RENDER', 'Simplified renderer initialized successfully');
+                    this.logger.info('RENDER', '✅ [PHASE 2] Simplified renderer initialized successfully');
                     
                     // ✅ CHECKLIST COMPLIANT: Emit ready event
                     document.dispatchEvent(new CustomEvent('gmkb:enhanced-component-renderer-ready', {
                         detail: { 
                             renderer: this,
                             simplified: true,
+                            phase2: true,
                             timestamp: Date.now()
                         }
                     }));
                     
                 } catch (error) {
-                    this.logger.error('RENDER', 'Initialization failed:', error);
+                    this.logger.error('RENDER', '❌ [PHASE 2] Initialization failed:', error);
                 }
             }
             
@@ -103,7 +126,7 @@
                     return;
                 }
                 
-                this.logger.info('RENDER', `Rendering ${componentIds.length} initial components`);
+                this.logger.info('RENDER', `🎨 [PHASE 2] Rendering ${componentIds.length} initial components`);
                 
                 const container = this.getOrCreateContainer();
                 if (!container) {
@@ -135,7 +158,7 @@
                     return;
                 }
                 
-                this.logger.debug('RENDER', 'Processing state change');
+                this.logger.debug('RENDER', '🔄 [PHASE 2] Processing state change');
                 this.processStateChange(newState);
             }
             
@@ -187,7 +210,8 @@
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Direct component rendering without complex templates
+             * ✅ PHASE 2: Configuration-driven component rendering
+             * ROOT CAUSE FIX: Uses ComponentConfigurationManager and DataBindingEngine
              */
             async renderComponent(componentId, componentData) {
                 try {
@@ -198,8 +222,8 @@
                     element.setAttribute('data-component-type', componentData.type);
                     element.style.position = 'relative'; // Ensure controls can be positioned
                     
-                    // ✅ SIMPLIFIED: Direct HTML generation based on component type
-                    const html = this.generateComponentHTML(componentId, componentData);
+                    // ✅ PHASE 2: Configuration-driven HTML generation
+                    const html = await this.generateConfigurationDrivenHTML(componentId, componentData);
                     element.innerHTML = html;
                     
                     // ✅ CHECKLIST COMPLIANT: Emit component rendered event for controls
@@ -208,27 +232,349 @@
                             componentId,
                             element,
                             componentData,
+                            phase2: true,
                             timestamp: Date.now()
                         }
                     }));
                     
-                    this.logger.debug('RENDER', `Rendered component: ${componentId}`);
+                    this.logger.debug('RENDER', `✅ [PHASE 2] Rendered component: ${componentId}`);
                     return element;
                     
                 } catch (error) {
-                    this.logger.error('RENDER', `Failed to render component ${componentId}:`, error);
-                    return null;
+                    this.logger.error('RENDER', `❌ Failed to render component ${componentId}:`, error);
+                    // Fallback to basic rendering if Phase 2 fails
+                    return this.renderBasicComponent(componentId, componentData);
                 }
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Simple HTML generation without complex templating
+             * ✅ PHASE 2: Configuration-driven HTML generation with data binding
              */
-            generateComponentHTML(componentId, componentData) {
+            async generateConfigurationDrivenHTML(componentId, componentData) {
+                const componentType = componentData.type;
+                
+                // Get configuration manager and data binding engine
+                const configManager = window.componentConfigurationManager;
+                const dataBindingEngine = window.dataBindingEngine;
+                
+                if (!configManager || !dataBindingEngine) {
+                    this.logger.warn('RENDER', '⚠️ [PHASE 2] Configuration systems not available, falling back to basic rendering');
+                    return this.generateBasicComponentHTML(componentId, componentData);
+                }
+                
+                // Register or get component configuration
+                let componentConfig = configManager.getComponentConfiguration(componentId);
+                if (!componentConfig) {
+                    componentConfig = configManager.registerConfiguration(componentId, componentType);
+                    if (!componentConfig) {
+                        this.logger.warn('RENDER', `⚠️ [PHASE 2] Could not create configuration for ${componentType}`);
+                        return this.generateBasicComponentHTML(componentId, componentData);
+                    }
+                }
+                
+                // Bind data using configuration
+                const sourceData = componentData.props || componentData.data || {};
+                const boundData = dataBindingEngine.bindComponentData(
+                    componentId, 
+                    componentType, 
+                    componentConfig.dataBindings,
+                    sourceData
+                );
+                
+                // Generate HTML using configuration and bound data
+                const html = this.generateConfiguredHTML(componentType, boundData, componentConfig.componentOptions);
+                
+                this.logger.debug('RENDER', `🔗 [PHASE 2] Generated configured HTML for ${componentType}`, {
+                    componentId,
+                    boundDataKeys: Object.keys(boundData),
+                    hasOptions: !!componentConfig.componentOptions
+                });
+                
+                return html;
+            }
+            
+            /**
+             * ✅ PHASE 2: Generate HTML using component configuration and options
+             */
+            generateConfiguredHTML(componentType, boundData, componentOptions = {}) {
+                const layout = componentOptions.layout || 'default';
+                
+                switch (componentType) {
+                    case 'topics':
+                        return this.generateConfiguredTopicsHTML(boundData, componentOptions);
+                    case 'hero':
+                        return this.generateConfiguredHeroHTML(boundData, componentOptions);
+                    case 'biography':
+                        return this.generateConfiguredBiographyHTML(boundData, componentOptions);
+                    case 'contact':
+                        return this.generateConfiguredContactHTML(boundData, componentOptions);
+                    case 'social-links':
+                        return this.generateConfiguredSocialLinksHTML(boundData, componentOptions);
+                    case 'portfolio':
+                        return this.generateConfiguredPortfolioHTML(boundData, componentOptions);
+                    default:
+                        return this.generateConfiguredDefaultHTML(componentType, boundData, componentOptions);
+                }
+            }
+            
+            // ===============================================
+            // ✅ PHASE 2: CONFIGURED HTML GENERATION METHODS
+            // ===============================================
+            
+            /**
+             * ✅ PHASE 2: Generate configured topics HTML with layout options
+             */
+            generateConfiguredTopicsHTML(boundData, options = {}) {
+                const title = boundData.title || 'Speaking Topics';
+                const topics = boundData.topics || [];
+                const layout = options.layout || 'grid';
+                const maxTopics = options.maxTopics || 20;
+                const showPriority = options.showPriority || false;
+                const columnsDesktop = options.columnsDesktop || '3';
+                
+                let html = `<div class="gmkb-topics gmkb-topics--${layout} gmkb-component--configured">
+                    <h3 class="gmkb-topics__title">${this.escapeHtml(title)}</h3>
+                    <div class="gmkb-component__phase2-badge">[PHASE 2 CONFIGURED]</div>`;
+                
+                if (topics.length > 0) {
+                    const displayTopics = topics.slice(0, maxTopics);
+                    
+                    if (layout === 'grid') {
+                        html += `<div class="gmkb-topics__grid" style="grid-template-columns: repeat(${columnsDesktop}, 1fr);">`;
+                        displayTopics.forEach(topic => {
+                            const topicTitle = topic.topic_title || topic.title || '';
+                            const topicDescription = topic.topic_description || topic.description || '';
+                            const priority = showPriority && topic.priority ? `<span class="gmkb-topics__priority">${topic.priority}</span>` : '';
+                            html += `<div class="gmkb-topics__item">
+                                ${priority}
+                                <h4>${this.escapeHtml(topicTitle)}</h4>
+                                <p>${this.escapeHtml(topicDescription)}</p>
+                            </div>`;
+                        });
+                        html += '</div>';
+                    } else if (layout === 'list') {
+                        html += '<ul class="gmkb-topics__list">';
+                        displayTopics.forEach(topic => {
+                            const topicTitle = topic.topic_title || topic.title || '';
+                            const topicDescription = topic.topic_description || topic.description || '';
+                            const priority = showPriority && topic.priority ? `<span class="gmkb-topics__priority">${topic.priority}</span>` : '';
+                            html += `<li class="gmkb-topics__item">
+                                ${priority}
+                                <h4>${this.escapeHtml(topicTitle)}</h4>
+                                <p>${this.escapeHtml(topicDescription)}</p>
+                            </li>`;
+                        });
+                        html += '</ul>';
+                    } else if (layout === 'tags') {
+                        html += '<div class="gmkb-topics__tags">';
+                        displayTopics.forEach(topic => {
+                            const topicTitle = topic.topic_title || topic.title || '';
+                            html += `<span class="gmkb-topics__tag">${this.escapeHtml(topicTitle)}</span>`;
+                        });
+                        html += '</div>';
+                    }
+                } else {
+                    html += '<p class="gmkb-topics__empty">No topics configured yet.</p>';
+                }
+                
+                html += '</div>';
+                return html;
+            }
+            
+            /**
+             * ✅ PHASE 2: Generate configured hero HTML with layout and styling options
+             */
+            generateConfiguredHeroHTML(boundData, options = {}) {
+                const title = boundData.title || boundData.full_name || 'Guest Name';
+                const subtitle = boundData.subtitle || boundData.guest_title || '';
+                const description = boundData.description || boundData.biography || '';
+                const image = boundData.image || boundData.guest_headshot || '';
+                const layout = options.layout || 'left_aligned';
+                const imageStyle = options.imageStyle || 'rounded';
+                const showSocialLinks = options.showSocialLinks !== false;
+                const backgroundColor = options.backgroundColor || '#ffffff';
+                const textColor = options.textColor || '#333333';
+                
+                let heroClass = `gmkb-hero gmkb-hero--${layout} gmkb-component--configured`;
+                let heroStyle = `background-color: ${backgroundColor}; color: ${textColor};`;
+                
+                let html = `<div class="${heroClass}" style="${heroStyle}">
+                    <div class="gmkb-component__phase2-badge">[PHASE 2 CONFIGURED - ${layout.toUpperCase()}]</div>`;
+                
+                if (layout === 'left_aligned') {
+                    html += '<div class="gmkb-hero__container">';
+                    if (image) {
+                        html += `<div class="gmkb-hero__image-container">
+                            <img src="${this.escapeHtml(image)}" alt="${this.escapeHtml(title)}" class="gmkb-hero__image gmkb-hero__image--${imageStyle}">
+                        </div>`;
+                    }
+                    html += `<div class="gmkb-hero__content">
+                        <h1 class="gmkb-hero__title">${this.escapeHtml(title)}</h1>`;
+                    if (subtitle) {
+                        html += `<h2 class="gmkb-hero__subtitle">${this.escapeHtml(subtitle)}</h2>`;
+                    }
+                    if (description) {
+                        html += `<p class="gmkb-hero__description">${this.escapeHtml(description)}</p>`;
+                    }
+                    if (showSocialLinks) {
+                        html += '<div class="gmkb-hero__social-placeholder">[Social Links Enabled]</div>';
+                    }
+                    html += '</div></div>';
+                } else if (layout === 'center_aligned') {
+                    html += '<div class="gmkb-hero__container gmkb-hero__container--center">';
+                    if (image) {
+                        html += `<div class="gmkb-hero__image-container">
+                            <img src="${this.escapeHtml(image)}" alt="${this.escapeHtml(title)}" class="gmkb-hero__image gmkb-hero__image--${imageStyle}">
+                        </div>`;
+                    }
+                    html += `<div class="gmkb-hero__content gmkb-hero__content--center">
+                        <h1 class="gmkb-hero__title">${this.escapeHtml(title)}</h1>`;
+                    if (subtitle) {
+                        html += `<h2 class="gmkb-hero__subtitle">${this.escapeHtml(subtitle)}</h2>`;
+                    }
+                    if (description) {
+                        html += `<p class="gmkb-hero__description">${this.escapeHtml(description)}</p>`;
+                    }
+                    if (showSocialLinks) {
+                        html += '<div class="gmkb-hero__social-placeholder">[Social Links Enabled]</div>';
+                    }
+                    html += '</div></div>';
+                } else { // right_aligned
+                    html += '<div class="gmkb-hero__container gmkb-hero__container--right">';
+                    html += `<div class="gmkb-hero__content gmkb-hero__content--right">
+                        <h1 class="gmkb-hero__title">${this.escapeHtml(title)}</h1>`;
+                    if (subtitle) {
+                        html += `<h2 class="gmkb-hero__subtitle">${this.escapeHtml(subtitle)}</h2>`;
+                    }
+                    if (description) {
+                        html += `<p class="gmkb-hero__description">${this.escapeHtml(description)}</p>`;
+                    }
+                    if (showSocialLinks) {
+                        html += '<div class="gmkb-hero__social-placeholder">[Social Links Enabled]</div>';
+                    }
+                    html += '</div>';
+                    if (image) {
+                        html += `<div class="gmkb-hero__image-container">
+                            <img src="${this.escapeHtml(image)}" alt="${this.escapeHtml(title)}" class="gmkb-hero__image gmkb-hero__image--${imageStyle}">
+                        </div>`;
+                    }
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+                return html;
+            }
+            
+            /**
+             * ✅ PHASE 2: Generate configured contact HTML with layout and display options
+             */
+            generateConfiguredContactHTML(boundData, options = {}) {
+                const title = 'Contact Information';
+                const email = boundData.email || '';
+                const phone = boundData.phone || '';
+                const website = boundData.website || '';
+                const location = boundData.location || '';
+                const layout = options.layout || 'vertical';
+                const showIcons = options.showIcons !== false;
+                const showLabels = options.showLabels !== false;
+                
+                let html = `<div class="gmkb-contact gmkb-contact--${layout} gmkb-component--configured">
+                    <h3 class="gmkb-contact__title">${this.escapeHtml(title)}</h3>
+                    <div class="gmkb-component__phase2-badge">[PHASE 2 CONFIGURED - ${layout.toUpperCase()}]</div>`;
+                
+                const contactItems = [];
+                
+                if (email) {
+                    const icon = showIcons ? '<span class="gmkb-contact__icon">📧</span>' : '';
+                    const label = showLabels ? '<strong>Email:</strong> ' : '';
+                    contactItems.push(`<div class="gmkb-contact__item">
+                        ${icon}${label}<a href="mailto:${this.escapeHtml(email)}">${this.escapeHtml(email)}</a>
+                    </div>`);
+                }
+                
+                if (phone) {
+                    const icon = showIcons ? '<span class="gmkb-contact__icon">📞</span>' : '';
+                    const label = showLabels ? '<strong>Phone:</strong> ' : '';
+                    contactItems.push(`<div class="gmkb-contact__item">
+                        ${icon}${label}<a href="tel:${this.escapeHtml(phone)}">${this.escapeHtml(phone)}</a>
+                    </div>`);
+                }
+                
+                if (website) {
+                    const icon = showIcons ? '<span class="gmkb-contact__icon">🌐</span>' : '';
+                    const label = showLabels ? '<strong>Website:</strong> ' : '';
+                    contactItems.push(`<div class="gmkb-contact__item">
+                        ${icon}${label}<a href="${this.escapeHtml(website)}" target="_blank" rel="noopener">${this.escapeHtml(website)}</a>
+                    </div>`);
+                }
+                
+                if (location) {
+                    const icon = showIcons ? '<span class="gmkb-contact__icon">📍</span>' : '';
+                    const label = showLabels ? '<strong>Location:</strong> ' : '';
+                    contactItems.push(`<div class="gmkb-contact__item">
+                        ${icon}${label}${this.escapeHtml(location)}
+                    </div>`);
+                }
+                
+                if (contactItems.length > 0) {
+                    if (layout === 'grid') {
+                        html += '<div class="gmkb-contact__grid">' + contactItems.join('') + '</div>';
+                    } else if (layout === 'horizontal') {
+                        html += '<div class="gmkb-contact__horizontal">' + contactItems.join('') + '</div>';
+                    } else {
+                        // vertical layout
+                        html += '<div class="gmkb-contact__info">' + contactItems.join('') + '</div>';
+                    }
+                } else {
+                    html += '<p class="gmkb-contact__empty">No contact information available.</p>';
+                }
+                
+                html += '</div>';
+                return html;
+            }
+            
+            /**
+             * ✅ PHASE 2: Generate configured default component HTML
+             */
+            generateConfiguredDefaultHTML(componentType, boundData, options = {}) {
+                const displayName = componentType.charAt(0).toUpperCase() + componentType.slice(1);
+                const layout = options.layout || 'default';
+                
+                return `<div class="gmkb-component-${componentType} gmkb-component-${componentType}--${layout} gmkb-component--configured">
+                    <h3 class="gmkb-component__title">${this.escapeHtml(displayName)} Component</h3>
+                    <div class="gmkb-component__phase2-badge">[PHASE 2 CONFIGURED]</div>
+                    <div class="gmkb-component__content">
+                        <p class="gmkb-component__status">✅ Configuration-driven rendering active</p>
+                        <div class="gmkb-component__data">
+                            <strong>Bound Data Keys:</strong> ${Object.keys(boundData).join(', ')}<br>
+                            <strong>Component Options:</strong> ${Object.keys(options).join(', ')}<br>
+                            <strong>Layout:</strong> ${layout}
+                        </div>
+                    </div>
+                </div>`;
+            }
+            
+            // Simplified methods for other component types
+            generateConfiguredBiographyHTML(boundData, options = {}) {
+                return this.generateConfiguredDefaultHTML('biography', boundData, options);
+            }
+            
+            generateConfiguredSocialLinksHTML(boundData, options = {}) {
+                return this.generateConfiguredDefaultHTML('social-links', boundData, options);
+            }
+            
+            generateConfiguredPortfolioHTML(boundData, options = {}) {
+                return this.generateConfiguredDefaultHTML('portfolio', boundData, options);
+            }
+            
+            /**
+             * ✅ FALLBACK: Basic HTML generation (legacy compatibility)
+             */
+            generateBasicComponentHTML(componentId, componentData) {
                 const props = componentData.props || componentData.data || {};
                 const type = componentData.type;
                 
-                // ✅ SIMPLIFIED: Basic HTML templates for each component type
+                // ✅ SIMPLIFIED: Basic HTML templates for each component type (unchanged for fallback)
                 switch (type) {
                     case 'topics':
                         return this.generateTopicsHTML(props);
@@ -244,6 +590,30 @@
                         return this.generatePortfolioHTML(props);
                     default:
                         return this.generateDefaultHTML(type, props);
+                }
+            }
+            
+            /**
+             * ✅ FALLBACK: Render basic component if Phase 2 fails completely
+             */
+            renderBasicComponent(componentId, componentData) {
+                try {
+                    const element = document.createElement('div');
+                    element.id = componentId;
+                    element.className = 'gmkb-component gmkb-component--fallback';
+                    element.setAttribute('data-component-id', componentId);
+                    element.setAttribute('data-component-type', componentData.type);
+                    element.style.position = 'relative';
+                    
+                    const html = this.generateBasicComponentHTML(componentId, componentData);
+                    element.innerHTML = html;
+                    
+                    this.logger.warn('RENDER', `⚠️ [FALLBACK] Rendered basic component: ${componentId}`);
+                    return element;
+                    
+                } catch (error) {
+                    this.logger.error('RENDER', `❌ [FALLBACK] Failed to render basic component ${componentId}:`, error);
+                    return null;
                 }
             }
             
@@ -417,7 +787,7 @@
                 if (element) {
                     container.appendChild(element);
                     this.componentCache.set(componentId, element);
-                    this.logger.info('RENDER', `Added component: ${componentId}`);
+                    this.logger.info('RENDER', `✅ [PHASE 2] Added component: ${componentId}`);
                 }
             }
             
@@ -457,8 +827,8 @@
                     return;
                 }
                 
-                // ✅ SIMPLIFIED: Replace content instead of complex updates
-                const html = this.generateComponentHTML(componentId, componentData);
+                // ✅ PHASE 2: Use configuration-driven HTML generation for updates too
+                const html = await this.generateConfigurationDrivenHTML(componentId, componentData);
                 existingElement.innerHTML = html;
                 existingElement.setAttribute('data-component-type', componentData.type);
                 
@@ -468,11 +838,12 @@
                         componentId,
                         element: existingElement,
                         componentData,
+                        phase2: true,
                         timestamp: Date.now()
                     }
                 }));
                 
-                this.logger.debug('RENDER', `Updated component: ${componentId}`);
+                this.logger.debug('RENDER', `🔄 [PHASE 2] Updated component: ${componentId}`);
             }
             
             /**
@@ -492,7 +863,7 @@
                         }
                     }));
                     
-                    this.logger.debug('RENDER', `Removed component: ${componentId}`);
+                    this.logger.debug('RENDER', `🗑️ [PHASE 2] Removed component: ${componentId}`);
                 }
             }
             
@@ -516,7 +887,7 @@
                     }
                 });
                 
-                this.logger.debug('RENDER', `Applied layout order: ${layout.join(', ')}`);
+                this.logger.debug('RENDER', `🎯 [PHASE 2] Applied layout order: ${layout.join(', ')}`);
             }
             
             /**
@@ -562,7 +933,7 @@
                     
                     preview.appendChild(container);
                     
-                    this.logger.info('RENDER', 'Created new saved-components-container with nested structure');
+                    this.logger.info('RENDER', '📦 [PHASE 2] Created new container with nested structure');
                     return directContainer; // Return the direct container for components
                 }
                 
@@ -580,27 +951,27 @@
                 const hasSections = state.sections && Array.isArray(state.sections) && state.sections.length > 0;
                 const hasContent = hasComponents || hasSections;
                 
-                this.logger.debug('RENDER', `Updating container display - hasComponents: ${hasComponents}, hasSections: ${hasSections}, hasContent: ${hasContent}`);
+                this.logger.debug('RENDER', `📊 [PHASE 2] Updating display - hasComponents: ${hasComponents}, hasSections: ${hasSections}, hasContent: ${hasContent}`);
                 
                 if (hasContent) {
                     // Show saved components container, hide empty state
                     if (savedContainer) {
                         savedContainer.style.display = 'block';
-                        this.logger.debug('RENDER', 'Showing saved-components-container (has content)');
+                        this.logger.debug('RENDER', '👁️ [PHASE 2] Showing saved-components-container (has content)');
                     }
                     if (emptyState) {
                         emptyState.style.display = 'none';
-                        this.logger.debug('RENDER', 'Hiding empty-state (has content)');
+                        this.logger.debug('RENDER', '🚫 [PHASE 2] Hiding empty-state (has content)');
                     }
                 } else {
                     // Show empty state, hide saved components container
                     if (savedContainer) {
                         savedContainer.style.display = 'none';
-                        this.logger.debug('RENDER', 'Hiding saved-components-container (no content)');
+                        this.logger.debug('RENDER', '🚫 [PHASE 2] Hiding saved-components-container (no content)');
                     }
                     if (emptyState) {
                         emptyState.style.display = 'block';
-                        this.logger.debug('RENDER', 'Showing empty-state (no content)');
+                        this.logger.debug('RENDER', '👁️ [PHASE 2] Showing empty-state (no content)');
                     }
                 }
             }
@@ -621,7 +992,8 @@
                     success: !!element,
                     id: componentId,
                     element: element,
-                    error: element ? null : 'Failed to render component'
+                    error: element ? null : 'Failed to render component',
+                    phase2: true
                 };
             }
             
@@ -635,7 +1007,9 @@
                     componentIds: Array.from(this.componentCache.keys()),
                     queueSize: this.renderQueue.size,
                     isProcessingQueue: this.isProcessingQueue,
-                    simplified: true
+                    simplified: true,
+                    phase2: true,
+                    configurationDriven: true
                 };
             }
             
@@ -643,7 +1017,7 @@
              * ✅ CHECKLIST COMPLIANT: Graceful cleanup
              */
             destroy() {
-                this.logger.info('RENDER', 'Destroying simplified renderer');
+                this.logger.info('RENDER', '🔄 [PHASE 2] Destroying simplified renderer');
                 
                 if (this.stateUnsubscribe) {
                     this.stateUnsubscribe();
@@ -654,7 +1028,7 @@
                 this.renderQueue.clear();
                 this.initialized = false;
                 
-                this.logger.info('RENDER', 'Simplified renderer destroyed');
+                this.logger.info('RENDER', '✅ [PHASE 2] Simplified renderer destroyed');
             }
         }
         
@@ -662,10 +1036,7 @@
         window.SimplifiedComponentRenderer = SimplifiedComponentRenderer;
         window.enhancedComponentRenderer = new SimplifiedComponentRenderer();
         
-        // ❌ PHASE 2 CLEANUP: Removed duplicate aliases that were causing console duplicates
-        // Removed: window.enhancedComponentRendererRefactored (was creating duplicate)
-        
-        structuredLogger.info('RENDER', 'Simplified Component Renderer ready and exposed globally');
+        structuredLogger.info('RENDER', '🚀 [PHASE 2] Simplified Component Renderer ready with configuration-driven rendering!');
     };
     
     // ✅ EVENT-DRIVEN: Initialize when DOM is ready

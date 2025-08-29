@@ -4,160 +4,127 @@
   "icon": "authority-hook.svg",
   "description": "Authority positioning with WHO, WHAT, WHEN, WHERE, WHY, HOW framework",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
+  "version": "2.0.0-phase2",
   "order": 5,
-  "settings": {
-    "title": {
-      "type": "text",
-      "label": "Section Title",
-      "default": "Authority Positioning",
-      "placeholder": "Enter section title",
-      "previewSelector": ".section-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "meta_info.section_title"
-    },
-    "who": {
-      "type": "textarea",
-      "label": "WHO - Target Audience",
-      "default": "Who is your ideal audience or client?",
-      "rows": 3,
-      "placeholder": "Describe your target audience",
-      "previewSelector": ".authority-who .content",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "authority_hook.authority_hook.who",
-      "helpText": "Define who you serve or speak to"
-    },
-    "what": {
-      "type": "textarea",
-      "label": "WHAT - Your Expertise",
-      "default": "What specific expertise or value do you provide?",
-      "rows": 3,
-      "placeholder": "Describe what you do or provide",
-      "previewSelector": ".authority-what .content",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "authority_hook.authority_hook.what",
-      "helpText": "Explain your unique value proposition"
-    },
-    "when": {
-      "type": "textarea",
-      "label": "WHEN - Timing/Context",
-      "default": "When do people need your expertise most?",
-      "rows": 3,
-      "placeholder": "Describe the timing or context",
-      "previewSelector": ".authority-when .content",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "authority_hook.authority_hook.when",
-      "helpText": "Identify the optimal timing for your services"
-    },
-    "where": {
-      "type": "textarea",
-      "label": "WHERE - Location/Platform",
-      "default": "Where do you deliver your expertise?",
-      "rows": 3,
-      "placeholder": "Describe where you operate",
-      "previewSelector": ".authority-where .content",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "authority_hook.authority_hook.where",
-      "helpText": "Specify your operational context or platforms"
-    },
-    "why": {
-      "type": "textarea",
-      "label": "WHY - Your Mission",
-      "default": "Why is your work important?",
-      "rows": 3,
-      "placeholder": "Explain your mission or purpose",
-      "previewSelector": ".authority-why .content",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "authority_hook.authority_hook.why",
-      "helpText": "Share your deeper purpose or mission"
-    },
-    "how": {
-      "type": "textarea",
-      "label": "HOW - Your Approach",
-      "default": "How do you deliver unique results?",
-      "rows": 3,
-      "placeholder": "Describe your methodology or approach",
-      "previewSelector": ".authority-how .content",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "authority_hook.authority_hook.how",
-      "helpText": "Explain your unique methodology or process"
-    },
-    "layout_style": {
+  
+  "dataBindings": {
+    "title": "authority_section_title",
+    "who": "authority_who",
+    "what": "authority_what",
+    "when": "authority_when",
+    "where": "authority_where",
+    "why": "authority_why",
+    "how": "authority_how"
+  },
+  
+  "componentOptions": {
+    "layout": {
       "type": "select",
       "label": "Layout Style",
+      "description": "Choose how authority components are displayed",
       "default": "grid",
-      "options": [
-        {"value": "grid", "label": "Grid Layout (2x3)"},
-        {"value": "list", "label": "Vertical List"},
-        {"value": "cards", "label": "Card Layout"},
-        {"value": "timeline", "label": "Timeline Style"}
-      ],
-      "previewSelector": ".authority-hook-container",
-      "updateMethod": "class",
-      "classPrefix": "layout-",
-      "section": "appearance"
+      "options": {
+        "grid": "Grid Layout (2x3)",
+        "list": "Vertical List",
+        "cards": "Card Layout",
+        "timeline": "Timeline Style"
+      },
+      "section": "layout",
+      "preview": true
     },
-    "show_icons": {
-      "type": "checkbox",
+    "showIcons": {
+      "type": "boolean",
       "label": "Show Component Icons",
+      "description": "Display icons for each authority component",
       "default": true,
-      "previewSelector": ".authority-hook-container",
-      "updateMethod": "class",
-      "className": "show-icons",
+      "section": "appearance",
+      "preview": true
+    },
+    "compactMode": {
+      "type": "boolean",
+      "label": "Compact Display",
+      "description": "Reduce spacing for more condensed layout",
+      "default": false,
       "section": "appearance"
     },
-    "compact_mode": {
-      "type": "checkbox",
-      "label": "Compact Display",
-      "default": false,
-      "previewSelector": ".authority-hook-container",
-      "updateMethod": "class",
-      "className": "compact-mode",
-      "section": "appearance",
-      "helpText": "Reduce spacing for more condensed layout"
-    },
-    "highlight_order": {
+    "emphasisOrder": {
       "type": "select",
       "label": "Emphasis Order",
+      "description": "Choose which components to emphasize",
       "default": "what-who",
-      "options": [
-        {"value": "what-who", "label": "Emphasize WHAT & WHO"},
-        {"value": "why-how", "label": "Emphasize WHY & HOW"},
-        {"value": "equal", "label": "Equal Emphasis"},
-        {"value": "custom", "label": "Custom Order"}
-      ],
-      "previewSelector": ".authority-hook-container",
-      "updateMethod": "class",
-      "classPrefix": "emphasis-",
+      "options": {
+        "what-who": "Emphasize WHAT & WHO",
+        "why-how": "Emphasize WHY & HOW",
+        "equal": "Equal Emphasis",
+        "custom": "Custom Order"
+      },
       "section": "appearance"
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "description": "Choose the visual theme",
+      "default": "professional",
+      "options": {
+        "professional": "Professional Blue",
+        "warm": "Warm Orange",
+        "neutral": "Neutral Gray",
+        "bold": "Bold Purple"
+      },
+      "section": "appearance",
+      "preview": true
     }
   },
+  
   "sections": {
     "content": {
       "title": "Authority Framework",
-      "order": 1
+      "description": "Configure WHO, WHAT, WHEN, WHERE, WHY, HOW content",
+      "order": 1,
+      "icon": "edit"
+    },
+    "layout": {
+      "title": "Layout Options",
+      "description": "Choose how components are arranged",
+      "order": 2,
+      "icon": "layout"
     },
     "appearance": {
-      "title": "Layout & Appearance",
-      "order": 2
+      "title": "Appearance",
+      "description": "Customize colors and visual styling",
+      "order": 3,
+      "icon": "palette"
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["who", "what"],
-    "dataSource": "authority_hook",
-    "validationRules": {
-      "minComponentsRequired": 4,
-      "maxLength": 500
+  
+  "presets": {
+    "speaker": {
+      "name": "Speaker Profile",
+      "options": {
+        "layout": "cards",
+        "showIcons": true,
+        "emphasisOrder": "what-who",
+        "colorScheme": "professional"
+      }
     },
-    "priority": "high"
+    "consultant": {
+      "name": "Consultant Profile",
+      "options": {
+        "layout": "timeline",
+        "showIcons": true,
+        "emphasisOrder": "why-how",
+        "colorScheme": "bold"
+      }
+    },
+    "compact": {
+      "name": "Compact Display",
+      "options": {
+        "layout": "list",
+        "showIcons": false,
+        "compactMode": true,
+        "emphasisOrder": "equal",
+        "colorScheme": "neutral"
+      }
+    }
   }
 }

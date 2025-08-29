@@ -1,134 +1,160 @@
 {
-  "name": "Topics",
+  "name": "Speaking Topics",
   "category": "essential",
   "icon": "topics-grid.svg",
-  "description": "Display topics or areas of expertise",
+  "description": "Areas of expertise and speaking topics display",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0-phase1",
+  "version": "2.0.0-phase2",
   "order": 3,
-  "settings": {
-    "title": {
-      "type": "text",
-      "label": "Section Title",
-      "default": "Speaking Topics",
-      "placeholder": "Enter section title",
-      "previewSelector": ".section-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "meta_info.section_title"
-    },
-    "topic_1": {
-      "type": "text",
-      "label": "Topic 1",
-      "default": "Topic 1",
-      "placeholder": "Enter first topic",
-      "previewSelector": ".topic-item:nth-child(1)",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "topics.topics.topic_1"
-    },
-    "topic_2": {
-      "type": "text",
-      "label": "Topic 2",
-      "default": "Topic 2",
-      "placeholder": "Enter second topic",
-      "previewSelector": ".topic-item:nth-child(2)",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "topics.topics.topic_2"
-    },
-    "topic_3": {
-      "type": "text",
-      "label": "Topic 3",
-      "default": "Topic 3",
-      "placeholder": "Enter third topic",
-      "previewSelector": ".topic-item:nth-child(3)",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "topics.topics.topic_3"
-    },
-    "topic_4": {
-      "type": "text",
-      "label": "Topic 4",
-      "default": "Topic 4",
-      "placeholder": "Enter fourth topic",
-      "previewSelector": ".topic-item:nth-child(4)",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "topics.topics.topic_4"
-    },
-    "topic_5": {
-      "type": "text",
-      "label": "Topic 5",
-      "default": "Topic 5",
-      "placeholder": "Enter fifth topic",
-      "previewSelector": ".topic-item:nth-child(5)",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "topics.topics.topic_5"
-    },
-    "layout_style": {
+  
+  "dataBindings": {
+    "topics": "speaking_topics",
+    "expertise": "areas_of_expertise",
+    "title": "topics_section_title"
+  },
+  
+  "componentOptions": {
+    "layout": {
       "type": "select",
-      "label": "Layout Style",
+      "label": "Display Layout",
+      "description": "Choose how topics are displayed",
       "default": "grid",
-      "options": [
-        {"value": "grid", "label": "Grid Layout"},
-        {"value": "list", "label": "List Layout"},
-        {"value": "pills", "label": "Pill Badges"},
-        {"value": "cards", "label": "Card Layout"}
-      ],
-      "previewSelector": ".topics-grid",
-      "updateMethod": "class",
-      "classPrefix": "layout-",
-      "section": "appearance"
+      "options": {
+        "grid": "Grid Layout",
+        "list": "Vertical List", 
+        "tags": "Tag Cloud"
+      },
+      "section": "layout",
+      "preview": true
     },
-    "show_numbering": {
-      "type": "checkbox",
-      "label": "Show Topic Numbers",
+    "maxTopics": {
+      "type": "number",
+      "label": "Maximum Topics to Show",
+      "description": "Limit the number of topics displayed",
+      "default": 6,
+      "min": 1,
+      "max": 20,
+      "section": "content"
+    },
+    "showPriority": {
+      "type": "boolean",
+      "label": "Show Priority Indicators", 
+      "description": "Display priority badges for high-priority topics",
       "default": false,
-      "previewSelector": ".topics-grid",
-      "updateMethod": "class",
-      "className": "show-numbers",
-      "section": "appearance"
+      "section": "content"
     },
-    "columns": {
+    "columnsDesktop": {
       "type": "select",
-      "label": "Number of Columns",
-      "default": "2",
-      "options": [
-        {"value": "1", "label": "1 Column"},
-        {"value": "2", "label": "2 Columns"},
-        {"value": "3", "label": "3 Columns"}
-      ],
-      "previewSelector": ".topics-grid",
-      "updateMethod": "class",
-      "classPrefix": "columns-",
-      "section": "appearance"
+      "label": "Desktop Columns",
+      "description": "Number of columns for grid layout on desktop",
+      "default": "3",
+      "options": {
+        "2": "2 Columns",
+        "3": "3 Columns",
+        "4": "4 Columns"
+      },
+      "section": "layout",
+      "preview": true,
+      "conditional": {
+        "field": "layout",
+        "value": "grid"
+      }
+    },
+    "sortBy": {
+      "type": "select",
+      "label": "Sort Topics By",
+      "description": "Choose how topics are ordered",
+      "default": "priority",
+      "options": {
+        "priority": "Priority",
+        "alphabetical": "Alphabetical",
+        "custom": "Custom Order"
+      },
+      "section": "content"
+    },
+    "showDescriptions": {
+      "type": "boolean",
+      "label": "Show Topic Descriptions",
+      "description": "Include descriptions below topic titles",
+      "default": true,
+      "section": "content"
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "description": "Choose the visual theme for topics",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Success Green",
+        "purple": "Creative Purple",
+        "neutral": "Neutral Gray"
+      },
+      "section": "appearance",
+      "preview": true
     }
   },
+  
+  "responsiveBehavior": {
+    "mobile": {
+      "layout": "list",
+      "columnsDesktop": "1"
+    },
+    "tablet": {
+      "columnsDesktop": "2"
+    }
+  },
+  
   "sections": {
     "content": {
-      "title": "Topics Content",
-      "order": 1
+      "title": "Content Options",
+      "description": "Configure what topics are shown and how",
+      "order": 1,
+      "icon": "list"
+    },
+    "layout": {
+      "title": "Layout Settings", 
+      "description": "Choose display layout and columns",
+      "order": 2,
+      "icon": "grid"
     },
     "appearance": {
-      "title": "Layout & Appearance",
-      "order": 2
+      "title": "Appearance",
+      "description": "Customize colors and visual style",
+      "order": 3,
+      "icon": "palette"
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["topic_1"],
-    "dataSource": "topics",
-    "validationRules": {
-      "minTopics": 1,
-      "maxTopics": 5
+  
+  "presets": {
+    "professional": {
+      "name": "Professional Grid",
+      "options": {
+        "layout": "grid",
+        "columnsDesktop": "3",
+        "showDescriptions": true,
+        "colorScheme": "blue",
+        "maxTopics": 6
+      }
     },
-    "scripts": [
-      "mkcg-integration.js"
-    ],
-    "phase": "phase1",
-    "version": "1.0.0"
+    "compact": {
+      "name": "Compact Tags",
+      "options": {
+        "layout": "tags",
+        "showDescriptions": false,
+        "colorScheme": "neutral",
+        "maxTopics": 12
+      }
+    },
+    "detailed": {
+      "name": "Detailed List",
+      "options": {
+        "layout": "list",
+        "showDescriptions": true,
+        "showPriority": true,
+        "colorScheme": "green",
+        "maxTopics": 8
+      }
+    }
   }
 }

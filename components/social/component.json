@@ -1,236 +1,168 @@
 {
-  "name": "Social",
+  "name": "Social Media Links",
   "category": "essential",
-  "icon": "social-icons.svg",
-  "description": "Social media links and profiles",
+  "description": "Display social media profiles and links",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
-  "order": 4,
-  "sections": {
-    "platforms": {
-      "title": "Social Platforms",
-      "order": 1
-    },
-    "layout": {
-      "title": "Layout & Display",
-      "order": 2
-    },
-    "appearance": {
-      "title": "Styling",
-      "order": 3
-    },
-    "advanced": {
-      "title": "Advanced Settings",
-      "order": 4
-    }
+  "version": "2.0.0-phase2",
+  "order": 6,
+  
+  "dataBindings": {
+    "facebook": "facebook_url",
+    "twitter": "twitter_url",
+    "instagram": "instagram_url",
+    "linkedin": "linkedin_url",
+    "youtube": "youtube_url",
+    "tiktok": "tiktok_url",
+    "website": "website"
   },
-  "settings": {
-    "social_twitter": {
-      "type": "text",
-      "label": "Twitter / X",
-      "default": "",
-      "placeholder": "https://twitter.com/yourusername",
-      "section": "platforms",
-      "mkcgMapping": "social_media.social_media.twitter",
-      "previewSelector": ".social-twitter",
-      "updateMethod": "href"
-    },
-    "social_linkedin": {
-      "type": "text",
-      "label": "LinkedIn",
-      "default": "",
-      "placeholder": "https://linkedin.com/in/yourusername",
-      "section": "platforms",
-      "mkcgMapping": "social_media.social_media.linkedin",
-      "previewSelector": ".social-linkedin",
-      "updateMethod": "href"
-    },
-    "social_instagram": {
-      "type": "text",
-      "label": "Instagram",
-      "default": "",
-      "placeholder": "https://instagram.com/yourusername",
-      "section": "platforms",
-      "mkcgMapping": "social_media.social_media.instagram",
-      "previewSelector": ".social-instagram",
-      "updateMethod": "href"
-    },
-    "social_facebook": {
-      "type": "text",
-      "label": "Facebook",
-      "default": "",
-      "placeholder": "https://facebook.com/yourusername",
-      "section": "platforms",
-      "mkcgMapping": "social_media.social_media.facebook",
-      "previewSelector": ".social-facebook",
-      "updateMethod": "href"
-    },
-    "social_youtube": {
-      "type": "text",
-      "label": "YouTube",
-      "default": "",
-      "placeholder": "https://youtube.com/@yourusername",
-      "section": "platforms",
-      "mkcgMapping": "social_media.social_media.youtube",
-      "previewSelector": ".social-youtube",
-      "updateMethod": "href"
-    },
-    "social_tiktok": {
-      "type": "text",
-      "label": "TikTok",
-      "default": "",
-      "placeholder": "https://tiktok.com/@yourusername",
-      "section": "platforms",
-      "mkcgMapping": "social_media.social_media.tiktok",
-      "previewSelector": ".social-tiktok",
-      "updateMethod": "href"
-    },
-    "social_pinterest": {
-      "type": "text",
-      "label": "Pinterest",
-      "default": "",
-      "placeholder": "https://pinterest.com/yourusername",
-      "section": "platforms",
-      "mkcgMapping": "social_media.social_media.pinterest",
-      "previewSelector": ".social-pinterest",
-      "updateMethod": "href"
-    },
-    "social_medium": {
-      "type": "text",
-      "label": "Medium",
-      "default": "",
-      "placeholder": "https://medium.com/@yourusername",
-      "section": "platforms",
-      "mkcgMapping": "social_media.social_media.medium",
-      "previewSelector": ".social-medium",
-      "updateMethod": "href"
-    },
+  
+  "componentOptions": {
     "layout": {
       "type": "select",
-      "label": "Layout",
+      "label": "Layout Style",
+      "description": "Choose how social icons are displayed",
       "default": "horizontal",
+      "options": {
+        "horizontal": "Horizontal Row",
+        "vertical": "Vertical Stack",
+        "grid": "Grid Layout",
+        "floating": "Floating Buttons"
+      },
       "section": "layout",
-      "options": [
-        {"value": "horizontal", "label": "Horizontal"},
-        {"value": "vertical", "label": "Vertical"},
-        {"value": "grid", "label": "Grid"}
-      ],
-      "previewSelector": ".social-component",
-      "updateMethod": "class",
-      "classPrefix": "layout--"
+      "preview": true
     },
-    "icon_style": {
+    "iconStyle": {
       "type": "select",
       "label": "Icon Style",
-      "default": "solid",
+      "description": "Choose the style for social icons",
+      "default": "filled",
+      "options": {
+        "filled": "Filled Icons",
+        "outline": "Outline Icons",
+        "minimal": "Minimal Icons",
+        "branded": "Brand Colors"
+      },
       "section": "appearance",
-      "options": [
-        {"value": "solid", "label": "Solid"},
-        {"value": "outline", "label": "Outline"},
-        {"value": "minimal", "label": "Minimal"},
-        {"value": "branded", "label": "Branded Colors"}
-      ],
-      "previewSelector": ".social-component",
-      "updateMethod": "class",
-      "classPrefix": "icon-style--"
+      "preview": true
     },
-    "icon_size": {
+    "iconSize": {
       "type": "select",
       "label": "Icon Size",
+      "description": "Choose the size of social icons",
       "default": "medium",
+      "options": {
+        "small": "Small (24px)",
+        "medium": "Medium (32px)",
+        "large": "Large (48px)",
+        "extra_large": "Extra Large (64px)"
+      },
       "section": "appearance",
-      "options": [
-        {"value": "small", "label": "Small"},
-        {"value": "medium", "label": "Medium"},
-        {"value": "large", "label": "Large"}
-      ],
-      "previewSelector": ".social-component",
-      "updateMethod": "class",
-      "classPrefix": "icon-size--"
+      "preview": true
     },
-    "icon_shape": {
-      "type": "select",
-      "label": "Icon Shape",
-      "default": "circle",
-      "section": "appearance",
-      "options": [
-        {"value": "circle", "label": "Circle"},
-        {"value": "square", "label": "Square"},
-        {"value": "rounded", "label": "Rounded"},
-        {"value": "none", "label": "No Background"}
-      ],
-      "previewSelector": ".social-component",
-      "updateMethod": "class",
-      "classPrefix": "icon-shape--"
-    },
-    "animation": {
-      "type": "select",
-      "label": "Animation",
-      "default": "none",
-      "section": "appearance",
-      "options": [
-        {"value": "none", "label": "None"},
-        {"value": "pulse", "label": "Pulse"},
-        {"value": "bounce", "label": "Bounce"},
-        {"value": "shake", "label": "Shake"}
-      ],
-      "previewSelector": ".social-component",
-      "updateMethod": "class",
-      "classPrefix": "animation--"
-    },
-    "icon_color": {
-      "type": "color",
-      "label": "Icon Color",
-      "default": "#ffffff",
-      "section": "appearance",
-      "previewSelector": ".social-icon",
-      "updateMethod": "style.color"
-    },
-    "background_color": {
-      "type": "color",
-      "label": "Background Color",
-      "default": "#4f46e5",
-      "section": "appearance",
-      "previewSelector": ".social-icon",
-      "updateMethod": "style.backgroundColor"
-    },
-    "hover_color": {
-      "type": "color",
-      "label": "Hover Color",
-      "default": "#3730a3",
-      "section": "appearance",
-      "previewSelector": ".social-component",
-      "updateMethod": "style.--social-hover-color"
-    },
-    "show_labels": {
-      "type": "checkbox",
-      "label": "Show Labels",
+    "showLabels": {
+      "type": "boolean",
+      "label": "Show Platform Labels",
+      "description": "Display platform names below icons",
       "default": false,
-      "section": "layout",
-      "previewSelector": ".social-label",
-      "updateMethod": "visibility"
+      "section": "content"
     },
-    "open_new_tab": {
-      "type": "checkbox",
-      "label": "Open Links in New Tab",
+    "openInNewTab": {
+      "type": "boolean",
+      "label": "Open in New Tab",
+      "description": "Open social links in new browser tab",
       "default": true,
-      "section": "advanced"
+      "section": "functionality"
     },
-    "add_rel_nofollow": {
-      "type": "checkbox",
-      "label": "Add rel=\"nofollow\" to Links",
-      "default": false,
-      "section": "advanced"
+    "hoverEffect": {
+      "type": "select",
+      "label": "Hover Effect",
+      "description": "Choose hover animation",
+      "default": "scale",
+      "options": {
+        "none": "No Effect",
+        "scale": "Scale Up",
+        "bounce": "Bounce",
+        "rotate": "Rotate",
+        "glow": "Glow Effect"
+      },
+      "section": "appearance"
+    },
+    "alignment": {
+      "type": "select",
+      "label": "Alignment",
+      "description": "Choose icon alignment",
+      "default": "center",
+      "options": {
+        "left": "Left Aligned",
+        "center": "Center Aligned",
+        "right": "Right Aligned",
+        "justified": "Justified"
+      },
+      "section": "layout",
+      "preview": true
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": [],
-    "dataSource": "social_media",
-    "validationRules": {
-      "validUrls": true
+  
+  "sections": {
+    "content": {
+      "title": "Social Platforms",
+      "description": "Configure which platforms to display",
+      "order": 1,
+      "icon": "edit"
     },
-    "priority": "medium"
+    "layout": {
+      "title": "Layout Options",
+      "description": "Choose how icons are arranged",
+      "order": 2,
+      "icon": "layout"
+    },
+    "appearance": {
+      "title": "Icon Styling",
+      "description": "Customize icon appearance and effects",
+      "order": 3,
+      "icon": "palette"
+    },
+    "functionality": {
+      "title": "Link Behavior",
+      "description": "Configure how links behave",
+      "order": 4,
+      "icon": "settings"
+    }
+  },
+  
+  "presets": {
+    "professional": {
+      "name": "Professional Icons",
+      "options": {
+        "layout": "horizontal",
+        "iconStyle": "filled",
+        "iconSize": "medium",
+        "showLabels": false,
+        "hoverEffect": "scale",
+        "alignment": "center"
+      }
+    },
+    "branded": {
+      "name": "Brand Colors",
+      "options": {
+        "layout": "horizontal",
+        "iconStyle": "branded",
+        "iconSize": "large",
+        "showLabels": true,
+        "hoverEffect": "bounce",
+        "alignment": "center"
+      }
+    },
+    "minimal": {
+      "name": "Minimal Style",
+      "options": {
+        "layout": "horizontal",
+        "iconStyle": "minimal",
+        "iconSize": "small",
+        "showLabels": false,
+        "hoverEffect": "none",
+        "alignment": "left"
+      }
+    }
   }
 }

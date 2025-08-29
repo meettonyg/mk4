@@ -1,155 +1,83 @@
 {
-  "name": "Stats",
-  "category": "essential",
-  "icon": "stats-grid.svg",
-  "description": "Display key statistics and metrics",
+  "name": "Statistics",
+  "category": "content",
+  "description": "Display key statistics and achievements",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
-  "order": 5,
-  "settings": {
-    "section_title": {
-      "type": "text",
-      "label": "Section Title",
-      "default": "Key Statistics",
-      "placeholder": "Enter section title",
-      "previewSelector": ".section-title",
-      "updateMethod": "textContent",
-      "section": "content"
-    },
-    "stat1_value": {
-      "type": "text",
-      "label": "Statistic 1 Value",
-      "default": "1.2M",
-      "placeholder": "e.g., 1.2M",
-      "previewSelector": ".stat-item:nth-child(1) .stat-item__number",
-      "updateMethod": "textContent",
-      "section": "statistics",
-      "mkcgMapping": "social_media.social_media.followers_count"
-    },
-    "stat1_label": {
-      "type": "text",
-      "label": "Statistic 1 Label",
-      "default": "Followers",
-      "placeholder": "e.g., Followers",
-      "previewSelector": ".stat-item:nth-child(1) .stat-item__label",
-      "updateMethod": "textContent",
-      "section": "statistics",
-      "mkcgMapping": "social_media.social_media.stat_1_label"
-    },
-    "stat2_value": {
-      "type": "text",
-      "label": "Statistic 2 Value",
-      "default": "150+",
-      "placeholder": "e.g., 150+",
-      "previewSelector": ".stat-item:nth-child(2) .stat-item__number",
-      "updateMethod": "textContent",
-      "section": "statistics",
-      "mkcgMapping": "social_media.social_media.podcast_count"
-    },
-    "stat2_label": {
-      "type": "text",
-      "label": "Statistic 2 Label",
-      "default": "Podcast Shows",
-      "placeholder": "e.g., Podcast Shows",
-      "previewSelector": ".stat-item:nth-child(2) .stat-item__label",
-      "updateMethod": "textContent",
-      "section": "statistics",
-      "mkcgMapping": "social_media.social_media.stat_2_label"
-    },
-    "stat3_value": {
-      "type": "text",
-      "label": "Statistic 3 Value",
-      "default": "500K",
-      "placeholder": "e.g., 500K",
-      "previewSelector": ".stat-item:nth-child(3) .stat-item__number",
-      "updateMethod": "textContent",
-      "section": "statistics",
-      "mkcgMapping": "social_media.social_media.download_count"
-    },
-    "stat3_label": {
-      "type": "text",
-      "label": "Statistic 3 Label",
-      "default": "Downloads",
-      "placeholder": "e.g., Downloads",
-      "previewSelector": ".stat-item:nth-child(3) .stat-item__label",
-      "updateMethod": "textContent",
-      "section": "statistics",
-      "mkcgMapping": "social_media.social_media.stat_3_label"
-    },
-    "stat4_value": {
-      "type": "text",
-      "label": "Statistic 4 Value",
-      "default": "5",
-      "placeholder": "e.g., 5",
-      "previewSelector": ".stat-item:nth-child(4) .stat-item__number",
-      "updateMethod": "textContent",
-      "section": "statistics",
-      "mkcgMapping": "biography.biography.years_experience"
-    },
-    "stat4_label": {
-      "type": "text",
-      "label": "Statistic 4 Label",
-      "default": "Years Experience",
-      "placeholder": "e.g., Years Experience",
-      "previewSelector": ".stat-item:nth-child(4) .stat-item__label",
-      "updateMethod": "textContent",
-      "section": "statistics",
-      "mkcgMapping": "social_media.social_media.stat_4_label"
-    },
-    "stats_columns": {
+  "version": "2.0.0-phase2",
+  "order": 9,
+  
+  "dataBindings": {
+    "stats": "statistics",
+    "title": "stats_title"
+  },
+  
+  "componentOptions": {
+    "layout": {
       "type": "select",
-      "label": "Number of Columns",
-      "default": "4",
-      "options": [
-        {"value": "2", "label": "2 Columns"},
-        {"value": "3", "label": "3 Columns"},
-        {"value": "4", "label": "4 Columns"}
-      ],
-      "previewSelector": ".stats-grid",
-      "updateMethod": "class",
-      "classPrefix": "stats-cols-",
-      "section": "appearance"
+      "label": "Layout Style",
+      "default": "grid",
+      "options": {
+        "grid": "Grid Layout",
+        "horizontal": "Horizontal Row",
+        "vertical": "Vertical Stack"
+      },
+      "section": "layout",
+      "preview": true
     },
-    "stat_color": {
-      "type": "color",
-      "label": "Statistic Color",
-      "default": "#3b82f6",
-      "previewSelector": ".stat-item__number",
-      "updateMethod": "style.color",
-      "section": "appearance"
-    },
-    "show_icons": {
-      "type": "checkbox",
+    "showIcons": {
+      "type": "boolean",
       "label": "Show Icons",
-      "default": false,
-      "previewSelector": ".stat-item__icon",
-      "updateMethod": "visibility",
+      "default": true,
       "section": "appearance"
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Success Green",
+        "neutral": "Neutral Gray"
+      },
+      "section": "appearance",
+      "preview": true
     }
   },
+  
   "sections": {
     "content": {
-      "title": "Content",
-      "order": 1
+      "title": "Statistics Data",
+      "order": 1,
+      "icon": "edit"
     },
-    "statistics": {
-      "title": "Statistics",
-      "order": 2
+    "layout": {
+      "title": "Layout Options",
+      "order": 2,
+      "icon": "layout"
     },
     "appearance": {
       "title": "Appearance",
-      "order": 3
+      "order": 3,
+      "icon": "palette"
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["stat1_value"],
-    "dataSource": "social_media",
-    "validationRules": {
-      "numericValues": true,
-      "minStats": 1
+  
+  "presets": {
+    "standard": {
+      "name": "Standard Grid",
+      "options": {
+        "layout": "grid",
+        "showIcons": true,
+        "colorScheme": "blue"
+      }
     },
-    "priority": "medium"
+    "minimal": {
+      "name": "Minimal Display",
+      "options": {
+        "layout": "horizontal",
+        "showIcons": false,
+        "colorScheme": "neutral"
+      }
+    }
   }
 }

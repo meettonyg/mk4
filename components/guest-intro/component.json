@@ -1,125 +1,85 @@
 {
-  "name": "Guest Intro",
+  "name": "Guest Introduction",
   "category": "essential",
-  "icon": "guest-intro.svg",
-  "description": "Professional introduction for podcast guests and speakers",
+  "description": "Brief introduction section for guest appearances",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
-  "order": 4,
-  "settings": {
-    "title": {
-      "type": "text",
-      "label": "Section Title",
-      "default": "Meet Your Guest",
-      "placeholder": "Enter section title",
-      "previewSelector": ".section-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "meta_info.section_title"
-    },
-    "guest_name": {
-      "type": "text",
-      "label": "Guest Name",
-      "default": "Your Name",
-      "placeholder": "Enter guest name",
-      "previewSelector": ".guest-name",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.name"
-    },
-    "guest_title": {
-      "type": "text",
-      "label": "Professional Title",
-      "default": "Your Professional Title",
-      "placeholder": "Enter professional title",
-      "previewSelector": ".guest-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.title"
-    },
-    "guest_intro": {
-      "type": "textarea",
-      "label": "Guest Introduction",
-      "default": "Brief introduction about the guest...",
-      "rows": 4,
-      "placeholder": "Enter guest introduction",
-      "previewSelector": ".guest-intro",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.short"
-    },
-    "guest_bio": {
-      "type": "textarea",
-      "label": "Extended Bio",
-      "default": "Extended biography for detailed introductions...",
-      "rows": 6,
-      "placeholder": "Enter extended biography",
-      "previewSelector": ".guest-bio",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.medium"
-    },
-    "expertise": {
-      "type": "text",
-      "label": "Areas of Expertise",
-      "default": "",
-      "placeholder": "Enter areas of expertise",
-      "previewSelector": ".guest-expertise",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.expertise"
-    },
-    "guest_image": {
-      "type": "image",
-      "label": "Guest Photo",
-      "default": "",
-      "previewSelector": ".guest-photo img",
-      "updateMethod": "src",
-      "section": "content",
-      "helpText": "Professional headshot recommended"
-    },
-    "layout_style": {
+  "version": "2.0.0-phase2",
+  "order": 1,
+  
+  "dataBindings": {
+    "title": "intro_title",
+    "subtitle": "guest_title",
+    "description": "guest_intro",
+    "image": "guest_headshot"
+  },
+  
+  "componentOptions": {
+    "layout": {
       "type": "select",
       "label": "Layout Style",
-      "default": "side-by-side",
-      "options": [
-        {"value": "side-by-side", "label": "Side by Side"},
-        {"value": "centered", "label": "Centered"},
-        {"value": "card", "label": "Card Style"}
-      ],
-      "previewSelector": ".guest-intro-container",
-      "updateMethod": "class",
-      "classPrefix": "layout-",
-      "section": "appearance"
+      "default": "side_by_side",
+      "options": {
+        "side_by_side": "Side by Side",
+        "stacked": "Stacked",
+        "text_only": "Text Only"
+      },
+      "section": "layout",
+      "preview": true
     },
-    "show_expertise": {
-      "type": "checkbox",
-      "label": "Show Expertise Section",
+    "showImage": {
+      "type": "boolean",
+      "label": "Show Guest Image",
       "default": true,
-      "previewSelector": ".guest-expertise",
-      "updateMethod": "visibility",
-      "section": "appearance"
+      "section": "content"
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Friendly Green",
+        "neutral": "Neutral Gray"
+      },
+      "section": "appearance",
+      "preview": true
     }
   },
+  
   "sections": {
     "content": {
-      "title": "Guest Information",
-      "order": 1
+      "title": "Introduction Content",
+      "order": 1,
+      "icon": "edit"
+    },
+    "layout": {
+      "title": "Layout Options",
+      "order": 2,
+      "icon": "layout"
     },
     "appearance": {
-      "title": "Layout & Appearance",
-      "order": 2
+      "title": "Appearance",
+      "order": 3,
+      "icon": "palette"
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["guest_name", "guest_intro"],
-    "dataSource": "biography",
-    "validationRules": {
-      "nameRequired": true,
-      "introMinLength": 20
+  
+  "presets": {
+    "standard": {
+      "name": "Standard Introduction",
+      "options": {
+        "layout": "side_by_side",
+        "showImage": true,
+        "colorScheme": "blue"
+      }
     },
-    "priority": "high"
+    "minimal": {
+      "name": "Minimal Introduction",
+      "options": {
+        "layout": "text_only",
+        "showImage": false,
+        "colorScheme": "neutral"
+      }
+    }
   }
 }

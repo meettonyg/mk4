@@ -1,85 +1,145 @@
 {
   "name": "Call to Action",
   "category": "essential",
-  "icon": "cta.svg",
-  "description": "Prompt visitors to take a specific action",
+  "description": "Compelling call-to-action section with customizable button",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
-  "order": 6,
-  "settings": {
-    "title": {
-      "type": "text",
-      "label": "CTA Title",
-      "default": "Ready to Get Started?",
-      "placeholder": "Enter call-to-action title",
-      "previewSelector": ".cta-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "meta_info.section_title"
-    },
-    "description": {
-      "type": "textarea",
-      "label": "CTA Description",
-      "default": "Contact me today to discuss your next event or project.",
-      "placeholder": "Enter call-to-action description",
-      "previewSelector": ".cta-description",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.cta_text"
-    },
-    "button_text": {
-      "type": "text",
-      "label": "Button Text",
-      "default": "Contact Me",
-      "placeholder": "Enter button text",
-      "previewSelector": ".cta-button",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.cta_button"
-    },
-    "button_link": {
-      "type": "url",
-      "label": "Button Link",
-      "default": "#contact",
-      "placeholder": "Enter button URL",
-      "previewSelector": ".cta-button",
-      "updateMethod": "href",
-      "section": "content",
-      "mkcgMapping": "biography.biography.contact_url"
-    },
-    "style": {
+  "version": "2.0.0-phase2",
+  "order": 8,
+  
+  "dataBindings": {
+    "title": "cta_title",
+    "description": "cta_description",
+    "buttonText": "cta_button_text",
+    "buttonUrl": "cta_button_url"
+  },
+  
+  "componentOptions": {
+    "layout": {
       "type": "select",
-      "label": "CTA Style",
-      "default": "primary",
-      "options": [
-        {"value": "primary", "label": "Primary Style"},
-        {"value": "secondary", "label": "Secondary Style"},
-        {"value": "outline", "label": "Outline Style"}
-      ],
-      "previewSelector": ".cta-container",
-      "updateMethod": "class",
-      "classPrefix": "style-",
+      "label": "Layout Style",
+      "description": "Choose how CTA content is arranged",
+      "default": "center",
+      "options": {
+        "center": "Centered Layout",
+        "left": "Left Aligned",
+        "right": "Right Aligned",
+        "split": "Split Layout"
+      },
+      "section": "layout",
+      "preview": true
+    },
+    "buttonStyle": {
+      "type": "select",
+      "label": "Button Style",
+      "description": "Choose button appearance",
+      "default": "solid",
+      "options": {
+        "solid": "Solid Button",
+        "outline": "Outline Button",
+        "ghost": "Ghost Button",
+        "gradient": "Gradient Button"
+      },
+      "section": "appearance",
+      "preview": true
+    },
+    "buttonSize": {
+      "type": "select",
+      "label": "Button Size",
+      "description": "Choose button size",
+      "default": "large",
+      "options": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "extra_large": "Extra Large"
+      },
+      "section": "appearance",
+      "preview": true
+    },
+    "backgroundColor": {
+      "type": "color",
+      "label": "Background Color",
+      "description": "Set the background color for the CTA section",
+      "default": "#f8f9fa",
+      "section": "appearance",
+      "preview": true
+    },
+    "buttonColor": {
+      "type": "color",
+      "label": "Button Color",
+      "description": "Set the button color",
+      "default": "#295cff",
+      "section": "appearance",
+      "preview": true
+    },
+    "showIcon": {
+      "type": "boolean",
+      "label": "Show Button Icon",
+      "description": "Display an icon in the button",
+      "default": false,
+      "section": "content"
+    },
+    "urgency": {
+      "type": "boolean",
+      "label": "Urgency Styling",
+      "description": "Apply urgency styling (animated, highlighted)",
+      "default": false,
       "section": "appearance"
     }
   },
+  
   "sections": {
     "content": {
       "title": "CTA Content",
-      "order": 1
+      "description": "Configure call-to-action text and links",
+      "order": 1,
+      "icon": "edit"
+    },
+    "layout": {
+      "title": "Layout Options",
+      "description": "Choose how content is arranged",
+      "order": 2,
+      "icon": "layout"
     },
     "appearance": {
       "title": "Appearance",
-      "order": 2
+      "description": "Customize colors and button styling",
+      "order": 3,
+      "icon": "palette"
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["title"],
-    "dataSource": "biography",
-    "validationRules": {
-      "titleRequired": true
+  
+  "presets": {
+    "professional": {
+      "name": "Professional CTA",
+      "options": {
+        "layout": "center",
+        "buttonStyle": "solid",
+        "buttonSize": "large",
+        "backgroundColor": "#f8f9fa",
+        "buttonColor": "#295cff"
+      }
     },
-    "priority": "medium"
+    "urgent": {
+      "name": "Urgent Action",
+      "options": {
+        "layout": "center",
+        "buttonStyle": "gradient",
+        "buttonSize": "extra_large",
+        "backgroundColor": "#fff5f5",
+        "buttonColor": "#ef4444",
+        "urgency": true
+      }
+    },
+    "minimal": {
+      "name": "Minimal CTA",
+      "options": {
+        "layout": "left",
+        "buttonStyle": "ghost",
+        "buttonSize": "medium",
+        "backgroundColor": "#ffffff",
+        "buttonColor": "#6b7280"
+      }
+    }
   }
 }

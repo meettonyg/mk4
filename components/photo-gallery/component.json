@@ -1,184 +1,83 @@
 {
   "name": "Photo Gallery",
-  "category": "premium",
-  "icon": "image-gallery.svg",
-  "description": "Display a gallery of photos or images",
-  "isPremium": true,
-  "dependencies": [],
-  "version": "1.0.0",
-  "order": 2,
+  "category": "content",
+  "description": "Display image gallery or portfolio",
+  "isPremium": false,
+  "version": "2.0.0-phase2",
+  "order": 12,
+  
+  "dataBindings": {
+    "images": "gallery_images",
+    "title": "gallery_title"
+  },
+  
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "masonry",
+      "options": {
+        "masonry": "Masonry Grid",
+        "grid": "Equal Grid",
+        "carousel": "Image Carousel"
+      },
+      "section": "layout",
+      "preview": true
+    },
+    "columnsDesktop": {
+      "type": "select",
+      "label": "Desktop Columns",
+      "default": "3",
+      "options": {
+        "2": "2 Columns",
+        "3": "3 Columns",
+        "4": "4 Columns"
+      },
+      "section": "layout",
+      "preview": true
+    },
+    "lightbox": {
+      "type": "boolean",
+      "label": "Enable Lightbox",
+      "default": true,
+      "section": "functionality"
+    }
+  },
+  
   "sections": {
     "content": {
-      "title": "Content",
-      "order": 1
+      "title": "Gallery Content",
+      "order": 1,
+      "icon": "edit"
     },
     "layout": {
-      "title": "Layout & Display",
-      "order": 2
+      "title": "Layout Options",
+      "order": 2,
+      "icon": "layout"
     },
-    "appearance": {
-      "title": "Appearance",
-      "order": 3
+    "functionality": {
+      "title": "Features",
+      "order": 3,
+      "icon": "settings"
     }
   },
-  "settings": {
-    "gallery_title": {
-      "type": "text",
-      "label": "Gallery Title",
-      "default": "Photo Gallery",
-      "placeholder": "Enter gallery title",
-      "section": "content",
-      "previewSelector": ".photo-gallery-title",
-      "updateMethod": "textContent",
-      "mkcgMapping": "meta_info.section_title"
+  
+  "presets": {
+    "portfolio": {
+      "name": "Portfolio Style",
+      "options": {
+        "layout": "masonry",
+        "columnsDesktop": "3",
+        "lightbox": true
+      }
     },
-    "gallery_description": {
-      "type": "textarea",
-      "label": "Gallery Description",
-      "default": "A collection of photos and images",
-      "placeholder": "Enter gallery description",
-      "section": "content",
-      "previewSelector": ".photo-gallery-description",
-      "updateMethod": "textContent",
-      "mkcgMapping": "biography.biography.description"
-    },
-    "show_title": {
-      "type": "checkbox",
-      "label": "Show Title",
-      "default": true,
-      "section": "content",
-      "previewSelector": ".photo-gallery-title",
-      "updateMethod": "visibility"
-    },
-    "show_description": {
-      "type": "checkbox",
-      "label": "Show Description",
-      "default": true,
-      "section": "content",
-      "previewSelector": ".photo-gallery-description",
-      "updateMethod": "visibility"
-    },
-    "photos": {
-      "type": "array",
-      "label": "Photos",
-      "default": [
-        {
-          "src": "/assets/images/placeholder-image.jpg",
-          "caption": "Photo Caption 1"
-        },
-        {
-          "src": "/assets/images/placeholder-image.jpg",
-          "caption": "Photo Caption 2"
-        }
-      ],
-      "section": "content",
-      "previewSelector": ".photo-gallery-grid",
-      "updateMethod": "custom"
-    },
-    "galleryLayout": {
-      "type": "select",
-      "label": "Gallery Layout",
-      "default": "grid",
-      "section": "layout",
-      "options": [
-        {"value": "grid", "label": "Grid"},
-        {"value": "masonry", "label": "Masonry"},
-        {"value": "carousel", "label": "Carousel"},
-        {"value": "fullwidth", "label": "Full Width"}
-      ],
-      "previewSelector": ".photo-gallery-container",
-      "updateMethod": "class",
-      "classPrefix": "layout-"
-    },
-    "columns": {
-      "type": "select",
-      "label": "Columns",
-      "default": "3",
-      "section": "layout",
-      "options": [
-        {"value": "2", "label": "2 Columns"},
-        {"value": "3", "label": "3 Columns"},
-        {"value": "4", "label": "4 Columns"},
-        {"value": "5", "label": "5 Columns"}
-      ],
-      "previewSelector": ".photo-gallery-grid",
-      "updateMethod": "data-columns",
-      "helpText": "Number of columns in grid layout"
-    },
-    "imageStyle": {
-      "type": "select",
-      "label": "Image Style",
-      "default": "standard",
-      "section": "appearance",
-      "options": [
-        {"value": "standard", "label": "Standard"},
-        {"value": "rounded", "label": "Rounded Corners"},
-        {"value": "circle", "label": "Circle"},
-        {"value": "polaroid", "label": "Polaroid"}
-      ],
-      "previewSelector": ".photo-item",
-      "updateMethod": "class",
-      "classPrefix": "image-"
-    },
-    "spacing": {
-      "type": "select",
-      "label": "Image Spacing",
-      "default": "medium",
-      "section": "appearance",
-      "options": [
-        {"value": "small", "label": "Small"},
-        {"value": "medium", "label": "Medium"},
-        {"value": "large", "label": "Large"}
-      ],
-      "previewSelector": ".photo-gallery-grid",
-      "updateMethod": "class",
-      "classPrefix": "spacing-"
-    },
-    "hover_effect": {
-      "type": "select",
-      "label": "Hover Effect",
-      "default": "zoom",
-      "section": "appearance",
-      "options": [
-        {"value": "none", "label": "None"},
-        {"value": "zoom", "label": "Zoom In"},
-        {"value": "fade", "label": "Fade"},
-        {"value": "overlay", "label": "Overlay"}
-      ],
-      "previewSelector": ".photo-gallery-grid",
-      "updateMethod": "data-hover",
-      "helpText": "Effect when hovering over images"
-    },
-    "background_color": {
-      "type": "color",
-      "label": "Background Color",
-      "default": "#f5f5f5",
-      "section": "appearance",
-      "previewSelector": ".photo-gallery-component",
-      "updateMethod": "style.backgroundColor"
-    },
-    "caption_style": {
-      "type": "select",
-      "label": "Caption Style",
-      "default": "overlay",
-      "section": "appearance",
-      "options": [
-        {"value": "overlay", "label": "Overlay"},
-        {"value": "below", "label": "Below Image"},
-        {"value": "hover", "label": "Show on Hover"},
-        {"value": "none", "label": "No Caption"}
-      ],
-      "previewSelector": ".photo-gallery-grid",
-      "updateMethod": "data-caption-style"
+    "simple": {
+      "name": "Simple Grid",
+      "options": {
+        "layout": "grid",
+        "columnsDesktop": "2",
+        "lightbox": false
+      }
     }
-  },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["gallery_title"],
-    "dataSource": "biography",
-    "validationRules": {
-      "titleRequired": true
-    },
-    "priority": "low"
   }
 }

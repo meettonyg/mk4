@@ -1,123 +1,106 @@
 {
-  "name": "Hero",
+  "name": "Hero Section",
+  "type": "hero",
+  "version": "2.0.0-phase2",
+  "description": "Main hero section with profile image and introduction",
   "category": "essential",
-  "icon": "hero-minimal.svg",
-  "description": "Hero section for your media kit",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
-  "order": 1,
-  "settings": {
-    "hero_name": {
-      "type": "text",
-      "label": "Full Name",
-      "default": "Your Name",
-      "placeholder": "Enter your full name",
-      "previewSelector": ".hero-name",
-      "updateMethod": "textContent",
-      "section": "profile",
-      "mkcgMapping": "biography.biography.name"
-    },
-    "hero_title": {
-      "type": "text",
-      "label": "Professional Title",
-      "default": "Your Title",
-      "placeholder": "Your Professional Title",
-      "previewSelector": ".hero-title",
-      "updateMethod": "textContent",
-      "section": "profile",
-      "mkcgMapping": "biography.biography.title"
-    },
-    "hero_bio": {
-      "type": "textarea",
-      "label": "Bio Description",
-      "default": "Brief introduction about yourself...",
-      "rows": 3,
-      "previewSelector": ".hero-bio",
-      "updateMethod": "textContent",
-      "section": "profile",
-      "mkcgMapping": "biography.biography.short"
-    },
-    "profile_image": {
-      "type": "image",
-      "label": "Profile Picture",
-      "default": "",
-      "previewSelector": ".hero-avatar img",
-      "updateMethod": "src",
-      "section": "profile",
-      "helpText": "Recommended: Square image, at least 200x200px"
-    },
-    "hero_bg_style": {
+  "icon": "fa-star",
+  "dataBindings": {
+    "title": "full_name",
+    "subtitle": "guest_title",
+    "description": "biography_short",
+    "image": "guest_headshot"
+  },
+  "componentOptions": {
+    "layout": {
       "type": "select",
-      "label": "Background Style",
-      "default": "gradient",
-      "options": [
-        {"value": "gradient", "label": "Gradient Background"},
-        {"value": "solid", "label": "Solid Color"},
-        {"value": "image", "label": "Background Image"},
-        {"value": "pattern", "label": "Pattern Background"}
-      ],
-      "previewSelector": ".hero-section",
-      "updateMethod": "class",
-      "classPrefix": "bg-style-",
-      "section": "appearance"
+      "label": "Layout Style",
+      "default": "center_aligned",
+      "options": {
+        "left_aligned": "Left Aligned",
+        "center_aligned": "Center Aligned",
+        "right_aligned": "Right Aligned"
+      },
+      "section": "layout"
     },
-    "hero_bg_color": {
-      "type": "color",
-      "label": "Background Color",
-      "default": "#f8fafc",
-      "previewSelector": ".hero-section",
-      "updateMethod": "style.backgroundColor",
-      "section": "appearance"
-    },
-    "hero_text_color": {
-      "type": "color",
-      "label": "Text Color",
-      "default": "#1e293b",
-      "previewSelector": ".hero-section",
-      "updateMethod": "style.color",
-      "section": "appearance"
-    },
-    "avatar_style": {
+    "imageStyle": {
       "type": "select",
-      "label": "Avatar Style",
-      "default": "circle",
-      "options": [
-        {"value": "circle", "label": "Circle"},
-        {"value": "square", "label": "Square"},
-        {"value": "rounded", "label": "Rounded Square"}
-      ],
-      "previewSelector": ".hero-avatar",
-      "updateMethod": "class",
-      "classPrefix": "avatar-",
+      "label": "Image Style",
+      "default": "rounded",
+      "options": {
+        "square": "Square",
+        "rounded": "Rounded",
+        "circle": "Circle"
+      },
       "section": "appearance"
     },
-    "show_bio": {
-      "type": "checkbox",
-      "label": "Show Bio Description",
+    "showCTA": {
+      "type": "toggle",
+      "label": "Show Call-to-Action Button",
       "default": true,
-      "previewSelector": ".hero-bio",
-      "updateMethod": "visibility",
-      "section": "appearance"
+      "section": "content"
+    },
+    "ctaText": {
+      "type": "text",
+      "label": "CTA Button Text",
+      "default": "Get in Touch",
+      "placeholder": "Enter button text",
+      "section": "content",
+      "dependsOn": {
+        "showCTA": true
+      }
+    },
+    "ctaLink": {
+      "type": "text",
+      "label": "CTA Button Link",
+      "default": "#contact",
+      "placeholder": "Enter link URL",
+      "section": "content",
+      "dependsOn": {
+        "showCTA": true
+      }
     }
   },
   "sections": {
-    "profile": {
-      "title": "Profile Information",
+    "layout": {
+      "title": "Layout Options",
+      "description": "Configure the component layout",
       "order": 1
     },
     "appearance": {
       "title": "Appearance",
+      "description": "Visual styling options",
       "order": 2
+    },
+    "content": {
+      "title": "Content Settings",
+      "description": "Content and behavior options",
+      "order": 3
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["hero_name"],
-    "dataSource": "biography",
-    "validationRules": {
-      "nameMinLength": 2,
-      "bioMinLength": 10
+  "responsiveBehavior": {
+    "mobile": "stack_vertical",
+    "tablet": "maintain_layout"
+  },
+  "presets": [
+    {
+      "name": "Classic",
+      "description": "Traditional centered layout",
+      "options": {
+        "layout": "center_aligned",
+        "imageStyle": "circle",
+        "showCTA": true
+      }
+    },
+    {
+      "name": "Modern",
+      "description": "Contemporary left-aligned layout",
+      "options": {
+        "layout": "left_aligned",
+        "imageStyle": "rounded",
+        "showCTA": false
+      }
     }
-  }
+  ]
 }

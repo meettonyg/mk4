@@ -1,0 +1,52 @@
+<?php
+/**
+ * Execute component.json cleanup
+ */
+
+$components_to_fix = [
+    'call-to-action' => json_decode(str_replace('\\n', "\n", '{\n  "name": "Call to Action",\n  "category": "essential",\n  "description": "Compelling call-to-action section with customizable button",\n  "isPremium": false,\n  "version": "2.0.0-phase2",\n  "order": 8,\n  \n  "dataBindings": {\n    "title": "cta_title",\n    "description": "cta_description",\n    "buttonText": "cta_button_text",\n    "buttonUrl": "cta_button_url"\n  },\n  \n  "componentOptions": {\n    "layout": {\n      "type": "select",\n      "label": "Layout Style",\n      "description": "Choose how CTA content is arranged",\n      "default": "center",\n      "options": {\n        "center": "Centered Layout",\n        "left": "Left Aligned",\n        "right": "Right Aligned",\n        "split": "Split Layout"\n      },\n      "section": "layout",\n      "preview": true\n    },\n    "buttonStyle": {\n      "type": "select",\n      "label": "Button Style",\n      "description": "Choose button appearance",\n      "default": "solid",\n      "options": {\n        "solid": "Solid Button",\n        "outline": "Outline Button",\n        "ghost": "Ghost Button",\n        "gradient": "Gradient Button"\n      },\n      "section": "appearance",\n      "preview": true\n    },\n    "buttonSize": {\n      "type": "select",\n      "label": "Button Size",\n      "description": "Choose button size",\n      "default": "large",\n      "options": {\n        "small": "Small",\n        "medium": "Medium",\n        "large": "Large",\n        "extra_large": "Extra Large"\n      },\n      "section": "appearance",\n      "preview": true\n    },\n    "backgroundColor": {\n      "type": "color",\n      "label": "Background Color",\n      "description": "Set the background color for the CTA section",\n      "default": "#f8f9fa",\n      "section": "appearance",\n      "preview": true\n    },\n    "buttonColor": {\n      "type": "color",\n      "label": "Button Color",\n      "description": "Set the button color",\n      "default": "#295cff",\n      "section": "appearance",\n      "preview": true\n    },\n    "showIcon": {\n      "type": "boolean",\n      "label": "Show Button Icon",\n      "description": "Display an icon in the button",\n      "default": false,\n      "section": "content"\n    },\n    "urgency": {\n      "type": "boolean",\n      "label": "Urgency Styling",\n      "description": "Apply urgency styling (animated, highlighted)",\n      "default": false,\n      "section": "appearance"\n    }\n  },\n  \n  "sections": {\n    "content": {\n      "title": "CTA Content",\n      "description": "Configure call-to-action text and links",\n      "order": 1,\n      "icon": "edit"\n    },\n    "layout": {\n      "title": "Layout Options",\n      "description": "Choose how content is arranged",\n      "order": 2,\n      "icon": "layout"\n    },\n    "appearance": {\n      "title": "Appearance",\n      "description": "Customize colors and button styling",\n      "order": 3,\n      "icon": "palette"\n    }\n  },\n  \n  "presets": {\n    "professional": {\n      "name": "Professional CTA",\n      "options": {\n        "layout": "center",\n        "buttonStyle": "solid",\n        "buttonSize": "large",\n        "backgroundColor": "#f8f9fa",\n        "buttonColor": "#295cff"\n      }\n    },\n    "urgent": {\n      "name": "Urgent Action",\n      "options": {\n        "layout": "center",\n        "buttonStyle": "gradient",\n        "buttonSize": "extra_large",\n        "backgroundColor": "#fff5f5",\n        "buttonColor": "#ef4444",\n        "urgency": true\n      }\n    },\n    "minimal": {\n      "name": "Minimal CTA",\n      "options": {\n        "layout": "left",\n        "buttonStyle": "ghost",\n        "buttonSize": "medium",\n        "backgroundColor": "#ffffff",\n        "buttonColor": "#6b7280"\n      }\n    }\n  }\n}'), true),
+    'contact' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/contact/component.json')), true),
+    'guest-intro' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/guest-intro/component.json')), true),
+    'logo-grid' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/logo-grid/component.json')), true),
+    'photo-gallery' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/photo-gallery/component.json')), true),
+    'podcast-player' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/podcast-player/component.json')), true),
+    'questions' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/questions/component.json')), true),
+    'social' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/social/component.json')), true),
+    'stats' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/stats/component.json')), true),
+    'testimonials' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/testimonials/component.json')), true),
+    'video-intro' => json_decode(str_replace('\\n', "\n", file_get_contents(__DIR__ . '/components/video-intro/component.json')), true)
+];
+
+$fixed_count = 0;
+$already_clean = 0;
+
+foreach ($components_to_fix as $component_name => $parsed_data) {
+    $json_file = __DIR__ . "/components/{$component_name}/component.json";
+    
+    if ($parsed_data !== null) {
+        $formatted = json_encode($parsed_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        
+        if (file_put_contents($json_file, $formatted) !== false) {
+            echo "✅ Fixed {$component_name}/component.json\n";
+            $fixed_count++;
+        } else {
+            echo "❌ Failed to write {$component_name}/component.json\n";
+        }
+    } else {
+        echo "❌ Could not parse {$component_name}/component.json\n";
+    }
+}
+
+// Check already cleaned files
+$already_clean_files = ['hero', 'biography', 'topics', 'authority-hook', 'booking-calendar'];
+foreach ($already_clean_files as $component) {
+    echo "✓ {$component}/component.json already clean\n";
+    $already_clean++;
+}
+
+echo "\n==============================\n";
+echo "Fixed: {$fixed_count} files\n";
+echo "Already clean: {$already_clean} files\n";
+echo "Total components: " . ($fixed_count + $already_clean) . "\n";
+echo "==============================\n";
+echo "\n✅ All component JSON files have been cleaned up!\n";

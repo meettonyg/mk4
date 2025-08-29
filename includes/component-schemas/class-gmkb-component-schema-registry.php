@@ -47,10 +47,109 @@ class GMKB_Component_Schema_Registry {
     
     /**
      * Load all component schemas
+     * PHASE 2 ENHANCEMENT: Load from JSON files with fallback to hardcoded schemas
      * 
      * @return array Component schemas
      */
     private static function load_schemas() {
+        $schemas = array();
+        
+        // PHASE 2: Try loading from JSON files first
+        $json_schemas = self::load_json_schemas();
+        if (!empty($json_schemas)) {
+            $schemas = array_merge($schemas, $json_schemas);
+        }
+        
+        // Fallback: Load hardcoded schemas for any missing types
+        $hardcoded_schemas = self::load_hardcoded_schemas();
+        foreach ($hardcoded_schemas as $type => $schema) {
+            if (!isset($schemas[$type])) {
+                $schemas[$type] = $schema;
+            }
+        }
+        
+        return $schemas;
+    }
+    
+    /**
+     * PHASE 2: Load schemas from component folders
+     * CRITICAL FIX: Load ALL component.json files from component directories
+     * 
+     * @return array Schemas loaded from component folders
+     */
+    private static function load_json_schemas() {
+        $schemas = array();
+        $components_dir = GUESTIFY_PLUGIN_DIR . 'components/';
+        
+        if (!is_dir($components_dir)) {
+            error_log('GMKB PHASE 2 CRITICAL: Components directory not found: ' . $components_dir);
+            return array();
+        }
+        
+        // CRITICAL FIX: Force scan all component directories
+        $component_dirs = array_filter(glob($components_dir . '*'), 'is_dir');
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB PHASE 2: Scanning ' . count($component_dirs) . ' component directories');
+        }
+        
+        foreach ($component_dirs as $component_path) {
+            $component_dir = basename($component_path);
+            $schema_file = $component_path . '/component.json';
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("GMKB PHASE 2: Processing {$component_dir} - JSON exists: " . (file_exists($schema_file) ? 'YES' : 'NO'));
+            }
+            
+            if (file_exists($schema_file)) {
+                $json_content = file_get_contents($schema_file);
+                if ($json_content !== false) {
+                    // ROOT FIX: Handle escaped newlines in JSON files
+                    $json_content = str_replace('\\n', '', $json_content);
+                    $schema = json_decode($json_content, true);
+                    
+                    if ($schema && is_array($schema)) {
+                        // CRITICAL FIX: Ensure required fields for JavaScript compatibility
+                        $schema['type'] = $component_dir;
+                        $schema['directory'] = $component_dir;
+                        $schema['version'] = $schema['version'] ?? '2.0.0-phase2';
+                        
+                        // Use directory name as component type
+                        $schemas[$component_dir] = $schema;
+                        
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("GMKB PHASE 2: ✅ Loaded {$component_dir} schema (version: {$schema['version']})");
+                        }
+                    } else {
+                        error_log("GMKB PHASE 2: ❌ Invalid JSON in {$schema_file}");
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("JSON error: " . json_last_error_msg());
+                        }
+                    }
+                } else {
+                    error_log("GMKB PHASE 2: ❌ Could not read {$schema_file}");
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("GMKB PHASE 2: ⚠️ No component.json found for {$component_dir}");
+                }
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB PHASE 2 CRITICAL: Loaded ' . count($schemas) . ' schemas from component folders');
+            error_log('GMKB PHASE 2: Available components: ' . implode(', ', array_keys($schemas)));
+        }
+        
+        return $schemas;
+    }
+    
+    /**
+     * Load hardcoded schemas (fallback)
+     * 
+     * @return array Hardcoded component schemas
+     */
+    private static function load_hardcoded_schemas() {
         return array(
             'hero' => array(
                 'name' => 'Hero Section',
@@ -73,158 +172,12 @@ class GMKB_Component_Schema_Registry {
                             'right_aligned' => 'Right Aligned'
                         ),
                         'section' => 'layout'
-                    ),
-                    'imageStyle' => array(
-                        'type' => 'select',
-                        'label' => 'Image Style',
-                        'default' => 'rounded',
-                        'options' => array(
-                            'rounded' => 'Rounded',
-                            'circle' => 'Circle',
-                            'square' => 'Square'
-                        ),
-                        'section' => 'appearance'
-                    ),
-                    'showSocialLinks' => array(
-                        'type' => 'boolean',
-                        'label' => 'Show Social Links',
-                        'default' => true,
-                        'section' => 'content'
-                    ),
-                    'backgroundColor' => array(
-                        'type' => 'color',
-                        'label' => 'Background Color',
-                        'default' => '#ffffff',
-                        'section' => 'appearance'
-                    ),
-                    'textColor' => array(
-                        'type' => 'color',
-                        'label' => 'Text Color',
-                        'default' => '#333333',
-                        'section' => 'appearance'
-                    )
-                ),
-                'responsiveBehavior' => array(
-                    'mobile' => 'stack_vertical',
-                    'tablet' => 'maintain_layout'
-                ),
-                'sections' => array(
-                    'content' => array(
-                        'title' => 'Content',
-                        'order' => 1
-                    ),
-                    'layout' => array(
-                        'title' => 'Layout',
-                        'order' => 2
-                    ),
-                    'appearance' => array(
-                        'title' => 'Appearance',
-                        'order' => 3
-                    )
-                )
-            ),
-            
-            'topics' => array(
-                'name' => 'Speaking Topics',
-                'description' => 'Areas of expertise and speaking topics',
-                'category' => 'essential',
-                'dataBindings' => array(
-                    'topics' => 'speaking_topics',
-                    'expertise' => 'areas_of_expertise'
-                ),
-                'componentOptions' => array(
-                    'layout' => array(
-                        'type' => 'select',
-                        'label' => 'Display Layout',
-                        'default' => 'grid',
-                        'options' => array(
-                            'list' => 'Vertical List',
-                            'grid' => 'Grid Layout',
-                            'tags' => 'Tag Cloud'
-                        ),
-                        'section' => 'layout'
-                    ),
-                    'maxTopics' => array(
-                        'type' => 'number',
-                        'label' => 'Maximum Topics to Show',
-                        'default' => 6,
-                        'min' => 1,
-                        'max' => 20,
-                        'section' => 'content'
-                    ),
-                    'showPriority' => array(
-                        'type' => 'boolean',
-                        'label' => 'Show Priority Indicators',
-                        'default' => false,
-                        'section' => 'content'
-                    ),
-                    'columnsDesktop' => array(
-                        'type' => 'select',
-                        'label' => 'Desktop Columns',
-                        'default' => '3',
-                        'options' => array(
-                            '2' => '2 Columns',
-                            '3' => '3 Columns',
-                            '4' => '4 Columns'
-                        ),
-                        'section' => 'layout'
-                    )
-                ),
-                'sections' => array(
-                    'content' => array(
-                        'title' => 'Content Options',
-                        'order' => 1
-                    ),
-                    'layout' => array(
-                        'title' => 'Layout Settings',
-                        'order' => 2
-                    )
-                )
-            ),
-            
-            'contact' => array(
-                'name' => 'Contact Information',
-                'description' => 'Contact details and communication methods',
-                'category' => 'essential',
-                'dataBindings' => array(
-                    'email' => 'email',
-                    'phone' => 'phone',
-                    'website' => 'website',
-                    'location' => 'location'
-                ),
-                'componentOptions' => array(
-                    'layout' => array(
-                        'type' => 'select',
-                        'label' => 'Layout Style',
-                        'default' => 'vertical',
-                        'options' => array(
-                            'vertical' => 'Vertical List',
-                            'horizontal' => 'Horizontal Row',
-                            'grid' => 'Grid Layout'
-                        ),
-                        'section' => 'layout'
-                    ),
-                    'showIcons' => array(
-                        'type' => 'boolean',
-                        'label' => 'Show Icons',
-                        'default' => true,
-                        'section' => 'appearance'
-                    ),
-                    'showLabels' => array(
-                        'type' => 'boolean',
-                        'label' => 'Show Field Labels',
-                        'default' => true,
-                        'section' => 'appearance'
                     )
                 ),
                 'sections' => array(
                     'layout' => array(
                         'title' => 'Layout Options',
                         'order' => 1
-                    ),
-                    'appearance' => array(
-                        'title' => 'Appearance',
-                        'order' => 2
                     )
                 )
             )
@@ -251,105 +204,6 @@ class GMKB_Component_Schema_Registry {
     public static function get_data_bindings($component_type) {
         $schema = self::get_schema($component_type);
         return isset($schema['dataBindings']) ? $schema['dataBindings'] : array();
-    }
-    
-    /**
-     * Validate component configuration against schema
-     * 
-     * @param string $component_type Component type
-     * @param array $configuration Component configuration
-     * @return array Validation result
-     */
-    public static function validate_configuration($component_type, $configuration) {
-        $schema = self::get_schema($component_type);
-        if (!$schema) {
-            return array(
-                'valid' => false,
-                'errors' => array("Unknown component type: {$component_type}")
-            );
-        }
-        
-        $errors = array();
-        $componentOptions = isset($configuration['componentOptions']) ? $configuration['componentOptions'] : array();
-        
-        // Validate component options
-        foreach ($componentOptions as $optionKey => $optionValue) {
-            $optionSchema = isset($schema['componentOptions'][$optionKey]) ? $schema['componentOptions'][$optionKey] : null;
-            if (!$optionSchema) {
-                $errors[] = "Unknown option: {$optionKey}";
-                continue;
-            }
-            
-            $validationResult = self::validate_option_value($optionValue, $optionSchema);
-            if (!$validationResult['valid']) {
-                $errors[] = "Invalid value for {$optionKey}: " . implode(', ', $validationResult['errors']);
-            }
-        }
-        
-        return array(
-            'valid' => empty($errors),
-            'errors' => $errors
-        );
-    }
-    
-    /**
-     * Validate individual option value
-     * 
-     * @param mixed $value Option value
-     * @param array $optionSchema Option schema
-     * @return array Validation result
-     */
-    private static function validate_option_value($value, $optionSchema) {
-        $errors = array();
-        $type = $optionSchema['type'];
-        
-        switch ($type) {
-            case 'select':
-                $validOptions = array_keys($optionSchema['options']);
-                if (!in_array($value, $validOptions)) {
-                    $errors[] = 'Must be one of: ' . implode(', ', $validOptions);
-                }
-                break;
-                
-            case 'boolean':
-                if (!is_bool($value) && !in_array($value, array(0, 1, '0', '1', 'true', 'false'))) {
-                    $errors[] = 'Must be a boolean value';
-                }
-                break;
-                
-            case 'number':
-                if (!is_numeric($value)) {
-                    $errors[] = 'Must be a number';
-                } else {
-                    $numValue = (float)$value;
-                    if (isset($optionSchema['min']) && $numValue < $optionSchema['min']) {
-                        $errors[] = "Must be at least {$optionSchema['min']}";
-                    }
-                    if (isset($optionSchema['max']) && $numValue > $optionSchema['max']) {
-                        $errors[] = "Must be at most {$optionSchema['max']}";
-                    }
-                }
-                break;
-                
-            case 'color':
-                if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {
-                    $errors[] = 'Must be a valid hex color (e.g., #ffffff)';
-                }
-                break;
-                
-            case 'string':
-            case 'text':
-            case 'textarea':
-                if (!is_string($value)) {
-                    $errors[] = 'Must be a string';
-                }
-                break;
-        }
-        
-        return array(
-            'valid' => empty($errors),
-            'errors' => $errors
-        );
     }
     
     /**
@@ -383,26 +237,43 @@ class GMKB_Component_Schema_Registry {
     /**
      * Get schemas formatted for JavaScript consumption
      * This is the method being called by enqueue.php
+     * CRITICAL FIX: Force fresh load and clear cache to load all 16 components
      * 
      * @return array JavaScript-formatted schemas
      */
     public static function get_js_schemas() {
+        // CRITICAL FIX: Force fresh load by clearing static cache
+        self::$schemas = null;
+        
         $schemas = self::get_schemas();
+        
+        // CRITICAL FIX: Additional validation and logging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB PHP REGISTRY: get_js_schemas() called - found ' . count($schemas) . ' total schemas');
+            error_log('GMKB PHP REGISTRY: Component types: ' . implode(', ', array_keys($schemas)));
+        }
         
         // Format for JavaScript - ensure proper JSON serialization
         $js_schemas = array();
         
         foreach ($schemas as $type => $schema) {
             $js_schemas[$type] = array(
-                'name' => $schema['name'],
-                'description' => $schema['description'],
-                'category' => $schema['category'],
+                'name' => $schema['name'] ?? ucfirst($type),
+                'description' => $schema['description'] ?? 'No description available',
+                'category' => $schema['category'] ?? 'general',
                 'dataBindings' => isset($schema['dataBindings']) ? $schema['dataBindings'] : array(),
                 'componentOptions' => isset($schema['componentOptions']) ? $schema['componentOptions'] : array(),
                 'responsiveBehavior' => isset($schema['responsiveBehavior']) ? $schema['responsiveBehavior'] : array(),
                 'sections' => isset($schema['sections']) ? $schema['sections'] : array(),
-                'version' => '2.0.0-phase2'
+                'presets' => isset($schema['presets']) ? $schema['presets'] : array(),
+                'version' => $schema['version'] ?? '2.0.0-phase2',
+                'type' => $type,
+                'directory' => $type
             );
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB PHP REGISTRY: Formatted ' . count($js_schemas) . ' schemas for JavaScript');
         }
         
         return $js_schemas;

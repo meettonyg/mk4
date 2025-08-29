@@ -1,93 +1,169 @@
 {
-  "name": "Contact",
-  "category": "media",
-  "icon": "contact-info.svg",
-  "description": "Contact form or contact information",
+  "name": "Contact Information",
+  "category": "essential",
+  "description": "Contact details and communication methods display",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
-  "order": 3,
-  "settings": {
-    "title": {
-      "type": "text",
-      "label": "Section Title",
-      "default": "Get In Touch",
-      "placeholder": "Enter section title",
-      "previewSelector": ".section-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "meta_info.section_title"
-    },
-    "contact_email": {
-      "type": "email",
-      "label": "Email Address",
-      "default": "your.email@example.com",
-      "placeholder": "Enter your email address",
-      "previewSelector": ".contact-email",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.contact_email"
-    },
-    "contact_phone": {
-      "type": "text",
-      "label": "Phone Number",
-      "default": "",
-      "placeholder": "Enter your phone number",
-      "previewSelector": ".contact-phone",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "biography.biography.phone"
-    },
-    "contact_website": {
-      "type": "url",
-      "label": "Website URL",
-      "default": "",
-      "placeholder": "Enter your website URL",
-      "previewSelector": ".contact-website",
-      "updateMethod": "href",
-      "section": "content",
-      "mkcgMapping": "biography.biography.website"
-    },
-    "contact_form_enabled": {
-      "type": "checkbox",
-      "label": "Show Contact Form",
-      "default": true,
-      "previewSelector": ".contact-form",
-      "updateMethod": "visibility",
-      "section": "appearance"
-    },
-    "layout_style": {
+  "version": "2.0.0-phase2",
+  "order": 5,
+  
+  "dataBindings": {
+    "email": "email",
+    "phone": "phone",
+    "website": "website",
+    "location": "location",
+    "social": "social_links"
+  },
+  
+  "componentOptions": {
+    "layout": {
       "type": "select",
       "label": "Layout Style",
-      "default": "cards",
-      "options": [
-        {"value": "cards", "label": "Card Layout"},
-        {"value": "inline", "label": "Inline Layout"},
-        {"value": "vertical", "label": "Vertical List"}
-      ],
-      "previewSelector": ".contact-container",
-      "updateMethod": "class",
-      "classPrefix": "layout-",
+      "description": "Choose how contact information is arranged",
+      "default": "vertical",
+      "options": {
+        "vertical": "Vertical List",
+        "horizontal": "Horizontal Row",
+        "grid": "Grid Layout"
+      },
+      "section": "layout",
+      "preview": true
+    },
+    "showIcons": {
+      "type": "boolean",
+      "label": "Show Icons",
+      "description": "Display icons next to contact information",
+      "default": true,
+      "section": "appearance",
+      "preview": true
+    },
+    "showLabels": {
+      "type": "boolean",
+      "label": "Show Field Labels",
+      "description": "Display labels like 'Email:', 'Phone:' before contact info",
+      "default": true,
       "section": "appearance"
+    },
+    "enableClickToContact": {
+      "type": "boolean",
+      "label": "Enable Click-to-Contact",
+      "description": "Make email and phone clickable (mailto: and tel: links)",
+      "default": true,
+      "section": "functionality"
+    },
+    "contactFields": {
+      "type": "multiselect",
+      "label": "Contact Fields to Show",
+      "description": "Choose which contact fields to display",
+      "default": ["email", "phone", "website"],
+      "options": {
+        "email": "Email Address",
+        "phone": "Phone Number",
+        "website": "Website URL",
+        "location": "Location",
+        "social": "Social Media"
+      },
+      "section": "content"
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "description": "Choose the visual theme for contact section",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Success Green",
+        "neutral": "Neutral Gray",
+        "dark": "Dark Theme"
+      },
+      "section": "appearance",
+      "preview": true
+    },
+    "cardStyle": {
+      "type": "select",
+      "label": "Card Style",
+      "description": "Choose the style for contact information cards",
+      "default": "elevated",
+      "options": {
+        "flat": "Flat",
+        "elevated": "Elevated (Shadow)",
+        "bordered": "Bordered",
+        "minimal": "Minimal"
+      },
+      "section": "appearance",
+      "preview": true
     }
   },
+  
+  "responsiveBehavior": {
+    "mobile": {
+      "layout": "vertical",
+      "cardStyle": "minimal"
+    },
+    "tablet": {
+      "layout": "grid"
+    }
+  },
+  
   "sections": {
     "content": {
-      "title": "Contact Information",
-      "order": 1
+      "title": "Content Settings",
+      "description": "Configure which contact fields are displayed",
+      "order": 1,
+      "icon": "contact"
+    },
+    "layout": {
+      "title": "Layout Options",
+      "description": "Choose how contact information is arranged",
+      "order": 2,
+      "icon": "layout"
     },
     "appearance": {
-      "title": "Layout & Appearance",
-      "order": 2
+      "title": "Appearance",
+      "description": "Customize colors, icons, and card styling",
+      "order": 3,
+      "icon": "palette"
+    },
+    "functionality": {
+      "title": "Functionality",
+      "description": "Configure interactive features",
+      "order": 4,
+      "icon": "settings"
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["contact_email"],
-    "dataSource": "biography",
-    "validationRules": {
-      "emailRequired": true
+  
+  "presets": {
+    "business": {
+      "name": "Business Card",
+      "options": {
+        "layout": "grid",
+        "showIcons": true,
+        "showLabels": true,
+        "colorScheme": "blue",
+        "cardStyle": "elevated",
+        "contactFields": ["email", "phone", "website"]
+      }
     },
-    "priority": "medium"
+    "minimal": {
+      "name": "Minimal Contact",
+      "options": {
+        "layout": "horizontal",
+        "showIcons": false,
+        "showLabels": false,
+        "colorScheme": "neutral",
+        "cardStyle": "minimal",
+        "contactFields": ["email", "website"]
+      }
+    },
+    "complete": {
+      "name": "Complete Contact Info",
+      "options": {
+        "layout": "vertical",
+        "showIcons": true,
+        "showLabels": true,
+        "colorScheme": "green",
+        "cardStyle": "bordered",
+        "contactFields": ["email", "phone", "website", "location", "social"]
+      }
+    }
   }
 }

@@ -20,6 +20,30 @@ class DataBindingEngine {
     }
     
     /**
+     * Handle forced component rerender from options UI
+     * PHASE 2: Real-time configuration updates
+     */
+    handleForceRerender(detail) {
+        const { componentId, componentData } = detail;
+        
+        if (this.bindings.has(componentId)) {
+            // Re-bind data with current configuration
+            const bindingInfo = this.bindings.get(componentId);
+            const newBoundData = this.bindComponentData(
+                componentId,
+                bindingInfo.componentType,
+                bindingInfo.dataBindings,
+                componentData.props || componentData.data
+            );
+            
+            // Dispatch update for component renderer
+            this.dispatchDataBindingUpdate(componentId, newBoundData);
+            
+            this.logger.info('DATA_BINDING', `🔄 [PHASE 2] Forced rerender for ${componentId}`);
+        }
+    }
+    
+    /**
      * Initialize the data binding engine
      */
     initializeEngine() {
@@ -27,6 +51,11 @@ class DataBindingEngine {
         document.addEventListener('gmkb:component-configuration-updated', (event) => {
             const { componentId, configuration } = event.detail;
             this.updateComponentBindings(componentId, configuration);
+        });
+        
+        // PHASE 2: Listen for forced component rerenders
+        document.addEventListener('gmkb:force-component-rerender', (event) => {
+            this.handleForceRerender(event.detail);
         });
         
         // Listen for data updates

@@ -341,6 +341,15 @@ function gmkb_enqueue_assets() {
     $component_schemas = array();
     if (class_exists('GMKB_Component_Schema_Registry')) {
         $component_schemas = GMKB_Component_Schema_Registry::get_js_schemas();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB PHASE 2 ENQUEUE: Retrieved ' . count($component_schemas) . ' schemas from registry');
+            error_log('GMKB PHASE 2 ENQUEUE: Schema types: ' . implode(', ', array_keys($component_schemas)));
+        }
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB PHASE 2 ENQUEUE: Schema registry class not found!');
+        }
     }
 
     // ROOT FIX: Create WordPress data array early so it can be used by multiple scripts
@@ -700,6 +709,28 @@ function gmkb_enqueue_assets() {
         );
     }
 
+    // PHASE 2: Component Options UI
+    if (!wp_script_is('gmkb-component-options-ui', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-options-ui',
+            $plugin_url . 'js/ui/component-options-ui.js',
+            array('gmkb-component-configuration-manager', 'gmkb-data-binding-engine'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 2: Component Selection Manager
+    if (!wp_script_is('gmkb-component-selection-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-selection-manager',
+            $plugin_url . 'js/ui/component-selection-manager.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+
     // PHASE 3: Section Layout Manager
     if (!wp_script_is('gmkb-section-layout-manager', 'enqueued')) {
         wp_enqueue_script(
@@ -942,6 +973,8 @@ function gmkb_enqueue_assets() {
                 // PHASE 2: Configuration and data binding systems
                 'gmkb-component-configuration-manager',
                 'gmkb-data-binding-engine',
+                'gmkb-component-options-ui',
+                'gmkb-component-selection-manager',
                 // PHASE 3: Section layer systems
                 'gmkb-section-layout-manager',
                 'gmkb-section-controls-ui',
@@ -1303,6 +1336,24 @@ function gmkb_enqueue_assets() {
         array( 'gmkb-main-styles' ),
         $version
     );
+    
+    // PHASE 2: Component Options UI CSS
+    wp_enqueue_style(
+        'gmkb-component-options-ui',
+        $plugin_url . 'css/modules/component-options-ui.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // PHASE 2 DEVELOPMENT: Only load development styles in debug mode
+    if (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['debug_mode']) && $_GET['debug_mode'] === 'full') {
+        wp_enqueue_style(
+            'gmkb-phase2-development',
+            $plugin_url . 'debug/phase2-development-styles.css',
+            array( 'gmkb-main-styles' ),
+            $version . '-debug'
+        );
+    }
 
     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
         error_log( '✅ GMKB: Comprehensive WordPress-native assets enqueued successfully.' );

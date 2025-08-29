@@ -1,221 +1,149 @@
 {
   "name": "Testimonials",
-  "category": "media",
-  "icon": "testimonials.svg",
-  "description": "Display testimonials from clients or colleagues",
+  "category": "essential",
+  "description": "Display client testimonials and reviews",
   "isPremium": false,
-  "dependencies": [],
-  "version": "1.0.0",
-  "order": 2,
-  "settings": {
-    "title": {
-      "type": "text",
-      "label": "Section Title",
-      "default": "What People Are Saying",
-      "placeholder": "Enter section title",
-      "previewSelector": ".section-title",
-      "updateMethod": "textContent",
-      "section": "content",
-      "mkcgMapping": "meta_info.section_title"
-    },
-    "subtitle": {
-      "type": "text",
-      "label": "Subtitle",
-      "default": "Testimonials from satisfied clients",
-      "placeholder": "Enter subtitle (optional)",
-      "previewSelector": ".section-subtitle",
-      "updateMethod": "textContent",
-      "section": "content"
-    },
-    "testimonial_1_quote": {
-      "type": "textarea",
-      "label": "Testimonial 1 Quote",
-      "default": "This was an amazing experience. Highly recommended!",
-      "rows": 4,
-      "placeholder": "Enter testimonial quote",
-      "previewSelector": ".testimonial:nth-child(1) .testimonial-quote",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_1.quote"
-    },
-    "testimonial_1_author": {
-      "type": "text",
-      "label": "Testimonial 1 Author",
-      "default": "John Smith",
-      "placeholder": "Enter author name",
-      "previewSelector": ".testimonial:nth-child(1) .testimonial-author",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_1.author"
-    },
-    "testimonial_1_title": {
-      "type": "text",
-      "label": "Testimonial 1 Title",
-      "default": "CEO, Company Name",
-      "placeholder": "Enter author title/company",
-      "previewSelector": ".testimonial:nth-child(1) .testimonial-title",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_1.title"
-    },
-    "testimonial_1_photo": {
-      "type": "image",
-      "label": "Testimonial 1 Photo",
-      "default": "",
-      "previewSelector": ".testimonial:nth-child(1) .testimonial-photo",
-      "updateMethod": "src",
-      "section": "testimonials",
-      "helpText": "Square photo recommended"
-    },
-    "testimonial_2_quote": {
-      "type": "textarea",
-      "label": "Testimonial 2 Quote",
-      "default": "Professional, knowledgeable, and results-driven.",
-      "rows": 4,
-      "placeholder": "Enter testimonial quote",
-      "previewSelector": ".testimonial:nth-child(2) .testimonial-quote",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_2.quote"
-    },
-    "testimonial_2_author": {
-      "type": "text",
-      "label": "Testimonial 2 Author",
-      "default": "Jane Doe",
-      "placeholder": "Enter author name",
-      "previewSelector": ".testimonial:nth-child(2) .testimonial-author",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_2.author"
-    },
-    "testimonial_2_title": {
-      "type": "text",
-      "label": "Testimonial 2 Title",
-      "default": "Marketing Director",
-      "placeholder": "Enter author title/company",
-      "previewSelector": ".testimonial:nth-child(2) .testimonial-title",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_2.title"
-    },
-    "testimonial_2_photo": {
-      "type": "image",
-      "label": "Testimonial 2 Photo",
-      "default": "",
-      "previewSelector": ".testimonial:nth-child(2) .testimonial-photo",
-      "updateMethod": "src",
-      "section": "testimonials"
-    },
-    "testimonial_3_quote": {
-      "type": "textarea",
-      "label": "Testimonial 3 Quote",
-      "default": "",
-      "rows": 4,
-      "placeholder": "Enter testimonial quote (optional)",
-      "previewSelector": ".testimonial:nth-child(3) .testimonial-quote",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_3.quote"
-    },
-    "testimonial_3_author": {
-      "type": "text",
-      "label": "Testimonial 3 Author",
-      "default": "",
-      "placeholder": "Enter author name (optional)",
-      "previewSelector": ".testimonial:nth-child(3) .testimonial-author",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_3.author"
-    },
-    "testimonial_3_title": {
-      "type": "text",
-      "label": "Testimonial 3 Title",
-      "default": "",
-      "placeholder": "Enter author title/company",
-      "previewSelector": ".testimonial:nth-child(3) .testimonial-title",
-      "updateMethod": "textContent",
-      "section": "testimonials",
-      "mkcgMapping": "testimonials.testimonial_3.title"
-    },
-    "testimonial_3_photo": {
-      "type": "image",
-      "label": "Testimonial 3 Photo",
-      "default": "",
-      "previewSelector": ".testimonial:nth-child(3) .testimonial-photo",
-      "updateMethod": "src",
-      "section": "testimonials"
-    },
-    "layout_style": {
+  "version": "2.0.0-phase2",
+  "order": 7,
+  
+  "dataBindings": {
+    "testimonials": "testimonials",
+    "title": "testimonials_title"
+  },
+  
+  "componentOptions": {
+    "layout": {
       "type": "select",
       "label": "Layout Style",
+      "description": "Choose how testimonials are displayed",
       "default": "cards",
-      "options": [
-        {"value": "cards", "label": "Card Layout"},
-        {"value": "carousel", "label": "Carousel Slider"},
-        {"value": "grid", "label": "Grid Layout"},
-        {"value": "list", "label": "List Layout"}
-      ],
-      "previewSelector": ".testimonials-container",
-      "updateMethod": "class",
-      "classPrefix": "layout-",
-      "section": "appearance"
+      "options": {
+        "cards": "Card Layout",
+        "quotes": "Quote Bubbles",
+        "list": "Simple List",
+        "carousel": "Carousel Slider"
+      },
+      "section": "layout",
+      "preview": true
     },
-    "columns": {
+    "showPhotos": {
+      "type": "boolean",
+      "label": "Show Client Photos",
+      "description": "Display client profile photos",
+      "default": true,
+      "section": "content"
+    },
+    "maxTestimonials": {
+      "type": "number",
+      "label": "Maximum Testimonials",
+      "description": "Limit number of testimonials displayed",
+      "default": 6,
+      "min": 1,
+      "max": 20,
+      "section": "content"
+    },
+    "showRatings": {
+      "type": "boolean",
+      "label": "Show Star Ratings",
+      "description": "Display star ratings with testimonials",
+      "default": false,
+      "section": "content"
+    },
+    "colorScheme": {
       "type": "select",
-      "label": "Number of Columns",
-      "default": "2",
-      "options": [
-        {"value": "1", "label": "1 Column"},
-        {"value": "2", "label": "2 Columns"},
-        {"value": "3", "label": "3 Columns"}
-      ],
-      "previewSelector": ".testimonials-grid",
-      "updateMethod": "class",
-      "classPrefix": "columns-",
-      "section": "appearance"
+      "label": "Color Scheme",
+      "description": "Choose visual theme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Success Green",
+        "gold": "Premium Gold",
+        "neutral": "Neutral Gray"
+      },
+      "section": "appearance",
+      "preview": true
     },
-    "show_photos": {
-      "type": "checkbox",
-      "label": "Show Author Photos",
-      "default": true,
-      "previewSelector": ".testimonial-photo",
-      "updateMethod": "visibility",
-      "section": "appearance"
-    },
-    "show_quotes": {
-      "type": "checkbox",
-      "label": "Show Quote Marks",
-      "default": true,
-      "previewSelector": ".testimonials-container",
-      "updateMethod": "class",
-      "className": "show-quotes",
-      "section": "appearance"
+    "columnsDesktop": {
+      "type": "select",
+      "label": "Desktop Columns",
+      "description": "Number of columns on desktop",
+      "default": "3",
+      "options": {
+        "1": "1 Column",
+        "2": "2 Columns",
+        "3": "3 Columns"
+      },
+      "section": "layout",
+      "preview": true,
+      "conditional": {
+        "field": "layout",
+        "value": "cards"
+      }
     }
   },
+  
+  "responsiveBehavior": {
+    "mobile": {
+      "layout": "list",
+      "columnsDesktop": "1"
+    },
+    "tablet": {
+      "columnsDesktop": "2"
+    }
+  },
+  
   "sections": {
     "content": {
-      "title": "Section Content",
-      "order": 1
-    },
-    "testimonials": {
       "title": "Testimonial Content",
-      "order": 2
+      "description": "Configure what testimonial data to show",
+      "order": 1,
+      "icon": "edit"
+    },
+    "layout": {
+      "title": "Layout Settings",
+      "description": "Choose display layout and columns",
+      "order": 2,
+      "icon": "layout"
     },
     "appearance": {
-      "title": "Layout & Appearance",
-      "order": 3
+      "title": "Appearance",
+      "description": "Customize colors and styling",
+      "order": 3,
+      "icon": "palette"
     }
   },
-  "mkcgIntegration": {
-    "autoPopulate": true,
-    "requiredFields": ["testimonial_1_quote", "testimonial_1_author"],
-    "dataSource": "testimonials",
-    "validationRules": {
-      "minTestimonials": 1,
-      "maxTestimonials": 3,
-      "quoteMinLength": 10,
-      "authorRequired": true
+  
+  "presets": {
+    "professional": {
+      "name": "Professional Cards",
+      "options": {
+        "layout": "cards",
+        "showPhotos": true,
+        "showRatings": false,
+        "colorScheme": "blue",
+        "columnsDesktop": "3",
+        "maxTestimonials": 6
+      }
     },
-    "priority": "high"
+    "premium": {
+      "name": "Premium Display",
+      "options": {
+        "layout": "quotes",
+        "showPhotos": true,
+        "showRatings": true,
+        "colorScheme": "gold",
+        "maxTestimonials": 4
+      }
+    },
+    "minimal": {
+      "name": "Minimal List",
+      "options": {
+        "layout": "list",
+        "showPhotos": false,
+        "showRatings": false,
+        "colorScheme": "neutral",
+        "maxTestimonials": 8
+      }
+    }
   }
 }
