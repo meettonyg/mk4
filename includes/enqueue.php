@@ -1377,6 +1377,14 @@ function gmkb_enqueue_assets() {
         $version
     );
     
+    // PHASE 2: Topics Editor CSS
+    wp_enqueue_style(
+        'gmkb-topics-editor',
+        $plugin_url . 'css/modules/topics-editor.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
     // PHASE 2 DEVELOPMENT: Only load development styles in debug mode
     if (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['debug_mode']) && $_GET['debug_mode'] === 'full') {
         wp_enqueue_style(

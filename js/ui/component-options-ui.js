@@ -21,6 +21,49 @@ class ComponentOptionsUI {
         this.init();
     }
     
+    updateTopicsInDOM(componentId, topics) {
+        // Find the topics component in the preview
+        const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (!componentElement) return;
+        
+        const topicsContainer = componentElement.querySelector('.topics-container');
+        if (!topicsContainer) return;
+        
+        // Clear existing topics
+        topicsContainer.innerHTML = '';
+        
+        // Add updated topics
+        if (topics && topics.length > 0) {
+            topics.forEach((topic, index) => {
+                const topicDiv = document.createElement('div');
+                topicDiv.className = 'topic-item';
+                topicDiv.setAttribute('data-topic-index', index);
+                topicDiv.setAttribute('data-topic-number', index + 1);
+                
+                topicDiv.innerHTML = `
+                    <div class="topic-content">
+                        <div class="topic-title" 
+                             contenteditable="true" 
+                             data-topic-number="${index + 1}"
+                             data-original-value="${topic.replace(/"/g, '&quot;')}">
+                            ${topic}
+                        </div>
+                    </div>
+                `;
+                
+                topicsContainer.appendChild(topicDiv);
+            });
+        } else {
+            topicsContainer.innerHTML = `
+                <div class="no-topics-message">
+                    <p>No topics found. Click 'Edit' to add your speaking topics.</p>
+                </div>
+            `;
+        }
+        
+        this.logger.info('UI', `Updated ${topics.length} topics in DOM for ${componentId}`);
+    }
+    
     init() {
         // Wait for core systems
         document.addEventListener('gmkb:core-systems-ready', () => {
@@ -270,6 +313,16 @@ class ComponentOptionsUI {
             return;
         }
         
+        // Clean up any existing editor first
+        if (this.currentEditor && this.currentEditor.destroy) {
+            this.currentEditor.destroy();
+            this.currentEditor = null;
+            this.currentEditorComponentId = null;
+        }
+        
+        // Clear the container
+        editorContainer.innerHTML = '';
+        
         // Get component data
         const component = window.enhancedStateManager?.getState()?.components?.[componentId];
         if (!component) {
@@ -305,12 +358,25 @@ class ComponentOptionsUI {
             }
         }
         
-        // Create update callback
+        // Create update callback  
         const onUpdate = (componentId, newData) => {
-            if (window.enhancedComponentManager) {
-                window.enhancedComponentManager.updateComponent(componentId, newData);
+            // Update component props using the correct method
+            if (window.enhancedComponentManager && window.enhancedComponentManager.updateComponentProps) {
+                window.enhancedComponentManager.updateComponentProps(componentId, newData);
+                
+                // For Topics component, manually update the DOM immediately
+                if (componentType === 'topics' && newData.topics) {
+                    this.updateTopicsInDOM(componentId, newData.topics);
+                }
             } else if (window.updateComponentProps) {
                 window.updateComponentProps(componentId, newData);
+                
+                // For Topics component, manually update the DOM immediately  
+                if (componentType === 'topics' && newData.topics) {
+                    this.updateTopicsInDOM(componentId, newData.topics);
+                }
+            } else {
+                this.logger.error('UI', 'No update method available for component props');
             }
         };
         
@@ -326,6 +392,7 @@ class ComponentOptionsUI {
         if (editor) {
             editor.render();
             this.currentEditor = editor;
+            this.currentEditorComponentId = componentId;
             this.logger.info('UI', `Loaded custom editor for ${componentType}`);
         }
     }

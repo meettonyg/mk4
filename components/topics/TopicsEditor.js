@@ -63,14 +63,23 @@ class TopicsEditor extends BaseComponentEditor {
         const listEl = this.container.querySelector('#topics-editor-list');
         const addBtn = this.container.querySelector('#add-topic-btn');
         
+        // Prevent clicks from bubbling up and potentially closing the editor
+        this.container.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
         // Add topic button
         if (addBtn) {
-            addBtn.addEventListener('click', () => this.addTopic());
+            addBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.addTopic();
+            });
         }
         
         // Topic input changes
         listEl.addEventListener('input', (e) => {
             if (e.target.classList.contains('topic-input')) {
+                e.stopPropagation();
                 this.updateTopics();
             }
         });
@@ -78,6 +87,8 @@ class TopicsEditor extends BaseComponentEditor {
         // Remove topic buttons
         listEl.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-remove')) {
+                e.stopPropagation();
+                e.preventDefault();
                 this.removeTopic(parseInt(e.target.dataset.index));
             }
         });
@@ -147,6 +158,9 @@ class TopicsEditor extends BaseComponentEditor {
         // Update the data through the base class method
         // This will trigger the onUpdate callback which handles persistence
         this.updateData({ topics });
+        
+        // Log the update for debugging
+        this.logger.info('EDITOR', `Updated ${topics.length} topics for ${this.componentId}`);
     }
 }
 
