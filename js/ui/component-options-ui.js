@@ -53,6 +53,9 @@ class ComponentOptionsUI {
                 
                 topicsContainer.appendChild(topicDiv);
             });
+            
+            // Set up preview-to-sidebar sync for the newly created elements
+            this.setupPreviewToSidebarSync(componentId);
         } else {
             topicsContainer.innerHTML = `
                 <div class="no-topics-message">
@@ -62,6 +65,56 @@ class ComponentOptionsUI {
         }
         
         this.logger.info('UI', `Updated ${topics.length} topics in DOM for ${componentId}`);
+    }
+    
+    setupPreviewToSidebarSync(componentId) {
+        // Find all topic title elements in the preview
+        const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (!componentElement) return;
+        
+        const topicTitles = componentElement.querySelectorAll('.topic-title[contenteditable="true"]');
+        
+        topicTitles.forEach((titleElement, index) => {
+            // Remove any existing listeners to prevent duplicates
+            const newElement = titleElement.cloneNode(true);
+            titleElement.parentNode.replaceChild(newElement, titleElement);
+            
+            // Add input listener for live sync
+            newElement.addEventListener('input', () => {
+                this.syncPreviewToSidebar(componentId, index, newElement.textContent.trim());
+            });
+            
+            // Add blur listener for final sync
+            newElement.addEventListener('blur', () => {
+                this.syncPreviewToSidebar(componentId, index, newElement.textContent.trim());
+            });
+        });
+    }
+    
+    syncPreviewToSidebar(componentId, topicIndex, value) {
+        // Prevent infinite sync loops
+        if (this._syncInProgress) return;
+        
+        // Update the sidebar editor if it exists and is for this component
+        if (this.currentEditor && this.currentEditorComponentId === componentId) {
+            const editorInput = document.querySelector(`#topics-editor-list .topic-input[data-index="${topicIndex}"]`);
+            if (editorInput && editorInput.value !== value) {
+                this._syncInProgress = true;
+                editorInput.value = value;
+                
+                // Trigger the editor's update method without causing a loop
+                // We'll modify updateTopics to check for this flag
+                if (this.currentEditor.updateTopics) {
+                    this.currentEditor._skipDOMUpdate = true;
+                    this.currentEditor.updateTopics();
+                    this.currentEditor._skipDOMUpdate = false;
+                }
+                
+                setTimeout(() => {
+                    this._syncInProgress = false;
+                }, 100);
+            }
+        }
     }
     
     init() {
@@ -365,14 +418,16 @@ class ComponentOptionsUI {
                 window.enhancedComponentManager.updateComponentProps(componentId, newData);
                 
                 // For Topics component, manually update the DOM immediately
-                if (componentType === 'topics' && newData.topics) {
+                // Skip if the update came from preview sync to prevent loops
+                if (componentType === 'topics' && newData.topics && !this.currentEditor?._skipDOMUpdate) {
                     this.updateTopicsInDOM(componentId, newData.topics);
                 }
             } else if (window.updateComponentProps) {
                 window.updateComponentProps(componentId, newData);
                 
                 // For Topics component, manually update the DOM immediately  
-                if (componentType === 'topics' && newData.topics) {
+                // Skip if the update came from preview sync to prevent loops
+                if (componentType === 'topics' && newData.topics && !this.currentEditor?._skipDOMUpdate) {
                     this.updateTopicsInDOM(componentId, newData.topics);
                 }
             } else {
@@ -394,6 +449,11 @@ class ComponentOptionsUI {
             this.currentEditor = editor;
             this.currentEditorComponentId = componentId;
             this.logger.info('UI', `Loaded custom editor for ${componentType}`);
+            
+            // For Topics, also set up preview-to-sidebar sync
+            if (componentType === 'topics') {
+                this.setupPreviewToSidebarSync(componentId);
+            }
         }
     }
     
