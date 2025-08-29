@@ -58,6 +58,7 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 
 // ROOT FIX: Load AJAX handlers for component functionality
 require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
+require_once GUESTIFY_PLUGIN_DIR . 'components/topics/save-handler.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 
 // Admin tools initialization

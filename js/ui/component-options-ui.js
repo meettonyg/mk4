@@ -413,23 +413,22 @@ class ComponentOptionsUI {
         
         // Create update callback  
         const onUpdate = (componentId, newData) => {
+            // For Topics, save directly to Pods instead of component state
+            if (componentType === 'topics' && newData.topics) {
+                // Don't update component props for Topics - let the save handler deal with it
+                // Just update the DOM for immediate feedback
+                if (!this.currentEditor?._skipDOMUpdate) {
+                    this.updateTopicsInDOM(componentId, newData.topics);
+                }
+                return; // Skip the normal component prop update
+            }
+            
+            // For other components, use the normal flow
             // Update component props using the correct method
             if (window.enhancedComponentManager && window.enhancedComponentManager.updateComponentProps) {
                 window.enhancedComponentManager.updateComponentProps(componentId, newData);
-                
-                // For Topics component, manually update the DOM immediately
-                // Skip if the update came from preview sync to prevent loops
-                if (componentType === 'topics' && newData.topics && !this.currentEditor?._skipDOMUpdate) {
-                    this.updateTopicsInDOM(componentId, newData.topics);
-                }
             } else if (window.updateComponentProps) {
                 window.updateComponentProps(componentId, newData);
-                
-                // For Topics component, manually update the DOM immediately  
-                // Skip if the update came from preview sync to prevent loops
-                if (componentType === 'topics' && newData.topics && !this.currentEditor?._skipDOMUpdate) {
-                    this.updateTopicsInDOM(componentId, newData.topics);
-                }
             } else {
                 this.logger.error('UI', 'No update method available for component props');
             }

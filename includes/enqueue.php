@@ -751,6 +751,17 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    
+    // PHASE 2: Topics Save Handler - saves to Pods
+    if (!wp_script_is('gmkb-topics-save-handler', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-topics-save-handler',
+            $plugin_url . 'components/topics/TopicsEditorSaveHandler.js',
+            array('gmkb-topics-editor'),
+            $version,
+            true
+        );
+    }
 
     // PHASE 2: Component Selection Manager
     if (!wp_script_is('gmkb-component-selection-manager', 'enqueued')) {
