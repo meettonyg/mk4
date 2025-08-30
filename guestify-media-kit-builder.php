@@ -15,35 +15,24 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// === GEMINI FIX START ===
-// DEFINE CONSTANTS AT THE TOP LEVEL - BEFORE ANY INCLUDES
+// DEFINE CONSTANTS AT THE TOP LEVEL
 define( 'GUESTIFY_VERSION', '2.1.0-vanilla-js-final' );
 define( 'GUESTIFY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GUESTIFY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-
-// Define GMKB constants for compatibility
 define( 'GMKB_VERSION', '2.1.0-vanilla-js-final' );
 define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-
-// WordPress compatibility flag
 define( 'GMKB_WORDPRESS_COMPATIBLE', true );
 
-// NOW include files that need these constants
+// Include primary files
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
-
-// SCALABLE ARCHITECTURE: Load base component service before specific components
 require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
-
-// PHASE 2: Component schema registry
 require_once GUESTIFY_PLUGIN_DIR . 'includes/component-schemas/class-gmkb-component-schema-registry.php';
 
-// ROOT FIX: Initialize schema registry for Phase 2
+// Initialize schema registry early
 add_action('init', function() {
     if (class_exists('GMKB_Component_Schema_Registry')) {
-        // Force initialization to ensure schemas are available
         GMKB_Component_Schema_Registry::get_schemas();
-        
         if (defined('WP_DEBUG') && WP_DEBUG) {
             $schemas = GMKB_Component_Schema_Registry::get_js_schemas();
             error_log('GMKB PHASE 2 ROOT FIX: Schema registry initialized with ' . count($schemas) . ' schemas');
@@ -56,26 +45,29 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 
-// ROOT FIX: Load AJAX handlers for component functionality
-require_once GUESTIFY_PLUGIN_DIR . 'components/topics/ajax-handler.php';
-require_once GUESTIFY_PLUGIN_DIR . 'components/topics/save-handler.php';
-require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
+// ARCHITECTURE CLEANUP: Component-level code should be handled by ComponentDiscovery
+// ROOT FIX: Remove component-specific includes from main plugin file
+// Components will auto-register via the ComponentDiscovery system
 
-// Admin tools initialization
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('ARCHITECTURE FIX: Component handlers now managed by ComponentDiscovery system');
+    error_log('ARCHITECTURE FIX: No more hard-coded component includes in main plugin');
+}
+
+require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
 
-// ROOT FIX: Topics data cleanup script for removing whitespace
+// Also protect the admin cleanup script loading
 if (is_admin()) {
     $cleanup_file = GUESTIFY_PLUGIN_DIR . 'admin/topics-data-cleanup.php';
     if (file_exists($cleanup_file)) {
         require_once $cleanup_file;
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('Guestify Plugin Warning: Missing optional file ' . $cleanup_file);
+        }
     }
 }
-
-// SCALABLE ARCHITECTURE: Test suite only loaded on demand via validation script
-// ROOT FIX: Removed automatic test script loading to prevent conflicts with enqueue.php
-// === GEMINI FIX END ===
-
 /**
  * Main plugin class - SIMPLIFIED
  */
@@ -202,48 +194,65 @@ class Guestify_Media_Kit_Builder {
     }
 
     /**
-     * SIMPLIFIED: Early builder page detection
+     * STRICT: Builder page detection - ONLY on specific pages
+     * ROOT FIX: Prevents site-wide CSS/JS loading
      */
     public function early_builder_check() {
-        // Simple builder page detection
         $is_builder_page = false;
         
-        // URL-based detection
-        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false) {
+        // Strategy 1: EXACT page slug detection (most restrictive)
+        if (is_page('media-kit') || is_page('guestify-media-kit')) {
             $is_builder_page = true;
         }
-        // WordPress page detection
-        elseif (is_page('guestify-media-kit') || is_page('media-kit')) {
+        // Strategy 2: EXACT URL path detection for tools/media-kit
+        elseif (isset($_SERVER['REQUEST_URI'])) {
+            $uri = $_SERVER['REQUEST_URI'];
+            // Only match EXACT path, not partial strings
+            if (preg_match('#/tools/media-kit/?($|\?)#', $uri)) {
+                $is_builder_page = true;
+            }
+        }
+        // Strategy 3: Admin page with specific parameter
+        elseif (is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit-builder') {
             $is_builder_page = true;
         }
         
         if ($is_builder_page) {
-            // Set global flag for enqueue.php
             global $gmkb_template_active;
             $gmkb_template_active = true;
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Builder page detected - WordPress will handle scripts');
+                error_log('✅ GMKB: STRICT page detection - builder page confirmed');
+                error_log('✅ GMKB: URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
+            }
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('ℹ️ GMKB: Page detection PASSED - not a builder page, CSS/JS will NOT load');
             }
         }
     }
     
     /**
-     * SIMPLIFIED: Template takeover
+     * STRICT: Template takeover - ONLY on specific pages
+     * ROOT FIX: Prevents template takeover on wrong pages
      */
     public function isolated_builder_template_takeover() {
-        // Simple detection
         $is_builder_page = false;
         
-        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'guestify-media-kit') !== false) {
+        // Strategy 1: EXACT page slug detection
+        if (is_page('media-kit') || is_page('guestify-media-kit')) {
             $is_builder_page = true;
         }
-        elseif (is_page('guestify-media-kit') || is_page('media-kit')) {
-            $is_builder_page = true;
+        // Strategy 2: EXACT URL path detection for tools/media-kit
+        elseif (isset($_SERVER['REQUEST_URI'])) {
+            $uri = $_SERVER['REQUEST_URI'];
+            if (preg_match('#/tools/media-kit/?($|\?)#', $uri)) {
+                $is_builder_page = true;
+            }
         }
         
         if (!$is_builder_page) {
-            return;
+            return; // Exit early - not a builder page
         }
         
         // Set global flag for script enqueuing

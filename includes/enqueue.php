@@ -1415,40 +1415,41 @@ function gmkb_enqueue_assets() {
 }
 
 /**
- * Simple, reliable page detection
- * Multiple strategies for maximum compatibility
+ * STRICT page detection - ROOT FIX for site-wide CSS/JS loading
+ * Only loads on EXACT media kit builder pages
  */
 function is_media_kit_builder_page() {
     $request_uri = $_SERVER['REQUEST_URI'] ?? '';
     
-    // ROOT FIX: Removed early debug output to prevent timing issues with wp_localize_script
+    // Strategy 1: EXACT WordPress page detection (most restrictive)
+    if ( is_page( 'media-kit' ) || is_page( 'guestify-media-kit' ) ) {
+        return true;
+    }
     
-    // Strategy 1: URL-based detection (most reliable)
-    if ( strpos( $request_uri, 'guestify-media-kit' ) !== false ) {
+    // Strategy 2: EXACT URL path detection for /tools/media-kit/
+    if ( preg_match( '#/tools/media-kit/?($|\?)#', $request_uri ) ) {
         return true;
     }
-
-    // Strategy 2: WordPress page detection
-    if ( is_page( 'guestify-media-kit' ) || is_page( 'media-kit' ) ) {
+    
+    // Strategy 3: Admin page with specific parameter ONLY
+    if ( is_admin() && isset( $_GET['page'] ) && $_GET['page'] === 'guestify-media-kit-builder' ) {
         return true;
     }
-
-    // Strategy 3: Post ID parameter detection (including all supported parameters)
-    if ( ( isset( $_GET['post_id'] ) && is_numeric( $_GET['post_id'] ) ) ||
-         ( isset( $_GET['mkcg_id'] ) && is_numeric( $_GET['mkcg_id'] ) ) ||
-         ( isset( $_GET['p'] ) && is_numeric( $_GET['p'] ) ) ||
-         ( isset( $_GET['page_id'] ) && is_numeric( $_GET['page_id'] ) ) ||
-         ( isset( $_GET['media_kit_id'] ) && is_numeric( $_GET['media_kit_id'] ) ) ) {
-        return true;
-    }
-
-    // Strategy 4: Global flag (set by template takeover)
+    
+    // Strategy 4: Global flag ONLY when explicitly set by template takeover
     global $gmkb_template_active;
     if ( ! empty( $gmkb_template_active ) ) {
         return true;
     }
-
-    return false;
+    
+    // ROOT FIX: REMOVED overly broad parameter detection
+    // The following was causing site-wide loading:
+    // - Generic ?post_id= parameters (used across WordPress)
+    // - Generic ?p= parameters (used for all posts)
+    // - Generic ?page_id= parameters (used for all pages)
+    // These are now REMOVED to prevent false positives
+    
+    return false; // Default: do not load
 }
 
 /**
