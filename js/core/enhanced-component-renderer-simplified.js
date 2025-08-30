@@ -122,7 +122,7 @@
                 
                 if (componentIds.length === 0) {
                     this.logger.debug('RENDER', 'No components to render initially');
-                    this.updateContainerDisplay(state);
+                    // ✅ ROOT CAUSE FIX: DO NOT manipulate display on initial load - let PHP control
                     return;
                 }
                 
@@ -146,7 +146,7 @@
                     }
                 }
                 
-                this.updateContainerDisplay(state);
+                // ✅ ROOT CAUSE FIX: DO NOT manipulate display on initial load - let PHP control
             }
             
             /**
