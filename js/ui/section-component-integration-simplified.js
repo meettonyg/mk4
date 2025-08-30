@@ -290,23 +290,27 @@
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Simple drag leave with section cleanup
+             * ✅ ROOT CAUSE FIX: Simple drag leave with proper target checking
              */
             handleDragLeave(e) {
-                // ROOT FIX: Safely remove visual feedback when leaving drop zones or sections
+                // ROOT FIX: Ensure we have a valid DOM element before accessing classList
+                if (!e.target || e.target.nodeType !== Node.ELEMENT_NODE) return;
+                
+                // ROOT FIX: Use e.target instead of e.currentTarget for element operations
+                const element = e.target;
                 const relatedTarget = e.relatedTarget;
-                if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
-                    // Check if e.currentTarget has classList before trying to remove classes
-                    if (e.currentTarget && e.currentTarget.classList) {
-                        e.currentTarget.classList.remove('gmkb-drop-zone-active', 'gmkb-section-drag-over');
+                
+                // Only remove classes if we're actually leaving the element
+                if (!relatedTarget || !element.contains(relatedTarget)) {
+                    // Safely remove visual feedback
+                    if (element.classList) {
+                        element.classList.remove('gmkb-drop-zone-active', 'gmkb-section-drag-over');
                     }
                     
                     // Also remove from parent section if applicable
-                    if (e.currentTarget) {
-                        const sectionElement = e.currentTarget.closest('[data-section-id]');
-                        if (sectionElement && sectionElement.classList) {
-                            sectionElement.classList.remove('gmkb-section-drag-over');
-                        }
+                    const sectionElement = element.closest && element.closest('[data-section-id]');
+                    if (sectionElement && sectionElement.classList) {
+                        sectionElement.classList.remove('gmkb-section-drag-over');
                     }
                 }
             }
