@@ -167,16 +167,33 @@
                 structuredLogger.debug('CONTROLS', `Set data-component-id="${componentId}" on element`);
             }
             
-            // ROOT CAUSE FIX: Verify this is the correct root element
-            // For topics components, the ID format is "topics-TIMESTAMP-INDEX"
-            // Check if this element has an ID that contains the component type
-            const componentType = componentId.split('-')[0]; // e.g., 'topics' from 'topics-1755999525631-1'
+            // ROOT CAUSE FIX: More flexible validation for dynamically generated components
+            // Accept the element if it either:
+            // 1. Has matching data-component-id
+            // 2. Has matching ID attribute
+            // 3. Is being assigned a new data-component-id
+            const existingDataId = componentElement.getAttribute('data-component-id');
+            const existingId = componentElement.id;
             
-            // Skip ID validation for dynamically generated components
-            // Just ensure the element has the data-component-id attribute
-            if (!componentElement.hasAttribute('data-component-id') || componentElement.getAttribute('data-component-id') !== componentId) {
-                structuredLogger.warn('CONTROLS', `Element validation failed for ${componentId} - data-component-id mismatch`);
-                return false;
+            // If data-component-id exists but doesn't match, this is likely the wrong element
+            if (existingDataId && existingDataId !== componentId) {
+                // Check if this is a duplicated component that needs updating
+                if (!componentId.includes('-copy-')) {
+                    structuredLogger.warn('CONTROLS', `Element validation failed for ${componentId} - data-component-id mismatch (has: ${existingDataId})`);
+                    return false;
+                }
+            }
+            
+            // Ensure the element has the correct data-component-id
+            if (!existingDataId || existingDataId !== componentId) {
+                componentElement.setAttribute('data-component-id', componentId);
+                structuredLogger.debug('CONTROLS', `Updated data-component-id to ${componentId}`);
+            }
+            
+            // Ensure the element has an ID if it doesn't
+            if (!existingId) {
+                componentElement.id = componentId;
+                structuredLogger.debug('CONTROLS', `Set element ID to ${componentId}`);
             }
             
             // ROOT FIX: Check if controls already attached to THIS SPECIFIC component ID (not element)

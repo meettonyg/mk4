@@ -413,82 +413,124 @@
         },
         
         /**
-         * Fallback duplicate method - Fixed for controls
+         * Fallback duplicate method - Fixed for controls AND Phase 2 configuration
          */
         fallbackDuplicateComponent(componentElement, componentId) {
             GMKBDebug.log('component', `🔧 GLOBAL: Using fallback duplication for ${componentId}`);
             
-            const duplicatedElement = componentElement.cloneNode(true);
             const newId = componentId + '-copy-' + Date.now();
-            duplicatedElement.setAttribute('data-component-id', newId);
             
-            // ROOT FIX: Remove ALL existing controls from the cloned element
-            const existingControls = duplicatedElement.querySelectorAll('.element-controls, .component-controls, .control-btn, [class*="control-toolbar"]');
-            existingControls.forEach(control => {
-                control.remove();
-                GMKBDebug.log('component', `Removed cloned control element: ${control.className}`);
-            });
+            // ROOT FIX: Get original component data and configuration
+            const state = window.enhancedStateManager?.getState();
+            const originalComponent = state?.components?.[componentId];
+            const componentType = componentElement.dataset.componentType || originalComponent?.type;
             
-            // Update all IDs in the cloned element
-            const elementsWithId = duplicatedElement.querySelectorAll('[id]');
-            elementsWithId.forEach(el => {
-                el.id = el.id + '-copy-' + Date.now();
-            });
+            if (!originalComponent) {
+                GMKBDebug.logError(`Component data not found in state: ${componentId}`);
+                return;
+            }
             
-            componentElement.parentNode.insertBefore(duplicatedElement, componentElement.nextSibling);
+            // Create new component data with Phase 2 configuration preserved
+            const duplicatedData = {
+                ...originalComponent,
+                id: newId,
+                duplicatedFrom: componentId,
+                timestamp: Date.now()
+            };
             
-            // Visual feedback
-            duplicatedElement.style.opacity = '0.5';
-            duplicatedElement.style.transform = 'scale(0.95)';
-            duplicatedElement.style.transition = 'all 0.3s ease';
-            
-            setTimeout(() => {
-                duplicatedElement.style.opacity = '1';
-                duplicatedElement.style.transform = 'scale(1)';
-                
-                // ROOT FIX: Attach fresh controls to the new component
-                if (window.componentControlsManager) {
-                    window.componentControlsManager.attachControls(duplicatedElement, newId);
-                    GMKBDebug.log('component', `✅ Attached fresh controls to duplicated component: ${newId}`);
-                } else {
-                    // Fallback: Dispatch event requesting control attachment
-                    document.dispatchEvent(new CustomEvent('gmkb:attach-controls-requested', {
-                        detail: {
-                            componentElement: duplicatedElement,
-                            componentId: newId,
-                            source: 'duplication'
-                        }
-                    }));
-                }
-                
-                // ROOT FIX: Update state manager if available
-                if (window.enhancedStateManager) {
-                    // Get the original component's data
-                    const state = window.enhancedStateManager.getState();
-                    const originalComponent = state?.components?.[componentId];
-                    
-                    if (originalComponent) {
-                        // Add the duplicated component to state
-                        const duplicatedData = {
-                            ...originalComponent,
-                            id: newId,
-                            duplicatedFrom: componentId,
-                            timestamp: Date.now()
-                        };
-                        
-                        // Dispatch action to add to state
-                        document.dispatchEvent(new CustomEvent('gmkb:component-duplicated', {
-                            detail: {
-                                originalId: componentId,
-                                newId: newId,
-                                componentData: duplicatedData
-                            }
-                        }));
+            // ROOT FIX: Add to state FIRST before DOM manipulation
+            if (window.enhancedStateManager) {
+                window.enhancedStateManager.dispatch({
+                    type: 'ADD_COMPONENT',
+                    payload: {
+                        componentId: newId,
+                        componentData: duplicatedData
                     }
-                }
+                });
+                GMKBDebug.log('component', `✅ Added duplicated component to state: ${newId}`);
+            }
+            
+            // ROOT FIX: Duplicate Phase 2 configuration
+            if (window.componentConfigurationManager && window.dataBindingEngine) {
+                // Get the original configuration
+                const originalConfig = window.componentConfigurationManager.getComponentConfiguration(componentId);
                 
-                GMKBDebug.log('component', `✅ GLOBAL: Fallback duplication complete: ${componentId} → ${newId}`);
-            }, 100);
+                if (originalConfig) {
+                    // Register configuration for the new component
+                    const newConfig = window.componentConfigurationManager.registerConfiguration(
+                        newId, 
+                        componentType,
+                        {
+                            ...originalConfig.componentOptions,
+                            duplicatedFrom: componentId
+                        }
+                    );
+                    
+                    // Bind data using the configuration
+                    const sourceData = duplicatedData.props || duplicatedData.data || {};
+                    window.dataBindingEngine.bindComponentData(
+                        newId,
+                        componentType,
+                        newConfig.dataBindings,
+                        sourceData
+                    );
+                    
+                    GMKBDebug.log('component', `✅ Phase 2 configuration duplicated for ${newId}`);
+                }
+            }
+            
+            // Let the renderer handle the actual DOM creation
+            // This ensures Phase 2 configuration is used
+            if (window.enhancedComponentRenderer) {
+                // The state change will trigger the renderer to add the component
+                GMKBDebug.log('component', `✅ Component renderer will handle DOM for ${newId}`);
+            } else {
+                // Fallback: Clone DOM element if renderer not available
+                const duplicatedElement = componentElement.cloneNode(true);
+                duplicatedElement.setAttribute('data-component-id', newId);
+                duplicatedElement.id = newId;
+                
+                // Remove ALL existing controls from the cloned element
+                const existingControls = duplicatedElement.querySelectorAll('.element-controls, .component-controls, .control-btn, [class*="control-toolbar"]');
+                existingControls.forEach(control => {
+                    control.remove();
+                });
+                
+                componentElement.parentNode.insertBefore(duplicatedElement, componentElement.nextSibling);
+                
+                // Visual feedback
+                duplicatedElement.style.opacity = '0.5';
+                duplicatedElement.style.transform = 'scale(0.95)';
+                duplicatedElement.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    duplicatedElement.style.opacity = '1';
+                    duplicatedElement.style.transform = 'scale(1)';
+                    
+                    // Attach fresh controls to the new component
+                    if (window.componentControlsManager) {
+                        window.componentControlsManager.attachControls(duplicatedElement, newId);
+                        GMKBDebug.log('component', `✅ Attached fresh controls to duplicated component: ${newId}`);
+                    }
+                }, 100);
+            }
+            
+            // Dispatch duplication complete event
+            document.dispatchEvent(new CustomEvent('gmkb:component-duplicated', {
+                detail: {
+                    originalId: componentId,
+                    newId: newId,
+                    componentData: duplicatedData,
+                    phase2: true
+                }
+            }));
+            
+            // Trigger auto-save
+            document.dispatchEvent(new CustomEvent('gmkb:state-changed', {
+                detail: { source: 'component-duplicate', componentId: newId }
+            }));
+            
+            GMKBDebug.log('component', `✅ GLOBAL: Fallback duplication complete with Phase 2: ${componentId} → ${newId}`);
         },
         
 

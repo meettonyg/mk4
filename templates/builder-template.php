@@ -465,45 +465,33 @@ if ($post_id > 0) {
                     </div>
                 <?php endif; ?>
                 
-                <?php if ($template_instructions['show_saved_components']): ?>
-                    <!-- PHASE 3: Section-Aware Saved Components Container -->
-                    <!-- ROOT CAUSE FIX: Conditional rendering prevents container conflicts -->
-                    <?php 
-                        // ROOT CAUSE FIX: Make display logic bulletproof
-                        $container_display = $template_instructions['show_saved_components'] ? 'block' : 'none';
-                        if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log('GMKB Template: Container display will be: ' . $container_display . ' (show_saved_components=' . ($template_instructions['show_saved_components'] ? 'true' : 'false') . ')');
-                        }
-                    ?>
-                    <div class="saved-components-container" id="saved-components-container" style="display: <?php echo $container_display; ?>; min-height: 400px;">
-                        <!-- Direct component rendering area - fallback for when sections are not used -->
-                        <div class="components-direct-container" id="components-direct-container">
-                            <!-- Components will be rendered here directly by EnhancedComponentRenderer -->
-                        </div>
-                        
-                        <!-- Sections will be rendered here by SectionLayoutManager -->
-                        <div class="gmkb-sections-container" id="gmkb-sections-container">
-                            <!-- Dynamic section rendering will happen here via JavaScript -->
-                        </div>
-                        
-                        <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
-                            <!-- Debug info for saved components -->
-                            <div class="debug-saved-components" style="position: absolute; top: 5px; right: 5px; background: rgba(0,255,0,0.1); padding: 5px; font-size: 10px; border-radius: 3px; z-index: 1000;">
-                                ✅ PHASE 3: Section-based rendering - <?php echo isset($saved_state['components']) ? count($saved_state['components']) : 0; ?> components
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                    <?php 
-                        if (defined('WP_DEBUG') && WP_DEBUG) {
-                            error_log('✅ GMKB Template: RENDERED saved-components-container (exclusive) - empty state HIDDEN');
-                        }
-                    ?>
-                <?php endif; ?>
+                <!-- ROOT FIX: Always render both containers, JavaScript controls visibility -->
+                <!-- This ensures containers always exist, preventing JavaScript errors -->
                 
-                <?php if ($template_instructions['show_empty_state']): ?>
-                    <!-- ROOT FIX: Enhanced Empty State with Auto-Loading Support -->
-                    <!-- ROOT CAUSE FIX: Conditional rendering prevents container conflicts -->
-                    <div class="empty-state-optimized" id="empty-state" data-allow-js-control="true">
+                <!-- PHASE 3: Section-Aware Saved Components Container -->
+                <!-- Always rendered, visibility controlled by JavaScript based on state -->
+                <div class="saved-components-container" id="saved-components-container" style="display: <?php echo $template_instructions['show_saved_components'] ? 'block' : 'none'; ?>; min-height: 400px;">
+                    <!-- Direct component rendering area - fallback for when sections are not used -->
+                    <div class="components-direct-container" id="components-direct-container">
+                        <!-- Components will be rendered here directly by EnhancedComponentRenderer -->
+                    </div>
+                    
+                    <!-- Sections will be rendered here by SectionLayoutManager -->
+                    <div class="gmkb-sections-container" id="gmkb-sections-container">
+                        <!-- Dynamic section rendering will happen here via JavaScript -->
+                    </div>
+                    
+                    <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
+                        <!-- Debug info for saved components -->
+                        <div class="debug-saved-components" style="position: absolute; top: 5px; right: 5px; background: rgba(0,255,0,0.1); padding: 5px; font-size: 10px; border-radius: 3px; z-index: 1000;">
+                            ✅ PHASE 3: Section-based rendering - <?php echo isset($saved_state['components']) ? count($saved_state['components']) : 0; ?> components
+                        </div>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- ROOT FIX: Empty State - Always Rendered -->
+                <!-- Always rendered, visibility controlled by JavaScript based on state -->
+                <div class="empty-state-optimized" id="empty-state" data-allow-js-control="true" style="display: <?php echo $template_instructions['show_empty_state'] ? 'block' : 'none'; ?>;">
                     <?php if ($dashboard_data): ?>
                         <!-- MKCG Data Auto-Loading State -->
                         <div class="empty-state-icon auto-loading">⚙️</div>
@@ -606,12 +594,7 @@ if ($post_id > 0) {
                         </div>
                     <?php endif; ?>
                 </div>
-                <?php 
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('✅ GMKB Template: RENDERED empty-state-optimized (exclusive) - saved components HIDDEN');
-                    }
-                ?>
-                <?php endif; // end show_empty_state ?>
+                <!-- END: Empty State -->
                 
                 <!-- ROOT FIX: Minimal drop zone (no complex bridge elements) -->
                 <div class="drop-zone drop-zone--empty" data-zone="0" style="display: none;">

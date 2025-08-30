@@ -685,6 +685,7 @@
 
         /**
          * Synchronize with state manager
+         * ROOT FIX: Don't clear components - merge instead to prevent loss during duplication
          */
         synchronizeWithState() {
             try {
@@ -704,8 +705,17 @@
                 
                 logger.info('COMPONENT', `Synchronizing with ${stateComponentIds.length} components from state`);
 
-                this.components.clear();
+                // ROOT FIX: Don't clear components - merge instead
+                // Only remove components that no longer exist in state
+                const managerComponentIds = Array.from(this.components.keys());
+                const toRemove = managerComponentIds.filter(id => !stateComponentIds.includes(id));
+                
+                toRemove.forEach(id => {
+                    this.components.delete(id);
+                    logger.debug('COMPONENT', `Removed component not in state: ${id}`);
+                });
 
+                // Add or update components from state
                 stateComponentIds.forEach(componentId => {
                     const componentData = stateComponents[componentId];
                     if (componentData && componentData.type) {

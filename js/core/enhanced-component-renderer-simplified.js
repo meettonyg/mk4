@@ -118,15 +118,20 @@
             
             /**
              * ✅ ROOT FIX: Initialize container display based on actual state
-             * This ensures the correct container is visible from the start
+             * Containers are always present in DOM (rendered by PHP), we only control visibility
              */
             initializeContainerDisplay() {
                 const initialState = this.stateManager.getState();
                 const savedContainer = document.getElementById('saved-components-container');
                 const emptyState = document.getElementById('empty-state');
                 
-                if (!savedContainer && !emptyState) {
-                    this.logger.warn('RENDER', '⚠️ No containers found to initialize');
+                // ROOT FIX: Both containers should always exist (rendered by PHP)
+                if (!savedContainer || !emptyState) {
+                    this.logger.error('RENDER', '❌ Required containers missing from DOM', {
+                        savedContainer: !!savedContainer,
+                        emptyState: !!emptyState
+                    });
+                    // Don't try to create them - this is a template error that needs fixing
                     return;
                 }
                 
@@ -135,40 +140,19 @@
                 const hasSections = initialState?.sections && Object.keys(initialState.sections).length > 0;
                 const hasContent = hasComponents || hasSections;
                 
-                this.logger.info('RENDER', `🎆 ROOT FIX: Initializing containers - hasComponents: ${hasComponents}, hasSections: ${hasSections}`);
+                this.logger.info('RENDER', `🎆 Initializing container visibility - hasComponents: ${hasComponents}, hasSections: ${hasSections}`);
                 
+                // ROOT FIX: Simple visibility toggle - containers always exist
                 if (hasContent) {
-                    // We have content - show saved container, hide empty state
-                    if (savedContainer) {
-                        savedContainer.style.display = 'block';
-                        this.logger.info('RENDER', '✅ ROOT FIX: Showing saved-components-container on init (has content)');
-                    }
-                    if (emptyState) {
-                        emptyState.style.display = 'none';
-                        this.logger.info('RENDER', '🚫 ROOT FIX: Hiding empty-state on init (has content)');
-                    }
+                    // Show saved container, hide empty state
+                    savedContainer.style.display = 'block';
+                    emptyState.style.display = 'none';
+                    this.logger.info('RENDER', '✅ Showing saved-components-container (has content)');
                 } else {
-                    // No content - show empty state, hide saved container
-                    if (emptyState) {
-                        emptyState.style.display = 'block';
-                        this.logger.info('RENDER', '✅ ROOT FIX: Showing empty-state on init (no content)');
-                    }
-                    if (savedContainer) {
-                        savedContainer.style.display = 'none';
-                        this.logger.info('RENDER', '🚫 ROOT FIX: Hiding saved-components-container on init (no content)');
-                    }
-                }
-                
-                // Verify at least one container is visible
-                const savedVisible = savedContainer && savedContainer.style.display !== 'none';
-                const emptyVisible = emptyState && emptyState.style.display !== 'none';
-                
-                if (!savedVisible && !emptyVisible) {
-                    // Emergency fallback - ensure empty state is visible
-                    this.logger.error('RENDER', '🚨 ROOT FIX: No container visible! Forcing empty state visible');
-                    if (emptyState) {
-                        emptyState.style.display = 'block';
-                    }
+                    // Show empty state, hide saved container
+                    savedContainer.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    this.logger.info('RENDER', '✅ Showing empty-state (no content)');
                 }
             }
             
@@ -224,6 +208,7 @@
             /**
              * ✅ SIMPLIFIED: Direct state processing without service coordination
              * ANTI-DUPLICATION: Respect section-managed components
+             * ROOT FIX: Properly handle duplicated components
              */
             async processStateChange(newState) {
                 const components = newState.components || {};
@@ -235,7 +220,7 @@
                     return;
                 }
                 
-                // ✅ SIMPLIFIED: Clear and re-render approach - but respect sections
+                // ✅ SIMPLIFIED: Smart update approach - don't remove everything
                 const currentComponents = Array.from(this.componentCache.keys());
                 
                 // Remove components that no longer exist in state (unless in sections)
@@ -251,6 +236,25 @@
                     if (componentData && componentData.type) {
                         // Skip if component is managed by sections
                         if (this.isComponentInSection(componentId)) {
+                            continue;
+                        }
+                        
+                        // ROOT FIX: Check if component exists in DOM but not in cache (duplication case)
+                        const existingElement = document.getElementById(componentId);
+                        if (existingElement && !this.componentCache.has(componentId)) {
+                            // Component exists in DOM but not in cache - add to cache
+                            this.componentCache.set(componentId, existingElement);
+                            this.logger.debug('RENDER', `Added existing DOM element to cache: ${componentId}`);
+                            
+                            // ROOT FIX: Ensure controls are attached to duplicated component
+                            if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                                setTimeout(() => {
+                                    const success = window.componentControlsManager.attachControls(existingElement, componentId);
+                                    if (success) {
+                                        this.logger.debug('RENDER', `Controls attached to duplicated component: ${componentId}`);
+                                    }
+                                }, 100);
+                            }
                             continue;
                         }
                         
@@ -967,8 +971,8 @@
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Direct container management without complex states
-             * Enhanced to find the correct nested container structure
+             * ✅ ROOT FIX: Get the component container
+             * Containers are always rendered by PHP, we just find them
              */
             getOrCreateContainer() {
                 // First try to find the direct container inside saved-components-container
@@ -979,76 +983,48 @@
                     return container;
                 }
                 
-                // Fallback to saved-components-container
+                // Fallback to saved-components-container itself
                 container = document.getElementById('saved-components-container');
                 
                 if (container) {
-                    this.logger.debug('RENDER', 'Found saved-components-container');
+                    this.logger.debug('RENDER', 'Using saved-components-container as fallback');
                     return container;
                 }
                 
-                // Create container if none exists
-                const preview = document.getElementById('media-kit-preview');
-                if (preview) {
-                    container = document.createElement('div');
-                    container.id = 'saved-components-container';
-                    container.className = 'gmkb-components-container';
-                    container.style.display = 'block';
-                    container.style.minHeight = '400px';
-                    
-                    // Create nested structure
-                    const directContainer = document.createElement('div');
-                    directContainer.id = 'components-direct-container';
-                    directContainer.className = 'components-direct-container';
-                    container.appendChild(directContainer);
-                    
-                    const sectionsContainer = document.createElement('div');
-                    sectionsContainer.id = 'gmkb-sections-container';
-                    sectionsContainer.className = 'gmkb-sections-container';
-                    container.appendChild(sectionsContainer);
-                    
-                    preview.appendChild(container);
-                    
-                    this.logger.info('RENDER', '📦 [PHASE 2] Created new container with nested structure');
-                    return directContainer; // Return the direct container for components
-                }
-                
+                // If containers don't exist, this is a template error
+                this.logger.error('RENDER', '❌ Component containers missing from DOM - template error');
                 return null;
             }
             
             /**
-             * ✅ SIMPLIFIED: Direct empty state management
-             * Enhanced to work with nested container structure and consider sections
+             * ✅ SIMPLIFIED: Update container visibility based on state
+             * Containers always exist, we only toggle visibility
              */
             updateContainerDisplay(state) {
                 const savedContainer = document.getElementById('saved-components-container');
                 const emptyState = document.getElementById('empty-state');
+                
+                // Both containers must exist (rendered by PHP)
+                if (!savedContainer || !emptyState) {
+                    this.logger.error('RENDER', '❌ Cannot update display - containers missing');
+                    return;
+                }
+                
                 const hasComponents = state.components && Object.keys(state.components).length > 0;
                 const hasSections = state.sections && Array.isArray(state.sections) && state.sections.length > 0;
                 const hasContent = hasComponents || hasSections;
                 
-                this.logger.debug('RENDER', `📊 [PHASE 2] Updating display - hasComponents: ${hasComponents}, hasSections: ${hasSections}, hasContent: ${hasContent}`);
+                this.logger.debug('RENDER', `📊 Updating display - hasComponents: ${hasComponents}, hasSections: ${hasSections}`);
                 
+                // Simple visibility toggle
                 if (hasContent) {
-                    // Show saved components container, hide empty state
-                    if (savedContainer) {
-                        savedContainer.style.display = 'block';
-                        this.logger.debug('RENDER', '👁️ [PHASE 2] Showing saved-components-container (has content)');
-                    }
-                    if (emptyState) {
-                        emptyState.style.display = 'none';
-                        this.logger.debug('RENDER', '🚫 [PHASE 2] Hiding empty-state (has content)');
-                    }
+                    savedContainer.style.display = 'block';
+                    emptyState.style.display = 'none';
+                    this.logger.debug('RENDER', '👁️ Showing saved-components-container');
                 } else {
-                    // Show empty state, hide saved components container
-                    if (savedContainer) {
-                        savedContainer.style.display = 'none';
-                        this.logger.debug('RENDER', '🚫 [PHASE 2] Hiding saved-components-container (no content)');
-                    }
-                    if (emptyState) {
-                        emptyState.style.display = 'block';
-                        this.logger.debug('RENDER', '👁️ [PHASE 2] Showing empty-state (no content)');
-                    }
+                    savedContainer.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    this.logger.debug('RENDER', '👁️ Showing empty-state');
                 }
             }
             

@@ -429,15 +429,30 @@
          */
         applyTransactionDirect(transaction) {
             switch (transaction.type) {
-                case 'ADD_COMPONENT':
-                    this.state.components[transaction.payload.id] = transaction.payload;
-                    this.state.layout.push(transaction.payload.id);
+                case 'ADD_COMPONENT': {
+                    // ROOT FIX: Properly handle component data structure
+                    // Use block scope to avoid redeclaration issues
+                    const componentData = transaction.payload.componentData || transaction.payload;
+                    const compId = transaction.payload.componentId || componentData.id;
+                    
+                    if (!compId) {
+                        this.logger.error('STATE', 'ADD_COMPONENT: No component ID provided');
+                        break;
+                    }
+                    
+                    this.state.components[compId] = componentData;
+                    
+                    // Only add to layout if not already present
+                    if (!this.state.layout.includes(compId)) {
+                        this.state.layout.push(compId);
+                    }
                     break;
+                }
                 case 'REMOVE_COMPONENT':
                     delete this.state.components[transaction.payload];
                     this.state.layout = this.state.layout.filter(id => id !== transaction.payload);
                     break;
-                case 'UPDATE_COMPONENT':
+                case 'UPDATE_COMPONENT': {
                     const { componentId, newProps } = transaction.payload;
                     if (this.state.components[componentId]) {
                         this.state.components[componentId].props = {
@@ -446,7 +461,8 @@
                         };
                     }
                     break;
-                case 'MOVE_COMPONENT':
+                }
+                case 'MOVE_COMPONENT': {
                     const { componentId: moveId, direction } = transaction.payload;
                     const index = this.state.layout.indexOf(moveId);
                     if (index === -1) break;
@@ -459,6 +475,7 @@
                         [this.state.layout[index + 1], this.state.layout[index]];
                     }
                     break;
+                }
                 case 'SET_LAYOUT':
                     this.state.layout = transaction.payload;
                     break;
