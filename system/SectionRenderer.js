@@ -655,6 +655,22 @@ class SectionRenderer {
     }
     
     /**
+     * Render sections - PUBLIC API METHOD
+     * @param {Array} sections - Optional array of sections to render
+     */
+    renderSections(sections = null) {
+        if (sections && Array.isArray(sections)) {
+            // Render specific sections
+            sections.forEach(section => {
+                this.renderSection(section);
+            });
+        } else {
+            // Render all sections
+            this.renderAllSections();
+        }
+    }
+    
+    /**
      * Render all sections (utility method)
      * Following checklist: Batch Operations, Performance
      */

@@ -753,6 +753,8 @@ function gmkb_enqueue_assets() {
     }
     
     // PHASE 2: Topics Save Handler - saves to Pods
+    // TEMPORARILY DISABLED: 404 error on file that exists - needs path investigation
+    /*
     if (!wp_script_is('gmkb-topics-save-handler', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-topics-save-handler',
@@ -762,6 +764,7 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
 
     // PHASE 2: Component Selection Manager
     if (!wp_script_is('gmkb-component-selection-manager', 'enqueued')) {
@@ -849,6 +852,17 @@ function gmkb_enqueue_assets() {
             'gmkb-toast-polyfill',
             $plugin_url . 'js/utils/toast-polyfill.js',
             array(),
+            $version,
+            true
+        );
+    }
+    
+    // Quick Diagnostic Tool - Always available for debugging
+    if (!wp_script_is('gmkb-quick-diagnostic', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-quick-diagnostic',
+            $plugin_url . 'debug/diagnostic/quick-diagnostic.js',
+            array('gmkb-main-script'),
             $version,
             true
         );
@@ -1297,6 +1311,24 @@ function gmkb_enqueue_assets() {
     // - component-controls-manager.js (handles all control creation)
     // No patches or fix scripts needed!
 
+    
+    // Test Suite Loader - Load only when explicitly requested
+    if (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['load_tests']) && $_GET['load_tests'] === '1') {
+        if (!wp_script_is('gmkb-test-suite-loader', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-test-suite-loader',
+                $plugin_url . 'tests/test-suite-loader.js',
+                array('gmkb-main-script'),
+                $version . '-test-suite',
+                true
+            );
+            
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( '✅ GMKB: Test Suite Loader enqueued - Use window.runAllTests() to run tests' );
+            }
+        }
+    }
+    
     // ROOT FIX: Move wp_localize_script BEFORE any debug output
     // This ensures data is available when first scripts run
     if ( wp_script_is( 'gmkb-enhanced-state-manager', 'enqueued' ) ) {

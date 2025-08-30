@@ -165,15 +165,17 @@
             return false;
         }
         
-        const props = {
-            title: 'Test Component',
-            subtitle: 'Created by diagnostic tool',
-            description: 'This is a test component'
+        const testComponent = {
+            type: type,
+            props: {
+                title: 'Test Component',
+                subtitle: 'Created by diagnostic tool',
+                description: 'This is a test component'
+            }
         };
         
         try {
-            // ROOT FIX: Pass type as first argument, props as second
-            window.enhancedComponentManager.addComponent(type, props);
+            window.enhancedComponentManager.addComponent(testComponent);
             console.log(`✅ Test ${type} component created`);
             return true;
         } catch (error) {

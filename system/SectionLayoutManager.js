@@ -96,6 +96,36 @@ class SectionLayoutManager {
     }
     
     /**
+     * Create a new section - PUBLIC API METHOD
+     * @param {string} sectionType - Type of section to create
+     * @param {object} configuration - Optional configuration
+     * @returns {object} The created section configuration
+     */
+    createSection(sectionType = 'full_width', configuration = {}) {
+        const sectionId = configuration.section_id || `section_${Date.now()}`;
+        return this.registerSection(sectionId, sectionType, configuration);
+    }
+    
+    /**
+     * Delete a section - PUBLIC API METHOD ALIAS
+     * @param {string} sectionId - ID of section to delete
+     * @returns {boolean} Success status
+     */
+    deleteSection(sectionId) {
+        return this.removeSection(sectionId);
+    }
+    
+    /**
+     * Update a section - PUBLIC API METHOD ALIAS
+     * @param {string} sectionId - ID of section to update
+     * @param {object} updates - Updates to apply
+     * @returns {object|null} Updated section or null
+     */
+    updateSection(sectionId, updates) {
+        return this.updateSectionConfiguration(sectionId, updates);
+    }
+    
+    /**
      * Register a new section
      * Following checklist: Schema Compliance, Event-Driven, Root Cause Fix
      */
