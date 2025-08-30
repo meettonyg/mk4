@@ -79,17 +79,20 @@
                 }
                 
                 try {
+                    // ✅ ROOT FIX: Initialize container display based on initial state
+                    this.initializeContainerDisplay();
+                    
                     // ✅ SIMPLIFIED: Direct state subscription without complex coordination
                     this.stateUnsubscribe = this.stateManager.subscribeGlobal((state) => {
                         this.onStateChange(state);
-                        });
-                        
-                        // PHASE 2: Listen for forced component rerenders from options UI
-                document.addEventListener('gmkb:force-component-rerender', (event) => {
-                    this.handleForceRerender(event.detail);
-                });
-                
-                // ✅ ROOT CAUSE FIX: Render initial state immediately
+                    });
+                    
+                    // PHASE 2: Listen for forced component rerenders from options UI
+                    document.addEventListener('gmkb:force-component-rerender', (event) => {
+                        this.handleForceRerender(event.detail);
+                    });
+                    
+                    // ✅ ROOT CAUSE FIX: Render initial state immediately
                     const initialState = this.stateManager.getState();
                     if (initialState && initialState.components) {
                         await this.renderInitialComponents(initialState);
@@ -114,6 +117,62 @@
             }
             
             /**
+             * ✅ ROOT FIX: Initialize container display based on actual state
+             * This ensures the correct container is visible from the start
+             */
+            initializeContainerDisplay() {
+                const initialState = this.stateManager.getState();
+                const savedContainer = document.getElementById('saved-components-container');
+                const emptyState = document.getElementById('empty-state');
+                
+                if (!savedContainer && !emptyState) {
+                    this.logger.warn('RENDER', '⚠️ No containers found to initialize');
+                    return;
+                }
+                
+                // Check for content
+                const hasComponents = initialState?.components && Object.keys(initialState.components).length > 0;
+                const hasSections = initialState?.sections && Object.keys(initialState.sections).length > 0;
+                const hasContent = hasComponents || hasSections;
+                
+                this.logger.info('RENDER', `🎆 ROOT FIX: Initializing containers - hasComponents: ${hasComponents}, hasSections: ${hasSections}`);
+                
+                if (hasContent) {
+                    // We have content - show saved container, hide empty state
+                    if (savedContainer) {
+                        savedContainer.style.display = 'block';
+                        this.logger.info('RENDER', '✅ ROOT FIX: Showing saved-components-container on init (has content)');
+                    }
+                    if (emptyState) {
+                        emptyState.style.display = 'none';
+                        this.logger.info('RENDER', '🚫 ROOT FIX: Hiding empty-state on init (has content)');
+                    }
+                } else {
+                    // No content - show empty state, hide saved container
+                    if (emptyState) {
+                        emptyState.style.display = 'block';
+                        this.logger.info('RENDER', '✅ ROOT FIX: Showing empty-state on init (no content)');
+                    }
+                    if (savedContainer) {
+                        savedContainer.style.display = 'none';
+                        this.logger.info('RENDER', '🚫 ROOT FIX: Hiding saved-components-container on init (no content)');
+                    }
+                }
+                
+                // Verify at least one container is visible
+                const savedVisible = savedContainer && savedContainer.style.display !== 'none';
+                const emptyVisible = emptyState && emptyState.style.display !== 'none';
+                
+                if (!savedVisible && !emptyVisible) {
+                    // Emergency fallback - ensure empty state is visible
+                    this.logger.error('RENDER', '🚨 ROOT FIX: No container visible! Forcing empty state visible');
+                    if (emptyState) {
+                        emptyState.style.display = 'block';
+                    }
+                }
+            }
+            
+            /**
              * ✅ ROOT CAUSE FIX: Direct initial rendering without service coordination
              */
             async renderInitialComponents(state) {
@@ -122,7 +181,7 @@
                 
                 if (componentIds.length === 0) {
                     this.logger.debug('RENDER', 'No components to render initially');
-                    // ✅ ROOT CAUSE FIX: DO NOT manipulate display on initial load - let PHP control
+                    // Container display already handled by initializeContainerDisplay
                     return;
                 }
                 
@@ -146,7 +205,7 @@
                     }
                 }
                 
-                // ✅ ROOT CAUSE FIX: DO NOT manipulate display on initial load - let PHP control
+                // Container display is managed by initializeContainerDisplay and updateContainerDisplay
             }
             
             /**
@@ -226,7 +285,16 @@
                     const html = await this.generateConfigurationDrivenHTML(componentId, componentData);
                     element.innerHTML = html;
                     
-                    // ✅ CHECKLIST COMPLIANT: Emit component rendered event for controls
+                    // ✅ ROOT FIX: Attach controls immediately after rendering
+                    // This ensures controls are always present, not relying on events
+                    if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                        const success = window.componentControlsManager.attachControls(element, componentId);
+                        if (!success) {
+                            this.logger.warn('RENDER', `Failed to attach controls to ${componentId}`);
+                        }
+                    }
+                    
+                    // ✅ CHECKLIST COMPLIANT: Emit component rendered event for other systems
                     document.dispatchEvent(new CustomEvent('gmkb:component-rendered', {
                         detail: {
                             componentId,
@@ -832,7 +900,15 @@
                 existingElement.innerHTML = html;
                 existingElement.setAttribute('data-component-type', componentData.type);
                 
-                // ✅ CHECKLIST COMPLIANT: Emit update event for controls
+                // ✅ ROOT FIX: Re-attach controls after update (innerHTML clears them)
+                if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                    const success = window.componentControlsManager.attachControls(existingElement, componentId);
+                    if (!success) {
+                        this.logger.warn('RENDER', `Failed to re-attach controls to ${componentId} after update`);
+                    }
+                }
+                
+                // ✅ CHECKLIST COMPLIANT: Emit update event for other systems
                 document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
                     detail: {
                         componentId,

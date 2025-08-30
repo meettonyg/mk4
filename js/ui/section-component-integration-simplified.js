@@ -293,15 +293,20 @@
              * ✅ ROOT CAUSE FIX: Simple drag leave with section cleanup
              */
             handleDragLeave(e) {
-                // ROOT FIX: Remove visual feedback when leaving drop zones or sections
+                // ROOT FIX: Safely remove visual feedback when leaving drop zones or sections
                 const relatedTarget = e.relatedTarget;
                 if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
-                    e.currentTarget.classList.remove('gmkb-drop-zone-active', 'gmkb-section-drag-over');
+                    // Check if e.currentTarget has classList before trying to remove classes
+                    if (e.currentTarget && e.currentTarget.classList) {
+                        e.currentTarget.classList.remove('gmkb-drop-zone-active', 'gmkb-section-drag-over');
+                    }
                     
                     // Also remove from parent section if applicable
-                    const sectionElement = e.currentTarget.closest('[data-section-id]');
-                    if (sectionElement) {
-                        sectionElement.classList.remove('gmkb-section-drag-over');
+                    if (e.currentTarget) {
+                        const sectionElement = e.currentTarget.closest('[data-section-id]');
+                        if (sectionElement && sectionElement.classList) {
+                            sectionElement.classList.remove('gmkb-section-drag-over');
+                        }
                     }
                 }
             }

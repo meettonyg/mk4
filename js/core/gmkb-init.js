@@ -298,69 +298,88 @@
         },
         
         /**
-         * Handle move component action
-         */
+        * Handle move component action - Fixed for sections
+        */
         handleMoveComponent(componentId, direction) {
-            GMKBDebug.log('component', `📦 Moving component ${componentId} ${direction}`);
-            
-            const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
-            if (!componentElement) {
-                GMKBDebug.logError(`Component element not found: ${componentId}`);
-                return;
-            }
-            
-            // Find the actual container
-            let container = componentElement.closest('#saved-components-container') ||
+        GMKBDebug.log('component', `📦 Moving component ${componentId} ${direction}`);
+        
+        const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (!componentElement) {
+        GMKBDebug.logError(`Component element not found: ${componentId}`);
+        return;
+        }
+        
+        // ROOT FIX: Check if component is in a section first
+        const sectionContainer = componentElement.closest('.gmkb-section__content, .gmkb-section__column, .section-content');
+        
+        let container;
+        let allComponents;
+        
+        if (sectionContainer) {
+        // Component is in a section - get components within the same section column
+        container = sectionContainer;
+            allComponents = Array.from(container.querySelectorAll('[data-component-id]'));
+            GMKBDebug.log('component', `Component is in section container: ${sectionContainer.className}`);
+        } else {
+            // Component is in main container
+            container = componentElement.closest('#saved-components-container') ||
                           componentElement.closest('.saved-components-container') ||
                           componentElement.closest('#components-container') ||
-                          componentElement.closest('.media-kit, #media-kit-preview');
-            
+                      componentElement.closest('.media-kit, #media-kit-preview');
+        
             if (!container) {
                 GMKBDebug.logError('Component container not found');
                 return;
-            }
-            
-            // Get all components in the same container
-            const allComponents = Array.from(container.querySelectorAll(':scope > [data-component-id]'));
-            const currentIndex = allComponents.indexOf(componentElement);
-            
-            if (currentIndex === -1) {
-                GMKBDebug.logError('Component not found in container children');
-                return;
-            }
-            
-            if (direction === 'up' && currentIndex > 0) {
-                const previousComponent = allComponents[currentIndex - 1];
-                container.insertBefore(componentElement, previousComponent);
-                GMKBDebug.log('component', `✅ Moved ${componentId} up`);
-                
-                if (window.enhancedStateManager) {
-                    window.enhancedStateManager.moveComponent(componentId, 'up');
-                }
-            } else if (direction === 'down' && currentIndex < allComponents.length - 1) {
-                const nextComponent = allComponents[currentIndex + 1];
-                if (nextComponent.nextSibling) {
-                    container.insertBefore(componentElement, nextComponent.nextSibling);
-                } else {
-                    container.appendChild(componentElement);
-                }
-                GMKBDebug.log('component', `✅ Moved ${componentId} down`);
-                
-                if (window.enhancedStateManager) {
-                    window.enhancedStateManager.moveComponent(componentId, 'down');
-                }
+        }
+        
+        // Get all components in the same container (direct children only)
+        allComponents = Array.from(container.querySelectorAll(':scope > [data-component-id]'));
+        }
+        
+        const currentIndex = allComponents.indexOf(componentElement);
+        
+        if (currentIndex === -1) {
+        GMKBDebug.logError('Component not found in container children');
+        return;
+        }
+        
+        if (direction === 'up' && currentIndex > 0) {
+        const previousComponent = allComponents[currentIndex - 1];
+        container.insertBefore(componentElement, previousComponent);
+        GMKBDebug.log('component', `✅ Moved ${componentId} up`);
+        
+        if (window.enhancedStateManager) {
+                window.enhancedStateManager.moveComponent(componentId, 'up');
+        }
+        } else if (direction === 'down' && currentIndex < allComponents.length - 1) {
+            const nextComponent = allComponents[currentIndex + 1];
+            if (nextComponent.nextSibling) {
+                container.insertBefore(componentElement, nextComponent.nextSibling);
             } else {
-                GMKBDebug.log('component', `⚠️ Cannot move ${componentId} ${direction}`);
-            }
+                container.appendChild(componentElement);
+        }
+        GMKBDebug.log('component', `✅ Moved ${componentId} down`);
             
-            // Visual feedback
-            componentElement.style.transform = 'scale(1.02)';
-            componentElement.style.transition = 'transform 0.2s ease';
-            setTimeout(() => {
-                componentElement.style.transform = '';
-                componentElement.style.transition = '';
-            }, 200);
-        },
+                if (window.enhancedStateManager) {
+                        window.enhancedStateManager.moveComponent(componentId, 'down');
+                    }
+                } else {
+                    GMKBDebug.log('component', `⚠️ Cannot move ${componentId} ${direction}`);
+                }
+                
+                // Visual feedback
+                componentElement.style.transform = 'scale(1.02)';
+                componentElement.style.transition = 'transform 0.2s ease';
+                setTimeout(() => {
+                    componentElement.style.transform = '';
+                    componentElement.style.transition = '';
+                }, 200);
+                
+                // Trigger auto-save
+                document.dispatchEvent(new CustomEvent('gmkb:state-changed', {
+                    detail: { source: 'component-move', componentId }
+                }));
+            },
         
         /**
          * Enhanced duplicate handler
@@ -394,7 +413,7 @@
         },
         
         /**
-         * Fallback duplicate method
+         * Fallback duplicate method - Fixed for controls
          */
         fallbackDuplicateComponent(componentElement, componentId) {
             GMKBDebug.log('component', `🔧 GLOBAL: Using fallback duplication for ${componentId}`);
@@ -403,6 +422,14 @@
             const newId = componentId + '-copy-' + Date.now();
             duplicatedElement.setAttribute('data-component-id', newId);
             
+            // ROOT FIX: Remove ALL existing controls from the cloned element
+            const existingControls = duplicatedElement.querySelectorAll('.element-controls, .component-controls, .control-btn, [class*="control-toolbar"]');
+            existingControls.forEach(control => {
+                control.remove();
+                GMKBDebug.log('component', `Removed cloned control element: ${control.className}`);
+            });
+            
+            // Update all IDs in the cloned element
             const elementsWithId = duplicatedElement.querySelectorAll('[id]');
             elementsWithId.forEach(el => {
                 el.id = el.id + '-copy-' + Date.now();
@@ -419,8 +446,45 @@
                 duplicatedElement.style.opacity = '1';
                 duplicatedElement.style.transform = 'scale(1)';
                 
+                // ROOT FIX: Attach fresh controls to the new component
                 if (window.componentControlsManager) {
                     window.componentControlsManager.attachControls(duplicatedElement, newId);
+                    GMKBDebug.log('component', `✅ Attached fresh controls to duplicated component: ${newId}`);
+                } else {
+                    // Fallback: Dispatch event requesting control attachment
+                    document.dispatchEvent(new CustomEvent('gmkb:attach-controls-requested', {
+                        detail: {
+                            componentElement: duplicatedElement,
+                            componentId: newId,
+                            source: 'duplication'
+                        }
+                    }));
+                }
+                
+                // ROOT FIX: Update state manager if available
+                if (window.enhancedStateManager) {
+                    // Get the original component's data
+                    const state = window.enhancedStateManager.getState();
+                    const originalComponent = state?.components?.[componentId];
+                    
+                    if (originalComponent) {
+                        // Add the duplicated component to state
+                        const duplicatedData = {
+                            ...originalComponent,
+                            id: newId,
+                            duplicatedFrom: componentId,
+                            timestamp: Date.now()
+                        };
+                        
+                        // Dispatch action to add to state
+                        document.dispatchEvent(new CustomEvent('gmkb:component-duplicated', {
+                            detail: {
+                                originalId: componentId,
+                                newId: newId,
+                                componentData: duplicatedData
+                            }
+                        }));
+                    }
                 }
                 
                 GMKBDebug.log('component', `✅ GLOBAL: Fallback duplication complete: ${componentId} → ${newId}`);
