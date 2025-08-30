@@ -12,6 +12,7 @@ Contains diagnostic JavaScript files for troubleshooting specific issues:
 - `diagnostic-infinite-loop-fix.js` - Infinite loop detection and fixes
 - `diagnostic-saved-components.js` - Saved components diagnostics
 
+### `/quick-tests/`
 Quick test scripts for various functionality:
 - Component testing
 - Topics/questions debugging
