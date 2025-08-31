@@ -752,19 +752,10 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // PHASE 2: Topics Save Handler - saves to Pods
-    // TEMPORARILY DISABLED: 404 error on file that exists - needs path investigation
-    /*
-    if (!wp_script_is('gmkb-topics-save-handler', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-topics-save-handler',
-            $plugin_url . 'components/topics/TopicsEditorSaveHandler.js',
-            array('gmkb-topics-editor'),
-            $version,
-            true
-        );
-    }
-    */
+    // PHASE 2: Topics Save Handler - REMOVED (integrated into script.js)
+    // ROOT FIX: TopicsEditorSaveHandler functionality moved to components/topics/script.js
+    // This eliminates the 404 error and follows component self-contained architecture
+    // The save handler is now part of the main topics script that auto-loads
 
     // PHASE 2: Component Selection Manager
     if (!wp_script_is('gmkb-component-selection-manager', 'enqueued')) {
