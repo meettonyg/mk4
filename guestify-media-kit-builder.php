@@ -57,6 +57,9 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
 
+// ROOT FIX: Include frontend template router for conditional media kit display
+require_once GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php';
+
 // Also protect the admin cleanup script loading
 if (is_admin()) {
     $cleanup_file = GUESTIFY_PLUGIN_DIR . 'admin/topics-data-cleanup.php';
