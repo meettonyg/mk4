@@ -189,6 +189,29 @@
                     }
                 }
                 
+                // ROOT CAUSE FIX: After initial render, ensure controls are attached
+                // This handles the case where components render before controls manager is ready
+                const ensureControlsAttached = () => {
+                    if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                        for (const [componentId, element] of this.componentCache) {
+                            if (!element.querySelector('.component-controls')) {
+                                const success = window.componentControlsManager.attachControls(element, componentId);
+                                if (success) {
+                                    this.logger.debug('RENDER', `✅ Controls attached to ${componentId} after initial render`);
+                                }
+                            }
+                        }
+                    }
+                };
+                
+                // Check if controls manager is already ready
+                if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                    ensureControlsAttached();
+                } else {
+                    // Wait for controls manager to be ready
+                    document.addEventListener('gmkb:component-controls-ready', ensureControlsAttached, { once: true });
+                }
+                
                 // Container display is managed by initializeContainerDisplay and updateContainerDisplay
             }
             
@@ -295,6 +318,25 @@
                         const success = window.componentControlsManager.attachControls(element, componentId);
                         if (!success) {
                             this.logger.warn('RENDER', `Failed to attach controls to ${componentId}`);
+                        }
+                    } else {
+                        // ROOT CAUSE FIX: ComponentControlsManager not ready yet
+                        // Listen for it to be ready and then attach controls
+                        const attachWhenReady = () => {
+                            if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                                const success = window.componentControlsManager.attachControls(element, componentId);
+                                if (success) {
+                                    this.logger.info('RENDER', `✅ Controls attached to ${componentId} after manager ready`);
+                                }
+                            }
+                        };
+                        
+                        // Listen for controls manager ready event
+                        document.addEventListener('gmkb:component-controls-ready', attachWhenReady, { once: true });
+                        
+                        // Also check if it became ready while we were setting up the listener
+                        if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                            attachWhenReady();
                         }
                     }
                     
@@ -899,16 +941,35 @@
                     return;
                 }
                 
+                // ROOT CAUSE FIX: Preserve controls during update
+                // Save existing controls before updating
+                const existingControls = existingElement.querySelector('.component-controls');
+                
                 // ✅ PHASE 2: Use configuration-driven HTML generation for updates too
                 const html = await this.generateConfigurationDrivenHTML(componentId, componentData);
                 existingElement.innerHTML = html;
                 existingElement.setAttribute('data-component-type', componentData.type);
                 
-                // ✅ ROOT FIX: Re-attach controls after update (innerHTML clears them)
-                if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
-                    const success = window.componentControlsManager.attachControls(existingElement, componentId);
-                    if (!success) {
-                        this.logger.warn('RENDER', `Failed to re-attach controls to ${componentId} after update`);
+                // ROOT CAUSE FIX: Restore controls after innerHTML update
+                if (existingControls) {
+                    // Controls existed, re-add them
+                    existingElement.appendChild(existingControls);
+                    this.logger.debug('RENDER', `✅ Preserved existing controls for ${componentId}`);
+                } else {
+                    // No controls existed, try to attach new ones
+                    // ✅ ROOT FIX: Re-attach controls after update (innerHTML clears them)
+                    if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                        const success = window.componentControlsManager.attachControls(existingElement, componentId);
+                        if (!success) {
+                            this.logger.warn('RENDER', `Failed to re-attach controls to ${componentId} after update`);
+                        }
+                    } else {
+                        // Controls manager not ready, wait for it
+                        document.addEventListener('gmkb:component-controls-ready', () => {
+                            if (!existingElement.querySelector('.component-controls')) {
+                                window.componentControlsManager.attachControls(existingElement, componentId);
+                            }
+                        }, { once: true });
                     }
                 }
                 
