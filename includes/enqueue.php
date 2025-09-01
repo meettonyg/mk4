@@ -753,6 +753,18 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT CAUSE FIX: WordPress Save Service - Bridges JavaScript to WordPress database
+    // This service ensures components are saved to database and persist across page reloads
+    if (!wp_script_is('gmkb-wordpress-save-service', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-wordpress-save-service',
+            $plugin_url . 'js/services/wordpress-save-service.js',
+            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // PHASE 2: Component Configuration Manager
     if (!wp_script_is('gmkb-component-configuration-manager', 'enqueued')) {
         wp_enqueue_script(
@@ -1104,6 +1116,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-state-history', // CONSOLIDATED: Now includes initializer and clear-fix
                 'gmkb-history-service',
                 'gmkb-wordpress-save-integration', // ROOT FIX: Centralized save handler
+                'gmkb-wordpress-save-service', // ROOT CAUSE FIX: Bridges JavaScript to WordPress database
                 // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure
                 // DISABLED: All conflicting drag systems - only section-component-integration handles drag/drop
                 // 'gmkb-sortable-integration', // DISABLED: Conflicts with section integration
