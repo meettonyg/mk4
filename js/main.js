@@ -26,22 +26,35 @@
             // Mark data as ready globally for other systems to check
             window.gmkbDataReady = true;
             
-            // Dispatch single core event
-            setTimeout(function() {
-                const gmkbReadyEvent = new CustomEvent('gmkb:ready', {
-                    detail: { 
-                        componentCount: window.gmkbData.components.length,
-                        totalProperties: Object.keys(window.gmkbData).length,
-                        retryCount: retryCount
-                    }
-                });
-                document.dispatchEvent(gmkbReadyEvent);
-                if (window.GMKBDebug) {
-                    window.GMKBDebug.logInit('🚀 gmkb: Ready event dispatched - initialization can begin');
-                } else {
-                    console.log('🚀 gmkb: Ready event dispatched - initialization can begin');
+            // ROOT FIX: Initialize state manager immediately with WordPress data
+            // This ensures saved state is loaded before any UI initialization
+            if (window.enhancedStateManager && !window.enhancedStateManager.isInitialized) {
+                if (window.structuredLogger) {
+                    window.structuredLogger.info('STATE', 'Initializing state manager with WordPress data...');
                 }
-            }, 10);
+                
+                // Initialize state manager with WordPress data
+                if (window.enhancedStateManager.initializeAfterSystems) {
+                    window.enhancedStateManager.initializeAfterSystems().then(() => {
+                        if (window.structuredLogger) {
+                            window.structuredLogger.info('STATE', 'State manager initialized with WordPress data');
+                        }
+                        
+                        // Now dispatch the ready event
+                        dispatchReadyEvent();
+                    }).catch(error => {
+                        console.error('Failed to initialize state manager:', error);
+                        // Still dispatch ready event to continue initialization
+                        dispatchReadyEvent();
+                    });
+                } else {
+                    // Fallback if method doesn't exist
+                    dispatchReadyEvent();
+                }
+            } else {
+                // State manager not available or already initialized
+                dispatchReadyEvent();
+            }
             
             return true;
         }
@@ -58,6 +71,25 @@
             }));
         }
         return false;
+    }
+    
+    function dispatchReadyEvent() {
+        setTimeout(function() {
+            const gmkbReadyEvent = new CustomEvent('gmkb:ready', {
+                detail: { 
+                    componentCount: window.gmkbData.components.length,
+                    totalProperties: Object.keys(window.gmkbData).length,
+                    retryCount: retryCount,
+                    stateInitialized: window.enhancedStateManager?.isInitialized || false
+                }
+            });
+            document.dispatchEvent(gmkbReadyEvent);
+            if (window.GMKBDebug) {
+                window.GMKBDebug.logInit('🚀 gmkb: Ready event dispatched - initialization can begin');
+            } else {
+                console.log('🚀 gmkb: Ready event dispatched - initialization can begin');
+            }
+        }, 10);
     }
     
     // Start verification process
@@ -158,13 +190,16 @@ async function initializeWhenReady() {
         
         // 1. Initialize state manager - ROOT FIX: Prevent double initialization
         if (window.enhancedStateManager && !window.enhancedStateManager.isInitialized) {
-            window.structuredLogger.info('STATE', 'Initializing state manager ONCE with WordPress data...');
+            // ROOT FIX: State manager is now initialized during WordPress data verification
+            // This check is kept for fallback scenarios where data verification didn't initialize it
+            window.structuredLogger.info('STATE', 'State manager initialization check - may already be initialized');
             
-            // ROOT FIX: Single initialization path - no complex waiting
-            if (window.enhancedStateManager.initializeAfterSystems) {
+            if (!window.enhancedStateManager.isInitialized && window.enhancedStateManager.initializeAfterSystems) {
                 await window.enhancedStateManager.initializeAfterSystems();
+                window.structuredLogger.info('MAIN', 'State manager initialized in fallback path');
+            } else {
+                window.structuredLogger.info('MAIN', 'State manager already initialized during data verification');
             }
-            window.structuredLogger.info('MAIN', 'State manager initialized successfully');
         } else if (window.enhancedStateManager && window.enhancedStateManager.isInitialized) {
             window.structuredLogger.debug('MAIN', 'State manager already initialized, skipping');
         } else {

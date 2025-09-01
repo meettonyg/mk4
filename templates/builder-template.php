@@ -484,7 +484,18 @@ if ($post_id > 0) {
                     <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
                         <!-- Debug info for saved components -->
                         <div class="debug-saved-components" style="position: absolute; top: 5px; right: 5px; background: rgba(0,255,0,0.1); padding: 5px; font-size: 10px; border-radius: 3px; z-index: 1000;">
-                            ✅ PHASE 3: Section-based rendering - <?php echo isset($saved_state['components']) ? count($saved_state['components']) : 0; ?> components
+                            ✅ PHASE 3: Section-based rendering - <?php 
+                                // ROOT FIX: Properly handle components that might be object or array
+                                $component_debug_count = 0;
+                                if (isset($saved_state['components'])) {
+                                    if (is_array($saved_state['components'])) {
+                                        $component_debug_count = count($saved_state['components']);
+                                    } elseif (is_object($saved_state['components'])) {
+                                        $component_debug_count = count((array)$saved_state['components']);
+                                    }
+                                }
+                                echo $component_debug_count;
+                            ?> components
                         </div>
                     <?php endif; ?>
                 </div>

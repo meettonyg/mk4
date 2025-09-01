@@ -322,9 +322,16 @@
                 this.logger.info('STATE', '✅ Using saved_state from WordPress database');
                 const savedState = wpData.saved_state;
                 
+                // ROOT FIX: Handle empty array components issue
+                let components = savedState.components || {};
+                if (Array.isArray(components) && components.length === 0) {
+                    this.logger.info('STATE', '🔄 Converting empty components array to object');
+                    components = {};
+                }
+                
                 // Ensure it has the required structure
                 const state = {
-                    components: savedState.components || {},
+                    components: components,
                     layout: savedState.layout || [],
                     globalSettings: savedState.globalSettings || { layout: 'vertical' },
                     sections: savedState.sections || [],

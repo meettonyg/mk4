@@ -66,12 +66,16 @@ function gmkb_enqueue_assets() {
         
         // ✅ PHASE 3 OPTIMIZATION: Essential debug scripts (minimal load for better performance)
         if (defined('WP_DEBUG') && WP_DEBUG) {
+            // Define variables for debug scripts since we're returning early
+            $plugin_url_debug = GUESTIFY_PLUGIN_URL;
+            $version_debug = '2.3.0-debug-' . time();
+            
             // Only load 2 essential debug scripts in normal debug mode
             wp_enqueue_script(
                 'gmkb-dom-state-checker',
-                $plugin_url . 'js/debug/dom-state-checker.js',
+                $plugin_url_debug . 'js/debug/dom-state-checker.js',
                 array(),
-                $version . '-debug',
+                $version_debug,
                 true
             );
             
@@ -79,9 +83,9 @@ function gmkb_enqueue_assets() {
             if (!wp_script_is('gmkb-topics-validation', 'enqueued')) {
                 wp_enqueue_script(
                     'gmkb-topics-validation',
-                    $plugin_url . 'components/topics/validation-script.js',
+                    $plugin_url_debug . 'components/topics/validation-script.js',
                     array('gmkb-topics-panel-enhanced'),
-                    $version . '-debug',
+                    $version_debug,
                     true
                 );
             }
@@ -91,9 +95,9 @@ function gmkb_enqueue_assets() {
                 // Add 1-2 extra debug tools only when explicitly requested
                 wp_enqueue_script(
                     'gmkb-test-component-move',
-                    $plugin_url . 'test-component-move-fix.js',
+                    $plugin_url_debug . 'test-component-move-fix.js',
                     array('gmkb-main-script'),
-                    $version . '-debug-extra',
+                    $version_debug . '-extra',
                     true
                 );
             }
@@ -104,20 +108,24 @@ function gmkb_enqueue_assets() {
         // ✅ To load full debug suite: Add ?debug_mode=full to URL
         // ✅ To load extra tools: Add ?debug_extra=1 to URL
         else if (defined('WP_DEBUG') && WP_DEBUG) {
+            // Define variables for minimal debug scripts since we're returning early
+            $plugin_url_debug = GUESTIFY_PLUGIN_URL;
+            $version_debug = '2.3.0-debug-minimal-' . time();
+            
             // Load only 2 essential debug scripts for normal development
             wp_enqueue_script(
                 'gmkb-dom-state-checker-minimal',
-                $plugin_url . 'js/debug/dom-state-checker.js',
+                $plugin_url_debug . 'js/debug/dom-state-checker.js',
                 array(),
-                $version . '-debug-minimal',
+                $version_debug,
                 true
             );
             
             wp_enqueue_script(
                 'gmkb-topics-validation-minimal',
-                $plugin_url . 'components/topics/validation-script.js',
+                $plugin_url_debug . 'components/topics/validation-script.js',
                 array('gmkb-topics-panel-enhanced'),
-                $version . '-debug-minimal',
+                $version_debug,
                 true
             );
         }
@@ -299,41 +307,18 @@ function gmkb_enqueue_assets() {
     if ( $post_id > 0 ) {
         $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
         
-        // ROOT FIX: Ensure components is always an object for JavaScript
+        // ROOT FIX: Ensure components exists
         if ( !empty( $saved_state ) && isset( $saved_state['components'] ) ) {
-            // CRITICAL FIX: Force components to be an object, not array
-            // PHP's json_encode converts empty array [] to JavaScript array
-            // But we need it to be an object {} for proper component storage
-            if ( is_array( $saved_state['components'] ) && empty( $saved_state['components'] ) ) {
-                // Use stdClass to force object encoding in JSON
-                $saved_state['components'] = new stdClass();
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( '✅ GMKB: Converted empty components array to object for JavaScript compatibility' );
-                }
-            }
-            // If it's a non-empty array with numeric keys, convert to object format
-            elseif ( is_array( $saved_state['components'] ) ) {
-                // Check if it's a sequential array (0, 1, 2...) which shouldn't happen
-                $is_sequential = array_keys( $saved_state['components'] ) === range( 0, count( $saved_state['components'] ) - 1 );
-                if ( $is_sequential && count( $saved_state['components'] ) > 0 ) {
-                    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                        error_log( '⚠️ GMKB: Components has sequential array keys - converting to object format' );
-                    }
-                    // Convert sequential array to associative array
-                    $components_obj = new stdClass();
-                    foreach ( $saved_state['components'] as $component ) {
-                        if ( isset( $component['id'] ) ) {
-                            $components_obj->{$component['id']} = $component;
-                        }
-                    }
-                    $saved_state['components'] = $components_obj;
-                }
+            // Leave components as-is, JavaScript will handle format conversion
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                $component_count = is_array( $saved_state['components'] ) ? count( $saved_state['components'] ) : 0;
+                error_log( '✅ GMKB: Loaded saved state with ' . $component_count . ' components' );
             }
         }
         
         if ( empty( $saved_state ) ) {
             $saved_state = array(
-                'components' => new stdClass(), // Empty object {} in JSON
+                'components' => array(), // Empty array
                 'layout' => array(),
                 'globalSettings' => array(),
                 'sections' => array() // PHASE 3 support
@@ -341,7 +326,7 @@ function gmkb_enqueue_assets() {
         } else {
             // Ensure all required fields exist
             if ( !isset( $saved_state['components'] ) ) {
-                $saved_state['components'] = new stdClass();
+                $saved_state['components'] = array();
             }
             if ( !isset( $saved_state['layout'] ) ) {
                 $saved_state['layout'] = array();

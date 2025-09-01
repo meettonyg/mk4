@@ -1064,33 +1064,7 @@ class Guestify_Media_Kit_Builder {
             }
         }
         
-        // ROOT FIX: Ensure components is always saved as object format, not array
-        // This prevents the empty array [] issue when loading
-        if (isset($state['components'])) {
-            if (is_array($state['components']) && empty($state['components'])) {
-                // Force empty array to be saved as object
-                $state['components'] = new stdClass();
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ GMKB: Converted empty components array to object before saving');
-                }
-            } elseif (is_array($state['components'])) {
-                // Ensure it's an associative array (object in JSON)
-                $is_sequential = array_keys($state['components']) === range(0, count($state['components']) - 1);
-                if ($is_sequential) {
-                    // Convert sequential array to object
-                    $components_obj = new stdClass();
-                    foreach ($state['components'] as $component) {
-                        if (isset($component['id'])) {
-                            $components_obj->{$component['id']} = $component;
-                        }
-                    }
-                    $state['components'] = $components_obj;
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('✅ GMKB: Converted sequential components array to object format');
-                    }
-                }
-            }
-        }
+        // ROOT FIX: Components will be handled as-is, JavaScript will manage format
         
         // ROOT FIX: Ensure timestamp is updated to force save
         $state['last_saved'] = current_time('mysql');
