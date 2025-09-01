@@ -315,11 +315,46 @@ function gmkb_enqueue_assets() {
         }
     }
     
+    // ROOT CAUSE DIAGNOSTIC: Temporary diagnostic tool to debug saved state loading
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        wp_enqueue_script(
+            'gmkb-data-diagnostic',
+            $plugin_url . 'js/debug/gmkb-data-diagnostic.js',
+            array(), // Load early, no dependencies
+            $version . '-diagnostic',
+            false // Load in head, not footer
+        );
+    }
+    
     // ROOT FIX: Load saved media kit state from database
     $saved_state = array();
     $post_id = get_current_post_id_safe();
     if ( $post_id > 0 ) {
         $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
+        
+        // ROOT CAUSE FIX: Debug the saved state structure
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG && !empty($saved_state) ) {
+            error_log( '🔍 GMKB DIAGNOSTIC: Raw saved_state from database:' );
+            error_log( '  - Is array: ' . (is_array($saved_state) ? 'YES' : 'NO') );
+            error_log( '  - Has components: ' . (isset($saved_state['components']) ? 'YES' : 'NO') );
+            if (isset($saved_state['components'])) {
+                error_log( '  - Components type: ' . gettype($saved_state['components']) );
+                error_log( '  - Components is array: ' . (is_array($saved_state['components']) ? 'YES' : 'NO') );
+                if (is_array($saved_state['components'])) {
+                    error_log( '  - Components count: ' . count($saved_state['components']) );
+                    // Check if it's associative (object-like) or indexed array
+                    $is_assoc = count(array_filter(array_keys($saved_state['components']), 'is_string')) > 0;
+                    error_log( '  - Components is associative: ' . ($is_assoc ? 'YES' : 'NO') );
+                    if ($is_assoc && count($saved_state['components']) > 0) {
+                        $first_key = array_keys($saved_state['components'])[0];
+                        error_log( '  - First component key: ' . $first_key );
+                    }
+                }
+            }
+            if (isset($saved_state['saved_components'])) {
+                error_log( '  - Has saved_components: YES (' . count($saved_state['saved_components']) . ' items)' );
+            }
+        }
         
         // ROOT FIX: Ensure components exists
         if ( !empty( $saved_state ) && isset( $saved_state['components'] ) ) {
