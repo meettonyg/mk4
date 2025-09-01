@@ -940,6 +940,24 @@ class Guestify_Media_Kit_Builder {
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ GMKB: JSON decoded successfully');
             error_log('📊 GMKB: State structure keys: ' . implode(', ', array_keys($state)));
+            
+            // ROOT FIX: Debug components format
+            if (isset($state['components'])) {
+                $components_type = gettype($state['components']);
+                $is_array = is_array($state['components']);
+                $is_assoc = $is_array && (array_keys($state['components']) !== range(0, count($state['components']) - 1));
+                
+                error_log('📊 GMKB: Components type: ' . $components_type);
+                error_log('📊 GMKB: Is array: ' . ($is_array ? 'YES' : 'NO'));
+                error_log('📊 GMKB: Is associative array: ' . ($is_assoc ? 'YES' : 'NO'));
+                error_log('📊 GMKB: Components count: ' . ($is_array ? count($state['components']) : 'N/A'));
+                
+                // If it's an empty array, leave it as empty array
+                // WordPress will handle the conversion properly
+                if ($is_array && count($state['components']) === 0) {
+                    error_log('⚠️ GMKB: Components is empty array - will be handled by WordPress serialization');
+                }
+            }
         }
         
         // ROOT FIX: Enhanced post validation with detailed diagnostics
@@ -1045,6 +1063,38 @@ class Guestify_Media_Kit_Builder {
                 error_log('✅ GMKB: Layout order: ' . implode(', ', $state['layout']));
             }
         }
+        
+        // ROOT FIX: Ensure components is always saved as object format, not array
+        // This prevents the empty array [] issue when loading
+        if (isset($state['components'])) {
+            if (is_array($state['components']) && empty($state['components'])) {
+                // Force empty array to be saved as object
+                $state['components'] = new stdClass();
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB: Converted empty components array to object before saving');
+                }
+            } elseif (is_array($state['components'])) {
+                // Ensure it's an associative array (object in JSON)
+                $is_sequential = array_keys($state['components']) === range(0, count($state['components']) - 1);
+                if ($is_sequential) {
+                    // Convert sequential array to object
+                    $components_obj = new stdClass();
+                    foreach ($state['components'] as $component) {
+                        if (isset($component['id'])) {
+                            $components_obj->{$component['id']} = $component;
+                        }
+                    }
+                    $state['components'] = $components_obj;
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('✅ GMKB: Converted sequential components array to object format');
+                    }
+                }
+            }
+        }
+        
+        // ROOT FIX: Ensure timestamp is updated to force save
+        $state['last_saved'] = current_time('mysql');
+        $state['save_timestamp'] = time();
         
         // Check if meta already exists
         $existing_meta = get_post_meta($post_id, $meta_key, true);

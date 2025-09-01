@@ -159,7 +159,7 @@ class SectionStatePersistence {
             
             // Prepare save data
             const saveData = {
-                action: 'gmkb_save_media_kit',
+                action: 'guestify_save_media_kit', // ROOT FIX: Use correct action name
                 nonce: window.gmkbData.nonce,
                 post_id: window.gmkbData.postId,
                 state: JSON.stringify({

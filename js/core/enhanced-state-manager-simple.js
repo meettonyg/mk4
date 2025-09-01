@@ -312,11 +312,36 @@
             
             this.logger.debug('STATE', 'WordPress data found:', {
                 hasSavedComponents: !!(wpData.saved_components && Array.isArray(wpData.saved_components)),
-                componentCount: wpData.saved_components ? wpData.saved_components.length : 0
+                componentCount: wpData.saved_components ? wpData.saved_components.length : 0,
+                hasSavedState: !!(wpData.saved_state),
+                savedStateComponentCount: wpData.saved_state?.components ? Object.keys(wpData.saved_state.components).length : 0
             });
 
-            // ✅ SIMPLIFIED: Use saved_components if available, otherwise empty
-            if (wpData.saved_components && Array.isArray(wpData.saved_components)) {
+            // ROOT FIX: Check saved_state first (complete state from database)
+            if (wpData.saved_state && typeof wpData.saved_state === 'object') {
+                this.logger.info('STATE', '✅ Using saved_state from WordPress database');
+                const savedState = wpData.saved_state;
+                
+                // Ensure it has the required structure
+                const state = {
+                    components: savedState.components || {},
+                    layout: savedState.layout || [],
+                    globalSettings: savedState.globalSettings || { layout: 'vertical' },
+                    sections: savedState.sections || [],
+                    version: savedState.version || '2.2.0'
+                };
+                
+                // Preserve saved_components if exists
+                if (savedState.saved_components) {
+                    state.saved_components = savedState.saved_components;
+                }
+                
+                this.logger.info('STATE', `Loaded complete state with ${Object.keys(state.components).length} components from WordPress`);
+                return state;
+            }
+            // Fallback: Use saved_components array
+            else if (wpData.saved_components && Array.isArray(wpData.saved_components)) {
+                this.logger.info('STATE', '⚠️ Using legacy saved_components array (no saved_state found)');
                 const components = this.mapComponentData(wpData.saved_components);
                 const layout = this.generateLayout(wpData.saved_components);
 
@@ -325,10 +350,11 @@
                     globalSettings: wpData.global_settings || { layout: 'vertical' },
                     layout: layout,
                     saved_components: wpData.saved_components,
+                    sections: [],
                     version: '2.2.0' 
                 };
                 
-                this.logger.info('STATE', `Loaded ${wpData.saved_components.length} components from WordPress`);
+                this.logger.info('STATE', `Loaded ${wpData.saved_components.length} components from WordPress saved_components`);
                 return state;
             }
             

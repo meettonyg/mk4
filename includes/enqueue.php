@@ -298,10 +298,66 @@ function gmkb_enqueue_assets() {
     $post_id = get_current_post_id_safe();
     if ( $post_id > 0 ) {
         $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
+        
+        // ROOT FIX: Ensure components is always an object for JavaScript
+        if ( !empty( $saved_state ) && isset( $saved_state['components'] ) ) {
+            // CRITICAL FIX: Force components to be an object, not array
+            // PHP's json_encode converts empty array [] to JavaScript array
+            // But we need it to be an object {} for proper component storage
+            if ( is_array( $saved_state['components'] ) && empty( $saved_state['components'] ) ) {
+                // Use stdClass to force object encoding in JSON
+                $saved_state['components'] = new stdClass();
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( '✅ GMKB: Converted empty components array to object for JavaScript compatibility' );
+                }
+            }
+            // If it's a non-empty array with numeric keys, convert to object format
+            elseif ( is_array( $saved_state['components'] ) ) {
+                // Check if it's a sequential array (0, 1, 2...) which shouldn't happen
+                $is_sequential = array_keys( $saved_state['components'] ) === range( 0, count( $saved_state['components'] ) - 1 );
+                if ( $is_sequential && count( $saved_state['components'] ) > 0 ) {
+                    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                        error_log( '⚠️ GMKB: Components has sequential array keys - converting to object format' );
+                    }
+                    // Convert sequential array to associative array
+                    $components_obj = new stdClass();
+                    foreach ( $saved_state['components'] as $component ) {
+                        if ( isset( $component['id'] ) ) {
+                            $components_obj->{$component['id']} = $component;
+                        }
+                    }
+                    $saved_state['components'] = $components_obj;
+                }
+            }
+        }
+        
+        if ( empty( $saved_state ) ) {
+            $saved_state = array(
+                'components' => new stdClass(), // Empty object {} in JSON
+                'layout' => array(),
+                'globalSettings' => array(),
+                'sections' => array() // PHASE 3 support
+            );
+        } else {
+            // Ensure all required fields exist
+            if ( !isset( $saved_state['components'] ) ) {
+                $saved_state['components'] = new stdClass();
+            }
+            if ( !isset( $saved_state['layout'] ) ) {
+                $saved_state['layout'] = array();
+            }
+            if ( !isset( $saved_state['globalSettings'] ) ) {
+                $saved_state['globalSettings'] = array();
+            }
+            if ( !isset( $saved_state['sections'] ) ) {
+                $saved_state['sections'] = array();
+            }
+        }
+        
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
             if ( !empty( $saved_state ) ) {
                 error_log( '✅ GMKB: Loaded saved state from database for post ' . $post_id );
-                error_log( '📊 GMKB: Saved components count: ' . count( $saved_state['components'] ?? [] ) );
+                error_log( '📊 GMKB: Saved components count: ' . count( (array)$saved_state['components'] ) );
                 error_log( '📊 GMKB: Saved_components array count: ' . count( $saved_state['saved_components'] ?? [] ) );
             } else {
                 error_log( '📝 GMKB: No saved state found for post ' . $post_id . ' - starting fresh' );
@@ -687,6 +743,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 12i. WordPress Save Integration - ROOT FIX: Centralized save handler
+    if (!wp_script_is('gmkb-wordpress-save-integration', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-wordpress-save-integration',
+            $plugin_url . 'js/services/wordpress-save-integration.js',
+            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // PHASE 2: Component Configuration Manager
     if (!wp_script_is('gmkb-component-configuration-manager', 'enqueued')) {
         wp_enqueue_script(
@@ -1037,6 +1104,7 @@ function gmkb_enqueue_assets() {
                 // 'gmkb-element-editor', // DISABLED: Legacy control system
                 'gmkb-state-history', // CONSOLIDATED: Now includes initializer and clear-fix
                 'gmkb-history-service',
+                'gmkb-wordpress-save-integration', // ROOT FIX: Centralized save handler
                 // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure
                 // DISABLED: All conflicting drag systems - only section-component-integration handles drag/drop
                 // 'gmkb-sortable-integration', // DISABLED: Conflicts with section integration
