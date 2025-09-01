@@ -77,6 +77,7 @@ if (is_admin()) {
 class Guestify_Media_Kit_Builder {
 
     private static $instance;
+    private static $initialized = false; // ROOT CAUSE FIX: Prevent double initialization
     private $component_discovery;
     private $component_loader;
     private $design_panel;
@@ -89,6 +90,15 @@ class Guestify_Media_Kit_Builder {
     }
 
     private function __construct() {
+        // ROOT CAUSE FIX: Prevent double initialization
+        if (self::$initialized) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: Preventing double initialization - already initialized');
+            }
+            return;
+        }
+        self::$initialized = true;
+        
         // SIMPLIFIED: Constructor only handles WordPress hooks - NO file includes or constants
         
         // Initialize component system

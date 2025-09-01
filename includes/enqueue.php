@@ -35,16 +35,16 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 }
 
 /**
- * Main script and style enqueuing function
- * Called by WordPress wp_enqueue_scripts hook
+ * ROOT CAUSE FIX: Move enqueue to later priority to ensure WordPress state is ready
+ * This prevents the double initialization issue seen in logs
  */
-add_action( 'wp_enqueue_scripts', 'gmkb_enqueue_assets' );
+add_action( 'wp_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Later priority (was default 10)
 
 /**
  * ROOT FIX: Enqueue ComponentControlsManager on admin pages too
  * Ensures the script is available in all contexts where the builder loads
  */
-add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets' );
+add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Consistent priority
 
 /**
  * Enqueues all necessary scripts and styles for the Media Kit Builder.
@@ -55,10 +55,18 @@ add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets' );
  * The conflicting inline scripts previously loaded in the footer have been removed.
  */
 function gmkb_enqueue_assets() {
-    // ROOT FIX: Removed early debug output to prevent timing issues
-    // Debug output now happens after wp_localize_script ensures data is available
+    // ROOT CAUSE FIX: Add initialization guard to prevent double execution
+    static $assets_enqueued = false;
     
-    // Use the existing reliable page detection
+    // Check if already enqueued in this request
+    if ($assets_enqueued) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Assets already enqueued, skipping duplicate execution');
+        }
+        return;
+    }
+    
+    // Use the enhanced page detection with caching
     if ( ! is_media_kit_builder_page() ) {
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
             error_log( '❌ GMKB: Not a media kit builder page - skipping script enqueue' );
@@ -133,8 +141,14 @@ function gmkb_enqueue_assets() {
         return; // Exit early if not a media kit builder page
     }
     
+    // Mark assets as enqueued to prevent double execution
+    $assets_enqueued = true;
+    
     // LOG SUCCESSFUL DETECTION
-    error_log( '✅ GMKB: Enqueuing scripts for media kit builder page with STABLE ARCHITECTURE' );
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log( '✅ GMKB: Enqueuing scripts for media kit builder page with STABLE ARCHITECTURE' );
+        error_log( 'GMKB: Enqueue timestamp: ' . time() );
+    }
 
     $plugin_url = GUESTIFY_PLUGIN_URL;
     $version = '2.3.0-CONSOLIDATED-ARCHITECTURE-' . time(); // ✅ Script consolidation completed - duplicate systems eliminated
@@ -1491,41 +1505,73 @@ function gmkb_enqueue_assets() {
 }
 
 /**
- * STRICT page detection - ROOT FIX for site-wide CSS/JS loading
- * Only loads on EXACT media kit builder pages
+ * ROOT CAUSE FIX: Enhanced page detection with caching and lifecycle awareness
+ * Prevents double detection and ensures WordPress state is ready
  */
 function is_media_kit_builder_page() {
+    // Static cache to prevent double detection (ROOT CAUSE FIX)
+    static $is_builder_page = null;
+    
+    // Return cached result if already determined
+    if ($is_builder_page !== null) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Using cached page detection result: ' . ($is_builder_page ? 'YES' : 'NO'));
+        }
+        return $is_builder_page;
+    }
+    
+    // Initialize as false
+    $is_builder_page = false;
+    $detection_method = 'none';
+    
+    // ROOT CAUSE FIX: Check reliable indicators FIRST
+    
+    // Priority 1: Check URL parameters with path verification (most reliable)
     $request_uri = $_SERVER['REQUEST_URI'] ?? '';
-    
-    // Strategy 1: EXACT WordPress page detection (most restrictive)
-    if ( is_page( 'media-kit' ) || is_page( 'guestify-media-kit' ) ) {
-        return true;
+    if ((isset($_GET['mkcg_id']) || isset($_GET['post_id']) || isset($_GET['media_kit_id'])) 
+        && strpos($request_uri, '/tools/media-kit') !== false) {
+        $is_builder_page = true;
+        $detection_method = 'url_params_with_path';
     }
     
-    // Strategy 2: EXACT URL path detection for /tools/media-kit/
-    if ( preg_match( '#/tools/media-kit/?($|\?)#', $request_uri ) ) {
-        return true;
+    // Priority 2: Check global template flag (set by template takeover)
+    if (!$is_builder_page) {
+        global $gmkb_template_active;
+        if (!empty($gmkb_template_active)) {
+            $is_builder_page = true;
+            $detection_method = 'template_flag';
+        }
     }
     
-    // Strategy 3: Admin page with specific parameter ONLY
-    if ( is_admin() && isset( $_GET['page'] ) && $_GET['page'] === 'guestify-media-kit-builder' ) {
-        return true;
+    // Priority 3: Direct URL path match
+    if (!$is_builder_page && preg_match('#/tools/media-kit/?($|\?)#', $request_uri)) {
+        $is_builder_page = true;
+        $detection_method = 'url_path';
     }
     
-    // Strategy 4: Global flag ONLY when explicitly set by template takeover
-    global $gmkb_template_active;
-    if ( ! empty( $gmkb_template_active ) ) {
-        return true;
+    // Priority 4: WordPress page detection (only if wp action has fired)
+    if (!$is_builder_page && did_action('wp') && function_exists('is_page')) {
+        if (is_page('media-kit') || is_page('guestify-media-kit')) {
+            $is_builder_page = true;
+            $detection_method = 'wordpress_page';
+        }
     }
     
-    // ROOT FIX: REMOVED overly broad parameter detection
-    // The following was causing site-wide loading:
-    // - Generic ?post_id= parameters (used across WordPress)
-    // - Generic ?p= parameters (used for all posts)
-    // - Generic ?page_id= parameters (used for all pages)
-    // These are now REMOVED to prevent false positives
+    // Priority 5: Admin page detection
+    if (!$is_builder_page && is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit-builder') {
+        $is_builder_page = true;
+        $detection_method = 'admin_page';
+    }
     
-    return false; // Default: do not load
+    // Log detection result for debugging
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: Page detection result: ' . ($is_builder_page ? 'YES' : 'NO') . ' (method: ' . $detection_method . ')');
+        error_log('GMKB: Request URI: ' . $request_uri);
+        error_log('GMKB: GET params: ' . print_r($_GET, true));
+        error_log('GMKB: WordPress wp action fired: ' . (did_action('wp') ? 'YES' : 'NO'));
+    }
+    
+    return $is_builder_page;
 }
 
 /**
