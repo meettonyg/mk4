@@ -319,33 +319,64 @@
 
             // ROOT FIX: Check saved_state first (complete state from database)
             if (wpData.saved_state && typeof wpData.saved_state === 'object') {
-                this.logger.info('STATE', '✅ Using saved_state from WordPress database');
-                const savedState = wpData.saved_state;
-                
-                // ROOT FIX: Handle empty array components issue
-                let components = savedState.components || {};
-                if (Array.isArray(components) && components.length === 0) {
-                    this.logger.info('STATE', '🔄 Converting empty components array to object');
-                    components = {};
-                }
-                
-                // Ensure it has the required structure
-                const state = {
-                    components: components,
-                    layout: savedState.layout || [],
-                    globalSettings: savedState.globalSettings || { layout: 'vertical' },
-                    sections: savedState.sections || [],
-                    version: savedState.version || '2.2.0'
-                };
-                
-                // Preserve saved_components if exists
-                if (savedState.saved_components) {
-                    state.saved_components = savedState.saved_components;
-                }
-                
-                this.logger.info('STATE', `Loaded complete state with ${Object.keys(state.components).length} components from WordPress`);
-                return state;
+            this.logger.info('STATE', '✅ Using saved_state from WordPress database');
+            const savedState = wpData.saved_state;
+            
+            // ROOT CAUSE FIX: Handle components whether it's an object or array
+            let components = {};
+            
+            // If components is already an object (associative array from PHP)
+            if (savedState.components && typeof savedState.components === 'object' && !Array.isArray(savedState.components)) {
+                components = savedState.components;
+                this.logger.info('STATE', '✅ Components is object format with ' + Object.keys(components).length + ' items');
             }
+            // If components is an array, convert to object
+            else if (Array.isArray(savedState.components) && savedState.components.length > 0) {
+            savedState.components.forEach(comp => {
+                if (comp && comp.id) {
+                    components[comp.id] = comp;
+                }
+                });
+                this.logger.info('STATE', '🔄 Converted components array to object with ' + Object.keys(components).length + ' items');
+            }
+            // Empty or invalid components
+            else {
+                this.logger.info('STATE', '⚠️ Components empty or invalid, starting fresh');
+                components = {};
+            }
+            
+                // ROOT CAUSE FIX: Also check layout array - if empty but we have components, rebuild it
+            let layout = savedState.layout || [];
+            if ((!layout || layout.length === 0) && Object.keys(components).length > 0) {
+                // If we have saved_components array, use its order
+                if (savedState.saved_components && Array.isArray(savedState.saved_components)) {
+                    layout = savedState.saved_components.map(c => c.id).filter(id => !!id);
+                    this.logger.info('STATE', '✅ Rebuilt layout from saved_components order');
+                } else {
+                    // Otherwise use component keys
+                    layout = Object.keys(components);
+                    this.logger.info('STATE', '⚠️ Rebuilt layout from component keys (order may be wrong)');
+                }
+            }
+            
+            // Ensure it has the required structure
+            const state = {
+                components: components,
+                layout: layout,
+                globalSettings: savedState.globalSettings || { layout: 'vertical' },
+                sections: savedState.sections || [],
+                version: savedState.version || '2.2.0'
+            };
+            
+            // Preserve saved_components if exists
+            if (savedState.saved_components) {
+                state.saved_components = savedState.saved_components;
+            }
+            
+            this.logger.info('STATE', `Loaded complete state with ${Object.keys(state.components).length} components from WordPress`);
+            this.logger.info('STATE', `Layout order: ${state.layout.join(', ')}`);
+            return state;
+        }
             // Fallback: Use saved_components array
             else if (wpData.saved_components && Array.isArray(wpData.saved_components)) {
                 this.logger.info('STATE', '⚠️ Using legacy saved_components array (no saved_state found)');
@@ -856,6 +887,38 @@
     // ROOT FIX: Create and expose globally
     window.EnhancedStateManager = EnhancedStateManager;
     window.enhancedStateManager = new EnhancedStateManager();
+    
+    // ROOT CAUSE FIX: Initialize the state manager with saved data
+    // This MUST be called to load saved components from gmkbData
+    document.addEventListener('DOMContentLoaded', () => {
+        // Only initialize if gmkbData is available
+        if (window.gmkbData) {
+            console.log('🔄 STATE: Initializing state manager with saved data...');
+            window.enhancedStateManager.initializeAfterSystems().then(() => {
+                console.log('✅ STATE: State manager initialized with saved data');
+                const state = window.enhancedStateManager.getState();
+                console.log(`📊 STATE: Loaded ${Object.keys(state.components || {}).length} components`);
+            }).catch(error => {
+                console.error('❌ STATE: Failed to initialize state manager:', error);
+            });
+        } else {
+            console.log('⚠️ STATE: gmkbData not available yet, waiting...');
+            // If gmkbData isn't ready yet, wait for it
+            const checkInterval = setInterval(() => {
+                if (window.gmkbData) {
+                    clearInterval(checkInterval);
+                    console.log('🔄 STATE: gmkbData now available, initializing...');
+                    window.enhancedStateManager.initializeAfterSystems().then(() => {
+                        console.log('✅ STATE: State manager initialized with saved data (delayed)');
+                        const state = window.enhancedStateManager.getState();
+                        console.log(`📊 STATE: Loaded ${Object.keys(state.components || {}).length} components`);
+                    });
+                }
+            }, 100);
+            // Stop checking after 5 seconds
+            setTimeout(() => clearInterval(checkInterval), 5000);
+        }
+    });
     
     // ✅ CHECKLIST COMPLIANT: Emit ready event for event-driven architecture
     document.dispatchEvent(new CustomEvent('gmkb:enhanced-state-manager-ready', {
