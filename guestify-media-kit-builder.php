@@ -29,13 +29,17 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/component-schemas/class-gmkb-component-schema-registry.php';
 
-// Initialize schema registry early
+// Initialize schema registry early - ONCE per request
 add_action('init', function() {
-    if (class_exists('GMKB_Component_Schema_Registry')) {
+    static $schemas_initialized = false;
+    
+    if (!$schemas_initialized && class_exists('GMKB_Component_Schema_Registry')) {
         GMKB_Component_Schema_Registry::get_schemas();
+        $schemas_initialized = true;
+        
         if (defined('WP_DEBUG') && WP_DEBUG) {
             $schemas = GMKB_Component_Schema_Registry::get_js_schemas();
-            error_log('GMKB PHASE 2 ROOT FIX: Schema registry initialized with ' . count($schemas) . ' schemas');
+            error_log('GMKB PHASE 2 ROOT FIX: Schema registry initialized ONCE with ' . count($schemas) . ' schemas');
         }
     }
 }, 5);
@@ -112,14 +116,15 @@ class Guestify_Media_Kit_Builder {
             error_log('✅ GMKB: ComponentDiscovery initialized with dir: ' . GUESTIFY_PLUGIN_DIR . 'components');
         }
         
-        // ROOT CAUSE FIX: Force a fresh scan to ensure components are always available
+        // ROOT CAUSE FIX: Use cached scan if available, only force fresh on cache miss
         try {
-            $scan_result = $this->component_discovery->scan(true); // Force fresh scan
+            // Try cached scan first
+            $scan_result = $this->component_discovery->scan(false); // Use cache if available
             $components_found = $this->component_discovery->getComponents();
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('🔄 GMKB: Forced fresh component scan completed');
-                error_log('📊 GMKB: Found ' . count($components_found) . ' components after fresh scan');
+                error_log('🔄 GMKB: Component scan completed (cache-aware)');
+                error_log('📊 GMKB: Found ' . count($components_found) . ' components');
                 
                 if (!empty($components_found)) {
                     $component_types = array_column($components_found, 'type');
@@ -1054,8 +1059,11 @@ class Guestify_Media_Kit_Builder {
         $meta_key = 'gmkb_media_kit_state';
         
         // CRITICAL FIX: Ensure saved_components array format for template compatibility and respects layout order
-        if (isset($state['layout']) && is_array($state['layout'])) {
-            $saved_components = array();
+        // Handle BOTH layout array AND components object for maximum compatibility
+        $saved_components = array();
+        
+        // First try to use layout order if available
+        if (isset($state['layout']) && is_array($state['layout']) && !empty($state['layout'])) {
             foreach ($state['layout'] as $component_id) {
                 if (isset($state['components'][$component_id])) {
                     $component_data = $state['components'][$component_id];
@@ -1066,11 +1074,27 @@ class Guestify_Media_Kit_Builder {
                     }
                 }
             }
-            $state['saved_components'] = $saved_components;
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB: Added saved_components array with ' . count($saved_components) . ' components for template compatibility, respecting layout order.');
+        }
+        // Fallback: If no layout array or it's empty, use all components
+        elseif (isset($state['components']) && !empty($state['components'])) {
+            foreach ($state['components'] as $component_id => $component_data) {
+                if (is_array($component_data) || is_object($component_data)) {
+                    $component_array = (array) $component_data;
+                    $component_array['id'] = $component_id; // Ensure ID is set
+                    $saved_components[] = $component_array;
+                }
+            }
+        }
+        
+        // Always set saved_components array even if empty
+        $state['saved_components'] = $saved_components;
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Added saved_components array with ' . count($saved_components) . ' components for template compatibility.');
+            if (isset($state['layout']) && !empty($state['layout'])) {
                 error_log('✅ GMKB: Layout order: ' . implode(', ', $state['layout']));
+            } else {
+                error_log('⚠️ GMKB: No layout array found, using all components in object order');
             }
         }
         
