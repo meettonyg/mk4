@@ -1062,6 +1062,23 @@ class Guestify_Media_Kit_Builder {
         // Handle BOTH layout array AND components object for maximum compatibility
         $saved_components = array();
         
+        // ROOT FIX: Synchronize layout array with components object
+        // When components are deleted, ensure layout array is also updated
+        if (isset($state['layout']) && is_array($state['layout'])) {
+            // Filter out deleted components from layout
+            $filtered_layout = array();
+            foreach ($state['layout'] as $component_id) {
+                if (isset($state['components'][$component_id])) {
+                    $filtered_layout[] = $component_id;
+                }
+            }
+            $state['layout'] = $filtered_layout;
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('ROOT FIX: Filtered layout to remove deleted components. New layout: ' . implode(', ', $filtered_layout));
+            }
+        }
+        
         // First try to use layout order if available
         if (isset($state['layout']) && is_array($state['layout']) && !empty($state['layout'])) {
             foreach ($state['layout'] as $component_id) {
@@ -1090,13 +1107,20 @@ class Guestify_Media_Kit_Builder {
         $state['saved_components'] = $saved_components;
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Added saved_components array with ' . count($saved_components) . ' components for template compatibility.');
-            if (isset($state['layout']) && !empty($state['layout'])) {
-                error_log('✅ GMKB: Layout order: ' . implode(', ', $state['layout']));
-            } else {
-                error_log('⚠️ GMKB: No layout array found, using all components in object order');
-            }
+        error_log('✅ GMKB: Added saved_components array with ' . count($saved_components) . ' components for template compatibility.');
+        if (isset($state['layout']) && !empty($state['layout'])) {
+        error_log('✅ GMKB: Layout order: ' . implode(', ', $state['layout']));
+        } else {
+        error_log('⚠️ GMKB: No layout array found, using all components in object order');
         }
+            
+                // ROOT FIX: Log exact state being saved for debugging
+                error_log('🔍 GMKB: Final state being saved:');
+                error_log('  - Components count: ' . count($state['components'] ?? []));
+                error_log('  - Layout count: ' . count($state['layout'] ?? []));
+                error_log('  - saved_components count: ' . count($state['saved_components'] ?? []));
+                error_log('  - Component IDs: ' . implode(', ', array_keys($state['components'] ?? [])));
+            }
         
         // ROOT FIX: Components will be handled as-is, JavaScript will manage format
         

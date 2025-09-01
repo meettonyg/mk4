@@ -513,8 +513,23 @@
                     break;
                 }
                 case 'REMOVE_COMPONENT':
-                    delete this.state.components[transaction.payload];
-                    this.state.layout = this.state.layout.filter(id => id !== transaction.payload);
+                    // ROOT FIX: Ensure component is fully removed from all state properties
+                    const componentToRemove = transaction.payload;
+                    
+                    // Remove from components object
+                    delete this.state.components[componentToRemove];
+                    
+                    // Remove from layout array
+                    this.state.layout = this.state.layout.filter(id => id !== componentToRemove);
+                    
+                    // ROOT FIX: Also remove from saved_components if it exists
+                    if (this.state.saved_components && Array.isArray(this.state.saved_components)) {
+                        this.state.saved_components = this.state.saved_components.filter(
+                            comp => comp && comp.id !== componentToRemove
+                        );
+                    }
+                    
+                    this.logger.debug('STATE', `Component ${componentToRemove} removed from all state properties`);
                     break;
                 case 'UPDATE_COMPONENT': {
                     const { componentId, newProps } = transaction.payload;

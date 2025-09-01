@@ -137,6 +137,12 @@
          * Main save function
          */
         async saveToWordPress(silent = false) {
+            // ROOT FIX: Dispatch manual save start event for state manager coordination
+            if (!silent) {
+                document.dispatchEvent(new CustomEvent('gmkb:manual-save-start', {
+                    detail: { timestamp: Date.now() }
+                }));
+            }
             if (this.isSaving) {
                 console.log('Save already in progress, skipping...');
                 return;

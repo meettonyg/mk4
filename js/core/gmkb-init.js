@@ -552,6 +552,23 @@
                 return;
             }
             
+            // ROOT FIX: Remove from state FIRST before DOM manipulation
+            // This ensures save operations get the correct state
+            if (window.enhancedStateManager) {
+                window.enhancedStateManager.removeComponent(componentId);
+                GMKBDebug.log('component', `✅ Removed ${componentId} from state`);
+            }
+            
+            // Also remove from component manager if available
+            if (window.enhancedComponentManager && window.enhancedComponentManager.removeComponent) {
+                try {
+                    window.enhancedComponentManager.removeComponent(componentId);
+                    GMKBDebug.log('component', `✅ Removed ${componentId} from component manager`);
+                } catch (error) {
+                    GMKBDebug.logError(`Failed to remove from component manager: ${error.message}`);
+                }
+            }
+            
             // Visual feedback before deletion
             componentElement.style.opacity = '0.5';
             componentElement.style.transform = 'scale(0.9)';
@@ -559,7 +576,7 @@
             
             setTimeout(() => {
                 componentElement.remove();
-                GMKBDebug.log('component', `✅ Deleted component ${componentId}`);
+                GMKBDebug.log('component', `✅ Deleted component ${componentId} from DOM`);
                 
                 // Check if we need to show empty state
                 const container = document.querySelector('.media-kit, #media-kit-preview');
@@ -572,6 +589,24 @@
                         GMKBDebug.log('component', '✅ Showing empty state - no components remaining');
                     }
                 }
+                
+                // ROOT FIX: Dispatch component deleted event AFTER state update
+                // This ensures any auto-save triggered will have the correct state
+                document.dispatchEvent(new CustomEvent('gmkb:component-deleted', {
+                    detail: {
+                        componentId,
+                        timestamp: Date.now()
+                    }
+                }));
+                
+                // Also trigger state changed event for auto-save
+                document.dispatchEvent(new CustomEvent('gmkb:state-changed', {
+                    detail: { 
+                        source: 'component-delete', 
+                        componentId,
+                        action: 'delete'
+                    }
+                }));
             }, 300);
         },
         
