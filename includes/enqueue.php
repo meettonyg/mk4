@@ -599,6 +599,17 @@ function gmkb_enqueue_assets() {
         wp_localize_script( 'gmkb-enhanced-component-manager', 'gmkbData', $wp_data );
     }
     
+    // 5a. Component Registry - ROOT FIX: Component self-registration system
+    if (!wp_script_is('gmkb-component-registry', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-registry',
+            $plugin_url . 'js/core/component-registry.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 6. Event bus (handles global events) - ROOT FIX: Added missing script
     if (!wp_script_is('gmkb-event-bus', 'enqueued')) {
         wp_enqueue_script(
@@ -949,6 +960,36 @@ function gmkb_enqueue_assets() {
 
     // PHASE 3: Dynamic Section Templates - ROOT FIX: Removed as it doesn't exist yet
     // We'll create this if needed, but for now SectionRenderer handles its own templates
+    
+    // ✅ COMPONENT SELF-REGISTRATION: Auto-discover and load component renderers
+    // This must come AFTER the component registry is loaded
+    $components_dir = GUESTIFY_PLUGIN_DIR . 'components/';
+    $debug_mode = defined('WP_DEBUG') && WP_DEBUG;
+    
+    // Auto-discover components
+    if (is_dir($components_dir)) {
+        $component_dirs = glob($components_dir . '*', GLOB_ONLYDIR);
+        
+        foreach ($component_dirs as $component_path) {
+            $component_name = basename($component_path);
+            $renderer_file = $component_path . '/renderer.js';
+            
+            // Check if renderer exists
+            if (file_exists($renderer_file)) {
+                wp_enqueue_script(
+                    "gmkb-component-{$component_name}-renderer",
+                    $plugin_url . "components/{$component_name}/renderer.js",
+                    array('gmkb-component-registry'), // Depends on registry
+                    $version . ($debug_mode ? '-' . filemtime($renderer_file) : ''),
+                    true
+                );
+                
+                if ($debug_mode) {
+                    error_log("✅ GMKB: Enqueued renderer for component: {$component_name}");
+                }
+            }
+        }
+    }
 
     // 12h2. Toast Polyfill - ROOT FIX: Toast notifications
     if (!wp_script_is('gmkb-toast-polyfill', 'enqueued')) {
@@ -1049,7 +1090,8 @@ function gmkb_enqueue_assets() {
             $plugin_url . 'js/core/enhanced-component-renderer-simplified.js',
             array(
                 'gmkb-enhanced-state-manager',
-                'gmkb-structured-logger'
+                'gmkb-structured-logger',
+                'gmkb-component-registry' // Add registry dependency
             ),
             $version,
             true

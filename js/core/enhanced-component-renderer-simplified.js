@@ -510,8 +510,22 @@
             
             /**
              * ✅ PHASE 2: Generate HTML using component configuration and options
+             * ARCHITECTURE: Component-agnostic - delegates to registry for self-registered components
              */
             generateConfiguredHTML(componentType, boundData, componentOptions = {}) {
+                // Check if component registry is available and has the component
+                if (window.GMKBComponentRegistry && window.GMKBComponentRegistry.isRegistered(componentType)) {
+                    try {
+                        const renderer = window.GMKBComponentRegistry.getRenderer(componentType);
+                        return renderer(boundData, componentOptions);
+                    } catch (error) {
+                        this.logger.error('RENDER', `Registry render failed for ${componentType}:`, error);
+                        // Fall through to legacy rendering
+                    }
+                }
+                
+                // LEGACY FALLBACK: Keep hardcoded methods temporarily for backwards compatibility
+                // These will be removed once all components have self-registered
                 const layout = componentOptions.layout || 'default';
                 
                 switch (componentType) {
