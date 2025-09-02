@@ -103,7 +103,12 @@ class SectionLayoutManager {
      */
     createSection(sectionType = 'full_width', configuration = {}) {
         const sectionId = configuration.section_id || `section_${Date.now()}`;
-        return this.registerSection(sectionId, sectionType, configuration);
+        // Mark as manually created so it won't be auto-cleaned
+        const enhancedConfig = {
+            ...configuration,
+            manual_creation: true
+        };
+        return this.registerSection(sectionId, sectionType, enhancedConfig);
     }
     
     /**
@@ -610,7 +615,20 @@ class SectionLayoutManager {
     
     onComponentRemoved(detail) {
         const { componentId } = detail;
-        this.removeComponentFromAllSections(componentId);
+        const removedFrom = this.removeComponentFromAllSections(componentId);
+        
+        // ROOT FIX: Clean up empty sections after component removal
+        // Only auto-cleanup if this was the last component in the system
+        const state = this.stateManager?.getState();
+        const hasComponents = state && state.components && Object.keys(state.components).length > 0;
+        
+        if (!hasComponents) {
+            // No components left - clean up empty sections
+            this.cleanupEmptySections();
+        } else {
+            // Still have components - keep empty sections for manual management
+            this.logger.info('🎯 PHASE 3: Keeping empty sections (components still exist)');
+        }
     }
     
     onSectionConfigurationUpdated(detail) {
@@ -725,6 +743,48 @@ class SectionLayoutManager {
         
         this.logger.info(`🗑️ PHASE 3: Removed section ${sectionId}`);
         return true;
+    }
+    
+    /**
+     * ROOT FIX: Clean up empty sections when no components remain
+     * Following checklist: Graceful Failure, Centralized State
+     * 
+     * IMPORTANT: This only runs when ALL components are removed,
+     * preserving intentionally created empty sections for manual use
+     */
+    cleanupEmptySections() {
+        const emptySections = [];
+        
+        // Find all empty sections
+        this.sections.forEach((section, sectionId) => {
+            if (!section.components || section.components.length === 0) {
+                // Check if this section was manually created (has a flag or recent creation)
+                const isRecentlyCreated = section.created_at && (Date.now() - section.created_at < 60000); // Created within last minute
+                const isManuallyCreated = section.manual_creation === true;
+                
+                if (!isRecentlyCreated && !isManuallyCreated) {
+                    emptySections.push(sectionId);
+                }
+            }
+        });
+        
+        // Remove only auto-created empty sections
+        if (emptySections.length > 0) {
+            this.logger.info(`🧹 PHASE 3: Cleaning up ${emptySections.length} empty auto-created sections`);
+            emptySections.forEach(sectionId => {
+                this.removeSection(sectionId);
+            });
+        }
+        
+        // Check if we have no sections left and handle accordingly
+        if (this.sections.size === 0) {
+            this.logger.info('📭 PHASE 3: No sections remaining after cleanup');
+            
+            // Dispatch event to notify renderer
+            this.dispatchSectionEvent('gmkb:all-sections-removed', {
+                timestamp: Date.now()
+            });
+        }
     }
     
     /**

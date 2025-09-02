@@ -48,6 +48,11 @@ class SectionRenderer {
             this.onSectionsReordered(event.detail);
         });
         
+        // ROOT FIX: Listen for all sections removed
+        document.addEventListener('gmkb:all-sections-removed', (event) => {
+            this.onAllSectionsRemoved(event.detail);
+        });
+        
         // ROOT FIX: Also try immediate initialization if systems are already ready
         if (window.sectionLayoutManager && window.enhancedComponentRenderer) {
             this.onCoreSystemsReady();
@@ -557,6 +562,9 @@ class SectionRenderer {
             this.renderedSections.delete(sectionId);
             
             this.logger.info(`🗑️ PHASE 3: Removed section ${sectionId} from DOM`);
+            
+            // ROOT FIX: Check if we have no more sections and handle empty state
+            this.checkForEmptyState();
         }
     }
     
@@ -853,6 +861,64 @@ class SectionRenderer {
             emptyState.style.display = 'none';
             this.logger.info('🚫 PHASE 3: Hidden empty state for sections');
         }
+    }
+    
+    /**
+     * ROOT FIX: Check if we should show empty state
+     * IMPORTANT: Empty sections are valid content - we show them with placeholders
+     */
+    checkForEmptyState() {
+        // Check if we have any components or sections
+        const state = window.enhancedStateManager?.getState();
+        const hasComponents = state && state.components && Object.keys(state.components).length > 0;
+        const hasSections = state && state.sections && state.sections.length > 0;
+        
+        const savedComponentsContainer = document.getElementById('saved-components-container');
+        const sectionsContainer = document.getElementById('gmkb-sections-container');
+        const emptyState = document.getElementById('empty-state');
+        
+        if (!hasComponents && !hasSections) {
+            // No components AND no sections - show empty state
+            if (savedComponentsContainer) {
+                savedComponentsContainer.style.display = 'none';
+            }
+            if (sectionsContainer) {
+                sectionsContainer.style.display = 'none';
+            }
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+            this.logger.info('📭 PHASE 3: No components or sections - showing empty state');
+        } else {
+            // We have sections (even if empty) or components - show containers
+            this.ensureContainersVisible();
+            
+            // If we only have empty sections, make sure they're visible with placeholders
+            if (hasSections && !hasComponents) {
+                this.logger.info('🎯 PHASE 3: Showing empty sections with placeholders');
+                // Re-render sections to ensure placeholders are shown
+                this.renderExistingSections();
+            }
+        }
+    }
+    
+    /**
+     * Handle all sections removed event
+     * Following checklist: Event-Driven, State Management
+     */
+    onAllSectionsRemoved(detail) {
+        this.logger.info('📭 PHASE 3: All sections removed - checking empty state');
+        
+        // Clear rendered sections tracking
+        this.renderedSections.clear();
+        
+        // Clear sections container
+        if (this.containerElement) {
+            this.containerElement.innerHTML = '';
+        }
+        
+        // Check for empty state
+        this.checkForEmptyState();
     }
     
     /**

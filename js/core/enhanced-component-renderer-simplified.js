@@ -94,6 +94,12 @@
                         this.handleForceRerender(event.detail);
                     });
                     
+                    // ROOT FIX: Listen for all sections removed to update container display
+                    document.addEventListener('gmkb:all-sections-removed', () => {
+                        const state = this.stateManager.getState();
+                        this.updateContainerDisplay(state);
+                    });
+                    
                     // ✅ ROOT CAUSE FIX: Render initial state immediately
                     const initialState = this.stateManager.getState();
                     if (initialState && initialState.components) {
@@ -139,7 +145,7 @@
                 
                 // Check for content
                 const hasComponents = initialState?.components && Object.keys(initialState.components).length > 0;
-                const hasSections = initialState?.sections && Object.keys(initialState.sections).length > 0;
+                const hasSections = initialState?.sections && Array.isArray(initialState.sections) && initialState.sections.length > 0;
                 const hasContent = hasComponents || hasSections;
                 
                 this.logger.info('RENDER', `🎆 Initializing container visibility - hasComponents: ${hasComponents}, hasSections: ${hasSections}`);
