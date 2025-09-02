@@ -234,19 +234,128 @@ const ComponentManager = {
     },
     
     async addComponent(type, data = {}, skipServerRender = false) {
-        const component = {
-            id: 'component-' + Date.now(),
-            type,
-            data,
-            timestamp: Date.now()
-        };
+        // ROOT FIX: Generate unique component ID first
+        const componentId = `${type}-${Date.now()}-${Math.floor(Math.random() * 100)}`;
         
-        const id = window.StateManager ? window.StateManager.addComponent(component) : null;
+        // ROOT FIX: Get current state to check sections
+        const currentState = window.enhancedStateManager ? window.enhancedStateManager.getState() : 
+                           (window.StateManager ? window.StateManager.getState() : null);
         
-        if (!id) {
-            console.error('❌ ComponentManager: StateManager not available');
+        if (!currentState) {
+            console.error('❌ ComponentManager: No state manager available');
             return null;
         }
+        
+        // ROOT FIX: ALWAYS ensure we have a section for the component
+        let targetSectionId = null;
+        let sections = currentState.sections || [];
+        
+        if (sections.length === 0) {
+            // No sections exist - create a default one
+            console.log('🔧 ComponentManager: No sections found, creating default section');
+            const defaultSection = {
+                section_id: `section_${Date.now()}`,
+                section_type: 'full_width',
+                layout: {
+                    width: 'full_width',
+                    max_width: '100%',
+                    padding: '40px 20px',
+                    columns: 1,
+                    column_gap: '0px'
+                },
+                section_options: {
+                    background_type: 'none',
+                    background_color: 'transparent',
+                    spacing_top: 'medium',
+                    spacing_bottom: 'medium'
+                },
+                responsive: {
+                    mobile: { padding: '20px 15px' },
+                    tablet: { padding: '30px 20px' }
+                },
+                components: [],
+                created_at: Date.now(),
+                updated_at: Date.now()
+            };
+            
+            // Add default section to state
+            sections = [defaultSection];
+            targetSectionId = defaultSection.section_id;
+            
+            // Update sections in state manager
+            if (window.enhancedStateManager) {
+                window.enhancedStateManager.updateSections(sections);
+            }
+            
+            console.log(`✅ ComponentManager: Created default section ${targetSectionId}`);
+        } else {
+            // Use first available section
+            targetSectionId = sections[0].section_id;
+            console.log(`🎯 ComponentManager: Using existing section ${targetSectionId}`);
+        }
+        
+        // ROOT FIX: Create component WITH section assignment
+        const component = {
+            id: componentId,
+            type,
+            data,
+            props: data, // Include props for rendering
+            timestamp: Date.now(),
+            sectionId: targetSectionId, // ROOT FIX: ALWAYS assign to a section
+            columnNumber: 1 // Default to first column
+        };
+        
+        console.log(`🔧 ComponentManager: Creating component ${componentId} with section ${targetSectionId}`);
+        
+        // ROOT FIX: Add component to state WITH section assignment
+        let id = null;
+        if (window.enhancedStateManager) {
+            window.enhancedStateManager.addComponent(component);
+            id = componentId;
+        } else if (window.StateManager) {
+            id = window.StateManager.addComponent(component);
+        }
+        
+        if (!id) {
+            console.error('❌ ComponentManager: Failed to add component to state');
+            return null;
+        }
+        
+        // ROOT FIX: Update section's component list
+        const updatedSections = sections.map(section => {
+            if (section.section_id === targetSectionId) {
+                if (!section.components) section.components = [];
+                
+                // Check if component already in section
+                const existingIndex = section.components.findIndex(c => c.component_id === componentId);
+                if (existingIndex === -1) {
+                    // Add component to section
+                    section.components.push({
+                        component_id: componentId,
+                        column: 1,
+                        order: section.components.length,
+                        assigned_at: Date.now()
+                    });
+                    console.log(`✅ ComponentManager: Added ${componentId} to section ${targetSectionId} components list`);
+                }
+            }
+            return section;
+        });
+        
+        // Update sections in state manager
+        if (window.enhancedStateManager) {
+            window.enhancedStateManager.updateSections(updatedSections);
+        }
+        
+        // ROOT FIX: Dispatch event for SectionLayoutManager
+        document.dispatchEvent(new CustomEvent('gmkb:component-added', {
+            detail: {
+                componentId: componentId,
+                componentType: type,
+                targetSectionId: targetSectionId,
+                timestamp: Date.now()
+            }
+        }));
         
         // If skipServerRender is true, use fallback rendering (for backwards compatibility)
         if (skipServerRender) {
@@ -256,7 +365,7 @@ const ComponentManager = {
             await this.renderComponent(id);
         }
         
-        console.log(`🧩 ComponentManager: Added component '${type}' with ID: ${id}`);
+        console.log(`✅ ComponentManager: Added component '${type}' with ID: ${id} to section ${targetSectionId}`);
         return id;
     },
     

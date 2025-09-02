@@ -708,10 +708,14 @@
 
             try {
                 // Check if ComponentManager is available
-                if (!window.GMKB || !window.GMKB.systems || !window.GMKB.systems.ComponentManager) {
-                console.error('🎯 DragDropManager: ComponentManager not available');
-                this.showDropError('Component system not ready');
-                return;
+                // ROOT FIX: Check both possible locations for ComponentManager
+                const componentManager = window.ComponentManager || 
+                                       (window.GMKB && window.GMKB.systems && window.GMKB.systems.ComponentManager);
+                
+                if (!componentManager) {
+                    console.error('🎯 DragDropManager: ComponentManager not available');
+                    this.showDropError('Component system not ready');
+                    return;
                 }
         
         // ROOT FIX: Check if we already have a component being rendered
@@ -732,7 +736,8 @@
                 }
 
                 // Add component using existing ComponentManager
-                const componentId = await window.GMKB.systems.ComponentManager.addComponent(componentType, {
+                // ROOT FIX: Use the ComponentManager we found earlier
+                const componentId = await componentManager.addComponent(componentType, {
                     // Add any default data for the component
                     droppedAt: new Date().toISOString(),
                     dragDropCreated: true
