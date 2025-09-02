@@ -8,6 +8,8 @@
  * - Phase 3: Centralized state through state manager only
  * - Phase 4: Graceful failure, actionable errors
  * - Phase 5: Correct WordPress integration
+ * 
+ * ARCHITECTURE: Component-agnostic renderer that respects component self-containment
  */
 
 (function() {
@@ -296,8 +298,36 @@
             }
             
             /**
+             * ARCHITECTURE: Check if component requires server-side rendering
+             * Components declare this requirement via configuration, not hardcoded logic
+             */
+            async checkServerRenderRequirement(componentType) {
+                // Check component's own configuration file
+                if (window.gmkbData?.componentSchemas?.[componentType]?.requiresServerRender) {
+                    return true;
+                }
+                
+                // Check if component has self-registered for server rendering
+                if (window.gmkbServerRenderComponents?.has(componentType)) {
+                    return true;
+                }
+                
+                // Check configuration manager for component schema
+                const configManager = window.componentConfigurationManager;
+                if (configManager) {
+                    const schema = configManager.getComponentSchema?.(componentType);
+                    if (schema?.requiresServerRender) {
+                        return true;
+                    }
+                }
+                
+                // Default: client-side rendering
+                return false;
+            }
+            
+            /**
              * ✅ PHASE 2: Configuration-driven component rendering
-             * ROOT CAUSE FIX: Uses ComponentConfigurationManager and DataBindingEngine
+             * ARCHITECTURE: Component-agnostic - checks configuration for rendering requirements
              */
             async renderComponent(componentId, componentData) {
                 try {
@@ -308,8 +338,24 @@
                     element.setAttribute('data-component-type', componentData.type);
                     element.style.position = 'relative'; // Ensure controls can be positioned
                     
-                    // ✅ PHASE 2: Configuration-driven HTML generation
-                    const html = await this.generateConfigurationDrivenHTML(componentId, componentData);
+                    // ARCHITECTURE: Check component configuration for rendering requirements
+                    const requiresServerRender = await this.checkServerRenderRequirement(componentData.type);
+                    
+                    let html;
+                    if (requiresServerRender) {
+                        // Component has indicated it needs server-side rendering for data
+                        this.logger.debug('RENDER', `Component ${componentData.type} requires server rendering`);
+                        html = await this.fetchServerRenderedHTML(componentId, componentData);
+                        if (!html) {
+                            // Fallback to client-side if server unavailable
+                            this.logger.warn('RENDER', `Server rendering failed for ${componentData.type}, falling back to client-side`);
+                            html = await this.generateConfigurationDrivenHTML(componentId, componentData);
+                        }
+                    } else {
+                        // ✅ PHASE 2: Standard configuration-driven HTML generation
+                        html = await this.generateConfigurationDrivenHTML(componentId, componentData);
+                    }
+                    
                     element.innerHTML = html;
                     
                     // ✅ ROOT FIX: Attach controls immediately after rendering
@@ -358,6 +404,55 @@
                     this.logger.error('RENDER', `❌ Failed to render component ${componentId}:`, error);
                     // Fallback to basic rendering if Phase 2 fails
                     return this.renderBasicComponent(componentId, componentData);
+                }
+            }
+            
+            /**
+             * ARCHITECTURE: Generic server-side rendering for data-dependent components
+             * Works for any component that declares server render requirement
+             */
+            async fetchServerRenderedHTML(componentId, componentData) {
+                try {
+                    // Get post ID from global context or state
+                    const postId = window.gmkbData?.postId || 
+                                  document.body.getAttribute('data-post-id') || 
+                                  new URLSearchParams(window.location.search).get('post_id') || 
+                                  new URLSearchParams(window.location.search).get('mkcg_id') || 
+                                  0;
+                    
+                    if (!postId) {
+                        this.logger.warn('RENDER', 'No post ID available for server rendering');
+                        return null;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('action', 'guestify_render_component');
+                    formData.append('component', componentData.type);
+                    formData.append('post_id', postId);
+                    formData.append('nonce', window.gmkbData?.nonce || '');
+                    formData.append('props', JSON.stringify({
+                        ...componentData.props,
+                        component_id: componentId,
+                        post_id: postId
+                    }));
+                    
+                    const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success && result.data?.html) {
+                        this.logger.debug('RENDER', `✅ Server-rendered HTML fetched for ${componentId}`);
+                        return result.data.html;
+                    } else {
+                        this.logger.warn('RENDER', `Failed to fetch server HTML for ${componentId}`);
+                        return null;
+                    }
+                } catch (error) {
+                    this.logger.error('RENDER', `Error fetching server HTML: ${error.message}`);
+                    return null;
                 }
             }
             
@@ -925,7 +1020,7 @@
             
             /**
              * ✅ ROOT CAUSE FIX: Direct component update without complex diffing
-             * ANTI-DUPLICATION: Only update if not handled by sections
+             * ARCHITECTURE: Component-agnostic - checks configuration for rendering requirements
              */
             async updateComponent(componentId, componentData) {
                 // ROOT FIX: Check if component is in a section first
@@ -945,8 +1040,22 @@
                 // Save existing controls before updating
                 const existingControls = existingElement.querySelector('.component-controls');
                 
-                // ✅ PHASE 2: Use configuration-driven HTML generation for updates too
-                const html = await this.generateConfigurationDrivenHTML(componentId, componentData);
+                // ARCHITECTURE: Check component configuration for rendering requirements
+                const requiresServerRender = await this.checkServerRenderRequirement(componentData.type);
+                
+                let html;
+                if (requiresServerRender) {
+                    // Component has indicated it needs server-side rendering for data
+                    html = await this.fetchServerRenderedHTML(componentId, componentData);
+                    if (!html) {
+                        // Fallback to client-side if server unavailable
+                        html = await this.generateConfigurationDrivenHTML(componentId, componentData);
+                    }
+                } else {
+                    // ✅ PHASE 2: Standard configuration-driven HTML generation
+                    html = await this.generateConfigurationDrivenHTML(componentId, componentData);
+                }
+                
                 existingElement.innerHTML = html;
                 existingElement.setAttribute('data-component-type', componentData.type);
                 

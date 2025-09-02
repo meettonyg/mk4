@@ -6,6 +6,7 @@
   "isPremium": false,
   "version": "2.0.0-phase2",
   "order": 3,
+  "requiresServerRender": true,
   
   "dataBindings": {
     "topics": "speaking_topics",

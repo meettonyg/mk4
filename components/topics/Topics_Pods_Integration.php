@@ -16,7 +16,11 @@ if (!defined('ABSPATH')) {
 
 // Load abstract base class
 if (!class_exists('Abstract_Component_Integration')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'system/Abstract_Component_Integration.php';
+    // ROOT FIX: Use plugin_dir_path instead of undefined constant
+    $base_path = plugin_dir_path(dirname(dirname(__FILE__))) . 'system/Abstract_Component_Integration.php';
+    if (file_exists($base_path)) {
+        require_once $base_path;
+    }
 }
 
 /**
@@ -92,6 +96,12 @@ class Topics_Pods_Integration extends Abstract_Component_Integration {
             'quality' => 'empty',
             'timestamp' => current_time('mysql')
         );
+        
+        // ROOT FIX: Ensure we have a valid post ID
+        if (empty($post_id)) {
+            $result['message'] = 'No post ID provided';
+            return $result;
+        }
         
         if (!self::validate_post_id($post_id)) {
             $result['message'] = 'Invalid post ID';

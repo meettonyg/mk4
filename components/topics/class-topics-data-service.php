@@ -14,6 +14,21 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// ROOT FIX: Load dependencies in correct order
+if (!class_exists('Base_Component_Data_Service')) {
+    $base_path = plugin_dir_path(dirname(dirname(__FILE__))) . 'system/Base_Component_Data_Service.php';
+    if (file_exists($base_path)) {
+        require_once $base_path;
+    }
+}
+
+if (!class_exists('Abstract_Component_Integration')) {
+    $abstract_path = plugin_dir_path(dirname(dirname(__FILE__))) . 'system/Abstract_Component_Integration.php';
+    if (file_exists($abstract_path)) {
+        require_once $abstract_path;
+    }
+}
+
 // Load component-specific integration if not already loaded
 if (!class_exists('Topics_Pods_Integration')) {
     require_once __DIR__ . '/Topics_Pods_Integration.php';
