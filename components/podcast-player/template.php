@@ -2,6 +2,31 @@
 /**
  * Podcast Player Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $episodes = $props['episodes'] ?? null;
+    $podcastRssUrl = $props['podcastRssUrl'] ?? null;
+    $podcastAppleId = $props['podcastAppleId'] ?? null;
+    $podcastSpotifyId = $props['podcastSpotifyId'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $episodes = $episodes ?? null;
+    $podcastRssUrl = $podcastRssUrl ?? null;
+    $podcastAppleId = $podcastAppleId ?? null;
+    $podcastSpotifyId = $podcastSpotifyId ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Podcast Episodes';
+$componentId = $componentId ?? 'podcast-player-' . time();
 ?>
 <div class="podcast-player-component editable-element" data-element="podcast-player" data-component="podcast-player" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="podcast-player">
     <div class="element-controls">

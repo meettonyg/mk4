@@ -3,14 +3,34 @@
  * Authority Hook Component Template
  */
 
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $who = $props['who'] ?? null;
+    $what = $props['what'] ?? null;
+    $when = $props['when'] ?? null;
+    $how = $props['how'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $who = $who ?? null;
+    $what = $what ?? null;
+    $when = $when ?? null;
+    $how = $how ?? null;
+    $componentId = $componentId ?? null;
+}
+
 // Default values for component props
 $title = $title ?? 'Authority Hook';
 $who = $who ?? 'Who is your ideal audience or client?';
 $what = $what ?? 'What specific expertise or value do you provide?';
 $when = $when ?? 'When do people need your expertise most?';
 $how = $how ?? 'How do you deliver unique results?';
+$componentId = $componentId ?? 'authority-hook-' . time();
 ?>
-<div class="content-section authority-hook-component editable-element" data-element="authority-hook" data-component="authority-hook" data-component-type="authority-hook">
+<div class="content-section authority-hook-component editable-element" data-element="authority-hook" data-component="authority-hook" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="authority-hook">
     <h2 class="section-title" contenteditable="true" data-setting="title"><?php echo esc_html($title); ?></h2>
     <div class="authority-hook-container">
         <div class="authority-item">

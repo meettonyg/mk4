@@ -2,6 +2,18 @@
 /**
  * Social Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $links = $props['links'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $links = $links ?? null;
+    $componentId = $componentId ?? null;
+}
+
 // Default social links if none provided
 $defaultLinks = [
     ['url' => '#', 'title' => 'Twitter', 'icon' => 'twitter'],
@@ -9,6 +21,7 @@ $defaultLinks = [
     ['url' => '#', 'title' => 'Instagram', 'icon' => 'instagram']
 ];
 $socialLinks = $links ?? $defaultLinks;
+$componentId = $componentId ?? 'social-' . time();
 ?>
 <div class="social-links editable-element" data-element="social" data-component="social" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="social">
     <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->

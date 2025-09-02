@@ -2,6 +2,23 @@
 /**
  * Stats Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $stats = $props['stats'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $stats = $stats ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Key Statistics';
+$componentId = $componentId ?? 'stats-' . time();
 ?>
 <div class="content-section editable-element" data-element="stats" data-component="stats" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="stats">
     <div class="element-controls">

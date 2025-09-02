@@ -359,12 +359,70 @@
                 }
             }
             
+            // ROOT FIX: Fix orphaned components and broken section assignments
+            let sections = savedState.sections || [];
+            if (sections.length > 0 && Object.keys(components).length > 0) {
+                // Check if any components are orphaned (not in any section)
+                const assignedComponentIds = new Set();
+                sections.forEach(section => {
+                    if (section.components && Array.isArray(section.components)) {
+                        section.components.forEach(comp => {
+                            assignedComponentIds.add(comp.component_id);
+                        });
+                    }
+                });
+                
+                // Find orphaned components
+                const orphanedComponentIds = Object.keys(components).filter(id => !assignedComponentIds.has(id));
+                
+                if (orphanedComponentIds.length > 0) {
+                    this.logger.warn('STATE', `Found ${orphanedComponentIds.length} orphaned components, assigning to first section`);
+                    
+                    // Assign orphaned components to the first section
+                    if (!sections[0].components) sections[0].components = [];
+                    
+                    orphanedComponentIds.forEach(componentId => {
+                        // Also update the component's sectionId
+                        if (components[componentId]) {
+                            components[componentId].sectionId = sections[0].section_id;
+                        }
+                        
+                        // Add to section's component list
+                        sections[0].components.push({
+                            component_id: componentId,
+                            column: 1,
+                            order: sections[0].components.length,
+                            assigned_at: Date.now()
+                        });
+                        this.logger.info('STATE', `Assigned orphaned component ${componentId} to section ${sections[0].section_id}`);
+                    });
+                }
+                
+                // Also clean up section components that reference non-existent components
+                sections.forEach(section => {
+                    if (section.components && Array.isArray(section.components)) {
+                        const originalLength = section.components.length;
+                        section.components = section.components.filter(comp => {
+                            const exists = components.hasOwnProperty(comp.component_id);
+                            if (!exists) {
+                                this.logger.warn('STATE', `Removing non-existent component ${comp.component_id} from section ${section.section_id}`);
+                            }
+                            return exists;
+                        });
+                        
+                        if (section.components.length < originalLength) {
+                            this.logger.info('STATE', `Cleaned ${originalLength - section.components.length} non-existent components from section ${section.section_id}`);
+                        }
+                    }
+                });
+            }
+            
             // Ensure it has the required structure
             const state = {
                 components: components,
                 layout: layout,
                 globalSettings: savedState.globalSettings || { layout: 'vertical' },
-                sections: savedState.sections || [],
+                sections: sections, // Use the fixed sections
                 version: savedState.version || '2.2.0'
             };
             

@@ -2,6 +2,25 @@
 /**
  * Questions Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $questions = $props['questions'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $questions = $questions ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Frequently Asked Questions';
+$componentId = $componentId ?? 'questions-' . time();
 ?>
 <div class="questions-component editable-element" data-element="questions" data-component="questions" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="questions">
     <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->

@@ -2,6 +2,37 @@
 /**
  * Contact Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $contactType = $props['contactType'] ?? null;
+    $formAction = $props['formAction'] ?? null;
+    $formMethod = $props['formMethod'] ?? null;
+    $contactEmail = $props['contactEmail'] ?? null;
+    $contactPhone = $props['contactPhone'] ?? null;
+    $contactAddress = $props['contactAddress'] ?? null;
+    $contactCustom = $props['contactCustom'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $contactType = $contactType ?? null;
+    $formAction = $formAction ?? null;
+    $formMethod = $formMethod ?? null;
+    $contactEmail = $contactEmail ?? null;
+    $contactPhone = $contactPhone ?? null;
+    $contactAddress = $contactAddress ?? null;
+    $contactCustom = $contactCustom ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Contact Me';
+$componentId = $componentId ?? 'contact-' . time();
 ?>
 <div class="contact-component editable-element" data-element="contact" data-component="contact" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="contact">
     <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->

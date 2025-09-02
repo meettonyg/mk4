@@ -2,6 +2,27 @@
 /**
  * Booking Calendar Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $calendarConfigured = $props['calendarConfigured'] ?? null;
+    $services = $props['services'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $calendarConfigured = $calendarConfigured ?? null;
+    $services = $services ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Book a Session';
+$componentId = $componentId ?? 'booking-calendar-' . time();
 ?>
 <div class="booking-calendar-component editable-element" data-element="booking-calendar" data-component="booking-calendar" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="booking-calendar">
     <!-- ROOT FIX: Removed hardcoded element-controls - dynamic controls added by component-controls-manager.js -->

@@ -2,6 +2,28 @@
 /**
  * Call to Action Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $buttonText = $props['buttonText'] ?? null;
+    $buttonUrl = $props['buttonUrl'] ?? null;
+    $buttonTarget = $props['buttonTarget'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $buttonText = $buttonText ?? null;
+    $buttonUrl = $buttonUrl ?? null;
+    $buttonTarget = $buttonTarget ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$componentId = $componentId ?? 'cta-' . time();
 ?>
 <div class="cta-component editable-element" data-element="call-to-action" data-component="call-to-action" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="call-to-action">
     <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->

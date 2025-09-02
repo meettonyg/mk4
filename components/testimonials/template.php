@@ -2,6 +2,25 @@
 /**
  * Testimonials Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $testimonials = $props['testimonials'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $testimonials = $testimonials ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Testimonials';
+$componentId = $componentId ?? 'testimonials-' . time();
 ?>
 <div class="testimonials-component editable-element" data-element="testimonials" data-component="testimonials" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="testimonials">
     <div class="element-controls">

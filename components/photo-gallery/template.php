@@ -2,6 +2,25 @@
 /**
  * Photo Gallery Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $photos = $props['photos'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $photos = $photos ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Photo Gallery';
+$componentId = $componentId ?? 'photo-gallery-' . time();
 ?>
 <div class="photo-gallery-component editable-element" data-element="photo-gallery" data-component="photo-gallery" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="photo-gallery">
     <div class="element-controls">

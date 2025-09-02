@@ -2,6 +2,27 @@
 /**
  * Video Intro Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $videoUrl = $props['videoUrl'] ?? null;
+    $videoType = $props['videoType'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $videoUrl = $videoUrl ?? null;
+    $videoType = $videoType ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Video Introduction';
+$componentId = $componentId ?? 'video-intro-' . time();
 ?>
 <div class="video-intro-component editable-element" data-element="video-intro" data-component="video-intro" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="video-intro">
     <div class="element-controls">

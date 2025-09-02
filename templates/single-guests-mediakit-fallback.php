@@ -145,12 +145,41 @@ if (defined('WP_DEBUG') && WP_DEBUG && !empty($media_kit_state)) {
                                 </div>
                             <?php else: ?>
                                 <!-- Single column layout -->
-                                <?php foreach ($section_components as $comp_ref):
+                                <?php 
+                                // ROOT FIX: Debug component rendering
+                                if (defined('WP_DEBUG') && WP_DEBUG) {
+                                    error_log('Section ' . $section_id . ' has ' . count($section_components) . ' component references');
+                                    foreach ($section_components as $comp_ref) {
+                                        $cid = $comp_ref['component_id'];
+                                        $exists = isset($components_map[$cid]) ? 'YES' : 'NO';
+                                        error_log('  - Looking for component: ' . $cid . ' - Exists: ' . $exists);
+                                    }
+                                    error_log('Available components in map: ' . implode(', ', array_keys($components_map)));
+                                }
+                                
+                                foreach ($section_components as $comp_ref):
                                     $component_id = $comp_ref['component_id'];
                                     if (isset($components_map[$component_id])):
                                         $component = $components_map[$component_id];
                                         $component['id'] = $component_id;
                                         render_component($component, $post_id);
+                                    else:
+                                        // ROOT FIX: Try to find orphaned component by checking all components
+                                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                                            error_log('Component ' . $component_id . ' not found in map, checking orphaned components...');
+                                        }
+                                        // Check if we have any orphaned components that should be here
+                                        foreach ($components as $orphan_comp) {
+                                            if (!$orphan_comp['sectionId'] || $orphan_comp['sectionId'] === null) {
+                                                if (defined('WP_DEBUG') && WP_DEBUG) {
+                                                    error_log('Found orphaned component: ' . $orphan_comp['id'] . ' - rendering it');
+                                                }
+                                                render_component($orphan_comp, $post_id);
+                                                // Mark as rendered to avoid duplicates
+                                                $orphan_comp['sectionId'] = 'rendered';
+                                                break; // Only render one orphan per missing reference
+                                            }
+                                        }
                                     endif;
                                 endforeach; ?>
                             <?php endif; ?>

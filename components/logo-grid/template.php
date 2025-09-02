@@ -2,6 +2,25 @@
 /**
  * Logo Grid Component Template
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $description = $props['description'] ?? null;
+    $logos = $props['logos'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $description = $description ?? null;
+    $logos = $logos ?? null;
+    $componentId = $componentId ?? $id ?? null;
+}
+
+// Set defaults
+$title = $title ?? 'Featured In';
+$componentId = $componentId ?? 'logo-grid-' . time();
 ?>
 <div class="logo-grid-component editable-element" data-element="logo-grid" data-component="logo-grid" data-component-id="<?php echo esc_attr($componentId ?? $id ?? ''); ?>" data-component-type="logo-grid">
     <div class="element-controls">

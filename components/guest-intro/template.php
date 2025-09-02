@@ -3,8 +3,36 @@
  * Guest Intro Component Template
  * Perfect for podcast hosts to introduce their guests
  */
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract from props array
+    $title = $props['title'] ?? null;
+    $guest_name = $props['guest_name'] ?? null;
+    $guest_title = $props['guest_title'] ?? null;
+    $tagline = $props['tagline'] ?? null;
+    $intro_text = $props['intro_text'] ?? null;
+    $topics = $props['topics'] ?? null;
+    $guest_website = $props['guest_website'] ?? null;
+    $guest_social = $props['guest_social'] ?? null;
+    $componentId = $props['component_id'] ?? $props['componentId'] ?? null;
+} else {
+    // Direct variables might be set
+    $title = $title ?? null;
+    $guest_name = $guest_name ?? null;
+    $guest_title = $guest_title ?? null;
+    $tagline = $tagline ?? null;
+    $intro_text = $intro_text ?? null;
+    $topics = $topics ?? null;
+    $guest_website = $guest_website ?? null;
+    $guest_social = $guest_social ?? null;
+    $componentId = $componentId ?? null;
+}
+
+// Set defaults
+$componentId = $componentId ?? 'guest-intro-' . time();
 ?>
-<div class="content-section guest-intro-component editable-element" data-element="guest-intro" data-component="guest-intro" data-component-type="guest-intro">
+<div class="content-section guest-intro-component editable-element" data-element="guest-intro" data-component="guest-intro" data-component-id="<?php echo esc_attr($componentId); ?>" data-component-type="guest-intro">
     <!-- ROOT FIX: Controls removed - ComponentControlsManager handles all control functionality dynamically -->
     <h2 class="section-title"><?php echo esc_html($title ?? 'Guest Introduction'); ?></h2>
     
