@@ -6,6 +6,19 @@
 
 // ROOT FIX: Component ID should be passed from parent context
 $finalComponentId = isset($component_id) ? $component_id : (isset($id) ? $id : (isset($componentId) ? $componentId : ''));
+
+// ROOT FIX: Handle props data structure
+if (isset($props) && is_array($props)) {
+    // Extract bio from props
+    $bio_content = $props['bio'] ?? null;
+} else {
+    // Direct variable might be set
+    $bio_content = $bio ?? null;
+}
+
+// Map to template variable
+$content = $bio_content ?? $content ?? null;
+$title = $title ?? 'Biography';
 ?>
 <!-- Biography component template - controls added dynamically by JS -->
 <div class="content-section biography-component editable-element" 

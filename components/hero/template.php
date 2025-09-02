@@ -2,10 +2,28 @@
 /**
  * Hero Component Template
  */
-// Map variable names for backwards compatibility
-$name = $name ?? $title ?? 'New Hero Section';
-$title = $title ?? $subtitle ?? 'Your Professional Title';
-$bio = $bio ?? $description ?? 'Briefly introduce yourself and your expertise.';
+// ROOT FIX: Correct variable mapping for saved props
+// The props come in as 'title', 'subtitle', 'buttonText'
+// But the template uses 'name', 'title', 'bio'
+
+// Check if we have the new props structure
+if (isset($props) && is_array($props)) {
+    // Extract props if they exist
+    $hero_title = $props['title'] ?? null;
+    $hero_subtitle = $props['subtitle'] ?? null;
+    $hero_button = $props['buttonText'] ?? null;
+} else {
+    // Direct variables might be set
+    $hero_title = $title ?? null;
+    $hero_subtitle = $subtitle ?? null;
+    $hero_button = $buttonText ?? null;
+}
+
+// Map to template variables
+$name = $hero_title ?? 'New Hero Section';
+$title = $hero_subtitle ?? 'Your Professional Title';  
+$bio = $description ?? 'Briefly introduce yourself and your expertise.';
+$buttonText = $hero_button ?? 'Get In Touch';
 ?>
 <div class="hero editable-element" data-element="hero" data-component="hero" data-component-type="hero">
     <!-- ROOT FIX: Controls now created dynamically by JavaScript - no server-side duplication -->
@@ -19,4 +37,11 @@ $bio = $bio ?? $description ?? 'Briefly introduce yourself and your expertise.';
     <h1 class="hero__name" contenteditable="true" data-setting="name"><?php echo esc_html($name); ?></h1>
     <div class="hero__title" contenteditable="true" data-setting="title"><?php echo esc_html($title); ?></div>
     <p class="hero__bio" contenteditable="true" data-setting="bio"><?php echo esc_html($bio); ?></p>
+    <?php if (!empty($buttonText)): ?>
+    <div class="hero__cta" style="margin-top: 20px;">
+        <button class="btn btn-primary" style="padding: 12px 30px; background: #295cff; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+            <?php echo esc_html($buttonText); ?>
+        </button>
+    </div>
+    <?php endif; ?>
 </div>

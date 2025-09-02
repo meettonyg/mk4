@@ -504,6 +504,66 @@
                         break;
                     }
                     
+                    // ROOT FIX: ALWAYS ensure component has a section assignment
+                    if (!componentData.sectionId || componentData.sectionId === null) {
+                        // Check if we have sections, if not create a default one
+                        if (!this.state.sections || this.state.sections.length === 0) {
+                            const defaultSection = {
+                                section_id: `section_${Date.now()}`,
+                                section_type: 'full_width',
+                                layout: {
+                                    width: 'full_width',
+                                    max_width: '100%',
+                                    padding: '40px 20px',
+                                    columns: 1,
+                                    column_gap: '0px'
+                                },
+                                section_options: {
+                                    background_type: 'none',
+                                    background_color: 'transparent',
+                                    spacing_top: 'medium',
+                                    spacing_bottom: 'medium'
+                                },
+                                responsive: {
+                                    mobile: { padding: '20px 15px' },
+                                    tablet: { padding: '30px 20px' }
+                                },
+                                components: [],
+                                created_at: Date.now(),
+                                updated_at: Date.now()
+                            };
+                            
+                            if (!this.state.sections) this.state.sections = [];
+                            this.state.sections.push(defaultSection);
+                            componentData.sectionId = defaultSection.section_id;
+                            
+                            this.logger.info('STATE', `ROOT FIX: Created default section ${defaultSection.section_id} for orphaned component`);
+                        } else {
+                            // Assign to first available section
+                            componentData.sectionId = this.state.sections[0].section_id;
+                            this.logger.info('STATE', `ROOT FIX: Assigned orphaned component to existing section ${componentData.sectionId}`);
+                        }
+                    }
+                    
+                    // Also ensure the section knows about this component
+                    if (componentData.sectionId && this.state.sections) {
+                        const section = this.state.sections.find(s => s.section_id === componentData.sectionId);
+                        if (section) {
+                            // Check if component is already in section's component list
+                            const existingAssignment = section.components?.find(c => c.component_id === compId);
+                            if (!existingAssignment) {
+                                if (!section.components) section.components = [];
+                                section.components.push({
+                                    component_id: compId,
+                                    column: 1,
+                                    order: section.components.length,
+                                    assigned_at: Date.now()
+                                });
+                                this.logger.info('STATE', `ROOT FIX: Added component ${compId} to section ${componentData.sectionId} components list`);
+                            }
+                        }
+                    }
+                    
                     this.state.components[compId] = componentData;
                     
                     // Only add to layout if not already present
