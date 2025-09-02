@@ -511,47 +511,50 @@
             /**
              * ✅ PHASE 2: Generate HTML using component configuration and options
              * ARCHITECTURE: Component-agnostic - delegates to registry for self-registered components
+             * MIGRATION COMPLETE: All components now use self-registration, no hardcoded methods
              */
             generateConfiguredHTML(componentType, boundData, componentOptions = {}) {
-                // Check if component registry is available and has the component
-                if (window.GMKBComponentRegistry && window.GMKBComponentRegistry.isRegistered(componentType)) {
+                // Primary: Use component registry for all rendering
+                if (window.GMKBComponentRegistry) {
                     try {
                         const renderer = window.GMKBComponentRegistry.getRenderer(componentType);
                         return renderer(boundData, componentOptions);
                     } catch (error) {
                         this.logger.error('RENDER', `Registry render failed for ${componentType}:`, error);
-                        // Fall through to legacy rendering
+                        // Return error component
+                        return this.renderErrorComponent(componentType, error);
                     }
                 }
                 
-                // LEGACY FALLBACK: Keep hardcoded methods temporarily for backwards compatibility
-                // These will be removed once all components have self-registered
-                const layout = componentOptions.layout || 'default';
-                
-                switch (componentType) {
-                    case 'topics':
-                        return this.generateConfiguredTopicsHTML(boundData, componentOptions);
-                    case 'hero':
-                        return this.generateConfiguredHeroHTML(boundData, componentOptions);
-                    case 'biography':
-                        return this.generateConfiguredBiographyHTML(boundData, componentOptions);
-                    case 'contact':
-                        return this.generateConfiguredContactHTML(boundData, componentOptions);
-                    case 'social-links':
-                        return this.generateConfiguredSocialLinksHTML(boundData, componentOptions);
-                    case 'portfolio':
-                        return this.generateConfiguredPortfolioHTML(boundData, componentOptions);
-                    default:
-                        return this.generateConfiguredDefaultHTML(componentType, boundData, componentOptions);
-                }
+                // Fallback: Registry not available (should never happen)
+                this.logger.error('RENDER', 'Component registry not available!');
+                return `<div class="gmkb-component gmkb-component--error">
+                    <h3>⚠️ Component Registry Error</h3>
+                    <p>Unable to render ${componentType} - registry not available</p>
+                </div>`;
+            }
+            
+            /**
+             * Render error component
+             */
+            renderErrorComponent(type, error) {
+                return `<div class="gmkb-component gmkb-component--error">
+                    <h3>⚠️ Error Rendering ${type}</h3>
+                    <p>${this.escapeHtml(error.message)}</p>
+                </div>`;
             }
             
             // ===============================================
-            // ✅ PHASE 2: CONFIGURED HTML GENERATION METHODS
+            // 📦 LEGACY METHODS - CAN BE DELETED
+            // All component rendering now handled by GMKBComponentRegistry
+            // These methods are no longer used as of 2025-02-02
+            // Keeping temporarily for emergency rollback only
+            // DELETE AFTER: 2025-02-09 (one week stability period)
             // ===============================================
             
             /**
-             * ✅ PHASE 2: Generate configured topics HTML with layout options
+             * DEPRECATED - Kept only as emergency fallback
+             * Remove this method once registry is stable in production
              */
             generateConfiguredTopicsHTML(boundData, options = {}) {
                 const title = boundData.title || 'Speaking Topics';
