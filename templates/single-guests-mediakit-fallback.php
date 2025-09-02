@@ -22,15 +22,36 @@ if (!$media_kit_state && $post_id) {
 
 // If still no state, show error
 if (empty($media_kit_state)) {
-    get_header();
-    ?>
-    <div class="gmkb-error-container" style="padding: 40px; text-align: center;">
+?><!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo('charset'); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Media Kit Not Available</title>
+    <style>
+        body::before {
+            content: "📄";
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            z-index: 9999;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="gmkb-error-container" style="padding: 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         <h2>Media Kit Not Available</h2>
         <p>This guest's media kit is currently being updated. Please check back soon.</p>
         <a href="<?php echo home_url(); ?>" class="button">Return Home</a>
     </div>
-    <?php
-    get_footer();
+</body>
+</html>
+<?php
     exit;
 }
 
@@ -63,9 +84,36 @@ $global_settings = isset($media_kit_state['globalSettings']) ? $media_kit_state[
 // Get post data
 $post = get_post($post_id);
 
-get_header();
+?><!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo('charset'); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?php echo get_the_title($post_id); ?> - Media Kit</title>
+    
+    <!-- Only load essential Media Kit CSS -->
+    <link rel='stylesheet' href='<?php echo GMKB_PLUGIN_URL; ?>css/frontend-mediakit.css' media='all' />
+    <link rel='stylesheet' href='<?php echo GMKB_PLUGIN_URL; ?>css/modules/components.css' media='all' />
+    
+    <style>
+        /* Minimal icon in corner */
+        body::before {
+            content: "📄";
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            z-index: 9999;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
 
-// ROOT FIX: Debug saved data structure
+<?php
 if (defined('WP_DEBUG') && WP_DEBUG && !empty($media_kit_state)) {
     error_log('=== MEDIA KIT DATA STRUCTURE DEBUG ===');
     error_log('Post ID: ' . $post_id);
@@ -202,8 +250,10 @@ if (defined('WP_DEBUG') && WP_DEBUG && !empty($media_kit_state)) {
     
 </article>
 
+</body>
+</html>
+
 <?php
-get_footer();
 
 // ROOT FIX: Helper function to render a component
 function render_component($component, $post_id, $index = 0) {
