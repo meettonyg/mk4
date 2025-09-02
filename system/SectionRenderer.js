@@ -33,7 +33,7 @@ class SectionRenderer {
         
         // Listen for section events
         document.addEventListener('gmkb:section-registered', (event) => {
-            this.onSectionRegistered(event.detail);
+            this.onSectionRegistered(event);
         });
         
         document.addEventListener('gmkb:section-updated', (event) => {
@@ -64,88 +64,84 @@ class SectionRenderer {
     /**
      * Handle core systems ready event
      * Following checklist: Dependency-Awareness, No Global Object Sniffing
+     * ROOT FIX: Create container if it doesn't exist instead of repeatedly retrying
      */
     onCoreSystemsReady() {
         this.sectionLayoutManager = window.sectionLayoutManager;
         this.componentRenderer = window.enhancedComponentRenderer;
         
-        // ROOT FIX: Ensure DOM is ready before looking for container
-        const tryFindContainer = () => {
-            this.containerElement = this.findContainerElement();
-            
-            if (!this.containerElement) {
-                // Try again after a short delay if DOM not ready
-                if (this.containerRetries < 5) {
-                    this.containerRetries++;
-                    this.logger.warn(`⏳ PHASE 3: Container not found, retry ${this.containerRetries}/5`);
-                    setTimeout(tryFindContainer, 100);
-                } else {
-                    this.logger.error('❌ PHASE 3: No container element found for sections after retries');
-                }
-                return;
-            }
-            
-            this.logger.info('🎯 PHASE 3: Section renderer ready - container found:', {
-                containerId: this.containerElement.id,
-                containerClass: this.containerElement.className,
-                parent: this.containerElement.parentElement?.id
-            });
-            
-            // Render any existing sections
-            this.renderExistingSections();
-        };
+        // ROOT FIX: Find or create container immediately
+        this.containerElement = this.findOrCreateContainerElement();
         
-        // Start looking for container
-        this.containerRetries = 0;
-        tryFindContainer();
+        if (!this.containerElement) {
+            this.logger.error('❌ PHASE 3: Failed to create sections container');
+            return;
+        }
+        
+        this.logger.info('🎯 PHASE 3: Section renderer ready - container found:', {
+            containerId: this.containerElement.id,
+            containerClass: this.containerElement.className,
+            parent: this.containerElement.parentElement?.id
+        });
+        
+        // Render any existing sections
+        this.renderExistingSections();
     }
     
     /**
-     * Find the container element for sections
-     * Following checklist: Root Cause Fix
+     * Find or create the container element for sections
+     * ROOT FIX: Always ensure container exists
      */
-    findContainerElement() {
-        // ROOT FIX: Look for the container that exists in the PHP template
+    findOrCreateContainerElement() {
+        // First try to find existing container
         let container = document.getElementById('gmkb-sections-container');
         
-        if (!container) {
-            // Try alternate selectors
-            container = document.querySelector('.gmkb-sections-container');
+        if (container) {
+            this.logger.info('✅ PHASE 3: Found existing sections container');
+            return container;
         }
         
-        if (!container) {
-            // Fall back to saved components container
-            const savedComponentsContainer = document.getElementById('saved-components-container');
-            if (savedComponentsContainer) {
-                // Find or create sections container within saved components container
-                container = savedComponentsContainer.querySelector('#gmkb-sections-container');
-                
-                if (!container) {
-                    // The container should exist from PHP template, but create if missing
-                    container = document.createElement('div');
-                    container.id = 'gmkb-sections-container';
-                    container.className = 'gmkb-sections-container';
-                    savedComponentsContainer.appendChild(container);
-                    
-                    this.logger.info('📦 PHASE 3: Created sections container in saved-components-container');
-                }
-            }
-        }
-        
-        if (!container) {
-            // Last resort: create in media kit preview
-            const mediaKitPreview = document.getElementById('media-kit-preview');
-            if (mediaKitPreview) {
-                container = document.createElement('div');
+        // Try alternate selector
+        container = document.querySelector('.gmkb-sections-container');
+        if (container) {
+            // Add ID if missing
+            if (!container.id) {
                 container.id = 'gmkb-sections-container';
-                container.className = 'gmkb-sections-container';
-                mediaKitPreview.appendChild(container);
-                
-                this.logger.info('📦 PHASE 3: Created sections container in media-kit-preview');
             }
+            this.logger.info('✅ PHASE 3: Found sections container by class');
+            return container;
         }
         
-        return container;
+        // ROOT FIX: Create container in the correct parent
+        const savedComponentsContainer = document.getElementById('saved-components-container');
+        if (savedComponentsContainer) {
+            // Create sections container as first child of saved-components-container
+            container = document.createElement('div');
+            container.id = 'gmkb-sections-container';
+            container.className = 'gmkb-sections-container';
+            
+            // Insert at beginning so sections come before direct components
+            savedComponentsContainer.insertBefore(container, savedComponentsContainer.firstChild);
+            
+            this.logger.info('📦 PHASE 3: Created sections container in saved-components-container');
+            return container;
+        }
+        
+        // Fallback: create in media kit preview
+        const mediaKitPreview = document.getElementById('media-kit-preview');
+        if (mediaKitPreview) {
+            container = document.createElement('div');
+            container.id = 'gmkb-sections-container';
+            container.className = 'gmkb-sections-container';
+            mediaKitPreview.appendChild(container);
+            
+            this.logger.info('📦 PHASE 3: Created sections container in media-kit-preview');
+            return container;
+        }
+        
+        // Last resort: create in body (should never reach here)
+        this.logger.error('❌ PHASE 3: No suitable parent for sections container');
+        return null;
     }
     
     /**
@@ -170,15 +166,15 @@ class SectionRenderer {
     /**
      * Handle section registered event
      * Following checklist: Event-Driven, Real-time Updates, Root Cause Fix
+     * CRITICAL: Use manager from event detail to avoid circular dependency
      */
-    onSectionRegistered(detail) {
-        const { sectionId, configuration } = detail;
+    onSectionRegistered(event) {
+        const { sectionId, sectionLayoutManager } = event.detail;
         
         this.logger.info(`📐 PHASE 3: Rendering newly registered section ${sectionId}`);
         
-        // ROOT CAUSE FIX: Always use section ID for consistency
-        // renderSection will fetch the proper section object internally
-        this.renderSection(sectionId);
+        // ROOT CAUSE FIX: Use passed manager reference to avoid global access
+        this.renderSection(sectionId, sectionLayoutManager);
         
         // ROOT CAUSE FIX: Ensure section is properly registered with drag-drop system
         // Small delay to ensure DOM is ready for drag-drop integration
@@ -192,11 +188,17 @@ class SectionRenderer {
     /**
      * Render a section to DOM
      * Following checklist: DOM Manipulation, Visual Consistency, Root Cause Fix
+     * @param {string|object} sectionOrId - Section object or ID
+     * @param {object} sectionLayoutManager - Manager instance (required when passing ID)
      */
-    renderSection(sectionOrId) {
+    renderSection(sectionOrId, sectionLayoutManager = null) {
         if (!this.containerElement) {
-            this.logger.error('❌ PHASE 3: Cannot render section - no container element');
-            return;
+            // ROOT FIX: Try to create container if missing
+            this.containerElement = this.findOrCreateContainerElement();
+            if (!this.containerElement) {
+                this.logger.error('❌ PHASE 3: Cannot render section - unable to create container');
+                return;
+            }
         }
         
         // ROOT CAUSE FIX: Handle both section object and section ID
@@ -204,14 +206,18 @@ class SectionRenderer {
         
         // If a string ID was passed, fetch the actual section object
         if (typeof sectionOrId === 'string') {
-            if (this.sectionLayoutManager) {
-                section = this.sectionLayoutManager.getSection(sectionOrId);
-                if (!section) {
-                    this.logger.error(`❌ PHASE 3: Section not found: ${sectionOrId}`);
-                    return;
-                }
-            } else {
-                this.logger.error('❌ PHASE 3: Cannot fetch section - SectionLayoutManager not available');
+            // ROOT CAUSE FIX: Use passed manager or fallback to instance manager
+            const manager = sectionLayoutManager || this.sectionLayoutManager;
+            
+            if (!manager) {
+                this.logger.error(`❌ PHASE 3: Cannot fetch section ${sectionOrId} - no manager available`);
+                this.logger.error('This is a critical error - section manager should be passed via event');
+                return;
+            }
+            
+            section = manager.getSection(sectionOrId);
+            if (!section) {
+                this.logger.error(`❌ PHASE 3: Section not found: ${sectionOrId}`);
                 return;
             }
         }

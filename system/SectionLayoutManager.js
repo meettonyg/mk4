@@ -657,15 +657,21 @@ class SectionLayoutManager {
     
     /**
      * Dispatch section-related events
-     * Following checklist: Event-Driven, Documentation
+     * Following checklist: Event-Driven, Documentation, Root Cause Fix
+     * CRITICAL: Include self-reference to prevent circular dependencies
      */
     dispatchSectionEvent(eventType, detail) {
+        // ROOT CAUSE FIX: Include self-reference in event detail for dependency injection
+        // This prevents circular dependencies and global object sniffing
+        const enhancedDetail = {
+            ...detail,
+            sectionLayoutManager: this,  // Pass reference to avoid global access
+            timestamp: Date.now(),
+            source: 'SectionLayoutManager'
+        };
+        
         const event = new CustomEvent(eventType, {
-            detail: {
-                ...detail,
-                timestamp: Date.now(),
-                source: 'SectionLayoutManager'
-            }
+            detail: enhancedDetail
         });
         
         document.dispatchEvent(event);

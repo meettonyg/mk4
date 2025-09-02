@@ -6,7 +6,7 @@
 (function() {
     'use strict';
     
-    // Run diagnostic as soon as possible
+    // Run diagnostic when data is available
     function runDataDiagnostic() {
         console.group('🔍 GMKB DATA PIPELINE DIAGNOSTIC');
         
@@ -90,11 +90,31 @@
         console.groupEnd();
     }
     
-    // Run diagnostic immediately
-    runDataDiagnostic();
+    // ROOT CAUSE FIX: Event-driven initialization without polling
+    // Wait for DOM and gmkbData to be available
+    function initDiagnostic() {
+        if (typeof window.gmkbData !== 'undefined') {
+            // Data is available, run diagnostic
+            runDataDiagnostic();
+        } else {
+            // Data not yet available, wait for WordPress to localize it
+            // Listen for gmkb:ready which indicates WordPress data is loaded
+            document.addEventListener('gmkb:ready', runDataDiagnostic, { once: true });
+            
+            // Also listen for DOMContentLoaded as fallback
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    // Check again after DOM is ready
+                    if (typeof window.gmkbData !== 'undefined') {
+                        runDataDiagnostic();
+                    }
+                }, { once: true });
+            }
+        }
+    }
     
-    // Also run after a short delay to catch any late initialization
-    setTimeout(runDataDiagnostic, 1000);
+    // Start initialization
+    initDiagnostic();
     
     // Expose globally for manual testing
     window.runGmkbDataDiagnostic = runDataDiagnostic;

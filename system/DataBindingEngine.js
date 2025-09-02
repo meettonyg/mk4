@@ -78,38 +78,47 @@ class DataBindingEngine {
     
     /**
      * Bind Pods field data to component properties
+     * ROOT FIX: Preserve existing component data when re-binding
      */
     bindComponentData(componentId, componentType, dataBindings, sourceData = null) {
         if (!window.componentConfigurationManager) {
             this.logger.warn('⚠️ PHASE 2: ComponentConfigurationManager not available');
-            return {};
+            return sourceData || {}; // ROOT FIX: Return source data if no config
         }
         
         const schema = window.componentConfigurationManager.getSchema(componentType);
         if (!schema || !schema.dataBindings) {
             this.logger.warn(`⚠️ PHASE 2: No data bindings found for ${componentType}`);
-            return {};
+            return sourceData || {}; // ROOT FIX: Return source data if no schema
         }
         
-        // Use provided data or get from cache/global data
-        const data = sourceData || this.getDataForBinding(componentId);
+        // ROOT FIX: Get existing component data from state first
+        const existingComponentData = this.getExistingComponentData(componentId);
+        
+        // Use provided data, existing data, or get from cache/global data
+        const data = sourceData || existingComponentData || this.getDataForBinding(componentId);
         if (!data) {
             this.logger.warn(`⚠️ PHASE 2: No source data available for ${componentId}`);
-            return {};
+            // ROOT FIX: Return existing data if available, otherwise empty object
+            return existingComponentData || {};
         }
         
-        const boundData = {};
         const bindings = dataBindings || schema.dataBindings;
         
-        // Process each data binding
+        // ROOT FIX: First, preserve all existing data
+        const boundData = { ...data };
+        
+        // Process each data binding, only override if we have new data
         Object.entries(bindings).forEach(([componentProp, dataField]) => {
             const value = this.resolveDataField(data, dataField);
             if (value !== undefined && value !== null) {
                 boundData[componentProp] = value;
-            } else {
+            } else if (!boundData[componentProp]) {
+                // Only set default if no existing value
                 this.logger.debug(`📊 PHASE 2: No data found for field ${dataField} in ${componentId}`);
                 boundData[componentProp] = this.getDefaultValue(componentProp, componentType);
             }
+            // If boundData already has this property, keep it (preserve existing data)
         });
         
         // Store binding information
@@ -189,10 +198,36 @@ class DataBindingEngine {
     }
     
     /**
+     * ROOT FIX: Get existing component data from state manager
+     */
+    getExistingComponentData(componentId) {
+        try {
+            if (window.enhancedStateManager) {
+                const state = window.enhancedStateManager.getState();
+                if (state && state.components && state.components[componentId]) {
+                    const component = state.components[componentId];
+                    // Return the existing props/data
+                    return component.props || component.data || {};
+                }
+            }
+        } catch (error) {
+            this.logger.warn(`⚠️ PHASE 2: Error getting existing component data: ${error.message}`);
+        }
+        return null;
+    }
+    
+    /**
      * Get data for binding from various sources
+     * ROOT FIX: Check existing component data first
      */
     getDataForBinding(componentId) {
-        // Check cache first
+        // ROOT FIX: Check existing component data first
+        const existingData = this.getExistingComponentData(componentId);
+        if (existingData && Object.keys(existingData).length > 0) {
+            return existingData;
+        }
+        
+        // Check cache
         if (this.dataCache.has(componentId)) {
             return this.dataCache.get(componentId);
         }
