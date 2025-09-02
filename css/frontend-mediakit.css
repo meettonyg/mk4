@@ -43,45 +43,66 @@
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-/* Section Support (Phase 3) */
+/* ROOT FIX: Enhanced Section Support with proper layouts */
 .gmkb-sections-wrapper {
     display: flex;
     flex-direction: column;
     gap: 0;
+    width: 100%;
 }
 
 .gmkb-section {
     width: 100%;
-    padding: 40px 0;
+    position: relative;
 }
 
+.gmkb-section-inner {
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Section Layout Types */
 .gmkb-section--full_width .gmkb-section-inner {
     max-width: 100%;
-    padding: 0 20px;
 }
 
 .gmkb-section--contained .gmkb-section-inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
 }
 
-.gmkb-section--two_column .gmkb-section-inner {
+/* Column Layouts */
+.gmkb-section-columns {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-.gmkb-section--three_column .gmkb-section-inner {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 30px;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
+    width: 100%;
+}
+
+.gmkb-columns--1 {
+    grid-template-columns: 1fr;
+}
+
+.gmkb-columns--2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.gmkb-columns--3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.gmkb-columns--4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.gmkb-section-column {
+    min-height: 50px;
+    position: relative;
+}
+
+/* Components within sections */
+.gmkb-section .gmkb-component {
+    margin-bottom: 0;
+    height: 100%;
 }
 
 /* Component Type Specific Styles */
@@ -169,8 +190,9 @@
 
 /* Responsive Design */
 @media (max-width: 992px) {
-    .gmkb-section--three_column .gmkb-section-inner {
-        grid-template-columns: 1fr 1fr;
+    .gmkb-columns--3,
+    .gmkb-columns--4 {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -179,9 +201,11 @@
         padding: 20px 15px;
     }
     
-    .gmkb-section--two_column .gmkb-section-inner,
-    .gmkb-section--three_column .gmkb-section-inner {
+    .gmkb-columns--2,
+    .gmkb-columns--3,
+    .gmkb-columns--4 {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
     
     .gmkb-component {

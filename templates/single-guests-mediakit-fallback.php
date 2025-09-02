@@ -34,20 +34,27 @@ if (empty($media_kit_state)) {
     exit;
 }
 
-// Get components in proper order
+// ROOT FIX: Get sections and components in proper structure
+$sections = isset($media_kit_state['sections']) ? $media_kit_state['sections'] : array();
+$components_map = isset($media_kit_state['components']) ? $media_kit_state['components'] : array();
+
+// Build ordered component list
 $components = array();
 if (!empty($media_kit_state['saved_components'])) {
     $components = $media_kit_state['saved_components'];
-} elseif (!empty($media_kit_state['layout']) && !empty($media_kit_state['components'])) {
+} elseif (!empty($media_kit_state['layout']) && !empty($components_map)) {
     foreach ($media_kit_state['layout'] as $component_id) {
-        if (isset($media_kit_state['components'][$component_id])) {
-            $component = $media_kit_state['components'][$component_id];
+        if (isset($components_map[$component_id])) {
+            $component = $components_map[$component_id];
             $component['id'] = $component_id;
             $components[] = $component;
         }
     }
-} elseif (!empty($media_kit_state['components'])) {
-    $components = array_values($media_kit_state['components']);
+} elseif (!empty($components_map)) {
+    foreach ($components_map as $id => $component) {
+        $component['id'] = $id;
+        $components[] = $component;
+    }
 }
 
 // Get global settings
@@ -57,6 +64,24 @@ $global_settings = isset($media_kit_state['globalSettings']) ? $media_kit_state[
 $post = get_post($post_id);
 
 get_header();
+
+// ROOT FIX: Debug saved data structure
+if (defined('WP_DEBUG') && WP_DEBUG && !empty($media_kit_state)) {
+    error_log('=== MEDIA KIT DATA STRUCTURE DEBUG ===');
+    error_log('Post ID: ' . $post_id);
+    error_log('Has sections: ' . (!empty($sections) ? 'YES (' . count($sections) . ')' : 'NO'));
+    error_log('Has components_map: ' . (!empty($components_map) ? 'YES (' . count($components_map) . ')' : 'NO'));
+    error_log('Has ordered components: ' . (!empty($components) ? 'YES (' . count($components) . ')' : 'NO'));
+    
+    if (!empty($components)) {
+        foreach ($components as $idx => $comp) {
+            error_log('Component ' . $idx . ': Type=' . ($comp['type'] ?? 'unknown') . ', ID=' . ($comp['id'] ?? 'no-id'));
+            if (isset($comp['props'])) {
+                error_log('  Props: ' . json_encode($comp['props']));
+            }
+        }
+    }
+}
 ?>
 
 <!-- Media Kit Container -->
@@ -69,55 +94,147 @@ get_header();
             <p>This media kit is currently being built. Please check back soon.</p>
         </div>
     <?php else: ?>
-        <!-- Dynamic Component Rendering -->
-        <div class="gmkb-components-wrapper">
-            <?php foreach ($components as $index => $component): 
-                $component_type = isset($component['type']) ? $component['type'] : 'unknown';
-                $component_id = isset($component['id']) ? $component['id'] : 'component-' . $index;
-                $component_data = isset($component['data']) ? $component['data'] : array();
-                $component_props = isset($component['props']) ? $component['props'] : array();
+        <!-- ROOT FIX: Section-Based Rendering -->
+        <?php if (!empty($sections)): ?>
+            <!-- Render with sections -->
+            <div class="gmkb-sections-wrapper">
+                <?php foreach ($sections as $section_index => $section): 
+                    $section_id = isset($section['section_id']) ? $section['section_id'] : 'section-' . $section_index;
+                    $section_type = isset($section['section_type']) ? $section['section_type'] : 'full_width';
+                    $section_layout = isset($section['layout']) ? $section['layout'] : array();
+                    $section_components = isset($section['components']) ? $section['components'] : array();
+                    ?>
+                    
+                    <section class="gmkb-section gmkb-section--<?php echo esc_attr($section_type); ?>" 
+                             data-section-id="<?php echo esc_attr($section_id); ?>"
+                             data-section-type="<?php echo esc_attr($section_type); ?>">
+                        
+                        <div class="gmkb-section-inner" style="<?php 
+                            if (isset($section_layout['max_width'])) echo 'max-width: ' . esc_attr($section_layout['max_width']) . ';';
+                            if (isset($section_layout['padding'])) echo 'padding: ' . esc_attr($section_layout['padding']) . ';';
+                        ?>">
+                            
+                            <?php if ($section_type === 'two_column' || $section_type === 'three_column'): ?>
+                                <!-- Multi-column layout -->
+                                <div class="gmkb-section-columns gmkb-columns--<?php echo esc_attr($section_layout['columns'] ?? 1); ?>">
+                                    <?php 
+                                    // Group components by column
+                                    $columns = array();
+                                    foreach ($section_components as $comp_ref) {
+                                        $column = isset($comp_ref['column']) ? $comp_ref['column'] : 1;
+                                        if (!isset($columns[$column])) $columns[$column] = array();
+                                        $columns[$column][] = $comp_ref;
+                                    }
+                                    
+                                    // Render each column
+                                    for ($col = 1; $col <= ($section_layout['columns'] ?? 1); $col++):
+                                    ?>
+                                        <div class="gmkb-section-column" data-column="<?php echo $col; ?>">
+                                            <?php if (isset($columns[$col])): 
+                                                foreach ($columns[$col] as $comp_ref):
+                                                    $component_id = $comp_ref['component_id'];
+                                                    if (isset($components_map[$component_id])):
+                                                        $component = $components_map[$component_id];
+                                                        $component['id'] = $component_id;
+                                                        render_component($component, $post_id);
+                                                    endif;
+                                                endforeach;
+                                            endif; ?>
+                                        </div>
+                                    <?php endfor; ?>
+                                </div>
+                            <?php else: ?>
+                                <!-- Single column layout -->
+                                <?php foreach ($section_components as $comp_ref):
+                                    $component_id = $comp_ref['component_id'];
+                                    if (isset($components_map[$component_id])):
+                                        $component = $components_map[$component_id];
+                                        $component['id'] = $component_id;
+                                        render_component($component, $post_id);
+                                    endif;
+                                endforeach; ?>
+                            <?php endif; ?>
+                            
+                        </div>
+                    </section>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <!-- Fallback: Render components without sections -->
+            <div class="gmkb-components-wrapper">
+                <?php foreach ($components as $index => $component): 
+                    render_component($component, $post_id, $index);
                 ?>
                 
-                <section class="gmkb-component gmkb-component--<?php echo esc_attr($component_type); ?>" 
-                         data-component-id="<?php echo esc_attr($component_id); ?>"
-                         data-component-type="<?php echo esc_attr($component_type); ?>"
-                         data-component-index="<?php echo esc_attr($index); ?>">
-                    
-                    <?php
-                    // Try to load component template
-                    $component_template = GMKB_PLUGIN_DIR . "components/{$component_type}/frontend-template.php";
-                    
-                    // If no frontend template, try regular template
-                    if (!file_exists($component_template)) {
-                        $component_template = GMKB_PLUGIN_DIR . "components/{$component_type}/template.php";
-                    }
-                    
-                    if (file_exists($component_template)) {
-                        // Set up props for template
-                        $props = array_merge($component_props, array(
-                            'data' => $component_data,
-                            'component_id' => $component_id,
-                            'is_frontend' => true,
-                            'post_id' => $post_id
-                        ));
-                        
-                        // Include template
-                        include $component_template;
-                    } else {
-                        // Fallback rendering
-                        echo $this->render_component_fallback($component_type, $component_data, $component_props);
-                    }
-                    ?>
-                </section>
-                
             <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+            </div>
+        <?php endif; // End sections check ?>
+    <?php endif; // End components check ?>
     
 </article>
 
 <?php
 get_footer();
+
+// ROOT FIX: Helper function to render a component
+function render_component($component, $post_id, $index = 0) {
+    $component_type = isset($component['type']) ? $component['type'] : 'unknown';
+    $component_id = isset($component['id']) ? $component['id'] : 'component-' . $index;
+    $component_data = isset($component['data']) ? $component['data'] : array();
+    $component_props = isset($component['props']) ? $component['props'] : array();
+    
+    // ROOT FIX: Debug component data
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('Rendering component: ' . $component_type . ' with ID: ' . $component_id);
+        error_log('Component props: ' . print_r($component_props, true));
+    }
+    ?>
+    
+    <div class="gmkb-component gmkb-component--<?php echo esc_attr($component_type); ?>" 
+         data-component-id="<?php echo esc_attr($component_id); ?>"
+         data-component-type="<?php echo esc_attr($component_type); ?>"
+         data-component-index="<?php echo esc_attr($index); ?>">
+        
+        <?php
+        // Try to load component template
+        $component_template = GMKB_PLUGIN_DIR . "components/{$component_type}/frontend-template.php";
+        
+        // If no frontend template, try regular template
+        if (!file_exists($component_template)) {
+            $component_template = GMKB_PLUGIN_DIR . "components/{$component_type}/template.php";
+        }
+        
+        if (file_exists($component_template)) {
+            // ROOT FIX: Extract props as variables for the template
+            // The hero template expects: $name, $title, $bio (or $title, $subtitle, $description)
+            if (!empty($component_props)) {
+                // Extract props directly as variables
+                extract($component_props, EXTR_SKIP);
+                
+                // Also handle common variations
+                if (isset($component_props['title'])) $title = $component_props['title'];
+                if (isset($component_props['subtitle'])) $subtitle = $component_props['subtitle'];
+                if (isset($component_props['buttonText'])) $buttonText = $component_props['buttonText'];
+            }
+            
+            // Set up additional variables
+            $props = array_merge($component_props, array(
+                'data' => $component_data,
+                'component_id' => $component_id,
+                'is_frontend' => true,
+                'post_id' => $post_id
+            ));
+            
+            // Include template
+            include $component_template;
+        } else {
+            // Fallback rendering
+            echo render_component_fallback($component_type, $component_data, $component_props);
+        }
+        ?>
+    </div>
+    <?php
+}
 
 // Helper function for fallback rendering
 function render_component_fallback($type, $data, $props) {

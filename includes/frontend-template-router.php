@@ -28,15 +28,47 @@ class GMKB_Frontend_Template_Router {
     }
     
     private function __construct() {
-        // ROOT FIX: Hook into WordPress template selection system
-        add_filter('template_include', array($this, 'route_media_kit_template'), 99);
+        // ROOT FIX: Hook into WordPress template selection system with HIGHEST priority
+        // Priority 999 ensures we run AFTER the theme and can override its template
+        add_filter('template_include', array($this, 'route_media_kit_template'), 999);
+        
+        // ROOT FIX: Also try single_template filter which is more specific
+        add_filter('single_template', array($this, 'route_media_kit_template'), 999);
+        
+        // ROOT FIX: And the post type specific filter
+        add_filter('single_template_hierarchy', array($this, 'modify_template_hierarchy'), 10);
         
         // Enqueue frontend assets when media kit template is used
         add_action('wp_enqueue_scripts', array($this, 'enqueue_media_kit_assets'));
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Template Router: Initialized');
+            error_log('GMKB Template Router: Initialized with multiple filters');
         }
+    }
+    
+    /**
+     * ROOT FIX: Modify template hierarchy to prioritize media kit templates
+     */
+    public function modify_template_hierarchy($templates) {
+        global $post;
+        
+        if (!$post || $post->post_type !== 'guests') {
+            return $templates;
+        }
+        
+        // Check if this post has media kit data
+        $media_kit_state = get_post_meta($post->ID, 'gmkb_media_kit_state', true);
+        
+        if (!empty($media_kit_state) && (isset($media_kit_state['components']) || isset($media_kit_state['saved_components']))) {
+            // Add our template to the beginning of the hierarchy
+            array_unshift($templates, 'single-guests-mediakit.php');
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Template Router: Modified template hierarchy for post ' . $post->ID);
+            }
+        }
+        
+        return $templates;
     }
     
     /**
@@ -46,8 +78,23 @@ class GMKB_Frontend_Template_Router {
      * @return string Modified template path
      */
     public function route_media_kit_template($template) {
-        // Only process for single guest posts
-        if (!is_singular('guests')) {
+        // ROOT FIX: Debug current template being used
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Template Router: Current template: ' . $template);
+            error_log('GMKB Template Router: is_singular check: guests=' . (is_singular('guests') ? 'YES' : 'NO'));
+        }
+        
+        // ROOT FIX: Check for correct custom post type
+        // The actual post type is 'guests' based on the theme template name
+        $is_guest_post = is_singular('guests');
+        
+        if (!$is_guest_post) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                global $post;
+                if ($post) {
+                    error_log('GMKB Template Router: Not a guest post. Post type: ' . $post->post_type);
+                }
+            }
             return $template;
         }
         
@@ -91,30 +138,39 @@ class GMKB_Frontend_Template_Router {
             return $template;
         }
         
-        // Look for media kit template in theme
-        $media_kit_template = locate_template('single-guests-mediakit.php');
-        
-        if ($media_kit_template) {
-            // Set flag for asset loading
-            $GLOBALS['gmkb_using_media_kit_template'] = true;
-            $GLOBALS['gmkb_media_kit_state'] = $media_kit_state;
-            $GLOBALS['gmkb_media_kit_post_id'] = $post_id;
+        // ROOT FIX: ALWAYS use plugin template when media kit data exists
+        // This overrides the theme's single-guests.php template
+        $media_kit_template = GMKB_PLUGIN_DIR . 'templates/single-guests-mediakit-fallback.php';
             
+        if (!file_exists($media_kit_template)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Template Router: Using media kit template for post ' . $post_id);
-                $component_count = count($media_kit_state['saved_components'] ?? $media_kit_state['components'] ?? []);
-                error_log('GMKB Template Router: Rendering ' . $component_count . ' components');
+                error_log('GMKB Template Router ERROR: Plugin template not found at: ' . $media_kit_template);
+                error_log('GMKB Template Router: Falling back to theme template: ' . $template);
             }
-            
-            return $media_kit_template;
+            return $template;
         }
         
-        // Media kit template not found - log and use default
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Template Router: Media kit template not found in theme - using default');
+            error_log('GMKB Template Router: OVERRIDING theme template with plugin media kit template');
+            error_log('GMKB Template Router: Using: ' . $media_kit_template);
         }
         
-        return $template;
+        // Set globals for template use
+        $GLOBALS['gmkb_using_media_kit_template'] = true;
+        $GLOBALS['gmkb_media_kit_state'] = $media_kit_state;
+        $GLOBALS['gmkb_media_kit_post_id'] = $post_id;
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $component_count = count($media_kit_state['saved_components'] ?? $media_kit_state['components'] ?? []);
+            error_log('GMKB Template Router: Rendering ' . $component_count . ' components');
+            
+            // ROOT FIX: Log sections if present
+            if (!empty($media_kit_state['sections'])) {
+                error_log('GMKB Template Router: Found ' . count($media_kit_state['sections']) . ' sections');
+            }
+        }
+        
+        return $media_kit_template;
     }
     
     /**
@@ -189,3 +245,35 @@ class GMKB_Frontend_Template_Router {
 
 // Initialize the template router
 GMKB_Frontend_Template_Router::get_instance();
+
+// ROOT FIX: Log that the router was loaded and verify filters are added
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('GMKB: Frontend Template Router file loaded and initialized at ' . current_action());
+    
+    // Verify our filters are registered
+    add_action('init', function() {
+        global $wp_filter;
+        
+        error_log('GMKB: Template router active at init hook');
+        
+        // Check if our filters are registered
+        if (isset($wp_filter['template_include'])) {
+            $found_our_filter = false;
+            foreach ($wp_filter['template_include'] as $priority => $hooks) {
+                foreach ($hooks as $hook) {
+                    if (is_array($hook['function']) && isset($hook['function'][0])) {
+                        if (is_object($hook['function'][0]) && get_class($hook['function'][0]) === 'GMKB_Frontend_Template_Router') {
+                            error_log('GMKB: Found our template_include filter at priority ' . $priority);
+                            $found_our_filter = true;
+                        }
+                    }
+                }
+            }
+            if (!$found_our_filter) {
+                error_log('GMKB ERROR: Our template_include filter is NOT registered!');
+            }
+        } else {
+            error_log('GMKB ERROR: No template_include filters registered at all!');
+        }
+    }, 100);
+}
