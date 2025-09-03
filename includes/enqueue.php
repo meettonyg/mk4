@@ -332,6 +332,14 @@ function gmkb_enqueue_assets() {
     if ( $post_id > 0 ) {
         $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
         
+        // PHASE 1 FIX: Apply Pods data enrichment to saved state
+        if (!empty($saved_state)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('PHASE 1 FIX ENQUEUE: Enriching saved state for post ' . $post_id);
+            }
+            $saved_state = apply_filters('gmkb_load_media_kit_state', $saved_state, $post_id);
+        }
+        
         // ROOT CAUSE FIX: Debug the saved state structure
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG && !empty($saved_state) ) {
             error_log( '🔍 GMKB DIAGNOSTIC: Raw saved_state from database:' );
@@ -442,6 +450,46 @@ function gmkb_enqueue_assets() {
         }
     }
 
+    // PHASE 1 FIX: Load Pods field data for enrichment
+    $pods_data = array();
+    if ($post_id > 0) {
+        // Topics fields
+        for ($i = 1; $i <= 5; $i++) {
+            $topic_value = get_post_meta($post_id, "topic_{$i}", true);
+            if (!empty($topic_value)) {
+                $pods_data["topic_{$i}"] = $topic_value;
+            }
+        }
+        
+        // Biography fields
+        $pods_data['biography'] = get_post_meta($post_id, 'biography', true);
+        $pods_data['biography_short'] = get_post_meta($post_id, 'biography_short', true);
+        
+        // Contact fields
+        $pods_data['email'] = get_post_meta($post_id, 'email', true);
+        $pods_data['phone'] = get_post_meta($post_id, 'phone', true);
+        $pods_data['website'] = get_post_meta($post_id, 'website', true);
+        
+        // Hero fields
+        $pods_data['first_name'] = get_post_meta($post_id, 'first_name', true);
+        $pods_data['last_name'] = get_post_meta($post_id, 'last_name', true);
+        $pods_data['guest_title'] = get_post_meta($post_id, 'guest_title', true);
+        $pods_data['tagline'] = get_post_meta($post_id, 'tagline', true);
+        $pods_data['guest_headshot'] = get_post_meta($post_id, 'guest_headshot', true);
+        
+        // Questions fields
+        for ($i = 1; $i <= 10; $i++) {
+            $question_value = get_post_meta($post_id, "question_{$i}", true);
+            if (!empty($question_value)) {
+                $pods_data["question_{$i}"] = $question_value;
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('PHASE 1 FIX: Loaded ' . count($pods_data) . ' Pods fields for post ' . $post_id);
+        }
+    }
+
     // ROOT FIX: Create WordPress data array early so it can be used by multiple scripts
     $wp_data = array(
         'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
@@ -475,6 +523,9 @@ function gmkb_enqueue_assets() {
         'layout' => $saved_state['layout'] ?? array(),
         'hasSavedData' => !empty( $saved_state ),
         'autoSaveEnabled' => true,
+        // PHASE 1: Pods field data for component enrichment
+        'pods_data' => $pods_data,
+        'pods_fields_loaded' => !empty($pods_data),
         // PHASE 2: Component schemas and configuration data
         'componentSchemas' => $component_schemas,
         'phase2Enabled' => true,
@@ -1033,6 +1084,17 @@ function gmkb_enqueue_assets() {
             $plugin_url . 'js/utils/toast-polyfill.js',
             array(),
             $version,
+            true
+        );
+    }
+    
+    // PHASE 1 DEBUG: Test Pods data enrichment
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        wp_enqueue_script(
+            'gmkb-test-pods-enrichment',
+            $plugin_url . 'debug/test-pods-enrichment.js',
+            array('gmkb-main-script'),
+            $version . '-debug',
             true
         );
     }

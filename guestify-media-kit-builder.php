@@ -29,6 +29,9 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/component-schemas/class-gmkb-component-schema-registry.php';
 
+// PHASE 1 FIX: Include Pods data enrichment system
+require_once GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php';
+
 // Initialize schema registry early - ONCE per request
 add_action('init', function() {
     static $schemas_initialized = false;
@@ -1284,6 +1287,30 @@ class Guestify_Media_Kit_Builder {
         
         // Load from post meta
         $state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+        
+        // PHASE 1 FIX: Apply Pods data enrichment filter
+        if (!empty($state)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('🔄 GMKB: Applying Pods data enrichment for post ' . $post_id);
+                if (isset($state['saved_components'])) {
+                    error_log('📊 GMKB: Before enrichment - ' . count($state['saved_components']) . ' saved components');
+                }
+            }
+            
+            $state = apply_filters('gmkb_load_media_kit_state', $state, $post_id);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                if (isset($state['saved_components'])) {
+                    error_log('✅ GMKB: After enrichment - ' . count($state['saved_components']) . ' saved components');
+                    // Log the topics component data if it exists
+                    foreach ($state['saved_components'] as $component) {
+                        if ($component['type'] === 'topics') {
+                            error_log('📊 GMKB: Topics component props after enrichment: ' . print_r($component['props'], true));
+                        }
+                    }
+                }
+            }
+        }
         
         if (empty($state)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {

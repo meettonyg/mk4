@@ -83,7 +83,7 @@
                 }
             },
             
-            // 2. TOPICS
+            // 2. TOPICS - ROOT FIX: Self-contained with data fetching
             'topics': {
                 schema: {
                     dataBindings: { title: 'topics_title', topics: 'topics_list' },
@@ -92,8 +92,62 @@
                 },
                 render: (data, options = {}) => {
                     const title = data.title || 'Untitled';
-                    const topics = Array.isArray(data.topics) ? data.topics : [];
+                    let topics = Array.isArray(data.topics) ? data.topics : [];
                     const layout = options.layout || 'grid';
+                    
+                    // ROOT FIX: Self-contained Pods data fetching
+                    // Check if we have Pods field data in the props
+                    if (topics.length === 0 && !data.podsDataFetched) {
+                        // Check for Pods field data directly in props
+                        const podsTopics = [];
+                        for (let i = 1; i <= 5; i++) {
+                            const fieldKey = `topic_${i}`;
+                            if (data[fieldKey]) {
+                                podsTopics.push({
+                                    title: data[fieldKey],
+                                    description: ''
+                                });
+                            }
+                        }
+                        
+                        if (podsTopics.length > 0) {
+                            topics = podsTopics;
+                        } else {
+                            // ROOT FIX: Trigger async data fetch if component has a componentId
+                            // This allows the component to fetch its own data
+                            if (options.componentId && window.gmkbData?.postId) {
+                                // Mark container for async update
+                                const containerId = `topics-container-${options.componentId || Date.now()}`;
+                                
+                                // Self-contained async fetch (no external dependencies)
+                                setTimeout(() => {
+                                    const container = document.querySelector(`[data-component-id="${options.componentId}"]`);
+                                    if (container && window.gmkbData?.pods_data) {
+                                        // Extract topics from global Pods data
+                                        const updatedTopics = [];
+                                        for (let i = 1; i <= 5; i++) {
+                                            const fieldKey = `topic_${i}`;
+                                            if (window.gmkbData.pods_data[fieldKey]) {
+                                                updatedTopics.push({
+                                                    title: window.gmkbData.pods_data[fieldKey],
+                                                    description: ''
+                                                });
+                                            }
+                                        }
+                                        
+                                        if (updatedTopics.length > 0) {
+                                            // Re-render with loaded data
+                                            const updatedHtml = components['topics'].render(
+                                                { ...data, topics: updatedTopics, podsDataFetched: true },
+                                                options
+                                            );
+                                            container.innerHTML = updatedHtml;
+                                        }
+                                    }
+                                }, 100);
+                            }
+                        }
+                    }
                     
                     // ROOT FIX: Render component even without topics to match expected UI
                     let html = `<div class="gmkb-topics gmkb-topics--${layout}">
