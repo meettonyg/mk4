@@ -1227,6 +1227,21 @@ function gmkb_enqueue_assets() {
             $version . '-debug',
             true
         );
+        
+        // PHASE 1-4 MIGRATION HELPER: Assists with migration to new architecture
+        wp_enqueue_script(
+            'gmkb-phase14-migration-helper',
+            $plugin_url . 'debug/phase14-migration-helper.js',
+            array(
+                'gmkb-main-initialization',
+                'gmkb-data-state',
+                'gmkb-sync-coordinator',
+                'gmkb-dom-ownership-manager',
+                'gmkb-state-migration-helper'
+            ),
+            $version . '-debug',
+            true
+        );
     }
     
     // Quick Diagnostic Tool - Always available for debugging
