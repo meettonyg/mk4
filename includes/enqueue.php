@@ -1255,6 +1255,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // Topics Editor Load Verification - Debug why TopicsEditor isn't loading
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        wp_enqueue_script(
+            'gmkb-verify-topics-editor-load',
+            $plugin_url . 'debug/verify-topics-editor-load.js',
+            array('gmkb-component-editor-registry'),
+            $version . '-debug-verify',
+            true
+        );
+    }
+    
     // Topics Editor Debug/Fix Script - Ensures Topics editor loads properly
     if (defined('WP_DEBUG') && WP_DEBUG) {
         wp_enqueue_script(
