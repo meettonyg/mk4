@@ -90,6 +90,18 @@ class ComponentEditorRegistry {
                 this.logger.info('EDITOR_REGISTRY', `Created and rendered legacy editor for ${componentType}`);
             }
             
+            // PHASE 3 ROOT FIX: Emit standard lifecycle event for sync system
+            // This allows the SyncCoordinator to auto-register the editor
+            document.dispatchEvent(new CustomEvent('component:editor-ready', {
+                detail: {
+                    componentId,
+                    componentType,
+                    container: containerEl
+                }
+            }));
+            
+            this.logger.info('EDITOR_REGISTRY', `Dispatched component:editor-ready for ${componentType}`);
+            
             return editor;
         } catch (error) {
             this.logger.error('EDITOR_REGISTRY', `Failed to create editor for ${componentType}:`, error);

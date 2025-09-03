@@ -1012,14 +1012,24 @@ function gmkb_enqueue_assets() {
     }
     
     // PHASE 2: Component-specific editors (only Topics for now)
-    if (!wp_script_is('gmkb-topics-editor', 'enqueued')) {
+    // ROOT FIX: Force enqueue with no cache and explicit file check
+    $topics_editor_file = GUESTIFY_PLUGIN_DIR . 'components/topics/TopicsEditor.js';
+    if (file_exists($topics_editor_file)) {
         wp_enqueue_script(
             'gmkb-topics-editor',
             $plugin_url . 'components/topics/TopicsEditor.js',
-            array('gmkb-component-lifecycle', 'gmkb-component-editor-registry'), // Now depends on ComponentLifecycle
-            $version,
+            array('gmkb-component-editor-registry'), // Simplified dependencies
+            $version . '-' . filemtime($topics_editor_file), // Force cache bust
             true
         );
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Topics editor file exists and enqueued: ' . $topics_editor_file);
+        }
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('❌ GMKB: Topics editor file not found: ' . $topics_editor_file);
+        }
     }
     
     // PHASE 1-4: Main Initialization Script - Coordinates new Phase 1-4 systems
@@ -1255,27 +1265,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // Topics Editor Load Verification - Debug why TopicsEditor isn't loading
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        wp_enqueue_script(
-            'gmkb-verify-topics-editor-load',
-            $plugin_url . 'debug/verify-topics-editor-load.js',
-            array('gmkb-component-editor-registry'),
-            $version . '-debug-verify',
-            true
-        );
-    }
-    
-    // Topics Editor Debug/Fix Script - Ensures Topics editor loads properly
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        wp_enqueue_script(
-            'gmkb-fix-topics-editor-loading',
-            $plugin_url . 'debug/fix-topics-editor-loading.js',
-            array('gmkb-topics-editor', 'gmkb-component-editor-registry'),
-            $version . '-debug',
-            true
-        );
-    }
+    // ROOT FIX: Emergency loaders removed - TopicsEditor now loads via proper enqueue
     
     // Quick Diagnostic Tool - Always available for debugging
     if (!wp_script_is('gmkb-quick-diagnostic', 'enqueued')) {
@@ -1464,6 +1454,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-data-binding-engine',
                 'gmkb-component-options-ui',
                 'gmkb-component-selection-manager',
+                'gmkb-topics-editor', // ROOT FIX: Ensure Topics editor loads
                 // PHASE 3: Section layer systems
                 'gmkb-section-layout-manager',
                 'gmkb-section-controls-ui',
