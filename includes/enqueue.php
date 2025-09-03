@@ -811,6 +811,18 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // PHASE 1 REDESIGN: Component Lifecycle Base Class - Foundation for all component editors
+    // MOVED HERE: Before sync-coordinator and dom-ownership-manager that depend on it
+    if (!wp_script_is('gmkb-component-lifecycle', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-lifecycle',
+            $plugin_url . 'js/core/component-lifecycle.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 12e2. PHASE 3 REDESIGN: Sync Coordinator - Clean event-driven sync system
     // Replaces universal-component-sync.js with proper lifecycle-based synchronization
     if (!wp_script_is('gmkb-sync-coordinator', 'enqueued')) {
@@ -965,16 +977,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // PHASE 1 REDESIGN: Component Lifecycle Base Class - Foundation for all component editors
-    if (!wp_script_is('gmkb-component-lifecycle', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-component-lifecycle',
-            $plugin_url . 'js/core/component-lifecycle.js',
-            array('gmkb-structured-logger'),
-            $version,
-            true
-        );
-    }
+    // Component Lifecycle already enqueued earlier (moved before sync-coordinator)
     
     // PHASE 2: Component Editor System - Base class and registry
     if (!wp_script_is('gmkb-base-component-editor', 'enqueued')) {
@@ -1003,6 +1006,43 @@ function gmkb_enqueue_assets() {
             'gmkb-topics-editor',
             $plugin_url . 'components/topics/TopicsEditor.js',
             array('gmkb-component-lifecycle', 'gmkb-component-editor-registry'), // Now depends on ComponentLifecycle
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 1-4: Main Initialization Script - Coordinates new Phase 1-4 systems
+    if (!wp_script_is('gmkb-main-initialization', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-main-initialization',
+            $plugin_url . 'js/core/main-initialization.js',
+            array(
+                'gmkb-component-lifecycle',
+                'gmkb-data-state',
+                'gmkb-sync-coordinator',
+                'gmkb-dom-ownership-manager'
+            ),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 1-4: Migration Scripts - Help transition from old to new systems
+    if (!wp_script_is('gmkb-migration-sync', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-migration-sync',
+            $plugin_url . 'js/migrations/migrate-sync-system.js',
+            array('gmkb-sync-coordinator', 'gmkb-component-lifecycle'),
+            $version,
+            true
+        );
+    }
+    
+    if (!wp_script_is('gmkb-migration-ownership', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-migration-ownership',
+            $plugin_url . 'js/migrations/ownership-debug.js',
+            array('gmkb-dom-ownership-manager'),
             $version,
             true
         );

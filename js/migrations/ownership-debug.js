@@ -299,9 +299,9 @@
     }
 
     // Initialize ownership debugger
-    const debugger = new OwnershipDebugger();
+    const ownershipDebuggerInstance = new OwnershipDebugger();
     
     // Expose the debugger instance
-    window.ownershipDebugger = debugger;
+    window.ownershipDebugger = ownershipDebuggerInstance;
 
 })();

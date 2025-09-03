@@ -279,8 +279,11 @@
                 });
             }
             
-            // Check inline style violations
-            if (this.editMode.restrictions.preventInlineStyles && element.hasAttribute('style')) {
+            // Check inline style violations (skip component controls)
+            if (this.editMode.restrictions.preventInlineStyles && 
+                element.hasAttribute('style') && 
+                !element.classList.contains('component-controls') &&
+                !element.classList.contains('component-controls--dynamic')) {
                 const style = element.getAttribute('style');
                 if (this.isProblematicStyle(style)) {
                     violations.push({
@@ -615,12 +618,18 @@
          * Check if style is problematic
          */
         isProblematicStyle(style) {
-            // Check for styles that might interfere with ownership
+            // Allow component control styles (position, opacity, etc.)
+            // Only check for styles that directly interfere with ownership
             const problematic = [
-                'pointer-events',
-                'user-select',
-                'contenteditable'
+                'pointer-events: none',  // Only problematic if set to none
+                'user-select: none',      // Only problematic if prevents selection
+                'contenteditable'         // Should not be in styles
             ];
+            
+            // Ignore component control styles
+            if (style.includes('component-controls')) {
+                return false;
+            }
             
             return problematic.some(prop => style.includes(prop));
         }
