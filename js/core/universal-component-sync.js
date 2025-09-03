@@ -214,8 +214,12 @@
         findSidebarElements(componentType, mapping) {
             const elements = {};
             
-            // ROOT FIX: Check for Phase 2 Component Options UI first
-            let panel = document.querySelector('.component-options__content');
+            // ROOT FIX: Look for the actual editor container first (for Topics)
+            let panel = document.querySelector('#custom-content-editor');
+            if (!panel) {
+                // Check for Phase 2 Component Options UI
+                panel = document.querySelector('.component-options__content');
+            }
             if (!panel) {
                 // Fallback to old design panel
                 panel = document.querySelector('#element-editor');
@@ -228,25 +232,35 @@
                 return elements;
             }
             
+            // Debug: Show what panel we found
+            console.log(`🔍 Looking for ${componentType} inputs in:`, panel.id || panel.className);
+            
             // Find elements based on mapping
             if (mapping.isListBased) {
-                // For list-based components, find input containers
-                const containers = panel.querySelectorAll('.topic-editor__field, .list-item, .item-editor, [data-item-index]');
-                if (containers.length > 0) {
-                    elements.items = [];
-                    containers.forEach(container => {
-                        const input = container.querySelector('input[type="text"], textarea');
-                        if (input) {
-                            elements.items.push(input);
-                        }
-                    });
-                    console.log(`📝 Found ${elements.items.length} inputs in sidebar`);
+                // ROOT FIX: Look for Phase 2 topics editor inputs
+                const topicsInputs = panel.querySelectorAll('.topic-input, input.topic-input');
+                if (topicsInputs.length > 0) {
+                    elements.items = Array.from(topicsInputs);
+                    console.log(`📝 Found ${topicsInputs.length} topic inputs in Phase 2 editor`);
                 } else {
-                    // Direct input selection fallback
-                    const inputs = panel.querySelectorAll('input[type="text"]:not([type="hidden"]):not([readonly])');
-                    if (inputs.length > 0) {
-                        elements.items = Array.from(inputs);
-                        console.log(`📝 Found ${inputs.length} inputs (fallback)`);
+                    // Try other containers
+                    const containers = panel.querySelectorAll('.topic-editor__field, .list-item, .item-editor, [data-item-index]');
+                    if (containers.length > 0) {
+                        elements.items = [];
+                        containers.forEach(container => {
+                            const input = container.querySelector('input[type="text"], textarea');
+                            if (input) {
+                                elements.items.push(input);
+                            }
+                        });
+                        console.log(`📝 Found ${elements.items.length} inputs in containers`);
+                    } else {
+                        // Direct input selection fallback
+                        const inputs = panel.querySelectorAll('input[type="text"]:not([type="hidden"]):not([readonly])');
+                        if (inputs.length > 0) {
+                            elements.items = Array.from(inputs);
+                            console.log(`📝 Found ${inputs.length} inputs (fallback)`);
+                        }
                     }
                 }
             } else {

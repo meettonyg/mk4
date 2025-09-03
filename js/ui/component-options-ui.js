@@ -354,14 +354,17 @@ class ComponentOptionsUI {
         this.loadCustomEditor(componentId, componentType);
         
         // ROOT FIX: Dispatch event for universal sync to connect
-        document.dispatchEvent(new CustomEvent('gmkb:component-editor-ready', {
-            detail: {
-                componentId,
-                componentType,
-                container: sectionsContainer,
-                timestamp: Date.now()
-            }
-        }));
+        // Wait longer to ensure custom editor has rendered
+        setTimeout(() => {
+            document.dispatchEvent(new CustomEvent('gmkb:component-editor-ready', {
+                detail: {
+                    componentId,
+                    componentType,
+                    container: sectionsContainer,
+                    timestamp: Date.now()
+                }
+            }));
+        }, 500); // Increased delay to allow custom editors to render
         
         this.logger.info('UI', `Generated options form for ${componentType}`);
     }
