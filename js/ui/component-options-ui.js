@@ -410,42 +410,30 @@ class ComponentOptionsUI {
             return;
         }
         
+        // For Topics component, check if we have the actual topics data from the DOM
         let componentData = component.props || component.data || {};
-        
-        // More robust data preparation for the Topics editor
         if (componentType === 'topics') {
-            const topicsArray = [];
-            
-            // First priority: Check for topic_1, topic_2, etc. in component.data
-            const componentStateData = component.data || {};
-            for (let i = 1; i <= 10; i++) {
-                if (componentStateData[`topic_${i}`]) {
-                    topicsArray.push(componentStateData[`topic_${i}`]);
-                }
-            }
-            
-            // If we found topics in the state data, use them
-            if (topicsArray.length > 0) {
-                componentData.topics = topicsArray;
-                this.logger.info('UI', `Loaded ${topicsArray.length} topics from component state (topic_1, topic_2, etc.) for ${componentId}`);
-            } else {
-                // Fallback to DOM scraping if state is empty
-                const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
-                if (componentElement) {
-                    const topicElements = componentElement.querySelectorAll('.topic-title');
-                    if (topicElements.length > 0) {
-                        const domTopics = Array.from(topicElements).map(el => el.textContent.trim()).filter(Boolean);
-                        if (domTopics.length > 0) {
-                            componentData.topics = domTopics;
-                            this.logger.info('UI', `Loaded ${domTopics.length} topics from DOM for ${componentId}`);
-                        }
+            // Try to get topics data from the rendered component in the DOM
+            const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (componentElement) {
+                // Look for topic-title elements which contain the actual topic text
+                const topicElements = componentElement.querySelectorAll('.topic-title');
+                if (topicElements.length > 0) {
+                    const domTopics = [];
+                    topicElements.forEach(el => {
+                        const text = el.textContent.trim();
+                        if (text) domTopics.push(text);
+                    });
+                    if (domTopics.length > 0) {
+                        componentData = { ...componentData, topics: domTopics };
+                        this.logger.info('UI', `Loaded ${domTopics.length} topics from DOM for ${componentId}`);
                     }
-                }
-                
-                // Last fallback: Check if topics array already exists in props
-                if (!componentData.topics && component.props?.topics && component.props.topics.length > 0) {
-                    componentData.topics = component.props.topics;
-                    this.logger.info('UI', `Using ${component.props.topics.length} topics from component props`);
+                } else {
+                    // Fallback: Check if topics are in the component props already
+                    if (component.props?.topics && component.props.topics.length > 0) {
+                        componentData = { ...componentData, topics: component.props.topics };
+                        this.logger.info('UI', `Using ${component.props.topics.length} topics from component props`);
+                    }
                 }
             }
         }
