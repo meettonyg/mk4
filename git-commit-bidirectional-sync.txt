@@ -1,0 +1,37 @@
+ROOT FIX: Restored bi-directional sync for ALL components
+
+ISSUE: Topics were visible in preview but bi-directional sync between sidebar and preview was missing
+CAUSE: Universal Component Sync system was created but never loaded in enqueue.php
+
+SOLUTION IMPLEMENTED:
+1. Added universal-component-sync.js to enqueue.php
+   - Loaded after design panel and state manager
+   - Added to main script dependencies
+
+2. Modified design-panel.js to dispatch gmkb:design-panel-opened event
+   - Triggers when any design panel opens
+   - Passes componentId, componentType, and componentData
+
+3. Universal sync system now active for ALL components:
+   - Topics, Hero, Biography, Contact, Questions, Social, etc.
+   - Components are contenteditable in preview
+   - Changes sync bidirectionally between sidebar and preview
+   - Visual feedback with hover/focus effects
+
+FEATURES RESTORED:
+✅ Edit components directly in preview (contenteditable)
+✅ Sidebar changes update preview in real-time
+✅ Preview edits update sidebar immediately
+✅ Works for ALL component types (not just topics)
+✅ Visual feedback when editing (blue outline/background)
+✅ Press Enter to save edits
+✅ Automatic state management updates
+
+ARCHITECTURE:
+- Event-driven (no polling)
+- Component-agnostic design
+- Extensible field mappings for each component type
+- Graceful fallbacks for unknown components
+- Proper error handling
+
+This is a complete ROOT FIX that restores the missing functionality globally.

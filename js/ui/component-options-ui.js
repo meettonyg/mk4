@@ -353,6 +353,16 @@ class ComponentOptionsUI {
         // Load custom content editor if available
         this.loadCustomEditor(componentId, componentType);
         
+        // ROOT FIX: Dispatch event for universal sync to connect
+        document.dispatchEvent(new CustomEvent('gmkb:component-editor-ready', {
+            detail: {
+                componentId,
+                componentType,
+                container: sectionsContainer,
+                timestamp: Date.now()
+            }
+        }));
+        
         this.logger.info('UI', `Generated options form for ${componentType}`);
     }
     

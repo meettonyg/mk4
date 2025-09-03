@@ -800,6 +800,18 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 12e2. Universal Component Sync - ROOT FIX: BI-DIRECTIONAL SYNC FOR ALL COMPONENTS
+    // Enables contenteditable and real-time sync between sidebar and preview for ALL component types
+    if (!wp_script_is('gmkb-universal-component-sync', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-universal-component-sync',
+            $plugin_url . 'js/core/universal-component-sync.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager', 'gmkb-design-panel'),
+            $version,
+            true
+        );
+    }
+    
     // ROOT FIX: DISABLED LEGACY UI CONTROL SYSTEMS
     // Only component-controls-manager.js should handle all component controls
     
@@ -1110,6 +1122,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT FIX: Bi-Directional Sync Test Commands - Always available for testing
+    if (!wp_script_is('gmkb-test-bidirectional-sync', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-test-bidirectional-sync',
+            $plugin_url . 'test-bidirectional-sync.js',
+            array('gmkb-universal-component-sync'),
+            $version,
+            true
+        );
+    }
+    
     // REMOVED: toolbar-interactions.js - now consolidated into toolbar-consolidated.js
     
     // ROOT CAUSE FIX: Circuit breaker removed - GMKB core system now loads properly
@@ -1286,6 +1309,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-toolbar', // CONSOLIDATED: Now includes toolbar-interactions
                 'gmkb-ui-init-coordinator',
                 'gmkb-design-panel',
+                'gmkb-universal-component-sync', // ROOT FIX: Bi-directional sync for ALL components
                 // 'gmkb-element-editor', // DISABLED: Legacy control system
                 'gmkb-state-history', // CONSOLIDATED: Now includes initializer and clear-fix
                 'gmkb-history-service',

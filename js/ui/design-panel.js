@@ -153,6 +153,16 @@ class DesignPanel {
             
             this.show();
             
+            // ROOT FIX: Dispatch design panel opened event for universal sync
+            document.dispatchEvent(new CustomEvent('gmkb:design-panel-opened', {
+                detail: {
+                    componentId: componentId,
+                    componentType: component.type,
+                    componentData: component,
+                    timestamp: Date.now()
+                }
+            }));
+            
         } catch (error) {
             console.error('❌ ROOT FIX: Error loading design panel:', error);
             
