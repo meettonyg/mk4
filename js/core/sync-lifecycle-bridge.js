@@ -48,15 +48,16 @@
         }
         
         setupBidirectionalSync(componentId, type, editorContainer) {
-            // Find the preview element
-            const previewElement = document.querySelector(`#${componentId}`);
+            // Find the preview element - ROOT FIX: Use correct selector
+            const previewElement = document.querySelector(`[data-component-id="${componentId}"]`);
             if (!previewElement) {
                 logger.warn('SYNC_BRIDGE', `Preview element not found for ${componentId}`);
                 return;
             }
             
-            // Check if SyncCoordinator is available
-            if (!window.SyncCoordinator) {
+            // ROOT FIX: Check for syncCoordinator (lowercase) or SyncCoordinator class
+            const coordinator = window.syncCoordinator || (window.SyncCoordinator ? new window.SyncCoordinator() : null);
+            if (!coordinator) {
                 logger.warn('SYNC_BRIDGE', 'SyncCoordinator not available');
                 return;
             }
@@ -66,12 +67,18 @@
             
             // Register with SyncCoordinator
             try {
-                window.SyncCoordinator.register(componentId, {
-                    editor: editorContainer,
-                    preview: previewElement,
-                    fields: fields,
-                    type: type
-                });
+                // ROOT FIX: Use the coordinator instance we found
+                if (coordinator.register) {
+                    coordinator.register(componentId, {
+                        editor: editorContainer,
+                        preview: previewElement,
+                        fields: fields,
+                        type: type
+                    });
+                } else {
+                    // If no register method, skip formal registration but still set up sync
+                    logger.info('SYNC_BRIDGE', 'SyncCoordinator lacks register method, setting up manual sync');
+                }
                 
                 this.syncRegistrations.set(componentId, {
                     type,

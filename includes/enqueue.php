@@ -857,16 +857,14 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // SYNC-LIFECYCLE BRIDGE: Fixes bi-directional sync for components
-    if (!wp_script_is('gmkb-sync-lifecycle-bridge', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-sync-lifecycle-bridge',
-            $plugin_url . 'js/core/sync-lifecycle-bridge.js',
-            array('gmkb-component-lifecycle', 'gmkb-sync-coordinator', 'gmkb-topics-editor'),
-            $version,
-            true
-        );
-    }
+    // Topics component script with sync functionality
+    wp_enqueue_script(
+        'gmkb-topics-script',
+        $plugin_url . 'components/topics/script.js',
+        array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+        $version,
+        true
+    );
     
     // 12e2. Universal Component Sync - DEPRECATED - Replaced by Sync Coordinator
     // Keeping commented for reference during transition
@@ -1455,6 +1453,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-options-ui',
                 'gmkb-component-selection-manager',
                 'gmkb-topics-editor', // ROOT FIX: Ensure Topics editor loads
+                'gmkb-topics-script', // Topics component sync functionality
                 // PHASE 3: Section layer systems
                 'gmkb-section-layout-manager',
                 'gmkb-section-controls-ui',

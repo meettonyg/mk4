@@ -1,10 +1,13 @@
 /**
  * Topics Component Client-Side Script
  * ARCHITECTURE: Self-contained component script that registers its rendering requirements
+ * Includes bi-directional sync functionality
  */
 
 (function() {
     'use strict';
+    
+    const logger = window.structuredLogger || console;
     
     // ARCHITECTURE: Register this component as requiring server-side rendering
     // This ensures the component loads actual data from the database
@@ -29,6 +32,105 @@
                 timestamp: Date.now()
             }
         }));
+        
+        // Initialize sync functionality
+        initializeTopicsSync();
+    }
+    
+    // SYNC FUNCTIONALITY: Handle bi-directional sync for Topics
+    function initializeTopicsSync() {
+        // Listen for Topics-specific data change events from the editor
+        document.addEventListener('component:data-changed', handleDataChanged);
+        document.addEventListener('component:editor-ready', handleEditorReady);
+        
+        logger.info('TOPICS', 'Sync functionality initialized');
+    }
+    
+    function handleDataChanged(event) {
+        const { componentId, newData } = event.detail;
+        
+        // Only handle topics components
+        const preview = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (!preview || !preview.classList.contains('gmkb-topics')) {
+            return;
+        }
+        
+        // Update preview with new topics data
+        if (newData && newData.topics) {
+            updatePreview(componentId, newData.topics);
+            updateState(componentId, newData.topics);
+        }
+    }
+    
+    function handleEditorReady(event) {
+        const { componentId, componentType } = event.detail;
+        
+        if (componentType === 'topics') {
+            logger.info('TOPICS', `Editor ready for component: ${componentId}`);
+        }
+    }
+    
+    function updatePreview(componentId, topics) {
+        const preview = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (!preview) return;
+        
+        const container = preview.querySelector('.gmkb-topics__grid');
+        if (!container) return;
+        
+        // Clear and rebuild topics display
+        container.innerHTML = '';
+        
+        topics.forEach((topic, index) => {
+            if (topic && topic.trim()) {
+                const topicEl = document.createElement('div');
+                topicEl.className = 'gmkb-topics__item';
+                topicEl.innerHTML = `
+                    <h4 class="topic-title" data-topic-number="${index + 1}">
+                        ${topic}
+                    </h4>
+                `;
+                container.appendChild(topicEl);
+            }
+        });
+        
+        logger.debug('TOPICS', `Updated preview with ${topics.length} topics`);
+    }
+    
+    function updateState(componentId, topics) {
+        if (!window.enhancedStateManager) return;
+        
+        const state = window.enhancedStateManager.getState();
+        const component = state.components[componentId];
+        
+        if (!component) return;
+        
+        // Convert to Pods field format
+        const newData = {};
+        topics.forEach((topic, index) => {
+            newData[`topic_${index + 1}`] = topic;
+        });
+        
+        // Clear unused fields
+        for (let i = topics.length + 1; i <= 10; i++) {
+            newData[`topic_${i}`] = '';
+        }
+        
+        // Update state
+        window.enhancedStateManager.dispatch({
+            type: 'UPDATE_COMPONENT',
+            payload: {
+                id: componentId,
+                updates: { 
+                    data: { ...component.data, ...newData },
+                    props: { ...component.props, topics: topics }
+                }
+            }
+        });
+        
+        // Trigger save if save handler exists
+        if (window.GMKB?.Topics?.SaveHandler) {
+            window.GMKB.Topics.SaveHandler.saveTopics(componentId, topics);
+        }
     }
     
     // Initialize when DOM is ready
