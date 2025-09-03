@@ -597,12 +597,23 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // PHASE 2 REDESIGN: Data-Only State Management - Clean state without metadata bloat
+    if (!wp_script_is('gmkb-data-state', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-data-state',
+            $plugin_url . 'js/core/data-state.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 3. Enhanced state manager (core functionality) - ROOT FIX: Added duplicate prevention
     if (!wp_script_is('gmkb-enhanced-state-manager', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-enhanced-state-manager',
             $plugin_url . 'js/core/enhanced-state-manager-simple.js',
-            array('gmkb-structured-logger'),
+            array('gmkb-structured-logger', 'gmkb-data-state'), // Now depends on data-state
             $version,
             true
         );
@@ -800,8 +811,43 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 12e2. Universal Component Sync - ROOT FIX: BI-DIRECTIONAL SYNC FOR ALL COMPONENTS
-    // Enables contenteditable and real-time sync between sidebar and preview for ALL component types
+    // 12e2. PHASE 3 REDESIGN: Sync Coordinator - Clean event-driven sync system
+    // Replaces universal-component-sync.js with proper lifecycle-based synchronization
+    if (!wp_script_is('gmkb-sync-coordinator', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-sync-coordinator',
+            $plugin_url . 'js/core/sync-coordinator.js',
+            array('gmkb-structured-logger', 'gmkb-component-lifecycle', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 4 REDESIGN: DOM Ownership Manager - Enforces clear DOM boundaries
+    if (!wp_script_is('gmkb-dom-ownership-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-dom-ownership-manager',
+            $plugin_url . 'js/core/dom-ownership-manager.js',
+            array('gmkb-structured-logger', 'gmkb-component-lifecycle'),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 3 REDESIGN: Sync Migration Bridge - Compatibility layer during transition
+    if (!wp_script_is('gmkb-sync-migration-bridge', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-sync-migration-bridge',
+            $plugin_url . 'js/migration/sync-migration-bridge.js',
+            array('gmkb-sync-coordinator'),
+            $version,
+            true
+        );
+    }
+    
+    // 12e2. Universal Component Sync - DEPRECATED - Replaced by Sync Coordinator
+    // Keeping commented for reference during transition
+    /*
     if (!wp_script_is('gmkb-universal-component-sync', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-universal-component-sync',
@@ -811,6 +857,7 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
     
     // ROOT FIX: DISABLED LEGACY UI CONTROL SYSTEMS
     // Only component-controls-manager.js should handle all component controls
@@ -896,12 +943,34 @@ function gmkb_enqueue_assets() {
         );
     }
 
+    // PHASE 2 REDESIGN: State Migration Helper - Migrate bloated state to clean state
+    if (!wp_script_is('gmkb-state-migration-helper', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-state-migration-helper',
+            $plugin_url . 'js/migration/state-migration-helper.js',
+            array('gmkb-data-state', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
     // PHASE 2: Component Options UI
     if (!wp_script_is('gmkb-component-options-ui', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-component-options-ui',
             $plugin_url . 'js/ui/component-options-ui.js',
             array('gmkb-component-configuration-manager', 'gmkb-data-binding-engine'),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 1 REDESIGN: Component Lifecycle Base Class - Foundation for all component editors
+    if (!wp_script_is('gmkb-component-lifecycle', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-lifecycle',
+            $plugin_url . 'js/core/component-lifecycle.js',
+            array('gmkb-structured-logger'),
             $version,
             true
         );
@@ -933,7 +1002,7 @@ function gmkb_enqueue_assets() {
         wp_enqueue_script(
             'gmkb-topics-editor',
             $plugin_url . 'components/topics/TopicsEditor.js',
-            array('gmkb-base-component-editor', 'gmkb-component-editor-registry'),
+            array('gmkb-component-lifecycle', 'gmkb-component-editor-registry'), // Now depends on ComponentLifecycle
             $version,
             true
         );
@@ -1106,6 +1175,15 @@ function gmkb_enqueue_assets() {
             'gmkb-test-pods-enrichment',
             $plugin_url . 'debug/test-pods-enrichment.js',
             array('gmkb-main-script'),
+            $version . '-debug',
+            true
+        );
+        
+        // PHASE 1-4 DIAGNOSTIC: Verify new scripts are loading
+        wp_enqueue_script(
+            'gmkb-phase14-diagnostic',
+            $plugin_url . 'debug/phase14-diagnostic.js',
+            array('gmkb-main-initialization'),
             $version . '-debug',
             true
         );
@@ -1309,7 +1387,9 @@ function gmkb_enqueue_assets() {
                 'gmkb-toolbar', // CONSOLIDATED: Now includes toolbar-interactions
                 'gmkb-ui-init-coordinator',
                 'gmkb-design-panel',
-                'gmkb-universal-component-sync', // ROOT FIX: Bi-directional sync for ALL components
+                'gmkb-sync-coordinator', // PHASE 3: New clean sync system replacing universal-component-sync
+                'gmkb-dom-ownership-manager', // PHASE 4: DOM ownership enforcement
+                // 'gmkb-universal-component-sync', // DEPRECATED: Replaced by sync-coordinator
                 // 'gmkb-element-editor', // DISABLED: Legacy control system
                 'gmkb-state-history', // CONSOLIDATED: Now includes initializer and clear-fix
                 'gmkb-history-service',
@@ -1693,6 +1773,14 @@ function gmkb_enqueue_assets() {
     wp_enqueue_style(
         'gmkb-topics-editor',
         $plugin_url . 'css/modules/topics-editor.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // PHASE 4: DOM Ownership CSS
+    wp_enqueue_style(
+        'gmkb-dom-ownership',
+        $plugin_url . 'css/modules/dom-ownership.css',
         array( 'gmkb-main-styles' ),
         $version
     );

@@ -369,7 +369,7 @@ class ComponentOptionsUI {
         this.logger.info('UI', `Generated options form for ${componentType}`);
     }
     
-    loadCustomEditor(componentId, componentType) {
+    async loadCustomEditor(componentId, componentType) {
         if (!window.componentEditorRegistry || !window.componentEditorRegistry.hasEditor(componentType)) {
             return;
         }
@@ -447,8 +447,8 @@ class ComponentOptionsUI {
             }
         };
         
-        // Create the custom editor
-        const editor = window.componentEditorRegistry.createEditor(
+        // Create the custom editor (now async for lifecycle support)
+        const editor = await window.componentEditorRegistry.createEditor(
             componentType,
             editorContainer,
             componentId,
@@ -457,7 +457,6 @@ class ComponentOptionsUI {
         );
         
         if (editor) {
-            editor.render();
             this.currentEditor = editor;
             this.currentEditorComponentId = componentId;
             this.logger.info('UI', `Loaded custom editor for ${componentType}`);
@@ -465,6 +464,22 @@ class ComponentOptionsUI {
             // For Topics, also set up preview-to-sidebar sync
             if (componentType === 'topics') {
                 this.setupPreviewToSidebarSync(componentId);
+            }
+            
+            // Listen for lifecycle events from the editor
+            if (editor.componentId) {
+                // The editor should emit component:editor-ready by now
+                // But we can also dispatch our own event for other systems
+                setTimeout(() => {
+                    document.dispatchEvent(new CustomEvent('gmkb:custom-editor-loaded', {
+                        detail: {
+                            componentId,
+                            componentType,
+                            editor,
+                            timestamp: Date.now()
+                        }
+                    }));
+                }, 100);
             }
         }
     }

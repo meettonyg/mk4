@@ -1,15 +1,47 @@
 /**
  * Topics Component Editor
- * PHASE 2: Custom editor for Topics component
+ * PHASE 1 COMPLIANT: Uses ComponentLifecycle for standardized event-driven communication
  * 
- * Handles the specific needs of Topics list editing
- * Follows checklist: Component-specific logic isolated from core
+ * Handles the specific needs of Topics list editing with proper lifecycle management
+ * Follows checklist: Event-driven, no polling, proper lifecycle events
  * 
- * @version 2.0.0-phase2
+ * @version 3.0.0-lifecycle
  */
 
-class TopicsEditor extends BaseComponentEditor {
-    render() {
+(function(window) {
+    'use strict';
+    
+    // Wait for ComponentLifecycle to be available
+    if (!window.ComponentLifecycle) {
+        console.error('TopicsEditor: ComponentLifecycle not found. Deferring initialization.');
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.ComponentLifecycle) {
+                initializeTopicsEditor();
+            } else {
+                console.error('TopicsEditor: ComponentLifecycle still not available after DOM ready');
+            }
+        });
+        return;
+    }
+    
+    initializeTopicsEditor();
+    
+    function initializeTopicsEditor() {
+        
+class TopicsEditor extends window.ComponentLifecycle {
+    constructor(containerEl, componentId, initialData, onUpdate) {
+        // Call parent constructor with proper parameters
+        super(containerEl, componentId, 'topics', initialData);
+        
+        // Store the update callback
+        this.onUpdate = onUpdate;
+        
+        // Track sync state
+        this._skipDOMUpdate = false;
+        this._syncInProgress = false;
+    }
+    
+    async render() {
         // Topics are already in the data passed to the constructor
         // The component system has already loaded them from Pods
         const topics = this.data.topics || [];
@@ -43,7 +75,9 @@ class TopicsEditor extends BaseComponentEditor {
         `;
         
         this.container.innerHTML = html;
-        this.attachEventListeners();
+        
+        // Don't call attachEventListeners directly - it will be called by performRender
+        return Promise.resolve();
     }
     
     createTopicRow(text, index) {
@@ -60,38 +94,43 @@ class TopicsEditor extends BaseComponentEditor {
     }
     
     attachEventListeners() {
+        // Call parent method first
+        super.attachEventListeners();
+        
         const listEl = this.container.querySelector('#topics-editor-list');
         const addBtn = this.container.querySelector('#add-topic-btn');
         
         // Prevent clicks from bubbling up and potentially closing the editor
-        this.container.addEventListener('click', (e) => {
+        this.addEventListener(this.container, 'click', (e) => {
             e.stopPropagation();
         });
         
         // Add topic button
         if (addBtn) {
-            addBtn.addEventListener('click', (e) => {
+            this.addEventListener(addBtn, 'click', (e) => {
                 e.stopPropagation();
                 this.addTopic();
             });
         }
         
         // Topic input changes
-        listEl.addEventListener('input', (e) => {
-            if (e.target.classList.contains('topic-input')) {
-                e.stopPropagation();
-                this.updateTopics();
-            }
-        });
-        
-        // Remove topic buttons
-        listEl.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-remove')) {
-                e.stopPropagation();
-                e.preventDefault();
-                this.removeTopic(parseInt(e.target.dataset.index));
-            }
-        });
+        if (listEl) {
+            this.addEventListener(listEl, 'input', (e) => {
+                if (e.target.classList.contains('topic-input')) {
+                    e.stopPropagation();
+                    this.updateTopics();
+                }
+            });
+            
+            // Remove topic buttons
+            this.addEventListener(listEl, 'click', (e) => {
+                if (e.target.classList.contains('btn-remove')) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    this.removeTopic(parseInt(e.target.dataset.index));
+                }
+            });
+        }
     }
     
     addTopic() {
@@ -155,12 +194,17 @@ class TopicsEditor extends BaseComponentEditor {
             .map(input => input.value.trim())
             .filter(text => text.length > 0);
         
-        // Update the data through the base class method
-        // This will trigger the onUpdate callback which handles persistence
+        // Update the data with lifecycle event emission
         this.updateData({ topics });
         
+        // Call the update callback if provided
+        if (this.onUpdate && !this._skipDOMUpdate) {
+            this.onUpdate(this.componentId, { topics });
+        }
+        
         // Log the update for debugging
-        this.logger.info('EDITOR', `Updated ${topics.length} topics for ${this.componentId}`);
+        const logger = window.structuredLogger || console;
+        logger.info('EDITOR', `Updated ${topics.length} topics for ${this.componentId}`);
     }
 }
 
@@ -169,7 +213,14 @@ if (window.componentEditorRegistry) {
     window.componentEditorRegistry.register('topics', TopicsEditor);
 }
 
+// Make globally available
+window.TopicsEditor = TopicsEditor;
+
 // Export for modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = TopicsEditor;
 }
+
+    } // End of initializeTopicsEditor function
+    
+})(window);

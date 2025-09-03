@@ -69,7 +69,7 @@ class ComponentEditorRegistry {
     /**
      * Create an editor instance
      */
-    createEditor(componentType, containerEl, componentId, initialData, onUpdate) {
+    async createEditor(componentType, containerEl, componentId, initialData, onUpdate) {
         const EditorClass = this.getEditor(componentType);
         
         if (!EditorClass) {
@@ -79,7 +79,17 @@ class ComponentEditorRegistry {
         
         try {
             const editor = new EditorClass(containerEl, componentId, initialData, onUpdate);
-            this.logger.info('EDITOR_REGISTRY', `Created editor instance for ${componentType}`);
+            
+            // If the editor extends ComponentLifecycle, use performRender
+            if (editor.performRender && typeof editor.performRender === 'function') {
+                await editor.performRender();
+                this.logger.info('EDITOR_REGISTRY', `Created and rendered lifecycle-compliant editor for ${componentType}`);
+            } else if (editor.render && typeof editor.render === 'function') {
+                // Fallback for non-lifecycle editors
+                await editor.render();
+                this.logger.info('EDITOR_REGISTRY', `Created and rendered legacy editor for ${componentType}`);
+            }
+            
             return editor;
         } catch (error) {
             this.logger.error('EDITOR_REGISTRY', `Failed to create editor for ${componentType}:`, error);
