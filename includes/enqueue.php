@@ -1255,6 +1255,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // Topics Editor Debug/Fix Script - Ensures Topics editor loads properly
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        wp_enqueue_script(
+            'gmkb-fix-topics-editor-loading',
+            $plugin_url . 'debug/fix-topics-editor-loading.js',
+            array('gmkb-topics-editor', 'gmkb-component-editor-registry'),
+            $version . '-debug',
+            true
+        );
+    }
+    
     // Quick Diagnostic Tool - Always available for debugging
     if (!wp_script_is('gmkb-quick-diagnostic', 'enqueued')) {
         wp_enqueue_script(
