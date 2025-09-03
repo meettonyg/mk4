@@ -263,5 +263,4 @@
         editor.render();
         return editor;
     };
-    
 })(window);
