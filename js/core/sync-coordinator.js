@@ -150,14 +150,20 @@
                 logger.debug('SYNC', `Component ${componentId} already registered, updating config`);
             }
             
-            // Find preview container
-            const previewContainer = this.findPreviewContainer(componentId);
+            // Handle different config formats
+            let editorContainer = config.editorContainer || config.editor;
+            let previewContainer = config.previewContainer || config.preview;
+            
+            // Find preview container if not provided
+            if (!previewContainer) {
+                previewContainer = this.findPreviewContainer(componentId);
+            }
             
             // Create registration entry
             const registration = {
                 componentId,
                 componentType: config.componentType,
-                editorContainer: config.editorContainer,
+                editorContainer: editorContainer,
                 previewContainer: previewContainer,
                 fields: config.fields || [],
                 options: config.options || {},

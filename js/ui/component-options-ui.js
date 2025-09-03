@@ -379,8 +379,22 @@ class ComponentOptionsUI {
             return;
         }
         
-        // Clean up any existing editor first
+        // Check if we already have an editor for this exact component
+        if (this.currentEditor && this.currentEditorComponentId === componentId) {
+            this.logger.info('UI', `Reusing existing editor for ${componentType} (${componentId})`);
+            // Just update the data if needed
+            if (this.currentEditor.updateData) {
+                const component = window.enhancedStateManager?.getState()?.components?.[componentId];
+                if (component) {
+                    this.currentEditor.updateData(component.props || component.data || {});
+                }
+            }
+            return; // Don't recreate, just reuse
+        }
+        
+        // Clean up any existing editor for a different component
         if (this.currentEditor && this.currentEditor.destroy) {
+            this.logger.info('UI', `Destroying old editor for ${this.currentEditorComponentId}`);
             this.currentEditor.destroy();
             this.currentEditor = null;
             this.currentEditorComponentId = null;

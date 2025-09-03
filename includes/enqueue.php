@@ -857,6 +857,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // SYNC-LIFECYCLE BRIDGE: Fixes bi-directional sync for components
+    if (!wp_script_is('gmkb-sync-lifecycle-bridge', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-sync-lifecycle-bridge',
+            $plugin_url . 'js/core/sync-lifecycle-bridge.js',
+            array('gmkb-component-lifecycle', 'gmkb-sync-coordinator', 'gmkb-topics-editor'),
+            $version,
+            true
+        );
+    }
+    
     // 12e2. Universal Component Sync - DEPRECATED - Replaced by Sync Coordinator
     // Keeping commented for reference during transition
     /*

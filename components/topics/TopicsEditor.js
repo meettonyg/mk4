@@ -131,6 +131,29 @@ class TopicsEditor extends window.ComponentLifecycle {
                 }
             });
         }
+        
+        // Register with Sync Coordinator for bi-directional sync
+        this.registerWithSyncCoordinator();
+    }
+    
+    registerWithSyncCoordinator() {
+        if (window.SyncCoordinator) {
+            const preview = document.querySelector(`#${this.componentId}`);
+            if (preview) {
+                // Get all input fields
+                const inputs = this.container.querySelectorAll('.topic-input');
+                const fields = Array.from(inputs).map((input, index) => `topic_${index + 1}`);
+                
+                window.SyncCoordinator.register(this.componentId, {
+                    editor: this.container,
+                    preview: preview,
+                    fields: fields
+                });
+                
+                const logger = window.structuredLogger || console;
+                logger.info('SYNC', `Registered Topics editor ${this.componentId} with SyncCoordinator`);
+            }
+        }
     }
     
     addTopic() {
