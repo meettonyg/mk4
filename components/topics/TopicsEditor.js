@@ -1,48 +1,35 @@
 /**
- * Topics Component Editor
- * PHASE 1 COMPLIANT: Uses ComponentLifecycle for standardized event-driven communication
+ * Topics Component Editor - Simplified Version
+ * Standalone editor that doesn't depend on ComponentLifecycle
  * 
- * Handles the specific needs of Topics list editing with proper lifecycle management
- * Follows checklist: Event-driven, no polling, proper lifecycle events
- * 
- * @version 3.0.0-lifecycle
+ * @version 3.1.0-standalone
  */
 
 (function(window) {
     'use strict';
     
-    const logger = window.structuredLogger || console;
+    console.log('TopicsEditor.js loading...');
     
-    class TopicsEditor extends (window.ComponentLifecycle || class {}) {
+    class TopicsEditor {
         constructor(containerEl, componentId, initialData, onUpdate) {
-            // Call parent constructor with proper parameters if ComponentLifecycle exists
-            if (window.ComponentLifecycle) {
-                super(containerEl, componentId, 'topics', initialData);
-            } else {
-                // Fallback if ComponentLifecycle isn't loaded yet
-                this.container = containerEl;
-                this.componentId = componentId;
-                this.componentType = 'topics';
-                this.data = initialData || {};
-                this.listeners = [];
-            }
-            
-            // Store the update callback
+            this.container = containerEl;
+            this.componentId = componentId;
+            this.componentType = 'topics';
+            this.data = initialData || {};
             this.onUpdate = onUpdate;
+            this.listeners = [];
             
             // Track sync state
             this._skipDOMUpdate = false;
             this._syncInProgress = false;
             
-            logger.info('UI', `Topics editor constructed for ${componentId}`);
+            console.log('Topics editor constructed for', componentId);
         }
         
         async render() {
-            // Topics are already in the data passed to the constructor
-            // The component system has already loaded them from Pods
             const topics = this.data.topics || [];
             
-            logger.info('UI', `Using ${topics.length} topics from component data`);
+            console.log(`Rendering ${topics.length} topics`);
             
             // Create the editor HTML
             let html = `
@@ -73,8 +60,6 @@
             `;
             
             this.container.innerHTML = html;
-            
-            // Attach event listeners immediately
             this.attachEventListeners();
             
             return Promise.resolve();
@@ -100,15 +85,10 @@
         }
         
         attachEventListeners() {
-            // Call parent method if it exists
-            if (super.attachEventListeners) {
-                super.attachEventListeners();
-            }
-            
             const listEl = this.container.querySelector('#topics-editor-list');
             const addBtn = this.container.querySelector('#add-topic-btn');
             
-            // Prevent clicks from bubbling up and potentially closing the editor
+            // Prevent clicks from bubbling up
             this.addEventListener(this.container, 'click', (e) => {
                 e.stopPropagation();
             });
@@ -138,28 +118,6 @@
                         this.removeTopic(parseInt(e.target.dataset.index));
                     }
                 });
-            }
-            
-            // Register with Sync Coordinator for bi-directional sync
-            this.registerWithSyncCoordinator();
-        }
-        
-        registerWithSyncCoordinator() {
-            if (window.syncCoordinator) {
-                const preview = document.querySelector(`#${this.componentId}`);
-                if (preview) {
-                    // Get all input fields
-                    const inputs = this.container.querySelectorAll('.topic-input');
-                    const fields = Array.from(inputs).map((input, index) => `topic_${index + 1}`);
-                    
-                    window.syncCoordinator.register(this.componentId, {
-                        editor: this.container,
-                        preview: preview,
-                        fields: fields
-                    });
-                    
-                    logger.info('SYNC', `Registered Topics editor ${this.componentId} with SyncCoordinator`);
-                }
             }
         }
         
@@ -224,34 +182,19 @@
                 .map(input => input.value.trim())
                 .filter(text => text.length > 0);
             
-            // Update the data with lifecycle event emission if available
-            if (this.updateData) {
-                this.updateData({ topics });
-            } else {
-                this.data.topics = topics;
-            }
+            this.data.topics = topics;
             
             // Call the update callback if provided
             if (this.onUpdate && !this._skipDOMUpdate) {
                 this.onUpdate(this.componentId, { topics });
             }
             
-            logger.info('EDITOR', `Updated ${topics.length} topics for ${this.componentId}`);
+            console.log(`Updated ${topics.length} topics for ${this.componentId}`);
         }
         
-        // Provide a method to update data (used by sync)
-        updateData(newData) {
-            this.data = { ...this.data, ...newData };
-            
-            // Emit lifecycle event if available
-            if (this.emitLifecycleEvent) {
-                this.emitLifecycleEvent('data-changed', this.data);
-            }
-        }
-        
-        // Provide async render wrapper
+        // Provide async render wrapper for compatibility
         async performRender() {
-            await this.render();
+            return this.render();
         }
         
         // Cleanup method
@@ -267,27 +210,58 @@
                 this.container.innerHTML = '';
             }
             
-            // Emit destroy event if available
-            if (this.emitLifecycleEvent) {
-                this.emitLifecycleEvent('destroyed');
-            }
-            
-            logger.info('LIFECYCLE', `Topics editor ${this.componentId} destroyed`);
+            console.log(`Topics editor ${this.componentId} destroyed`);
         }
     }
     
-    // Register this editor with the registry
-    if (window.componentEditorRegistry) {
-        window.componentEditorRegistry.register('topics', TopicsEditor);
-        logger.info('EDITOR_REGISTRY', 'Registered editor for topics');
-    }
-    
-    // Also expose globally
+    // Expose globally
     window.TopicsEditor = TopicsEditor;
     
-    // Export for modules if available
-    if (typeof module !== 'undefined' && module.exports) {
-        module.exports = TopicsEditor;
+    // Register with the registry if available
+    if (window.componentEditorRegistry) {
+        window.componentEditorRegistry.register('topics', TopicsEditor);
+        console.log('Topics editor registered with componentEditorRegistry');
+    } else {
+        console.log('componentEditorRegistry not available yet, will retry...');
+        
+        // Try again after DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                if (window.componentEditorRegistry) {
+                    window.componentEditorRegistry.register('topics', TopicsEditor);
+                    console.log('Topics editor registered after DOM ready');
+                }
+            });
+        } else {
+            // DOM already loaded, try with a delay
+            setTimeout(function() {
+                if (window.componentEditorRegistry && !window.componentEditorRegistry.hasEditor('topics')) {
+                    window.componentEditorRegistry.register('topics', TopicsEditor);
+                    console.log('Topics editor registered after delay');
+                }
+            }, 1000);
+        }
     }
+    
+    console.log('TopicsEditor.js loaded successfully');
+    
+    // Create a test function
+    window.quickTestTopics = function() {
+        const container = document.getElementById('custom-content-editor');
+        if (!container) {
+            console.error('No container found');
+            return;
+        }
+        
+        const editor = new TopicsEditor(
+            container,
+            'test-topics',
+            { topics: ['Topic 1', 'Topic 2', 'Topic 3'] },
+            (id, data) => console.log('Updated:', data)
+        );
+        
+        editor.render();
+        return editor;
+    };
     
 })(window);
