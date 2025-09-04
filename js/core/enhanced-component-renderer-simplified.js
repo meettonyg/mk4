@@ -990,7 +990,7 @@
             
             /**
              * ✅ ROOT CAUSE FIX: Direct component addition without complex service calls
-             * ANTI-DUPLICATION: Skip if component already exists in DOM
+             * SECTION-AWARE: Place components in their assigned sections
              */
             async addComponent(componentId, componentData) {
                 // ROOT FIX: Check if component already exists in DOM (from section system)
@@ -1003,23 +1003,48 @@
                     return;
                 }
                 
-                // ROOT FIX: Check if this is a section-targeted component
-                if (this.isComponentInSection(componentId)) {
-                    this.logger.debug('RENDER', `Component ${componentId} handled by section system - skipping`);
-                    return;
+                // ROOT FIX: Check if component has section assignment
+                const sectionId = componentData.sectionId;
+                let targetContainer;
+                
+                if (sectionId) {
+                    // Component should be in a section
+                    const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
+                    if (sectionElement) {
+                        // Find the components container within the section
+                        targetContainer = sectionElement.querySelector('.gmkb-section__components');
+                        if (!targetContainer) {
+                            // Create components container in section if missing
+                            targetContainer = document.createElement('div');
+                            targetContainer.className = 'gmkb-section__components';
+                            sectionElement.appendChild(targetContainer);
+                        }
+                        this.logger.debug('RENDER', `Placing component ${componentId} in section ${sectionId}`);
+                    } else {
+                        // Section doesn't exist yet, render it first
+                        this.logger.warn('RENDER', `Section ${sectionId} not found for component ${componentId}`);
+                        // Fall back to main container
+                        targetContainer = this.getOrCreateContainer();
+                    }
+                } else {
+                    // No section assignment, use main container
+                    targetContainer = this.getOrCreateContainer();
                 }
                 
-                const container = this.getOrCreateContainer();
-                if (!container) {
-                    this.logger.error('RENDER', 'Cannot add component - container not available');
+                if (!targetContainer) {
+                    this.logger.error('RENDER', 'Cannot add component - no container available');
                     return;
                 }
                 
                 const element = await this.renderComponent(componentId, componentData);
                 if (element) {
-                    container.appendChild(element);
+                    // Add section ID as data attribute if assigned
+                    if (sectionId) {
+                        element.setAttribute('data-section-id', sectionId);
+                    }
+                    targetContainer.appendChild(element);
                     this.componentCache.set(componentId, element);
-                    this.logger.info('RENDER', `✅ [PHASE 2] Added component: ${componentId}`);
+                    this.logger.info('RENDER', `✅ [PHASE 2] Added component: ${componentId} to ${sectionId || 'main container'}`);
                 }
             }
             
