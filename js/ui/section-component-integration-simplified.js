@@ -264,10 +264,24 @@
             }
             
             /**
-             * ✅ ROOT CAUSE FIX: Simple drop target identification
+             * ✅ ROOT CAUSE FIX: Enhanced drop target identification for columns
              */
             findDropTarget(element) {
                 if (!element || element.nodeType !== Node.ELEMENT_NODE) return null;
+                
+                // ROOT FIX: Check for column drop zones FIRST (most specific)
+                const columnDropZone = element.closest('[data-drop-zone="true"]');
+                if (columnDropZone) {
+                    this.logger.debug('DRAG', `Found column drop zone: Column ${columnDropZone.dataset.columnIndex || 1}`);
+                    return columnDropZone;
+                }
+                
+                // Check for section columns specifically
+                const sectionColumn = element.closest('.gmkb-section__column');
+                if (sectionColumn) {
+                    this.logger.debug('DRAG', `Found section column: ${sectionColumn.dataset.column}`);
+                    return sectionColumn;
+                }
                 
                 // ✅ SIMPLIFIED: Check common drop targets directly
                 const dropTargets = [
@@ -332,30 +346,46 @@
                     return;
                 }
                 
-                // ROOT CAUSE FIX: Detect section targeting from actual drop target
+                // ROOT CAUSE FIX: Enhanced section and column detection
                 let targetSectionId = null;
                 let targetColumn = 1;
                 
-                // Check if we dropped directly on a section element or its children
-                const sectionElement = e.target.closest('[data-section-id]') || dropTarget.closest('[data-section-id]');
-                if (sectionElement) {
-                    targetSectionId = sectionElement.getAttribute('data-section-id');
-                    
-                    // Check if dropped on a specific column
-                    const columnElement = e.target.closest('.gmkb-section__column');
-                    if (columnElement) {
-                        targetColumn = parseInt(columnElement.getAttribute('data-column')) || 1;
+                // ROOT FIX: Check if drop target has column information
+                if (dropTarget.hasAttribute('data-column-index')) {
+                    targetColumn = parseInt(dropTarget.getAttribute('data-column-index')) || 1;
+                    targetSectionId = dropTarget.getAttribute('data-section-id');
+                    this.logger.info('DRAG', `Drop on column ${targetColumn} of section ${targetSectionId}`);
+                } else if (dropTarget.hasAttribute('data-column')) {
+                    // Fallback for column attribute
+                    targetColumn = parseInt(dropTarget.getAttribute('data-column')) || 1;
+                    // Find parent section
+                    const parentSection = dropTarget.closest('[data-section-id]');
+                    if (parentSection) {
+                        targetSectionId = parentSection.getAttribute('data-section-id');
                     }
-                    
-                    this.logger.info('DRAG', `Targeting section ${targetSectionId}, column ${targetColumn}`);
+                    this.logger.info('DRAG', `Drop on column ${targetColumn} (fallback detection)`);
                 } else {
-                    // Check if the drop target itself is a section or section container
-                    if (dropTarget.id && dropTarget.id.includes('section-')) {
-                        targetSectionId = dropTarget.id.replace('section-', '');
-                        this.logger.info('DRAG', `Targeting section from drop target ID: ${targetSectionId}`);
-                    } else if (dropTarget.dataset && dropTarget.dataset.sectionId) {
-                        targetSectionId = dropTarget.dataset.sectionId;
-                        this.logger.info('DRAG', `Targeting section from dataset: ${targetSectionId}`);
+                    // Check if we dropped directly on a section element or its children
+                    const sectionElement = e.target.closest('[data-section-id]') || dropTarget.closest('[data-section-id]');
+                    if (sectionElement) {
+                        targetSectionId = sectionElement.getAttribute('data-section-id');
+                        
+                        // Check if dropped on a specific column
+                        const columnElement = e.target.closest('.gmkb-section__column');
+                        if (columnElement) {
+                            targetColumn = parseInt(columnElement.getAttribute('data-column')) || 1;
+                        }
+                        
+                        this.logger.info('DRAG', `Targeting section ${targetSectionId}, column ${targetColumn}`);
+                    } else {
+                        // Check if the drop target itself is a section or section container
+                        if (dropTarget.id && dropTarget.id.includes('section-')) {
+                            targetSectionId = dropTarget.id.replace('section-', '');
+                            this.logger.info('DRAG', `Targeting section from drop target ID: ${targetSectionId}`);
+                        } else if (dropTarget.dataset && dropTarget.dataset.sectionId) {
+                            targetSectionId = dropTarget.dataset.sectionId;
+                            this.logger.info('DRAG', `Targeting section from dataset: ${targetSectionId}`);
+                        }
                     }
                 }
                 

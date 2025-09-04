@@ -175,11 +175,47 @@ class SectionRenderer {
             .gmkb-section__inner {
                 min-height: 60px;
                 padding: 10px;
+                display: flex;
+                gap: 20px;
             }
             
             .gmkb-section__content,
             .gmkb-section__column {
-                min-height: 60px;
+                min-height: 100px;
+                flex: 1;
+                position: relative;
+                border: 1px dashed transparent;
+                transition: all 0.3s ease;
+                padding: 10px;
+            }
+            
+            /* Multi-column layout styles */
+            .gmkb-section--two_column .gmkb-section__inner,
+            .gmkb-section--three_column .gmkb-section__inner {
+                display: grid;
+                gap: 20px;
+            }
+            
+            .gmkb-section--two_column .gmkb-section__inner {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .gmkb-section--three_column .gmkb-section__inner {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            /* Drop zone visual feedback */
+            .gmkb-section__column[data-drop-zone="true"]:hover,
+            .gmkb-section__content[data-drop-zone="true"]:hover {
+                background: rgba(41, 92, 255, 0.05);
+                border-color: #295cff;
+            }
+            
+            /* Drag over state for columns */
+            .gmkb-section__column.gmkb-drop-zone-active,
+            .gmkb-section__content.gmkb-drop-zone-active {
+                background: rgba(41, 92, 255, 0.1);
+                border: 2px dashed #295cff;
             }
         `;
         
@@ -448,11 +484,21 @@ class SectionRenderer {
                 const column = document.createElement('div');
                 column.className = `gmkb-section__column gmkb-section__column--${i}`;
                 column.dataset.column = i;
+                // ROOT FIX: Add drop zone attributes to each column for drag-drop targeting
+                column.setAttribute('data-drop-zone', 'true');
+                column.setAttribute('data-section-id', section.section_id);
+                column.setAttribute('data-column-index', i);
+                column.style.minHeight = '100px'; // Ensure columns have minimum height for dropping
                 innerContainer.appendChild(column);
             }
         } else {
             // Single column or custom layout
             innerContainer.classList.add('gmkb-section__content');
+            // ROOT FIX: Add drop zone attributes for single column sections
+            innerContainer.setAttribute('data-drop-zone', 'true');
+            innerContainer.setAttribute('data-section-id', section.section_id);
+            innerContainer.setAttribute('data-column-index', '1');
+            innerContainer.style.minHeight = '100px'; // Ensure container has minimum height
         }
         
         sectionElement.appendChild(innerContainer);
@@ -638,33 +684,76 @@ class SectionRenderer {
      * Following checklist: User Experience, Visual Feedback, ROOT FIX: Click functionality
      */
     addEmptySectionPlaceholder(sectionElement) {
-        const innerElement = sectionElement.querySelector('.gmkb-section__inner, .gmkb-section__content');
+        const section = this.sectionLayoutManager?.getSection(sectionElement.dataset.sectionId);
+        const columnCount = section?.layout?.columns || 1;
         
-        if (innerElement && !innerElement.querySelector('.gmkb-section__empty')) {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'gmkb-section__empty';
-            placeholder.innerHTML = `
-                <div class="gmkb-section__empty-icon">
-                    <span class="dashicons dashicons-plus-alt2"></span>
-                </div>
-                <div class="gmkb-section__empty-text">
-                    Drop components here or click to add
-                </div>
-            `;
-            
-            // ROOT FIX: Make clickable to add components via modal
-            placeholder.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.handleAddComponentToSection(sectionElement.dataset.sectionId);
+        // ROOT FIX: Add placeholders to ALL columns in multi-column sections
+        if (columnCount > 1) {
+            // Multi-column section - add placeholder to each column
+            const columns = sectionElement.querySelectorAll('.gmkb-section__column');
+            columns.forEach((column, index) => {
+                if (!column.querySelector('.gmkb-section__empty')) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'gmkb-section__empty';
+                    placeholder.innerHTML = `
+                        <div class="gmkb-section__empty-icon">
+                            <span class="dashicons dashicons-plus-alt2"></span>
+                        </div>
+                        <div class="gmkb-section__empty-text">
+                            Drop to Column ${index + 1}
+                        </div>
+                    `;
+                    
+                    // ROOT FIX: Make clickable to add components to specific column
+                    placeholder.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Store which column was clicked
+                        window.targetColumnForComponent = index + 1;
+                        this.handleAddComponentToSection(sectionElement.dataset.sectionId);
+                    });
+                    
+                    placeholder.style.cursor = 'pointer';
+                    placeholder.setAttribute('data-drop-zone', 'true');
+                    placeholder.setAttribute('data-section-id', sectionElement.dataset.sectionId);
+                    placeholder.setAttribute('data-column-index', index + 1);
+                    
+                    column.appendChild(placeholder);
+                }
             });
+            this.logger.debug(`PHASE 3: Added placeholders to ${columns.length} columns in section`);
+        } else {
+            // Single column section - add one placeholder
+            const innerElement = sectionElement.querySelector('.gmkb-section__inner, .gmkb-section__content');
             
-            // ROOT FIX: Add cursor pointer for click affordance
-            placeholder.style.cursor = 'pointer';
-            
-            innerElement.appendChild(placeholder);
-            
-            this.logger.debug('PHASE 3: Added clickable placeholder to section');
+            if (innerElement && !innerElement.querySelector('.gmkb-section__empty')) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'gmkb-section__empty';
+                placeholder.innerHTML = `
+                    <div class="gmkb-section__empty-icon">
+                        <span class="dashicons dashicons-plus-alt2"></span>
+                    </div>
+                    <div class="gmkb-section__empty-text">
+                        Drop components here or click to add
+                    </div>
+                `;
+                
+                // ROOT FIX: Make clickable to add components via modal
+                placeholder.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.handleAddComponentToSection(sectionElement.dataset.sectionId);
+                });
+                
+                placeholder.style.cursor = 'pointer';
+                placeholder.setAttribute('data-drop-zone', 'true');
+                placeholder.setAttribute('data-section-id', sectionElement.dataset.sectionId);
+                placeholder.setAttribute('data-column-index', '1');
+                
+                innerElement.appendChild(placeholder);
+                
+                this.logger.debug('PHASE 3: Added clickable placeholder to single-column section');
+            }
         }
     }
     
