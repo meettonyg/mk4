@@ -556,9 +556,19 @@ class SectionLayoutManager {
         // Background
         if (options.background_type === 'color' && options.background_color) {
             css.push(`background-color: ${options.background_color};`);
-        } else if (options.background_type === 'gradient') {
-            const gradientColor = options.background_color || '#295cff';
-            css.push(`background: linear-gradient(135deg, ${gradientColor}, ${this.lightenColor(gradientColor, 0.2)});`);
+        } else if (options.background_type === 'gradient' && options.background_color) {
+            // Check if background_color is already a gradient string
+            if (options.background_color.includes('linear-gradient')) {
+                css.push(`background: ${options.background_color};`);
+            } else {
+                // Fallback: create a gradient from single color
+                const gradientColor = options.background_color;
+                css.push(`background: linear-gradient(135deg, ${gradientColor}, ${this.lightenColor(gradientColor, 0.2)});`);
+            }
+        } else if (options.background_type === 'image' && options.background_color) {
+            css.push(`background: ${options.background_color};`);
+            css.push(`background-size: cover;`);
+            css.push(`background-position: center;`);
         }
         
         return css.join(' ');

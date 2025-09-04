@@ -484,9 +484,26 @@ class SectionEditPanel {
         });
         
         // Apply updates
-        window.sectionLayoutManager.updateSectionConfiguration(this.currentSectionId, updates);
+        const updatedSection = window.sectionLayoutManager.updateSectionConfiguration(this.currentSectionId, updates);
         
         this.logger.info(`✅ PHASE 3: Applied changes to section ${this.currentSectionId}`);
+        
+        // Dispatch event to re-render the section with new styles
+        document.dispatchEvent(new CustomEvent('gmkb:section-rerender-requested', {
+            detail: {
+                sectionId: this.currentSectionId,
+                updates: updates
+            }
+        }));
+        
+        // Also directly apply background if it's a gradient
+        if (updates.section_options.background_type === 'gradient' && updates.section_options.background_color) {
+            const sectionElement = document.querySelector(`#section-${this.currentSectionId}, [data-section-id="${this.currentSectionId}"]`);
+            if (sectionElement) {
+                sectionElement.style.background = updates.section_options.background_color;
+                this.logger.info(`🎨 PHASE 3: Applied gradient directly to section element`);
+            }
+        }
         
         // Show success message
         this.showSuccess('Section updated successfully');
@@ -577,13 +594,14 @@ class SectionEditPanel {
             const start = this.getFieldValue('section-bg-gradient-start') || '#295cff';
             const end = this.getFieldValue('section-bg-gradient-end') || '#1c0d5a';
             const direction = this.getFieldValue('section-bg-gradient-direction') || 'to bottom';
+            // Return gradient string that will be properly applied
             return `linear-gradient(${direction}, ${start}, ${end})`;
         } else if (type === 'image') {
             const url = this.getFieldValue('section-bg-image');
-            return url ? `url(${url})` : 'transparent';
+            return url ? `url(${url})` : '';
         }
         
-        return 'transparent';
+        return '';
     }
     
     /**
@@ -692,6 +710,8 @@ class SectionEditPanel {
                 flex: 1;
                 overflow-y: auto;
                 padding: 20px;
+                padding-bottom: 80px; /* Space for footer */
+                max-height: calc(100vh - 200px); /* Ensure scrollability */
             }
             
             .section-edit-group {
@@ -782,12 +802,16 @@ class SectionEditPanel {
             }
             
             .section-edit-panel__footer {
+                position: sticky;
+                bottom: 0;
                 padding: 15px;
                 border-top: 1px solid #e1e1e1;
                 background: #f8f9fa;
                 display: flex;
                 justify-content: flex-end;
                 gap: 10px;
+                z-index: 10;
+                margin-top: auto;
             }
             
             .section-edit-btn--primary,
