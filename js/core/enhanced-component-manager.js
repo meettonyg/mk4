@@ -538,16 +538,31 @@
                 logger.debug('COMPONENT', `Component removed from preview: ${componentId}`);
             }
 
-            // Show empty state if no components remain
+            // ROOT FIX: Show empty state only if no components AND no sections remain
             const previewContainer = document.getElementById('media-kit-preview');
-            const remainingComponents = previewContainer?.querySelectorAll('[data-component-id]');
+            const remainingComponents = document.querySelectorAll('[data-component-id]');
             
-            if (!remainingComponents || remainingComponents.length === 0) {
-                const emptyState = document.getElementById('empty-state');
-                if (emptyState) {
-                    emptyState.style.display = 'block';
-                }
+            // Check sections
+            const state = window.enhancedStateManager?.getState();
+            const hasSections = state && state.sections && state.sections.length > 0;
+            
+            if ((!remainingComponents || remainingComponents.length === 0) && !hasSections) {
+                // No components and no sections - show empty state
+            const emptyState = document.getElementById('empty-state');
+            const savedComponentsContainer = document.getElementById('saved-components-container');
+            
+            if (emptyState) {
+                emptyState.style.display = 'block';
             }
+            if (savedComponentsContainer) {
+                savedComponentsContainer.style.display = 'none';
+            }
+            
+            logger.info('COMPONENT', 'No components or sections remain - showing empty state');
+        } else if (!remainingComponents || remainingComponents.length === 0) {
+            // No components but sections exist - keep sections visible
+            logger.info('COMPONENT', 'No components but sections remain - keeping sections visible');
+        }
         }
 
         /**
@@ -1078,17 +1093,20 @@
     });
     
     document.addEventListener('gmkb:component-delete-requested', async (event) => {
-        const { componentId } = event.detail;
-        logger.info('COMPONENT', `Delete requested for: ${componentId}`);
+        const { componentId, reason, sectionId, skipConfirmation } = event.detail;
+        logger.info('COMPONENT', `Delete requested for: ${componentId}`, { reason, sectionId });
         
         try {
-            // Confirm deletion
-            if (!confirm('Are you sure you want to delete this component?')) {
-                return;
+            // ROOT FIX: Skip confirmation if requested (e.g., when deleting entire section)
+            if (!skipConfirmation) {
+                // Confirm deletion only for individual component deletions
+                if (!confirm('Are you sure you want to delete this component?')) {
+                    return;
+                }
             }
             
             await window.enhancedComponentManager.removeComponent(componentId);
-            logger.info('COMPONENT', `Deleted component: ${componentId}`);
+            logger.info('COMPONENT', `Deleted component: ${componentId}`, { reason });
             
         } catch (error) {
             logger.error('COMPONENT', `Failed to delete component: ${componentId}`, error);

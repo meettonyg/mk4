@@ -721,6 +721,7 @@ class SectionLayoutManager {
     /**
      * Remove section
      * Following checklist: Graceful Failure, Centralized State
+     * ROOT FIX: Properly delete all components within the section
      */
     removeSection(sectionId) {
         const section = this.sections.get(sectionId);
@@ -729,12 +730,32 @@ class SectionLayoutManager {
             return false;
         }
         
-        // Remove components from section first
-        section.components.forEach(comp => {
+        // ROOT FIX: Actually delete components from the section
+        // Collect component IDs first to avoid mutation during iteration
+        const componentIdsToDelete = section.components.map(comp => comp.component_id);
+        
+        this.logger.info(`🗑️ PHASE 3: Removing section ${sectionId} with ${componentIdsToDelete.length} components`);
+        
+        // Delete each component through the component manager
+        componentIdsToDelete.forEach(componentId => {
+            // First dispatch removal from section event
             this.dispatchSectionEvent('gmkb:component-removed-from-section', {
-                componentId: comp.component_id,
+                componentId: componentId,
                 sectionId
             });
+            
+            // ROOT FIX: Actually request component deletion
+            // This will trigger the component manager to remove the component
+            document.dispatchEvent(new CustomEvent('gmkb:component-delete-requested', {
+                detail: { 
+                    componentId: componentId,
+                    reason: 'section_deleted',
+                    sectionId: sectionId,
+                    skipConfirmation: true // Don't ask for confirmation when deleting section
+                }
+            }));
+            
+            this.logger.info(`🗑️ PHASE 3: Requested deletion of component ${componentId} from section ${sectionId}`);
         });
         
         // Remove section
@@ -747,7 +768,7 @@ class SectionLayoutManager {
         // Dispatch event
         this.dispatchSectionEvent('gmkb:section-removed', { sectionId });
         
-        this.logger.info(`🗑️ PHASE 3: Removed section ${sectionId}`);
+        this.logger.info(`🗑️ PHASE 3: Removed section ${sectionId} and its ${componentIdsToDelete.length} components`);
         return true;
     }
     
