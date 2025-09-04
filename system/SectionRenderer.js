@@ -202,7 +202,8 @@ class SectionRenderer {
             }
             
             .gmkb-section--main_sidebar .gmkb-section__inner {
-                grid-template-columns: 70% 30%; /* Main content 70%, sidebar 30% */
+                grid-template-columns: 2fr 1fr !important; /* Main content 2/3, sidebar 1/3 */
+                display: grid !important;
             }
             
             .gmkb-section--three_column .gmkb-section__inner {

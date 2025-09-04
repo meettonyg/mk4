@@ -247,7 +247,7 @@ class SectionLayoutManager {
                     padding: '60px 20px',
                     columns: 2,
                     column_gap: '40px',
-                    column_ratio: '70-30' // Main content 70%, sidebar 30%
+                    column_ratio: '2fr-1fr' // Main content 2/3, sidebar 1/3
                 },
                 section_options: {
                     background_type: 'none',
@@ -257,7 +257,7 @@ class SectionLayoutManager {
                 },
                 responsive: {
                     mobile: { columns: 1, column_gap: '0px' },
-                    tablet: { columns: 2, column_gap: '30px', column_ratio: '60-40' }
+                    tablet: { columns: 2, column_gap: '30px', column_ratio: '2fr-1fr' }
                 }
             },
             three_column: {
