@@ -784,6 +784,108 @@
                 payload: sections
             });
         }
+        
+        /**
+         * ROOT FIX: Update component order based on DOM state
+         * This captures the actual visual order of components after drag/drop or move operations
+         */
+        updateComponentOrder() {
+            try {
+                // Get all components from DOM in their current order
+                const allComponents = document.querySelectorAll('[data-component-id]');
+                const newLayout = [];
+                const sectionUpdates = {};
+                
+                allComponents.forEach((element) => {
+                    const componentId = element.getAttribute('data-component-id') || element.id;
+                    if (!componentId || !this.state.components[componentId]) {
+                        return; // Skip non-tracked components
+                    }
+                    
+                    // Check if component is in a section
+                    const sectionElement = element.closest('[data-section-id]');
+                    if (sectionElement) {
+                        const sectionId = sectionElement.getAttribute('data-section-id');
+                        
+                        // Track components per section
+                        if (!sectionUpdates[sectionId]) {
+                            sectionUpdates[sectionId] = [];
+                        }
+                        
+                        sectionUpdates[sectionId].push(componentId);
+                        
+                        // Update component's sectionId if changed
+                        if (this.state.components[componentId].sectionId !== sectionId) {
+                            this.state.components[componentId].sectionId = sectionId;
+                            this.logger.info('STATE', `Updated component ${componentId} section to ${sectionId}`);
+                        }
+                    } else {
+                        // Component is in main container (no section)
+                        newLayout.push(componentId);
+                        
+                        // Clear sectionId if component moved out of section
+                        if (this.state.components[componentId].sectionId) {
+                            this.state.components[componentId].sectionId = null;
+                            this.logger.info('STATE', `Cleared section for component ${componentId}`);
+                        }
+                    }
+                });
+                
+                // Update sections with new component order
+                if (this.state.sections && Object.keys(sectionUpdates).length > 0) {
+                    this.state.sections.forEach(section => {
+                        if (sectionUpdates[section.section_id]) {
+                            const orderedComponents = sectionUpdates[section.section_id];
+                            
+                            // Update section's component list with new order
+                            section.components = orderedComponents.map((componentId, index) => ({
+                                component_id: componentId,
+                                column: 1, // Default to column 1 for now
+                                order: index,
+                                assigned_at: Date.now()
+                            }));
+                            
+                            section.updated_at = Date.now();
+                            this.logger.info('STATE', `Updated section ${section.section_id} with ${orderedComponents.length} components`);
+                        }
+                    });
+                }
+                
+                // Build complete layout from sections and non-section components
+                const completeLayout = [];
+                
+                // Add components from sections first (in section order)
+                if (this.state.sections) {
+                    this.state.sections.forEach(section => {
+                        if (sectionUpdates[section.section_id]) {
+                            completeLayout.push(...sectionUpdates[section.section_id]);
+                        }
+                    });
+                }
+                
+                // Add non-section components
+                completeLayout.push(...newLayout);
+                
+                // Update state layout
+                this.state.layout = completeLayout;
+                
+                // Also update saved_components array if it exists
+                if (this.state.saved_components && Array.isArray(this.state.saved_components)) {
+                    this.state.saved_components = completeLayout.map(id => this.state.components[id]).filter(Boolean);
+                }
+                
+                this.logger.info('STATE', `Updated component order: ${completeLayout.join(', ')}`);
+                
+                // Notify subscribers and save
+                this.notifySubscribers();
+                this.debouncedSave();
+                
+                return true;
+            } catch (error) {
+                this.logger.error('STATE', 'Failed to update component order', error);
+                return false;
+            }
+        }
 
         /**
          * Check if busy

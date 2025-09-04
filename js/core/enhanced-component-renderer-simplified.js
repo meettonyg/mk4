@@ -1011,15 +1011,31 @@
                     // Component should be in a section
                     const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
                     if (sectionElement) {
-                        // Find the components container within the section
-                        targetContainer = sectionElement.querySelector('.gmkb-section__components');
-                        if (!targetContainer) {
-                            // Create components container in section if missing
-                            targetContainer = document.createElement('div');
-                            targetContainer.className = 'gmkb-section__components';
-                            sectionElement.appendChild(targetContainer);
+                        // ROOT FIX: Look for the correct section container structure
+                        // Section renderer creates: .gmkb-section__inner with either .gmkb-section__content or .gmkb-section__column
+                        const innerContainer = sectionElement.querySelector('.gmkb-section__inner');
+                        
+                        if (innerContainer) {
+                            // Check for columns first (multi-column layout)
+                            const columns = innerContainer.querySelectorAll('.gmkb-section__column');
+                            if (columns.length > 0) {
+                                // Multi-column layout - use first column by default
+                                targetContainer = columns[0];
+                                this.logger.debug('RENDER', `Placing component ${componentId} in section ${sectionId} column 1`);
+                            } else {
+                                // Single column layout - use content area
+                                targetContainer = innerContainer.querySelector('.gmkb-section__content');
+                                if (!targetContainer) {
+                                    // Fallback to inner container itself
+                                    targetContainer = innerContainer;
+                                }
+                                this.logger.debug('RENDER', `Placing component ${componentId} in section ${sectionId} content area`);
+                            }
+                        } else {
+                            // No inner container, use section element itself
+                            targetContainer = sectionElement;
+                            this.logger.warn('RENDER', `Section ${sectionId} has no inner container, using section element`);
                         }
-                        this.logger.debug('RENDER', `Placing component ${componentId} in section ${sectionId}`);
                     } else {
                         // Section doesn't exist yet, render it first
                         this.logger.warn('RENDER', `Section ${sectionId} not found for component ${componentId}`);

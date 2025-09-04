@@ -936,6 +936,176 @@
         }
     });
     
+    // ROOT FIX: Listen for move up/down events
+    document.addEventListener('gmkb:component-move-up-requested', (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Move up requested for: ${componentId}`);
+        
+        try {
+            const componentElement = document.getElementById(componentId);
+            if (!componentElement) {
+                logger.warn('COMPONENT', `Component ${componentId} not found for move up`);
+                return;
+            }
+            
+            // ROOT FIX: Get the actual container (could be .gmkb-section__components or similar)
+            const container = componentElement.parentElement;
+            
+            // Get siblings that are components only (have data-component-id)
+            const siblings = Array.from(container.children).filter(child => 
+                child.hasAttribute('data-component-id') || child.id?.match(/^[a-z-]+-\d{13}-\d+$/)
+            );
+            
+            const currentIndex = siblings.indexOf(componentElement);
+            
+            // ROOT FIX: Only move if there's actually a previous sibling component
+            if (currentIndex > 0 && siblings.length > 1) {
+                // Move up by swapping with previous sibling
+                container.insertBefore(componentElement, siblings[currentIndex - 1]);
+                logger.info('COMPONENT', `Moved ${componentId} up (position ${currentIndex} to ${currentIndex - 1})`);
+                
+                // Update state to match new DOM order
+                if (window.enhancedStateManager) {
+                    window.enhancedStateManager.updateComponentOrder();
+                }
+                
+                // Auto-save the new order
+                if (window.enhancedComponentManager) {
+                    window.enhancedComponentManager.autoSaveState('component_moved', {
+                        componentId,
+                        direction: 'up',
+                        newPosition: currentIndex - 1
+                    });
+                }
+            } else {
+                logger.info('COMPONENT', `Cannot move ${componentId} up - already at top or only component`);
+            }
+        } catch (error) {
+            logger.error('COMPONENT', `Failed to move component up: ${componentId}`, error);
+        }
+    });
+    
+    document.addEventListener('gmkb:component-move-down-requested', (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Move down requested for: ${componentId}`);
+        
+        try {
+            const componentElement = document.getElementById(componentId);
+            if (!componentElement) {
+                logger.warn('COMPONENT', `Component ${componentId} not found for move down`);
+                return;
+            }
+            
+            // ROOT FIX: Get the actual container (could be .gmkb-section__components or similar)
+            const container = componentElement.parentElement;
+            
+            // Get siblings that are components only (have data-component-id)
+            const siblings = Array.from(container.children).filter(child => 
+                child.hasAttribute('data-component-id') || child.id?.match(/^[a-z-]+-\d{13}-\d+$/)
+            );
+            
+            const currentIndex = siblings.indexOf(componentElement);
+            
+            // ROOT FIX: Only move if there's actually a next sibling component
+            if (currentIndex < siblings.length - 1 && siblings.length > 1) {
+                // Move down by swapping with next sibling
+                const nextSibling = siblings[currentIndex + 1];
+                container.insertBefore(nextSibling, componentElement);
+                logger.info('COMPONENT', `Moved ${componentId} down (position ${currentIndex} to ${currentIndex + 1})`);
+                
+                // Update state to match new DOM order
+                if (window.enhancedStateManager) {
+                    window.enhancedStateManager.updateComponentOrder();
+                }
+                
+                // Auto-save the new order
+                if (window.enhancedComponentManager) {
+                    window.enhancedComponentManager.autoSaveState('component_moved', {
+                        componentId,
+                        direction: 'down',
+                        newPosition: currentIndex + 1
+                    });
+                }
+            } else {
+                logger.info('COMPONENT', `Cannot move ${componentId} down - already at bottom or only component`);
+            }
+        } catch (error) {
+            logger.error('COMPONENT', `Failed to move component down: ${componentId}`, error);
+        }
+    });
+    
+    // ROOT FIX: Listen for duplicate and delete events
+    document.addEventListener('gmkb:component-duplicate-requested', async (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Duplicate requested for: ${componentId}`);
+        
+        try {
+            const originalComponent = window.enhancedComponentManager.getComponent(componentId);
+            if (!originalComponent) {
+                logger.warn('COMPONENT', `Component ${componentId} not found for duplication`);
+                return;
+            }
+            
+            // Get component data from state
+            const stateComponent = window.enhancedStateManager?.getComponent(componentId);
+            const componentData = stateComponent || originalComponent;
+            
+            // Create duplicate with new ID
+            const duplicateProps = { ...componentData.props };
+            const duplicateId = await window.enhancedComponentManager.addComponent(
+                componentData.type,
+                duplicateProps
+            );
+            
+            logger.info('COMPONENT', `Duplicated ${componentId} as ${duplicateId}`);
+            
+            // Place duplicate after original
+            setTimeout(() => {
+                const originalElement = document.getElementById(componentId);
+                const duplicateElement = document.getElementById(duplicateId);
+                
+                if (originalElement && duplicateElement) {
+                    originalElement.parentElement.insertBefore(
+                        duplicateElement,
+                        originalElement.nextSibling
+                    );
+                }
+            }, 100);
+            
+        } catch (error) {
+            logger.error('COMPONENT', `Failed to duplicate component: ${componentId}`, error);
+        }
+    });
+    
+    document.addEventListener('gmkb:component-delete-requested', async (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Delete requested for: ${componentId}`);
+        
+        try {
+            // Confirm deletion
+            if (!confirm('Are you sure you want to delete this component?')) {
+                return;
+            }
+            
+            await window.enhancedComponentManager.removeComponent(componentId);
+            logger.info('COMPONENT', `Deleted component: ${componentId}`);
+            
+        } catch (error) {
+            logger.error('COMPONENT', `Failed to delete component: ${componentId}`, error);
+        }
+    });
+    
+    // ROOT FIX: Listen for edit request
+    document.addEventListener('gmkb:component-edit-requested', (event) => {
+        const { componentId } = event.detail;
+        logger.info('COMPONENT', `Edit requested for: ${componentId}`);
+        
+        // This is handled by gmkb-init.js, but we log it here
+        document.dispatchEvent(new CustomEvent('gmkb:edit-component', {
+            detail: { componentId }
+        }));
+    });
+    
     // State sync when both managers ready
     const setupStateChangeListener = () => {
         if (window.enhancedStateManager && window.enhancedComponentManager && window.enhancedComponentManager.isInitialized) {
