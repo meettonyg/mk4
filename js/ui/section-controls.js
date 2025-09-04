@@ -89,13 +89,38 @@ class SectionControlsUI {
         
         // Section click handlers
         document.addEventListener('click', (event) => {
-            // Section settings button
-            if (event.target.matches('.gmkb-section__control-btn--settings')) {
+            // Section edit button (pencil icon)
+            if (event.target.matches('.gmkb-section__control--edit, .gmkb-section__control--edit *')) {
                 event.preventDefault();
                 event.stopPropagation();
                 const section = event.target.closest('.gmkb-section');
                 if (section) {
-                    this.openSectionSettings(section.dataset.sectionId);
+                    const sectionId = section.dataset.sectionId || section.id?.replace('section-', '');
+                    if (sectionId) {
+                        // Dispatch event for section edit panel
+                        document.dispatchEvent(new CustomEvent('gmkb:section-edit-requested', {
+                            detail: { sectionId }
+                        }));
+                        this.logger.info(`✉️ PHASE 3: Edit requested for section ${sectionId}`);
+                    }
+                }
+                return;
+            }
+            
+            // Section settings button (legacy - redirect to edit panel)
+            if (event.target.matches('.gmkb-section__control-btn--settings, .gmkb-section__control-btn--settings *')) {
+                event.preventDefault();
+                event.stopPropagation();
+                const section = event.target.closest('.gmkb-section');
+                if (section) {
+                    const sectionId = section.dataset.sectionId || section.id?.replace('section-', '');
+                    if (sectionId) {
+                        // Dispatch event for section edit panel instead of opening modal
+                        document.dispatchEvent(new CustomEvent('gmkb:section-edit-requested', {
+                            detail: { sectionId }
+                        }));
+                        this.logger.info(`🎯 PHASE 3: Settings redirected to edit panel for section ${sectionId}`);
+                    }
                 }
                 return;
             }

@@ -1116,6 +1116,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // PHASE 3: Section Edit Panel - UI for editing section properties
+    if (!wp_script_is('gmkb-section-edit-panel', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-edit-panel',
+            $plugin_url . 'js/ui/section-edit-panel.js',
+            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // PHASE 3: Section Renderer - ROOT FIX: Must be enqueued BEFORE section-component-integration
     if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
         wp_enqueue_script(
@@ -1458,6 +1469,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-layout-manager',
                 'gmkb-section-controls-ui',
                 'gmkb-sidebar-section-integration',
+                'gmkb-section-edit-panel', // Section edit UI
                 'gmkb-section-component-integration',
                 'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
