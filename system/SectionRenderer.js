@@ -191,6 +191,7 @@ class SectionRenderer {
             
             /* Multi-column layout styles */
             .gmkb-section--two_column .gmkb-section__inner,
+            .gmkb-section--main_sidebar .gmkb-section__inner,
             .gmkb-section--three_column .gmkb-section__inner {
                 display: grid;
                 gap: 20px;
@@ -198,6 +199,10 @@ class SectionRenderer {
             
             .gmkb-section--two_column .gmkb-section__inner {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .gmkb-section--main_sidebar .gmkb-section__inner {
+                grid-template-columns: 70% 30%; /* Main content 70%, sidebar 30% */
             }
             
             .gmkb-section--three_column .gmkb-section__inner {
@@ -216,6 +221,27 @@ class SectionRenderer {
             .gmkb-section__content.gmkb-drop-zone-active {
                 background: rgba(41, 92, 255, 0.1);
                 border: 2px dashed #295cff;
+            }
+            
+            /* Main + Sidebar specific styles */
+            .gmkb-section--main_sidebar .gmkb-section__column--main {
+                background: rgba(255, 255, 255, 0.5);
+                border: 1px dashed #e0e0e0;
+            }
+            
+            .gmkb-section--main_sidebar .gmkb-section__column--sidebar {
+                background: rgba(245, 245, 245, 0.8);
+                border: 1px dashed #d0d0d0;
+            }
+            
+            .gmkb-section--main_sidebar .gmkb-section__column--main:hover {
+                background: rgba(41, 92, 255, 0.03);
+                border-color: #295cff;
+            }
+            
+            .gmkb-section--main_sidebar .gmkb-section__column--sidebar:hover {
+                background: rgba(41, 92, 255, 0.05);
+                border-color: #295cff;
             }
         `;
         
@@ -480,14 +506,24 @@ class SectionRenderer {
         // Handle column layouts - with defensive check
         const columnCount = section.layout?.columns || 1;
         if (columnCount > 1) {
+            // ROOT FIX: Handle main_sidebar special case with column labels
+            const isMainSidebar = section.section_type === 'main_sidebar';
+            
             for (let i = 1; i <= columnCount; i++) {
                 const column = document.createElement('div');
                 column.className = `gmkb-section__column gmkb-section__column--${i}`;
+                
+                // Add special class for main/sidebar columns
+                if (isMainSidebar) {
+                    column.classList.add(i === 1 ? 'gmkb-section__column--main' : 'gmkb-section__column--sidebar');
+                }
+                
                 column.dataset.column = i;
                 // ROOT FIX: Add drop zone attributes to each column for drag-drop targeting
                 column.setAttribute('data-drop-zone', 'true');
                 column.setAttribute('data-section-id', section.section_id);
                 column.setAttribute('data-column-index', i);
+                column.setAttribute('data-column-label', isMainSidebar ? (i === 1 ? 'Main Content' : 'Sidebar') : `Column ${i}`);
                 column.style.minHeight = '100px'; // Ensure columns have minimum height for dropping
                 innerContainer.appendChild(column);
             }
@@ -693,6 +729,9 @@ class SectionRenderer {
             const columns = sectionElement.querySelectorAll('.gmkb-section__column');
             columns.forEach((column, index) => {
                 if (!column.querySelector('.gmkb-section__empty')) {
+                    // Get column label from data attribute or default
+                    const columnLabel = column.getAttribute('data-column-label') || `Column ${index + 1}`;
+                    
                     const placeholder = document.createElement('div');
                     placeholder.className = 'gmkb-section__empty';
                     placeholder.innerHTML = `
@@ -700,7 +739,7 @@ class SectionRenderer {
                             <span class="dashicons dashicons-plus-alt2"></span>
                         </div>
                         <div class="gmkb-section__empty-text">
-                            Drop to Column ${index + 1}
+                            Drop to ${columnLabel}
                         </div>
                     `;
                     

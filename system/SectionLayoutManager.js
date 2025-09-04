@@ -240,6 +240,26 @@ class SectionLayoutManager {
                     tablet: { columns: 2, column_gap: '30px' }
                 }
             },
+            main_sidebar: {
+                layout: {
+                    width: 'constrained',
+                    max_width: '1200px',
+                    padding: '60px 20px',
+                    columns: 2,
+                    column_gap: '40px',
+                    column_ratio: '70-30' // Main content 70%, sidebar 30%
+                },
+                section_options: {
+                    background_type: 'none',
+                    background_color: 'transparent',
+                    spacing_top: 'large',
+                    spacing_bottom: 'large'
+                },
+                responsive: {
+                    mobile: { columns: 1, column_gap: '0px' },
+                    tablet: { columns: 2, column_gap: '30px', column_ratio: '60-40' }
+                }
+            },
             three_column: {
                 layout: {
                     width: 'constrained',
