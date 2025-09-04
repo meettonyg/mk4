@@ -26,6 +26,9 @@ class SectionRenderer {
      * Following checklist: Event-Driven Initialization, Dependency-Awareness
      */
     initializeRenderer() {
+        // Add required CSS styles for section controls
+        this.injectSectionStyles();
+        
         // Wait for core systems to be ready
         document.addEventListener('gmkb:core-systems-ready', () => {
             this.onCoreSystemsReady();
@@ -59,6 +62,129 @@ class SectionRenderer {
         }
         
         this.logger.info('✅ PHASE 3: SectionRenderer initialized');
+    }
+    
+    /**
+     * ROOT FIX: Inject critical CSS styles for section controls
+     * Ensures controls are visible even without theme styles
+     */
+    injectSectionStyles() {
+        // Check if styles already added
+        if (document.getElementById('gmkb-section-controls-styles')) {
+            return;
+        }
+        
+        const styles = document.createElement('style');
+        styles.id = 'gmkb-section-controls-styles';
+        styles.innerHTML = `
+            /* Section Controls Positioning */
+            .gmkb-section {
+                position: relative;
+                margin-bottom: 20px;
+                min-height: 100px;
+            }
+            
+            .gmkb-section__controls {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 100;
+                display: flex;
+                gap: 8px;
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 4px;
+                padding: 4px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .gmkb-section__control {
+                width: 32px;
+                height: 32px;
+                border: 1px solid #ddd;
+                background: white;
+                border-radius: 3px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 16px;
+                color: #666;
+            }
+            
+            .gmkb-section__control:hover {
+                background: #f0f0f0;
+                border-color: #999;
+                color: #333;
+            }
+            
+            .gmkb-section__control--add {
+                background: #4CAF50;
+                color: white;
+                border-color: #45a049;
+            }
+            
+            .gmkb-section__control--add:hover {
+                background: #45a049;
+            }
+            
+            .gmkb-section__control--remove:hover {
+                background: #ffebee;
+                border-color: #ef5350;
+                color: #ef5350;
+            }
+            
+            /* Ensure Dashicons show properly */
+            .gmkb-section__control .dashicons,
+            .gmkb-section__control i.dashicons {
+                font-family: dashicons !important;
+                font-size: 20px;
+                width: 20px;
+                height: 20px;
+                line-height: 1;
+            }
+            
+            /* Section empty state */
+            .gmkb-section__empty {
+                padding: 40px;
+                text-align: center;
+                border: 2px dashed #ddd;
+                border-radius: 4px;
+                background: #fafafa;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            
+            .gmkb-section__empty:hover {
+                border-color: #999;
+                background: #f5f5f5;
+            }
+            
+            .gmkb-section__empty-icon {
+                font-size: 32px;
+                color: #999;
+                margin-bottom: 10px;
+            }
+            
+            .gmkb-section__empty-text {
+                color: #666;
+                font-size: 14px;
+            }
+            
+            /* Section inner layout */
+            .gmkb-section__inner {
+                min-height: 60px;
+                padding: 10px;
+            }
+            
+            .gmkb-section__content,
+            .gmkb-section__column {
+                min-height: 60px;
+            }
+        `;
+        
+        document.head.appendChild(styles);
+        this.logger.debug('💄 PHASE 3: Injected section control styles');
     }
     
     /**
@@ -345,10 +471,21 @@ class SectionRenderer {
         const controls = document.createElement('div');
         controls.className = 'gmkb-section__controls';
         
+        // ROOT FIX: Add component button - ALWAYS present, not just for empty sections
+        const addBtn = document.createElement('button');
+        addBtn.className = 'gmkb-section__control gmkb-section__control--add';
+        addBtn.innerHTML = '<i class="dashicons dashicons-plus-alt"></i>';
+        addBtn.title = 'Add Component to Section';
+        addBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handleAddComponentToSection(section.section_id);
+        });
+        
         // Edit button
         const editBtn = document.createElement('button');
         editBtn.className = 'gmkb-section__control gmkb-section__control--edit';
-        editBtn.innerHTML = '<span class="dashicons dashicons-edit"></span>';
+        editBtn.innerHTML = '<i class="dashicons dashicons-edit"></i>';
         editBtn.title = 'Edit Section';
         editBtn.addEventListener('click', () => {
             this.handleSectionEdit(section.section_id);
@@ -357,7 +494,7 @@ class SectionRenderer {
         // Remove button
         const removeBtn = document.createElement('button');
         removeBtn.className = 'gmkb-section__control gmkb-section__control--remove';
-        removeBtn.innerHTML = '<span class="dashicons dashicons-trash"></span>';
+        removeBtn.innerHTML = '<i class="dashicons dashicons-trash"></i>';
         removeBtn.title = 'Remove Section';
         removeBtn.addEventListener('click', () => {
             this.handleSectionRemove(section.section_id);
@@ -366,14 +503,42 @@ class SectionRenderer {
         // Move handle
         const moveHandle = document.createElement('div');
         moveHandle.className = 'gmkb-section__control gmkb-section__control--move';
-        moveHandle.innerHTML = '<span class="dashicons dashicons-move"></span>';
+        moveHandle.innerHTML = '<i class="dashicons dashicons-move"></i>';
         moveHandle.title = 'Drag to Reorder';
         
+        controls.appendChild(addBtn);
         controls.appendChild(editBtn);
         controls.appendChild(removeBtn);
         controls.appendChild(moveHandle);
         
         sectionElement.appendChild(controls);
+        
+        // ROOT FIX: Add CSS to ensure Dashicons are loaded and visible
+        this.ensureDashiconsLoaded();
+    }
+    
+    /**
+     * ROOT FIX: Ensure Dashicons font is loaded
+     * WordPress doesn't always load Dashicons on the frontend
+     */
+    ensureDashiconsLoaded() {
+        // Check if dashicons are already loaded
+        if (document.querySelector('link[href*="dashicons"]')) {
+            return;
+        }
+        
+        // Check if we're in WordPress admin (dashicons should be loaded)
+        if (document.body.classList.contains('wp-admin')) {
+            return;
+        }
+        
+        // Add dashicons CSS if not present
+        const dashiconsLink = document.createElement('link');
+        dashiconsLink.rel = 'stylesheet';
+        dashiconsLink.href = '/wp-includes/css/dashicons.min.css';
+        document.head.appendChild(dashiconsLink);
+        
+        this.logger.debug('📦 PHASE 3: Added Dashicons CSS for section controls');
     }
     
     /**
