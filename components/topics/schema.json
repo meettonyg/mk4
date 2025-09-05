@@ -1,0 +1,118 @@
+{
+  "component_type": "topics",
+  "name": "Speaking Topics",
+  "description": "List of speaking topics and expertise areas",
+  "dataBindings": {
+    "topic_1": "topic_1",
+    "topic_2": "topic_2",
+    "topic_3": "topic_3",
+    "topic_4": "topic_4",
+    "topic_5": "topic_5",
+    "topic_6": "topic_6",
+    "sectionTitle": "topics_section_title"
+  },
+  "defaultOptions": {
+    "layout": "grid",
+    "maxTopics": 6,
+    "showDescriptions": true,
+    "showIcons": false,
+    "columns": 3
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": {
+        "list": "Vertical List",
+        "grid": "Grid Layout",
+        "cards": "Card Layout",
+        "tags": "Tag Cloud",
+        "accordion": "Accordion"
+      }
+    },
+    "columns": {
+      "type": "number",
+      "label": "Number of Columns",
+      "default": 3,
+      "min": 1,
+      "max": 4,
+      "condition": {
+        "field": "layout",
+        "value": ["grid", "cards"]
+      }
+    },
+    "maxTopics": {
+      "type": "number",
+      "label": "Maximum Topics",
+      "default": 6,
+      "min": 1,
+      "max": 20
+    },
+    "showDescriptions": {
+      "type": "boolean",
+      "label": "Show Topic Descriptions",
+      "default": true
+    },
+    "showIcons": {
+      "type": "boolean",
+      "label": "Show Topic Icons",
+      "default": false
+    },
+    "cardStyle": {
+      "type": "select",
+      "label": "Card Style",
+      "default": "bordered",
+      "options": {
+        "bordered": "Bordered",
+        "shadow": "Shadow",
+        "gradient": "Gradient",
+        "minimal": "Minimal"
+      },
+      "condition": {
+        "field": "layout",
+        "value": "cards"
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "columns": 1,
+      "layout": "list"
+    },
+    "tablet": {
+      "columns": 2
+    }
+  },
+  "layouts": {
+    "list": {
+      "container": "space-y-4",
+      "item": "border-b pb-4",
+      "title": "text-lg font-semibold",
+      "description": "text-sm text-gray-600 mt-2"
+    },
+    "grid": {
+      "container": "grid gap-6",
+      "item": "text-center p-4",
+      "title": "text-lg font-semibold",
+      "description": "text-sm text-gray-600 mt-2"
+    },
+    "cards": {
+      "container": "grid gap-6",
+      "item": "bg-white rounded-lg p-6",
+      "title": "text-lg font-semibold",
+      "description": "text-sm text-gray-600 mt-2"
+    },
+    "tags": {
+      "container": "flex flex-wrap gap-3",
+      "item": "px-4 py-2 bg-blue-100 text-blue-800 rounded-full",
+      "title": "text-sm font-medium"
+    },
+    "accordion": {
+      "container": "space-y-2",
+      "item": "border rounded-lg",
+      "title": "text-lg font-medium p-4 cursor-pointer",
+      "description": "px-4 pb-4 text-gray-600"
+    }
+  }
+}

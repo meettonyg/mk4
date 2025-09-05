@@ -15,6 +15,7 @@ class SectionEditPanel {
         this.currentSection = null;
         this.panelElement = null;
         this.isOpen = false;
+        this.isFloating = false; // Track if panel is floating
         
         this.logger.info('✏️ PHASE 3: SectionEditPanel initializing for sidebar');
         this.initializePanel();
@@ -241,6 +242,80 @@ class SectionEditPanel {
     }
     
     /**
+     * Setup event listeners for a panel element
+     * Following checklist: Event-Driven, Reusable
+     */
+    setupPanelEventListeners(panelEl) {
+        // Back button
+        const backBtn = panelEl.querySelector('.section-edit-panel__back');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.goBack();
+            });
+        }
+        
+        // Close button
+        const closeBtn = panelEl.querySelector('.section-edit-panel__close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closePanel();
+            });
+        }
+        
+        // Cancel button
+        const cancelBtn = panelEl.querySelector('#section-edit-cancel');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.closePanel();
+            });
+        }
+        
+        // Apply button
+        const applyBtn = panelEl.querySelector('#section-edit-apply');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                this.applyChanges();
+            });
+        }
+        
+        // Background type change
+        const bgTypeSelect = panelEl.querySelector('#section-bg-type');
+        if (bgTypeSelect) {
+            bgTypeSelect.addEventListener('change', (e) => {
+                this.handleBackgroundTypeChange(e.target.value);
+            });
+        }
+        
+        // Width change
+        const widthSelect = panelEl.querySelector('#section-width');
+        if (widthSelect) {
+            widthSelect.addEventListener('change', (e) => {
+                this.handleWidthChange(e.target.value);
+            });
+        }
+        
+        // Color sync
+        const bgColor = panelEl.querySelector('#section-bg-color');
+        const bgColorText = panelEl.querySelector('#section-bg-color-text');
+        
+        if (bgColor) {
+            bgColor.addEventListener('input', (e) => {
+                if (bgColorText) {
+                    bgColorText.value = e.target.value;
+                }
+            });
+        }
+        
+        if (bgColorText) {
+            bgColorText.addEventListener('input', (e) => {
+                if (/^#[0-9A-F]{6}$/i.test(e.target.value) && bgColor) {
+                    bgColor.value = e.target.value;
+                }
+            });
+        }
+    }
+    
+    /**
      * Setup event listeners
      * Following checklist: Event-Driven, No Polling
      */
@@ -250,51 +325,9 @@ class SectionEditPanel {
             this.openPanel(e.detail.sectionId);
         });
         
-        // Panel controls
+        // Setup event listeners on the original panel element
         if (this.panelElement) {
-            // Back button
-            const backBtn = this.panelElement.querySelector('.section-edit-panel__back');
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    this.goBack();
-                });
-            }
-            
-            // Close button
-            this.panelElement.querySelector('.section-edit-panel__close').addEventListener('click', () => {
-                this.closePanel();
-            });
-            
-            // Cancel button
-            this.panelElement.querySelector('#section-edit-cancel').addEventListener('click', () => {
-                this.closePanel();
-            });
-            
-            // Apply button
-            this.panelElement.querySelector('#section-edit-apply').addEventListener('click', () => {
-                this.applyChanges();
-            });
-            
-            // Background type change
-            this.panelElement.querySelector('#section-bg-type').addEventListener('change', (e) => {
-                this.handleBackgroundTypeChange(e.target.value);
-            });
-            
-            // Width change
-            this.panelElement.querySelector('#section-width').addEventListener('change', (e) => {
-                this.handleWidthChange(e.target.value);
-            });
-            
-            // Color sync
-            this.panelElement.querySelector('#section-bg-color').addEventListener('input', (e) => {
-                this.panelElement.querySelector('#section-bg-color-text').value = e.target.value;
-            });
-            
-            this.panelElement.querySelector('#section-bg-color-text').addEventListener('input', (e) => {
-                if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                    this.panelElement.querySelector('#section-bg-color').value = e.target.value;
-                }
-            });
+            this.setupPanelEventListeners(this.panelElement);
         }
         
         // ESC to close
@@ -310,6 +343,8 @@ class SectionEditPanel {
      * Following checklist: User Experience, State Management
      */
     openPanel(sectionId) {
+        console.log('Opening panel for section:', sectionId);
+        
         if (!window.sectionLayoutManager) {
             this.logger.error('❌ PHASE 3: Section layout manager not available');
             return;
@@ -327,39 +362,78 @@ class SectionEditPanel {
         // Populate form with current values
         this.populateForm(section);
         
-        // ROOT FIX: Hide other tab panels using the tab system
-        const allTabs = document.querySelectorAll('.tab-content');
-        allTabs.forEach(tab => {
-            tab.style.display = 'none';
-            tab.classList.remove('active', 'tab-content--active');
-        });
+        // Get the Design tab content area
+        const designTabContent = document.getElementById('design-tab') || document.querySelector('[data-tab="design"].tab-content');
+        if (!designTabContent) {
+            this.logger.error('❌ PHASE 3: Design tab content not found');
+            return;
+        }
         
-        // Also hide any floating panels
-        const allPanels = document.querySelectorAll('.gmkb-panel, .gmkb-sidebar-panel');
-        allPanels.forEach(panel => {
-            if (panel.id !== 'section-edit-panel') {
-                panel.style.display = 'none';
-                panel.classList.remove('active');
-            }
-        });
+        console.log('Design tab found:', designTabContent);
         
-        // Show this panel
-        this.panelElement.style.display = 'block';
-        this.panelElement.classList.add('active', 'tab-content--active');
+        // Store the original Design tab content if not already stored
+        if (!this.originalDesignContent) {
+            this.originalDesignContent = designTabContent.innerHTML;
+        }
+        
+        // Clear the Design tab
+        designTabContent.innerHTML = '';
+        
+        // Clone our panel element
+        const panelContent = this.panelElement.innerHTML;
+        
+        // Create a wrapper div with the panel content
+        const wrapper = document.createElement('div');
+        wrapper.className = 'section-edit-panel active';
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.height = '100%';
+        wrapper.innerHTML = panelContent;
+        
+        console.log('Creating panel wrapper:', wrapper);
+        
+        // Append to Design tab
+        designTabContent.appendChild(wrapper);
+        
+        // Re-setup event listeners on the new element
+        this.setupPanelEventListeners(wrapper);
+        
+        // Store reference to the active panel
+        this.activePanelElement = wrapper;
+        
+        // Switch to the Design tab
+        const designTabButton = document.querySelector('.sidebar__tab[data-tab="design"]');
+        if (designTabButton) {
+            console.log('Switching to Design tab');
+            
+            // Deactivate all tabs
+            const allTabs = document.querySelectorAll('.sidebar__tab');
+            allTabs.forEach(tab => tab.classList.remove('sidebar__tab--active'));
+            
+            // Hide all tab contents
+            const allTabContents = document.querySelectorAll('.tab-content');
+            allTabContents.forEach(content => {
+                if (content !== designTabContent) {
+                    content.style.display = 'none';
+                    content.classList.remove('active', 'tab-content--active');
+                }
+            });
+            
+            // Activate Design tab
+            designTabButton.classList.add('sidebar__tab--active');
+            designTabContent.style.display = 'block';
+            designTabContent.classList.add('active', 'tab-content--active');
+        }
+        
         this.isOpen = true;
-        
-        // Update tab indicators if they exist
-        const tabs = document.querySelectorAll('.sidebar__tab');
-        tabs.forEach(tab => {
-            tab.classList.remove('sidebar__tab--active');
-        });
         
         // Dispatch event for panel system
         document.dispatchEvent(new CustomEvent('gmkb:panel-opened', {
             detail: { panelId: 'section-edit', title: 'Edit Section', sectionId }
         }));
         
-        this.logger.info(`✏️ PHASE 3: Opened edit panel for section ${sectionId}`);
+        this.logger.info(`✏️ PHASE 3: Opened edit panel for section ${sectionId} in Design tab`);
+        console.log('Panel opened successfully');
     }
     
     /**
@@ -369,16 +443,10 @@ class SectionEditPanel {
     goBack() {
         this.closePanel();
         
-        // Show the Layout tab/panel
-        const layoutTab = document.querySelector('[data-tab="layout"], [data-panel="layout"]');
+        // Return to Layout tab (where sections are managed)
+        const layoutTab = document.querySelector('.sidebar__tab[data-tab="layout"]');
         if (layoutTab) {
             layoutTab.click();
-        } else {
-            // Show first available tab
-            const firstTab = document.querySelector('.gmkb-tab, .gmkb-sidebar-tab');
-            if (firstTab) {
-                firstTab.click();
-            }
         }
     }
     
@@ -517,18 +585,33 @@ class SectionEditPanel {
      * Following checklist: User Experience, State Cleanup
      */
     closePanel() {
-        this.panelElement.style.display = 'none';
-        this.panelElement.classList.remove('active', 'gmkb-panel--open');
+        // Hide the panel
+        if (this.activePanelElement) {
+            this.activePanelElement.style.display = 'none';
+            this.activePanelElement.classList.remove('active', 'tab-content--active', 'gmkb-panel--open');
+        }
+        
         this.isOpen = false;
         this.currentSectionId = null;
         this.currentSection = null;
+        
+        // Restore the original Design tab content
+        const designTabContent = document.getElementById('design-tab') || document.querySelector('[data-tab="design"].tab-content');
+        if (designTabContent && this.originalDesignContent) {
+            // Clear and restore
+            designTabContent.innerHTML = this.originalDesignContent;
+            this.originalDesignContent = null;
+        }
+        
+        // Clear active panel reference
+        this.activePanelElement = null;
         
         // Dispatch event
         document.dispatchEvent(new CustomEvent('gmkb:panel-closed', {
             detail: { panelId: 'section-edit' }
         }));
         
-        this.logger.info('🔒 PHASE 3: Closed section edit panel');
+        this.logger.info('🔒 PHASE 3: Closed section edit panel and restored Design tab');
     }
     
     /**
@@ -653,7 +736,7 @@ class SectionEditPanel {
                 position: relative;
                 width: 100%;
                 height: 100%;
-                background: #fff;
+                background: #ffffff;
                 display: none;
                 flex-direction: column;
             }

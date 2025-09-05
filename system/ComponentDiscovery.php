@@ -100,6 +100,18 @@ class ComponentDiscovery {
             // Load component data
             $componentData = $this->loadComponentJson($componentJsonPath);
             
+            // ROOT FIX: Self-contained architecture - load schema.json if exists
+            $schemaJsonPath = $componentDir . '/schema.json';
+            if (file_exists($schemaJsonPath)) {
+                $schemaData = json_decode(file_get_contents($schemaJsonPath), true);
+                if ($schemaData) {
+                    $componentData['schema'] = $schemaData;
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ComponentDiscovery: Loaded schema.json for '{$componentName}'");
+                    }
+                }
+            }
+            
             // ROOT CAUSE DEBUG: Log loaded data
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log("ComponentDiscovery: Loaded data for '{$componentName}': " . print_r($componentData, true));

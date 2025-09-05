@@ -28,18 +28,40 @@ class ComponentConfigurationManager {
     }
     
     /**
-     * Initialize component schemas from WordPress data
+     * Initialize component schemas from component directories
+     * ROOT FIX: Self-contained architecture - each component owns its schema
      */
-    initializeSchemas() {
+    async initializeSchemas() {
+        // Try to load from WordPress data first (if PHP loaded them)
         if (typeof gmkbComponentSchemas !== 'undefined' && gmkbComponentSchemas.schemas) {
             this.schemas = gmkbComponentSchemas.schemas;
-            this.logger.info('✅ PHASE 2: Loaded schemas for components:', Object.keys(this.schemas));
-        } else if (typeof gmkbData !== 'undefined' && gmkbData.componentSchemas) {
-            this.schemas = gmkbData.componentSchemas;
-            this.logger.info('✅ PHASE 2: Loaded schemas from gmkbData for components:', Object.keys(this.schemas));
-        } else {
-            this.logger.warn('⚠️ PHASE 2: No component schemas available - using defaults');
+            this.logger.info('✅ PHASE 2: Loaded schemas from PHP for components:', Object.keys(this.schemas));
+            return;
+        }
+        
+        // ROOT FIX: Load schemas from component directories (self-contained architecture)
+        const componentTypes = ['hero', 'biography', 'topics', 'contact', 'questions', 'gallery', 'testimonials'];
+        
+        for (const type of componentTypes) {
+            try {
+                // Try to fetch schema.json from component directory
+                const response = await fetch(`${window.gmkbData?.pluginUrl || '/wp-content/plugins/mk4/'}components/${type}/schema.json`);
+                if (response.ok) {
+                    const schema = await response.json();
+                    this.schemas[type] = schema;
+                    this.logger.info(`✅ PHASE 2: Loaded schema for ${type} from component directory`);
+                }
+            } catch (error) {
+                this.logger.debug(`Component ${type} has no schema.json (might not be implemented)`);
+            }
+        }
+        
+        // If no schemas loaded, use defaults
+        if (Object.keys(this.schemas).length === 0) {
+            this.logger.warn('⚠️ PHASE 2: No component schemas found - using defaults');
             this.loadDefaultSchemas();
+        } else {
+            this.logger.info('✅ PHASE 2: Loaded schemas for components:', Object.keys(this.schemas));
         }
     }
     

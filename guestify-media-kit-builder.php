@@ -27,25 +27,16 @@ define( 'GMKB_WORDPRESS_COMPATIBLE', true );
 // Include primary files
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
-require_once GUESTIFY_PLUGIN_DIR . 'includes/component-schemas/class-gmkb-component-schema-registry.php';
+// Component schemas are now self-contained in each component directory (schema.json)
 
 // PHASE 1 FIX: Include Pods data enrichment system
 require_once GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php';
 
-// Initialize schema registry early - ONCE per request
-add_action('init', function() {
-    static $schemas_initialized = false;
-    
-    if (!$schemas_initialized && class_exists('GMKB_Component_Schema_Registry')) {
-        GMKB_Component_Schema_Registry::get_schemas();
-        $schemas_initialized = true;
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            $schemas = GMKB_Component_Schema_Registry::get_js_schemas();
-            error_log('GMKB PHASE 2 ROOT FIX: Schema registry initialized ONCE with ' . count($schemas) . ' schemas');
-        }
-    }
-}, 5);
+// PHASE 4: Theme system is handled entirely by JavaScript (ThemeManager.js)
+// No PHP theme generation needed - maintains self-contained architecture
+
+// Component schemas are self-contained - each component has its own schema.json
+// ComponentDiscovery will load schemas when discovering components
 
 // Component system files
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';

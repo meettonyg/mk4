@@ -435,18 +435,25 @@ function gmkb_enqueue_assets() {
         }
     }
 
-    // Load component schemas for Phase 2
+    // ROOT FIX: Load component schemas from self-contained components
     $component_schemas = array();
-    if (class_exists('GMKB_Component_Schema_Registry')) {
-        $component_schemas = GMKB_Component_Schema_Registry::get_js_schemas();
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB PHASE 2 ENQUEUE: Retrieved ' . count($component_schemas) . ' schemas from registry');
-            error_log('GMKB PHASE 2 ENQUEUE: Schema types: ' . implode(', ', array_keys($component_schemas)));
+    
+    // Extract schemas from components (loaded by ComponentDiscovery)
+    foreach ($components_data as $component) {
+        if (isset($component['schema']) && is_array($component['schema'])) {
+            $type = $component['type'] ?? $component['directory'] ?? '';
+            if ($type) {
+                $component_schemas[$type] = $component['schema'];
+            }
         }
-    } else {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB PHASE 2 ENQUEUE: Schema registry class not found!');
+    }
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        if (count($component_schemas) > 0) {
+            error_log('GMKB PHASE 2 ENQUEUE: Retrieved ' . count($component_schemas) . ' self-contained schemas');
+            error_log('GMKB PHASE 2 ENQUEUE: Schema types: ' . implode(', ', array_keys($component_schemas)));
+        } else {
+            error_log('GMKB PHASE 2 ENQUEUE: No component schemas found (components may not have schema.json files)');
         }
     }
 
@@ -1160,8 +1167,27 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 3: Dynamic Section Templates - ROOT FIX: Removed as it doesn't exist yet
-    // We'll create this if needed, but for now SectionRenderer handles its own templates
+    // PHASE 4: Theme Manager
+    if (!wp_script_is('gmkb-theme-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-theme-manager',
+            $plugin_url . 'system/ThemeManager.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 4: Theme Customizer UI
+    if (!wp_script_is('gmkb-theme-customizer', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-theme-customizer',
+            $plugin_url . 'js/ui/theme-customizer.js',
+            array('gmkb-theme-manager'),
+            $version,
+            true
+        );
+    }
     
     // ✅ COMPONENT SELF-REGISTRATION: Load component renderers
     // PERFORMANCE OPTIMIZATION: Use bundled version in production, individual files in development
@@ -1473,6 +1499,8 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-component-integration',
                 'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
+                // PHASE 4: Theme layer systems
+                'gmkb-theme-manager',
                 'gmkb-tabs',
                 'gmkb-toolbar', // CONSOLIDATED: Now includes toolbar-interactions
                 'gmkb-ui-init-coordinator',
@@ -1872,6 +1900,22 @@ function gmkb_enqueue_assets() {
         'gmkb-dom-ownership',
         $plugin_url . 'css/modules/dom-ownership.css',
         array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // PHASE 4: Theme Variables CSS
+    wp_enqueue_style(
+        'gmkb-theme-variables',
+        $plugin_url . 'css/theme-variables.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // PHASE 4: Theme Customizer CSS
+    wp_enqueue_style(
+        'gmkb-theme-customizer',
+        $plugin_url . 'css/modules/theme-customizer.css',
+        array( 'gmkb-theme-variables' ),
         $version
     );
     

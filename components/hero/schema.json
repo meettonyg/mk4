@@ -1,0 +1,103 @@
+{
+  "component_type": "hero",
+  "name": "Hero Section",
+  "description": "Full-width hero section with image and text",
+  "dataBindings": {
+    "title": "full_name",
+    "subtitle": "guest_title",
+    "description": "biography_short",
+    "image": "guest_headshot",
+    "cta_text": "cta_button_text",
+    "cta_link": "cta_button_link"
+  },
+  "defaultOptions": {
+    "layout": "center_aligned",
+    "imageStyle": "rounded",
+    "showCTA": true,
+    "overlayOpacity": 0.4,
+    "textColor": "#ffffff",
+    "minHeight": "500px"
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "center_aligned",
+      "options": {
+        "center_aligned": "Center Aligned",
+        "left_aligned": "Left Aligned",
+        "right_aligned": "Right Aligned",
+        "split_screen": "Split Screen"
+      }
+    },
+    "imageStyle": {
+      "type": "select",
+      "label": "Image Style",
+      "default": "rounded",
+      "options": {
+        "rounded": "Rounded Corners",
+        "circle": "Circle",
+        "square": "Square",
+        "none": "No Image"
+      }
+    },
+    "showCTA": {
+      "type": "boolean",
+      "label": "Show Call to Action",
+      "default": true
+    },
+    "overlayOpacity": {
+      "type": "number",
+      "label": "Background Overlay",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    "textColor": {
+      "type": "color",
+      "label": "Text Color",
+      "default": "#ffffff"
+    },
+    "minHeight": {
+      "type": "text",
+      "label": "Minimum Height",
+      "default": "500px"
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "layout": "center_aligned",
+      "minHeight": "400px"
+    },
+    "tablet": {
+      "minHeight": "450px"
+    }
+  },
+  "layouts": {
+    "center_aligned": {
+      "container": "text-center",
+      "title": "text-4xl md:text-5xl font-bold mb-4",
+      "subtitle": "text-xl md:text-2xl mb-6",
+      "description": "text-lg max-w-2xl mx-auto mb-8"
+    },
+    "left_aligned": {
+      "container": "text-left",
+      "title": "text-4xl md:text-5xl font-bold mb-4",
+      "subtitle": "text-xl md:text-2xl mb-6",
+      "description": "text-lg max-w-2xl mb-8"
+    },
+    "right_aligned": {
+      "container": "text-right",
+      "title": "text-4xl md:text-5xl font-bold mb-4",
+      "subtitle": "text-xl md:text-2xl mb-6",
+      "description": "text-lg max-w-2xl ml-auto mb-8"
+    },
+    "split_screen": {
+      "container": "grid grid-cols-1 md:grid-cols-2 gap-8 items-center",
+      "title": "text-3xl md:text-4xl font-bold mb-4",
+      "subtitle": "text-xl md:text-2xl mb-6",
+      "description": "text-lg mb-8"
+    }
+  }
+}

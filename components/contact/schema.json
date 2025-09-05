@@ -1,0 +1,122 @@
+{
+  "component_type": "contact",
+  "name": "Contact Information",
+  "description": "Contact details and social media links",
+  "dataBindings": {
+    "email": "email",
+    "phone": "phone",
+    "website": "website",
+    "linkedin": "linkedin_url",
+    "twitter": "twitter_handle",
+    "instagram": "instagram_handle",
+    "facebook": "facebook_url",
+    "booking_link": "booking_link"
+  },
+  "defaultOptions": {
+    "layout": "horizontal",
+    "showSocial": true,
+    "showBookingButton": true,
+    "iconStyle": "outlined",
+    "alignment": "center"
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "horizontal",
+      "options": {
+        "horizontal": "Horizontal Layout",
+        "vertical": "Vertical Layout",
+        "cards": "Card Layout",
+        "compact": "Compact Layout",
+        "footer": "Footer Style"
+      }
+    },
+    "alignment": {
+      "type": "select",
+      "label": "Alignment",
+      "default": "center",
+      "options": {
+        "left": "Left",
+        "center": "Center",
+        "right": "Right"
+      }
+    },
+    "showSocial": {
+      "type": "boolean",
+      "label": "Show Social Links",
+      "default": true
+    },
+    "showBookingButton": {
+      "type": "boolean",
+      "label": "Show Booking Button",
+      "default": true
+    },
+    "iconStyle": {
+      "type": "select",
+      "label": "Icon Style",
+      "default": "outlined",
+      "options": {
+        "outlined": "Outlined",
+        "filled": "Filled",
+        "rounded": "Rounded",
+        "square": "Square"
+      }
+    },
+    "buttonText": {
+      "type": "text",
+      "label": "Booking Button Text",
+      "default": "Book Now"
+    },
+    "buttonStyle": {
+      "type": "select",
+      "label": "Button Style",
+      "default": "primary",
+      "options": {
+        "primary": "Primary",
+        "secondary": "Secondary",
+        "outline": "Outline",
+        "ghost": "Ghost"
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "layout": "vertical",
+      "alignment": "center"
+    },
+    "tablet": {
+      "layout": "horizontal"
+    }
+  },
+  "layouts": {
+    "horizontal": {
+      "container": "flex flex-wrap gap-6 justify-center",
+      "item": "flex items-center gap-2",
+      "icon": "w-5 h-5",
+      "text": "text-sm"
+    },
+    "vertical": {
+      "container": "flex flex-col gap-4",
+      "item": "flex items-center gap-3",
+      "icon": "w-5 h-5",
+      "text": "text-base"
+    },
+    "cards": {
+      "container": "grid grid-cols-2 md:grid-cols-4 gap-4",
+      "item": "bg-white p-4 rounded-lg text-center",
+      "icon": "w-8 h-8 mx-auto mb-2",
+      "text": "text-sm"
+    },
+    "compact": {
+      "container": "inline-flex flex-wrap gap-3",
+      "item": "text-sm",
+      "separator": "·"
+    },
+    "footer": {
+      "container": "border-t pt-6 mt-6",
+      "socialContainer": "flex gap-4 mb-4",
+      "contactContainer": "text-sm text-gray-600"
+    }
+  }
+}

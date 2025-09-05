@@ -1,0 +1,103 @@
+{
+  "component_type": "biography",
+  "name": "Biography Section",
+  "description": "Guest biography with optional image",
+  "dataBindings": {
+    "bio": "biography",
+    "name": "full_name",
+    "title": "guest_title",
+    "image": "guest_headshot",
+    "quote": "favorite_quote"
+  },
+  "defaultOptions": {
+    "layout": "with_image",
+    "showTitle": true,
+    "maxLength": 500,
+    "imagePosition": "left",
+    "showQuote": false
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Type",
+      "default": "with_image",
+      "options": {
+        "text_only": "Text Only",
+        "with_image": "With Image",
+        "card_style": "Card Style",
+        "timeline": "Timeline Style"
+      }
+    },
+    "imagePosition": {
+      "type": "select",
+      "label": "Image Position",
+      "default": "left",
+      "options": {
+        "left": "Image Left",
+        "right": "Image Right",
+        "top": "Image Top",
+        "background": "Background Image"
+      },
+      "condition": {
+        "field": "layout",
+        "value": "with_image"
+      }
+    },
+    "showTitle": {
+      "type": "boolean",
+      "label": "Show Name & Title",
+      "default": true
+    },
+    "showQuote": {
+      "type": "boolean",
+      "label": "Show Favorite Quote",
+      "default": false
+    },
+    "maxLength": {
+      "type": "number",
+      "label": "Max Characters",
+      "default": 500,
+      "min": 100,
+      "max": 2000,
+      "step": 100
+    },
+    "readMoreText": {
+      "type": "text",
+      "label": "Read More Text",
+      "default": "Read Full Bio"
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "imagePosition": "top",
+      "layout": "text_only"
+    },
+    "tablet": {
+      "imagePosition": "top"
+    }
+  },
+  "layouts": {
+    "text_only": {
+      "container": "prose max-w-4xl mx-auto",
+      "title": "text-2xl font-bold mb-4",
+      "bio": "text-base leading-relaxed"
+    },
+    "with_image": {
+      "container": "flex gap-8 items-start",
+      "imageContainer": "flex-shrink-0",
+      "contentContainer": "flex-1",
+      "title": "text-2xl font-bold mb-4",
+      "bio": "text-base leading-relaxed"
+    },
+    "card_style": {
+      "container": "bg-white rounded-lg shadow-lg p-8",
+      "title": "text-2xl font-bold mb-4",
+      "bio": "text-base leading-relaxed"
+    },
+    "timeline": {
+      "container": "relative pl-8 border-l-2 border-gray-200",
+      "title": "text-2xl font-bold mb-4",
+      "bio": "text-base leading-relaxed"
+    }
+  }
+}

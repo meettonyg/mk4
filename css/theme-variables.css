@@ -1,0 +1,290 @@
+/**
+ * Theme Variables CSS
+ * Phase 4: Theme Layer System
+ * 
+ * CSS custom properties for theming support
+ * These variables are overridden by ThemeManager.js
+ * 
+ * @package GMKB
+ * @since 4.0.0
+ */
+
+/* Default theme variables - fallback values */
+:root {
+  /* Typography */
+  --gmkb-font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --gmkb-font-heading: inherit;
+  --gmkb-font-mono: "SF Mono", Monaco, "Courier New", monospace;
+  
+  /* Font sizes */
+  --gmkb-font-size-xs: 12px;
+  --gmkb-font-size-sm: 14px;
+  --gmkb-font-size-base: 16px;
+  --gmkb-font-size-lg: 18px;
+  --gmkb-font-size-xl: 20px;
+  --gmkb-font-size-2xl: 24px;
+  --gmkb-font-size-3xl: 30px;
+  --gmkb-font-size-4xl: 36px;
+  --gmkb-font-size-5xl: 48px;
+  
+  /* Line heights */
+  --gmkb-line-height-tight: 1.1;
+  --gmkb-line-height-heading: 1.2;
+  --gmkb-line-height-normal: 1.5;
+  --gmkb-line-height-body: 1.6;
+  --gmkb-line-height-relaxed: 1.75;
+  
+  /* Font weights */
+  --gmkb-font-weight-light: 300;
+  --gmkb-font-weight-normal: 400;
+  --gmkb-font-weight-medium: 500;
+  --gmkb-font-weight-semibold: 600;
+  --gmkb-font-weight-bold: 700;
+  --gmkb-font-weight-black: 900;
+  
+  /* Colors */
+  --gmkb-color-primary: #295cff;
+  --gmkb-color-primary-dark: #1c0d5a;
+  --gmkb-color-secondary: #1c0d5a;
+  --gmkb-color-accent: #295cff;
+  --gmkb-color-success: #10b981;
+  --gmkb-color-warning: #f59e0b;
+  --gmkb-color-error: #ef4444;
+  --gmkb-color-info: #3b82f6;
+  
+  /* Text colors */
+  --gmkb-color-text: #1f2937;
+  --gmkb-color-text-light: #6b7280;
+  --gmkb-color-text-muted: #9ca3af;
+  --gmkb-color-text-inverse: #ffffff;
+  
+  /* Background colors */
+  --gmkb-color-background: #ffffff;
+  --gmkb-color-surface: #f9fafb;
+  --gmkb-color-surface-alt: #f3f4f6;
+  --gmkb-color-overlay: rgba(0, 0, 0, 0.5);
+  
+  /* Border colors */
+  --gmkb-color-border: #e5e7eb;
+  --gmkb-color-border-dark: #d1d5db;
+  --gmkb-color-border-light: #f3f4f6;
+  
+  /* Spacing scale */
+  --gmkb-space-0: 0;
+  --gmkb-space-1: 8px;
+  --gmkb-space-2: 16px;
+  --gmkb-space-3: 24px;
+  --gmkb-space-4: 32px;
+  --gmkb-space-5: 40px;
+  --gmkb-space-6: 48px;
+  --gmkb-space-7: 56px;
+  --gmkb-space-8: 64px;
+  --gmkb-space-9: 72px;
+  --gmkb-space-10: 80px;
+  --gmkb-space-11: 88px;
+  --gmkb-space-12: 96px;
+  
+  /* Component gaps */
+  --gmkb-spacing-component-gap: 40px;
+  --gmkb-spacing-section-gap: 80px;
+  --gmkb-spacing-base-unit: 8px;
+  
+  /* Border radius */
+  --gmkb-border-radius-none: 0;
+  --gmkb-border-radius-sm: 4px;
+  --gmkb-border-radius: 8px;
+  --gmkb-border-radius-md: 12px;
+  --gmkb-border-radius-lg: 16px;
+  --gmkb-border-radius-xl: 24px;
+  --gmkb-border-radius-full: 9999px;
+  
+  /* Shadows */
+  --gmkb-shadow-none: none;
+  --gmkb-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --gmkb-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --gmkb-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --gmkb-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --gmkb-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* Transitions */
+  --gmkb-transitions: all 0.3s ease;
+  --gmkb-transition-fast: all 0.15s ease;
+  --gmkb-transition-normal: all 0.3s ease;
+  --gmkb-transition-slow: all 0.5s ease;
+  
+  /* Z-index scale */
+  --gmkb-z-base: 0;
+  --gmkb-z-dropdown: 1000;
+  --gmkb-z-sticky: 1020;
+  --gmkb-z-fixed: 1030;
+  --gmkb-z-modal-backdrop: 1040;
+  --gmkb-z-modal: 1050;
+  --gmkb-z-popover: 1060;
+  --gmkb-z-tooltip: 1070;
+  --gmkb-z-notification: 1080;
+}
+
+/* Dark theme override variables */
+[data-gmkb-theme="modern_dark"] {
+  --gmkb-color-primary: #60a5fa;
+  --gmkb-color-secondary: #818cf8;
+  --gmkb-color-accent: #34d399;
+  --gmkb-color-text: #f3f4f6;
+  --gmkb-color-text-light: #9ca3af;
+  --gmkb-color-text-muted: #6b7280;
+  --gmkb-color-background: #111827;
+  --gmkb-color-surface: #1f2937;
+  --gmkb-color-surface-alt: #374151;
+  --gmkb-color-border: #374151;
+  --gmkb-color-border-dark: #1f2937;
+  --gmkb-color-border-light: #4b5563;
+}
+
+/* Component theming */
+.gmkb-component {
+  font-family: var(--gmkb-font-primary);
+  font-size: var(--gmkb-font-size-base);
+  line-height: var(--gmkb-line-height-body);
+  color: var(--gmkb-color-text);
+}
+
+.gmkb-component__title {
+  font-family: var(--gmkb-font-heading);
+  font-size: var(--gmkb-font-size-2xl);
+  font-weight: var(--gmkb-font-weight-bold);
+  line-height: var(--gmkb-line-height-heading);
+  color: var(--gmkb-color-text);
+  margin-bottom: var(--gmkb-space-3);
+}
+
+.gmkb-component__subtitle {
+  font-size: var(--gmkb-font-size-lg);
+  font-weight: var(--gmkb-font-weight-medium);
+  color: var(--gmkb-color-text-light);
+  margin-bottom: var(--gmkb-space-2);
+}
+
+.gmkb-component__description {
+  font-size: var(--gmkb-font-size-base);
+  line-height: var(--gmkb-line-height-body);
+  color: var(--gmkb-color-text-light);
+  margin-bottom: var(--gmkb-space-4);
+}
+
+/* Button theming */
+.gmkb-btn {
+  font-family: var(--gmkb-font-primary);
+  font-size: var(--gmkb-font-size-base);
+  font-weight: var(--gmkb-font-weight-medium);
+  padding: var(--gmkb-space-2) var(--gmkb-space-4);
+  border-radius: var(--gmkb-border-radius);
+  transition: var(--gmkb-transitions);
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.gmkb-btn--primary {
+  background-color: var(--gmkb-color-primary);
+  color: var(--gmkb-color-text-inverse);
+}
+
+.gmkb-btn--primary:hover {
+  background-color: var(--gmkb-color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--gmkb-shadow-md);
+}
+
+.gmkb-btn--secondary {
+  background-color: var(--gmkb-color-surface);
+  color: var(--gmkb-color-text);
+  border: 1px solid var(--gmkb-color-border);
+}
+
+.gmkb-btn--secondary:hover {
+  background-color: var(--gmkb-color-surface-alt);
+  border-color: var(--gmkb-color-border-dark);
+}
+
+/* Card theming */
+.gmkb-card {
+  background-color: var(--gmkb-color-background);
+  border: 1px solid var(--gmkb-color-border);
+  border-radius: var(--gmkb-border-radius);
+  padding: var(--gmkb-space-4);
+  box-shadow: var(--gmkb-shadow);
+  transition: var(--gmkb-transitions);
+}
+
+.gmkb-card:hover {
+  box-shadow: var(--gmkb-shadow-md);
+}
+
+/* Section theming */
+.gmkb-section {
+  padding: var(--gmkb-spacing-section-gap) 0;
+  background-color: var(--gmkb-color-background);
+}
+
+.gmkb-section--alt {
+  background-color: var(--gmkb-color-surface);
+}
+
+.gmkb-section__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--gmkb-space-3);
+}
+
+/* Form theming */
+.gmkb-input,
+.gmkb-textarea,
+.gmkb-select {
+  font-family: var(--gmkb-font-primary);
+  font-size: var(--gmkb-font-size-base);
+  padding: var(--gmkb-space-2);
+  border: 1px solid var(--gmkb-color-border);
+  border-radius: var(--gmkb-border-radius-sm);
+  background-color: var(--gmkb-color-background);
+  color: var(--gmkb-color-text);
+  transition: var(--gmkb-transitions);
+  width: 100%;
+}
+
+.gmkb-input:focus,
+.gmkb-textarea:focus,
+.gmkb-select:focus {
+  outline: none;
+  border-color: var(--gmkb-color-primary);
+  box-shadow: 0 0 0 3px rgba(41, 92, 255, 0.1);
+}
+
+/* Utility classes for theming */
+.gmkb-text-primary { color: var(--gmkb-color-primary); }
+.gmkb-text-secondary { color: var(--gmkb-color-secondary); }
+.gmkb-text-accent { color: var(--gmkb-color-accent); }
+.gmkb-text-muted { color: var(--gmkb-color-text-muted); }
+
+.gmkb-bg-primary { background-color: var(--gmkb-color-primary); }
+.gmkb-bg-secondary { background-color: var(--gmkb-color-secondary); }
+.gmkb-bg-surface { background-color: var(--gmkb-color-surface); }
+.gmkb-bg-surface-alt { background-color: var(--gmkb-color-surface-alt); }
+
+/* Responsive theming adjustments */
+@media (max-width: 768px) {
+  :root {
+    --gmkb-font-size-base: 14px;
+    --gmkb-spacing-component-gap: 32px;
+    --gmkb-spacing-section-gap: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --gmkb-spacing-component-gap: 24px;
+    --gmkb-spacing-section-gap: 40px;
+  }
+}
