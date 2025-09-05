@@ -6,13 +6,10 @@
  * @package GMKB/UI
  */
 
-/* Component Options Panel */
+/* Component Options Panel - Hidden as it's no longer used */
 .component-options-panel {
-    background: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: none !important;
+    /* Panel removed - component options now integrated into design panel */
 }
 
 .options-panel__header {

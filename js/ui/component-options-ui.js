@@ -26,6 +26,11 @@ class ComponentOptionsUI {
         const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
         if (!componentElement) return;
         
+        // ROOT FIX: Check if component is in a section and preserve that relationship
+        const parentSection = componentElement.closest('.gmkb-section');
+        const parentColumn = componentElement.closest('.gmkb-section__column');
+        const originalParent = componentElement.parentElement;
+        
         const topicsContainer = componentElement.querySelector('.topics-container');
         if (!topicsContainer) return;
         
@@ -62,6 +67,21 @@ class ComponentOptionsUI {
                     <p>No topics found. Click 'Edit' to add your speaking topics.</p>
                 </div>
             `;
+        }
+        
+        // ROOT FIX: Ensure component stays in its section after DOM update
+        // If component was moved out of its section during update, move it back
+        if (parentSection && !componentElement.closest('.gmkb-section')) {
+            // Component was displaced from its section - restore it
+            if (parentColumn) {
+                // It was in a specific column
+                parentColumn.appendChild(componentElement);
+                this.logger.info('UI', `Restored component ${componentId} to its section column`);
+            } else if (originalParent && originalParent.classList.contains('gmkb-section__content')) {
+                // It was in section content area
+                originalParent.appendChild(componentElement);
+                this.logger.info('UI', `Restored component ${componentId} to section content`);
+            }
         }
         
         this.logger.info('UI', `Updated ${topics.length} topics in DOM for ${componentId}`);
@@ -153,47 +173,14 @@ class ComponentOptionsUI {
             return;
         }
         
-        // Create options panel container
-        const optionsPanel = document.createElement('div');
-        optionsPanel.id = 'component-options-panel';
-        optionsPanel.className = 'component-options-panel';
-        optionsPanel.innerHTML = this.getOptionsPanelHTML();
-        
-        // Insert at the top of design tab
-        designTab.insertBefore(optionsPanel, designTab.firstChild);
-        
-        this.logger.info('UI', 'Component options panel created');
+        // Don't create the panel - it's no longer needed
+        // The component options are now integrated directly into the design panel
+        this.logger.info('UI', 'Component options panel creation skipped - using integrated design panel');
     }
     
     getOptionsPanelHTML() {
-        return `
-            <div class="options-panel">
-                <div class="options-panel__header">
-                    <h3 class="options-panel__title">Component Options</h3>
-                </div>
-                
-                <div class="options-panel__content">
-                    <div class="options-panel__no-selection">
-                        <p>Select a component to customize its options</p>
-                    </div>
-                    
-                    <div class="options-panel__form" style="display: none;">
-                        <div class="component-info">
-                            <h4 class="component-info__type"></h4>
-                            <p class="component-info__description"></p>
-                        </div>
-                        
-                        <div class="options-sections"></div>
-                        
-                        <div class="options-panel__actions">
-                            <button type="button" class="btn btn--secondary" id="reset-component-options">
-                                Reset to Defaults
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        // This method is no longer used since we're not creating a separate panel
+        return '';
     }
     
     attachEventListeners() {
@@ -226,48 +213,33 @@ class ComponentOptionsUI {
     }
     
     showComponentOptions(componentId, componentType) {
-        const optionsPanel = document.getElementById('component-options-panel');
-        if (!optionsPanel) return;
-        
-        const noSelectionDiv = optionsPanel.querySelector('.options-panel__no-selection');
-        const formDiv = optionsPanel.querySelector('.options-panel__form');
-        
-        if (noSelectionDiv) noSelectionDiv.style.display = 'none';
-        if (formDiv) formDiv.style.display = 'block';
-        
+        // Component options are now shown directly in the design panel
+        // No need for a separate options panel
         this.updateComponentInfo(componentType);
         this.generateOptionsForm(componentId, componentType);
     }
     
     hideComponentOptions() {
-        const optionsPanel = document.getElementById('component-options-panel');
-        if (!optionsPanel) return;
-        
-        const noSelectionDiv = optionsPanel.querySelector('.options-panel__no-selection');
-        const formDiv = optionsPanel.querySelector('.options-panel__form');
-        
-        if (noSelectionDiv) noSelectionDiv.style.display = 'block';
-        if (formDiv) formDiv.style.display = 'none';
+        // Component options are handled by the design panel
+        // No separate panel to hide
+        this.logger.info('UI', 'Component deselected');
     }
     
     updateComponentInfo(componentType) {
-        if (!this.currentSchema) return;
-        
-        const typeElement = document.querySelector('.component-info__type');
-        const descElement = document.querySelector('.component-info__description');
-        
-        if (typeElement) {
-            typeElement.textContent = this.currentSchema.name || componentType;
-        }
-        
-        if (descElement) {
-            descElement.textContent = this.currentSchema.description || 'Configure component options';
-        }
+        // Component info is now handled directly by the design panel
+        // No separate info section to update
+        this.logger.info('UI', `Component type: ${componentType}`);
     }
     
     generateOptionsForm(componentId, componentType) {
+        // Options form is now integrated into the design panel
+        // The design panel handles all component configuration
         const sectionsContainer = document.querySelector('.options-sections');
-        if (!sectionsContainer) return;
+        if (!sectionsContainer) {
+            // No options sections container - component uses its own panel
+            this.logger.info('UI', `Component ${componentType} uses custom panel`);
+            return;
+        }
         
         const schema = this.currentSchema;
         if (!schema || !schema.componentOptions) {

@@ -1137,29 +1137,38 @@ class SectionRenderer {
     ensureContainersVisible() {
         // Show the main saved components container
         const savedComponentsContainer = document.getElementById('saved-components-container');
-        if (savedComponentsContainer && savedComponentsContainer.style.display === 'none') {
-            savedComponentsContainer.style.display = 'block';
-            this.logger.info('📦 PHASE 3: Made saved-components-container visible for sections');
+        if (savedComponentsContainer) {
+            // Always ensure it's visible when we have sections
+            if (savedComponentsContainer.style.display === 'none' || savedComponentsContainer.style.display === '') {
+                savedComponentsContainer.style.display = 'block';
+                this.logger.info('📦 PHASE 3: Made saved-components-container visible for sections');
+            }
         }
         
         // Show the sections container (this.containerElement)
-        if (this.containerElement && this.containerElement.style.display === 'none') {
-            this.containerElement.style.display = 'block';
-            this.logger.info('📦 PHASE 3: Made sections container visible');
+        if (this.containerElement) {
+            if (this.containerElement.style.display === 'none' || this.containerElement.style.display === '') {
+                this.containerElement.style.display = 'block';
+                this.logger.info('📦 PHASE 3: Made sections container visible');
+            }
         }
         
         // Show the main preview container
         const previewContainer = document.getElementById('media-kit-preview');
-        if (previewContainer && previewContainer.style.display === 'none') {
-            previewContainer.style.display = 'block';
-            this.logger.info('📦 PHASE 3: Made media-kit-preview visible');
+        if (previewContainer) {
+            if (previewContainer.style.display === 'none' || previewContainer.style.display === '') {
+                previewContainer.style.display = 'block';
+                this.logger.info('📦 PHASE 3: Made media-kit-preview visible');
+            }
         }
         
-        // Hide empty state if it exists
+        // Hide empty state if we have sections
         const emptyState = document.getElementById('empty-state');
-        if (emptyState && emptyState.style.display !== 'none') {
-            emptyState.style.display = 'none';
-            this.logger.info('🚫 PHASE 3: Hidden empty state for sections');
+        if (emptyState && this.renderedSections.size > 0) {
+            if (emptyState.style.display !== 'none') {
+                emptyState.style.display = 'none';
+                this.logger.info('🚫 PHASE 3: Hidden empty state for sections');
+            }
         }
     }
     
