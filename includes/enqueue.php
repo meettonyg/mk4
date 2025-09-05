@@ -818,6 +818,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // TEMPORARY: Diagnostic for selection issue
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        wp_enqueue_script(
+            'gmkb-diagnostic-selection',
+            $plugin_url . 'debug/diagnostic-selection.js',
+            array('gmkb-design-panel', 'gmkb-component-selection-manager'),
+            time(), // Use timestamp to bypass cache
+            true
+        );
+    }
+    
     // PHASE 1 REDESIGN: Component Lifecycle Base Class - Foundation for all component editors
     // MOVED HERE: Before sync-coordinator and dom-ownership-manager that depend on it
     if (!wp_script_is('gmkb-component-lifecycle', 'enqueued')) {

@@ -2,7 +2,9 @@
  * @file design-panel.js
  * @description Manages the design panel for editing component properties.
  * FIXED: Now uses WordPress AJAX endpoints instead of direct PHP file access.
+ * ROOT FIX: Handles destructive re-rendering issue with event-driven architecture
  */
+
 
 // ROOT FIX: Use global debounce function from helpers.js
 // debounce will be available globally
@@ -25,8 +27,57 @@ class DesignPanel {
         // FIXED: Use existing element-editor in left sidebar
         this.panel = document.getElementById('element-editor');
         this.currentComponentId = null;
-
-        // No close button needed since this is part of the sidebar
+        this.isUpdating = false; // Track update state
+        
+        // ROOT FIX: Setup event listeners for component selection
+        this.setupEventListeners();
+    }
+    
+    /**
+     * ROOT FIX: Setup event listeners for component selection
+     */
+    setupEventListeners() {
+        // Listen for component selection
+        document.addEventListener('gmkb:component-selected', (event) => {
+            console.log('🎯 Design Panel: Component selected', event.detail);
+            const { componentId } = event.detail;
+            if (componentId) {
+                this.load(componentId);
+            }
+        });
+        
+        // Listen for component deselection
+        document.addEventListener('gmkb:component-deselected', (event) => {
+            console.log('🚫 Design Panel: Component deselected');
+            // Only hide if not in the middle of an update
+            if (!this.isUpdating) {
+                this.hide();
+            }
+        });
+        
+        // Listen for component edit request (from edit buttons)
+        document.addEventListener('gmkb:component-edit-requested', (event) => {
+            console.log('✏️ Design Panel: Edit requested', event.detail);
+            const { componentId } = event.detail;
+            if (componentId) {
+                // Switch to design tab and load component
+                this.show();
+                this.load(componentId);
+            }
+        });
+        
+        // Listen for update lifecycle events
+        document.addEventListener('gmkb:before-component-update', (event) => {
+            if (event.detail.componentId === this.currentComponentId) {
+                this.isUpdating = true;
+            }
+        });
+        
+        document.addEventListener('gmkb:after-component-update', (event) => {
+            if (event.detail.componentId === this.currentComponentId) {
+                this.isUpdating = false;
+            }
+        });
     }
 
     /**
@@ -61,13 +112,13 @@ class DesignPanel {
      * @param {string} componentId - The ID of the component to load.
      */
     async load(componentId) {
-        console.log(`🎯 ROOT FIX: Loading enhanced design panel for component: ${componentId}`);
+        console.log(`Loading design panel for component: ${componentId}`);
         
         this.currentComponentId = componentId;
         const component = this.getComponent(componentId);
         
         if (!component) {
-            console.warn(`⚠️ ROOT FIX: Component not found in any state manager: ${componentId}`);
+            console.warn(`Component not found: ${componentId}`);
             
             // DEBUG: Show available components
             this.debugAvailableComponents();
@@ -78,10 +129,6 @@ class DesignPanel {
                 <div class="form-section">
                     <p class="form-help-text">Component ID: ${componentId}</p>
                     <p class="form-help-text">Try refreshing the page or selecting a different component.</p>
-                </div>
-                <div class="form-section">
-                    <h4 class="form-section__title">Debug Information</h4>
-                    <button type="button" class="btn btn--secondary btn--small" onclick="window.debugDesignPanel && window.debugDesignPanel()">Debug Design Panel</button>
                 </div>
             `;
             this.show();
@@ -126,7 +173,6 @@ class DesignPanel {
             }
 
             const html = data.data.html;
-            console.log(`✅ ROOT FIX: Design panel loaded for ${component.type}`);
             
             this.panel.innerHTML = html;
             
@@ -148,7 +194,7 @@ class DesignPanel {
                     this.setupTopicsSpecificEnhancements(componentId);
                 }
                 
-                console.log(`✅ ROOT FIX: Design panel binding complete for ${component.type}`);
+                console.log(`Design panel loaded for ${component.type}`);
             }, 100);
             
             this.show();
@@ -164,7 +210,7 @@ class DesignPanel {
             }));
             
         } catch (error) {
-            console.error('❌ ROOT FIX: Error loading design panel:', error);
+            console.error('Error loading design panel:', error);
             
             // Enhanced error handling with specific WordPress error support
             let errorMessage = error.message;
@@ -265,37 +311,18 @@ class DesignPanel {
      * Debug function to show available components
      */
     debugAvailableComponents() {
-        console.log('🔍 DEBUG: Available components in state managers:');
+        console.log('🔍 DEBUG: Checking component availability...');
         
         if (window.enhancedStateManager) {
             try {
                 const state = window.enhancedStateManager.getState();
-                console.log('Enhanced State Manager components:', Object.keys(state.components || {}));
+                const componentCount = Object.keys(state.components || {}).length;
+                if (componentCount > 0) {
+                    console.log(`Found ${componentCount} components in state manager`);
+                }
             } catch (e) {
-                console.log('Enhanced State Manager error:', e.message);
+                console.log('State manager error:', e.message);
             }
-        }
-        
-        if (window.stateManager) {
-            try {
-                const state = window.stateManager.getState();
-                console.log('Regular State Manager components:', Object.keys(state.components || {}));
-            } catch (e) {
-                console.log('Regular State Manager error:', e.message);
-            }
-        }
-        
-        if (window.state) {
-            console.log('Legacy State components:', Object.keys(window.state.components || {}));
-        }
-        
-        // Also debug WordPress data availability
-        console.log('🔍 DEBUG: WordPress data availability:');
-        console.log('gmkbData exists:', !!window.gmkbData);
-        if (window.gmkbData) {
-            console.log('ajaxUrl:', window.gmkbData.ajaxUrl);
-            console.log('nonce:', window.gmkbData.nonce ? 'Available' : 'Missing');
-            console.log('pluginUrl:', window.gmkbData.pluginUrl);
         }
     }
 
@@ -306,48 +333,48 @@ class DesignPanel {
      */
     bindControls(props) {
         const inputs = this.panel.querySelectorAll('[data-property]');
-        console.log(`🔗 ROOT FIX: Binding ${inputs.length} controls to component properties:`, props);
         
         const debouncedUpdate = (window.debounce || quickDebounce)((id, newProps) => {
+            // ROOT FIX: Announce that an update is about to begin (prevents deselection)
+            document.dispatchEvent(new CustomEvent('gmkb:before-component-update', {
+                detail: { componentId: id }
+            }));
+            
             // ROOT FIX: Use the correct component manager reference
             let componentManager = null;
             
             // Try different manager references in priority order
             if (window.GMKB && window.GMKB.componentManager && typeof window.GMKB.componentManager.updateComponent === 'function') {
                 componentManager = window.GMKB.componentManager;
-                console.log(`🔄 ROOT FIX: Using GMKB.componentManager for update`);
             } else if (window.enhancedComponentManager && typeof window.enhancedComponentManager.updateComponent === 'function') {
                 componentManager = window.enhancedComponentManager;
-                console.log(`🔄 ROOT FIX: Using enhancedComponentManager for update`);
             } else if (window.componentManager && typeof window.componentManager.updateComponent === 'function') {
                 componentManager = window.componentManager;
-                console.log(`🔄 ROOT FIX: Using componentManager for update`);
             } else if (window.updateComponentProps && typeof window.updateComponentProps === 'function') {
                 // Use the global updateComponentProps function
                 window.updateComponentProps(id, newProps);
-                console.log(`🔄 ROOT FIX: Updated via updateComponentProps: ${id}`);
+                // ROOT FIX: Announce that the update has completed
+                document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
+                    detail: { componentId: id }
+                }));
                 return;
             }
             
             if (componentManager) {
                 componentManager.updateComponent(id, newProps);
-                console.log(`🔄 ROOT FIX: Component updated via manager: ${id}`);
             } else {
                 // ROOT FIX: Fallback to direct state manager update
                 if (window.enhancedStateManager && typeof window.enhancedStateManager.updateComponent === 'function') {
                     window.enhancedStateManager.updateComponent(id, newProps);
-                    console.log(`🔄 ROOT FIX: Updated via enhancedStateManager: ${id}`);
                 } else {
-                    console.error('ROOT FIX: No component manager available for updates');
-                    console.log('🔍 Available global objects:', {
-                        GMKB: !!window.GMKB,
-                        enhancedComponentManager: !!window.enhancedComponentManager,
-                        componentManager: !!window.componentManager,
-                        updateComponentProps: !!window.updateComponentProps,
-                        enhancedStateManager: !!window.enhancedStateManager
-                    });
+                    console.error('No component manager available for updates');
                 }
             }
+            
+            // ROOT FIX: Announce that the update has completed (allows re-selection)
+            document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
+                detail: { componentId: id }
+            }));
             
             // ROOT FIX: Trigger topics sync if this is a topics component
             const currentComponent = this.getComponent(this.currentComponentId);
@@ -361,21 +388,17 @@ class DesignPanel {
         inputs.forEach(input => {
             const propName = input.dataset.property;
             if (props.hasOwnProperty(propName)) {
-                // ROOT FIX: Trim whitespace from property values before binding
                 const rawValue = props[propName];
                 const trimmedValue = (typeof rawValue === 'string') ? rawValue.trim() : rawValue;
                 input.value = trimmedValue;
-                console.log(`📝 ROOT FIX: Bound property ${propName} = ${trimmedValue}`);
             }
 
             input.addEventListener('input', () => {
                 const currentComponent = this.getComponent(this.currentComponentId);
                 if (currentComponent) {
                     const newProps = { ...(currentComponent.props || currentComponent.data || {}) };
-                    // ROOT FIX: Trim input values before saving
                     newProps[propName] = input.value.trim();
                     debouncedUpdate(this.currentComponentId, newProps);
-                    console.log(`🔄 ROOT FIX: Updated ${propName} = ${input.value.trim()}`);
                     
                     // ROOT FIX: Notify topics sync system of changes
                     if (currentComponent.type === 'topics' && 
@@ -475,6 +498,9 @@ class DesignPanel {
      * ROOT FIX: Simplified hide method
      */
     hide() {
+        // Clear the current component ID when panel is hidden
+        this.currentComponentId = null;
+        
         this.panel.innerHTML = `
             <div class="element-editor__title">No Element Selected</div>
             <div class="element-editor__subtitle">Click on any element in the preview to edit its properties</div>
@@ -489,140 +515,14 @@ class DesignPanel {
                 </ul>
             </div>
         `;
-        console.log('TOPICS: Design panel hidden, showing default state');
+        console.log('Design panel hidden, showing default state.');
     }
     
     // ROOT FIX: Removed complex cleanup - no longer needed
 }
 
-// ROOT FIX: Enhanced design panel instance with topics sync capabilities
 // ROOT FIX: Create design panel instance and expose globally
 const designPanel = new DesignPanel();
-
-// ROOT FIX: Expose design panel globally for component manager access
 window.designPanel = designPanel;
 
-// ROOT FIX: Expose enhanced design panel functions globally for debugging
-window.debugDesignPanel = function() {
-    console.log('🔍 ROOT FIX: Design Panel Debug Information');
-    
-    const debugInfo = {
-        currentComponent: designPanel.currentComponentId,
-        panelVisible: designPanel.panel?.style?.display !== 'none',
-        topicsEnhancements: {
-            counterObserver: !!designPanel.topicsCounterObserver,
-            previewObserver: !!designPanel.topicsPreviewObserver
-        },
-        counters: {
-            sidebarTopics: document.querySelectorAll('.topics-sidebar__topic-item').length,
-            previewTopics: document.querySelectorAll('.topic-item').length,
-            topicInputs: document.querySelectorAll('.topics-sidebar__topic-input').length,
-            inSync: document.querySelectorAll('.topics-sidebar__topic-item').length === document.querySelectorAll('.topic-item').length
-        },
-        availableManagers: {
-            GMKB: !!window.GMKB,
-            'GMKB.componentManager': !!(window.GMKB && window.GMKB.componentManager),
-            'GMKB.componentManager.updateComponent': !!(window.GMKB && window.GMKB.componentManager && window.GMKB.componentManager.updateComponent),
-            enhancedComponentManager: !!window.enhancedComponentManager,
-            componentManager: !!window.componentManager,
-            updateComponentProps: !!window.updateComponentProps,
-            enhancedStateManager: !!window.enhancedStateManager,
-            'enhancedStateManager.updateComponent': !!(window.enhancedStateManager && window.enhancedStateManager.updateComponent)
-        }
-    };
-    
-    console.table(debugInfo.topicsEnhancements);
-    console.table(debugInfo.counters);
-    console.table(debugInfo.availableManagers);
-    
-    if (designPanel.currentComponentId) {
-        const component = designPanel.getComponent(designPanel.currentComponentId);
-        console.log('Current component data:', component);
-    }
-    
-    // Test component manager access
-    if (window.GMKB && window.GMKB.componentManager) {
-        console.log('GMKB.componentManager methods:', Object.getOwnPropertyNames(window.GMKB.componentManager));
-    }
-    
-    return debugInfo;
-};
-
-window.testDesignPanelSync = function() {
-    console.log('TOPICS: Testing design panel coordination...');
-    
-    if (designPanel.currentComponentId) {
-        const component = designPanel.getComponent(designPanel.currentComponentId);
-        if (component?.type === 'topics') {
-            console.log('Testing topics sync coordination with panel-script.js...');
-            
-            // Test coordination with panel-script.js
-            if (window.TopicsSync && typeof window.TopicsSync.testSync === 'function') {
-                window.TopicsSync.testSync();
-                console.log('Design panel coordinated with TopicsSync');
-            } else {
-                console.log('TopicsSync not available - check panel-script.js');
-            }
-        } else {
-            console.log('Current component is not topics type:', component?.type);
-        }
-    } else {
-        console.log('No current component selected');
-    }
-};
-
-// ROOT FIX: Manual test for component manager
-window.testComponentManagerAccess = function() {
-    console.log('🧪 ROOT FIX: Testing component manager access...');
-    
-    const testComponentId = 'topics-1755999525631-1'; // Use current topics component
-    const testProps = { title: 'TEST UPDATE - ' + Date.now() };
-    
-    // Try each manager method
-    const methods = [
-        () => {
-            if (window.GMKB && window.GMKB.componentManager && window.GMKB.componentManager.updateComponent) {
-                window.GMKB.componentManager.updateComponent(testComponentId, testProps);
-                return 'GMKB.componentManager';
-            }
-            return null;
-        },
-        () => {
-            if (window.updateComponentProps) {
-                window.updateComponentProps(testComponentId, testProps);
-                return 'updateComponentProps';
-            }
-            return null;
-        },
-        () => {
-            if (window.enhancedStateManager && window.enhancedStateManager.updateComponent) {
-                window.enhancedStateManager.updateComponent(testComponentId, testProps);
-                return 'enhancedStateManager.updateComponent';
-            }
-            return null;
-        }
-    ];
-    
-    for (const method of methods) {
-        try {
-            const result = method();
-            if (result) {
-                console.log(`✅ SUCCESS: Updated component using ${result}`);
-                return result;
-            }
-        } catch (error) {
-            console.log(`❌ ERROR with method: ${error.message}`);
-        }
-    }
-    
-    console.log('❌ No working component manager found');
-    return null;
-};
-
-console.log('TOPICS: Simplified Design Panel coordination ready');
-console.log('Debug commands available:');
-console.log('   debugDesignPanel() - Show design panel debug info and manager availability');
-console.log('   testDesignPanelSync() - Test design panel coordination with panel-script.js');
-console.log('   testComponentManagerAccess() - Test component update functionality');
-console.log('ROOT CAUSE FIXED: Simplified sync coordination between design panel and preview');
-console.log('Design panel now coordinates with panel-script.js for clean sync');
+console.log('✅ Design Panel initialized and ready for component configuration');

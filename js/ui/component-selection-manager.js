@@ -13,6 +13,7 @@ class ComponentSelectionManager {
         this.logger = window.structuredLogger || console;
         this.selectedComponentId = null;
         this.selectedElement = null;
+        this.isUpdating = false; // ROOT FIX: Track update state to prevent deselection
         
         this.logger.info('UI', '🎯 [PHASE 2] ComponentSelectionManager initializing');
         this.init();
@@ -25,11 +26,34 @@ class ComponentSelectionManager {
         // Listen for component rendered events to attach selection handlers
         document.addEventListener('gmkb:component-rendered', (event) => {
             this.attachSelectionHandler(event.detail.element, event.detail.componentId);
+            
+            // ROOT FIX: If this is the component being updated, restore selection
+            if (this.isUpdating && event.detail.componentId === this.selectedComponentId) {
+                this.restoreSelection(event.detail.componentId);
+            }
         });
         
         // Listen for component updated events
         document.addEventListener('gmkb:component-updated', (event) => {
             this.attachSelectionHandler(event.detail.element, event.detail.componentId);
+        });
+        
+        // ROOT FIX: Listen for update lifecycle events
+        document.addEventListener('gmkb:before-component-update', (event) => {
+            if (event.detail.componentId === this.selectedComponentId) {
+                this.isUpdating = true;
+                this.logger.debug('UI', `🔄 [PHASE 2] Component update starting for ${event.detail.componentId}`);
+            }
+        });
+        
+        document.addEventListener('gmkb:after-component-update', (event) => {
+            if (event.detail.componentId === this.selectedComponentId) {
+                // Restore selection after a brief delay to ensure DOM is updated
+                setTimeout(() => {
+                    this.restoreSelection(event.detail.componentId);
+                    this.isUpdating = false;
+                }, 50);
+            }
         });
         
         // Listen for clicks outside components to deselect
@@ -116,6 +140,12 @@ class ComponentSelectionManager {
      * Deselect current component
      */
     deselectCurrentComponent() {
+        // ROOT FIX: Don't deselect if we're in the middle of an update
+        if (this.isUpdating) {
+            this.logger.debug('UI', '🛑 [PHASE 2] Skipping deselection during update');
+            return;
+        }
+        
         if (this.selectedElement) {
             this.selectedElement.classList.remove('selected', 'gmkb-component--selected');
         }
@@ -191,13 +221,41 @@ class ComponentSelectionManager {
     }
     
     /**
+     * ROOT FIX: Restore selection after component update
+     */
+    restoreSelection(componentId) {
+        const element = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (element) {
+            this.selectedElement = element;
+            element.classList.add('selected', 'gmkb-component--selected');
+            this.attachSelectionHandler(element, componentId);
+            
+            // Re-dispatch selection event to ensure design panel stays open
+            document.dispatchEvent(new CustomEvent('gmkb:component-selected', {
+                detail: {
+                    componentId,
+                    componentType: element.dataset.componentType || element.getAttribute('data-component-type'),
+                    element,
+                    timestamp: Date.now(),
+                    isRestoration: true
+                }
+            }));
+            
+            this.logger.debug('UI', `🔄 [PHASE 2] Restored selection after update: ${componentId}`);
+        } else {
+            this.logger.warn('UI', `⚠️ [PHASE 2] Could not restore selection - element not found: ${componentId}`);
+        }
+    }
+    
+    /**
      * Debug method
      */
     getDebugInfo() {
         return {
             selectedComponentId: this.selectedComponentId,
             selectedElement: this.selectedElement?.id,
-            hasSelection: !!this.selectedComponentId
+            hasSelection: !!this.selectedComponentId,
+            isUpdating: this.isUpdating
         };
     }
 }
