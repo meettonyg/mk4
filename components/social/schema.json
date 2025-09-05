@@ -1,0 +1,142 @@
+{
+  "component_type": "social",
+  "name": "Social Media Links",
+  "description": "Display social media profiles and links",
+  "dataBindings": {
+    "facebook": "facebook_url",
+    "twitter": "twitter_handle",
+    "instagram": "instagram_handle",
+    "linkedin": "linkedin_url",
+    "youtube": "youtube_url",
+    "tiktok": "tiktok_handle",
+    "website": "website",
+    "email": "email"
+  },
+  "defaultOptions": {
+    "layout": "horizontal",
+    "iconStyle": "filled",
+    "iconSize": "medium",
+    "showLabels": false,
+    "openInNewTab": true,
+    "alignment": "center",
+    "hoverEffect": "scale"
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "horizontal",
+      "options": {
+        "horizontal": "Horizontal Row",
+        "vertical": "Vertical Stack",
+        "grid": "Grid Layout",
+        "floating": "Floating Buttons",
+        "circle": "Circle Layout"
+      }
+    },
+    "iconStyle": {
+      "type": "select",
+      "label": "Icon Style",
+      "default": "filled",
+      "options": {
+        "filled": "Filled Icons",
+        "outline": "Outline Icons",
+        "minimal": "Minimal Icons",
+        "branded": "Brand Colors",
+        "gradient": "Gradient"
+      }
+    },
+    "iconSize": {
+      "type": "select",
+      "label": "Icon Size",
+      "default": "medium",
+      "options": {
+        "small": "Small (24px)",
+        "medium": "Medium (32px)",
+        "large": "Large (48px)",
+        "extra_large": "Extra Large (64px)"
+      }
+    },
+    "showLabels": {
+      "type": "boolean",
+      "label": "Show Platform Labels",
+      "default": false
+    },
+    "openInNewTab": {
+      "type": "boolean",
+      "label": "Open in New Tab",
+      "default": true
+    },
+    "alignment": {
+      "type": "select",
+      "label": "Alignment",
+      "default": "center",
+      "options": {
+        "left": "Left Aligned",
+        "center": "Center Aligned",
+        "right": "Right Aligned",
+        "justified": "Justified"
+      }
+    },
+    "hoverEffect": {
+      "type": "select",
+      "label": "Hover Effect",
+      "default": "scale",
+      "options": {
+        "none": "No Effect",
+        "scale": "Scale Up",
+        "bounce": "Bounce",
+        "rotate": "Rotate",
+        "glow": "Glow Effect",
+        "flip": "Flip"
+      }
+    },
+    "spacing": {
+      "type": "number",
+      "label": "Icon Spacing",
+      "default": 16,
+      "min": 8,
+      "max": 48,
+      "step": 4
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "iconSize": "small",
+      "layout": "horizontal",
+      "spacing": 12
+    },
+    "tablet": {
+      "iconSize": "medium"
+    }
+  },
+  "layouts": {
+    "horizontal": {
+      "container": "flex flex-wrap gap-4 items-center",
+      "item": "flex items-center justify-center",
+      "icon": "transition-all duration-300"
+    },
+    "vertical": {
+      "container": "flex flex-col gap-4",
+      "item": "flex items-center gap-3",
+      "icon": "transition-all duration-300",
+      "label": "text-sm"
+    },
+    "grid": {
+      "container": "grid grid-cols-3 gap-4",
+      "item": "flex flex-col items-center text-center",
+      "icon": "mb-2",
+      "label": "text-xs"
+    },
+    "floating": {
+      "container": "fixed bottom-4 right-4 flex flex-col gap-2",
+      "item": "rounded-full shadow-lg",
+      "icon": "p-3"
+    },
+    "circle": {
+      "container": "relative rounded-full",
+      "item": "absolute transform",
+      "icon": "rounded-full p-2"
+    }
+  }
+}

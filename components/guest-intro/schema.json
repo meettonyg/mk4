@@ -1,0 +1,162 @@
+{
+  "component_type": "guest-intro",
+  "name": "Guest Introduction",
+  "description": "Brief introduction section for guest appearances",
+  "dataBindings": {
+    "title": "intro_title",
+    "subtitle": "guest_title",
+    "description": "guest_intro",
+    "image": "guest_headshot",
+    "company": "company_name",
+    "role": "professional_title",
+    "tagline": "tagline"
+  },
+  "defaultOptions": {
+    "layout": "side_by_side",
+    "showImage": true,
+    "imagePosition": "left",
+    "imageShape": "rounded",
+    "textAlignment": "left",
+    "colorScheme": "blue",
+    "showTagline": true
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "side_by_side",
+      "options": {
+        "side_by_side": "Side by Side",
+        "stacked": "Stacked",
+        "text_only": "Text Only",
+        "card": "Card Layout",
+        "hero": "Hero Style"
+      }
+    },
+    "showImage": {
+      "type": "boolean",
+      "label": "Show Guest Image",
+      "default": true
+    },
+    "imagePosition": {
+      "type": "select",
+      "label": "Image Position",
+      "default": "left",
+      "options": {
+        "left": "Left",
+        "right": "Right",
+        "top": "Top",
+        "background": "Background"
+      },
+      "condition": {
+        "field": "showImage",
+        "value": true
+      }
+    },
+    "imageShape": {
+      "type": "select",
+      "label": "Image Shape",
+      "default": "rounded",
+      "options": {
+        "square": "Square",
+        "rounded": "Rounded",
+        "circle": "Circle",
+        "hexagon": "Hexagon"
+      },
+      "condition": {
+        "field": "showImage",
+        "value": true
+      }
+    },
+    "textAlignment": {
+      "type": "select",
+      "label": "Text Alignment",
+      "default": "left",
+      "options": {
+        "left": "Left",
+        "center": "Center",
+        "right": "Right"
+      }
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Friendly Green",
+        "neutral": "Neutral Gray",
+        "gradient": "Gradient",
+        "dark": "Dark Theme"
+      }
+    },
+    "showTagline": {
+      "type": "boolean",
+      "label": "Show Tagline",
+      "default": true
+    },
+    "showCompanyRole": {
+      "type": "boolean",
+      "label": "Show Company & Role",
+      "default": true
+    },
+    "backgroundStyle": {
+      "type": "select",
+      "label": "Background Style",
+      "default": "none",
+      "options": {
+        "none": "None",
+        "subtle": "Subtle Pattern",
+        "gradient": "Gradient",
+        "image": "Background Image"
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "layout": "stacked",
+      "imagePosition": "top",
+      "textAlignment": "center"
+    },
+    "tablet": {
+      "layout": "side_by_side"
+    }
+  },
+  "layouts": {
+    "side_by_side": {
+      "container": "flex gap-8 items-center",
+      "imageContainer": "flex-shrink-0",
+      "contentContainer": "flex-1",
+      "title": "text-3xl font-bold mb-2",
+      "subtitle": "text-xl text-gray-600 mb-4",
+      "description": "text-base leading-relaxed"
+    },
+    "stacked": {
+      "container": "text-center",
+      "imageContainer": "mb-6",
+      "title": "text-3xl font-bold mb-2",
+      "subtitle": "text-xl text-gray-600 mb-4",
+      "description": "text-base leading-relaxed max-w-2xl mx-auto"
+    },
+    "text_only": {
+      "container": "max-w-3xl",
+      "title": "text-3xl font-bold mb-2",
+      "subtitle": "text-xl text-gray-600 mb-4",
+      "description": "text-base leading-relaxed"
+    },
+    "card": {
+      "container": "bg-white rounded-lg shadow-lg p-8",
+      "imageContainer": "mb-4",
+      "title": "text-2xl font-bold mb-2",
+      "subtitle": "text-lg text-gray-600 mb-3",
+      "description": "text-base"
+    },
+    "hero": {
+      "container": "relative py-16 px-8",
+      "backgroundOverlay": "absolute inset-0 bg-gradient-to-r opacity-90",
+      "content": "relative z-10",
+      "title": "text-4xl md:text-5xl font-bold mb-4",
+      "description": "text-lg md:text-xl"
+    }
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "component_type": "photo-gallery",
+  "name": "Photo Gallery",
+  "description": "Display image gallery or portfolio",
+  "dataBindings": {
+    "images": "gallery_images",
+    "image_1": "gallery_image_1",
+    "image_2": "gallery_image_2",
+    "image_3": "gallery_image_3",
+    "image_4": "gallery_image_4",
+    "image_5": "gallery_image_5",
+    "image_6": "gallery_image_6",
+    "title": "gallery_title",
+    "subtitle": "gallery_subtitle"
+  },
+  "defaultOptions": {
+    "layout": "masonry",
+    "columns": 3,
+    "lightbox": true,
+    "showCaptions": false,
+    "imageSpacing": 16,
+    "borderRadius": 8,
+    "hoverEffect": "zoom"
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "masonry",
+      "options": {
+        "masonry": "Masonry Grid",
+        "grid": "Equal Grid",
+        "carousel": "Image Carousel",
+        "mosaic": "Mosaic Layout",
+        "stack": "Stacked Cards"
+      }
+    },
+    "columns": {
+      "type": "number",
+      "label": "Number of Columns",
+      "default": 3,
+      "min": 2,
+      "max": 5,
+      "condition": {
+        "field": "layout",
+        "value": ["masonry", "grid", "mosaic"]
+      }
+    },
+    "lightbox": {
+      "type": "boolean",
+      "label": "Enable Lightbox",
+      "default": true
+    },
+    "showCaptions": {
+      "type": "boolean",
+      "label": "Show Image Captions",
+      "default": false
+    },
+    "imageSpacing": {
+      "type": "number",
+      "label": "Image Spacing (px)",
+      "default": 16,
+      "min": 0,
+      "max": 32,
+      "step": 4
+    },
+    "borderRadius": {
+      "type": "number",
+      "label": "Border Radius (px)",
+      "default": 8,
+      "min": 0,
+      "max": 24,
+      "step": 4
+    },
+    "hoverEffect": {
+      "type": "select",
+      "label": "Hover Effect",
+      "default": "zoom",
+      "options": {
+        "none": "No Effect",
+        "zoom": "Zoom In",
+        "fade": "Fade Overlay",
+        "slide": "Slide Caption",
+        "blur": "Blur Background"
+      }
+    },
+    "aspectRatio": {
+      "type": "select",
+      "label": "Aspect Ratio",
+      "default": "auto",
+      "options": {
+        "auto": "Auto (Original)",
+        "square": "Square (1:1)",
+        "landscape": "Landscape (16:9)",
+        "portrait": "Portrait (3:4)"
+      },
+      "condition": {
+        "field": "layout",
+        "value": "grid"
+      }
+    },
+    "maxImages": {
+      "type": "number",
+      "label": "Maximum Images",
+      "default": 12,
+      "min": 1,
+      "max": 30
+    },
+    "filterable": {
+      "type": "boolean",
+      "label": "Enable Category Filters",
+      "default": false
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "columns": 2,
+      "imageSpacing": 8,
+      "layout": "grid"
+    },
+    "tablet": {
+      "columns": 3,
+      "imageSpacing": 12
+    }
+  },
+  "layouts": {
+    "masonry": {
+      "container": "columns-1 md:columns-2 lg:columns-3 gap-4",
+      "item": "break-inside-avoid mb-4",
+      "image": "w-full rounded"
+    },
+    "grid": {
+      "container": "grid gap-4",
+      "item": "relative overflow-hidden",
+      "image": "w-full h-full object-cover"
+    },
+    "carousel": {
+      "container": "relative overflow-hidden",
+      "track": "flex transition-transform duration-500",
+      "item": "flex-shrink-0",
+      "controls": "absolute inset-y-0 flex items-center justify-between w-full"
+    },
+    "mosaic": {
+      "container": "grid grid-cols-4 grid-rows-3 gap-4",
+      "item": "relative",
+      "featured": "col-span-2 row-span-2"
+    },
+    "stack": {
+      "container": "space-y-4",
+      "item": "relative transform transition-transform hover:scale-105",
+      "image": "w-full rounded shadow-lg"
+    }
+  }
+}

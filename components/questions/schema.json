@@ -1,0 +1,102 @@
+{
+  "component_type": "questions",
+  "name": "Questions",
+  "description": "Frequently asked questions and interview questions section",
+  "dataBindings": {
+    "questions": "faq_questions",
+    "question_1": "1_question_1",
+    "question_2": "1_question_2",
+    "question_3": "1_question_3",
+    "question_4": "1_question_4",
+    "question_5": "1_question_5",
+    "title": "faq_title"
+  },
+  "defaultOptions": {
+    "layout": "accordion",
+    "showIcon": true,
+    "expandFirst": false,
+    "allowMultiple": false,
+    "colorScheme": "blue"
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "accordion",
+      "options": {
+        "accordion": "Accordion",
+        "cards": "Cards",
+        "list": "Simple List",
+        "tabs": "Tabbed View"
+      }
+    },
+    "showIcon": {
+      "type": "boolean",
+      "label": "Show Expand/Collapse Icons",
+      "default": true
+    },
+    "expandFirst": {
+      "type": "boolean",
+      "label": "Expand First Question",
+      "default": false
+    },
+    "allowMultiple": {
+      "type": "boolean",
+      "label": "Allow Multiple Open",
+      "default": false
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "neutral": "Neutral Gray",
+        "gradient": "Gradient",
+        "minimal": "Minimal"
+      }
+    },
+    "maxQuestions": {
+      "type": "number",
+      "label": "Maximum Questions",
+      "default": 10,
+      "min": 1,
+      "max": 25
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "layout": "accordion",
+      "allowMultiple": false
+    },
+    "tablet": {
+      "layout": "accordion"
+    }
+  },
+  "layouts": {
+    "accordion": {
+      "container": "space-y-2",
+      "item": "border rounded-lg overflow-hidden",
+      "question": "p-4 font-semibold cursor-pointer hover:bg-gray-50",
+      "answer": "px-4 pb-4 text-gray-600"
+    },
+    "cards": {
+      "container": "grid gap-4",
+      "item": "bg-white rounded-lg shadow-sm p-6",
+      "question": "text-lg font-semibold mb-3",
+      "answer": "text-gray-600"
+    },
+    "list": {
+      "container": "space-y-6",
+      "item": "border-b pb-4",
+      "question": "text-lg font-semibold mb-2",
+      "answer": "text-gray-600"
+    },
+    "tabs": {
+      "container": "border rounded-lg",
+      "tabList": "flex border-b",
+      "tab": "px-4 py-2 cursor-pointer hover:bg-gray-50",
+      "tabPanel": "p-4"
+    }
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "component_type": "stats",
+  "name": "Statistics",
+  "description": "Display key statistics and achievements",
+  "dataBindings": {
+    "stats": "statistics",
+    "stat_1_value": "stat_1_value",
+    "stat_1_label": "stat_1_label",
+    "stat_2_value": "stat_2_value",
+    "stat_2_label": "stat_2_label",
+    "stat_3_value": "stat_3_value",
+    "stat_3_label": "stat_3_label",
+    "stat_4_value": "stat_4_value",
+    "stat_4_label": "stat_4_label",
+    "title": "stats_title",
+    "subtitle": "stats_subtitle"
+  },
+  "defaultOptions": {
+    "layout": "grid",
+    "showIcons": true,
+    "animateNumbers": true,
+    "columns": 4,
+    "colorScheme": "blue",
+    "numberFormat": "standard"
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": {
+        "grid": "Grid Layout",
+        "horizontal": "Horizontal Row",
+        "vertical": "Vertical Stack",
+        "cards": "Card Layout",
+        "circle": "Circle Progress"
+      }
+    },
+    "columns": {
+      "type": "number",
+      "label": "Number of Columns",
+      "default": 4,
+      "min": 2,
+      "max": 6,
+      "condition": {
+        "field": "layout",
+        "value": ["grid", "cards"]
+      }
+    },
+    "showIcons": {
+      "type": "boolean",
+      "label": "Show Icons",
+      "default": true
+    },
+    "animateNumbers": {
+      "type": "boolean",
+      "label": "Animate Numbers on Scroll",
+      "default": true
+    },
+    "numberFormat": {
+      "type": "select",
+      "label": "Number Format",
+      "default": "standard",
+      "options": {
+        "standard": "Standard (1,234)",
+        "short": "Short (1.2K)",
+        "percentage": "Percentage (%)",
+        "currency": "Currency ($)"
+      }
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Success Green",
+        "neutral": "Neutral Gray",
+        "gradient": "Gradient",
+        "custom": "Custom Colors"
+      }
+    },
+    "iconStyle": {
+      "type": "select",
+      "label": "Icon Style",
+      "default": "filled",
+      "options": {
+        "filled": "Filled",
+        "outline": "Outline",
+        "background": "With Background"
+      },
+      "condition": {
+        "field": "showIcons",
+        "value": true
+      }
+    },
+    "separator": {
+      "type": "boolean",
+      "label": "Show Separators",
+      "default": false
+    },
+    "background": {
+      "type": "select",
+      "label": "Background Style",
+      "default": "transparent",
+      "options": {
+        "transparent": "Transparent",
+        "light": "Light Background",
+        "dark": "Dark Background",
+        "pattern": "Pattern Background"
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "layout": "vertical",
+      "columns": 2,
+      "showIcons": false
+    },
+    "tablet": {
+      "columns": 2
+    }
+  },
+  "layouts": {
+    "grid": {
+      "container": "grid gap-6",
+      "item": "text-center",
+      "value": "text-4xl font-bold mb-2",
+      "label": "text-sm text-gray-600"
+    },
+    "horizontal": {
+      "container": "flex flex-wrap justify-around gap-8",
+      "item": "text-center",
+      "value": "text-3xl font-bold",
+      "label": "text-sm text-gray-600 mt-1"
+    },
+    "vertical": {
+      "container": "space-y-6",
+      "item": "flex justify-between items-center border-b pb-4",
+      "value": "text-2xl font-bold",
+      "label": "text-gray-600"
+    },
+    "cards": {
+      "container": "grid gap-4",
+      "item": "bg-white rounded-lg p-6 shadow-sm",
+      "icon": "mb-3",
+      "value": "text-3xl font-bold mb-1",
+      "label": "text-sm text-gray-500"
+    },
+    "circle": {
+      "container": "flex flex-wrap justify-center gap-8",
+      "item": "relative",
+      "circle": "w-32 h-32 rounded-full border-8",
+      "value": "absolute inset-0 flex items-center justify-center text-2xl font-bold",
+      "label": "text-center mt-3 text-sm"
+    }
+  }
+}

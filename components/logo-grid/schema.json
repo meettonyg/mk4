@@ -1,0 +1,183 @@
+{
+  "component_type": "logo-grid",
+  "name": "Logo Grid",
+  "description": "Display client logos or partner brands",
+  "dataBindings": {
+    "logos": "client_logos",
+    "logo_1": "client_logo_1",
+    "logo_2": "client_logo_2",
+    "logo_3": "client_logo_3",
+    "logo_4": "client_logo_4",
+    "logo_5": "client_logo_5",
+    "logo_6": "client_logo_6",
+    "title": "logos_title",
+    "subtitle": "logos_subtitle"
+  },
+  "defaultOptions": {
+    "layout": "grid",
+    "columns": 4,
+    "grayscale": true,
+    "showTitle": true,
+    "alignment": "center",
+    "spacing": "normal",
+    "hoverEffect": "color",
+    "autoScroll": false
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "grid",
+      "options": {
+        "grid": "Grid Layout",
+        "carousel": "Carousel Slider",
+        "masonry": "Masonry Layout",
+        "flex": "Flexible Row",
+        "scroll": "Horizontal Scroll"
+      }
+    },
+    "columns": {
+      "type": "number",
+      "label": "Number of Columns",
+      "default": 4,
+      "min": 2,
+      "max": 6,
+      "condition": {
+        "field": "layout",
+        "value": ["grid", "masonry"]
+      }
+    },
+    "grayscale": {
+      "type": "boolean",
+      "label": "Grayscale Logos",
+      "default": true
+    },
+    "showTitle": {
+      "type": "boolean",
+      "label": "Show Section Title",
+      "default": true
+    },
+    "alignment": {
+      "type": "select",
+      "label": "Logo Alignment",
+      "default": "center",
+      "options": {
+        "left": "Left",
+        "center": "Center",
+        "right": "Right"
+      }
+    },
+    "spacing": {
+      "type": "select",
+      "label": "Logo Spacing",
+      "default": "normal",
+      "options": {
+        "tight": "Tight",
+        "normal": "Normal",
+        "loose": "Loose",
+        "extra": "Extra Space"
+      }
+    },
+    "hoverEffect": {
+      "type": "select",
+      "label": "Hover Effect",
+      "default": "color",
+      "options": {
+        "none": "No Effect",
+        "color": "Show Colors",
+        "scale": "Scale Up",
+        "rotate": "Rotate",
+        "shadow": "Add Shadow"
+      }
+    },
+    "autoScroll": {
+      "type": "boolean",
+      "label": "Auto-Scroll",
+      "default": false,
+      "condition": {
+        "field": "layout",
+        "value": ["carousel", "scroll"]
+      }
+    },
+    "scrollSpeed": {
+      "type": "number",
+      "label": "Scroll Speed",
+      "default": 3000,
+      "min": 1000,
+      "max": 10000,
+      "step": 500,
+      "condition": {
+        "field": "autoScroll",
+        "value": true
+      }
+    },
+    "maxLogos": {
+      "type": "number",
+      "label": "Maximum Logos",
+      "default": 12,
+      "min": 1,
+      "max": 24
+    },
+    "logoSize": {
+      "type": "select",
+      "label": "Logo Size",
+      "default": "medium",
+      "options": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "auto": "Auto Size"
+      }
+    },
+    "background": {
+      "type": "select",
+      "label": "Background Style",
+      "default": "none",
+      "options": {
+        "none": "Transparent",
+        "light": "Light Gray",
+        "white": "White",
+        "pattern": "Pattern"
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "columns": 2,
+      "layout": "grid",
+      "logoSize": "small"
+    },
+    "tablet": {
+      "columns": 3
+    }
+  },
+  "layouts": {
+    "grid": {
+      "container": "grid gap-8",
+      "item": "flex items-center justify-center p-4",
+      "image": "max-w-full h-auto"
+    },
+    "carousel": {
+      "container": "relative overflow-hidden",
+      "track": "flex gap-8 transition-transform",
+      "item": "flex-shrink-0",
+      "controls": "absolute inset-y-0 flex items-center justify-between w-full"
+    },
+    "masonry": {
+      "container": "columns-2 md:columns-3 lg:columns-4 gap-4",
+      "item": "break-inside-avoid mb-4",
+      "image": "w-full"
+    },
+    "flex": {
+      "container": "flex flex-wrap justify-center items-center gap-8",
+      "item": "flex-shrink-0",
+      "image": "h-12 w-auto"
+    },
+    "scroll": {
+      "container": "overflow-x-auto",
+      "track": "flex gap-8 pb-4",
+      "item": "flex-shrink-0",
+      "image": "h-16 w-auto"
+    }
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "component_type": "booking-calendar",
+  "name": "Booking Calendar",
+  "description": "Allow visitors to book appointments or sessions",
+  "dataBindings": {
+    "title": "booking_section_title",
+    "subtitle": "booking_subtitle",
+    "bookingType": "booking_type",
+    "description": "booking_description",
+    "calendarUrl": "booking_url",
+    "calendlyUrl": "calendly_url",
+    "availabilityText": "availability_info",
+    "timezone": "default_timezone"
+  },
+  "defaultOptions": {
+    "calendarStyle": "embedded",
+    "provider": "calendly",
+    "buttonText": "Schedule Now",
+    "showAvailability": true,
+    "showTimezone": false,
+    "colorScheme": "blue",
+    "buttonStyle": "solid",
+    "embedHeight": "630px"
+  },
+  "componentOptions": {
+    "calendarStyle": {
+      "type": "select",
+      "label": "Calendar Style",
+      "default": "embedded",
+      "options": {
+        "embedded": "Embedded Calendar",
+        "popup": "Popup Modal",
+        "redirect": "External Redirect",
+        "inline": "Inline Button"
+      }
+    },
+    "provider": {
+      "type": "select",
+      "label": "Calendar Provider",
+      "default": "calendly",
+      "options": {
+        "calendly": "Calendly",
+        "cal": "Cal.com",
+        "google": "Google Calendar",
+        "outlook": "Outlook Calendar",
+        "custom": "Custom Calendar"
+      }
+    },
+    "buttonText": {
+      "type": "text",
+      "label": "Button Text",
+      "default": "Schedule Now"
+    },
+    "showAvailability": {
+      "type": "boolean",
+      "label": "Show Availability Info",
+      "default": true
+    },
+    "showTimezone": {
+      "type": "boolean",
+      "label": "Show Timezone",
+      "default": false
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Success Green",
+        "orange": "Warm Orange",
+        "purple": "Creative Purple",
+        "custom": "Custom Colors"
+      }
+    },
+    "buttonStyle": {
+      "type": "select",
+      "label": "Button Style",
+      "default": "solid",
+      "options": {
+        "solid": "Solid Button",
+        "outline": "Outline Button",
+        "minimal": "Minimal Link",
+        "gradient": "Gradient",
+        "floating": "Floating Action"
+      }
+    },
+    "embedHeight": {
+      "type": "text",
+      "label": "Embed Height",
+      "default": "630px",
+      "condition": {
+        "field": "calendarStyle",
+        "value": "embedded"
+      }
+    },
+    "buttonSize": {
+      "type": "select",
+      "label": "Button Size",
+      "default": "large",
+      "options": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "extra_large": "Extra Large"
+      }
+    },
+    "showIcon": {
+      "type": "boolean",
+      "label": "Show Calendar Icon",
+      "default": true
+    },
+    "prefillEnabled": {
+      "type": "boolean",
+      "label": "Enable Form Prefill",
+      "default": false
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "calendarStyle": "redirect",
+      "embedHeight": "500px",
+      "buttonSize": "medium"
+    },
+    "tablet": {
+      "embedHeight": "600px"
+    }
+  },
+  "layouts": {
+    "embedded": {
+      "container": "w-full",
+      "header": "text-center mb-6",
+      "title": "text-2xl font-bold mb-2",
+      "description": "text-gray-600 mb-4",
+      "embedContainer": "rounded-lg overflow-hidden shadow-lg"
+    },
+    "popup": {
+      "container": "text-center",
+      "header": "mb-6",
+      "title": "text-2xl font-bold mb-2",
+      "description": "text-gray-600 mb-4",
+      "buttonContainer": "flex justify-center"
+    },
+    "redirect": {
+      "container": "text-center py-8",
+      "header": "mb-6",
+      "title": "text-2xl font-bold mb-2",
+      "description": "text-gray-600 mb-6",
+      "buttonContainer": "flex justify-center"
+    },
+    "inline": {
+      "container": "inline-flex items-center gap-4",
+      "button": "inline-flex items-center gap-2"
+    }
+  }
+}

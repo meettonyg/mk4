@@ -1,0 +1,132 @@
+{
+  "component_type": "testimonials",
+  "name": "Testimonials",
+  "description": "Display client testimonials and reviews",
+  "dataBindings": {
+    "testimonials": "testimonials",
+    "testimonial_1": "testimonial_1",
+    "testimonial_2": "testimonial_2",
+    "testimonial_3": "testimonial_3",
+    "title": "testimonials_title",
+    "subtitle": "testimonials_subtitle"
+  },
+  "defaultOptions": {
+    "layout": "cards",
+    "showPhotos": true,
+    "showRatings": false,
+    "maxTestimonials": 6,
+    "columns": 3,
+    "colorScheme": "blue"
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "cards",
+      "options": {
+        "cards": "Card Layout",
+        "quotes": "Quote Bubbles",
+        "list": "Simple List",
+        "carousel": "Carousel Slider",
+        "masonry": "Masonry Grid"
+      }
+    },
+    "columns": {
+      "type": "number",
+      "label": "Number of Columns",
+      "default": 3,
+      "min": 1,
+      "max": 4,
+      "condition": {
+        "field": "layout",
+        "value": ["cards", "masonry"]
+      }
+    },
+    "showPhotos": {
+      "type": "boolean",
+      "label": "Show Client Photos",
+      "default": true
+    },
+    "showRatings": {
+      "type": "boolean",
+      "label": "Show Star Ratings",
+      "default": false
+    },
+    "showCompany": {
+      "type": "boolean",
+      "label": "Show Company Name",
+      "default": true
+    },
+    "maxTestimonials": {
+      "type": "number",
+      "label": "Maximum Testimonials",
+      "default": 6,
+      "min": 1,
+      "max": 20
+    },
+    "colorScheme": {
+      "type": "select",
+      "label": "Color Scheme",
+      "default": "blue",
+      "options": {
+        "blue": "Professional Blue",
+        "green": "Success Green",
+        "gold": "Premium Gold",
+        "neutral": "Neutral Gray",
+        "gradient": "Gradient"
+      }
+    },
+    "quoteStyle": {
+      "type": "select",
+      "label": "Quote Style",
+      "default": "standard",
+      "options": {
+        "standard": "Standard",
+        "large": "Large Quotes",
+        "italic": "Italic Style",
+        "boxed": "Boxed Quotes"
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "layout": "list",
+      "columns": 1,
+      "showPhotos": false
+    },
+    "tablet": {
+      "columns": 2
+    }
+  },
+  "layouts": {
+    "cards": {
+      "container": "grid gap-6",
+      "item": "bg-white rounded-lg shadow-md p-6",
+      "quote": "text-gray-700 mb-4",
+      "author": "font-semibold text-gray-900",
+      "company": "text-sm text-gray-500"
+    },
+    "quotes": {
+      "container": "space-y-8",
+      "item": "relative pl-12",
+      "quoteIcon": "absolute left-0 top-0 text-4xl text-gray-300",
+      "quote": "text-lg italic text-gray-700 mb-4",
+      "author": "font-semibold"
+    },
+    "list": {
+      "container": "space-y-6",
+      "item": "border-b pb-6",
+      "quote": "text-gray-700 mb-3",
+      "author": "font-medium text-gray-900"
+    },
+    "carousel": {
+      "container": "relative overflow-hidden",
+      "track": "flex transition-transform",
+      "item": "flex-shrink-0 w-full px-4"
+    },
+    "masonry": {
+      "container": "columns-1 md:columns-2 lg:columns-3 gap-6",
+      "item": "break-inside-avoid mb-6 bg-white rounded-lg p-6"
+    }
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "component_type": "video-intro",
+  "name": "Video Introduction",
+  "description": "Embed introduction or promotional videos",
+  "dataBindings": {
+    "videoUrl": "intro_video_url",
+    "videoThumbnail": "video_thumbnail",
+    "title": "video_title",
+    "subtitle": "video_subtitle",
+    "description": "video_description",
+    "duration": "video_duration"
+  },
+  "defaultOptions": {
+    "videoStyle": "responsive",
+    "showControls": true,
+    "autoplay": false,
+    "muted": false,
+    "loop": false,
+    "showTitle": true,
+    "playButtonStyle": "circle",
+    "aspectRatio": "16:9"
+  },
+  "componentOptions": {
+    "videoStyle": {
+      "type": "select",
+      "label": "Video Style",
+      "default": "responsive",
+      "options": {
+        "responsive": "Responsive Embed",
+        "fixed": "Fixed Dimensions",
+        "fullwidth": "Full Width",
+        "theater": "Theater Mode",
+        "popup": "Popup Modal"
+      }
+    },
+    "aspectRatio": {
+      "type": "select",
+      "label": "Aspect Ratio",
+      "default": "16:9",
+      "options": {
+        "16:9": "Widescreen (16:9)",
+        "4:3": "Standard (4:3)",
+        "21:9": "Cinematic (21:9)",
+        "1:1": "Square (1:1)",
+        "9:16": "Vertical (9:16)"
+      }
+    },
+    "showControls": {
+      "type": "boolean",
+      "label": "Show Video Controls",
+      "default": true
+    },
+    "autoplay": {
+      "type": "boolean",
+      "label": "Autoplay Video",
+      "default": false
+    },
+    "muted": {
+      "type": "boolean",
+      "label": "Muted by Default",
+      "default": false,
+      "condition": {
+        "field": "autoplay",
+        "value": true
+      }
+    },
+    "loop": {
+      "type": "boolean",
+      "label": "Loop Video",
+      "default": false
+    },
+    "showTitle": {
+      "type": "boolean",
+      "label": "Show Title & Description",
+      "default": true
+    },
+    "playButtonStyle": {
+      "type": "select",
+      "label": "Play Button Style",
+      "default": "circle",
+      "options": {
+        "circle": "Circle",
+        "rectangle": "Rectangle",
+        "youtube": "YouTube Style",
+        "minimal": "Minimal",
+        "none": "No Button"
+      }
+    },
+    "thumbnailOverlay": {
+      "type": "boolean",
+      "label": "Show Thumbnail Overlay",
+      "default": true
+    },
+    "provider": {
+      "type": "select",
+      "label": "Video Provider",
+      "default": "youtube",
+      "options": {
+        "youtube": "YouTube",
+        "vimeo": "Vimeo",
+        "wistia": "Wistia",
+        "custom": "Custom URL"
+      }
+    },
+    "borderStyle": {
+      "type": "select",
+      "label": "Border Style",
+      "default": "none",
+      "options": {
+        "none": "No Border",
+        "thin": "Thin Border",
+        "thick": "Thick Border",
+        "shadow": "Box Shadow",
+        "rounded": "Rounded Corners"
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "videoStyle": "responsive",
+      "aspectRatio": "16:9",
+      "showTitle": false
+    },
+    "tablet": {
+      "videoStyle": "responsive"
+    }
+  },
+  "layouts": {
+    "responsive": {
+      "container": "relative pb-[56.25%] h-0 overflow-hidden",
+      "iframe": "absolute top-0 left-0 w-full h-full"
+    },
+    "fixed": {
+      "container": "max-w-4xl mx-auto",
+      "iframe": "w-full",
+      "height": "450px"
+    },
+    "fullwidth": {
+      "container": "w-full",
+      "iframe": "w-full h-[70vh]"
+    },
+    "theater": {
+      "container": "bg-black py-8",
+      "content": "max-w-6xl mx-auto",
+      "iframe": "w-full aspect-video"
+    },
+    "popup": {
+      "trigger": "relative cursor-pointer group",
+      "overlay": "absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center",
+      "modal": "fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
+    }
+  }
+}

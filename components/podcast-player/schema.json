@@ -1,0 +1,154 @@
+{
+  "component_type": "podcast-player",
+  "name": "Podcast Player",
+  "description": "Embed podcast episodes or audio content",
+  "dataBindings": {
+    "episodes": "podcast_episodes",
+    "episode_1": "episode_1_url",
+    "episode_2": "episode_2_url",
+    "episode_3": "episode_3_url",
+    "title": "podcast_title",
+    "subtitle": "podcast_subtitle",
+    "podcastUrl": "podcast_main_url",
+    "spotifyUrl": "spotify_podcast_url",
+    "appleUrl": "apple_podcast_url"
+  },
+  "defaultOptions": {
+    "playerStyle": "modern",
+    "showPlaylist": true,
+    "autoplay": false,
+    "showEpisodeInfo": true,
+    "showTranscript": false,
+    "maxEpisodes": 5,
+    "provider": "spotify",
+    "colorTheme": "dark"
+  },
+  "componentOptions": {
+    "playerStyle": {
+      "type": "select",
+      "label": "Player Style",
+      "default": "modern",
+      "options": {
+        "modern": "Modern Player",
+        "minimal": "Minimal Player",
+        "compact": "Compact Player",
+        "full": "Full Featured",
+        "embedded": "Platform Embed"
+      }
+    },
+    "provider": {
+      "type": "select",
+      "label": "Podcast Provider",
+      "default": "spotify",
+      "options": {
+        "spotify": "Spotify",
+        "apple": "Apple Podcasts",
+        "google": "Google Podcasts",
+        "soundcloud": "SoundCloud",
+        "custom": "Custom RSS"
+      }
+    },
+    "showPlaylist": {
+      "type": "boolean",
+      "label": "Show Episode Playlist",
+      "default": true
+    },
+    "autoplay": {
+      "type": "boolean",
+      "label": "Autoplay",
+      "default": false
+    },
+    "showEpisodeInfo": {
+      "type": "boolean",
+      "label": "Show Episode Information",
+      "default": true
+    },
+    "showTranscript": {
+      "type": "boolean",
+      "label": "Show Transcript",
+      "default": false
+    },
+    "maxEpisodes": {
+      "type": "number",
+      "label": "Maximum Episodes",
+      "default": 5,
+      "min": 1,
+      "max": 20
+    },
+    "colorTheme": {
+      "type": "select",
+      "label": "Color Theme",
+      "default": "dark",
+      "options": {
+        "dark": "Dark Theme",
+        "light": "Light Theme",
+        "auto": "Auto (Match Site)",
+        "custom": "Custom Colors"
+      }
+    },
+    "showSubscribeButtons": {
+      "type": "boolean",
+      "label": "Show Subscribe Buttons",
+      "default": true
+    },
+    "showShareButtons": {
+      "type": "boolean",
+      "label": "Show Share Buttons",
+      "default": false
+    },
+    "playbackSpeed": {
+      "type": "boolean",
+      "label": "Show Speed Controls",
+      "default": true
+    },
+    "embedHeight": {
+      "type": "text",
+      "label": "Player Height",
+      "default": "152px",
+      "condition": {
+        "field": "playerStyle",
+        "value": ["embedded", "minimal"]
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "playerStyle": "compact",
+      "showPlaylist": false,
+      "maxEpisodes": 3
+    },
+    "tablet": {
+      "maxEpisodes": 5
+    }
+  },
+  "layouts": {
+    "modern": {
+      "container": "bg-gray-900 rounded-lg p-6",
+      "player": "mb-6",
+      "controls": "flex justify-between items-center mb-4",
+      "playlist": "space-y-3",
+      "episode": "bg-gray-800 rounded p-3 hover:bg-gray-700"
+    },
+    "minimal": {
+      "container": "border rounded-lg p-4",
+      "player": "mb-2",
+      "controls": "flex justify-center gap-4"
+    },
+    "compact": {
+      "container": "bg-white shadow-sm rounded p-3",
+      "player": "flex items-center gap-3",
+      "controls": "flex gap-2"
+    },
+    "full": {
+      "container": "bg-gradient-to-b from-gray-900 to-black rounded-xl p-8",
+      "header": "text-white mb-6",
+      "player": "bg-gray-800 rounded-lg p-4 mb-6",
+      "playlist": "grid gap-4",
+      "subscribeBar": "flex gap-4 mt-6"
+    },
+    "embedded": {
+      "container": "w-full",
+      "iframe": "w-full rounded-lg"
+    }
+  }
+}

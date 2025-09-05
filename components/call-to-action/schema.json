@@ -1,0 +1,162 @@
+{
+  "component_type": "call-to-action",
+  "name": "Call to Action",
+  "description": "Compelling call-to-action section with customizable button",
+  "dataBindings": {
+    "title": "cta_title",
+    "subtitle": "cta_subtitle",
+    "description": "cta_description",
+    "buttonText": "cta_button_text",
+    "buttonUrl": "cta_button_url",
+    "secondaryButtonText": "cta_secondary_button_text",
+    "secondaryButtonUrl": "cta_secondary_button_url"
+  },
+  "defaultOptions": {
+    "layout": "center",
+    "buttonStyle": "solid",
+    "buttonSize": "large",
+    "showIcon": false,
+    "urgency": false,
+    "showSecondaryButton": false,
+    "backgroundColor": "#f8f9fa",
+    "buttonColor": "#295cff"
+  },
+  "componentOptions": {
+    "layout": {
+      "type": "select",
+      "label": "Layout Style",
+      "default": "center",
+      "options": {
+        "center": "Centered Layout",
+        "left": "Left Aligned",
+        "right": "Right Aligned",
+        "split": "Split Layout",
+        "hero": "Hero Style"
+      }
+    },
+    "buttonStyle": {
+      "type": "select",
+      "label": "Button Style",
+      "default": "solid",
+      "options": {
+        "solid": "Solid Button",
+        "outline": "Outline Button",
+        "ghost": "Ghost Button",
+        "gradient": "Gradient Button",
+        "animated": "Animated Button"
+      }
+    },
+    "buttonSize": {
+      "type": "select",
+      "label": "Button Size",
+      "default": "large",
+      "options": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "extra_large": "Extra Large"
+      }
+    },
+    "backgroundColor": {
+      "type": "color",
+      "label": "Background Color",
+      "default": "#f8f9fa"
+    },
+    "buttonColor": {
+      "type": "color",
+      "label": "Button Color",
+      "default": "#295cff"
+    },
+    "textColor": {
+      "type": "color",
+      "label": "Text Color",
+      "default": "#333333"
+    },
+    "showIcon": {
+      "type": "boolean",
+      "label": "Show Button Icon",
+      "default": false
+    },
+    "iconType": {
+      "type": "select",
+      "label": "Icon Type",
+      "default": "arrow",
+      "options": {
+        "arrow": "Arrow",
+        "chevron": "Chevron",
+        "play": "Play",
+        "download": "Download",
+        "external": "External Link"
+      },
+      "condition": {
+        "field": "showIcon",
+        "value": true
+      }
+    },
+    "urgency": {
+      "type": "boolean",
+      "label": "Urgency Styling",
+      "default": false
+    },
+    "showSecondaryButton": {
+      "type": "boolean",
+      "label": "Show Secondary Button",
+      "default": false
+    },
+    "backgroundPattern": {
+      "type": "select",
+      "label": "Background Pattern",
+      "default": "none",
+      "options": {
+        "none": "None",
+        "gradient": "Gradient",
+        "dots": "Dots Pattern",
+        "waves": "Waves",
+        "diagonal": "Diagonal Lines"
+      }
+    }
+  },
+  "responsive": {
+    "mobile": {
+      "layout": "center",
+      "buttonSize": "medium",
+      "showSecondaryButton": false
+    },
+    "tablet": {
+      "buttonSize": "large"
+    }
+  },
+  "layouts": {
+    "center": {
+      "container": "text-center py-12 px-6",
+      "title": "text-3xl font-bold mb-4",
+      "description": "text-lg text-gray-600 mb-8 max-w-2xl mx-auto",
+      "buttonContainer": "flex justify-center gap-4"
+    },
+    "left": {
+      "container": "text-left py-12 px-6",
+      "title": "text-3xl font-bold mb-4",
+      "description": "text-lg text-gray-600 mb-8 max-w-2xl",
+      "buttonContainer": "flex justify-start gap-4"
+    },
+    "right": {
+      "container": "text-right py-12 px-6",
+      "title": "text-3xl font-bold mb-4",
+      "description": "text-lg text-gray-600 mb-8 max-w-2xl ml-auto",
+      "buttonContainer": "flex justify-end gap-4"
+    },
+    "split": {
+      "container": "flex justify-between items-center py-12 px-6",
+      "contentContainer": "flex-1",
+      "title": "text-2xl font-bold mb-2",
+      "description": "text-gray-600",
+      "buttonContainer": "flex gap-4"
+    },
+    "hero": {
+      "container": "py-20 px-6 bg-gradient-to-r",
+      "title": "text-4xl md:text-5xl font-bold mb-6 text-center",
+      "description": "text-xl text-center mb-10 max-w-3xl mx-auto",
+      "buttonContainer": "flex justify-center gap-4"
+    }
+  }
+}
