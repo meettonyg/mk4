@@ -306,7 +306,11 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     </div>
 </div>
 
-<?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
+<?php 
+// Debug info removed for production
+// To enable debug info, uncomment the block below and set WP_DEBUG to true
+/*
+if (defined('WP_DEBUG') && WP_DEBUG): ?>
 <div class="topics-sidebar__debug-info" style="margin-top: 20px; padding: 12px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 6px; font-size: 12px;">
     <strong>🔧 DEBUG INFO:</strong><br>
     Post ID: <?php echo esc_html($current_post_id); ?><br>
@@ -314,4 +318,6 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     Message: <?php echo esc_html($sidebar_message); ?><br>
     BEM Compliant UI: ✅ Active
 </div>
-<?php endif; ?>
+<?php endif; 
+*/
+?>

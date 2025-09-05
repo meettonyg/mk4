@@ -128,9 +128,6 @@ class DesignPanel {
         if (!component) {
             console.warn(`Component not found: ${componentId}`);
             
-            // DEBUG: Show available components
-            this.debugAvailableComponents();
-            
             this.panel.innerHTML = `
                 <div class="element-editor__title">Component Not Found</div>
                 <div class="element-editor__subtitle">The selected component could not be loaded</div>
@@ -316,20 +313,23 @@ class DesignPanel {
     // ROOT FIX: Removed counter display method - handled by panel-script.js
 
     /**
-     * Debug function to show available components
+     * Debug function to show available components (debug console only)
      */
     debugAvailableComponents() {
-        console.log('🔍 DEBUG: Checking component availability...');
-        
-        if (window.enhancedStateManager) {
-            try {
-                const state = window.enhancedStateManager.getState();
-                const componentCount = Object.keys(state.components || {}).length;
-                if (componentCount > 0) {
-                    console.log(`Found ${componentCount} components in state manager`);
+        // Only log to console in debug mode
+        if (window.gmkbData?.debugMode) {
+            console.log('🔍 DEBUG: Checking component availability...');
+            
+            if (window.enhancedStateManager) {
+                try {
+                    const state = window.enhancedStateManager.getState();
+                    const componentCount = Object.keys(state.components || {}).length;
+                    if (componentCount > 0) {
+                        console.log(`Found ${componentCount} components in state manager`);
+                    }
+                } catch (e) {
+                    console.log('State manager error:', e.message);
                 }
-            } catch (e) {
-                console.log('State manager error:', e.message);
             }
         }
     }

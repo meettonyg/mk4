@@ -170,7 +170,6 @@ class ComponentOptionsUI {
             <div class="options-panel">
                 <div class="options-panel__header">
                     <h3 class="options-panel__title">Component Options</h3>
-                    <div class="options-panel__badge">[PHASE 2]</div>
                 </div>
                 
                 <div class="options-panel__content">
