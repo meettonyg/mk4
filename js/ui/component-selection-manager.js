@@ -43,16 +43,23 @@ class ComponentSelectionManager {
             if (event.detail.componentId === this.selectedComponentId) {
                 this.isUpdating = true;
                 this.logger.debug('UI', `🔄 [PHASE 2] Component update starting for ${event.detail.componentId}`);
+                // ROOT FIX: Store the fact that we're updating a selected component
+                this.wasSelectedBeforeUpdate = event.detail.isSelected || false;
             }
         });
         
         document.addEventListener('gmkb:after-component-update', (event) => {
             if (event.detail.componentId === this.selectedComponentId) {
-                // Restore selection after a brief delay to ensure DOM is updated
-                setTimeout(() => {
-                    this.restoreSelection(event.detail.componentId);
+                // ROOT FIX: If component was selected, it should still be selected
+                if (this.wasSelectedBeforeUpdate || event.detail.isSelected) {
+                    // The renderer already restored selection, just reset our flag
                     this.isUpdating = false;
-                }, 50);
+                    this.wasSelectedBeforeUpdate = false;
+                    this.logger.debug('UI', `✅ [PHASE 2] Selection preserved through update for ${event.detail.componentId}`);
+                } else {
+                    // Component wasn't selected, normal update
+                    this.isUpdating = false;
+                }
             }
         });
         

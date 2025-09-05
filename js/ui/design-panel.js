@@ -40,7 +40,15 @@ class DesignPanel {
         // Listen for component selection
         document.addEventListener('gmkb:component-selected', (event) => {
             console.log('🎯 Design Panel: Component selected', event.detail);
-            const { componentId } = event.detail;
+            const { componentId, isRestoration } = event.detail;
+            
+            // ROOT FIX: If this is a restoration after update, just update the current ID
+            if (isRestoration && this.currentComponentId === componentId) {
+                console.log('✅ Design Panel: Component restored after update');
+                // Panel is already open with this component, no need to reload
+                return;
+            }
+            
             if (componentId) {
                 this.load(componentId);
             }
@@ -335,9 +343,15 @@ class DesignPanel {
         const inputs = this.panel.querySelectorAll('[data-property]');
         
         const debouncedUpdate = (window.debounce || quickDebounce)((id, newProps) => {
+            // ROOT FIX: Mark that we're updating to prevent panel closure
+            this.isUpdating = true;
+            
             // ROOT FIX: Announce that an update is about to begin (prevents deselection)
             document.dispatchEvent(new CustomEvent('gmkb:before-component-update', {
-                detail: { componentId: id }
+                detail: { 
+                    componentId: id,
+                    isFromDesignPanel: true
+                }
             }));
             
             // ROOT FIX: Use the correct component manager reference
@@ -354,9 +368,15 @@ class DesignPanel {
                 // Use the global updateComponentProps function
                 window.updateComponentProps(id, newProps);
                 // ROOT FIX: Announce that the update has completed
-                document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
-                    detail: { componentId: id }
-                }));
+                setTimeout(() => {
+                    this.isUpdating = false;
+                    document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
+                        detail: { 
+                            componentId: id,
+                            isFromDesignPanel: true
+                        }
+                    }));
+                }, 100);
                 return;
             }
             
@@ -372,16 +392,22 @@ class DesignPanel {
             }
             
             // ROOT FIX: Announce that the update has completed (allows re-selection)
-            document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
-                detail: { componentId: id }
-            }));
+            setTimeout(() => {
+                this.isUpdating = false;
+                document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
+                    detail: { 
+                        componentId: id,
+                        isFromDesignPanel: true
+                    }
+                }));
+            }, 100);
             
             // ROOT FIX: Trigger topics sync if this is a topics component
             const currentComponent = this.getComponent(this.currentComponentId);
             if (currentComponent?.type === 'topics') {
                 setTimeout(() => {
                     this.syncTopicsCounterWithPreview();
-                }, 100);
+                }, 200);
             }
         }, 300);
 

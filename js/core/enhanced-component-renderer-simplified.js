@@ -1085,6 +1085,7 @@
             /**
              * ✅ ROOT CAUSE FIX: Direct component update without complex diffing
              * ARCHITECTURE: Component-agnostic - checks configuration for rendering requirements
+             * ROOT FIX: Preserve selection state through destructive re-rendering
              */
             async updateComponent(componentId, componentData) {
                 // ROOT FIX: Check if component is in a section first
@@ -1099,6 +1100,15 @@
                     await this.addComponent(componentId, componentData);
                     return;
                 }
+                
+                // ROOT FIX: Check if this component is currently selected
+                const isSelected = existingElement.classList.contains('selected') || 
+                                 existingElement.classList.contains('gmkb-component--selected');
+                
+                // ROOT FIX: Dispatch before-update event to prevent deselection
+                document.dispatchEvent(new CustomEvent('gmkb:before-component-update', {
+                    detail: { componentId, isSelected, timestamp: Date.now() }
+                }));
                 
                 // ROOT CAUSE FIX: Preserve controls during update
                 // Save existing controls before updating
@@ -1120,7 +1130,22 @@
                     html = await this.generateConfigurationDrivenHTML(componentId, componentData);
                 }
                 
-                existingElement.innerHTML = html;
+                // ROOT FIX: Use a more surgical approach for selected components
+                // Instead of destroying everything with innerHTML, try to preserve structure
+                if (isSelected) {
+                    // For selected components, try to update content more carefully
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    
+                    // Try to preserve selection classes while updating content
+                    const oldClasses = existingElement.className;
+                    existingElement.innerHTML = html;
+                    existingElement.className = oldClasses; // Restore all classes including selection
+                } else {
+                    // For non-selected components, use normal innerHTML replacement
+                    existingElement.innerHTML = html;
+                }
+                
                 existingElement.setAttribute('data-component-type', componentData.type);
                 
                 // ROOT CAUSE FIX: Restore controls after innerHTML update
@@ -1145,6 +1170,28 @@
                         }, { once: true });
                     }
                 }
+                
+                // ROOT FIX: If component was selected, restore selection
+                if (isSelected) {
+                    existingElement.classList.add('selected', 'gmkb-component--selected');
+                    // Re-trigger selection event to ensure design panel knows component is still selected
+                    setTimeout(() => {
+                        document.dispatchEvent(new CustomEvent('gmkb:component-selected', {
+                            detail: {
+                                componentId,
+                                componentType: componentData.type,
+                                element: existingElement,
+                                timestamp: Date.now(),
+                                isRestoration: true
+                            }
+                        }));
+                    }, 10);
+                }
+                
+                // ROOT FIX: Dispatch after-update event to allow re-selection
+                document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
+                    detail: { componentId, isSelected, timestamp: Date.now() }
+                }));
                 
                 // ✅ CHECKLIST COMPLIANT: Emit update event for other systems
                 document.dispatchEvent(new CustomEvent('gmkb:component-updated', {

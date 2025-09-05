@@ -818,23 +818,16 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ROOT FIX COMPLETED: Selection system now handles updates properly
-    // Diagnostic script removed - fix is implemented in core files:
-    // - enhanced-component-renderer-simplified.js preserves selection through updates
-    // - design-panel.js tracks update state to prevent closure
-    // - component-selection-manager.js handles restoration after re-renders
-    // To re-enable diagnostic monitoring: uncomment the block below
-    /*
+    // TEMPORARY: Diagnostic for selection issue
     if (defined('WP_DEBUG') && WP_DEBUG) {
         wp_enqueue_script(
             'gmkb-diagnostic-selection',
             $plugin_url . 'debug/diagnostic-selection.js',
             array('gmkb-design-panel', 'gmkb-component-selection-manager'),
-            time(),
+            time(), // Use timestamp to bypass cache
             true
         );
     }
-    */
     
     // PHASE 1 REDESIGN: Component Lifecycle Base Class - Foundation for all component editors
     // MOVED HERE: Before sync-coordinator and dom-ownership-manager that depend on it
