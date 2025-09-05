@@ -32,8 +32,9 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 // PHASE 1 FIX: Include Pods data enrichment system
 require_once GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php';
 
-// PHASE 4: Theme system is handled entirely by JavaScript (ThemeManager.js)
-// No PHP theme generation needed - maintains self-contained architecture
+// PHASE 4: Theme Generator for dynamic CSS generation
+require_once GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php';
+require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php';
 
 // Component schemas are self-contained - each component has its own schema.json
 // ComponentDiscovery will load schemas when discovering components
@@ -43,8 +44,7 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 
-// PHASE 4: Theme AJAX handlers
-require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php';
+// Theme AJAX handlers are loaded with the theme generator
 
 // ARCHITECTURE CLEANUP: Component-level code should be handled by ComponentDiscovery
 // ROOT FIX: Remove component-specific includes from main plugin file

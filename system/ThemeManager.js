@@ -109,6 +109,56 @@ class ThemeManager {
         // Default theme
         this.themes.set('default', this.defaultTheme);
         
+        // ROOT FIX: Load themes from self-contained theme directories via AJAX
+        this.loadThemesFromDiscovery();
+    }
+    
+    /**
+     * Load themes from theme discovery system
+     * Following checklist: Event-Driven, WordPress Integration
+     */
+    async loadThemesFromDiscovery() {
+        try {
+            // Make AJAX call to get discovered themes
+            const response = await fetch(window.gmkbData?.ajaxUrl || ajaxurl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    action: 'gmkb_get_discovered_themes',
+                    nonce: window.gmkbData?.nonce || ''
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success && result.data.themes) {
+                // Add discovered themes to the themes map
+                Object.entries(result.data.themes).forEach(([themeId, themeData]) => {
+                    this.themes.set(themeId, themeData);
+                });
+                
+                this.logger.info(`📚 PHASE 4: Loaded ${Object.keys(result.data.themes).length} themes from discovery system`);
+                
+                // Dispatch event that themes are loaded
+                this.dispatchThemeEvent('gmkb:themes-loaded', {
+                    themes: Array.from(this.themes.values())
+                });
+            }
+        } catch (error) {
+            this.logger.warn('⚠️ PHASE 4: Could not load themes from discovery, using built-in defaults');
+            // Fallback to built-in themes defined in JavaScript
+            this.loadBuiltInThemesStatically();
+        }
+    }
+    
+    /**
+     * Load built-in themes statically as fallback
+     */
+    loadBuiltInThemesStatically() {
+        
         // Professional Clean theme
         this.themes.set('professional_clean', {
             theme_id: 'professional_clean',
@@ -277,7 +327,12 @@ class ThemeManager {
             }
         });
         
-        this.logger.info(`📚 PHASE 4: Loaded ${this.themes.size} built-in themes`);
+        this.logger.info(`📚 PHASE 4: Loaded ${this.themes.size} built-in themes (static fallback)`);
+        
+        // Dispatch event that themes are loaded
+        this.dispatchThemeEvent('gmkb:themes-loaded', {
+            themes: Array.from(this.themes.values())
+        });
     }
     
     /**

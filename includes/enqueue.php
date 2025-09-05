@@ -1935,7 +1935,7 @@ function gmkb_enqueue_assets() {
         $version
     );
     
-    // PHASE 4: Theme Variables CSS
+    // PHASE 4: Theme Variables CSS - Load early for all theme CSS properties
     wp_enqueue_style(
         'gmkb-theme-variables',
         $plugin_url . 'css/theme-variables.css',
@@ -1943,10 +1943,10 @@ function gmkb_enqueue_assets() {
         $version
     );
     
-    // PHASE 4: Theme Customizer CSS
+    // PHASE 4: Theme Customizer CSS - Not in modules subdirectory
     wp_enqueue_style(
         'gmkb-theme-customizer',
-        $plugin_url . 'css/modules/theme-customizer.css',
+        $plugin_url . 'css/theme-customizer.css',
         array( 'gmkb-theme-variables' ),
         $version
     );

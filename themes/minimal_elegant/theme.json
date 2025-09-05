@@ -1,0 +1,108 @@
+{
+  "theme_id": "minimal_elegant",
+  "theme_name": "Minimal Elegant",
+  "version": "1.0.0",
+  "description": "A sophisticated, minimalist theme with monochrome aesthetics",
+  "preview_image": "minimal-elegant-preview.jpg",
+  "typography": {
+    "primary_font": {
+      "family": "Helvetica Neue, Helvetica, Arial, sans-serif",
+      "weights": [300, 400, 500],
+      "fallback": "Arial, sans-serif"
+    },
+    "heading_font": {
+      "family": "Georgia, serif",
+      "weights": [400, 700],
+      "fallback": "Times New Roman, serif"
+    },
+    "font_scale": 1.15,
+    "line_height": {
+      "body": 1.75,
+      "heading": 1.4
+    },
+    "letter_spacing": {
+      "body": "0",
+      "heading": "-0.02em",
+      "uppercase": "0.1em"
+    }
+  },
+  "colors": {
+    "primary": "#000000",
+    "primary_hover": "#333333",
+    "secondary": "#333333",
+    "secondary_hover": "#555555",
+    "accent": "#666666",
+    "accent_hover": "#888888",
+    "text": "#000000",
+    "text_light": "#666666",
+    "text_muted": "#999999",
+    "background": "#ffffff",
+    "surface": "#fafafa",
+    "surface_hover": "#f5f5f5",
+    "border": "#eeeeee",
+    "border_focus": "#cccccc",
+    "error": "#cc0000",
+    "success": "#008800",
+    "warning": "#ff8800",
+    "info": "#0066cc"
+  },
+  "spacing": {
+    "base_unit": "8px",
+    "component_gap": "32px",
+    "section_gap": "64px",
+    "container_padding": "20px",
+    "content_max_width": "1000px",
+    "line_spacing": "1px"
+  },
+  "effects": {
+    "border_radius": "0px",
+    "border_radius_sm": "0px",
+    "border_radius_lg": "0px",
+    "shadow": "none",
+    "shadow_sm": "none",
+    "shadow_lg": "0 0 0 1px rgba(0, 0, 0, 0.1)",
+    "transitions": "opacity 0.3s ease",
+    "transitions_color": "color 0.3s ease, background-color 0.3s ease",
+    "blur": "none",
+    "hover_opacity": "0.7"
+  },
+  "components": {
+    "button": {
+      "padding": "10px 24px",
+      "font_weight": "400",
+      "letter_spacing": "0.1em",
+      "text_transform": "uppercase",
+      "border_width": "1px"
+    },
+    "card": {
+      "padding": "24px",
+      "shadow": "none",
+      "border": "1px solid var(--gmkb-color-border)"
+    },
+    "input": {
+      "padding": "10px 12px",
+      "border_width": "1px",
+      "border_style": "solid"
+    },
+    "divider": {
+      "width": "1px",
+      "color": "#eeeeee"
+    }
+  },
+  "responsive": {
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px"
+    },
+    "font_scale_mobile": 0.95,
+    "spacing_scale_mobile": 0.9
+  },
+  "special": {
+    "use_serif_for_body": false,
+    "monochrome_only": true,
+    "minimal_decoration": true,
+    "emphasis_through_spacing": true
+  }
+}

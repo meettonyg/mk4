@@ -1,290 +1,479 @@
 /**
  * Theme Variables CSS
- * Phase 4: Theme Layer System
+ * Phase 4: CSS Custom Properties for Theme System
  * 
- * CSS custom properties for theming support
- * These variables are overridden by ThemeManager.js
+ * This file defines the base CSS custom properties that are overridden
+ * by the theme system. It provides fallback values for all theme variables.
  * 
- * @package GMKB
- * @since 4.0.0
+ * @version 4.0.0-phase4
+ * @package GMKB/CSS
  */
 
-/* Default theme variables - fallback values */
+/* Default Theme Variables - Fallback Values */
 :root {
-  /* Typography */
-  --gmkb-font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --gmkb-font-heading: inherit;
-  --gmkb-font-mono: "SF Mono", Monaco, "Courier New", monospace;
-  
-  /* Font sizes */
-  --gmkb-font-size-xs: 12px;
-  --gmkb-font-size-sm: 14px;
-  --gmkb-font-size-base: 16px;
-  --gmkb-font-size-lg: 18px;
-  --gmkb-font-size-xl: 20px;
-  --gmkb-font-size-2xl: 24px;
-  --gmkb-font-size-3xl: 30px;
-  --gmkb-font-size-4xl: 36px;
-  --gmkb-font-size-5xl: 48px;
-  
-  /* Line heights */
-  --gmkb-line-height-tight: 1.1;
-  --gmkb-line-height-heading: 1.2;
-  --gmkb-line-height-normal: 1.5;
-  --gmkb-line-height-body: 1.6;
-  --gmkb-line-height-relaxed: 1.75;
-  
-  /* Font weights */
-  --gmkb-font-weight-light: 300;
-  --gmkb-font-weight-normal: 400;
-  --gmkb-font-weight-medium: 500;
-  --gmkb-font-weight-semibold: 600;
-  --gmkb-font-weight-bold: 700;
-  --gmkb-font-weight-black: 900;
-  
-  /* Colors */
-  --gmkb-color-primary: #295cff;
-  --gmkb-color-primary-dark: #1c0d5a;
-  --gmkb-color-secondary: #1c0d5a;
-  --gmkb-color-accent: #295cff;
-  --gmkb-color-success: #10b981;
-  --gmkb-color-warning: #f59e0b;
-  --gmkb-color-error: #ef4444;
-  --gmkb-color-info: #3b82f6;
-  
-  /* Text colors */
-  --gmkb-color-text: #1f2937;
-  --gmkb-color-text-light: #6b7280;
-  --gmkb-color-text-muted: #9ca3af;
-  --gmkb-color-text-inverse: #ffffff;
-  
-  /* Background colors */
-  --gmkb-color-background: #ffffff;
-  --gmkb-color-surface: #f9fafb;
-  --gmkb-color-surface-alt: #f3f4f6;
-  --gmkb-color-overlay: rgba(0, 0, 0, 0.5);
-  
-  /* Border colors */
-  --gmkb-color-border: #e5e7eb;
-  --gmkb-color-border-dark: #d1d5db;
-  --gmkb-color-border-light: #f3f4f6;
-  
-  /* Spacing scale */
-  --gmkb-space-0: 0;
-  --gmkb-space-1: 8px;
-  --gmkb-space-2: 16px;
-  --gmkb-space-3: 24px;
-  --gmkb-space-4: 32px;
-  --gmkb-space-5: 40px;
-  --gmkb-space-6: 48px;
-  --gmkb-space-7: 56px;
-  --gmkb-space-8: 64px;
-  --gmkb-space-9: 72px;
-  --gmkb-space-10: 80px;
-  --gmkb-space-11: 88px;
-  --gmkb-space-12: 96px;
-  
-  /* Component gaps */
-  --gmkb-spacing-component-gap: 40px;
-  --gmkb-spacing-section-gap: 80px;
-  --gmkb-spacing-base-unit: 8px;
-  
-  /* Border radius */
-  --gmkb-border-radius-none: 0;
-  --gmkb-border-radius-sm: 4px;
-  --gmkb-border-radius: 8px;
-  --gmkb-border-radius-md: 12px;
-  --gmkb-border-radius-lg: 16px;
-  --gmkb-border-radius-xl: 24px;
-  --gmkb-border-radius-full: 9999px;
-  
-  /* Shadows */
-  --gmkb-shadow-none: none;
-  --gmkb-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --gmkb-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --gmkb-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --gmkb-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  --gmkb-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  
-  /* Transitions */
-  --gmkb-transitions: all 0.3s ease;
-  --gmkb-transition-fast: all 0.15s ease;
-  --gmkb-transition-normal: all 0.3s ease;
-  --gmkb-transition-slow: all 0.5s ease;
-  
-  /* Z-index scale */
-  --gmkb-z-base: 0;
-  --gmkb-z-dropdown: 1000;
-  --gmkb-z-sticky: 1020;
-  --gmkb-z-fixed: 1030;
-  --gmkb-z-modal-backdrop: 1040;
-  --gmkb-z-modal: 1050;
-  --gmkb-z-popover: 1060;
-  --gmkb-z-tooltip: 1070;
-  --gmkb-z-notification: 1080;
+    /* Typography */
+    --gmkb-font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --gmkb-font-heading: var(--gmkb-font-primary);
+    --gmkb-font-scale: 1.2;
+    
+    /* Font Sizes */
+    --gmkb-font-size-xs: 12px;
+    --gmkb-font-size-sm: 14px;
+    --gmkb-font-size-base: 16px;
+    --gmkb-font-size-lg: 19px;
+    --gmkb-font-size-xl: 24px;
+    --gmkb-font-size-2xl: 29px;
+    --gmkb-font-size-3xl: 36px;
+    --gmkb-font-size-4xl: 43px;
+    
+    /* Line Heights */
+    --gmkb-line-height-body: 1.6;
+    --gmkb-line-height-heading: 1.2;
+    
+    /* Colors */
+    --gmkb-color-primary: #295cff;
+    --gmkb-color-primary-hover: #1844dd;
+    --gmkb-color-secondary: #1c0d5a;
+    --gmkb-color-secondary-hover: #150a44;
+    --gmkb-color-accent: #295cff;
+    --gmkb-color-accent-hover: #1844dd;
+    --gmkb-color-text: #333333;
+    --gmkb-color-text-light: #666666;
+    --gmkb-color-text-muted: #999999;
+    --gmkb-color-background: #ffffff;
+    --gmkb-color-surface: #f8f9fa;
+    --gmkb-color-surface-hover: #e9ecef;
+    --gmkb-color-border: #e1e5e9;
+    --gmkb-color-border-focus: #295cff;
+    --gmkb-color-error: #dc3545;
+    --gmkb-color-success: #28a745;
+    --gmkb-color-warning: #ffc107;
+    --gmkb-color-info: #17a2b8;
+    
+    /* Spacing */
+    --gmkb-spacing-base-unit: 8px;
+    --gmkb-spacing-component-gap: 40px;
+    --gmkb-spacing-section-gap: 80px;
+    --gmkb-spacing-container-padding: 24px;
+    
+    /* Spacing Scale */
+    --gmkb-space-1: 8px;
+    --gmkb-space-2: 16px;
+    --gmkb-space-3: 24px;
+    --gmkb-space-4: 32px;
+    --gmkb-space-5: 40px;
+    --gmkb-space-6: 48px;
+    --gmkb-space-7: 56px;
+    --gmkb-space-8: 64px;
+    --gmkb-space-9: 72px;
+    --gmkb-space-10: 80px;
+    --gmkb-space-11: 88px;
+    --gmkb-space-12: 96px;
+    
+    /* Effects */
+    --gmkb-border-radius: 8px;
+    --gmkb-border-radius-sm: 4px;
+    --gmkb-border-radius-lg: 16px;
+    --gmkb-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --gmkb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --gmkb-shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.15);
+    --gmkb-transitions: all 0.3s ease;
+    --gmkb-transitions-fast: all 0.15s ease;
+    --gmkb-transitions-slow: all 0.5s ease;
 }
 
-/* Dark theme override variables */
-[data-gmkb-theme="modern_dark"] {
-  --gmkb-color-primary: #60a5fa;
-  --gmkb-color-secondary: #818cf8;
-  --gmkb-color-accent: #34d399;
-  --gmkb-color-text: #f3f4f6;
-  --gmkb-color-text-light: #9ca3af;
-  --gmkb-color-text-muted: #6b7280;
-  --gmkb-color-background: #111827;
-  --gmkb-color-surface: #1f2937;
-  --gmkb-color-surface-alt: #374151;
-  --gmkb-color-border: #374151;
-  --gmkb-color-border-dark: #1f2937;
-  --gmkb-color-border-light: #4b5563;
+/* Apply theme variables to Media Kit Builder */
+.gmkb-media-kit-builder {
+    font-family: var(--gmkb-font-primary);
+    font-size: var(--gmkb-font-size-base);
+    line-height: var(--gmkb-line-height-body);
+    color: var(--gmkb-color-text);
+    background-color: var(--gmkb-color-background);
 }
 
-/* Component theming */
+/* Headings */
+.gmkb-media-kit-builder h1,
+.gmkb-media-kit-builder h2,
+.gmkb-media-kit-builder h3,
+.gmkb-media-kit-builder h4,
+.gmkb-media-kit-builder h5,
+.gmkb-media-kit-builder h6 {
+    font-family: var(--gmkb-font-heading);
+    line-height: var(--gmkb-line-height-heading);
+    color: var(--gmkb-color-text);
+    margin-top: 0;
+    margin-bottom: var(--gmkb-space-2);
+}
+
+.gmkb-media-kit-builder h1 { font-size: var(--gmkb-font-size-4xl); }
+.gmkb-media-kit-builder h2 { font-size: var(--gmkb-font-size-3xl); }
+.gmkb-media-kit-builder h3 { font-size: var(--gmkb-font-size-2xl); }
+.gmkb-media-kit-builder h4 { font-size: var(--gmkb-font-size-xl); }
+.gmkb-media-kit-builder h5 { font-size: var(--gmkb-font-size-lg); }
+.gmkb-media-kit-builder h6 { font-size: var(--gmkb-font-size-base); }
+
+/* Components */
 .gmkb-component {
-  font-family: var(--gmkb-font-primary);
-  font-size: var(--gmkb-font-size-base);
-  line-height: var(--gmkb-line-height-body);
-  color: var(--gmkb-color-text);
+    background: var(--gmkb-color-surface);
+    border: 1px solid var(--gmkb-color-border);
+    border-radius: var(--gmkb-border-radius);
+    padding: var(--gmkb-spacing-container-padding);
+    margin-bottom: var(--gmkb-spacing-component-gap);
+    transition: var(--gmkb-transitions);
 }
 
-.gmkb-component__title {
-  font-family: var(--gmkb-font-heading);
-  font-size: var(--gmkb-font-size-2xl);
-  font-weight: var(--gmkb-font-weight-bold);
-  line-height: var(--gmkb-line-height-heading);
-  color: var(--gmkb-color-text);
-  margin-bottom: var(--gmkb-space-3);
+.gmkb-component:hover {
+    box-shadow: var(--gmkb-shadow);
 }
 
-.gmkb-component__subtitle {
-  font-size: var(--gmkb-font-size-lg);
-  font-weight: var(--gmkb-font-weight-medium);
-  color: var(--gmkb-color-text-light);
-  margin-bottom: var(--gmkb-space-2);
-}
-
-.gmkb-component__description {
-  font-size: var(--gmkb-font-size-base);
-  line-height: var(--gmkb-line-height-body);
-  color: var(--gmkb-color-text-light);
-  margin-bottom: var(--gmkb-space-4);
-}
-
-/* Button theming */
-.gmkb-btn {
-  font-family: var(--gmkb-font-primary);
-  font-size: var(--gmkb-font-size-base);
-  font-weight: var(--gmkb-font-weight-medium);
-  padding: var(--gmkb-space-2) var(--gmkb-space-4);
-  border-radius: var(--gmkb-border-radius);
-  transition: var(--gmkb-transitions);
-  cursor: pointer;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-}
-
-.gmkb-btn--primary {
-  background-color: var(--gmkb-color-primary);
-  color: var(--gmkb-color-text-inverse);
-}
-
-.gmkb-btn--primary:hover {
-  background-color: var(--gmkb-color-primary-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--gmkb-shadow-md);
-}
-
-.gmkb-btn--secondary {
-  background-color: var(--gmkb-color-surface);
-  color: var(--gmkb-color-text);
-  border: 1px solid var(--gmkb-color-border);
-}
-
-.gmkb-btn--secondary:hover {
-  background-color: var(--gmkb-color-surface-alt);
-  border-color: var(--gmkb-color-border-dark);
-}
-
-/* Card theming */
-.gmkb-card {
-  background-color: var(--gmkb-color-background);
-  border: 1px solid var(--gmkb-color-border);
-  border-radius: var(--gmkb-border-radius);
-  padding: var(--gmkb-space-4);
-  box-shadow: var(--gmkb-shadow);
-  transition: var(--gmkb-transitions);
-}
-
-.gmkb-card:hover {
-  box-shadow: var(--gmkb-shadow-md);
-}
-
-/* Section theming */
+/* Sections */
 .gmkb-section {
-  padding: var(--gmkb-spacing-section-gap) 0;
-  background-color: var(--gmkb-color-background);
+    margin-bottom: var(--gmkb-spacing-section-gap);
+    padding: var(--gmkb-space-3) 0;
 }
 
-.gmkb-section--alt {
-  background-color: var(--gmkb-color-surface);
+.gmkb-section-full_width {
+    width: 100%;
 }
 
-.gmkb-section__container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--gmkb-space-3);
+.gmkb-section-two_column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gmkb-spacing-component-gap);
 }
 
-/* Form theming */
+.gmkb-section-three_column {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gmkb-spacing-component-gap);
+}
+
+/* Buttons */
+.gmkb-button,
+.gmkb-toolbar button,
+.gmkb-component-controls button {
+    font-family: var(--gmkb-font-primary);
+    font-size: var(--gmkb-font-size-sm);
+    font-weight: 500;
+    padding: var(--gmkb-space-1) var(--gmkb-space-3);
+    background: var(--gmkb-color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--gmkb-border-radius);
+    cursor: pointer;
+    transition: var(--gmkb-transitions);
+}
+
+.gmkb-button:hover,
+.gmkb-toolbar button:hover,
+.gmkb-component-controls button:hover {
+    background: var(--gmkb-color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--gmkb-shadow);
+}
+
+.gmkb-button-secondary {
+    background: var(--gmkb-color-surface);
+    color: var(--gmkb-color-text);
+    border: 1px solid var(--gmkb-color-border);
+}
+
+.gmkb-button-secondary:hover {
+    background: var(--gmkb-color-surface-hover);
+}
+
+/* Forms */
 .gmkb-input,
 .gmkb-textarea,
 .gmkb-select {
-  font-family: var(--gmkb-font-primary);
-  font-size: var(--gmkb-font-size-base);
-  padding: var(--gmkb-space-2);
-  border: 1px solid var(--gmkb-color-border);
-  border-radius: var(--gmkb-border-radius-sm);
-  background-color: var(--gmkb-color-background);
-  color: var(--gmkb-color-text);
-  transition: var(--gmkb-transitions);
-  width: 100%;
+    font-family: var(--gmkb-font-primary);
+    font-size: var(--gmkb-font-size-sm);
+    padding: var(--gmkb-space-1) var(--gmkb-space-2);
+    background: var(--gmkb-color-background);
+    color: var(--gmkb-color-text);
+    border: 1px solid var(--gmkb-color-border);
+    border-radius: var(--gmkb-border-radius-sm);
+    transition: var(--gmkb-transitions-fast);
+    width: 100%;
 }
 
 .gmkb-input:focus,
 .gmkb-textarea:focus,
 .gmkb-select:focus {
-  outline: none;
-  border-color: var(--gmkb-color-primary);
-  box-shadow: 0 0 0 3px rgba(41, 92, 255, 0.1);
+    outline: none;
+    border-color: var(--gmkb-color-border-focus);
+    box-shadow: 0 0 0 3px rgba(41, 92, 255, 0.1);
 }
 
-/* Utility classes for theming */
+/* Cards */
+.gmkb-card {
+    background: var(--gmkb-color-surface);
+    border: 1px solid var(--gmkb-color-border);
+    border-radius: var(--gmkb-border-radius);
+    padding: var(--gmkb-space-3);
+    box-shadow: var(--gmkb-shadow-sm);
+    transition: var(--gmkb-transitions);
+}
+
+.gmkb-card:hover {
+    box-shadow: var(--gmkb-shadow);
+    transform: translateY(-2px);
+}
+
+/* Sidebar */
+.gmkb-sidebar {
+    background: var(--gmkb-color-surface);
+    border-right: 1px solid var(--gmkb-color-border);
+}
+
+.gmkb-sidebar-tab {
+    padding: var(--gmkb-space-2) var(--gmkb-space-3);
+    border-bottom: 2px solid transparent;
+    color: var(--gmkb-color-text-light);
+    transition: var(--gmkb-transitions-fast);
+}
+
+.gmkb-sidebar-tab.active {
+    color: var(--gmkb-color-primary);
+    border-bottom-color: var(--gmkb-color-primary);
+}
+
+/* Toolbar */
+.gmkb-toolbar {
+    background: var(--gmkb-color-background);
+    border-bottom: 1px solid var(--gmkb-color-border);
+    padding: var(--gmkb-space-2) var(--gmkb-space-3);
+}
+
+/* Preview Area */
+.gmkb-preview-area {
+    background: var(--gmkb-color-background);
+    padding: var(--gmkb-spacing-container-padding);
+}
+
+/* Component Controls */
+.gmkb-component-controls {
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: var(--gmkb-border-radius-sm);
+    padding: var(--gmkb-space-1);
+}
+
+.gmkb-component-controls button {
+    background: transparent;
+    color: white;
+    padding: var(--gmkb-space-1);
+    font-size: var(--gmkb-font-size-xs);
+}
+
+.gmkb-component-controls button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Empty State */
+.gmkb-empty-state {
+    text-align: center;
+    padding: var(--gmkb-space-10) var(--gmkb-space-4);
+    color: var(--gmkb-color-text-light);
+}
+
+.gmkb-empty-state h3 {
+    font-size: var(--gmkb-font-size-xl);
+    margin-bottom: var(--gmkb-space-2);
+}
+
+/* Modals */
+.gmkb-modal {
+    background: var(--gmkb-color-background);
+    border-radius: var(--gmkb-border-radius-lg);
+    box-shadow: var(--gmkb-shadow-lg);
+}
+
+.gmkb-modal-header {
+    border-bottom: 1px solid var(--gmkb-color-border);
+    padding: var(--gmkb-space-3);
+}
+
+.gmkb-modal-body {
+    padding: var(--gmkb-space-3);
+}
+
+.gmkb-modal-footer {
+    border-top: 1px solid var(--gmkb-color-border);
+    padding: var(--gmkb-space-3);
+    background: var(--gmkb-color-surface);
+}
+
+/* Loading States */
+.gmkb-loading {
+    color: var(--gmkb-color-text-light);
+}
+
+.gmkb-spinner {
+    border-color: var(--gmkb-color-border);
+    border-top-color: var(--gmkb-color-primary);
+}
+
+/* Drag and Drop */
+.gmkb-drag-over {
+    background: var(--gmkb-color-surface);
+    border: 2px dashed var(--gmkb-color-primary);
+}
+
+.gmkb-dragging {
+    opacity: 0.5;
+}
+
+.gmkb-drop-indicator {
+    background: var(--gmkb-color-primary);
+    height: 3px;
+    border-radius: var(--gmkb-border-radius-sm);
+}
+
+/* Alerts and Messages */
+.gmkb-alert {
+    padding: var(--gmkb-space-2) var(--gmkb-space-3);
+    border-radius: var(--gmkb-border-radius);
+    margin-bottom: var(--gmkb-space-3);
+}
+
+.gmkb-alert-success {
+    background: var(--gmkb-color-success);
+    color: white;
+}
+
+.gmkb-alert-error {
+    background: var(--gmkb-color-error);
+    color: white;
+}
+
+.gmkb-alert-warning {
+    background: var(--gmkb-color-warning);
+    color: #333;
+}
+
+.gmkb-alert-info {
+    background: var(--gmkb-color-info);
+    color: white;
+}
+
+/* Tooltips */
+.gmkb-tooltip {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: var(--gmkb-space-1) var(--gmkb-space-2);
+    border-radius: var(--gmkb-border-radius-sm);
+    font-size: var(--gmkb-font-size-xs);
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+    :root {
+        --gmkb-font-size-base: 14px;
+        --gmkb-spacing-component-gap: 24px;
+        --gmkb-spacing-section-gap: 48px;
+        --gmkb-spacing-container-padding: 16px;
+    }
+    
+    .gmkb-section-two_column,
+    .gmkb-section-three_column {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Theme-specific Overrides */
+[data-gmkb-theme="professional_clean"] {
+    /* Professional Clean specific overrides */
+}
+
+[data-gmkb-theme="creative_bold"] {
+    /* Creative Bold specific animations */
+    .gmkb-button {
+        transition: var(--gmkb-transitions);
+    }
+    
+    .gmkb-component {
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+}
+
+[data-gmkb-theme="minimal_elegant"] {
+    /* Minimal Elegant removes decorations */
+    * {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+    
+    .gmkb-component {
+        border-bottom: 1px solid var(--gmkb-color-border);
+        border-left: none;
+        border-right: none;
+        border-top: none;
+    }
+}
+
+[data-gmkb-theme="modern_dark"] {
+    /* Modern Dark glassmorphism effects */
+    .gmkb-component {
+        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .gmkb-card {
+        backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.03);
+    }
+    
+    .gmkb-button {
+        box-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
+    }
+    
+    .gmkb-button:hover {
+        box-shadow: 0 0 30px rgba(96, 165, 250, 0.5);
+    }
+}
+
+/* Print Styles */
+@media print {
+    :root {
+        --gmkb-color-primary: #000000;
+        --gmkb-color-text: #000000;
+        --gmkb-color-background: #ffffff;
+        --gmkb-shadow: none;
+    }
+    
+    .gmkb-toolbar,
+    .gmkb-sidebar,
+    .gmkb-component-controls,
+    .gmkb-modal {
+        display: none !important;
+    }
+    
+    .gmkb-component {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+
+/* Utility Classes */
 .gmkb-text-primary { color: var(--gmkb-color-primary); }
 .gmkb-text-secondary { color: var(--gmkb-color-secondary); }
-.gmkb-text-accent { color: var(--gmkb-color-accent); }
+.gmkb-text-light { color: var(--gmkb-color-text-light); }
 .gmkb-text-muted { color: var(--gmkb-color-text-muted); }
 
 .gmkb-bg-primary { background-color: var(--gmkb-color-primary); }
 .gmkb-bg-secondary { background-color: var(--gmkb-color-secondary); }
 .gmkb-bg-surface { background-color: var(--gmkb-color-surface); }
-.gmkb-bg-surface-alt { background-color: var(--gmkb-color-surface-alt); }
 
-/* Responsive theming adjustments */
-@media (max-width: 768px) {
-  :root {
-    --gmkb-font-size-base: 14px;
-    --gmkb-spacing-component-gap: 32px;
-    --gmkb-spacing-section-gap: 60px;
-  }
-}
+.gmkb-rounded { border-radius: var(--gmkb-border-radius); }
+.gmkb-rounded-sm { border-radius: var(--gmkb-border-radius-sm); }
+.gmkb-rounded-lg { border-radius: var(--gmkb-border-radius-lg); }
 
-@media (max-width: 480px) {
-  :root {
-    --gmkb-spacing-component-gap: 24px;
-    --gmkb-spacing-section-gap: 40px;
-  }
-}
+.gmkb-shadow { box-shadow: var(--gmkb-shadow); }
+.gmkb-shadow-sm { box-shadow: var(--gmkb-shadow-sm); }
+.gmkb-shadow-lg { box-shadow: var(--gmkb-shadow-lg); }
+
+.gmkb-transition { transition: var(--gmkb-transitions); }
+.gmkb-transition-fast { transition: var(--gmkb-transitions-fast); }
+.gmkb-transition-slow { transition: var(--gmkb-transitions-slow); }
