@@ -43,6 +43,9 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';
 require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 
+// PHASE 4: Theme AJAX handlers
+require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php';
+
 // ARCHITECTURE CLEANUP: Component-level code should be handled by ComponentDiscovery
 // ROOT FIX: Remove component-specific includes from main plugin file
 // Components will auto-register via the ComponentDiscovery system

@@ -362,16 +362,27 @@
         
         /**
          * Handle theme button click
+         * ROOT FIX: Simplified since theme customizer now loads before toolbar
          */
         handleThemeClick() {
-            const themeModal = document.getElementById('global-settings-modal');
-            if (themeModal) {
-                this.showModal(themeModal);
+            this.logger.info('TOOLBAR', 'Theme button clicked');
+            
+            // Theme customizer should always exist since it loads before toolbar
+            if (window.themeCustomizer && window.themeCustomizer.open) {
+                this.logger.info('TOOLBAR', 'Opening Theme Customizer');
+                window.themeCustomizer.open();
                 if (this.eventBus) {
                     this.eventBus.emit('toolbar:theme-requested', { timestamp: new Date() });
                 }
             } else {
-                this.showToast('Theme settings not available', 'warning');
+                // This should not happen with proper script loading order
+                this.logger.error('TOOLBAR', 'Theme Customizer not available - check script loading order');
+                this.showToast('Theme settings not available', 'error');
+                
+                // Dispatch event as last resort
+                document.dispatchEvent(new CustomEvent('gmkb:open-theme-customizer', {
+                    detail: { source: 'toolbar-error' }
+                }));
             }
         }
         

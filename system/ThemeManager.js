@@ -420,6 +420,52 @@ class ThemeManager {
                 }
             });
         }
+        
+        // Save to WordPress database via AJAX
+        this.saveThemeToDatabase(themeId);
+    }
+    
+    /**
+     * Save theme to WordPress database
+     * Following checklist: WordPress Integration
+     */
+    saveThemeToDatabase(themeId) {
+        if (!window.gmkbData || !window.gmkbData.ajaxUrl) {
+            this.logger.warn('⚠️ PHASE 4: Cannot save theme - WordPress data not available');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('action', 'gmkb_save_theme');
+        formData.append('theme_id', themeId);
+        formData.append('theme_data', JSON.stringify(this.currentTheme));
+        formData.append('post_id', window.gmkbData.postId || 0);
+        formData.append('nonce', window.gmkbData.nonce);
+        
+        fetch(window.gmkbData.ajaxUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.logger.info('✅ PHASE 4: Theme saved to database');
+                
+                // Show success message
+                if (window.showToast) {
+                    window.showToast('Theme saved successfully', 'success', 3000);
+                }
+            } else {
+                throw new Error(data.data || 'Failed to save theme');
+            }
+        })
+        .catch(error => {
+            this.logger.error('❌ PHASE 4: Failed to save theme to database:', error);
+            if (window.showToast) {
+                window.showToast('Failed to save theme settings', 'error', 5000);
+            }
+        });
     }
     
     /**
@@ -659,13 +705,11 @@ class ThemeManager {
 // Global instance
 window.ThemeManager = ThemeManager;
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.themeManager = new ThemeManager();
-    });
-} else {
+// ROOT FIX: Initialize immediately so it's available for other components
+// The instance will handle its own internal initialization timing
+if (!window.themeManager) {
     window.themeManager = new ThemeManager();
+    console.log('✅ Theme Manager: Instance created immediately and available globally');
 }
 
 // Export for use in modules

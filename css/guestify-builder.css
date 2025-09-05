@@ -54,6 +54,9 @@
 /* Enhanced Error Handler */
 @import url('modules/enhanced-error-handler.css');
 
+/* Phase 4 Theme Customizer */
+@import url('modules/theme-customizer.css');
+
 /* ========================================
    CRITICAL CSS - IMMEDIATE THEMING
    ======================================== */

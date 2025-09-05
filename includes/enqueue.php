@@ -757,6 +757,29 @@ function gmkb_enqueue_assets() {
     }
     
     // ROOT FIX: MISSING UI SCRIPTS - Adding essential UI functionality for tabs, modals, and toolbar
+    // ROOT FIX: Load Phase 4 Theme System BEFORE toolbar to prevent race conditions
+    // PHASE 4: Theme Manager - Must load early
+    if (!wp_script_is('gmkb-theme-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-theme-manager',
+            $plugin_url . 'system/ThemeManager.js',
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 4: Theme Customizer UI - Must load BEFORE toolbar
+    if (!wp_script_is('gmkb-theme-customizer', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-theme-customizer',
+            $plugin_url . 'js/ui/theme-customizer.js',
+            array('gmkb-theme-manager'),
+            $version,
+            true
+        );
+    }
+    
     // 12a. Tabs system (handles sidebar tab switching) - CRITICAL MISSING SCRIPT
     if (!wp_script_is('gmkb-tabs', 'enqueued')) {
         wp_enqueue_script(
@@ -768,13 +791,12 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 12b. CONSOLIDATED Toolbar System - ROOT FIX: All toolbar functionality
-    // PHASE 2 OPTIMIZATION: Consolidated 2 files into 1 (toolbar + toolbar-interactions)
+    // 12b. CONSOLIDATED Toolbar System - ROOT FIX: Now loads AFTER theme system
     if (!wp_script_is('gmkb-toolbar', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-toolbar',
             $plugin_url . 'js/ui/toolbar-consolidated.js',
-            array('gmkb-structured-logger'),
+            array('gmkb-structured-logger', 'gmkb-theme-customizer'), // Depends on theme customizer
             $version . '-consolidated',
             true
         );
@@ -813,6 +835,17 @@ function gmkb_enqueue_assets() {
             'gmkb-design-panel',
             $plugin_url . 'js/ui/design-panel.js',
             array('gmkb-structured-logger', 'gmkb-helpers', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
+    
+    // 12e1. Design Sidebar Buttons - ROOT FIX: Theme Settings and Template Loading
+    if (!wp_script_is('gmkb-design-sidebar-buttons', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-design-sidebar-buttons',
+            $plugin_url . 'js/ui/design-sidebar-buttons.js',
+            array('gmkb-design-panel', 'gmkb-theme-manager', 'gmkb-theme-customizer'),
             $version,
             true
         );
@@ -1185,27 +1218,7 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 4: Theme Manager
-    if (!wp_script_is('gmkb-theme-manager', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-theme-manager',
-            $plugin_url . 'system/ThemeManager.js',
-            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
-            $version,
-            true
-        );
-    }
-
-    // PHASE 4: Theme Customizer UI
-    if (!wp_script_is('gmkb-theme-customizer', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-theme-customizer',
-            $plugin_url . 'js/ui/theme-customizer.js',
-            array('gmkb-theme-manager'),
-            $version,
-            true
-        );
-    }
+    // PHASE 4 Theme scripts already loaded earlier before toolbar to fix race condition
     
     // ✅ COMPONENT SELF-REGISTRATION: Load component renderers
     // PERFORMANCE OPTIMIZATION: Use bundled version in production, individual files in development
@@ -1517,8 +1530,9 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-component-integration',
                 'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
-                // PHASE 4: Theme layer systems
-                'gmkb-theme-manager',
+                // PHASE 4: Theme layer systems (already loaded earlier)
+                // 'gmkb-theme-manager', // Already loaded before toolbar
+                // 'gmkb-theme-customizer', // Already loaded before toolbar
                 'gmkb-tabs',
                 'gmkb-toolbar', // CONSOLIDATED: Now includes toolbar-interactions
                 'gmkb-ui-init-coordinator',

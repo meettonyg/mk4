@@ -1,4 +1,3 @@
-/**
  * @file emergency-blank-screen-fix.js
  * @description Emergency patch for blank screen issue after component addition
  * PLACE THIS SCRIPT BEFORE component renderer initialization

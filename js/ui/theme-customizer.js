@@ -9,7 +9,12 @@
  * @package GMKB/UI
  */
 
-class ThemeCustomizer {
+(function() {
+    'use strict';
+    
+    console.log('🎨 Theme Customizer: Script loaded');
+    
+    class ThemeCustomizer {
     constructor() {
         this.logger = window.StructuredLogger || console;
         this.themeManager = null;
@@ -629,21 +634,38 @@ class ThemeCustomizer {
             window.showToast(`Custom theme "${name}" created`, 'success');
         }
     }
-}
-
-// Global instance
-window.ThemeCustomizer = ThemeCustomizer;
-
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+    }
+    
+    // Global instance
+    window.ThemeCustomizer = ThemeCustomizer;
+    
+    // ROOT FIX: Initialize immediately to be available for toolbar
+    // The instance will wait internally for its dependencies
+    if (!window.themeCustomizer) {
         window.themeCustomizer = new ThemeCustomizer();
-    });
-} else {
-    window.themeCustomizer = new ThemeCustomizer();
-}
-
-// Export for use in modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ThemeCustomizer;
-}
+        console.log('✅ Theme Customizer: Instance created immediately and available globally');
+    }
+    
+    // Also ensure initialization after DOM/events for components that might recreate it
+    function ensureThemeCustomizer() {
+        if (!window.themeCustomizer) {
+            window.themeCustomizer = new ThemeCustomizer();
+            console.log('✅ Theme Customizer: Late initialization completed');
+        }
+    }
+    
+    // Backup initialization points
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ensureThemeCustomizer);
+    }
+    document.addEventListener('gmkb:theme-applied', ensureThemeCustomizer);
+    document.addEventListener('gmkb:ready', ensureThemeCustomizer);
+    
+    // Export for use in modules
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = ThemeCustomizer;
+    }
+    
+    console.log('🎨 Theme Customizer: Setup complete');
+    
+})();
