@@ -17,8 +17,14 @@
     // ============================================
     
     function setupTemplateLibrary() {
-        // Create modal HTML if it doesn't exist
-        if (!document.getElementById('template-library-modal')) {
+        // ROOT FIX: Use existing modal from PHP partial, don't create new one
+        const existingModal = document.getElementById('template-library-modal');
+        if (existingModal) {
+            console.log('✅ Template Library: Found existing modal from PHP partial');
+            setupExistingTemplateModal();
+        } else {
+            // Fallback: Create modal if PHP partial missing
+            console.log('⚠️ Template Library: Creating fallback modal');
             createTemplateModal();
         }
         
@@ -27,14 +33,8 @@
             showTemplateLibrary();
         });
         
-        // Set up template selection
-        document.addEventListener('click', (e) => {
-            const templateCard = e.target.closest('.template-card');
-            if (templateCard && templateCard.closest('#template-library-modal')) {
-                const templateId = templateCard.getAttribute('data-template-id');
-                selectTemplate(templateId);
-            }
-        });
+        // ROOT FIX: Setup proper event delegation for template selection
+        setupTemplateSelectionHandlers();
     }
 
     function createTemplateModal() {
@@ -63,13 +63,16 @@
     function showTemplateLibrary() {
         const modal = document.getElementById('template-library-modal');
         if (modal) {
-            populateTemplates();
+            // ROOT FIX: Populate templates with proper PHP structure
+            populateTemplatesForPHPModal();
             if (window.GMKB_Modals && window.GMKB_Modals.show) {
                 window.GMKB_Modals.show('template-library-modal');
             } else {
                 modal.style.display = 'flex';
-                modal.classList.add('modal--open');
+                modal.classList.add('library-modal--open');
             }
+        } else {
+            console.error('❌ Template Library: Modal not found');
         }
     }
 
@@ -81,10 +84,222 @@
             if (modal) {
                 modal.style.display = 'none';
                 modal.classList.remove('modal--open');
+                modal.classList.remove('library-modal--open');
             }
         }
     }
+    
+    // ROOT FIX: Setup existing template modal from PHP partial
+    function setupExistingTemplateModal() {
+        const modal = document.getElementById('template-library-modal');
+        if (!modal) return;
+        
+        // Setup close button
+        const closeBtn = modal.querySelector('#close-template-library');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideTemplateLibrary();
+            });
+        }
+        
+        // Setup Load Template button
+        const loadBtn = modal.querySelector('#load-template-button');
+        if (loadBtn) {
+            loadBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleLoadTemplate();
+            });
+        }
+        
+        // Setup Cancel button
+        const cancelBtn = modal.querySelector('#cancel-template-button');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideTemplateLibrary();
+            });
+        }
+    }
+    
+    // ROOT FIX: Setup template selection handlers for PHP structure
+    function setupTemplateSelectionHandlers() {
+        document.addEventListener('click', (e) => {
+            // Handle template card clicks
+            const templateCard = e.target.closest('.template-card');
+            if (templateCard && templateCard.closest('#template-library-modal')) {
+                // Remove active class from all cards
+                document.querySelectorAll('.template-card').forEach(card => {
+                    card.classList.remove('template-card--active');
+                });
+                // Add active class to clicked card
+                templateCard.classList.add('template-card--active');
+                
+                // Enable Load Template button
+                const loadBtn = document.querySelector('#load-template-button');
+                if (loadBtn) {
+                    loadBtn.disabled = false;
+                    loadBtn.classList.add('btn--primary');
+                    loadBtn.classList.remove('btn--disabled');
+                }
+            }
+        });
+    }
+    
+    // ROOT FIX: Populate templates for PHP modal structure
+    function populateTemplatesForPHPModal() {
+        const grid = document.getElementById('template-grid');
+        if (!grid) {
+            console.error('Template grid not found');
+            return;
+        }
+        
+        // Check if templates already exist (from PHP)
+        const existingCards = grid.querySelectorAll('.template-card');
+        if (existingCards.length > 0) {
+            console.log('Templates already populated from PHP');
+            return;
+        }
+        
+        // Populate with default templates if empty
+        const templates = [
+            {
+                id: 'professional-speaker',
+                name: 'Professional Speaker',
+                description: 'Complete speaker media kit with bio, topics, and social links'
+            },
+            {
+                id: 'podcast-host',
+                name: 'Podcast Host',
+                description: 'Media kit focused on podcasting with stats and social presence'
+            },
+            {
+                id: 'minimal-professional',
+                name: 'Minimal Professional',
+                description: 'Clean, simple layout with essential components only'
+            }
+        ];
+        
+        grid.innerHTML = templates.map(template => `
+            <div class="template-card" data-template="${template.id}">
+                <div class="template-preview">
+                    <div class="template-preview-content">
+                        <div class="preview-hero"></div>
+                        <div class="preview-bio"></div>
+                        <div class="preview-topics"></div>
+                    </div>
+                </div>
+                <div class="template-info">
+                    <h4>${template.name}</h4>
+                    <p>${template.description}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // ROOT FIX: Handle Load Template button click
+    function handleLoadTemplate() {
+        const activeCard = document.querySelector('.template-card--active');
+        if (!activeCard) {
+            if (window.showToast) {
+                window.showToast('Please select a template first', 'warning');
+            } else {
+                alert('Please select a template first');
+            }
+            return;
+        }
+        
+        const templateId = activeCard.dataset.template;
+        console.log('Loading template:', templateId);
+        
+        // Apply the selected template
+        applyTemplate(templateId);
+        
+        // Close modal
+        hideTemplateLibrary();
+    }
+    
+    // ROOT FIX: Apply template to media kit
+    function applyTemplate(templateId) {
+        console.log('Applying template:', templateId);
+        
+        // Show loading message
+        if (window.showToast) {
+            window.showToast('Loading template...', 'info', 2000);
+        }
+        
+        // Template configurations
+        const templates = {
+            'professional-speaker': {
+                components: [
+                    { type: 'hero', props: {} },
+                    { type: 'biography', props: {} },
+                    { type: 'topics', props: {} },
+                    { type: 'contact', props: {} },
+                    { type: 'social', props: {} }
+                ],
+                theme: 'professional_clean'
+            },
+            'podcast-host': {
+                components: [
+                    { type: 'hero', props: {} },
+                    { type: 'stats', props: {} },
+                    { type: 'biography', props: {} },
+                    { type: 'topics', props: {} },
+                    { type: 'social', props: {} },
+                    { type: 'podcast-player', props: {} }
+                ],
+                theme: 'creative_bold'
+            },
+            'minimal-professional': {
+                components: [
+                    { type: 'hero', props: {} },
+                    { type: 'biography', props: {} },
+                    { type: 'contact', props: {} }
+                ],
+                theme: 'minimal_elegant'
+            }
+        };
+        
+        const template = templates[templateId];
+        if (!template) {
+            console.error('Template not found:', templateId);
+            return;
+        }
+        
+        // Clear existing components
+        if (window.enhancedComponentManager) {
+            const state = window.enhancedStateManager?.getState();
+            if (state?.components) {
+                Object.keys(state.components).forEach(id => {
+                    window.enhancedComponentManager.removeComponent(id, true); // Skip confirmation
+                });
+            }
+        }
+        
+        // Add template components
+        if (window.enhancedComponentManager && template.components) {
+            template.components.forEach((component, index) => {
+                setTimeout(() => {
+                    window.enhancedComponentManager.addComponent(component.type, component.props);
+                }, index * 100); // Stagger component addition
+            });
+        }
+        
+        // Apply theme if available
+        if (template.theme && window.themeManager) {
+            window.themeManager.loadTheme(template.theme);
+        }
+        
+        // Show success message
+        setTimeout(() => {
+            if (window.showToast) {
+                window.showToast('Template loaded successfully!', 'success', 3000);
+            }
+        }, 1000);
+    }
 
+    // Keep original populateTemplates for fallback modal
     function populateTemplates() {
         const grid = document.getElementById('template-grid');
         if (!grid) return;
@@ -360,6 +575,223 @@
     // ============================================
     
     const templateStyles = `
+        /* ROOT FIX: Styles for PHP template modal structure */
+        .library-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .library-modal--open {
+            display: flex !important;
+        }
+        
+        .library {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .library__header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .library__title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .library__title svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .library__close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: color 0.2s;
+        }
+        
+        .library__close:hover {
+            color: #111827;
+        }
+        
+        .library__content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+        }
+        
+        .library__main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        
+        .library__section-header {
+            margin-bottom: 20px;
+        }
+        
+        .library__section-header h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .library__section-header p {
+            margin: 0;
+            color: #6b7280;
+        }
+        
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .template-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .template-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .template-card--active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .template-preview {
+            height: 120px;
+            background: #f9fafb;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .template-preview-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .preview-hero,
+        .preview-bio,
+        .preview-topics,
+        .preview-stats,
+        .preview-social {
+            background: #d1d5db;
+            border-radius: 2px;
+            flex: 1;
+        }
+        
+        .preview-hero {
+            flex: 2;
+            background: #3b82f6;
+        }
+        
+        .preview-bio {
+            background: #6b7280;
+        }
+        
+        .preview-topics {
+            background: #9ca3af;
+        }
+        
+        .template-info {
+            padding: 16px;
+        }
+        
+        .template-info h4 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .template-info p {
+            margin: 0;
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+        
+        .library__footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        .library__footer .btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        
+        .library__footer .btn--secondary {
+            background: white;
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+        
+        .library__footer .btn--secondary:hover {
+            background: #f9fafb;
+        }
+        
+        .library__footer .btn--primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .library__footer .btn--primary:hover {
+            background: #2563eb;
+        }
+        
+        .library__footer .btn--primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        /* Original template styles for fallback modal */
         .template-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

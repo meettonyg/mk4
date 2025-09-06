@@ -36,7 +36,8 @@
         }
 
         // Register all modals in DOM
-        document.querySelectorAll('.modal-overlay, .library-modal').forEach(modalElement => {
+        // ROOT FIX: Include template-library-modal specifically
+        document.querySelectorAll('.modal-overlay, .library-modal, #template-library-modal').forEach(modalElement => {
             registerModal(modalElement);
         });
 
@@ -94,7 +95,7 @@
             return;
         }
 
-        const modal = modalState.registeredModals.get(modalId);
+        let modal = modalState.registeredModals.get(modalId);
         if (!modal) {
             // Try to find modal in DOM
             const modalElement = document.getElementById(modalId);
@@ -109,7 +110,8 @@
 
         const modalToShow = modalState.registeredModals.get(modalId);
         modalToShow.style.removeProperty('display');
-        modalToShow.classList.add('modal--open');
+        // ROOT FIX: Support both modal--open and library-modal--open classes
+        modalToShow.classList.add('modal--open', 'library-modal--open');
         modalToShow.style.display = 'flex';
         document.body.classList.add('modal-open');
         modalState.activeModals.add(modalId);
@@ -128,7 +130,8 @@
         const modal = modalState.registeredModals.get(modalId) || document.getElementById(modalId);
         if (!modal) return;
 
-        modal.classList.remove('modal--open');
+        // ROOT FIX: Remove both possible open classes
+        modal.classList.remove('modal--open', 'library-modal--open');
         modal.style.display = 'none';
         modalState.activeModals.delete(modalId);
 
