@@ -199,7 +199,7 @@ class SidebarSectionIntegration {
     /**
      * Handle add section button click
      * Following checklist: Integration with Section Manager
-     * ROOT FIX: Allow section creation regardless of existing components
+     * ROOT FIX: Ensure section is both created AND rendered
      */
     handleAddSection() {
         // Prevent rapid duplicate clicks
@@ -219,6 +219,20 @@ class SidebarSectionIntegration {
         // ROOT FIX: Ensure containers are visible before creating section
         this.ensureContainersVisible();
         
+        // ROOT FIX: Ensure SectionRenderer exists and is ready
+        if (!window.sectionRenderer) {
+            this.logger.warn('⚠️ PHASE 3: SectionRenderer not found, attempting to create it');
+            if (window.SectionRenderer) {
+                window.sectionRenderer = new window.SectionRenderer();
+                this.logger.info('✅ PHASE 3: Created SectionRenderer instance');
+            } else {
+                this.logger.error('❌ PHASE 3: SectionRenderer class not available');
+                this.showError('Section renderer not available. Please refresh the page.');
+                this.isAddingSection = false;
+                return;
+            }
+        }
+        
         // ROOT FIX: Create new section regardless of existing components or preview state
         const sectionId = `section_${Date.now()}`;
         
@@ -228,6 +242,25 @@ class SidebarSectionIntegration {
         
         if (section) {
             this.logger.info(`✅ PHASE 3: Created section ${sectionId} with layout ${this.selectedLayout}`);
+            
+            // ROOT FIX: Dispatch event that SectionRenderer listens to
+            const event = new CustomEvent('gmkb:section-registered', {
+                detail: {
+                    sectionId: sectionId,
+                    section: section,
+                    sectionLayoutManager: this.sectionLayoutManager
+                }
+            });
+            document.dispatchEvent(event);
+            
+            // ROOT FIX: Also directly call the renderer if available
+            if (window.sectionRenderer && typeof window.sectionRenderer.renderSection === 'function') {
+                this.logger.info(`🎨 PHASE 3: Directly calling sectionRenderer.renderSection for ${sectionId}`);
+                // Small delay to ensure container is ready
+                setTimeout(() => {
+                    window.sectionRenderer.renderSection(section, this.sectionLayoutManager);
+                }, 50);
+            }
             
             // Show success feedback
             this.showSuccess(`Added ${this.getLayoutDisplayName(this.selectedLayout)} section!`);
@@ -241,7 +274,7 @@ class SidebarSectionIntegration {
                 this.enableSectionForDragDrop(sectionId);
                 
                 this.isAddingSection = false;
-            }, 100);
+            }, 300);
         } else {
             this.logger.error(`❌ PHASE 3: Failed to create section with layout ${this.selectedLayout}`);
             this.showError('Failed to create section. Please try again.');
@@ -313,7 +346,23 @@ class SidebarSectionIntegration {
         
         if (duplicatedSection) {
             this.logger.info(`✅ PHASE 3: Duplicated section ${lastSection.section_id} as ${newSectionId}`);
+            
+            // ROOT FIX: Dispatch event that SectionRenderer listens to
+            const event = new CustomEvent('gmkb:section-registered', {
+                detail: {
+                    sectionId: newSectionId,
+                    section: duplicatedSection,
+                    sectionLayoutManager: this.sectionLayoutManager
+                }
+            });
+            document.dispatchEvent(event);
+            
             this.showSuccess(`Duplicated ${this.getLayoutDisplayName(lastSection.section_type)} section!`);
+            
+            // Scroll to new section
+            setTimeout(() => {
+                this.scrollToNewSection(newSectionId);
+            }, 200);
         }
     }
     

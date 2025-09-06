@@ -40,19 +40,43 @@ class ComponentConfigurationManager {
         }
         
         // ROOT FIX: Load schemas from component directories (self-contained architecture)
-        const componentTypes = ['hero', 'biography', 'topics', 'contact', 'questions', 'gallery', 'testimonials'];
+        // Map aliases to actual directories
+        const componentTypeMap = {
+            'hero': 'hero',
+            'biography': 'biography',
+            'topics': 'topics',
+            'contact': 'contact',
+            'questions': 'questions',
+            'gallery': 'photo-gallery',  // Alias mapping
+            'photo-gallery': 'photo-gallery',
+            'testimonials': 'testimonials',
+            'stats': 'stats',
+            'social': 'social',
+            'authority-hook': 'authority-hook',
+            'guest-intro': 'guest-intro',
+            'video-intro': 'video-intro',
+            'podcast-player': 'podcast-player',
+            'logo-grid': 'logo-grid',
+            'portfolio': 'portfolio',
+            'call-to-action': 'call-to-action',
+            'booking-calendar': 'booking-calendar'
+        };
         
-        for (const type of componentTypes) {
+        for (const [alias, directory] of Object.entries(componentTypeMap)) {
             try {
                 // Try to fetch schema.json from component directory
-                const response = await fetch(`${window.gmkbData?.pluginUrl || '/wp-content/plugins/mk4/'}components/${type}/schema.json`);
+                const response = await fetch(`${window.gmkbData?.pluginUrl || '/wp-content/plugins/mk4/'}components/${directory}/schema.json`);
                 if (response.ok) {
                     const schema = await response.json();
-                    this.schemas[type] = schema;
-                    this.logger.info(`✅ PHASE 2: Loaded schema for ${type} from component directory`);
+                    // Store under both alias and actual name for maximum compatibility
+                    this.schemas[alias] = schema;
+                    if (alias !== directory) {
+                        this.schemas[directory] = schema;
+                    }
+                    this.logger.info(`✅ PHASE 2: Loaded schema for ${alias} from component directory ${directory}`);
                 }
             } catch (error) {
-                this.logger.debug(`Component ${type} has no schema.json (might not be implemented)`);
+                this.logger.debug(`Component ${alias}/${directory} has no schema.json (might not be implemented)`);
             }
         }
         
