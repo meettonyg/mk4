@@ -558,6 +558,12 @@
                     bottom: 0;
                     background: rgba(0, 0, 0, 0.5);
                     z-index: 9999;
+                    cursor: pointer;
+                }
+                
+                /* Ensure no body scroll when customizer is open */
+                body.customizer-open {
+                    overflow: hidden;
                 }
             `;
             
@@ -679,65 +685,105 @@
         }
         
         /**
-         * Open customizer
-         */
-        openCustomizer() {
-            const panel = document.getElementById('gmkb-theme-customizer');
-            if (!panel) return;
-            
-            // Create backdrop
-            const backdrop = document.createElement('div');
-            backdrop.className = 'gmkb-customizer-backdrop';
-            document.body.appendChild(backdrop);
-            
-            // Show panel
-            panel.style.display = 'flex';
-            
-            // Load current theme values
-            this.loadCurrentTheme();
-            
-            // Close dropdown
-            const dropdown = document.querySelector('.gmkb-theme-dropdown');
-            if (dropdown) {
-                dropdown.style.display = 'none';
-            }
-            
-            // Reset dirty state
-            this.isDirty = false;
-            this.updateApplyButton();
+        * Open customizer
+        */
+        open() {
+        this.openCustomizer();
         }
         
         /**
-         * Close customizer
-         */
+        * Internal method to open customizer
+        */
+        openCustomizer() {
+        const panel = document.getElementById('gmkb-theme-customizer');
+        if (!panel) return;
+        
+        // Check if already open
+        if (panel.style.display === 'flex') {
+            return;
+        }
+        
+        // Remove any existing backdrops first (cleanup)
+        const existingBackdrops = document.querySelectorAll('.gmkb-customizer-backdrop');
+        existingBackdrops.forEach(backdrop => backdrop.remove());
+        
+        // Create backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'gmkb-customizer-backdrop';
+        document.body.appendChild(backdrop);
+        
+        // Add click handler to backdrop to close customizer
+        backdrop.addEventListener('click', () => {
+            this.closeCustomizer();
+        });
+        
+        // Show panel
+            panel.style.display = 'flex';
+        
+        // Ensure panel is above backdrop
+        panel.style.zIndex = '10001';
+        backdrop.style.zIndex = '10000';
+        
+        // Load current theme values
+        this.loadCurrentTheme();
+        
+        // Close dropdown
+        const dropdown = document.querySelector('.gmkb-theme-dropdown');
+        if (dropdown) {
+            dropdown.style.display = 'none';
+        }
+        
+        // Reset dirty state
+        this.isDirty = false;
+        this.updateApplyButton();
+    }
+        
+        /**
+        * Close customizer
+        */
         closeCustomizer() {
-            const panel = document.getElementById('gmkb-theme-customizer');
-            if (!panel) return;
-            
-            // Check if there are unsaved changes
-            if (this.isDirty) {
-                if (!confirm('You have unsaved changes. Are you sure you want to close?')) {
-                    return;
-                }
-            }
-            
-            // Hide panel
-            panel.style.display = 'none';
-            
-            // Remove backdrop
-            const backdrop = document.querySelector('.gmkb-customizer-backdrop');
-            if (backdrop) {
-                backdrop.remove();
-            }
-            
-            // Reset to current theme if there were changes
-            if (this.isDirty && this.themeManager) {
-                const currentThemeId = this.themeManager.getCurrentTheme()?.theme_id;
-                if (currentThemeId) {
-                    this.themeManager.applyTheme(currentThemeId);
-                }
+        const panel = document.getElementById('gmkb-theme-customizer');
+        if (!panel) return;
+        
+        // Check if there are unsaved changes
+        if (this.isDirty) {
+        if (!confirm('You have unsaved changes. Are you sure you want to close?')) {
+        return;
+        }
+        }
+        
+        // Hide panel
+        panel.style.display = 'none';
+        
+        // Remove ALL backdrops (in case there are multiple)
+        const backdrops = document.querySelectorAll('.gmkb-customizer-backdrop');
+        backdrops.forEach(backdrop => {
+        backdrop.remove();
+        });
+        
+        // Also remove any lingering modal backdrops
+        const modalBackdrops = document.querySelectorAll('.modal-backdrop, .gmkb-modal-backdrop');
+        modalBackdrops.forEach(backdrop => {
+        backdrop.remove();
+        });
+        
+        // Ensure body is not locked
+            document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.classList.remove('modal-open', 'customizer-open');
+        
+        // Reset to current theme if there were changes
+        if (this.isDirty && this.themeManager) {
+            const currentThemeId = this.themeManager.getCurrentTheme()?.theme_id;
+            if (currentThemeId) {
+                this.themeManager.applyTheme(currentThemeId);
             }
         }
+        
+        // Reset dirty state
+        this.isDirty = false;
+        this.updateApplyButton();
+    }
         
         /**
          * Load current theme values into customizer
