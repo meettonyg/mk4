@@ -1033,12 +1033,12 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // PHASE 2: Component Options UI
+    // PHASE 2: Component Options UI - Complete implementation
     if (!wp_script_is('gmkb-component-options-ui', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-component-options-ui',
-            $plugin_url . 'js/ui/component-options-ui.js',
-            array('gmkb-component-configuration-manager', 'gmkb-data-binding-engine'),
+            $plugin_url . 'system/ComponentOptionsUI.js',
+            array('gmkb-component-configuration-manager', 'gmkb-data-binding-engine', 'gmkb-enhanced-state-manager', 'gmkb-design-panel'),
             $version,
             true
         );
@@ -1911,10 +1911,10 @@ function gmkb_enqueue_assets() {
         $version
     );
     
-    // PHASE 2: Component Options UI CSS
+    // PHASE 2: Component Options UI CSS - Complete styling
     wp_enqueue_style(
         'gmkb-component-options-ui',
-        $plugin_url . 'css/modules/component-options-ui.css',
+        $plugin_url . 'system/component-options-ui.css',
         array( 'gmkb-main-styles' ),
         $version
     );
