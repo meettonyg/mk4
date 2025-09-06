@@ -12,9 +12,8 @@
 // ROOT FIX: Immediate diagnostic to confirm script loads
 console.log('🔍 SectionRenderer.js SCRIPT LOADED');
 
-// ROOT FIX: Wrap in try-catch to catch any initialization errors
-try {
-
+// ROOT FIX: Create the class and instance immediately
+// The dependencies are ensured by WordPress enqueue system
 class SectionRenderer {
     constructor() {
         this.logger = window.StructuredLogger || console;
@@ -1323,27 +1322,17 @@ class SectionRenderer {
 window.SectionRenderer = SectionRenderer;
 console.log('✅ SectionRenderer class exposed globally');
 
-// ROOT FIX: Create a factory function that ensures single instance
-window.getSectionRenderer = function() {
-    if (!window.sectionRenderer) {
-        window.sectionRenderer = new SectionRenderer();
-        console.log('✅ PHASE 3: SectionRenderer instance created via factory');
-    }
-    return window.sectionRenderer;
-};
-
-// ROOT FIX: Create instance immediately when script loads
-// This ensures it's available for any code that needs it
+// ROOT FIX: Create instance immediately
+// The WordPress enqueue system ensures dependencies are loaded in order
+// SectionLayoutManager is already created when this script runs
 if (!window.sectionRenderer) {
     window.sectionRenderer = new SectionRenderer();
-    console.log('✅ PHASE 3: SectionRenderer instance created on script load');
-} else {
-    console.log('⚠️ PHASE 3: SectionRenderer instance already exists');
-}
-
-} catch (error) {
-    console.error('❌ CRITICAL: SectionRenderer initialization failed:', error);
-    console.error('Stack trace:', error.stack);
+    console.log('✅ PHASE 3: SectionRenderer instance created');
+    
+    // Dispatch ready event for other systems
+    document.dispatchEvent(new CustomEvent('gmkb:section-renderer-ready', {
+        detail: { sectionRenderer: window.sectionRenderer }
+    }));
 }
 
 // Export for use in modules

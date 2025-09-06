@@ -1151,6 +1151,28 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    
+    // PHASE 3: Section Renderer - ROOT FIX: Load IMMEDIATELY after section-layout-manager
+    if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-renderer',
+            $plugin_url . 'system/SectionRenderer.js',
+            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+
+    // PHASE 3: Sidebar Section Integration - ROOT FIX: Load after section-renderer
+    if (!wp_script_is('gmkb-sidebar-section-integration', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-sidebar-section-integration',
+            $plugin_url . 'js/ui/sidebar-section-integration.js',
+            array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
 
     // PHASE 3: Section Controls UI
     if (!wp_script_is('gmkb-section-controls-ui', 'enqueued')) {
@@ -1163,16 +1185,6 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 3: Sidebar Section Integration - ROOT FIX: Depends on SectionRenderer
-    if (!wp_script_is('gmkb-sidebar-section-integration', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-sidebar-section-integration',
-            $plugin_url . 'js/ui/sidebar-section-integration.js',
-            array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-structured-logger'),
-            $version,
-            true
-        );
-    }
     
     // PHASE 3: Section Edit Panel - UI for editing section properties
     if (!wp_script_is('gmkb-section-edit-panel', 'enqueued')) {
@@ -1215,17 +1227,6 @@ function gmkb_enqueue_assets() {
             array('gmkb-section-templates', 'gmkb-modal-system'),
             $version,
             true
-        );
-    }
-    
-    // PHASE 3: Section Renderer - ROOT FIX: Load early with proper dependencies
-    if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-section-renderer',
-            $plugin_url . 'system/SectionRenderer.js',
-            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
-            $version,
-            true  // Load in footer but with high priority
         );
     }
     
@@ -1566,6 +1567,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-component-integration',
                 'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
+                'gmkb-sidebar-section-integration',
                 // PHASE 4: Theme layer systems (already loaded earlier)
                 // 'gmkb-theme-manager', // Already loaded before toolbar
                 // 'gmkb-theme-customizer', // Already loaded before toolbar

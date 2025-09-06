@@ -12,9 +12,6 @@
 // ROOT FIX: Immediate diagnostic to confirm script loads
 console.log('🔍 sidebar-section-integration.js SCRIPT LOADED');
 
-// ROOT FIX: Wrap in try-catch to catch any initialization errors
-try {
-
 class SidebarSectionIntegration {
     constructor() {
         this.logger = window.StructuredLogger || console;
@@ -652,21 +649,16 @@ class SidebarSectionIntegration {
 window.SidebarSectionIntegration = SidebarSectionIntegration;
 console.log('✅ SidebarSectionIntegration class exposed globally');
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    console.log('⏳ Waiting for DOM to initialize SidebarSectionIntegration');
-    document.addEventListener('DOMContentLoaded', () => {
-        window.sidebarSectionIntegration = new SidebarSectionIntegration();
-        console.log('✅ SidebarSectionIntegration instance created on DOMContentLoaded');
-    });
-} else {
+// ROOT FIX: Create instance immediately
+// The WordPress enqueue system ensures dependencies are loaded in order
+if (!window.sidebarSectionIntegration) {
     window.sidebarSectionIntegration = new SidebarSectionIntegration();
-    console.log('✅ SidebarSectionIntegration instance created immediately');
-}
-
-} catch (error) {
-    console.error('❌ CRITICAL: SidebarSectionIntegration initialization failed:', error);
-    console.error('Stack trace:', error.stack);
+    console.log('✅ SidebarSectionIntegration instance created');
+    
+    // Dispatch ready event
+    document.dispatchEvent(new CustomEvent('gmkb:sidebar-section-integration-ready', {
+        detail: { sidebarSectionIntegration: window.sidebarSectionIntegration }
+    }));
 }
 
 // Export for use in modules
