@@ -74,7 +74,8 @@
             }
         }
         
-        console.warn('TOPICS: Could not find current component ID');
+        // This is expected when no topics component exists yet - not an error
+        console.debug('TOPICS: No topics component found yet (this is normal on initial load)');
         return null;
     }
 

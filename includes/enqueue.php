@@ -1163,12 +1163,12 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 3: Sidebar Section Integration
+    // PHASE 3: Sidebar Section Integration - ROOT FIX: Depends on SectionRenderer
     if (!wp_script_is('gmkb-sidebar-section-integration', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-sidebar-section-integration',
             $plugin_url . 'js/ui/sidebar-section-integration.js',
-            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
+            array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-structured-logger'),
             $version,
             true
         );
@@ -1218,14 +1218,14 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // PHASE 3: Section Renderer - ROOT FIX: Must be enqueued BEFORE section-component-integration
+    // PHASE 3: Section Renderer - ROOT FIX: Load early with proper dependencies
     if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-renderer',
             $plugin_url . 'system/SectionRenderer.js',
             array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
             $version,
-            true
+            true  // Load in footer but with high priority
         );
     }
     
@@ -1787,6 +1787,17 @@ function gmkb_enqueue_assets() {
                 'gmkb-test-section-fix',
                 $plugin_url . 'debug/test-section-fix.js',
                 array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-enhanced-component-manager'),
+                $version . '-debug',
+                true
+            );
+        }
+        
+        // ROOT FIX: Section Renderer Fix Test
+        if (!wp_script_is('gmkb-test-section-renderer-fix', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-test-section-renderer-fix',
+                $plugin_url . 'debug/test-section-renderer-fix.js',
+                array('gmkb-section-renderer', 'gmkb-sidebar-section-integration'),
                 $version . '-debug',
                 true
             );

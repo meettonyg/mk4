@@ -1313,35 +1313,24 @@ class SectionRenderer {
     }
 }
 
-// Global instance
+// Global class exposure
 window.SectionRenderer = SectionRenderer;
 
-// ROOT FIX: Ensure instance is always created
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        // Only create if not already exists
-        if (!window.sectionRenderer) {
-            window.sectionRenderer = new SectionRenderer();
-            console.log('✅ PHASE 3: SectionRenderer instance created on DOMContentLoaded');
-        }
-    });
-} else {
-    // DOM already loaded, create immediately if not exists
+// ROOT FIX: Create a factory function that ensures single instance
+window.getSectionRenderer = function() {
     if (!window.sectionRenderer) {
         window.sectionRenderer = new SectionRenderer();
-        console.log('✅ PHASE 3: SectionRenderer instance created immediately');
+        console.log('✅ PHASE 3: SectionRenderer instance created via factory');
     }
-}
+    return window.sectionRenderer;
+};
 
-// ROOT FIX: Also ensure instance exists when script loads
-// This handles cases where the script loads after DOM but instance wasn't created
-setTimeout(() => {
-    if (!window.sectionRenderer && window.SectionRenderer) {
-        window.sectionRenderer = new SectionRenderer();
-        console.log('✅ PHASE 3: SectionRenderer instance created via fallback');
-    }
-}, 100);
+// ROOT FIX: Create instance immediately when script loads
+// This ensures it's available for any code that needs it
+if (!window.sectionRenderer) {
+    window.sectionRenderer = new SectionRenderer();
+    console.log('✅ PHASE 3: SectionRenderer instance created on script load');
+}
 
 // Export for use in modules
 if (typeof module !== 'undefined' && module.exports) {

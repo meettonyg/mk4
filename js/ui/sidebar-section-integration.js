@@ -219,14 +219,18 @@ class SidebarSectionIntegration {
         // ROOT FIX: Ensure containers are visible before creating section
         this.ensureContainersVisible();
         
-        // ROOT FIX: Ensure SectionRenderer exists and is ready
+        // ROOT FIX: Ensure SectionRenderer exists using factory function
         if (!window.sectionRenderer) {
-            this.logger.warn('⚠️ PHASE 3: SectionRenderer not found, attempting to create it');
-            if (window.SectionRenderer) {
+            this.logger.warn('⚠️ PHASE 3: SectionRenderer not found, getting via factory');
+            if (window.getSectionRenderer) {
+                window.sectionRenderer = window.getSectionRenderer();
+                this.logger.info('✅ PHASE 3: Got SectionRenderer instance from factory');
+            } else if (window.SectionRenderer) {
+                // Fallback: create directly if factory not available
                 window.sectionRenderer = new window.SectionRenderer();
-                this.logger.info('✅ PHASE 3: Created SectionRenderer instance');
+                this.logger.info('✅ PHASE 3: Created SectionRenderer instance directly');
             } else {
-                this.logger.error('❌ PHASE 3: SectionRenderer class not available');
+                this.logger.error('❌ PHASE 3: SectionRenderer not available at all');
                 this.showError('Section renderer not available. Please refresh the page.');
                 this.isAddingSection = false;
                 return;
@@ -322,6 +326,15 @@ class SidebarSectionIntegration {
             return;
         }
         
+        // ROOT FIX: Ensure SectionRenderer is available
+        if (!window.sectionRenderer) {
+            if (window.getSectionRenderer) {
+                window.sectionRenderer = window.getSectionRenderer();
+            } else if (window.SectionRenderer) {
+                window.sectionRenderer = new window.SectionRenderer();
+            }
+        }
+        
         // Find currently selected section (for now, duplicate the last section)
         const sections = this.sectionLayoutManager.getSectionsInOrder();
         
@@ -356,6 +369,13 @@ class SidebarSectionIntegration {
                 }
             });
             document.dispatchEvent(event);
+            
+            // ROOT FIX: Also directly call renderer if available
+            if (window.sectionRenderer && typeof window.sectionRenderer.renderSection === 'function') {
+                setTimeout(() => {
+                    window.sectionRenderer.renderSection(duplicatedSection, this.sectionLayoutManager);
+                }, 50);
+            }
             
             this.showSuccess(`Duplicated ${this.getLayoutDisplayName(lastSection.section_type)} section!`);
             

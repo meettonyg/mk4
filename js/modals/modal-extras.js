@@ -406,7 +406,8 @@
                                  document.getElementById('global-settings-btn');
                 
                 if (!this.modal) {
-                    console.warn('⚠️ GMKB: Global Settings modal not found');
+                    // Modal might not be rendered yet or not needed on this page
+            console.debug('GMKB: Global Settings modal not present (may not be needed on this page)');
                     return Promise.resolve();
                 }
                 

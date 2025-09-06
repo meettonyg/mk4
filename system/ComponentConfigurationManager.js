@@ -41,6 +41,7 @@ class ComponentConfigurationManager {
         
         // ROOT FIX: Load schemas from component directories (self-contained architecture)
         // Map aliases to actual directories
+        // NOTE: Not all components have schemas - this is normal and expected
         const componentTypeMap = {
             'hero': 'hero',
             'biography': 'biography',
@@ -57,12 +58,32 @@ class ComponentConfigurationManager {
             'video-intro': 'video-intro',
             'podcast-player': 'podcast-player',
             'logo-grid': 'logo-grid',
-            'portfolio': 'portfolio',
+            // 'portfolio': 'portfolio',  // REMOVED: portfolio directory doesn't exist
             'call-to-action': 'call-to-action',
             'booking-calendar': 'booking-calendar'
         };
         
+        // Components that we know don't have schemas (to avoid 404s)
+        const componentsWithoutSchemas = [
+            'stats',      // Stats component is simple
+            'social',     // Social links are basic
+            'logo-grid',  // Logo grid is simple
+            'video-intro', // Video intro is basic
+            'podcast-player', // Podcast player is simple
+            'booking-calendar', // Booking calendar is external
+            'call-to-action', // CTA is simple
+            'guest-intro', // Guest intro is basic
+            'authority-hook', // Authority hook is simple
+            'photo-gallery' // Photo gallery may not have schema
+        ];
+        
         for (const [alias, directory] of Object.entries(componentTypeMap)) {
+            // Skip components we know don't have schemas to avoid 404s
+            if (componentsWithoutSchemas.includes(directory)) {
+                this.logger.debug(`Skipping schema load for ${alias} - component uses basic rendering`);
+                continue;
+            }
+            
             try {
                 // Try to fetch schema.json from component directory
                 const response = await fetch(`${window.gmkbData?.pluginUrl || '/wp-content/plugins/mk4/'}components/${directory}/schema.json`);
@@ -74,9 +95,16 @@ class ComponentConfigurationManager {
                         this.schemas[directory] = schema;
                     }
                     this.logger.info(`✅ PHASE 2: Loaded schema for ${alias} from component directory ${directory}`);
+                } else if (response.status === 404) {
+                    // 404 is normal for components without schemas - not an error
+                    this.logger.debug(`Component ${alias} has no schema.json - will use basic rendering`);
+                } else {
+                    // Other HTTP errors are worth logging
+                    this.logger.debug(`Unexpected response for ${alias} schema: ${response.status}`);
                 }
             } catch (error) {
-                this.logger.debug(`Component ${alias}/${directory} has no schema.json (might not be implemented)`);
+                // Network errors or other issues
+                this.logger.debug(`Could not check schema for ${alias}: ${error.message}`);
             }
         }
         
