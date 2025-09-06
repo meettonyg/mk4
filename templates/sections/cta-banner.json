@@ -1,0 +1,36 @@
+{
+  "name": "CTA Banner",
+  "slug": "cta-banner",
+  "category": "call-to-action",
+  "description": "A call-to-action banner section",
+  "section_type": "full_width",
+  "default_components": [
+    {
+      "type": "call-to-action",
+      "props": {
+        "title": "Ready to Book Your Next Speaker?",
+        "subtitle": "Let's discuss how I can add value to your event",
+        "primaryButtonText": "Book Now",
+        "primaryButtonLink": "#booking",
+        "secondaryButtonText": "Learn More",
+        "secondaryButtonLink": "#about"
+      },
+      "position": 0
+    }
+  ],
+  "styling": {
+    "background": "gradient",
+    "backgroundColors": ["#dc2626", "#b91c1c"],
+    "textColor": "#ffffff",
+    "padding": "100px 20px",
+    "text_align": "center",
+    "border_radius": "16px",
+    "margin": "40px auto"
+  },
+  "responsive": {
+    "mobile": {
+      "padding": "60px 20px",
+      "border_radius": "8px"
+    }
+  }
+}

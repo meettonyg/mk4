@@ -1,0 +1,44 @@
+{
+  "name": "Footer Links",
+  "slug": "footer-links",
+  "category": "navigation",
+  "description": "A footer section with navigation links and contact info",
+  "section_type": "three_column",
+  "default_components": [
+    {
+      "type": "contact",
+      "props": {
+        "title": "Contact Info",
+        "showEmail": true,
+        "showPhone": true,
+        "showAddress": true
+      },
+      "position": 0,
+      "column": 1
+    },
+    {
+      "type": "social",
+      "props": {
+        "title": "Follow Me",
+        "showIcons": true,
+        "iconSize": "large"
+      },
+      "position": 1,
+      "column": 2
+    }
+  ],
+  "styling": {
+    "background": "solid",
+    "backgroundColor": "#111827",
+    "textColor": "#9ca3af",
+    "padding": "60px 20px 40px",
+    "column_gap": "60px"
+  },
+  "responsive": {
+    "mobile": {
+      "padding": "40px 20px",
+      "columns": 1,
+      "row_gap": "40px"
+    }
+  }
+}

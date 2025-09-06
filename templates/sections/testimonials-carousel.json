@@ -1,0 +1,33 @@
+{
+  "name": "Testimonials Carousel",
+  "slug": "testimonials-carousel",
+  "category": "social-proof",
+  "description": "A carousel section for displaying testimonials",
+  "section_type": "full_width",
+  "default_components": [
+    {
+      "type": "testimonials",
+      "props": {
+        "title": "What People Say",
+        "layout": "carousel",
+        "autoplay": true,
+        "showNavigation": true
+      },
+      "position": 0
+    }
+  ],
+  "styling": {
+    "background": "gradient",
+    "backgroundColors": ["#f3f4f6", "#e5e7eb"],
+    "padding": "100px 20px",
+    "text_align": "center"
+  },
+  "responsive": {
+    "mobile": {
+      "padding": "60px 20px"
+    },
+    "tablet": {
+      "padding": "80px 30px"
+    }
+  }
+}

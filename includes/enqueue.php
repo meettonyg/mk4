@@ -1185,6 +1185,39 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // PHASE 3: Section Style Manager - Comprehensive styling options
+    if (!wp_script_is('gmkb-section-style-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-style-manager',
+            $plugin_url . 'system/SectionStyleManager.js',
+            array('gmkb-section-layout-manager', 'gmkb-section-renderer', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 3: Section Templates - Pre-designed section templates
+    if (!wp_script_is('gmkb-section-templates', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-templates',
+            $plugin_url . 'js/templates/section-templates.js',
+            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 3: Template Button Integration - Connects UI button to template system
+    if (!wp_script_is('gmkb-template-button-integration', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-template-button-integration',
+            $plugin_url . 'js/ui/template-button-integration.js',
+            array('gmkb-section-templates', 'gmkb-modal-system'),
+            $version,
+            true
+        );
+    }
+    
     // PHASE 3: Section Renderer - ROOT FIX: Must be enqueued BEFORE section-component-integration
     if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
         wp_enqueue_script(
@@ -1527,6 +1560,9 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-controls-ui',
                 'gmkb-sidebar-section-integration',
                 'gmkb-section-edit-panel', // Section edit UI
+                'gmkb-section-style-manager', // Section styling options
+                'gmkb-section-templates', // Section template library
+                'gmkb-template-button-integration', // Template button handler
                 'gmkb-section-component-integration',
                 'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
@@ -1907,6 +1943,14 @@ function gmkb_enqueue_assets() {
     wp_enqueue_style(
         'gmkb-sections',
         $plugin_url . 'css/sections.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // PHASE 3: Section Templates CSS - Template button and modal styling
+    wp_enqueue_style(
+        'gmkb-section-templates',
+        $plugin_url . 'css/modules/section-templates.css',
         array( 'gmkb-main-styles' ),
         $version
     );

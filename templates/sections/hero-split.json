@@ -1,0 +1,39 @@
+{
+  "name": "Hero Split",
+  "slug": "hero-split",
+  "category": "hero",
+  "description": "A split hero section with content on one side and image on the other",
+  "section_type": "two_column",
+  "default_components": [
+    {
+      "type": "hero",
+      "props": {
+        "layout": "split",
+        "title": "Professional Speaker",
+        "subtitle": "Transform Your Audience",
+        "showImage": true,
+        "imagePosition": "right"
+      },
+      "position": 0,
+      "column": 1
+    }
+  ],
+  "styling": {
+    "background": "solid",
+    "backgroundColor": "#f8f9fa",
+    "padding": "100px 20px",
+    "min_height": "60vh",
+    "column_gap": "60px"
+  },
+  "responsive": {
+    "mobile": {
+      "padding": "60px 20px",
+      "min_height": "auto",
+      "columns": 1
+    },
+    "tablet": {
+      "padding": "80px 30px",
+      "column_gap": "40px"
+    }
+  }
+}

@@ -27,6 +27,15 @@
             </svg>
             Add Section
         </button>
+        <button class="section-btn section-btn--template" id="use-template-btn" style="background: #6c5ce7; color: white; border-color: #6c5ce7;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Use Template
+        </button>
         <button class="section-btn" id="duplicate-section-btn">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>

@@ -1,0 +1,35 @@
+{
+  "name": "Features Grid",
+  "slug": "features-grid",
+  "category": "content",
+  "description": "A grid layout for showcasing features or services",
+  "section_type": "three_column",
+  "default_components": [
+    {
+      "type": "topics",
+      "props": {
+        "title": "Speaking Topics",
+        "layout": "grid",
+        "showIcons": true
+      },
+      "position": 0
+    }
+  ],
+  "styling": {
+    "background": "none",
+    "padding": "80px 20px",
+    "column_gap": "40px",
+    "row_gap": "40px"
+  },
+  "responsive": {
+    "mobile": {
+      "padding": "60px 20px",
+      "columns": 1,
+      "row_gap": "30px"
+    },
+    "tablet": {
+      "columns": 2,
+      "column_gap": "30px"
+    }
+  }
+}

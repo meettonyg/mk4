@@ -1,0 +1,38 @@
+{
+  "name": "Hero Centered",
+  "slug": "hero-centered",
+  "category": "hero",
+  "description": "A centered hero section with title, subtitle and CTA button",
+  "section_type": "hero",
+  "default_components": [
+    {
+      "type": "hero",
+      "props": {
+        "layout": "centered",
+        "title": "Welcome to Your Media Kit",
+        "subtitle": "Professional Speaker & Expert",
+        "showCTA": true,
+        "ctaText": "Get Started",
+        "ctaLink": "#contact"
+      },
+      "position": 0
+    }
+  ],
+  "styling": {
+    "background": "gradient",
+    "backgroundColors": ["#295cff", "#1e40af"],
+    "padding": "120px 20px",
+    "min_height": "70vh",
+    "text_align": "center"
+  },
+  "responsive": {
+    "mobile": {
+      "padding": "80px 20px",
+      "min_height": "60vh"
+    },
+    "tablet": {
+      "padding": "100px 30px",
+      "min_height": "65vh"
+    }
+  }
+}
