@@ -82,9 +82,24 @@
          * Create theme switcher in toolbar
          */
         createThemeSwitcher() {
-            const toolbar = document.querySelector('.gmkb-toolbar-actions');
+            // ROOT FIX: Try multiple toolbar selectors
+            let toolbar = document.querySelector('.gmkb-toolbar-actions') || 
+                         document.querySelector('.toolbar') || 
+                         document.querySelector('#gmkb-toolbar') ||
+                         document.querySelector('[data-toolbar]');
+            
             if (!toolbar) {
-                this.logger.warn('Toolbar not found for theme switcher');
+                // Try to find save button and use its parent
+                const saveBtn = document.querySelector('#save-btn, .save-btn, [data-action="save"]');
+                if (saveBtn) {
+                    toolbar = saveBtn.parentElement;
+                }
+            }
+            
+            if (!toolbar) {
+                this.logger.warn('Toolbar not found for theme switcher - will retry');
+                // Retry after a delay
+                setTimeout(() => this.createThemeSwitcher(), 1000);
                 return;
             }
             

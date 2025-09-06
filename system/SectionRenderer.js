@@ -56,12 +56,45 @@ class SectionRenderer {
             this.onAllSectionsRemoved(event.detail);
         });
         
-        // ROOT FIX: Also try immediate initialization if systems are already ready
-        if (window.sectionLayoutManager && window.enhancedComponentRenderer) {
-            this.onCoreSystemsReady();
-        }
+        // ROOT FIX: Try initialization with progressive checks
+        this.attemptInitialization();
         
         this.logger.info('✅ PHASE 3: SectionRenderer initialized');
+    }
+    
+    /**
+     * ROOT FIX: Progressive initialization attempts
+     * Tries to initialize immediately if possible, otherwise waits
+     */
+    attemptInitialization() {
+        // Check if systems are ready now
+        if (window.sectionLayoutManager && window.enhancedComponentRenderer) {
+            this.onCoreSystemsReady();
+            return;
+        }
+        
+        // Try again after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.sectionLayoutManager && window.enhancedComponentRenderer) {
+                    this.onCoreSystemsReady();
+                } else {
+                    // Final attempt after a delay
+                    setTimeout(() => {
+                        if (window.sectionLayoutManager) {
+                            this.onCoreSystemsReady();
+                        }
+                    }, 1000);
+                }
+            });
+        } else {
+            // DOM already loaded, try after a short delay
+            setTimeout(() => {
+                if (window.sectionLayoutManager) {
+                    this.onCoreSystemsReady();
+                }
+            }, 500);
+        }
     }
     
     /**
@@ -264,6 +297,14 @@ class SectionRenderer {
         
         if (!this.containerElement) {
             this.logger.error('❌ PHASE 3: Failed to create sections container');
+            // ROOT FIX: Try again after a short delay
+            setTimeout(() => {
+                this.containerElement = this.findOrCreateContainerElement();
+                if (this.containerElement) {
+                    this.logger.info('✅ PHASE 3: Sections container created on retry');
+                    this.renderExistingSections();
+                }
+            }, 500);
             return;
         }
         
@@ -362,14 +403,38 @@ class SectionRenderer {
         
         this.logger.info(`📐 PHASE 3: Rendering newly registered section ${sectionId}`);
         
+        // ROOT FIX: Ensure container exists before rendering
+        if (!this.containerElement) {
+            this.containerElement = this.findOrCreateContainerElement();
+            if (!this.containerElement) {
+                this.logger.error(`❌ PHASE 3: Cannot render section ${sectionId} - no container`);
+                // Try again after a delay
+                setTimeout(() => {
+                    this.onSectionRegistered(event);
+                }, 500);
+                return;
+            }
+        }
+        
+        // ROOT FIX: Ensure containers are visible
+        this.ensureContainersVisible();
+        
         // ROOT CAUSE FIX: Use passed manager reference to avoid global access
-        this.renderSection(sectionId, sectionLayoutManager);
+        this.renderSection(sectionId, sectionLayoutManager || this.sectionLayoutManager);
         
         // ROOT CAUSE FIX: Ensure section is properly registered with drag-drop system
         // Small delay to ensure DOM is ready for drag-drop integration
         setTimeout(() => {
             if (window.sectionComponentIntegration) {
                 this.logger.debug(`🔗 PHASE 3: Section ${sectionId} ready for drag-drop integration`);
+            }
+            
+            // ROOT FIX: Verify section was actually rendered
+            const sectionElement = document.getElementById(`section-${sectionId}`);
+            if (!sectionElement) {
+                this.logger.warn(`⚠️ PHASE 3: Section ${sectionId} not found in DOM after render attempt`);
+                // Try to render again
+                this.renderSection(sectionId, sectionLayoutManager || this.sectionLayoutManager);
             }
         }, 100);
     }
@@ -1251,14 +1316,32 @@ class SectionRenderer {
 // Global instance
 window.SectionRenderer = SectionRenderer;
 
+// ROOT FIX: Ensure instance is always created
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        window.sectionRenderer = new SectionRenderer();
+        // Only create if not already exists
+        if (!window.sectionRenderer) {
+            window.sectionRenderer = new SectionRenderer();
+            console.log('✅ PHASE 3: SectionRenderer instance created on DOMContentLoaded');
+        }
     });
 } else {
-    window.sectionRenderer = new SectionRenderer();
+    // DOM already loaded, create immediately if not exists
+    if (!window.sectionRenderer) {
+        window.sectionRenderer = new SectionRenderer();
+        console.log('✅ PHASE 3: SectionRenderer instance created immediately');
+    }
 }
+
+// ROOT FIX: Also ensure instance exists when script loads
+// This handles cases where the script loads after DOM but instance wasn't created
+setTimeout(() => {
+    if (!window.sectionRenderer && window.SectionRenderer) {
+        window.sectionRenderer = new SectionRenderer();
+        console.log('✅ PHASE 3: SectionRenderer instance created via fallback');
+    }
+}, 100);
 
 // Export for use in modules
 if (typeof module !== 'undefined' && module.exports) {

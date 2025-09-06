@@ -184,7 +184,18 @@ class ComponentConfigurationManager {
     registerComponentConfiguration(componentId, componentType, configuration = {}) {
         const schema = this.getSchema(componentType);
         if (!schema) {
-            this.logger.warn(`⚠️ PHASE 2: No schema found for component type: ${componentType}`);
+            // ROOT FIX: Don't warn if schemas are still loading
+            if (Object.keys(this.schemas).length === 0) {
+                this.logger.debug(`PHASE 2: Schemas still loading, will retry for ${componentType}`);
+                // Queue for retry
+                setTimeout(() => {
+                    if (this.getSchema(componentType)) {
+                        this.registerComponentConfiguration(componentId, componentType, configuration);
+                    }
+                }, 500);
+            } else {
+                this.logger.warn(`⚠️ PHASE 2: No schema found for component type: ${componentType}`);
+            }
             return null;
         }
         
