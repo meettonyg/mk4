@@ -9,6 +9,12 @@
  * @package GMKB/System
  */
 
+// ROOT FIX: Immediate diagnostic to confirm script loads
+console.log('🔍 SectionRenderer.js SCRIPT LOADED');
+
+// ROOT FIX: Wrap in try-catch to catch any initialization errors
+try {
+
 class SectionRenderer {
     constructor() {
         this.logger = window.StructuredLogger || console;
@@ -1315,6 +1321,7 @@ class SectionRenderer {
 
 // Global class exposure
 window.SectionRenderer = SectionRenderer;
+console.log('✅ SectionRenderer class exposed globally');
 
 // ROOT FIX: Create a factory function that ensures single instance
 window.getSectionRenderer = function() {
@@ -1330,6 +1337,13 @@ window.getSectionRenderer = function() {
 if (!window.sectionRenderer) {
     window.sectionRenderer = new SectionRenderer();
     console.log('✅ PHASE 3: SectionRenderer instance created on script load');
+} else {
+    console.log('⚠️ PHASE 3: SectionRenderer instance already exists');
+}
+
+} catch (error) {
+    console.error('❌ CRITICAL: SectionRenderer initialization failed:', error);
+    console.error('Stack trace:', error.stack);
 }
 
 // Export for use in modules

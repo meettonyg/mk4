@@ -9,6 +9,12 @@
  * @package GMKB/JS/UI
  */
 
+// ROOT FIX: Immediate diagnostic to confirm script loads
+console.log('🔍 sidebar-section-integration.js SCRIPT LOADED');
+
+// ROOT FIX: Wrap in try-catch to catch any initialization errors
+try {
+
 class SidebarSectionIntegration {
     constructor() {
         this.logger = window.StructuredLogger || console;
@@ -644,14 +650,23 @@ class SidebarSectionIntegration {
 
 // Global instance
 window.SidebarSectionIntegration = SidebarSectionIntegration;
+console.log('✅ SidebarSectionIntegration class exposed globally');
 
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
+    console.log('⏳ Waiting for DOM to initialize SidebarSectionIntegration');
     document.addEventListener('DOMContentLoaded', () => {
         window.sidebarSectionIntegration = new SidebarSectionIntegration();
+        console.log('✅ SidebarSectionIntegration instance created on DOMContentLoaded');
     });
 } else {
     window.sidebarSectionIntegration = new SidebarSectionIntegration();
+    console.log('✅ SidebarSectionIntegration instance created immediately');
+}
+
+} catch (error) {
+    console.error('❌ CRITICAL: SidebarSectionIntegration initialization failed:', error);
+    console.error('Stack trace:', error.stack);
 }
 
 // Export for use in modules
