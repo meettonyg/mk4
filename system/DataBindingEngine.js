@@ -169,11 +169,207 @@ class DataBindingEngine {
     }
     
     /**
-     * Alias for removeComponentBindings (backward compatibility)  
-     * This is the method called by enhanced-component-manager.js
+     * ROOT FIX: Update binding for a specific field
+     * Called by ComponentOptionsUI when user changes data binding
      */
-    removeBinding(componentId) {
-        return this.removeComponentBindings(componentId);
+    updateBinding(componentId, field, source) {
+        const bindingInfo = this.bindings.get(componentId);
+        if (!bindingInfo) {
+            this.logger.warn(`⚠️ PHASE 2: No binding info found for ${componentId}`);
+            return;
+        }
+        
+        // Update the specific field binding
+        if (!bindingInfo.dataBindings) {
+            bindingInfo.dataBindings = {};
+        }
+        bindingInfo.dataBindings[field] = source;
+        
+        // Save updated binding
+        this.bindings.set(componentId, bindingInfo);
+        
+        // Refresh component with new binding
+        this.refreshComponent(componentId);
+        
+        this.logger.info(`🔄 PHASE 2: Updated binding for ${field} to ${source} in ${componentId}`);
+    }
+    
+    /**
+     * ROOT FIX: Remove binding for a specific field
+     * Called by ComponentOptionsUI when user removes data binding
+     */
+    removeBinding(componentId, field) {
+        const bindingInfo = this.bindings.get(componentId);
+        if (!bindingInfo || !bindingInfo.dataBindings) {
+            this.logger.warn(`⚠️ PHASE 2: No binding info found for ${componentId}`);
+            return;
+        }
+        
+        // Remove the specific field binding
+        delete bindingInfo.dataBindings[field];
+        
+        // Save updated binding
+        this.bindings.set(componentId, bindingInfo);
+        
+        // Refresh component with updated binding
+        this.refreshComponent(componentId);
+        
+        this.logger.info(`🗑️ PHASE 2: Removed binding for ${field} in ${componentId}`);
+    }
+    
+    /**
+     * ROOT FIX: Get test data for testing bindings
+     * Called by ComponentOptionsUI when user clicks "Test Bindings"
+     */
+    getTestData() {
+        return {
+            // Personal data
+            first_name: 'John',
+            last_name: 'Doe',
+            full_name: 'John Doe',
+            guest_title: 'Senior Marketing Expert',
+            tagline: 'Transforming Brands Through Digital Innovation',
+            
+            // Biography data
+            biography: 'John Doe is a seasoned marketing professional with over 15 years of experience in digital marketing, brand strategy, and customer engagement. He has helped Fortune 500 companies transform their digital presence and achieve remarkable growth.',
+            biography_short: 'Marketing expert with 15+ years transforming brands through digital innovation.',
+            
+            // Contact data
+            email: 'john.doe@example.com',
+            phone: '+1 (555) 123-4567',
+            website: 'https://johndoe.com',
+            
+            // Social media
+            twitter: '@johndoe',
+            linkedin: 'linkedin.com/in/johndoe',
+            facebook: 'facebook.com/johndoe',
+            instagram: '@johndoe',
+            
+            // Topics/expertise
+            topics: [
+                'Digital Marketing Strategy',
+                'Brand Transformation',
+                'Customer Experience',
+                'Marketing Analytics',
+                'Social Media Marketing'
+            ],
+            topic_1: 'Digital Marketing Strategy',
+            topic_2: 'Brand Transformation',
+            topic_3: 'Customer Experience',
+            topic_4: 'Marketing Analytics',
+            topic_5: 'Social Media Marketing',
+            
+            // Questions
+            questions: [
+                'How can brands adapt to the digital age?',
+                'What are the key metrics for marketing success?',
+                'How to build customer loyalty in 2024?'
+            ],
+            question_1: 'How can brands adapt to the digital age?',
+            question_2: 'What are the key metrics for marketing success?',
+            question_3: 'How to build customer loyalty in 2024?',
+            
+            // Media
+            guest_headshot: 'https://via.placeholder.com/400x400/4F46E5/ffffff?text=JD',
+            profile_image: 'https://via.placeholder.com/400x400/4F46E5/ffffff?text=JD',
+            featured_image: 'https://via.placeholder.com/1920x1080/4F46E5/ffffff?text=Featured',
+            
+            // Call to action
+            cta_button_text: 'Book John for Your Event',
+            cta_button_link: 'https://example.com/book',
+            
+            // Company/organization
+            company: 'Digital Innovation Co.',
+            position: 'Chief Marketing Officer',
+            organization: 'Marketing Leaders Association'
+        };
+    }
+    
+    /**
+     * ROOT FIX: Apply bindings with provided data
+     * Called by ComponentOptionsUI to test bindings with sample data
+     */
+    applyBindings(componentId, testData) {
+        const bindingInfo = this.bindings.get(componentId);
+        if (!bindingInfo) {
+            this.logger.warn(`⚠️ PHASE 2: No binding info found for ${componentId}`);
+            return;
+        }
+        
+        // Apply bindings with test data
+        const boundData = this.bindComponentData(
+            componentId,
+            bindingInfo.componentType,
+            bindingInfo.dataBindings,
+            testData
+        );
+        
+        // Update component with test data
+        if (window.enhancedStateManager) {
+            window.enhancedStateManager.dispatch({
+                type: 'UPDATE_COMPONENT',
+                payload: {
+                    id: componentId,
+                    updates: {
+                        props: boundData
+                    }
+                }
+            });
+            
+            // Trigger component re-render
+            document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
+                detail: {
+                    componentId: componentId,
+                    props: boundData,
+                    isTestData: true
+                }
+            }));
+        }
+        
+        this.logger.info(`🧪 PHASE 2: Applied test bindings for ${componentId}`);
+    }
+    
+    /**
+     * ROOT FIX: Refresh component with current bindings
+     * Called when bindings are updated
+     */
+    refreshComponent(componentId) {
+        const bindingInfo = this.bindings.get(componentId);
+        if (!bindingInfo) {
+            this.logger.warn(`⚠️ PHASE 2: No binding info found for ${componentId}`);
+            return;
+        }
+        
+        // Re-apply bindings with current data
+        const boundData = this.bindComponentData(
+            componentId,
+            bindingInfo.componentType,
+            bindingInfo.dataBindings
+        );
+        
+        // Update component
+        if (window.enhancedStateManager) {
+            window.enhancedStateManager.dispatch({
+                type: 'UPDATE_COMPONENT',
+                payload: {
+                    id: componentId,
+                    updates: {
+                        props: boundData
+                    }
+                }
+            });
+            
+            // Trigger component re-render
+            document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
+                detail: {
+                    componentId: componentId,
+                    props: boundData,
+                    refreshed: true
+                }
+            }));
+        }
+        
+        this.logger.info(`🔄 PHASE 2: Refreshed component ${componentId} with current bindings`);
     }
     
     /**
@@ -413,12 +609,13 @@ class DataBindingEngine {
     }
     
     /**
-     * Remove bindings for component
+     * Remove bindings for component (complete removal)
+     * This is for when a component is deleted entirely
      */
     removeComponentBindings(componentId) {
         const removed = this.bindings.delete(componentId);
         if (removed) {
-            this.logger.info(`🗑️ PHASE 2: Removed bindings for ${componentId}`);
+            this.logger.info(`🗑️ PHASE 2: Removed all bindings for ${componentId}`);
         }
         return removed;
     }
