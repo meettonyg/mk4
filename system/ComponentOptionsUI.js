@@ -416,7 +416,19 @@
         }
         
         generateSelectControl(key, option, value, required) {
-            const options = option.options || [];
+            // ROOT FIX: Handle both array and object formats for options
+            let optionsArray = [];
+            
+            if (Array.isArray(option.options)) {
+                // Options is already an array
+                optionsArray = option.options;
+            } else if (typeof option.options === 'object' && option.options !== null) {
+                // Options is an object, convert to array format
+                optionsArray = Object.entries(option.options).map(([optValue, optLabel]) => ({
+                    value: optValue,
+                    label: optLabel
+                }));
+            }
             
             let html = `
                 <select class="form-input option-input" 
@@ -428,7 +440,7 @@
                 html += `<option value="">Choose...</option>`;
             }
             
-            for (const opt of options) {
+            for (const opt of optionsArray) {
                 const optValue = typeof opt === 'object' ? opt.value : opt;
                 const optLabel = typeof opt === 'object' ? opt.label : opt;
                 const selected = value === optValue ? 'selected' : '';
@@ -494,10 +506,23 @@
         }
         
         generateRadioControl(key, option, value) {
-            const options = option.options || [];
+            // ROOT FIX: Handle both array and object formats for options
+            let optionsArray = [];
+            
+            if (Array.isArray(option.options)) {
+                // Options is already an array
+                optionsArray = option.options;
+            } else if (typeof option.options === 'object' && option.options !== null) {
+                // Options is an object, convert to array format
+                optionsArray = Object.entries(option.options).map(([optValue, optLabel]) => ({
+                    value: optValue,
+                    label: optLabel
+                }));
+            }
+            
             let html = '<div class="radio-group">';
             
-            for (const opt of options) {
+            for (const opt of optionsArray) {
                 const optValue = typeof opt === 'object' ? opt.value : opt;
                 const optLabel = typeof opt === 'object' ? opt.label : opt;
                 const checked = value === optValue ? 'checked' : '';
