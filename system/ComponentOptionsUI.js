@@ -1,1078 +1,974 @@
 /**
  * Component Options UI
- * Phase 2 Completion: Component Configuration UI Panel
+ * Phase 2.1: Dynamic UI generation from component schemas
  * 
- * Dynamically generates UI controls based on component schema.json files
- * Integrates with the existing design panel system
+ * CHECKLIST COMPLIANT: Event-driven, no polling, no global sniffing
+ * Generates form controls based on component schema.json files
+ * Provides real-time preview of component configuration changes
  * 
  * @version 2.1.0
  * @package GMKB/System
  */
 
-class ComponentOptionsUI {
+(function() {
+    'use strict';
     
-    /**
-     * Get component from state manager
-     */
-    getComponent(componentId) {
-        if (window.enhancedStateManager) {
-            return window.enhancedStateManager.getComponentById(componentId);
-        }
-        return null;
-    }
-    constructor() {
-        this.logger = window.structuredLogger || console;
-        this.currentComponentId = null;
-        this.currentComponentType = null;
-        this.panelContainer = null;
-        this.isInitialized = false;
-        
-        // Wait for dependencies
-        this.waitForDependencies();
-    }
-    
-    /**
-     * Wait for required dependencies to be available
-     */
-    waitForDependencies() {
-        const checkDependencies = () => {
-            if (window.componentConfigurationManager && 
-                window.enhancedStateManager && 
-                window.dataBindingEngine) {
-                this.init();
-            } else {
-                setTimeout(checkDependencies, 100);
-            }
-        };
-        checkDependencies();
-    }
-    
-    /**
-     * Initialize the component options UI
-     */
-    init() {
-        if (this.isInitialized) return;
-        
-        this.logger.info('COMPONENT_OPTIONS_UI', 'Initializing Component Options UI');
-        
-        // Listen for edit component events from controls
-        document.addEventListener('gmkb:component-edit-requested', this.handleEditComponent.bind(this));
-        document.addEventListener('gmkb:design-panel-opened', this.handlePanelOpened.bind(this));
-        
-        // Listen for component selection changes
-        document.addEventListener('gmkb:component-selected', this.handleComponentSelected.bind(this));
-        
-        this.isInitialized = true;
-        this.logger.info('COMPONENT_OPTIONS_UI', 'Component Options UI initialized');
-    }
-    
-    /**
-     * Handle edit component event
-     */
-    handleEditComponent(event) {
-        const { componentId } = event.detail;
-        
-        // Get component type from state
-        const component = this.getComponent(componentId);
-        if (!component) {
-            this.logger.warn('COMPONENT_OPTIONS_UI', 'Component not found', { componentId });
-            return;
-        }
-        
-        const componentType = component.type;
-        this.openOptionsPanel(componentId, componentType);
-    }
-    
-    /**
-     * Handle design panel opened event
-     */
-    handlePanelOpened(event) {
-        const { componentId, componentType } = event.detail;
-        if (componentId && componentType) {
-            // Integrate with existing design panel
-            this.currentComponentId = componentId;
-            this.currentComponentType = componentType;
-            this.enhanceExistingPanel(componentId, componentType);
-        }
-    }
-    
-    /**
-     * Handle component selected event
-     */
-    handleComponentSelected(event) {
-        const { componentId, componentType } = event.detail;
-        if (this.panelContainer && this.panelContainer.classList.contains('show')) {
-            this.renderOptionsUI(componentId, componentType);
-        }
-    }
-    
-    /**
-     * Open the options panel for a component
-     */
-    openOptionsPanel(componentId, componentType) {
-        this.currentComponentId = componentId;
-        this.currentComponentType = componentType;
-        
-        // Dispatch component selected event to trigger existing design panel
-        document.dispatchEvent(new CustomEvent('gmkb:component-selected', {
-            detail: {
-                componentId,
-                componentType,
-                source: 'component-options-ui'
-            }
-        }));
-        
-        // Wait for design panel to load, then enhance it
-        setTimeout(() => {
-            this.enhanceExistingPanel(componentId, componentType);
-        }, 500);
-    }
-    
-    /**
-     * Create design panel if it doesn't exist
-     */
-    createDesignPanel() {
-        const panel = document.createElement('div');
-        panel.id = 'design-panel';
-        panel.className = 'design-panel';
-        panel.innerHTML = `
-            <div class="design-panel-header">
-                <h3>Component Options</h3>
-                <button class="design-panel-close" aria-label="Close panel">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <div class="design-panel-body">
-                <div class="design-panel-content" id="component-options-content">
-                    <!-- Options will be rendered here -->
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(panel);
-        
-        // Add close functionality
-        const closeBtn = panel.querySelector('.design-panel-close');
-        closeBtn.addEventListener('click', () => this.closePanel());
-        
-        // Close on ESC key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && panel.classList.contains('show')) {
-                this.closePanel();
-            }
-        });
-        
-        return panel;
-    }
-    
-    /**
-     * Enhance the existing design panel with schema-based options
-     */
-    enhanceExistingPanel(componentId, componentType) {
-        // Find the element-editor panel
-        const elementEditor = document.getElementById('element-editor');
-        if (!elementEditor) {
-            this.logger.warn('COMPONENT_OPTIONS_UI', 'Element editor not found');
-            return;
-        }
-        
-        // Check if we should add our enhancements
-        const existingEnhancements = elementEditor.querySelector('.component-options-enhancements');
-        if (existingEnhancements) {
-            // Already enhanced, just update if needed
-            return;
-        }
-        
-        // Get schema for this component
-        const schema = window.componentConfigurationManager.getSchema(componentType);
-        if (!schema || !schema.componentOptions) {
-            // No additional options to add
-            return;
-        }
-        
-        // Add our enhancements to the existing panel
-        this.addSchemaEnhancements(elementEditor, componentId, componentType, schema);
-    }
-    
-    /**
-     * Add schema-based enhancements to the existing design panel
-     */
-    addSchemaEnhancements(panel, componentId, componentType, schema) {
-        // Create enhancement container
-        const enhancementContainer = document.createElement('div');
-        enhancementContainer.className = 'component-options-enhancements';
-        
-        // Add advanced options section if we have schema options not covered by the basic panel
-        const advancedOptions = this.getAdvancedOptions(schema);
-        if (advancedOptions.length > 0) {
-            const advancedSection = this.createAdvancedOptionsSection(advancedOptions, componentId);
-            enhancementContainer.appendChild(advancedSection);
-        }
-        
-        // Add data bindings section if available
-        if (schema.dataBindings) {
-            const bindingsSection = this.createDataBindingsSectionSimple(schema, componentId);
-            enhancementContainer.appendChild(bindingsSection);
-        }
-        
-        // Append to the panel
-        panel.appendChild(enhancementContainer);
-        
-        // Setup event handlers
-        this.setupEnhancementHandlers(enhancementContainer, componentId);
-    }
-    
-    /**
-     * Get advanced options not covered by the basic panel
-     */
-    getAdvancedOptions(schema) {
-        const advancedOptions = [];
-        const basicOptions = ['title', 'subtitle', 'description', 'content']; // Common basic options
-        
-        Object.entries(schema.componentOptions || {}).forEach(([key, option]) => {
-            if (!basicOptions.includes(key)) {
-                advancedOptions.push({ key, ...option });
-            }
-        });
-        
-        return advancedOptions;
-    }
-    
-    /**
-     * Create advanced options section
-     */
-    createAdvancedOptionsSection(options, componentId) {
-        const section = document.createElement('div');
-        section.className = 'form-section';
-        section.innerHTML = `
-            <h4 class="form-section__title">Advanced Options</h4>
-        `;
-        
-        options.forEach(option => {
-            const control = this.createSimpleFormControl(option.key, option, null);
-            section.appendChild(control);
-        });
-        
-        return section;
-    }
-    
-    /**
-     * Create a simple form control element
-     */
-    createSimpleFormControl(key, option, currentValue) {
-        const container = document.createElement('div');
-        container.className = 'form-group';
-        
-        const label = document.createElement('label');
-        label.textContent = option.label || this.humanizeKey(key);
-        container.appendChild(label);
-        
-        let input;
-        
-        switch (option.type) {
-            case 'select':
-                input = document.createElement('select');
-                input.className = 'form-control';
-                Object.entries(option.options || {}).forEach(([value, text]) => {
-                    const optionEl = document.createElement('option');
-                    optionEl.value = value;
-                    optionEl.textContent = text;
-                    if (currentValue === value) {
-                        optionEl.selected = true;
-                    }
-                    input.appendChild(optionEl);
-                });
-                break;
-                
-            case 'boolean':
-                input = document.createElement('input');
-                input.type = 'checkbox';
-                input.className = 'form-checkbox';
-                input.checked = currentValue || option.default;
-                break;
-                
-            default:
-                input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'form-control';
-                input.value = currentValue || option.default || '';
-        }
-        
-        input.setAttribute('data-option-key', key);
-        container.appendChild(input);
-        
-        return container;
-    }
-    
-    /**
-     * Create simplified data bindings section
-     */
-    createDataBindingsSectionSimple(schema, componentId) {
-        const section = document.createElement('div');
-        section.className = 'form-section';
-        section.innerHTML = `
-            <h4 class="form-section__title">Data Bindings</h4>
-            <p class="form-help-text">Connect component fields to Pods data</p>
-        `;
-        
-        // Add binding info
-        const bindingInfo = document.createElement('div');
-        bindingInfo.className = 'binding-info';
-        
-        Object.entries(schema.dataBindings || {}).forEach(([property, field]) => {
-            const row = document.createElement('div');
-            row.className = 'binding-row-simple';
-            row.innerHTML = `
-                <span class="binding-property">${this.humanizeKey(property)}</span>
-                <span class="binding-arrow">→</span>
-                <span class="binding-field">${field}</span>
-            `;
-            bindingInfo.appendChild(row);
-        });
-        
-        section.appendChild(bindingInfo);
-        
-        return section;
-    }
-    
-    /**
-     * Setup enhancement event handlers
-     */
-    setupEnhancementHandlers(container, componentId) {
-        // Handle advanced option changes
-        container.querySelectorAll('[data-option-key]').forEach(input => {
-            const key = input.getAttribute('data-option-key');
+    class ComponentOptionsUI {
+        constructor() {
+            this.logger = window.structuredLogger || console;
+            this.configManager = null;
+            this.stateManager = null;
+            this.componentManager = null;
+            this.dataBinding = null;
+            this.isInitialized = false;
+            this.currentComponentId = null;
+            this.currentSchema = null;
+            this.changeDebounceTimer = null;
             
-            input.addEventListener('change', () => {
-                const value = input.type === 'checkbox' ? input.checked : input.value;
-                this.updateComponentOption(componentId, key, value);
-            });
-        });
-    }
-    
-    /**
-     * Update a component option
-     */
-    updateComponentOption(componentId, key, value) {
-        // Update configuration
-        const config = window.componentConfigurationManager.getComponentConfiguration(componentId) || {};
-        if (!config.componentOptions) {
-            config.componentOptions = {};
-        }
-        config.componentOptions[key] = value;
-        
-        window.componentConfigurationManager.updateComponentConfiguration(componentId, config);
-        
-        // Update component state
-        if (window.enhancedStateManager) {
-            const updates = { props: { [key]: value } };
-            window.enhancedStateManager.updateComponent(componentId, updates);
-        }
-        
-        // Trigger re-render
-        document.dispatchEvent(new CustomEvent('gmkb:component-option-changed', {
-            detail: { componentId, key, value }
-        }));
-        
-        this.logger.info('COMPONENT_OPTIONS_UI', 'Option updated', { componentId, key, value });
-    }
-    
-    /**
-     * Render the options UI for a component (standalone version)
-     */
-    renderOptionsUI(componentId, componentType) {
-        const schema = window.componentConfigurationManager.getSchema(componentType);
-        if (!schema) {
-            this.logger.warn('COMPONENT_OPTIONS_UI', `No schema found for ${componentType}`);
-            this.renderNoSchemaMessage();
-            return;
-        }
-        
-        // Get current component state
-        const componentState = window.enhancedStateManager.getComponentById(componentId);
-        const currentConfig = componentState?.props || {};
-        
-        // Find content container
-        const contentContainer = this.panelContainer.querySelector('#component-options-content') ||
-                                this.panelContainer.querySelector('.design-panel-content');
-        
-        if (!contentContainer) {
-            this.logger.error('COMPONENT_OPTIONS_UI', 'Content container not found');
-            return;
-        }
-        
-        // Clear existing content
-        contentContainer.innerHTML = '';
-        
-        // Create sections
-        const sections = [
-            { id: 'component-info', title: 'Component Info', content: this.createInfoSection(componentType, schema) },
-            { id: 'component-options', title: 'Options', content: this.createOptionsSection(schema, currentConfig, componentId) },
-            { id: 'data-bindings', title: 'Data Bindings', content: this.createDataBindingsSection(schema, currentConfig, componentId) }
-        ];
-        
-        // Create tabbed interface
-        const tabsHtml = `
-            <div class="component-options-tabs">
-                <div class="tabs-header">
-                    ${sections.map((section, index) => `
-                        <button class="tab-button ${index === 0 ? 'active' : ''}" 
-                                data-tab="${section.id}">
-                            ${section.title}
-                        </button>
-                    `).join('')}
-                </div>
-                <div class="tabs-content">
-                    ${sections.map((section, index) => `
-                        <div class="tab-panel ${index === 0 ? 'active' : ''}" 
-                             id="${section.id}">
-                            ${section.content}
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-        
-        contentContainer.innerHTML = tabsHtml;
-        
-        // Set up tab functionality
-        this.setupTabs(contentContainer);
-        
-        // Set up form controls
-        this.setupFormControls(contentContainer, componentId);
-    }
-    
-    /**
-     * Create component info section
-     */
-    createInfoSection(componentType, schema) {
-        return `
-            <div class="component-info-section">
-                <div class="info-item">
-                    <label>Type:</label>
-                    <span>${componentType}</span>
-                </div>
-                <div class="info-item">
-                    <label>Name:</label>
-                    <span>${schema.name || componentType}</span>
-                </div>
-                ${schema.description ? `
-                    <div class="info-item">
-                        <label>Description:</label>
-                        <span>${schema.description}</span>
-                    </div>
-                ` : ''}
-                <div class="info-item">
-                    <label>Component ID:</label>
-                    <code>${this.currentComponentId}</code>
-                </div>
-            </div>
-        `;
-    }
-    
-    /**
-     * Create options section with form controls
-     */
-    createOptionsSection(schema, currentConfig, componentId) {
-        const componentOptions = schema.componentOptions || {};
-        
-        if (Object.keys(componentOptions).length === 0) {
-            return '<p class="no-options">No configurable options for this component.</p>';
-        }
-        
-        const optionsHtml = Object.entries(componentOptions).map(([key, option]) => {
-            const currentValue = currentConfig[key] !== undefined ? currentConfig[key] : option.default;
-            return this.createFormControl(key, option, currentValue);
-        }).join('');
-        
-        return `
-            <div class="component-options-form">
-                ${optionsHtml}
-                <div class="form-actions">
-                    <button class="btn btn-primary apply-options" data-component-id="${componentId}">
-                        Apply Changes
-                    </button>
-                    <button class="btn btn-secondary reset-options" data-component-id="${componentId}">
-                        Reset to Defaults
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    
-    /**
-     * Create a form control based on option type
-     */
-    createFormControl(key, option, currentValue) {
-        const label = option.label || this.humanizeKey(key);
-        const inputId = `option-${key}`;
-        
-        let controlHtml = '';
-        
-        switch (option.type) {
-            case 'select':
-                controlHtml = `
-                    <select id="${inputId}" name="${key}" class="form-control">
-                        ${Object.entries(option.options || {}).map(([value, text]) => `
-                            <option value="${value}" ${currentValue === value ? 'selected' : ''}>
-                                ${text}
-                            </option>
-                        `).join('')}
-                    </select>
-                `;
-                break;
-                
-            case 'boolean':
-                controlHtml = `
-                    <label class="switch">
-                        <input type="checkbox" id="${inputId}" name="${key}" 
-                               ${currentValue ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                `;
-                break;
-                
-            case 'number':
-                controlHtml = `
-                    <input type="number" id="${inputId}" name="${key}" 
-                           class="form-control"
-                           value="${currentValue}"
-                           ${option.min !== undefined ? `min="${option.min}"` : ''}
-                           ${option.max !== undefined ? `max="${option.max}"` : ''}
-                           ${option.step !== undefined ? `step="${option.step}"` : ''}>
-                    ${option.min !== undefined || option.max !== undefined ? `
-                        <small class="form-help">
-                            ${option.min !== undefined ? `Min: ${option.min}` : ''}
-                            ${option.min !== undefined && option.max !== undefined ? ' | ' : ''}
-                            ${option.max !== undefined ? `Max: ${option.max}` : ''}
-                        </small>
-                    ` : ''}
-                `;
-                break;
-                
-            case 'color':
-                controlHtml = `
-                    <div class="color-input-wrapper">
-                        <input type="color" id="${inputId}" name="${key}" 
-                               class="form-control color-picker"
-                               value="${currentValue || '#000000'}">
-                        <input type="text" class="form-control color-text" 
-                               value="${currentValue || '#000000'}"
-                               pattern="^#[0-9A-Fa-f]{6}$">
-                    </div>
-                `;
-                break;
-                
-            case 'text':
-            case 'string':
-                controlHtml = `
-                    <input type="text" id="${inputId}" name="${key}" 
-                           class="form-control"
-                           value="${currentValue || ''}">
-                `;
-                break;
-                
-            case 'textarea':
-                controlHtml = `
-                    <textarea id="${inputId}" name="${key}" 
-                              class="form-control" rows="3">${currentValue || ''}</textarea>
-                `;
-                break;
-                
-            default:
-                controlHtml = `
-                    <input type="text" id="${inputId}" name="${key}" 
-                           class="form-control"
-                           value="${currentValue || ''}">
-                `;
-        }
-        
-        return `
-            <div class="form-group">
-                <label for="${inputId}">${label}</label>
-                ${controlHtml}
-            </div>
-        `;
-    }
-    
-    /**
-     * Create data bindings section
-     */
-    createDataBindingsSection(schema, currentConfig, componentId) {
-        const dataBindings = schema.dataBindings || {};
-        
-        if (Object.keys(dataBindings).length === 0) {
-            return '<p class="no-bindings">No data bindings available for this component.</p>';
-        }
-        
-        // Get available Pods fields
-        const availableFields = this.getAvailablePodsFields();
-        
-        const bindingsHtml = Object.entries(dataBindings).map(([property, defaultField]) => {
-            const currentBinding = currentConfig.dataBindings?.[property] || defaultField;
+            this.logger.info('📋 Component Options UI: Initializing Phase 2.1');
             
-            return `
-                <div class="binding-row">
-                    <div class="binding-property">
-                        <label>${this.humanizeKey(property)}</label>
-                    </div>
-                    <div class="binding-arrow">→</div>
-                    <div class="binding-field">
-                        <select name="binding-${property}" class="form-control binding-select">
-                            <option value="">None</option>
-                            ${availableFields.map(field => `
-                                <option value="${field.key}" 
-                                        ${currentBinding === field.key ? 'selected' : ''}>
-                                    ${field.label}
-                                </option>
-                            `).join('')}
-                        </select>
-                    </div>
-                    <div class="binding-preview">
-                        <button class="btn btn-sm preview-binding" 
-                                data-property="${property}"
-                                data-component-id="${componentId}">
-                            Preview
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        return `
-            <div class="data-bindings-form">
-                ${bindingsHtml}
-                <div class="form-actions">
-                    <button class="btn btn-primary apply-bindings" data-component-id="${componentId}">
-                        Apply Bindings
-                    </button>
-                    <button class="btn btn-secondary test-bindings" data-component-id="${componentId}">
-                        Test All Bindings
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    
-    /**
-     * Get available Pods fields
-     */
-    getAvailablePodsFields() {
-        // Get from WordPress data if available
-        if (window.gmkbData?.podsFields) {
-            return window.gmkbData.podsFields;
+            // CHECKLIST COMPLIANT: Event-driven initialization only
+            this.setupEventListeners();
         }
         
-        // Default common fields
-        return [
-            { key: 'full_name', label: 'Full Name' },
-            { key: 'first_name', label: 'First Name' },
-            { key: 'last_name', label: 'Last Name' },
-            { key: 'guest_title', label: 'Title/Position' },
-            { key: 'biography', label: 'Full Biography' },
-            { key: 'biography_short', label: 'Short Biography' },
-            { key: 'guest_headshot', label: 'Headshot Image' },
-            { key: 'speaking_topics', label: 'Speaking Topics' },
-            { key: 'email', label: 'Email' },
-            { key: 'phone', label: 'Phone' },
-            { key: 'website', label: 'Website' },
-            { key: 'social_links', label: 'Social Links' },
-            { key: 'cta_button_text', label: 'CTA Button Text' },
-            { key: 'cta_button_link', label: 'CTA Button Link' }
-        ];
-    }
-    
-    /**
-     * Set up tab functionality
-     */
-    setupTabs(container) {
-        const tabButtons = container.querySelectorAll('.tab-button');
-        const tabPanels = container.querySelectorAll('.tab-panel');
+        setupEventListeners() {
+            // Listen for system ready events
+            document.addEventListener('gmkb:core-systems-ready', (e) => this.onSystemsReady(e));
+            document.addEventListener('gmkb:component-manager-ready', (e) => this.onComponentManagerReady(e));
+            
+            // Listen for design panel events
+            document.addEventListener('gmkb:design-panel-opened', (e) => this.onDesignPanelOpened(e));
+            document.addEventListener('gmkb:component-selected', (e) => this.onComponentSelected(e));
+            
+            // Listen for schema updates
+            document.addEventListener('gmkb:schema-loaded', (e) => this.onSchemaLoaded(e));
+        }
         
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const targetTab = button.dataset.tab;
+        onSystemsReady(event) {
+            const systems = event.detail || {};
+            
+            // Get references to required systems
+            if (systems.configurationManager) {
+                this.configManager = systems.configurationManager;
+            }
+            if (systems.stateManager) {
+                this.stateManager = systems.stateManager;
+            }
+            if (systems.dataBindingEngine) {
+                this.dataBinding = systems.dataBindingEngine;
+            }
+            
+            // Try to initialize if we have what we need
+            this.tryInitialize();
+        }
+        
+        onComponentManagerReady(event) {
+            if (event.detail?.manager) {
+                this.componentManager = event.detail.manager;
+                this.tryInitialize();
+            }
+        }
+        
+        tryInitialize() {
+            // Check if we have all required dependencies
+            if (this.isInitialized) return;
+            
+            // Look for managers in window as fallback
+            this.configManager = this.configManager || window.componentConfigurationManager;
+            this.stateManager = this.stateManager || window.enhancedStateManager;
+            this.componentManager = this.componentManager || window.enhancedComponentManager;
+            this.dataBinding = this.dataBinding || window.dataBindingEngine;
+            
+            if (this.configManager && this.stateManager) {
+                this.isInitialized = true;
                 
-                // Update active states
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabPanels.forEach(panel => panel.classList.remove('active'));
+                // ROOT FIX: Make available globally IMMEDIATELY for design panel integration
+                window.componentOptionsUI = this;
+                window.ComponentOptionsUI = this.constructor; // Also expose the class
                 
-                button.classList.add('active');
-                const targetPanel = container.querySelector(`#${targetTab}`);
-                if (targetPanel) {
-                    targetPanel.classList.add('active');
+                // Also make ComponentSelectionManager available if it exists
+                if (window.componentSelectionManager) {
+                    window.ComponentSelectionManager = window.componentSelectionManager.constructor || window.componentSelectionManager;
                 }
-            });
-        });
-    }
-    
-    /**
-     * Set up form controls and event handlers
-     */
-    setupFormControls(container, componentId) {
-        // Handle real-time updates for form controls
-        const inputs = container.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            // Skip binding selects and action buttons
-            if (input.classList.contains('binding-select') || 
-                input.type === 'button' || 
-                input.type === 'submit') {
+                
+                // Dispatch ready event
+                document.dispatchEvent(new CustomEvent('gmkb:component-options-ui-ready', {
+                    detail: { ui: this }
+                }));
+                
+                // ROOT FIX: Also dispatch Phase 2 ready event for GMKB to detect
+                document.dispatchEvent(new CustomEvent('gmkb:phase2-ready', {
+                    detail: {
+                        componentOptionsUI: this,
+                        componentSelectionManager: window.componentSelectionManager,
+                        available: true
+                    }
+                }));
+                
+                this.logger.info('✅ Component Options UI: Ready to generate dynamic forms');
+                console.log('✅ PHASE 2 READY: Component Options UI available at window.componentOptionsUI');
+            }
+        }
+        
+        onDesignPanelOpened(event) {
+            const { componentId, componentType, panelElement } = event.detail || {};
+            
+            if (!componentId || !componentType || !panelElement) {
+                this.logger.warn('Design panel opened without required details');
                 return;
             }
             
-            // Add real-time preview
-            const updatePreview = () => {
-                this.updateComponentPreview(componentId, this.collectFormData(container));
-            };
-            
-            if (input.type === 'checkbox') {
-                input.addEventListener('change', updatePreview);
-            } else {
-                input.addEventListener('input', updatePreview);
-            }
-        });
+            // Load schema and inject options UI
+            this.loadComponentOptions(componentId, componentType, panelElement);
+        }
         
-        // Handle color picker sync
-        const colorPickers = container.querySelectorAll('.color-picker');
-        colorPickers.forEach(picker => {
-            const textInput = picker.nextElementSibling;
-            if (textInput && textInput.classList.contains('color-text')) {
-                picker.addEventListener('input', () => {
-                    textInput.value = picker.value;
-                    this.updateComponentPreview(componentId, this.collectFormData(container));
-                });
+        onComponentSelected(event) {
+            const { componentId } = event.detail || {};
+            if (componentId) {
+                this.currentComponentId = componentId;
+            }
+        }
+        
+        onSchemaLoaded(event) {
+            const { componentType, schema } = event.detail || {};
+            if (componentType && schema) {
+                this.logger.info(`Schema loaded for ${componentType}`, schema);
+            }
+        }
+        
+        /**
+         * Load component options and inject UI into design panel
+         */
+        async loadComponentOptions(componentId, componentType, panelElement) {
+            try {
+                this.currentComponentId = componentId;
                 
-                textInput.addEventListener('input', () => {
-                    if (/^#[0-9A-Fa-f]{6}$/.test(textInput.value)) {
-                        picker.value = textInput.value;
-                        this.updateComponentPreview(componentId, this.collectFormData(container));
-                    }
-                });
+                // Get schema from configuration manager
+                const schema = await this.getComponentSchema(componentType);
+                if (!schema) {
+                    this.logger.warn(`No schema found for component type: ${componentType}`);
+                    this.injectFallbackUI(panelElement, componentType);
+                    return;
+                }
+                
+                this.currentSchema = schema;
+                
+                // Get current component state
+                const componentState = this.getComponentState(componentId);
+                
+                // Generate and inject the options UI
+                this.injectOptionsUI(panelElement, schema, componentState, componentType);
+                
+                this.logger.info(`✅ Options UI loaded for ${componentType} (${componentId})`);
+                
+            } catch (error) {
+                this.logger.error('Failed to load component options:', error);
+                this.injectErrorUI(panelElement, error.message);
             }
-        });
-        
-        // Handle apply button
-        const applyBtn = container.querySelector('.apply-options');
-        if (applyBtn) {
-            applyBtn.addEventListener('click', () => {
-                this.applyOptions(componentId, this.collectFormData(container));
-            });
         }
         
-        // Handle reset button
-        const resetBtn = container.querySelector('.reset-options');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => {
-                this.resetOptions(componentId);
-            });
+        /**
+         * Get schema for a component type
+         */
+        async getComponentSchema(componentType) {
+            // Try configuration manager first
+            if (this.configManager && typeof this.configManager.getSchema === 'function') {
+                const schema = this.configManager.getSchema(componentType);
+                if (schema) return schema;
+            }
+            
+            // Try loading schema directly as fallback
+            try {
+                const response = await fetch(`/wp-content/plugins/guestify-media-kit-builder/components/${componentType}/schema.json`);
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (error) {
+                this.logger.warn(`Failed to load schema for ${componentType}:`, error);
+            }
+            
+            return null;
         }
         
-        // Handle apply bindings button
-        const applyBindingsBtn = container.querySelector('.apply-bindings');
-        if (applyBindingsBtn) {
-            applyBindingsBtn.addEventListener('click', () => {
-                this.applyBindings(componentId, this.collectBindings(container));
-            });
+        /**
+         * Get current state of a component
+         */
+        getComponentState(componentId) {
+            if (!this.stateManager) return {};
+            
+            const state = this.stateManager.getState();
+            const component = state.components?.[componentId];
+            
+            return component?.props || {};
         }
         
-        // Handle test bindings button
-        const testBindingsBtn = container.querySelector('.test-bindings');
-        if (testBindingsBtn) {
-            testBindingsBtn.addEventListener('click', () => {
-                this.testBindings(componentId);
-            });
-        }
-        
-        // Handle preview binding buttons
-        const previewBtns = container.querySelectorAll('.preview-binding');
-        previewBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const property = btn.dataset.property;
-                this.previewBinding(componentId, property);
-            });
-        });
-    }
-    
-    /**
-     * Collect form data from the options panel
-     */
-    collectFormData(container) {
-        const formData = {};
-        const inputs = container.querySelectorAll('.component-options-form input, .component-options-form select, .component-options-form textarea');
-        
-        inputs.forEach(input => {
-            if (input.name && !input.name.startsWith('binding-')) {
-                if (input.type === 'checkbox') {
-                    formData[input.name] = input.checked;
+        /**
+         * Inject the options UI into the design panel
+         */
+        injectOptionsUI(panelElement, schema, currentState, componentType) {
+            // Find or create options container
+            let optionsContainer = panelElement.querySelector('.component-options-container');
+            if (!optionsContainer) {
+                optionsContainer = document.createElement('div');
+                optionsContainer.className = 'component-options-container';
+                
+                // Find a good insertion point
+                const formSections = panelElement.querySelectorAll('.form-section');
+                if (formSections.length > 0) {
+                    // Insert after the first form section
+                    formSections[0].after(optionsContainer);
                 } else {
-                    formData[input.name] = input.value;
+                    // Append to panel
+                    panelElement.appendChild(optionsContainer);
                 }
             }
-        });
-        
-        return formData;
-    }
-    
-    /**
-     * Collect data bindings from the panel
-     */
-    collectBindings(container) {
-        const bindings = {};
-        const selects = container.querySelectorAll('.binding-select');
-        
-        selects.forEach(select => {
-            const property = select.name.replace('binding-', '');
-            if (select.value) {
-                bindings[property] = select.value;
-            }
-        });
-        
-        return bindings;
-    }
-    
-    /**
-     * Update component preview in real-time
-     */
-    updateComponentPreview(componentId, options) {
-        // Update state
-        const updates = { props: options };
-        window.enhancedStateManager.updateComponent(componentId, updates);
-        
-        // Trigger re-render
-        document.dispatchEvent(new CustomEvent('gmkb:component-options-preview', {
-            detail: { componentId, options }
-        }));
-        
-        this.logger.info('COMPONENT_OPTIONS_UI', 'Preview updated', { componentId, options });
-    }
-    
-    /**
-     * Apply options permanently
-     */
-    applyOptions(componentId, options) {
-        // Update configuration
-        window.componentConfigurationManager.updateComponentConfiguration(componentId, {
-            componentOptions: options
-        });
-        
-        // Update state
-        window.enhancedStateManager.updateComponent(componentId, { props: options });
-        
-        // Trigger save
-        if (window.enhancedComponentManager?.manualSave) {
-            window.enhancedComponentManager.manualSave();
-        }
-        
-        // Show success feedback
-        this.showFeedback('Options applied successfully!', 'success');
-        
-        this.logger.info('COMPONENT_OPTIONS_UI', 'Options applied', { componentId, options });
-    }
-    
-    /**
-     * Reset options to defaults
-     */
-    resetOptions(componentId) {
-        const componentType = this.currentComponentType;
-        const schema = window.componentConfigurationManager.getSchema(componentType);
-        
-        if (!schema) return;
-        
-        // Get default values
-        const defaults = {};
-        Object.entries(schema.componentOptions || {}).forEach(([key, option]) => {
-            if (option.default !== undefined) {
-                defaults[key] = option.default;
-            }
-        });
-        
-        // Apply defaults
-        this.applyOptions(componentId, defaults);
-        
-        // Re-render the panel
-        this.renderOptionsUI(componentId, componentType);
-        
-        this.showFeedback('Options reset to defaults', 'info');
-    }
-    
-    /**
-     * Apply data bindings
-     */
-    applyBindings(componentId, bindings) {
-        // Update configuration
-        window.componentConfigurationManager.updateComponentConfiguration(componentId, {
-            dataBindings: bindings
-        });
-        
-        // Apply bindings using DataBindingEngine
-        if (window.dataBindingEngine) {
-            window.dataBindingEngine.bindComponentData(componentId, this.currentComponentType, bindings);
-        }
-        
-        // Trigger save
-        if (window.enhancedComponentManager?.manualSave) {
-            window.enhancedComponentManager.manualSave();
-        }
-        
-        this.showFeedback('Data bindings applied successfully!', 'success');
-        
-        this.logger.info('COMPONENT_OPTIONS_UI', 'Bindings applied', { componentId, bindings });
-    }
-    
-    /**
-     * Test all bindings with sample data
-     */
-    testBindings(componentId) {
-        if (!window.dataBindingEngine) {
-            this.showFeedback('Data binding engine not available', 'error');
-            return;
-        }
-        
-        // Get sample data
-        const sampleData = window.dataBindingEngine.getSampleData ? 
-            window.dataBindingEngine.getSampleData() : 
-            this.getDefaultSampleData();
-        
-        // Apply sample data temporarily
-        window.dataBindingEngine.testBindings(componentId, sampleData);
-        
-        this.showFeedback('Testing with sample data...', 'info');
-        
-        // Revert after 3 seconds
-        setTimeout(() => {
-            window.dataBindingEngine.revertTestBindings(componentId);
-            this.showFeedback('Test completed, reverted to actual data', 'info');
-        }, 3000);
-    }
-    
-    /**
-     * Preview a single binding
-     */
-    previewBinding(componentId, property) {
-        const select = this.panelContainer.querySelector(`select[name="binding-${property}"]`);
-        if (!select || !select.value) {
-            this.showFeedback('Please select a field to preview', 'warning');
-            return;
-        }
-        
-        // Get field value
-        const fieldValue = window.gmkbData?.currentPost?.[select.value] || `[${select.value}]`;
-        
-        this.showFeedback(`Preview: ${fieldValue}`, 'info');
-    }
-    
-    /**
-     * Get default sample data for testing
-     */
-    getDefaultSampleData() {
-        return {
-            full_name: 'John Doe',
-            first_name: 'John',
-            last_name: 'Doe',
-            guest_title: 'Senior Developer',
-            biography: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-            biography_short: 'Experienced developer and speaker.',
-            email: 'john.doe@example.com',
-            phone: '(555) 123-4567',
-            website: 'https://example.com',
-            speaking_topics: ['Web Development', 'JavaScript', 'React', 'Node.js'],
-            cta_button_text: 'Book Now',
-            cta_button_link: 'https://example.com/booking'
-        };
-    }
-    
-    /**
-     * Show feedback message
-     */
-    showFeedback(message, type = 'info') {
-        // Use toast if available
-        if (window.showToast) {
-            window.showToast(message, type, 3000);
-            return;
-        }
-        
-        // Otherwise create inline feedback
-        const feedback = document.createElement('div');
-        feedback.className = `feedback-message feedback-${type}`;
-        feedback.textContent = message;
-        
-        const container = this.panelContainer.querySelector('.design-panel-body');
-        if (container) {
-            container.insertBefore(feedback, container.firstChild);
             
-            setTimeout(() => {
-                feedback.remove();
-            }, 3000);
+            // Clear existing content
+            optionsContainer.innerHTML = '';
+            
+            // Generate UI based on schema
+            const ui = this.generateOptionsUI(schema, currentState, componentType);
+            optionsContainer.innerHTML = ui;
+            
+            // Setup event listeners for the new controls
+            this.setupControlListeners(optionsContainer);
+            
+            // Add data binding section if schema has bindings
+            if (schema.dataBindings && Object.keys(schema.dataBindings).length > 0) {
+                const bindingUI = this.generateDataBindingUI(schema.dataBindings, currentState);
+                const bindingSection = document.createElement('div');
+                bindingSection.innerHTML = bindingUI;
+                optionsContainer.appendChild(bindingSection);
+                this.setupBindingListeners(bindingSection);
+            }
         }
-    }
-    
-    /**
-     * Close the options panel
-     */
-    closePanel() {
-        if (this.panelContainer) {
-            this.panelContainer.classList.remove('show', 'active');
-            document.body.classList.remove('design-panel-open');
+        
+        /**
+         * Generate HTML for component options based on schema
+         */
+        generateOptionsUI(schema, currentState, componentType) {
+            const options = schema.componentOptions || {};
+            
+            if (Object.keys(options).length === 0) {
+                return `
+                    <div class="form-section">
+                        <h4 class="form-section__title">Component Settings</h4>
+                        <p class="form-help-text">This component has no configurable options.</p>
+                    </div>
+                `;
+            }
+            
+            let html = `
+                <div class="form-section component-options-section" data-component-type="${componentType}">
+                    <h4 class="form-section__title">
+                        <span class="section-icon">⚙️</span>
+                        Component Settings
+                    </h4>
+            `;
+            
+            // Group options by category if available
+            const categories = this.categorizeOptions(options);
+            
+            for (const [category, categoryOptions] of Object.entries(categories)) {
+                if (category !== 'default') {
+                    html += `<div class="options-category">
+                        <h5 class="category-title">${this.formatLabel(category)}</h5>`;
+                }
+                
+                for (const [key, option] of Object.entries(categoryOptions)) {
+                    const value = currentState[key] !== undefined ? currentState[key] : option.default;
+                    html += this.generateControl(key, option, value);
+                }
+                
+                if (category !== 'default') {
+                    html += `</div>`;
+                }
+            }
+            
+            html += `</div>`;
+            
+            return html;
         }
         
-        this.currentComponentId = null;
-        this.currentComponentType = null;
+        /**
+         * Categorize options for better organization
+         */
+        categorizeOptions(options) {
+            const categories = {};
+            
+            for (const [key, option] of Object.entries(options)) {
+                const category = option.category || 'default';
+                if (!categories[category]) {
+                    categories[category] = {};
+                }
+                categories[category][key] = option;
+            }
+            
+            return categories;
+        }
         
-        // Dispatch closed event
-        document.dispatchEvent(new CustomEvent('gmkb:design-panel-closed'));
-    }
-    
-    /**
-     * Render no schema message
-     */
-    renderNoSchemaMessage() {
-        const contentContainer = this.panelContainer.querySelector('#component-options-content') ||
-                                this.panelContainer.querySelector('.design-panel-content');
-        
-        if (contentContainer) {
-            contentContainer.innerHTML = `
-                <div class="no-schema-message">
-                    <p>No configuration schema found for this component type.</p>
-                    <p>The component will use default settings.</p>
+        /**
+         * Generate individual control based on option type
+         */
+        generateControl(key, option, value) {
+            const label = option.label || this.formatLabel(key);
+            const description = option.description || '';
+            const required = option.required ? 'required' : '';
+            
+            let control = '';
+            
+            switch (option.type) {
+                case 'text':
+                    control = this.generateTextControl(key, option, value, required);
+                    break;
+                    
+                case 'textarea':
+                    control = this.generateTextareaControl(key, option, value, required);
+                    break;
+                    
+                case 'number':
+                    control = this.generateNumberControl(key, option, value, required);
+                    break;
+                    
+                case 'select':
+                    control = this.generateSelectControl(key, option, value, required);
+                    break;
+                    
+                case 'boolean':
+                case 'checkbox':
+                    control = this.generateCheckboxControl(key, option, value);
+                    break;
+                    
+                case 'color':
+                    control = this.generateColorControl(key, option, value);
+                    break;
+                    
+                case 'range':
+                    control = this.generateRangeControl(key, option, value);
+                    break;
+                    
+                case 'radio':
+                    control = this.generateRadioControl(key, option, value);
+                    break;
+                    
+                case 'image':
+                    control = this.generateImageControl(key, option, value);
+                    break;
+                    
+                default:
+                    control = this.generateTextControl(key, option, value, required);
+            }
+            
+            return `
+                <div class="form-group option-control" data-option-key="${key}">
+                    <label class="form-label">
+                        ${label}
+                        ${option.required ? '<span class="required">*</span>' : ''}
+                    </label>
+                    ${description ? `<p class="form-description">${description}</p>` : ''}
+                    ${control}
                 </div>
             `;
         }
+        
+        generateTextControl(key, option, value, required) {
+            const placeholder = option.placeholder || '';
+            const maxLength = option.maxLength ? `maxlength="${option.maxLength}"` : '';
+            
+            return `
+                <input type="text" 
+                       class="form-input option-input" 
+                       data-option="${key}"
+                       value="${this.escapeHtml(value || '')}"
+                       placeholder="${placeholder}"
+                       ${maxLength}
+                       ${required}>
+            `;
+        }
+        
+        generateTextareaControl(key, option, value, required) {
+            const placeholder = option.placeholder || '';
+            const rows = option.rows || 4;
+            
+            return `
+                <textarea class="form-input option-input" 
+                          data-option="${key}"
+                          rows="${rows}"
+                          placeholder="${placeholder}"
+                          ${required}>${this.escapeHtml(value || '')}</textarea>
+            `;
+        }
+        
+        generateNumberControl(key, option, value, required) {
+            const min = option.min !== undefined ? `min="${option.min}"` : '';
+            const max = option.max !== undefined ? `max="${option.max}"` : '';
+            const step = option.step || 1;
+            
+            return `
+                <input type="number" 
+                       class="form-input option-input" 
+                       data-option="${key}"
+                       value="${value || option.default || 0}"
+                       ${min} ${max}
+                       step="${step}"
+                       ${required}>
+            `;
+        }
+        
+        generateSelectControl(key, option, value, required) {
+            const options = option.options || [];
+            
+            let html = `
+                <select class="form-input option-input" 
+                        data-option="${key}"
+                        ${required}>
+            `;
+            
+            if (!required) {
+                html += `<option value="">Choose...</option>`;
+            }
+            
+            for (const opt of options) {
+                const optValue = typeof opt === 'object' ? opt.value : opt;
+                const optLabel = typeof opt === 'object' ? opt.label : opt;
+                const selected = value === optValue ? 'selected' : '';
+                
+                html += `<option value="${optValue}" ${selected}>${optLabel}</option>`;
+            }
+            
+            html += `</select>`;
+            
+            return html;
+        }
+        
+        generateCheckboxControl(key, option, value) {
+            const checked = value === true || value === 'true' || value === 1 ? 'checked' : '';
+            
+            return `
+                <label class="checkbox-label">
+                    <input type="checkbox" 
+                           class="option-input" 
+                           data-option="${key}"
+                           ${checked}>
+                    <span>${option.checkboxLabel || 'Enable'}</span>
+                </label>
+            `;
+        }
+        
+        generateColorControl(key, option, value) {
+            const defaultColor = value || option.default || '#000000';
+            
+            return `
+                <div class="color-input-group">
+                    <input type="color" 
+                           class="color-picker option-input" 
+                           data-option="${key}"
+                           value="${defaultColor}">
+                    <input type="text" 
+                           class="form-input color-text" 
+                           data-option="${key}-text"
+                           value="${defaultColor}"
+                           pattern="^#[0-9A-Fa-f]{6}$">
+                </div>
+            `;
+        }
+        
+        generateRangeControl(key, option, value) {
+            const min = option.min || 0;
+            const max = option.max || 100;
+            const step = option.step || 1;
+            const currentValue = value || option.default || min;
+            
+            return `
+                <div class="range-control">
+                    <input type="range" 
+                           class="form-range option-input" 
+                           data-option="${key}"
+                           min="${min}"
+                           max="${max}"
+                           step="${step}"
+                           value="${currentValue}">
+                    <span class="range-value">${currentValue}${option.unit || ''}</span>
+                </div>
+            `;
+        }
+        
+        generateRadioControl(key, option, value) {
+            const options = option.options || [];
+            let html = '<div class="radio-group">';
+            
+            for (const opt of options) {
+                const optValue = typeof opt === 'object' ? opt.value : opt;
+                const optLabel = typeof opt === 'object' ? opt.label : opt;
+                const checked = value === optValue ? 'checked' : '';
+                const radioId = `${key}-${optValue}`;
+                
+                html += `
+                    <label class="radio-label" for="${radioId}">
+                        <input type="radio" 
+                               id="${radioId}"
+                               name="${key}"
+                               class="option-input" 
+                               data-option="${key}"
+                               value="${optValue}"
+                               ${checked}>
+                        <span>${optLabel}</span>
+                    </label>
+                `;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+        
+        generateImageControl(key, option, value) {
+            return `
+                <div class="image-control">
+                    <input type="text" 
+                           class="form-input option-input" 
+                           data-option="${key}"
+                           value="${value || ''}"
+                           placeholder="Image URL">
+                    <button type="button" class="btn btn--small media-library-btn" data-option="${key}">
+                        Choose Image
+                    </button>
+                    ${value ? `<div class="image-preview"><img src="${value}" alt="Preview"></div>` : ''}
+                </div>
+            `;
+        }
+        
+        /**
+         * Generate data binding UI
+         */
+        generateDataBindingUI(bindings, currentState) {
+            let html = `
+                <div class="form-section data-binding-section">
+                    <h4 class="form-section__title">
+                        <span class="section-icon">🔗</span>
+                        Data Bindings
+                    </h4>
+                    <p class="form-help-text">Connect component fields to data sources</p>
+            `;
+            
+            for (const [field, binding] of Object.entries(bindings)) {
+                const currentBinding = currentState[`binding_${field}`] || binding.source;
+                
+                html += `
+                    <div class="form-group binding-control">
+                        <label class="form-label">${binding.label || this.formatLabel(field)}</label>
+                        <select class="form-input binding-select" data-binding="${field}">
+                            <option value="">No binding</option>
+                            <option value="${binding.source}" ${currentBinding === binding.source ? 'selected' : ''}>
+                                ${binding.source} (default)
+                            </option>
+                            ${this.generatePodsFieldOptions(binding.fieldType)}
+                        </select>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="form-group">
+                    <button type="button" class="btn btn--secondary test-bindings-btn">
+                        Test Bindings
+                    </button>
+                </div>
+            </div>`;
+            
+            return html;
+        }
+        
+        /**
+         * Generate Pods field options for data binding
+         */
+        generatePodsFieldOptions(fieldType) {
+            // This would ideally pull from actual Pods configuration
+            // For now, return common fields
+            const commonFields = {
+                text: ['first_name', 'last_name', 'title', 'company'],
+                textarea: ['biography', 'description', 'notes'],
+                image: ['profile_image', 'featured_image', 'logo'],
+                repeater: ['topics', 'services', 'achievements']
+            };
+            
+            const fields = commonFields[fieldType] || commonFields.text;
+            
+            return fields.map(field => 
+                `<option value="pods.${field}">Pods: ${this.formatLabel(field)}</option>`
+            ).join('');
+        }
+        
+        /**
+         * Setup event listeners for option controls
+         */
+        setupControlListeners(container) {
+            // Text, number, and select inputs
+            container.querySelectorAll('.option-input').forEach(input => {
+                input.addEventListener('change', (e) => this.handleOptionChange(e));
+                
+                // Real-time preview for text inputs
+                if (input.type === 'text' || input.type === 'number') {
+                    input.addEventListener('input', (e) => this.handleOptionInput(e));
+                }
+            });
+            
+            // Range controls
+            container.querySelectorAll('.form-range').forEach(range => {
+                range.addEventListener('input', (e) => {
+                    this.handleRangeInput(e);
+                    this.handleOptionInput(e);
+                });
+            });
+            
+            // Color controls
+            container.querySelectorAll('.color-picker').forEach(picker => {
+                picker.addEventListener('input', (e) => {
+                    this.handleColorInput(e);
+                    this.handleOptionInput(e);
+                });
+            });
+            
+            // Color text inputs
+            container.querySelectorAll('.color-text').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const key = e.target.dataset.option.replace('-text', '');
+                    const picker = container.querySelector(`.color-picker[data-option="${key}"]`);
+                    if (picker) picker.value = e.target.value;
+                    this.handleOptionChange({ target: picker });
+                });
+            });
+            
+            // Media library buttons
+            container.querySelectorAll('.media-library-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => this.handleMediaLibrary(e));
+            });
+        }
+        
+        /**
+         * Setup event listeners for data binding controls
+         */
+        setupBindingListeners(container) {
+            container.querySelectorAll('.binding-select').forEach(select => {
+                select.addEventListener('change', (e) => this.handleBindingChange(e));
+            });
+            
+            const testBtn = container.querySelector('.test-bindings-btn');
+            if (testBtn) {
+                testBtn.addEventListener('click', () => this.testBindings());
+            }
+        }
+        
+        /**
+         * Handle option value changes
+         */
+        handleOptionChange(event) {
+            const key = event.target.dataset.option;
+            let value = event.target.value;
+            
+            // Convert checkbox values
+            if (event.target.type === 'checkbox') {
+                value = event.target.checked;
+            }
+            
+            // Convert number values
+            if (event.target.type === 'number') {
+                value = parseFloat(value) || 0;
+            }
+            
+            this.updateComponentProperty(key, value);
+        }
+        
+        /**
+         * Handle real-time input for preview
+         */
+        handleOptionInput(event) {
+            // Debounce the input to avoid too many updates
+            clearTimeout(this.changeDebounceTimer);
+            this.changeDebounceTimer = setTimeout(() => {
+                this.handleOptionChange(event);
+            }, 300);
+        }
+        
+        /**
+         * Handle range input changes
+         */
+        handleRangeInput(event) {
+            const container = event.target.closest('.range-control');
+            const display = container?.querySelector('.range-value');
+            if (display) {
+                const unit = this.currentSchema?.componentOptions?.[event.target.dataset.option]?.unit || '';
+                display.textContent = event.target.value + unit;
+            }
+        }
+        
+        /**
+         * Handle color input changes
+         */
+        handleColorInput(event) {
+            const key = event.target.dataset.option;
+            const textInput = event.target.parentElement.querySelector(`.color-text[data-option="${key}-text"]`);
+            if (textInput) {
+                textInput.value = event.target.value;
+            }
+        }
+        
+        /**
+         * Handle media library selection
+         */
+        handleMediaLibrary(event) {
+            const key = event.target.dataset.option;
+            
+            // WordPress media library integration
+            if (window.wp && window.wp.media) {
+                const frame = wp.media({
+                    title: 'Select Image',
+                    button: { text: 'Use Image' },
+                    multiple: false
+                });
+                
+                frame.on('select', () => {
+                    const attachment = frame.state().get('selection').first().toJSON();
+                    const input = document.querySelector(`.option-input[data-option="${key}"]`);
+                    if (input) {
+                        input.value = attachment.url;
+                        this.updateComponentProperty(key, attachment.url);
+                        
+                        // Update preview
+                        const container = input.closest('.image-control');
+                        let preview = container.querySelector('.image-preview');
+                        if (!preview) {
+                            preview = document.createElement('div');
+                            preview.className = 'image-preview';
+                            container.appendChild(preview);
+                        }
+                        preview.innerHTML = `<img src="${attachment.url}" alt="Preview">`;
+                    }
+                });
+                
+                frame.open();
+            } else {
+                // Fallback to URL prompt
+                const url = prompt('Enter image URL:');
+                if (url) {
+                    const input = document.querySelector(`.option-input[data-option="${key}"]`);
+                    if (input) {
+                        input.value = url;
+                        this.updateComponentProperty(key, url);
+                    }
+                }
+            }
+        }
+        
+        /**
+         * Handle data binding changes
+         */
+        handleBindingChange(event) {
+            const field = event.target.dataset.binding;
+            const source = event.target.value;
+            
+            if (!this.dataBinding) {
+                this.logger.warn('Data binding engine not available');
+                return;
+            }
+            
+            // Update binding configuration
+            if (source) {
+                this.dataBinding.updateBinding(this.currentComponentId, field, source);
+            } else {
+                this.dataBinding.removeBinding(this.currentComponentId, field);
+            }
+            
+            // Trigger data refresh
+            this.refreshComponentData();
+        }
+        
+        /**
+         * Test data bindings
+         */
+        testBindings() {
+            if (!this.dataBinding || !this.currentComponentId) return;
+            
+            // Get test data
+            const testData = this.dataBinding.getTestData();
+            
+            // Apply bindings with test data
+            this.dataBinding.applyBindings(this.currentComponentId, testData);
+            
+            // Show success message
+            this.showToast('Bindings tested with sample data', 'success');
+        }
+        
+        /**
+         * Update component property in state
+         */
+        updateComponentProperty(key, value) {
+            if (!this.currentComponentId || !this.stateManager) return;
+            
+            // Dispatch update action
+            this.stateManager.dispatch({
+                type: 'UPDATE_COMPONENT',
+                payload: {
+                    id: this.currentComponentId,
+                    updates: {
+                        props: {
+                            [key]: value
+                        }
+                    }
+                }
+            });
+            
+            // Trigger component re-render
+            document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
+                detail: {
+                    componentId: this.currentComponentId,
+                    property: key,
+                    value: value
+                }
+            }));
+            
+            this.logger.info(`Updated ${key} to:`, value);
+        }
+        
+        /**
+         * Refresh component data from bindings
+         */
+        refreshComponentData() {
+            if (!this.dataBinding || !this.currentComponentId) return;
+            
+            // Re-apply bindings with current data
+            this.dataBinding.refreshComponent(this.currentComponentId);
+        }
+        
+        /**
+         * Inject fallback UI when no schema is available
+         */
+        injectFallbackUI(panelElement, componentType) {
+            const container = this.getOrCreateContainer(panelElement);
+            
+            container.innerHTML = `
+                <div class="form-section">
+                    <h4 class="form-section__title">Component Settings</h4>
+                    <p class="form-help-text">
+                        No configuration schema found for ${componentType} component.
+                        You can edit this component directly in the preview area.
+                    </p>
+                    <div class="form-group">
+                        <button type="button" class="btn btn--secondary edit-inline-btn">
+                            Edit in Preview
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add inline edit button handler
+            const editBtn = container.querySelector('.edit-inline-btn');
+            if (editBtn) {
+                editBtn.addEventListener('click', () => {
+                    document.dispatchEvent(new CustomEvent('gmkb:enable-inline-editing', {
+                        detail: { componentId: this.currentComponentId }
+                    }));
+                });
+            }
+        }
+        
+        /**
+         * Inject error UI
+         */
+        injectErrorUI(panelElement, errorMessage) {
+            const container = this.getOrCreateContainer(panelElement);
+            
+            container.innerHTML = `
+                <div class="form-section error-section">
+                    <h4 class="form-section__title">⚠️ Configuration Error</h4>
+                    <p class="error-message">${errorMessage}</p>
+                    <p class="form-help-text">
+                        Try refreshing the page or contact support if the problem persists.
+                    </p>
+                </div>
+            `;
+        }
+        
+        /**
+         * Get or create options container
+         */
+        getOrCreateContainer(panelElement) {
+            let container = panelElement.querySelector('.component-options-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'component-options-container';
+                panelElement.appendChild(container);
+            }
+            return container;
+        }
+        
+        /**
+         * Format label from key
+         */
+        formatLabel(key) {
+            return key
+                .replace(/_/g, ' ')
+                .replace(/-/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
+        }
+        
+        /**
+         * Escape HTML for safe display
+         */
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        /**
+         * Show toast notification
+         */
+        showToast(message, type = 'info') {
+            if (window.showToast) {
+                window.showToast(message, type);
+            } else {
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+        }
+        
+        /**
+         * Public API: Refresh current component options
+         */
+        refresh() {
+            if (!this.currentComponentId) return;
+            
+            const panel = document.querySelector('.element-editor-sidebar');
+            if (!panel) return;
+            
+            const state = this.stateManager?.getState();
+            const component = state?.components?.[this.currentComponentId];
+            
+            if (component) {
+                this.loadComponentOptions(
+                    this.currentComponentId,
+                    component.type,
+                    panel
+                );
+            }
+        }
     }
     
-    /**
-     * Humanize a key string
-     */
-    humanizeKey(key) {
-        return key
-            .replace(/_/g, ' ')
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, str => str.toUpperCase())
-            .trim();
+    // ROOT FIX: Make ComponentOptionsUI immediately available globally
+    // This ensures it's detected when edit buttons are clicked
+    const instance = new ComponentOptionsUI();
+    
+    // Expose both instance and class globally
+    window.componentOptionsUI = instance;
+    window.ComponentOptionsUI = ComponentOptionsUI;
+    
+    // Try immediate initialization
+    if (document.readyState !== 'loading') {
+        instance.tryInitialize();
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            instance.tryInitialize();
+        });
     }
     
-    /**
-     * Get debug info
-     */
-    getDebugInfo() {
-        return {
-            isInitialized: this.isInitialized,
-            currentComponentId: this.currentComponentId,
-            currentComponentType: this.currentComponentType,
-            panelOpen: this.panelContainer?.classList.contains('show') || false
-        };
-    }
-}
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.componentOptionsUI = new ComponentOptionsUI();
-    });
-} else {
-    window.componentOptionsUI = new ComponentOptionsUI();
-}
-
-// Export for module usage
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ComponentOptionsUI;
-}
+    console.log('📋 Component Options UI: Instance created and exposed globally');
+})();

@@ -1,118 +1,190 @@
 {
   "component_type": "topics",
   "name": "Speaking Topics",
-  "description": "List of speaking topics and expertise areas",
+  "description": "List of expertise areas and speaking topics",
+  "version": "1.0.0",
   "dataBindings": {
-    "topic_1": "topic_1",
-    "topic_2": "topic_2",
-    "topic_3": "topic_3",
-    "topic_4": "topic_4",
-    "topic_5": "topic_5",
-    "topic_6": "topic_6",
-    "sectionTitle": "topics_section_title"
-  },
-  "defaultOptions": {
-    "layout": "grid",
-    "maxTopics": 6,
-    "showDescriptions": true,
-    "showIcons": false,
-    "columns": 3
+    "topics": {
+      "source": "pods.speaking_topics",
+      "label": "Speaking Topics",
+      "fieldType": "repeater"
+    }
   },
   "componentOptions": {
     "layout": {
       "type": "select",
       "label": "Layout Style",
       "default": "grid",
-      "options": {
-        "list": "Vertical List",
-        "grid": "Grid Layout",
-        "cards": "Card Layout",
-        "tags": "Tag Cloud",
-        "accordion": "Accordion"
-      }
+      "options": [
+        { "value": "grid", "label": "Grid Layout" },
+        { "value": "list", "label": "List Layout" },
+        { "value": "cards", "label": "Card Layout" },
+        { "value": "accordion", "label": "Accordion" }
+      ],
+      "description": "Choose how topics are displayed",
+      "category": "layout"
     },
     "columns": {
-      "type": "number",
+      "type": "select",
       "label": "Number of Columns",
-      "default": 3,
-      "min": 1,
-      "max": 4,
-      "condition": {
-        "field": "layout",
-        "value": ["grid", "cards"]
-      }
-    },
-    "maxTopics": {
-      "type": "number",
-      "label": "Maximum Topics",
-      "default": 6,
-      "min": 1,
-      "max": 20
-    },
-    "showDescriptions": {
-      "type": "boolean",
-      "label": "Show Topic Descriptions",
-      "default": true
+      "default": "2",
+      "options": [
+        { "value": "1", "label": "1 Column" },
+        { "value": "2", "label": "2 Columns" },
+        { "value": "3", "label": "3 Columns" },
+        { "value": "4", "label": "4 Columns" }
+      ],
+      "description": "For grid layout only",
+      "category": "layout"
     },
     "showIcons": {
       "type": "boolean",
       "label": "Show Topic Icons",
-      "default": false
+      "default": true,
+      "checkboxLabel": "Display icons next to topics",
+      "category": "appearance"
+    },
+    "iconStyle": {
+      "type": "select",
+      "label": "Icon Style",
+      "default": "filled",
+      "options": [
+        { "value": "filled", "label": "Filled" },
+        { "value": "outline", "label": "Outline" },
+        { "value": "colored", "label": "Colored" }
+      ],
+      "category": "appearance"
+    },
+    "showDescriptions": {
+      "type": "boolean",
+      "label": "Show Descriptions",
+      "default": true,
+      "checkboxLabel": "Display topic descriptions",
+      "category": "content"
+    },
+    "descriptionLength": {
+      "type": "range",
+      "label": "Description Length",
+      "default": 100,
+      "min": 50,
+      "max": 300,
+      "step": 25,
+      "unit": " chars",
+      "description": "Maximum characters for descriptions",
+      "category": "content"
     },
     "cardStyle": {
       "type": "select",
       "label": "Card Style",
       "default": "bordered",
-      "options": {
-        "bordered": "Bordered",
-        "shadow": "Shadow",
-        "gradient": "Gradient",
-        "minimal": "Minimal"
-      },
-      "condition": {
-        "field": "layout",
-        "value": "cards"
-      }
+      "options": [
+        { "value": "bordered", "label": "Bordered" },
+        { "value": "elevated", "label": "Elevated (Shadow)" },
+        { "value": "flat", "label": "Flat" },
+        { "value": "gradient", "label": "Gradient Background" }
+      ],
+      "category": "appearance"
+    },
+    "primaryColor": {
+      "type": "color",
+      "label": "Primary Color",
+      "default": "#3b82f6",
+      "description": "Main color for icons and accents",
+      "category": "colors"
+    },
+    "backgroundColor": {
+      "type": "color",
+      "label": "Card Background",
+      "default": "#ffffff",
+      "category": "colors"
+    },
+    "textColor": {
+      "type": "color",
+      "label": "Text Color",
+      "default": "#1f2937",
+      "category": "colors"
+    },
+    "animateOnScroll": {
+      "type": "boolean",
+      "label": "Animate on Scroll",
+      "default": false,
+      "checkboxLabel": "Fade in topics as they appear",
+      "category": "effects"
+    },
+    "hoverEffect": {
+      "type": "select",
+      "label": "Hover Effect",
+      "default": "lift",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "lift", "label": "Lift Up" },
+        { "value": "scale", "label": "Scale" },
+        { "value": "glow", "label": "Glow" }
+      ],
+      "category": "effects"
+    },
+    "spacing": {
+      "type": "range",
+      "label": "Item Spacing",
+      "default": 20,
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "category": "layout"
+    },
+    "maxTopics": {
+      "type": "number",
+      "label": "Maximum Topics",
+      "default": 12,
+      "min": 1,
+      "max": 50,
+      "description": "Limit number of topics displayed",
+      "category": "content"
+    },
+    "showViewMore": {
+      "type": "boolean",
+      "label": "Show View More",
+      "default": true,
+      "checkboxLabel": "Add 'View More' button if topics exceed max",
+      "category": "content"
+    },
+    "customTitle": {
+      "type": "text",
+      "label": "Section Title",
+      "default": "Speaking Topics",
+      "placeholder": "Enter custom title",
+      "category": "content"
+    },
+    "titleAlignment": {
+      "type": "radio",
+      "label": "Title Alignment",
+      "default": "center",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "category": "layout"
     }
   },
-  "responsive": {
-    "mobile": {
-      "columns": 1,
-      "layout": "list"
-    },
-    "tablet": {
-      "columns": 2
-    }
-  },
-  "layouts": {
-    "list": {
-      "container": "space-y-4",
-      "item": "border-b pb-4",
-      "title": "text-lg font-semibold",
-      "description": "text-sm text-gray-600 mt-2"
-    },
-    "grid": {
-      "container": "grid gap-6",
-      "item": "text-center p-4",
-      "title": "text-lg font-semibold",
-      "description": "text-sm text-gray-600 mt-2"
-    },
-    "cards": {
-      "container": "grid gap-6",
-      "item": "bg-white rounded-lg p-6",
-      "title": "text-lg font-semibold",
-      "description": "text-sm text-gray-600 mt-2"
-    },
-    "tags": {
-      "container": "flex flex-wrap gap-3",
-      "item": "px-4 py-2 bg-blue-100 text-blue-800 rounded-full",
-      "title": "text-sm font-medium"
-    },
-    "accordion": {
-      "container": "space-y-2",
-      "item": "border rounded-lg",
-      "title": "text-lg font-medium p-4 cursor-pointer",
-      "description": "px-4 pb-4 text-gray-600"
-    }
+  "defaultOptions": {
+    "layout": "grid",
+    "columns": "2",
+    "showIcons": true,
+    "iconStyle": "filled",
+    "showDescriptions": true,
+    "descriptionLength": 100,
+    "cardStyle": "bordered",
+    "primaryColor": "#3b82f6",
+    "backgroundColor": "#ffffff",
+    "textColor": "#1f2937",
+    "animateOnScroll": false,
+    "hoverEffect": "lift",
+    "spacing": 20,
+    "maxTopics": 12,
+    "showViewMore": true,
+    "customTitle": "Speaking Topics",
+    "titleAlignment": "center"
   }
 }

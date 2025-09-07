@@ -115,8 +115,8 @@ class DesignPanel {
     }
 
     /**
-     * ROOT FIX: Enhanced design panel loading with bidirectional sync support
-     * FIXED: Now uses WordPress AJAX endpoint and includes real-time component sync
+     * ROOT FIX: SINGLE SYSTEM - Component Options UI Only
+     * NO FALLBACKS, NO DUAL SYSTEMS - CHECKLIST COMPLIANT
      * @param {string} componentId - The ID of the component to load.
      */
     async load(componentId) {
@@ -140,177 +140,88 @@ class DesignPanel {
             return;
         }
 
-        console.log(`📋 ROOT FIX: Component found:`, component);
-
-        try {
-            // Show loading state
+        console.log(`📋 Component found:`, component);
+        
+        // Show the design panel first
+        this.show();
+        
+        // Get or create the panel element
+        if (!this.panel) {
+            this.panel = document.getElementById('element-editor') || document.querySelector('.element-editor-sidebar');
+        }
+        
+        // ROOT FIX: ONLY use Component Options UI - no fallbacks
+        if (window.componentOptionsUI && typeof window.componentOptionsUI.loadComponentOptions === 'function') {
+            try {
+                await window.componentOptionsUI.loadComponentOptions(
+                    componentId,
+                    component.type,
+                    this.panel
+                );
+                
+                console.log('✅ Component Options UI loaded successfully');
+                
+                // Dispatch design panel opened event
+                document.dispatchEvent(new CustomEvent('gmkb:design-panel-opened', {
+                    detail: {
+                        componentId: componentId,
+                        componentType: component.type,
+                        panelElement: this.panel,
+                        timestamp: Date.now()
+                    }
+                }));
+                
+            } catch (error) {
+                console.error('Failed to load Component Options UI:', error);
+                
+                // Show simple error state - NO FALLBACK TO OLD SYSTEM
+                this.panel.innerHTML = `
+                    <div class="element-editor__title">${this.formatComponentName(component.type)} Settings</div>
+                    <div class="element-editor__subtitle">Configuration unavailable</div>
+                    <div class="form-section">
+                        <p class="form-help-text">
+                            This component doesn't have configurable options yet.
+                            You can edit it directly in the preview area.
+                        </p>
+                    </div>
+                    <div class="form-section">
+                        <h4 class="form-section__title">Available Actions</h4>
+                        <ul class="tips-list">
+                            <li>Click directly on the component to edit inline</li>
+                            <li>Use the hover controls to move, duplicate, or delete</li>
+                            <li>Drag to reorder within sections</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        } else {
+            // Component Options UI not available yet
             this.panel.innerHTML = `
-                <div class="element-editor__title">Loading Settings...</div>
-                <div class="element-editor__subtitle">Loading component configuration</div>
-                <div class="design-panel-loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading ${component.type} settings...</p>
+                <div class="element-editor__title">Initializing...</div>
+                <div class="element-editor__subtitle">Component configuration system loading</div>
+                <div class="form-section">
+                    <p class="form-help-text">Please wait a moment and try again.</p>
                 </div>
             `;
-
-            // SIMPLEST FIX: Use WordPress AJAX endpoint with post ID for unified context
-            const formData = new FormData();
-            formData.append('action', 'guestify_render_design_panel');
-            formData.append('component', component.type);
-            formData.append('post_id', window.gmkbData.postId); // ✅ UNIFIED: Same context as template
-            formData.append('nonce', window.gmkbData.nonce); // ROOT FIX: Use gmkbData not guestifyData
-
-            const response = await fetch(window.gmkbData.ajaxUrl, {
-                method: 'POST',
-                body: formData,
-                credentials: 'same-origin' // Include cookies for WordPress authentication
-            });
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            
-            // Check if WordPress returned a success response
-            if (!data.success) {
-                throw new Error(data.data || 'Failed to load design panel');
-            }
-
-            const html = data.data.html;
-            
-            this.panel.innerHTML = html;
-            
-            // ROOT FIX: Dispatch design panel loaded event for component scripts
-            document.dispatchEvent(new CustomEvent('designPanelLoaded', {
-                detail: {
-                    component: component.type,
-                    componentId: componentId,
-                    timestamp: Date.now()
-                }
-            }));
-            
-            // ROOT FIX: Wait for panel content to be inserted into DOM before binding controls
+            // Try again after a brief delay
             setTimeout(() => {
-                this.bindControls(component.props || component.data || {});
-                
-                // ROOT FIX: Setup component-specific enhancements
-                if (component.type === 'topics') {
-                    this.setupTopicsSpecificEnhancements(componentId);
+                if (window.componentOptionsUI) {
+                    this.load(componentId);
                 }
-                
-                console.log(`Design panel loaded for ${component.type}`);
-            }, 100);
-            
-            this.show();
-            
-            // ROOT FIX: Dispatch design panel opened event for universal sync
-            document.dispatchEvent(new CustomEvent('gmkb:design-panel-opened', {
-                detail: {
-                    componentId: componentId,
-                    componentType: component.type,
-                    componentData: component,
-                    timestamp: Date.now()
-                }
-            }));
-            
-        } catch (error) {
-            console.error('Error loading design panel:', error);
-            
-            // Enhanced error handling with specific WordPress error support
-            let errorMessage = error.message;
-            let troubleshooting = [];
-            
-            if (error.message.includes('403')) {
-                errorMessage = 'Access denied - authentication issue';
-                troubleshooting.push('Try refreshing the page to renew your session');
-                troubleshooting.push('Ensure you have proper permissions');
-            } else if (error.message.includes('404')) {
-                errorMessage = 'Design panel not found for this component';
-                troubleshooting.push('This component may not have custom settings');
-                troubleshooting.push('Try editing the component directly in the preview');
-            } else if (error.message.includes('500')) {
-                errorMessage = 'Server error occurred';
-                troubleshooting.push('Check the browser console for more details');
-                troubleshooting.push('Contact support if the issue persists');
-            } else if (!window.gmkbData) {
-                errorMessage = 'WordPress data not loaded';
-                troubleshooting.push('Ensure the page loaded completely');
-                troubleshooting.push('Try refreshing the page');
-            } else if (!window.gmkbData.ajaxUrl) {
-                errorMessage = 'WordPress AJAX URL not available';
-                troubleshooting.push('Check WordPress configuration');
-                troubleshooting.push('Ensure plugin is properly activated');
-            }
-            
-            this.panel.innerHTML = `
-                <div class="element-editor__title">Error Loading Settings</div>
-                <div class="element-editor__subtitle">Could not load component configuration</div>
-                <div class="form-section">
-                    <h4 class="form-section__title">Error Details</h4>
-                    <p class="form-help-text"><strong>Component:</strong> ${component.type}</p>
-                    <p class="form-help-text"><strong>Error:</strong> ${errorMessage}</p>
-                </div>
-                ${troubleshooting.length > 0 ? `
-                <div class="form-section">
-                    <h4 class="form-section__title">Troubleshooting</h4>
-                    <ul class="tips-list">
-                        ${troubleshooting.map(tip => `<li>${tip}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-                <div class="form-section">
-                    <h4 class="form-section__title">Alternative Options</h4>
-                    <ul class="tips-list">
-                        <li>Try editing the component directly by clicking on it in the preview</li>
-                        <li>Use the component controls (move, duplicate, delete) if available</li>
-                        <li>Refresh the page and try again</li>
-                    </ul>
-                </div>
-            `;
-            this.show();
+            }, 500);
         }
     }
     
     /**
-     * ROOT FIX: Simplified topics setup - coordinates with panel-script.js
-     * @param {string} componentId - The topics component ID
+     * Helper to format component name
      */
-    setupTopicsSpecificEnhancements(componentId) {
-        console.log('TOPICS: Setting up simplified design panel coordination...');
-        
-        try {
-            // ROOT FIX: Just notify that topics sync is available
-            // The actual sync is handled by panel-script.js
-            document.dispatchEvent(new CustomEvent('gmkb:topics-design-panel-ready', {
-                detail: { 
-                    componentId: componentId,
-                    timestamp: Date.now()
-                }
-            }));
-            
-            console.log('TOPICS: Design panel coordination setup complete');
-            
-        } catch (error) {
-            console.error('TOPICS: Error setting up design panel coordination:', error);
-        }
+    formatComponentName(type) {
+        return type.replace(/_/g, ' ').replace(/-/g, ' ')
+                   .replace(/\b\w/g, l => l.toUpperCase());
     }
     
-    // ROOT FIX: Removed complex monitoring - handled by panel-script.js
-    
-    // ROOT FIX: Removed complex monitoring - handled by panel-script.js
-    
-    // ROOT FIX: Removed complex preview sync - handled by panel-script.js
-    
-    // ROOT FIX: Removed complex event listeners - handled by panel-script.js
-    
-    // ROOT FIX: Removed complex sync method - handled by panel-script.js
-    
-    // ROOT FIX: Removed validation method - handled by panel-script.js
-    
-    // ROOT FIX: Removed topic counting method - handled by panel-script.js
-    
-    // ROOT FIX: Removed counter display method - handled by panel-script.js
+
 
     /**
      * Debug function to show available components (debug console only)
@@ -334,148 +245,7 @@ class DesignPanel {
         }
     }
 
-    /**
-     * ROOT FIX: Enhanced control binding with topics-specific sync
-     * Binds the design panel controls to the component's properties with real-time sync
-     * @param {object} props - The component's properties.
-     */
-    bindControls(props) {
-        const inputs = this.panel.querySelectorAll('[data-property]');
-        
-        const debouncedUpdate = (window.debounce || quickDebounce)((id, newProps) => {
-            // ROOT FIX: Mark that we're updating to prevent panel closure
-            this.isUpdating = true;
-            
-            // ROOT FIX: Announce that an update is about to begin (prevents deselection)
-            document.dispatchEvent(new CustomEvent('gmkb:before-component-update', {
-                detail: { 
-                    componentId: id,
-                    isFromDesignPanel: true
-                }
-            }));
-            
-            // ROOT FIX: Use the correct component manager reference
-            let componentManager = null;
-            
-            // Try different manager references in priority order
-            if (window.GMKB && window.GMKB.componentManager && typeof window.GMKB.componentManager.updateComponent === 'function') {
-                componentManager = window.GMKB.componentManager;
-            } else if (window.enhancedComponentManager && typeof window.enhancedComponentManager.updateComponent === 'function') {
-                componentManager = window.enhancedComponentManager;
-            } else if (window.componentManager && typeof window.componentManager.updateComponent === 'function') {
-                componentManager = window.componentManager;
-            } else if (window.updateComponentProps && typeof window.updateComponentProps === 'function') {
-                // Use the global updateComponentProps function
-                window.updateComponentProps(id, newProps);
-                // ROOT FIX: Announce that the update has completed
-                setTimeout(() => {
-                    this.isUpdating = false;
-                    document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
-                        detail: { 
-                            componentId: id,
-                            isFromDesignPanel: true
-                        }
-                    }));
-                }, 100);
-                return;
-            }
-            
-            if (componentManager) {
-                componentManager.updateComponent(id, newProps);
-            } else {
-                // ROOT FIX: Fallback to direct state manager update
-                if (window.enhancedStateManager && typeof window.enhancedStateManager.updateComponent === 'function') {
-                    window.enhancedStateManager.updateComponent(id, newProps);
-                } else {
-                    console.error('No component manager available for updates');
-                }
-            }
-            
-            // ROOT FIX: Announce that the update has completed (allows re-selection)
-            setTimeout(() => {
-                this.isUpdating = false;
-                document.dispatchEvent(new CustomEvent('gmkb:after-component-update', {
-                    detail: { 
-                        componentId: id,
-                        isFromDesignPanel: true
-                    }
-                }));
-            }, 100);
-            
-            // ROOT FIX: Trigger topics sync if this is a topics component
-            const currentComponent = this.getComponent(this.currentComponentId);
-            if (currentComponent?.type === 'topics') {
-                setTimeout(() => {
-                    this.syncTopicsCounterWithPreview();
-                }, 200);
-            }
-        }, 300);
 
-        inputs.forEach(input => {
-            const propName = input.dataset.property;
-            if (props.hasOwnProperty(propName)) {
-                const rawValue = props[propName];
-                const trimmedValue = (typeof rawValue === 'string') ? rawValue.trim() : rawValue;
-                input.value = trimmedValue;
-            }
-
-            input.addEventListener('input', () => {
-                const currentComponent = this.getComponent(this.currentComponentId);
-                if (currentComponent) {
-                    const newProps = { ...(currentComponent.props || currentComponent.data || {}) };
-                    newProps[propName] = input.value.trim();
-                    debouncedUpdate(this.currentComponentId, newProps);
-                    
-                    // ROOT FIX: Notify topics sync system of changes
-                    if (currentComponent.type === 'topics' && 
-                        ['title', 'displayStyle', 'columns', 'topicColor'].includes(propName)) {
-                        // Let the simplified sync system handle it
-                        document.dispatchEvent(new CustomEvent('gmkb:topics-property-changed', {
-                            detail: { property: propName, value: input.value.trim(), componentId: this.currentComponentId }
-                        }));
-                    }
-                }
-            });
-            
-            // ROOT FIX: Listen for change events (selects, checkboxes) - simplified
-            input.addEventListener('change', () => {
-                const currentComponent = this.getComponent(this.currentComponentId);
-                if (currentComponent?.type === 'topics') {
-                    // Notify simplified sync system
-                    document.dispatchEvent(new CustomEvent('gmkb:topics-property-changed', {
-                        detail: { property: propName, componentId: this.currentComponentId }
-                    }));
-                }
-            });
-        });
-        
-        // ROOT FIX: Setup special handling for Add Topic button
-        const addTopicBtn = this.panel.querySelector('#add-topic-btn');
-        if (addTopicBtn) {
-            this.setupAddTopicButtonEnhancement(addTopicBtn);
-        }
-    }
-    
-    /**
-     * ROOT FIX: Simplified Add Topic button setup
-     * @param {HTMLElement} button - The Add Topic button element
-     */
-    setupAddTopicButtonEnhancement(button) {
-        console.log('TOPICS: Setting up Add Topic button coordination...');
-        
-        button.addEventListener('click', (event) => {
-            console.log('TOPICS: Add Topic button clicked - notifying sync system');
-            
-            // Notify simplified sync system
-            setTimeout(() => {
-                document.dispatchEvent(new CustomEvent('gmkb:topics-added', {
-                    detail: { componentId: this.currentComponentId, timestamp: Date.now() }
-                }));
-            }, 100);
-        }, { passive: true });
-        
-        console.log('TOPICS: Add Topic button coordination active');
-    }
 
     /**
      * Shows the design panel (switches to Design tab).

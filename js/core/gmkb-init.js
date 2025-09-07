@@ -242,14 +242,20 @@
             }
             
             // ROOT FIX: Check if Phase 2 Component Options UI is available
+            // Check both direct window references and GMKB.phase2
+            const phase2Available = (window.componentSelectionManager && window.componentOptionsUI) || 
+                                  (GMKB.phase2?.available && GMKB.phase2?.componentOptionsUI);
+            
             console.log('🔍 PHASE 2 CHECK:', {
-                componentSelectionManager: !!window.componentSelectionManager,
-                componentOptionsUI: !!window.componentOptionsUI,
-                ComponentSelectionManager: !!window.ComponentSelectionManager,
-                ComponentOptionsUI: !!window.ComponentOptionsUI
+                directSelectionManager: !!window.componentSelectionManager,
+                directOptionsUI: !!window.componentOptionsUI,
+                gmkbPhase2: !!GMKB.phase2?.available,
+                phase2Available: phase2Available
             });
             
-            if (window.componentSelectionManager && window.componentOptionsUI) {
+            if (phase2Available) {
+                const optionsUI = window.componentOptionsUI || GMKB.phase2?.componentOptionsUI;
+                const selectionManager = window.componentSelectionManager || GMKB.phase2?.componentSelectionManager;
                 console.log('🚀 PHASE 2: Using Component Options UI for', componentId);
                 
                 // Get component type
@@ -655,6 +661,24 @@
     
     // Make GMKB available globally
     window.GMKB = GMKB;
+    
+    // ROOT FIX: Track Phase 2 availability
+    let phase2Available = false;
+    
+    // Listen for Phase 2 ready event
+    document.addEventListener('gmkb:phase2-ready', (event) => {
+        phase2Available = true;
+        console.log('✅ GMKB: Phase 2 Component Options UI detected and available');
+        
+        // Store references for easy access
+        if (event.detail) {
+            GMKB.phase2 = {
+                componentOptionsUI: event.detail.componentOptionsUI,
+                componentSelectionManager: event.detail.componentSelectionManager,
+                available: true
+            };
+        }
+    });
     
     // Initialize global action listeners when DOM is ready
     if (document.readyState === 'loading') {

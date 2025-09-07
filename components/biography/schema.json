@@ -1,103 +1,125 @@
 {
   "component_type": "biography",
-  "name": "Biography Section",
-  "description": "Guest biography with optional image",
+  "name": "Biography",
+  "description": "Professional biography section",
+  "version": "1.0.0",
   "dataBindings": {
-    "bio": "biography",
-    "name": "full_name",
-    "title": "guest_title",
-    "image": "guest_headshot",
-    "quote": "favorite_quote"
-  },
-  "defaultOptions": {
-    "layout": "with_image",
-    "showTitle": true,
-    "maxLength": 500,
-    "imagePosition": "left",
-    "showQuote": false
+    "fullName": {
+      "source": "pods.first_name + pods.last_name",
+      "label": "Full Name",
+      "fieldType": "text"
+    },
+    "title": {
+      "source": "pods.professional_title",
+      "label": "Professional Title",
+      "fieldType": "text"
+    },
+    "biography": {
+      "source": "pods.biography",
+      "label": "Biography Text",
+      "fieldType": "textarea"
+    },
+    "profileImage": {
+      "source": "pods.profile_image",
+      "label": "Profile Image",
+      "fieldType": "image"
+    }
   },
   "componentOptions": {
     "layout": {
       "type": "select",
-      "label": "Layout Type",
-      "default": "with_image",
-      "options": {
-        "text_only": "Text Only",
-        "with_image": "With Image",
-        "card_style": "Card Style",
-        "timeline": "Timeline Style"
-      }
+      "label": "Layout Style",
+      "default": "classic",
+      "options": [
+        { "value": "classic", "label": "Classic (Image Left)" },
+        { "value": "modern", "label": "Modern (Image Right)" },
+        { "value": "centered", "label": "Centered" },
+        { "value": "card", "label": "Card Style" }
+      ],
+      "description": "Choose how the biography is displayed"
     },
-    "imagePosition": {
+    "imageSize": {
       "type": "select",
-      "label": "Image Position",
-      "default": "left",
-      "options": {
-        "left": "Image Left",
-        "right": "Image Right",
-        "top": "Image Top",
-        "background": "Background Image"
-      },
-      "condition": {
-        "field": "layout",
-        "value": "with_image"
-      }
+      "label": "Image Size",
+      "default": "medium",
+      "options": [
+        { "value": "small", "label": "Small (150px)" },
+        { "value": "medium", "label": "Medium (250px)" },
+        { "value": "large", "label": "Large (350px)" }
+      ]
+    },
+    "imageShape": {
+      "type": "radio",
+      "label": "Image Shape",
+      "default": "circle",
+      "options": [
+        { "value": "circle", "label": "Circle" },
+        { "value": "square", "label": "Square" },
+        { "value": "rounded", "label": "Rounded" }
+      ]
     },
     "showTitle": {
       "type": "boolean",
-      "label": "Show Name & Title",
-      "default": true
+      "label": "Show Professional Title",
+      "default": true,
+      "checkboxLabel": "Display professional title below name"
     },
-    "showQuote": {
-      "type": "boolean",
-      "label": "Show Favorite Quote",
-      "default": false
+    "textAlignment": {
+      "type": "select",
+      "label": "Text Alignment",
+      "default": "left",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "justify", "label": "Justified" }
+      ]
     },
-    "maxLength": {
+    "backgroundColor": {
+      "type": "color",
+      "label": "Background Color",
+      "default": "#ffffff",
+      "description": "Set the background color for the biography section"
+    },
+    "textColor": {
+      "type": "color",
+      "label": "Text Color",
+      "default": "#333333"
+    },
+    "maxWords": {
       "type": "number",
-      "label": "Max Characters",
+      "label": "Maximum Words",
       "default": 500,
       "min": 100,
       "max": 2000,
-      "step": 100
+      "step": 50,
+      "description": "Limit the biography text length"
     },
-    "readMoreText": {
-      "type": "text",
-      "label": "Read More Text",
-      "default": "Read Full Bio"
+    "showReadMore": {
+      "type": "boolean",
+      "label": "Show Read More Link",
+      "default": false,
+      "checkboxLabel": "Add expandable read more for long text"
+    },
+    "padding": {
+      "type": "range",
+      "label": "Section Padding",
+      "default": 40,
+      "min": 0,
+      "max": 100,
+      "step": 10,
+      "unit": "px"
     }
   },
-  "responsive": {
-    "mobile": {
-      "imagePosition": "top",
-      "layout": "text_only"
-    },
-    "tablet": {
-      "imagePosition": "top"
-    }
-  },
-  "layouts": {
-    "text_only": {
-      "container": "prose max-w-4xl mx-auto",
-      "title": "text-2xl font-bold mb-4",
-      "bio": "text-base leading-relaxed"
-    },
-    "with_image": {
-      "container": "flex gap-8 items-start",
-      "imageContainer": "flex-shrink-0",
-      "contentContainer": "flex-1",
-      "title": "text-2xl font-bold mb-4",
-      "bio": "text-base leading-relaxed"
-    },
-    "card_style": {
-      "container": "bg-white rounded-lg shadow-lg p-8",
-      "title": "text-2xl font-bold mb-4",
-      "bio": "text-base leading-relaxed"
-    },
-    "timeline": {
-      "container": "relative pl-8 border-l-2 border-gray-200",
-      "title": "text-2xl font-bold mb-4",
-      "bio": "text-base leading-relaxed"
-    }
+  "defaultOptions": {
+    "layout": "classic",
+    "imageSize": "medium",
+    "imageShape": "circle",
+    "showTitle": true,
+    "textAlignment": "left",
+    "backgroundColor": "#ffffff",
+    "textColor": "#333333",
+    "maxWords": 500,
+    "showReadMore": false,
+    "padding": 40
   }
 }

@@ -769,6 +769,33 @@ function gmkb_enqueue_assets() {
         );
     }
 
+    // PHASE 2.1: Component Options UI for dynamic configuration
+    if (!wp_script_is('gmkb-component-options-ui', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-options-ui',
+            $plugin_url . 'system/ComponentOptionsUI.js',
+            array('gmkb-component-configuration-manager', 'gmkb-data-binding-engine', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+        
+        wp_enqueue_style(
+            'gmkb-component-options-ui',
+            $plugin_url . 'css/component-options-ui.css',
+            array(),
+            $version
+        );
+        
+        // Integration helper
+        wp_enqueue_script(
+            'gmkb-component-options-integration',
+            $plugin_url . 'system/component-options-integration.js',
+            array('gmkb-component-options-ui'),
+            $version,
+            true
+        );
+    }
+    
     // PHASE 4.1: Theme Customizer UI - Complete implementation
     if (!wp_script_is('gmkb-theme-customizer', 'enqueued')) {
         wp_enqueue_script(
