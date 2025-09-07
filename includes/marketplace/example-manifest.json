@@ -1,0 +1,60 @@
+{
+    "id": "video-showcase",
+    "name": "Video Showcase",
+    "version": "1.0.0",
+    "author": "GMKB Marketplace",
+    "author_url": "https://example.com",
+    "description": "Display YouTube or Vimeo videos in an elegant showcase grid",
+    "component_type": "media",
+    "category": "media",
+    "tags": ["video", "youtube", "vimeo", "media", "showcase"],
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://example.com/components/video-showcase",
+    
+    "dependencies": [
+        {
+            "type": "component",
+            "id": "hero",
+            "name": "Hero Component",
+            "version": ">=1.0.0"
+        }
+    ],
+    
+    "min_wp_version": "5.8",
+    "min_gmkb_version": "1.0.0",
+    "tested_up_to_wp": "6.4",
+    "tested_up_to_gmkb": "1.5.0",
+    
+    "screenshots": [
+        "screenshots/preview.png",
+        "screenshots/settings.png",
+        "screenshots/frontend.png"
+    ],
+    
+    "changelog": {
+        "1.0.0": {
+            "date": "2025-01-03",
+            "changes": [
+                "Initial release",
+                "Support for YouTube and Vimeo",
+                "Responsive grid layout",
+                "Customizable display options"
+            ]
+        }
+    },
+    
+    "support": {
+        "documentation": "https://docs.example.com/video-showcase",
+        "support_forum": "https://support.example.com/video-showcase",
+        "issues": "https://github.com/example/video-showcase/issues"
+    },
+    
+    "marketplace": {
+        "price": 0,
+        "currency": "USD",
+        "purchase_url": null,
+        "download_count": 0,
+        "rating": 0,
+        "reviews_count": 0
+    }
+}

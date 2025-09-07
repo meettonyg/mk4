@@ -1,0 +1,49 @@
+{
+    "component_type": "video-showcase",
+    "name": "Video Showcase",
+    "description": "Display YouTube or Vimeo videos in an elegant showcase grid",
+    "version": "1.0.0",
+    "dataBindings": {
+        "video_url": {
+            "source": "pods",
+            "field": "video_url",
+            "default": ""
+        },
+        "video_title": {
+            "source": "pods",
+            "field": "video_title",
+            "default": "Featured Video"
+        }
+    },
+    "defaultOptions": {
+        "layout": "grid",
+        "columns": 2,
+        "autoplay": false,
+        "showControls": true,
+        "showTitle": true
+    },
+    "componentOptions": {
+        "layout": {
+            "type": "select",
+            "label": "Layout Style",
+            "options": [
+                {"value": "grid", "label": "Grid"},
+                {"value": "carousel", "label": "Carousel"},
+                {"value": "single", "label": "Single Video"}
+            ],
+            "default": "grid"
+        },
+        "columns": {
+            "type": "number",
+            "label": "Columns",
+            "min": 1,
+            "max": 4,
+            "default": 2
+        },
+        "autoplay": {
+            "type": "boolean",
+            "label": "Autoplay Videos",
+            "default": false
+        }
+    }
+}

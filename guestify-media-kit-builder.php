@@ -41,6 +41,12 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php';
 }
 
+// PHASE 5: Component Marketplace Ready
+if (is_admin()) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageManager.php';
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageValidator.php';
+}
+
 // Component schemas are self-contained - each component has its own schema.json
 // ComponentDiscovery will load schemas when discovering components
 
