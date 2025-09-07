@@ -36,6 +36,11 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php';
 
+// PHASE 4.2: Theme Customizer AJAX handlers
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php';
+}
+
 // Component schemas are self-contained - each component has its own schema.json
 // ComponentDiscovery will load schemas when discovering components
 

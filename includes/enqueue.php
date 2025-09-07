@@ -775,7 +775,7 @@ function gmkb_enqueue_assets() {
             'gmkb-theme-customizer',
             $plugin_url . 'system/ThemeCustomizer.js',
             array('gmkb-theme-manager', 'gmkb-structured-logger'),
-            $version,
+            $version . '-v4.2-advanced-' . time(), // Force cache refresh
             true
         );
     }

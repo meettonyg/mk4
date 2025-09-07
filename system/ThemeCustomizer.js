@@ -1,10 +1,9 @@
 /**
- * Theme Customizer
+ * Theme Customizer - Advanced Version
  * Phase 4.1-4.2: Complete Theme Customization System
  * 
  * CHECKLIST COMPLIANT: Event-driven, no polling, no global sniffing
  * Provides comprehensive UI for customizing themes with live preview
- * Supports saving custom themes and variants
  * 
  * @version 4.2.0
  * @package GMKB/System
@@ -24,7 +23,7 @@
             this.unsavedChanges = false;
             this.activePanel = 'themes';
             
-            this.logger.info('🎨 Theme Customizer: Initializing Phase 4.1-4.2');
+            this.logger.info('🎨 Theme Customizer: Initializing Advanced Version 4.2');
             
             // CHECKLIST COMPLIANT: Event-driven initialization only
             this.setupEventListeners();
@@ -82,7 +81,7 @@
                 detail: { customizer: this }
             }));
             
-            this.logger.info('✅ Theme Customizer: Ready with full customization features');
+            this.logger.info('✅ Theme Customizer: Ready with advanced customization features');
         }
         
         handleOpenRequest(event) {
@@ -234,52 +233,26 @@
                     
                     <div class="color-controls">
                         <h4>Custom Colors</h4>
-                        <div class="control-group">
-                            <label>
-                                Primary Color
-                                <div class="color-input-wrapper">
-                                    <input type="color" class="color-picker" data-color="primary" value="${colors.primary || '#295cff'}">
-                                    <input type="text" class="color-text" data-color="primary" value="${colors.primary || '#295cff'}">
-                                </div>
-                            </label>
-                        </div>
-                        <div class="control-group">
-                            <label>
-                                Secondary Color
-                                <div class="color-input-wrapper">
-                                    <input type="color" class="color-picker" data-color="secondary" value="${colors.secondary || '#1e40af'}">
-                                    <input type="text" class="color-text" data-color="secondary" value="${colors.secondary || '#1e40af'}">
-                                </div>
-                            </label>
-                        </div>
-                        <div class="control-group">
-                            <label>
-                                Background Color
-                                <div class="color-input-wrapper">
-                                    <input type="color" class="color-picker" data-color="background" value="${colors.background || '#ffffff'}">
-                                    <input type="text" class="color-text" data-color="background" value="${colors.background || '#ffffff'}">
-                                </div>
-                            </label>
-                        </div>
-                        <div class="control-group">
-                            <label>
-                                Text Color
-                                <div class="color-input-wrapper">
-                                    <input type="color" class="color-picker" data-color="text" value="${colors.text || '#1f2937'}">
-                                    <input type="text" class="color-text" data-color="text" value="${colors.text || '#1f2937'}">
-                                </div>
-                            </label>
-                        </div>
-                        <div class="control-group">
-                            <label>
-                                Border Color
-                                <div class="color-input-wrapper">
-                                    <input type="color" class="color-picker" data-color="border" value="${colors.border || '#e5e7eb'}">
-                                    <input type="text" class="color-text" data-color="border" value="${colors.border || '#e5e7eb'}">
-                                </div>
-                            </label>
-                        </div>
+                        ${this.getColorControl('Primary Color', 'primary', colors.primary || '#295cff')}
+                        ${this.getColorControl('Secondary Color', 'secondary', colors.secondary || '#1e40af')}
+                        ${this.getColorControl('Background Color', 'background', colors.background || '#ffffff')}
+                        ${this.getColorControl('Text Color', 'text', colors.text || '#1f2937')}
+                        ${this.getColorControl('Border Color', 'border', colors.border || '#e5e7eb')}
                     </div>
+                </div>
+            `;
+        }
+        
+        getColorControl(label, key, value) {
+            return `
+                <div class="control-group">
+                    <label>
+                        ${label}
+                        <div class="color-input-wrapper">
+                            <input type="color" class="color-picker" data-color="${key}" value="${value}">
+                            <input type="text" class="color-text" data-color="${key}" value="${value}">
+                        </div>
+                    </label>
                 </div>
             `;
         }
@@ -982,7 +955,17 @@
             
             const styles = document.createElement('style');
             styles.id = 'theme-customizer-advanced-styles';
-            styles.textContent = `
+            styles.textContent = this.getAdvancedStyles();
+            document.head.appendChild(styles);
+            
+            // Also inject base styles if needed
+            if (!document.getElementById('theme-customizer-styles')) {
+                this.injectStyles();
+            }
+        }
+        
+        getAdvancedStyles() {
+            return `
                 .theme-customizer-modal.advanced .gmkb-modal-content {
                     max-width: 900px;
                     width: 95%;
@@ -999,6 +982,7 @@
                     background: #f9fafb;
                     border-right: 1px solid #e5e7eb;
                     padding: 20px 0;
+                    flex-shrink: 0;
                 }
                 
                 .customizer-nav {
@@ -1018,6 +1002,7 @@
                     cursor: pointer;
                     transition: all 0.2s;
                     font-size: 14px;
+                    color: #374151;
                 }
                 
                 .nav-item:hover {
@@ -1028,6 +1013,7 @@
                     background: white;
                     font-weight: 600;
                     border-left: 3px solid #3b82f6;
+                    color: #1f2937;
                 }
                 
                 .nav-icon {
@@ -1044,6 +1030,7 @@
                     margin: 0 0 20px 0;
                     font-size: 20px;
                     font-weight: 600;
+                    color: #1f2937;
                 }
                 
                 .customizer-panel h4 {
@@ -1072,6 +1059,7 @@
                     border: 1px solid #d1d5db;
                     border-radius: 6px;
                     font-size: 14px;
+                    background: white;
                 }
                 
                 .form-range {
@@ -1098,11 +1086,13 @@
                     border: 1px solid #d1d5db;
                     border-radius: 6px;
                     cursor: pointer;
+                    padding: 2px;
                 }
                 
                 .color-text {
                     flex: 1;
                     font-family: monospace;
+                    background: white;
                 }
                 
                 .preset-grid {
@@ -1119,6 +1109,7 @@
                     cursor: pointer;
                     font-size: 13px;
                     transition: all 0.2s;
+                    color: #374151;
                 }
                 
                 .color-preset:hover {
@@ -1188,15 +1179,16 @@
                     font-size: 12px;
                     color: #6b7280;
                     text-align: center;
+                    background: #f9fafb;
+                }
+                
+                .save-options {
+                    background: #f9fafb;
+                    padding: 20px;
+                    border-radius: 8px;
+                    margin-bottom: 20px;
                 }
             `;
-            
-            // Append base styles if not present
-            if (!document.getElementById('theme-customizer-styles')) {
-                this.injectStyles();
-            }
-            
-            document.head.appendChild(styles);
         }
         
         injectStyles() {
@@ -1260,6 +1252,8 @@
                 .theme-customizer-modal .gmkb-modal-header h2 {
                     margin: 0;
                     font-size: 20px;
+                    font-weight: 600;
+                    color: #1f2937;
                 }
                 
                 .theme-customizer-modal .gmkb-modal-close {
@@ -1270,6 +1264,13 @@
                     color: #6b7280;
                     width: 32px;
                     height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .theme-customizer-modal .gmkb-modal-close:hover {
+                    color: #374151;
                 }
                 
                 .theme-customizer-modal .gmkb-modal-body {
@@ -1285,6 +1286,7 @@
                     justify-content: space-between;
                     align-items: center;
                     flex-shrink: 0;
+                    background: #f9fafb;
                 }
                 
                 .theme-grid {
@@ -1300,6 +1302,7 @@
                     overflow: hidden;
                     border: 2px solid transparent;
                     transition: all 0.2s;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
                 }
                 
                 .theme-option:hover {
@@ -1309,6 +1312,7 @@
                 
                 .theme-option.active {
                     border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                 }
                 
                 .theme-preview {
@@ -1321,6 +1325,7 @@
                     font-weight: 600;
                     text-align: center;
                     padding: 10px;
+                    position: relative;
                 }
                 
                 .theme-name {
