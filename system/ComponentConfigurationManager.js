@@ -14,9 +14,12 @@ class ComponentConfigurationManager {
         this.schemas = {};
         this.configurations = new Map();
         this.logger = window.StructuredLogger || console;
+        this.schemasInitialized = false;
+        this.pendingRegistrations = [];
         
         this.logger.info('📋 PHASE 2: ComponentConfigurationManager initializing');
-        this.initializeSchemas();
+        // Store the promise so we can wait for it
+        this.schemaInitPromise = this.initializeSchemas();
     }
     
     /**
@@ -85,8 +88,14 @@ class ComponentConfigurationManager {
             }
             
             try {
-                // Try to fetch schema.json from component directory
-                const response = await fetch(`${window.gmkbData?.pluginUrl || '/wp-content/plugins/mk4/'}components/${directory}/schema.json`);
+                // ROOT FIX: Properly construct URL using the correct plugin path
+                // The gmkbData.pluginUrl already contains the full path to the plugin
+                const baseUrl = window.gmkbData?.pluginUrl || '/wp-content/plugins/guestify-media-kit-builder/';
+                const schemaUrl = `${baseUrl}components/${directory}/schema.json`;
+                
+                this.logger.debug(`Attempting to load schema from: ${schemaUrl}`);
+                
+                const response = await fetch(schemaUrl);
                 if (response.ok) {
                     const schema = await response.json();
                     // Store under both alias and actual name for maximum compatibility
@@ -115,6 +124,28 @@ class ComponentConfigurationManager {
         } else {
             this.logger.info('✅ PHASE 2: Loaded schemas for components:', Object.keys(this.schemas));
         }
+        
+        // Mark as initialized and process any pending registrations
+        this.schemasInitialized = true;
+        this.processPendingRegistrations();
+    }
+    
+    /**
+     * Process any component registrations that were queued while schemas were loading
+     */
+    processPendingRegistrations() {
+        if (!this.pendingRegistrations || this.pendingRegistrations.length === 0) {
+            return;
+        }
+        
+        this.logger.info(`🔄 PHASE 2: Processing ${this.pendingRegistrations.length} pending component registrations`);
+        
+        const pending = [...this.pendingRegistrations];
+        this.pendingRegistrations = [];
+        
+        pending.forEach(({ componentId, componentType, configuration }) => {
+            this.registerComponentConfiguration(componentId, componentType, configuration);
+        });
     }
     
     /**
@@ -236,17 +267,34 @@ class ComponentConfigurationManager {
     registerComponentConfiguration(componentId, componentType, configuration = {}) {
         const schema = this.getSchema(componentType);
         if (!schema) {
-            // ROOT FIX: Don't warn if schemas are still loading
-            if (Object.keys(this.schemas).length === 0) {
-                this.logger.debug(`PHASE 2: Schemas still loading, will retry for ${componentType}`);
-                // Queue for retry
-                setTimeout(() => {
-                    if (this.getSchema(componentType)) {
-                        this.registerComponentConfiguration(componentId, componentType, configuration);
-                    }
-                }, 500);
+            // ROOT FIX: Check if we're still initializing schemas
+            if (!this.schemasInitialized) {
+                this.logger.debug(`PHASE 2: Schemas still loading, queueing ${componentType} for later`);
+                // Queue this registration for when schemas are ready
+                if (!this.pendingRegistrations) {
+                    this.pendingRegistrations = [];
+                }
+                this.pendingRegistrations.push({ componentId, componentType, configuration });
+                
+                // If we haven't set up the initialization promise handler yet
+                if (!this.schemaInitPromise) {
+                    this.logger.warn(`⚠️ PHASE 2: Schema initialization promise not available for ${componentType}`);
+                } else {
+                    // Wait for schemas to load then process pending registrations
+                    this.schemaInitPromise.then(() => {
+                        this.processPendingRegistrations();
+                    });
+                }
+                return null;
+            } else if (Object.keys(this.schemas).length === 0) {
+                // Schemas initialized but empty - use defaults
+                this.logger.debug(`PHASE 2: No schemas loaded, using defaults for ${componentType}`);
+                this.loadDefaultSchemas();
+                // Try again with defaults loaded
+                return this.registerComponentConfiguration(componentId, componentType, configuration);
             } else {
-                this.logger.warn(`⚠️ PHASE 2: No schema found for component type: ${componentType}`);
+                // Schemas are loaded but this type doesn't have one
+                this.logger.debug(`ℹ️ PHASE 2: No schema for ${componentType} - component will use basic rendering`);
             }
             return null;
         }

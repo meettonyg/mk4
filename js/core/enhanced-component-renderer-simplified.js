@@ -204,7 +204,7 @@
                 for (const componentId of componentIds) {
                     const componentData = components[componentId];
                     if (componentData && componentData.type) {
-                        const element = await this.renderComponent(componentId, componentData);
+                        const element = await this._renderComponentInternal(componentId, componentData);
                         if (element) {
                             container.appendChild(element);
                             this.componentCache.set(componentId, element);
@@ -345,88 +345,7 @@
                 // Default: client-side rendering
                 return false;
             }
-            
-            /**
-             * ✅ PHASE 2: Configuration-driven component rendering
-             * ARCHITECTURE: Component-agnostic - checks configuration for rendering requirements
-             */
-            async renderComponent(componentId, componentData) {
-                try {
-                    const element = document.createElement('div');
-                    element.id = componentId;
-                    element.className = 'gmkb-component';
-                    element.setAttribute('data-component-id', componentId);
-                    element.setAttribute('data-component-type', componentData.type);
-                    element.style.position = 'relative'; // Ensure controls can be positioned
-                    
-                    // ARCHITECTURE: Check component configuration for rendering requirements
-                    const requiresServerRender = await this.checkServerRenderRequirement(componentData.type);
-                    
-                    let html;
-                    if (requiresServerRender) {
-                        // Component has indicated it needs server-side rendering for data
-                        this.logger.debug('RENDER', `Component ${componentData.type} requires server rendering`);
-                        html = await this.fetchServerRenderedHTML(componentId, componentData);
-                        if (!html) {
-                            // Fallback to client-side if server unavailable
-                            this.logger.warn('RENDER', `Server rendering failed for ${componentData.type}, falling back to client-side`);
-                            html = await this.generateConfigurationDrivenHTML(componentId, componentData);
-                        }
-                    } else {
-                        // ✅ PHASE 2: Standard configuration-driven HTML generation
-                        html = await this.generateConfigurationDrivenHTML(componentId, componentData);
-                    }
-                    
-                    element.innerHTML = html;
-                    
-                    // ✅ ROOT FIX: Attach controls immediately after rendering
-                    // This ensures controls are always present, not relying on events
-                    if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
-                        const success = window.componentControlsManager.attachControls(element, componentId);
-                        if (!success) {
-                            this.logger.warn('RENDER', `Failed to attach controls to ${componentId}`);
-                        }
-                    } else {
-                        // ROOT CAUSE FIX: ComponentControlsManager not ready yet
-                        // Listen for it to be ready and then attach controls
-                        const attachWhenReady = () => {
-                            if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
-                                const success = window.componentControlsManager.attachControls(element, componentId);
-                                if (success) {
-                                    this.logger.info('RENDER', `✅ Controls attached to ${componentId} after manager ready`);
-                                }
-                            }
-                        };
-                        
-                        // Listen for controls manager ready event
-                        document.addEventListener('gmkb:component-controls-ready', attachWhenReady, { once: true });
-                        
-                        // Also check if it became ready while we were setting up the listener
-                        if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
-                            attachWhenReady();
-                        }
-                    }
-                    
-                    // ✅ CHECKLIST COMPLIANT: Emit component rendered event for other systems
-                    document.dispatchEvent(new CustomEvent('gmkb:component-rendered', {
-                        detail: {
-                            componentId,
-                            element,
-                            componentData,
-                            phase2: true,
-                            timestamp: Date.now()
-                        }
-                    }));
-                    
-                    this.logger.debug('RENDER', `✅ [PHASE 2] Rendered component: ${componentId}`);
-                    return element;
-                    
-                } catch (error) {
-                    this.logger.error('RENDER', `❌ Failed to render component ${componentId}:`, error);
-                    // Fallback to basic rendering if Phase 2 fails
-                    return this.renderBasicComponent(componentId, componentData);
-                }
-            }
+
             
             /**
              * ARCHITECTURE: Generic server-side rendering for data-dependent components
@@ -1077,7 +996,7 @@
                     return;
                 }
                 
-                const element = await this.renderComponent(componentId, componentData);
+                const element = await this._renderComponentInternal(componentId, componentData);
                 if (element) {
                     // Add section ID as data attribute if assigned
                     if (sectionId) {
@@ -1344,7 +1263,7 @@
                     props: componentConfig.props || componentConfig.data || {}
                 };
                 
-                const element = await this.renderComponent(componentId, componentData);
+                const element = await this._renderComponentInternal(componentId, componentData);
                 
                 return {
                     success: !!element,
@@ -1353,6 +1272,98 @@
                     error: element ? null : 'Failed to render component',
                     phase2: true
                 };
+            }
+            
+            /**
+             * ✅ PUBLIC API: Alias for renderComponent (for CoreSystemsCoordinator compatibility)
+             * This method exists to satisfy the dependency check in CoreSystemsCoordinator
+             * which looks for window.enhancedComponentRenderer.renderComponent
+             */
+            async renderComponent(componentId, componentData) {
+                // This is the actual implementation called by both public APIs
+                return this._renderComponentInternal(componentId, componentData);
+            }
+            
+            /**
+             * ✅ INTERNAL: The actual component rendering implementation
+             * Renamed to avoid conflict with the public API alias
+             */
+            async _renderComponentInternal(componentId, componentData) {
+                try {
+                    const element = document.createElement('div');
+                    element.id = componentId;
+                    element.className = 'gmkb-component';
+                    element.setAttribute('data-component-id', componentId);
+                    element.setAttribute('data-component-type', componentData.type);
+                    element.style.position = 'relative'; // Ensure controls can be positioned
+                    
+                    // ARCHITECTURE: Check component configuration for rendering requirements
+                    const requiresServerRender = await this.checkServerRenderRequirement(componentData.type);
+                    
+                    let html;
+                    if (requiresServerRender) {
+                        // Component has indicated it needs server-side rendering for data
+                        this.logger.debug('RENDER', `Component ${componentData.type} requires server rendering`);
+                        html = await this.fetchServerRenderedHTML(componentId, componentData);
+                        if (!html) {
+                            // Fallback to client-side if server unavailable
+                            this.logger.warn('RENDER', `Server rendering failed for ${componentData.type}, falling back to client-side`);
+                            html = await this.generateConfigurationDrivenHTML(componentId, componentData);
+                        }
+                    } else {
+                        // ✅ PHASE 2: Standard configuration-driven HTML generation
+                        html = await this.generateConfigurationDrivenHTML(componentId, componentData);
+                    }
+                    
+                    element.innerHTML = html;
+                    
+                    // ✅ ROOT FIX: Attach controls immediately after rendering
+                    // This ensures controls are always present, not relying on events
+                    if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                        const success = window.componentControlsManager.attachControls(element, componentId);
+                        if (!success) {
+                            this.logger.warn('RENDER', `Failed to attach controls to ${componentId}`);
+                        }
+                    } else {
+                        // ROOT CAUSE FIX: ComponentControlsManager not ready yet
+                        // Listen for it to be ready and then attach controls
+                        const attachWhenReady = () => {
+                            if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                                const success = window.componentControlsManager.attachControls(element, componentId);
+                                if (success) {
+                                    this.logger.info('RENDER', `✅ Controls attached to ${componentId} after manager ready`);
+                                }
+                            }
+                        };
+                        
+                        // Listen for controls manager ready event
+                        document.addEventListener('gmkb:component-controls-ready', attachWhenReady, { once: true });
+                        
+                        // Also check if it became ready while we were setting up the listener
+                        if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
+                            attachWhenReady();
+                        }
+                    }
+                    
+                    // ✅ CHECKLIST COMPLIANT: Emit component rendered event for other systems
+                    document.dispatchEvent(new CustomEvent('gmkb:component-rendered', {
+                        detail: {
+                            componentId,
+                            element,
+                            componentData,
+                            phase2: true,
+                            timestamp: Date.now()
+                        }
+                    }));
+                    
+                    this.logger.debug('RENDER', `✅ [PHASE 2] Rendered component: ${componentId}`);
+                    return element;
+                    
+                } catch (error) {
+                    this.logger.error('RENDER', `❌ Failed to render component ${componentId}:`, error);
+                    // Fallback to basic rendering if Phase 2 fails
+                    return this.renderBasicComponent(componentId, componentData);
+                }
             }
             
             /**

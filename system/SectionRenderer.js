@@ -789,10 +789,103 @@ class SectionRenderer {
             return;
         }
         
-        // ✅ CHECKLIST COMPLIANT: Direct rendering without waiting
-        // The section renderer owns rendering of section components
-        if (window.enhancedComponentRenderer) {
-            // Use the renderer's public API to create the component element
+        // ✅ CHECKLIST COMPLIANT: Wait for renderer if not available yet
+        // The section renderer needs the component renderer to create components
+        if (!window.enhancedComponentRenderer) {
+            // ROOT FIX: Component renderer not ready yet - defer rendering
+            this.logger.debug(`⏳ PHASE 3: Component renderer not ready yet for ${componentId}, deferring...`);
+            
+            // Store deferred component info for later rendering
+            if (!this.deferredComponents) {
+                this.deferredComponents = [];
+            }
+            this.deferredComponents.push({ componentId, targetContainer, componentData });
+            
+            // Listen for renderer ready event if not already listening
+            if (!this.listeningForRenderer) {
+                this.listeningForRenderer = true;
+                document.addEventListener('gmkb:enhanced-component-renderer-ready', () => {
+                    // ROOT FIX: Add small delay to ensure global variable is set
+                    // The event fires during init but before window.enhancedComponentRenderer is assigned
+                    setTimeout(() => {
+                        if (window.enhancedComponentRenderer) {
+                            this.processDeferredComponents();
+                        } else {
+                            this.logger.warn('⚠️ PHASE 3: Renderer ready event fired but global not set yet, waiting...');
+                            // Try again after another short delay
+                            setTimeout(() => {
+                                if (window.enhancedComponentRenderer) {
+                                    this.processDeferredComponents();
+                                }
+                            }, 50);
+                        }
+                    }, 10);
+                }, { once: true });
+                
+                // Also listen for core systems ready as a backup
+                document.addEventListener('gmkb:core-systems-ready', () => {
+                    setTimeout(() => {
+                        if (window.enhancedComponentRenderer && this.deferredComponents && this.deferredComponents.length > 0) {
+                            this.processDeferredComponents();
+                        }
+                    }, 100);
+                }, { once: true });
+            }
+            return;
+        }
+        
+        // Renderer is available - use it to create the component element
+        const result = await window.enhancedComponentRenderer.renderSingleComponent({
+            id: componentId,
+            type: componentData.type,
+            props: componentData.props || componentData.data || {}
+        });
+        
+        if (result.success && result.element) {
+            // Add the rendered component directly to the section
+            targetContainer.appendChild(result.element);
+            this.logger.info(`✅ PHASE 3: Component ${componentId} rendered directly in section`);
+        } else {
+            this.logger.error(`❌ PHASE 3: Failed to render component ${componentId}`);
+        }
+    }
+    
+    /**
+     * Process components that were deferred because renderer wasn't ready
+     * Following checklist: Event-Driven, Root Cause Fix
+     */
+    async processDeferredComponents() {
+        if (!this.deferredComponents || this.deferredComponents.length === 0) {
+            return;
+        }
+        
+        if (!window.enhancedComponentRenderer) {
+            this.logger.error('❌ PHASE 3: Cannot process deferred components - renderer still not available');
+            return;
+        }
+        
+        this.logger.info(`🔄 PHASE 3: Processing ${this.deferredComponents.length} deferred components`);
+        
+        // Process all deferred components
+        const deferred = [...this.deferredComponents];
+        this.deferredComponents = [];
+        
+        for (const { componentId, targetContainer, componentData } of deferred) {
+            // Check if container still exists in DOM
+            if (!targetContainer.isConnected) {
+                this.logger.warn(`⚠️ PHASE 3: Target container for ${componentId} no longer in DOM`);
+                continue;
+            }
+            
+            // Check if component wasn't already rendered elsewhere
+            const existingElement = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (existingElement) {
+                targetContainer.appendChild(existingElement);
+                this.logger.debug(`🔄 PHASE 3: Moved existing component ${componentId} to section`);
+                continue;
+            }
+            
+            // Render the component
             const result = await window.enhancedComponentRenderer.renderSingleComponent({
                 id: componentId,
                 type: componentData.type,
@@ -800,15 +893,14 @@ class SectionRenderer {
             });
             
             if (result.success && result.element) {
-                // Add the rendered component directly to the section
                 targetContainer.appendChild(result.element);
-                this.logger.info(`✅ PHASE 3: Component ${componentId} rendered directly in section`);
+                this.logger.info(`✅ PHASE 3: Deferred component ${componentId} rendered in section`);
             } else {
-                this.logger.error(`❌ PHASE 3: Failed to render component ${componentId}`);
+                this.logger.error(`❌ PHASE 3: Failed to render deferred component ${componentId}`);
             }
-        } else {
-            this.logger.error(`❌ PHASE 3: Component renderer not available`);
         }
+        
+        this.logger.info(`✅ PHASE 3: Finished processing deferred components`);
     }
     
     /**
