@@ -31,6 +31,109 @@ function gmkb_ajax_get_discovered_themes() {
     ));
 }
 
+// ROOT FIX: Save theme preference
+add_action('wp_ajax_gmkb_save_theme', 'gmkb_ajax_save_theme');
+add_action('wp_ajax_nopriv_gmkb_save_theme', 'gmkb_ajax_save_theme');
+function gmkb_ajax_save_theme() {
+    // Verify nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+        wp_send_json_error(array(
+            'message' => 'Invalid nonce',
+            'debug' => 'Nonce verification failed'
+        ));
+        return;
+    }
+    
+    // Get theme ID from request
+    $theme_id = isset($_POST['theme_id']) ? sanitize_text_field($_POST['theme_id']) : '';
+    
+    if (empty($theme_id)) {
+        wp_send_json_error(array(
+            'message' => 'No theme ID provided',
+            'debug' => 'theme_id parameter missing'
+        ));
+        return;
+    }
+    
+    // Get post ID if provided (for post-specific themes)
+    $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+    
+    // Save theme preference
+    if ($post_id > 0) {
+        // Save theme for specific post
+        update_post_meta($post_id, 'gmkb_selected_theme', $theme_id);
+        
+        // Also update in the media kit state if it exists
+        $state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+        if (is_array($state)) {
+            if (!isset($state['globalSettings'])) {
+                $state['globalSettings'] = array();
+            }
+            $state['globalSettings']['theme'] = $theme_id;
+            update_post_meta($post_id, 'gmkb_media_kit_state', $state);
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Theme saved for post ' . $post_id . ': ' . $theme_id);
+        }
+    } else {
+        // Save global theme preference
+        update_option('gmkb_current_theme', $theme_id);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Global theme saved: ' . $theme_id);
+        }
+    }
+    
+    wp_send_json_success(array(
+        'message' => 'Theme saved successfully',
+        'theme_id' => $theme_id,
+        'post_id' => $post_id,
+        'saved_to' => $post_id > 0 ? 'post_meta' : 'global_option'
+    ));
+}
+
+// ROOT FIX: Load saved theme preference
+add_action('wp_ajax_gmkb_load_theme', 'gmkb_ajax_load_theme');
+add_action('wp_ajax_nopriv_gmkb_load_theme', 'gmkb_ajax_load_theme');
+function gmkb_ajax_load_theme() {
+    // Verify nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+        wp_send_json_error(array(
+            'message' => 'Invalid nonce'
+        ));
+        return;
+    }
+    
+    // Get post ID if provided
+    $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+    
+    $theme_id = '';
+    
+    if ($post_id > 0) {
+        // Try to get post-specific theme first
+        $theme_id = get_post_meta($post_id, 'gmkb_selected_theme', true);
+        
+        // If not found, check media kit state
+        if (empty($theme_id)) {
+            $state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+            if (is_array($state) && isset($state['globalSettings']['theme'])) {
+                $theme_id = $state['globalSettings']['theme'];
+            }
+        }
+    }
+    
+    // Fall back to global theme if no post-specific theme
+    if (empty($theme_id)) {
+        $theme_id = get_option('gmkb_current_theme', 'professional_clean');
+    }
+    
+    wp_send_json_success(array(
+        'theme_id' => $theme_id,
+        'source' => $post_id > 0 ? 'post_specific' : 'global'
+    ));
+}
+
 // Example: Export all custom themes
 add_action('wp_ajax_gmkb_export_all_themes', 'gmkb_ajax_export_all_themes');
 function gmkb_ajax_export_all_themes() {
