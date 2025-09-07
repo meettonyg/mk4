@@ -150,8 +150,22 @@ class DesignPanel {
             this.panel = document.getElementById('element-editor') || document.querySelector('.element-editor-sidebar');
         }
         
-        // ROOT FIX: ONLY use Component Options UI - no fallbacks
-        if (window.componentOptionsUI && typeof window.componentOptionsUI.loadComponentOptions === 'function') {
+        // ROOT FIX: ONLY use Component Options UI - wait briefly if not ready
+        const waitForOptionsUI = async () => {
+            let attempts = 0;
+            while (attempts < 10) {
+                if (window.componentOptionsUI && typeof window.componentOptionsUI.loadComponentOptions === 'function') {
+                    return true;
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            return false;
+        };
+        
+        const optionsUIReady = await waitForOptionsUI();
+        
+        if (optionsUIReady) {
             try {
                 await window.componentOptionsUI.loadComponentOptions(
                     componentId,

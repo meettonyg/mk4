@@ -242,9 +242,10 @@
             }
             
             // ROOT FIX: Check if Phase 2 Component Options UI is available
-            // Check both direct window references and GMKB.phase2
+            // Check multiple locations for Phase 2 systems
             const phase2Available = (window.componentSelectionManager && window.componentOptionsUI) || 
-                                  (GMKB.phase2?.available && GMKB.phase2?.componentOptionsUI);
+                                  (GMKB.phase2?.available && GMKB.phase2?.componentOptionsUI) ||
+                                  (window.gmkbPhase2?.available && window.gmkbPhase2?.componentOptionsUI);
             
             console.log('🔍 PHASE 2 CHECK:', {
                 directSelectionManager: !!window.componentSelectionManager,
@@ -254,8 +255,8 @@
             });
             
             if (phase2Available) {
-                const optionsUI = window.componentOptionsUI || GMKB.phase2?.componentOptionsUI;
-                const selectionManager = window.componentSelectionManager || GMKB.phase2?.componentSelectionManager;
+                const optionsUI = window.componentOptionsUI || GMKB.phase2?.componentOptionsUI || window.gmkbPhase2?.componentOptionsUI;
+                const selectionManager = window.componentSelectionManager || GMKB.phase2?.componentSelectionManager || window.gmkbPhase2?.componentSelectionManager;
                 console.log('🚀 PHASE 2: Using Component Options UI for', componentId);
                 
                 // Get component type
@@ -679,6 +680,22 @@
             };
         }
     });
+    
+    // ROOT FIX: Also check for Phase 2 immediately
+    // Don't wait for event if it's already available
+    setTimeout(() => {
+        if (window.gmkbPhase2?.available || (window.componentOptionsUI && window.componentSelectionManager)) {
+            if (!phase2Available) {
+                phase2Available = true;
+                GMKB.phase2 = window.gmkbPhase2 || {
+                    componentOptionsUI: window.componentOptionsUI,
+                    componentSelectionManager: window.componentSelectionManager,
+                    available: true
+                };
+                console.log('✅ GMKB: Phase 2 detected immediately (not via event)');
+            }
+        }
+    }, 100);
     
     // Initialize global action listeners when DOM is ready
     if (document.readyState === 'loading') {

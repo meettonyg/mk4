@@ -961,14 +961,43 @@
     window.componentOptionsUI = instance;
     window.ComponentOptionsUI = ComponentOptionsUI;
     
+    // ROOT FIX: Force immediate initialization with fallback managers
+    // Don't wait for events, check for managers directly
+    const forceInitialize = () => {
+        // Look for managers in window immediately
+        instance.configManager = window.componentConfigurationManager || window.ComponentConfigurationManager;
+        instance.stateManager = window.enhancedStateManager || window.EnhancedStateManager;
+        instance.componentManager = window.enhancedComponentManager || window.EnhancedComponentManager;
+        instance.dataBinding = window.dataBindingEngine || window.DataBindingEngine;
+        
+        // Try initialization
+        instance.tryInitialize();
+        
+        // If still not initialized, try again after a brief delay
+        if (!instance.isInitialized) {
+            setTimeout(() => {
+                instance.tryInitialize();
+                if (instance.isInitialized) {
+                    console.log('✅ PHASE 2: Component Options UI initialized after delay');
+                }
+            }, 500);
+        }
+    };
+    
     // Try immediate initialization
     if (document.readyState !== 'loading') {
-        instance.tryInitialize();
+        forceInitialize();
     } else {
-        document.addEventListener('DOMContentLoaded', () => {
-            instance.tryInitialize();
-        });
+        document.addEventListener('DOMContentLoaded', forceInitialize);
     }
     
+    // ROOT FIX: Also make Phase 2 available to gmkb-init.js
+    window.gmkbPhase2 = {
+        componentOptionsUI: instance,
+        componentSelectionManager: window.componentSelectionManager,
+        available: true
+    };
+    
     console.log('📋 Component Options UI: Instance created and exposed globally');
+    console.log('✅ PHASE 2: ComponentOptionsUI available at window.componentOptionsUI');
 })();
