@@ -177,11 +177,27 @@ class ComponentSelectionManager {
      * Handle global clicks for deselection
      */
     handleGlobalClick(event) {
+        // ROOT FIX: Don't deselect if clicking inside the design panel or its elements
+        const clickedInDesignPanel = event.target.closest('#element-editor') || 
+                                      event.target.closest('.element-editor') ||
+                                      event.target.closest('.component-options-container') ||
+                                      event.target.closest('.design-panel') ||
+                                      event.target.closest('.element-editor-sidebar') ||
+                                      event.target.closest('.media-kit-sidebar') ||
+                                      event.target.closest('#media-kit-sidebar') ||
+                                      event.target.closest('.sidebar') ||
+                                      event.target.closest('.tab-content');
+        
+        if (clickedInDesignPanel) {
+            // Clicked inside design panel - don't deselect
+            return;
+        }
+        
         // Check if click is outside any component
         const clickedComponent = event.target.closest('[data-component-id]');
         
         if (!clickedComponent && this.selectedComponentId) {
-            // Clicked outside components - deselect
+            // Clicked outside components and not in design panel - deselect
             this.deselectCurrentComponent();
         }
     }
