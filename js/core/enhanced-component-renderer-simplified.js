@@ -100,10 +100,25 @@
                         this.updateContainerDisplay(state);
                     });
                     
-                    // ✅ ROOT CAUSE FIX: Render initial state immediately
+                    // ✅ ROOT CAUSE FIX: Don't render components on init - let sections request them
+                    // Components with sections will be rendered by section system
+                    // Components without sections will be rendered on first state change
                     const initialState = this.stateManager.getState();
+                    
+                    // Only render components that DON'T have section assignments
                     if (initialState && initialState.components) {
-                        await this.renderInitialComponents(initialState);
+                        const componentsWithoutSections = {};
+                        for (const [id, component] of Object.entries(initialState.components)) {
+                            if (!component.sectionId) {
+                                componentsWithoutSections[id] = component;
+                            }
+                        }
+                        
+                        // Only render if we have components without sections
+                        if (Object.keys(componentsWithoutSections).length > 0) {
+                            const modifiedState = { ...initialState, components: componentsWithoutSections };
+                            await this.renderInitialComponents(modifiedState);
+                        }
                     }
                     
                     this.initialized = true;

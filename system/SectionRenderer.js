@@ -765,24 +765,49 @@ class SectionRenderer {
     /**
      * Move component to section container
      * Following checklist: DOM Manipulation, Component Management
+     * ✅ ROOT FIX: Direct rendering without events or timeouts
      */
-    moveComponentToSection(componentId, targetContainer) {
-        // Find existing component element
-        const componentElement = document.querySelector(`[data-component-id="${componentId}"]`);
+    async moveComponentToSection(componentId, targetContainer) {
+        // Find existing component element anywhere in the DOM
+        let componentElement = document.querySelector(`[data-component-id="${componentId}"]`) || 
+                               document.getElementById(componentId);
         
         if (componentElement) {
             // Move existing component
             targetContainer.appendChild(componentElement);
             this.logger.debug(`🔄 PHASE 3: Moved component ${componentId} to section`);
-        } else {
-            // Component not yet rendered, add placeholder
-            const placeholder = document.createElement('div');
-            placeholder.className = 'gmkb-component-placeholder';
-            placeholder.dataset.componentId = componentId;
-            placeholder.textContent = `Component: ${componentId}`;
-            targetContainer.appendChild(placeholder);
+            return;
+        }
+        
+        // ✅ ROOT FIX: Component doesn't exist - render it directly here
+        // This is the proper place to render section components
+        const state = window.enhancedStateManager?.getState();
+        const componentData = state?.components?.[componentId];
+        
+        if (!componentData) {
+            this.logger.warn(`⚠️ PHASE 3: Component ${componentId} not found in state`);
+            return;
+        }
+        
+        // ✅ CHECKLIST COMPLIANT: Direct rendering without waiting
+        // The section renderer owns rendering of section components
+        if (window.enhancedComponentRenderer) {
+            // Use the renderer's public API to create the component element
+            const result = await window.enhancedComponentRenderer.renderSingleComponent({
+                id: componentId,
+                type: componentData.type,
+                props: componentData.props || componentData.data || {}
+            });
             
-            this.logger.debug(`📍 PHASE 3: Added placeholder for component ${componentId}`);
+            if (result.success && result.element) {
+                // Add the rendered component directly to the section
+                targetContainer.appendChild(result.element);
+                this.logger.info(`✅ PHASE 3: Component ${componentId} rendered directly in section`);
+            } else {
+                this.logger.error(`❌ PHASE 3: Failed to render component ${componentId}`);
+            }
+        } else {
+            this.logger.error(`❌ PHASE 3: Component renderer not available`);
         }
     }
     
