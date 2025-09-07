@@ -769,12 +769,12 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 4: Theme Customizer UI - Must load BEFORE toolbar
+    // PHASE 4.1: Theme Customizer UI - Complete implementation
     if (!wp_script_is('gmkb-theme-customizer', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-theme-customizer',
-            $plugin_url . 'js/ui/theme-customizer.js',
-            array('gmkb-theme-manager'),
+            $plugin_url . 'system/ThemeCustomizer.js',
+            array('gmkb-theme-manager', 'gmkb-structured-logger'),
             $version,
             true
         );
