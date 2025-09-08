@@ -81,6 +81,9 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
 // ROOT FIX: Include frontend template router for conditional media kit display
 require_once GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php';
 
+// PHASE 8: Enhanced Frontend Display with Theme Support
+require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';
+
 // Also protect the admin cleanup script loading
 if (is_admin()) {
     $cleanup_file = GUESTIFY_PLUGIN_DIR . 'admin/topics-data-cleanup.php';

@@ -60,8 +60,10 @@ class GMKB_Frontend_Template_Router {
         $media_kit_state = get_post_meta($post->ID, 'gmkb_media_kit_state', true);
         
         if (!empty($media_kit_state) && (isset($media_kit_state['components']) || isset($media_kit_state['saved_components']))) {
-            // Add our template to the beginning of the hierarchy
-            array_unshift($templates, 'single-guests-mediakit.php');
+            // Add our media kit template to the beginning of the hierarchy
+            array_unshift($templates, 'mediakit-frontend-template.php');
+            // Also add with single- prefix for WordPress compatibility
+            array_unshift($templates, 'single-mediakit-display.php');
             
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('GMKB Template Router: Modified template hierarchy for post ' . $post->ID);
@@ -84,16 +86,19 @@ class GMKB_Frontend_Template_Router {
             error_log('GMKB Template Router: is_singular check: guests=' . (is_singular('guests') ? 'YES' : 'NO'));
         }
         
-        // ROOT FIX: Check for correct custom post type
-        // The actual post type is 'guests' based on the theme template name
-        $is_guest_post = is_singular('guests');
+        // ROOT FIX: Check if this is a singular post of any type
+        if (!is_singular()) {
+            return $template;
+        }
         
-        if (!$is_guest_post) {
+        // Get supported post types (guests and any others registered)
+        $supported_post_types = apply_filters('gmkb_supported_post_types', array('guests'));
+        
+        // Check if current post type is supported
+        $post_type = get_post_type();
+        if (!in_array($post_type, $supported_post_types)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                global $post;
-                if ($post) {
-                    error_log('GMKB Template Router: Not a guest post. Post type: ' . $post->post_type);
-                }
+                error_log('GMKB Template Router: Post type ' . $post_type . ' not supported for media kits');
             }
             return $template;
         }
@@ -138,20 +143,20 @@ class GMKB_Frontend_Template_Router {
             return $template;
         }
         
-        // ROOT FIX: ALWAYS use plugin template when media kit data exists
-        // This overrides the theme's single-guests.php template
-        $media_kit_template = GMKB_PLUGIN_DIR . 'templates/single-guests-mediakit-fallback.php';
+        // ROOT FIX: Use the media kit display template when media kit data exists
+        // This is the PRIMARY template for displaying media kits on the frontend
+        $media_kit_template = GMKB_PLUGIN_DIR . 'templates/mediakit-frontend-template.php';
             
         if (!file_exists($media_kit_template)) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Template Router ERROR: Plugin template not found at: ' . $media_kit_template);
+                error_log('GMKB Template Router ERROR: Media kit template not found at: ' . $media_kit_template);
                 error_log('GMKB Template Router: Falling back to theme template: ' . $template);
             }
             return $template;
         }
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Template Router: OVERRIDING theme template with plugin media kit template');
+            error_log('GMKB Template Router: Using media kit display template');
             error_log('GMKB Template Router: Using: ' . $media_kit_template);
         }
         
@@ -182,41 +187,11 @@ class GMKB_Frontend_Template_Router {
             return;
         }
         
-        // Enqueue media kit frontend CSS
-        wp_enqueue_style(
-            'gmkb-frontend-display',
-            GMKB_PLUGIN_URL . 'css/frontend-mediakit.css',
-            array(),
-            GMKB_VERSION
-        );
-        
-        // Enqueue component-specific styles
-        wp_enqueue_style(
-            'gmkb-components',
-            GMKB_PLUGIN_URL . 'css/modules/components.css',
-            array(),
-            GMKB_VERSION
-        );
-        
-        // Enqueue media kit frontend JS if needed
-        wp_enqueue_script(
-            'gmkb-frontend-display',
-            GMKB_PLUGIN_URL . 'js/frontend-mediakit.js',
-            array(),
-            GMKB_VERSION,
-            true
-        );
-        
-        // Pass data to JavaScript
-        wp_localize_script('gmkb-frontend-display', 'gmkbFrontend', array(
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'postId' => $GLOBALS['gmkb_media_kit_post_id'] ?? 0,
-            'nonce' => wp_create_nonce('gmkb_frontend'),
-            'isMediaKit' => true
-        ));
+        // The enhanced frontend display class will handle asset enqueuing
+        // This method is kept for backward compatibility
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB Template Router: Frontend assets enqueued');
+            error_log('GMKB Template Router: Assets handled by GMKB_Frontend_Display class');
         }
     }
     

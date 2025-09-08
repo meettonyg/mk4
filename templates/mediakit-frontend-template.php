@@ -1,14 +1,18 @@
 <?php
 /**
- * Fallback Media Kit Template
+ * Media Kit Frontend Display Template
  * 
- * This template is used when the theme doesn't have single-guests-mediakit.php
- * Displays the saved media kit dynamically with no hardcoded content.
+ * This is the primary template for displaying media kits on the frontend.
+ * It automatically renders when viewing any supported custom post type that has media kit data.
  * 
- * CHECKLIST COMPLIANT:
- * ✅ No Polling: Direct rendering, no waiting
- * ✅ Simplicity First: Minimal HTML, maximum flexibility
- * ✅ Root Cause Fix: Provides complete fallback solution
+ * Features:
+ * - Full theme support with dynamic CSS generation
+ * - Section-based layouts (full width, 2-column, 3-column)
+ * - Component rendering with lazy loading support
+ * - Responsive design with mobile optimization
+ * 
+ * @package GMKB
+ * @since 2.1.0
  */
 
 // Get the media kit state
@@ -132,8 +136,22 @@ if (defined('WP_DEBUG') && WP_DEBUG && !empty($media_kit_state)) {
 }
 ?>
 
-<!-- Media Kit Container -->
-<article id="gmkb-media-kit-<?php echo esc_attr($post_id); ?>" class="gmkb-media-kit-container gmkb-frontend-display">
+<?php
+// Use the enhanced frontend display class if available
+if (class_exists('GMKB_Frontend_Display')) {
+    // Get the frontend display instance
+    $frontend_display = GMKB_Frontend_Display::get_instance();
+    
+    // Load theme from media kit state
+    $theme_id = isset($media_kit_state['globalSettings']['theme']) ? $media_kit_state['globalSettings']['theme'] : 'professional_clean';
+    
+    // Render the media kit with theme support
+    $frontend_display->render_media_kit_template($media_kit_state, $post_id, $theme_id);
+} else {
+    // Basic display mode (when enhanced display class is not available)
+    ?>
+    <!-- Media Kit Container -->
+    <article id="gmkb-media-kit-<?php echo esc_attr($post_id); ?>" class="gmkb-media-kit-container gmkb-frontend-display">
     
     <?php if (empty($components)): ?>
         <!-- Empty State -->
@@ -249,6 +267,9 @@ if (defined('WP_DEBUG') && WP_DEBUG && !empty($media_kit_state)) {
     <?php endif; // End components check ?>
     
 </article>
+<?php
+} // End basic display mode
+?>
 
 </body>
 </html>
@@ -307,7 +328,6 @@ function render_component($component, $post_id, $index = 0) {
             // Include template
             include $component_template;
         } else {
-            // Fallback rendering
             echo render_component_fallback($component_type, $component_data, $component_props);
         }
         ?>
@@ -315,7 +335,7 @@ function render_component($component, $post_id, $index = 0) {
     <?php
 }
 
-// Helper function for fallback rendering
+// Helper function for basic component rendering
 function render_component_fallback($type, $data, $props) {
     ob_start();
     ?>
