@@ -626,6 +626,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 3.1 State Schema - ROOT FIX: Load state schema definitions
+    if (!wp_script_is('gmkb-state-schema', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-state-schema',
+            $plugin_url . 'js/schemas/state-schema.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 3a. Core Systems Coordinator - ROOT FIX: Dispatch core-systems-ready event
     if (!wp_script_is('gmkb-core-systems-coordinator', 'enqueued')) {
         wp_enqueue_script(
@@ -1580,6 +1591,7 @@ function gmkb_enqueue_assets() {
                 'gmkb', // GMKB Core System FIRST
                 'sortable-js', // Include SortableJS
                 'gmkb-structured-logger',
+                'gmkb-state-schema', // ROOT FIX: Load state schema
                 'gmkb-enhanced-state-manager',
                 'gmkb-core-systems-coordinator',
                 'gmkb-enhanced-component-manager',
