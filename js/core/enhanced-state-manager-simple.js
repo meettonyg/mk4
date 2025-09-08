@@ -241,9 +241,19 @@
 
         /**
          * Get current state
+         * ROOT FIX: Ensure state.components is always countable for tests
          */
         getState() {
-            return JSON.parse(JSON.stringify(this.state));
+            const stateCopy = JSON.parse(JSON.stringify(this.state));
+            
+            // ROOT FIX: Add component count helper for tests that expect it
+            if (stateCopy.components && typeof stateCopy.components === 'object') {
+                stateCopy.componentCount = Object.keys(stateCopy.components).length;
+            } else {
+                stateCopy.componentCount = 0;
+            }
+            
+            return stateCopy;
         }
 
         /**
