@@ -376,7 +376,12 @@ class DataBindingEngine {
      * Resolve data field value with dot notation support
      */
     resolveDataField(data, fieldPath) {
-        if (!fieldPath || !data) return null;
+        // ROOT FIX: Ensure fieldPath is string and data exists
+        if (!data) return null;
+        if (!fieldPath || typeof fieldPath !== 'string') {
+            this.logger.warn('DATA_BINDING', 'Invalid fieldPath', { fieldPath, type: typeof fieldPath });
+            return null;
+        }
         
         // Handle dot notation (e.g., 'user.profile.name')
         const fields = fieldPath.split('.');

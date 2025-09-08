@@ -53,6 +53,210 @@
         }
         
         /**
+         * ROOT FIX: Create device preview buttons if they don't exist
+         */
+        createDevicePreviewButtons() {
+            // Find toolbar
+            const toolbar = document.querySelector('.gmkb-toolbar-actions, .toolbar, #gmkb-toolbar, [data-toolbar]');
+            if (!toolbar) {
+                this.logger.warn('TOOLBAR', 'Cannot create device preview buttons - toolbar not found');
+                return;
+            }
+            
+            // Check if buttons already exist
+            if (toolbar.querySelector('.toolbar__preview-group')) {
+                return;
+            }
+            
+            // Create preview button group
+            const previewGroup = document.createElement('div');
+            previewGroup.className = 'toolbar__preview-group';
+            previewGroup.innerHTML = `
+                <button class="toolbar__preview-btn toolbar__preview-btn--active" data-preview="desktop" title="Desktop View">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                </button>
+                <button class="toolbar__preview-btn" data-preview="tablet" title="Tablet View">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                        <line x1="12" y1="18" x2="12" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="toolbar__preview-btn" data-preview="mobile" title="Mobile View">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                        <line x1="12" y1="18" x2="12" y2="18"></line>
+                    </svg>
+                </button>
+            `;
+            
+            // Add styles for preview buttons
+            if (!document.getElementById('device-preview-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'device-preview-styles';
+                styles.textContent = `
+                    .toolbar__preview-group {
+                        display: flex;
+                        gap: 4px;
+                        margin-right: 16px;
+                        padding: 4px;
+                        background: rgba(0, 0, 0, 0.05);
+                        border-radius: 6px;
+                    }
+                    
+                    .toolbar__preview-btn {
+                        padding: 8px;
+                        background: transparent;
+                        border: none;
+                        color: #666;
+                        cursor: pointer;
+                        border-radius: 4px;
+                        transition: all 0.2s ease;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    
+                    .toolbar__preview-btn:hover {
+                        background: rgba(0, 0, 0, 0.1);
+                        color: #333;
+                    }
+                    
+                    .toolbar__preview-btn--active {
+                        background: white;
+                        color: #295cff;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                    }
+                    
+                    .toolbar__preview-btn svg {
+                        width: 16px;
+                        height: 16px;
+                    }
+                    
+                    /* Preview container responsive styles */
+                    .preview--mobile,
+                    #saved-components-container.preview--mobile,
+                    #media-kit-preview.preview--mobile {
+                        max-width: 375px;
+                        margin: 0 auto;
+                        border: 1px solid #ddd;
+                        border-radius: 20px;
+                        padding: 20px 10px;
+                    }
+                    
+                    .preview--tablet,
+                    #saved-components-container.preview--tablet,
+                    #media-kit-preview.preview--tablet {
+                        max-width: 768px;
+                        margin: 0 auto;
+                        border: 1px solid #ddd;
+                        border-radius: 12px;
+                        padding: 20px;
+                    }
+                    
+                    .preview--desktop,
+                    #saved-components-container.preview--desktop,
+                    #media-kit-preview.preview--desktop {
+                        max-width: 100%;
+                        margin: 0;
+                        border: none;
+                        padding: 0;
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
+            // Insert before save button or at the end
+            const saveBtn = toolbar.querySelector('#save-btn, .save-btn, [data-action="save"]');
+            if (saveBtn) {
+                toolbar.insertBefore(previewGroup, saveBtn);
+            } else {
+                toolbar.appendChild(previewGroup);
+            }
+            
+            this.logger.info('TOOLBAR', 'Device preview buttons created');
+        }
+        
+        /**
+         * ROOT FIX: Create theme button if it doesn't exist
+         */
+        createThemeButton() {
+            // Find toolbar
+            const toolbar = document.querySelector('.gmkb-toolbar-actions, .toolbar, #gmkb-toolbar, [data-toolbar]');
+            if (!toolbar) {
+                this.logger.warn('TOOLBAR', 'Cannot create theme button - toolbar not found');
+                return;
+            }
+            
+            // Check if button already exists
+            if (document.getElementById('global-theme-btn')) {
+                this.buttons.themeBtn = document.getElementById('global-theme-btn');
+                return;
+            }
+            
+            // Create theme button
+            const themeButton = document.createElement('button');
+            themeButton.id = 'global-theme-btn';
+            themeButton.className = 'toolbar__btn toolbar__btn--theme';
+            themeButton.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m4.22-13.22l4.24 4.24M1.54 12h6m6 0h6m-13.22 4.22l4.24 4.24"></path>
+                </svg>
+                <span>Theme</span>
+            `;
+            themeButton.title = 'Change Theme';
+            
+            // Add styles for theme button
+            if (!document.getElementById('theme-button-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'theme-button-styles';
+                styles.textContent = `
+                    .toolbar__btn--theme {
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 8px 12px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 500;
+                        transition: all 0.2s ease;
+                        margin-right: 12px;
+                    }
+                    
+                    .toolbar__btn--theme:hover {
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                    }
+                    
+                    .toolbar__btn--theme svg {
+                        width: 16px;
+                        height: 16px;
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
+            // Insert before save button or at the end
+            const saveBtn = toolbar.querySelector('#save-btn, .save-btn, [data-action="save"]');
+            if (saveBtn) {
+                toolbar.insertBefore(themeButton, saveBtn);
+            } else {
+                toolbar.appendChild(themeButton);
+            }
+            
+            this.buttons.themeBtn = themeButton;
+            this.logger.info('TOOLBAR', 'Theme button created');
+        }
+        
+        /**
          * Wait for required dependencies
          */
         waitForDependencies(callback) {
@@ -111,6 +315,7 @@
         
         /**
          * Get references to toolbar buttons
+         * ROOT FIX: Create theme button if it doesn't exist
          */
         getButtonReferences() {
             const buttonIds = {
@@ -129,21 +334,35 @@
                 }
             });
             
+            // ROOT FIX: Create theme button if it doesn't exist
+            if (!this.buttons.themeBtn) {
+                this.createThemeButton();
+            }
+            
             this.statusIndicator = document.querySelector('.toolbar__status');
         }
         
         /**
          * Setup device preview toggle (from toolbar.js)
+         * ROOT FIX: Create preview buttons if they don't exist
          */
         setupDevicePreviewToggle() {
             if (this._devicePreviewInitialized) return;
             
-            const previewButtons = document.querySelectorAll('.toolbar__preview-btn');
+            // ROOT FIX: Create device preview buttons if they don't exist
+            let previewButtons = document.querySelectorAll('.toolbar__preview-btn');
+            if (!previewButtons.length) {
+                this.createDevicePreviewButtons();
+                previewButtons = document.querySelectorAll('.toolbar__preview-btn');
+            }
+            
             const previewContainer = document.getElementById('preview-container') || 
-                                  document.querySelector('.preview__container, .preview');
+                                  document.querySelector('.preview__container, .preview') ||
+                                  document.getElementById('saved-components-container') ||
+                                  document.getElementById('media-kit-preview');
             
             if (!previewButtons.length || !previewContainer) {
-                this.logger.warn('TOOLBAR', 'Preview elements not found');
+                this.logger.warn('TOOLBAR', 'Preview elements not found after creation attempt');
                 return;
             }
             

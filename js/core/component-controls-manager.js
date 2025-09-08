@@ -123,13 +123,13 @@
                     className: 'component-control--edit',
                     position: 'primary'
                 },
-                moveUp: {
+                'move-up': {
                     title: 'Move Up',
                     icon: this.createMoveUpIcon(),
                     className: 'component-control--move-up',
                     position: 'group'
                 },
-                moveDown: {
+                'move-down': {
                     title: 'Move Down', 
                     icon: this.createMoveDownIcon(),
                     className: 'component-control--move-down',
@@ -432,12 +432,12 @@
             `;
             
             // ROOT FIX: Create move up button
-            const moveUpButton = this.createControlButton('moveUp', componentId);
+            const moveUpButton = this.createControlButton('move-up', componentId);
             moveUpButton.style.width = '20px';
             moveUpButton.style.height = '20px';
             
             // ROOT FIX: Create move down button
-            const moveDownButton = this.createControlButton('moveDown', componentId);
+            const moveDownButton = this.createControlButton('move-down', componentId);
             moveDownButton.style.width = '20px';
             moveDownButton.style.height = '20px';
             
@@ -616,8 +616,8 @@
             // ROOT FIX: Map control actions to events
             const actionEventMap = {
                 'edit': 'gmkb:component-edit-requested',
-                'moveUp': 'gmkb:component-move-up-requested',
-                'moveDown': 'gmkb:component-move-down-requested',
+                'move-up': 'gmkb:component-move-up-requested',
+                'move-down': 'gmkb:component-move-down-requested',
                 'duplicate': 'gmkb:component-duplicate-requested',
                 'delete': 'gmkb:component-delete-requested'
             };
@@ -1464,8 +1464,8 @@
         const buttons = [
             { selector: '[data-action="edit"]', action: 'edit' },
             { selector: '[data-action="duplicate"]', action: 'duplicate' },
-            { selector: '[data-action="moveUp"]', action: 'moveUp' },
-            { selector: '[data-action="moveDown"]', action: 'moveDown' },
+            { selector: '[data-action="move-up"]', action: 'move-up' },
+            { selector: '[data-action="move-down"]', action: 'move-down' },
             { selector: '[data-action="delete"]', action: 'delete' }
         ];
         

@@ -49,10 +49,19 @@
         }
         
         addToolbarButtons() {
-            const toolbar = document.querySelector('.builder-toolbar__actions, .toolbar__actions');
+            // ROOT FIX: Look for all possible toolbar selectors
+            const toolbar = document.querySelector('.gmkb-toolbar-actions, .toolbar, #gmkb-toolbar, [data-toolbar], .builder-toolbar__actions, .toolbar__actions');
             if (!toolbar) {
                 if (window.gmkbData?.debugMode) {
                     console.warn('Toolbar not found for export/import buttons');
+                }
+                // Try to find parent toolbar container and create actions container
+                const toolbarContainer = document.querySelector('.builder-toolbar, .gmkb-toolbar');
+                if (toolbarContainer) {
+                    const actionsContainer = document.createElement('div');
+                    actionsContainer.className = 'gmkb-toolbar-actions';
+                    toolbarContainer.appendChild(actionsContainer);
+                    this.addToolbarButtons(); // Recursively try again
                 }
                 return;
             }
