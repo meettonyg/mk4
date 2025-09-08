@@ -718,6 +718,14 @@ class ThemeManager {
     }
     
     /**
+     * Set theme - PUBLIC API METHOD (alias for applyTheme)
+     * This is the method that tests expect to exist
+     */
+    setTheme(themeId) {
+        return this.applyTheme(themeId);
+    }
+    
+    /**
      * Update current theme property
      * Following checklist: Centralized State, No Direct Manipulation
      */

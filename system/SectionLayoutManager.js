@@ -845,6 +845,23 @@ class SectionLayoutManager {
     }
     
     /**
+     * Add section - PUBLIC API METHOD (alias for registerSection)
+     * This is the method that tests expect to exist
+     */
+    addSection(sectionType = 'full_width', configuration = {}) {
+        const sectionId = configuration.section_id || `section_${Date.now()}`;
+        return this.registerSection(sectionId, sectionType, configuration);
+    }
+    
+    /**
+     * Get sections - PUBLIC API METHOD (alias for getAllSections)
+     * This is the method that tests expect to exist  
+     */
+    getSections() {
+        return this.getAllSections();
+    }
+    
+    /**
      * Debug method - get current state
      * Following checklist: Diagnostic Logging
      */

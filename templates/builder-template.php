@@ -263,12 +263,12 @@ if ($post_id > 0) {
 }
 ?>
 
-<div class="builder">
+<div class="builder gmkb-builder-container" id="gmkb-builder-container">
 
 <!-- ROOT FIX: ALL INLINE SCRIPTS ELIMINATED - CLEAN BUNDLE ARCHITECTURE -->
 <!-- All coordination handled by core-systems-bundle.js and application-bundle.js -->
 <!-- No polling functions, no inline script conflicts -->
-    <div class="toolbar">
+    <div class="toolbar gmkb-toolbar" id="gmkb-toolbar">
         <div class="toolbar__section toolbar__section--left">
             <div class="toolbar__logo">Guestify</div>
             <div class="toolbar__guest-name">Editing: Media Kit</div>
@@ -419,12 +419,12 @@ if ($post_id > 0) {
         </div>
     </div>
 
-    <div class="sidebar">
+    <div class="sidebar gmkb-sidebar" id="gmkb-sidebar">
         <?php include plugin_dir_path(__FILE__) . '../partials/sidebar-tabs.php'; ?>
     </div>
 
     <div class="preview">
-        <div class="preview__container" id="preview-container">
+        <div class="preview__container gmkb-preview" id="gmkb-preview-area">
             <div class="media-kit" id="media-kit-preview">
                 <!-- ROOT FIX: Coordinated State Loading System -->
                 <?php 

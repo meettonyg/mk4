@@ -81,6 +81,24 @@
          * Add component with section assignment
          */
         async addComponent(componentType, props = {}, podsData = null) {
+            // ROOT FIX: Handle case where componentType is passed as an object (from tests)
+            if (typeof componentType === 'object' && componentType !== null) {
+                // Extract type from object if it has a type property
+                if (componentType.type) {
+                    props = { ...componentType, ...props };
+                    componentType = componentType.type;
+                } else if (componentType.componentType) {
+                    props = { ...componentType, ...props };
+                    componentType = componentType.componentType;
+                } else {
+                    // Default to 'hero' if we can't determine the type
+                    logger.warn('COMPONENT', 'Component type passed as object without type property, defaulting to hero', componentType);
+                    componentType = 'hero';
+                }
+            }
+            
+            // Ensure componentType is a string
+            componentType = String(componentType);
             try {
                 if (!this.isInitialized) {
                     this.initialize();
@@ -609,6 +627,8 @@
          * Create fallback component HTML
          */
         createFallbackComponent(componentType, props, componentId) {
+            // ROOT FIX: Ensure componentType is a string before using charAt
+            componentType = String(componentType || 'component');
             const componentName = componentType.charAt(0).toUpperCase() + componentType.slice(1);
             
             return `
