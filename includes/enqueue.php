@@ -980,6 +980,28 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // PHASE 7: Enhanced Undo/Redo Manager - Replaces basic history with full undo/redo
+    if (!wp_script_is('gmkb-undo-redo-manager', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-undo-redo-manager',
+            $plugin_url . 'system/UndoRedoManager.js',
+            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
+    // PHASE 7: Version History UI - Visual interface for version management
+    if (!wp_script_is('gmkb-version-history-ui', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-version-history-ui',
+            $plugin_url . 'js/ui/version-history-ui.js',
+            array('gmkb-toolbar', 'gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 12i. WordPress Save Integration - ROOT FIX: Centralized save handler
     if (!wp_script_is('gmkb-wordpress-save-integration', 'enqueued')) {
         wp_enqueue_script(
@@ -1974,6 +1996,25 @@ function gmkb_enqueue_assets() {
         array( 'gmkb-main-styles' ),
         $version
     );
+    
+    // PHASE 6: Export/Import CSS
+    wp_enqueue_style(
+        'gmkb-export-import',
+        $plugin_url . 'css/modules/export-import.css',
+        array( 'gmkb-main-styles' ),
+        $version
+    );
+    
+    // PHASE 6: Export/Import UI
+    if (!wp_script_is('gmkb-export-import-ui', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-export-import-ui',
+            $plugin_url . 'js/ui/export-import-ui.js',
+            array('gmkb-toolbar', 'gmkb-modal-system', 'gmkb-enhanced-state-manager'),
+            $version,
+            true
+        );
+    }
     
     // PHASE 3: Sections CSS - ROOT FIX: Updated path
     wp_enqueue_style(

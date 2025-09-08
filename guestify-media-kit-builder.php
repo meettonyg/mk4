@@ -47,6 +47,15 @@ if (is_admin()) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageValidator.php';
 }
 
+// PHASE 6: Import/Export System
+require_once GUESTIFY_PLUGIN_DIR . 'includes/export/ExportManager.php';
+require_once GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php';
+
+// PHASE 7: Version Control System
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php';
+}
+
 // Component schemas are self-contained - each component has its own schema.json
 // ComponentDiscovery will load schemas when discovering components
 
