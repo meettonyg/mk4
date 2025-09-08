@@ -8,6 +8,11 @@ const stateSchema = {
     type: "object",
     required: ["layout", "components", "globalSettings"],
     properties: {
+        theme: {
+            type: "string",
+            description: "Active theme identifier",
+            default: "default"
+        },
         layout: {
             type: "array",
             description: "Ordered array of component IDs",
@@ -409,6 +414,7 @@ const validationConstraints = {
  * Default state structure
  */
 const defaultState = {
+    theme: "default",
     layout: [],
     components: {},
     sections: [],
