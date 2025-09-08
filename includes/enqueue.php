@@ -1626,6 +1626,8 @@ function gmkb_enqueue_assets() {
                 // 'gmkb-element-editor', // DISABLED: Legacy control system
                 'gmkb-state-history', // CONSOLIDATED: Now includes initializer and clear-fix
                 'gmkb-history-service',
+                'gmkb-undo-redo-manager', // PHASE 7: Enhanced undo/redo
+                'gmkb-version-history-ui', // PHASE 7: Version history UI
                 'gmkb-wordpress-save-integration', // ROOT FIX: Centralized save handler
                 'gmkb-wordpress-save-service', // ROOT CAUSE FIX: Bridges JavaScript to WordPress database
                 // 'gmkb-component-interactions', // REMOVED: Legacy script causing dependency failure

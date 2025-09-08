@@ -63,29 +63,30 @@
         addToolbarButton() {
             // Wait for toolbar to be ready
             const checkToolbar = () => {
-                const toolbar = document.querySelector('.gmkb-toolbar__actions, .toolbar-actions');
+                // Look for the right toolbar section where buttons are
+                const toolbar = document.querySelector('.toolbar__section--right');
                 if (toolbar) {
                     // Check if button already exists
                     if (!toolbar.querySelector('[data-action="version-history"]')) {
                         const button = document.createElement('button');
-                        button.className = 'gmkb-toolbar__button toolbar-button';
+                        button.className = 'toolbar__btn';
+                        button.id = 'version-history-btn';
                         button.setAttribute('data-action', 'version-history');
                         button.setAttribute('title', 'Version History');
                         button.innerHTML = `
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10 5V10L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M4 10C4 6.68629 6.68629 4 10 4C13.3137 4 16 6.68629 16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10Z" stroke="currentColor" stroke-width="2"/>
-                                <path d="M1 1L3 3L5 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M15 19L17 17L19 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-hidden="true" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
                             <span>History</span>
                         `;
                         
-                        // Add before save button if exists, otherwise at the end
-                        const saveBtn = toolbar.querySelector('[data-action="save"]');
-                        if (saveBtn) {
+                        // Add before save button if exists
+                        const saveBtn = document.getElementById('save-btn');
+                        if (saveBtn && saveBtn.parentNode === toolbar) {
                             toolbar.insertBefore(button, saveBtn);
                         } else {
+                            // Add at the end of the toolbar section
                             toolbar.appendChild(button);
                         }
                         
