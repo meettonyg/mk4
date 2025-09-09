@@ -5,6 +5,17 @@
 (function() {
     'use strict';
     
+    // Register biography component for server-side rendering to load Pods data
+    if (!window.gmkbServerRenderComponents) {
+        window.gmkbServerRenderComponents = new Set();
+    }
+    window.gmkbServerRenderComponents.add('biography');
+    
+    // Dispatch event to notify system
+    document.dispatchEvent(new CustomEvent('gmkb:component-requires-server-render', {
+        detail: { componentType: 'biography' }
+    }));
+    
     // Biography Component Class - handles only UI interactions
     class BiographyComponent {
         constructor(element) {

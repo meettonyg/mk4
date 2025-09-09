@@ -268,10 +268,25 @@
         checkForViolations(element, ownership) {
             const violations = [];
             
-            // Check contenteditable violation
+            // ROOT FIX: Allow contenteditable for specific component elements that need inline editing
+            const allowedEditableSelectors = [
+                '.topic-title',           // Topics component titles
+                '.section-title',         // Section headers
+                '.biography-content p',   // Biography text
+                '.hero-title',           // Hero titles
+                '[contenteditable="true"]' // Any explicitly marked editable
+            ];
+            
+            // Check if element is allowed to have contenteditable
+            const isAllowedEditable = allowedEditableSelectors.some(selector => 
+                element.matches(selector)
+            );
+            
+            // Check contenteditable violation - only if NOT allowed
             if (ownership.type === this.OWNERSHIP_TYPES.PREVIEW && 
                 element.hasAttribute('contenteditable') && 
-                !this.isEditModeEnabled(element)) {
+                !this.isEditModeEnabled(element) &&
+                !isAllowedEditable) {
                 violations.push({
                     type: 'contenteditable-violation',
                     element,

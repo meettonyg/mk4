@@ -1034,6 +1034,35 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
+        // ROOT FIX: Prevent component duplication on save
+        if (isset($state['components']) && is_array($state['components'])) {
+            $deduped_components = array();
+            $seen_ids = array();
+            
+            foreach ($state['components'] as $id => $component) {
+                // Skip if we've already seen this component ID
+                if (!in_array($id, $seen_ids)) {
+                    $deduped_components[$id] = $component;
+                    $seen_ids[] = $id;
+                } else {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('⚠️ GMKB: Skipping duplicate component: ' . $id);
+                    }
+                }
+            }
+            
+            // Replace components with deduplicated version
+            $state['components'] = $deduped_components;
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                $original_count = count($state['components']);
+                $deduped_count = count($deduped_components);
+                if ($original_count !== $deduped_count) {
+                    error_log('✅ GMKB: Deduplication removed ' . ($original_count - $deduped_count) . ' duplicate components');
+                }
+            }
+        }
+        
         // ROOT FIX: Validate state structure
         $required_keys = array('components', 'layout', 'globalSettings');
         foreach ($required_keys as $key) {
