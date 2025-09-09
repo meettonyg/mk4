@@ -1310,6 +1310,23 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    
+    // ROOT FIX: Initial State Loader - Loads components and sections from saved state
+    if (!wp_script_is('gmkb-initial-state-loader', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-initial-state-loader',
+            $plugin_url . 'js/loaders/initial-state-loader.js',
+            array(
+                'gmkb-enhanced-state-manager',
+                'gmkb-section-layout-manager',
+                'gmkb-enhanced-component-manager',
+                'gmkb-enhanced-component-renderer-simplified',
+                'gmkb-structured-logger'
+            ),
+            $version,
+            true
+        );
+    }
 
     // PHASE 4 Theme scripts already loaded earlier before toolbar to fix race condition
     
@@ -1639,6 +1656,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
                 'gmkb-sidebar-section-integration',
+                'gmkb-initial-state-loader', // ROOT FIX: Load saved state on page load
                 // PHASE 4: Theme layer systems (already loaded earlier)
                 // 'gmkb-theme-manager', // Already loaded before toolbar
                 // 'gmkb-theme-customizer', // Already loaded before toolbar

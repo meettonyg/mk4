@@ -298,6 +298,7 @@ class SectionRenderer {
      */
     onCoreSystemsReady() {
         this.sectionLayoutManager = window.sectionLayoutManager;
+        // ROOT FIX: Use the correct enhanced component renderer
         this.componentRenderer = window.enhancedComponentRenderer;
         
         // ROOT FIX: Find or create container immediately
@@ -908,19 +909,22 @@ class SectionRenderer {
             return;
         }
         
-        // Renderer is available - use it to create the component element
-        const result = await window.enhancedComponentRenderer.renderSingleComponent({
-            id: componentId,
-            type: componentData.type,
-            props: componentData.props || componentData.data || {}
-        });
+        // ROOT FIX: Use the renderComponent method which is an alias for the internal renderer
+        // The enhancedComponentRenderer has renderComponent(id, data) method
+        const element = await window.enhancedComponentRenderer.renderComponent(
+        componentId,
+        {
+                type: componentData.type,
+                        props: componentData.props || componentData.data || {}
+                    }
+                );
         
-        if (result.success && result.element) {
-            // Add the rendered component directly to the section
-            targetContainer.appendChild(result.element);
-            this.logger.info(`✅ PHASE 3: Component ${componentId} rendered directly in section`);
+        if (element) {
+        // Add the rendered component directly to the section
+        targetContainer.appendChild(element);
+        this.logger.info(`✅ PHASE 3: Component ${componentId} rendered directly in section`);
         } else {
-            this.logger.error(`❌ PHASE 3: Failed to render component ${componentId}`);
+        this.logger.error(`❌ PHASE 3: Failed to render component ${componentId}`);
         }
     }
     
@@ -969,15 +973,17 @@ class SectionRenderer {
             // Mark as rendered before attempting render
             this.renderedComponents.add(componentId);
             
-            // Render the component
-            const result = await window.enhancedComponentRenderer.renderSingleComponent({
-                id: componentId,
-                type: componentData.type,
-                props: componentData.props || componentData.data || {}
-            });
+            // ROOT FIX: Use the renderComponent method consistently
+            const element = await window.enhancedComponentRenderer.renderComponent(
+                componentId,
+                {
+                    type: componentData.type,
+                    props: componentData.props || componentData.data || {}
+                }
+            );
             
-            if (result.success && result.element) {
-                targetContainer.appendChild(result.element);
+            if (element) {
+                targetContainer.appendChild(element);
                 this.logger.info(`✅ PHASE 3: Deferred component ${componentId} rendered in section`);
             } else {
                 this.logger.error(`❌ PHASE 3: Failed to render deferred component ${componentId}`);

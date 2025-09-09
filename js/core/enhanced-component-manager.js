@@ -144,22 +144,31 @@
                     columnNumber: columnNumber || null
                 };
                 
-                // Render component via AJAX
+                // ROOT FIX: Components in sections are handled by the section renderer
+                // We only need to track them, not render them
+                if (sectionId) {
+                    // Component belongs to a section - just track it
+                    this.components.set(componentId, componentData);
+                    logger.info('COMPONENT', `Component ${componentId} belongs to section ${sectionId} - tracked only`);
+                    return componentId;
+                }
+                
+                // Component without section - render it directly
                 const html = await this.renderComponentOnServer(componentType, props, componentId);
                 
                 if (!html) {
                     throw new Error(`Failed to render existing component: ${componentType}`);
                 }
                 
-                // Add to preview with proper section assignment
-                this.addComponentToPreview(componentId, html, sectionId, columnNumber);
+                // Add to preview (orphaned components only)
+                this.addComponentToPreview(componentId, html, null, null);
                 
                 // Track the component
                 this.components.set(componentId, componentData);
                 
                 // Don't update state (it's already there) and don't auto-save (we're loading, not changing)
                 
-                logger.info('COMPONENT', `Successfully loaded existing component: ${componentId}`);
+                logger.info('COMPONENT', `Successfully loaded orphaned component: ${componentId}`);
                 return componentId;
                 
             } catch (error) {

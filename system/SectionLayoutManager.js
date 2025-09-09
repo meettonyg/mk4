@@ -135,15 +135,10 @@ class SectionLayoutManager {
             
             this.logger.info(`✅ PHASE 3: Assigned ${orphanedComponents.length} orphaned components to default section ${defaultSectionId}`);
         } else if (sections.length === 0 && Object.keys(components).length === 0) {
-            // No sections and no components - create empty default section for clean start
-            this.logger.info(`📦 PHASE 3: No sections or components - creating default empty section`);
-            const defaultSectionId = `section_default_${Date.now()}`;
-            this.registerSection(defaultSectionId, 'full_width', {
-                section_id: defaultSectionId,
-                section_type: 'full_width',
-                auto_created: true,
-                manual_creation: true // Mark as manual so it won't be auto-cleaned
-            });
+            // ROOT FIX: Don't auto-create sections when empty
+            // Let the user explicitly create sections when needed
+            this.logger.info(`📦 PHASE 3: No sections or components - starting with clean slate`);
+            // Don't create any default section - let empty state show
         }
     }
     
