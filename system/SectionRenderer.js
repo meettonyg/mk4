@@ -427,6 +427,16 @@ class SectionRenderer {
         // ROOT CAUSE FIX: Use passed manager reference to avoid global access
         this.renderSection(sectionId, sectionLayoutManager || this.sectionLayoutManager);
         
+        // ROOT FIX: Notify component renderer to update container display
+        // This ensures empty state is hidden when sections are added
+        document.dispatchEvent(new CustomEvent('gmkb:section-rendered-display-update', {
+            detail: { 
+                sectionId,
+                hasSections: true,
+                timestamp: Date.now() 
+            }
+        }));
+        
         // ROOT CAUSE FIX: Ensure section is properly registered with drag-drop system
         // Small delay to ensure DOM is ready for drag-drop integration
         setTimeout(() => {

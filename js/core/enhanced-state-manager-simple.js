@@ -606,6 +606,31 @@
                             componentData.sectionId = defaultSection.section_id;
                             
                             this.logger.info('STATE', `ROOT FIX: Created default section ${defaultSection.section_id} for orphaned component`);
+                            
+                            // ROOT FIX: Register with SectionLayoutManager if available
+                            // Note: Don't call registerSection as it will update state (circular)
+                            // Just ensure the manager knows about the section for tracking
+                            if (window.sectionLayoutManager && window.sectionLayoutManager.sections) {
+                                // Add directly to the manager's tracking without state update
+                                window.sectionLayoutManager.sections.set(defaultSection.section_id, defaultSection);
+                                if (!window.sectionLayoutManager.sectionOrder.includes(defaultSection.section_id)) {
+                                    window.sectionLayoutManager.sectionOrder.push(defaultSection.section_id);
+                                }
+                                this.logger.info('STATE', `ROOT FIX: Tracked section ${defaultSection.section_id} in SectionLayoutManager`);
+                            }
+                            
+                            // ROOT FIX: Dispatch section registered event so it gets rendered visually
+                            // Dispatch immediately - the SectionRenderer will handle it properly
+                            document.dispatchEvent(new CustomEvent('gmkb:section-registered', {
+                                detail: {
+                                    sectionId: defaultSection.section_id,
+                                    section: defaultSection,
+                                    sectionLayoutManager: window.sectionLayoutManager,
+                                    source: 'state-manager-auto-create',
+                                    isNewSection: true  // Flag that this is a newly created section
+                                }
+                            }));
+                            this.logger.info('STATE', `ROOT FIX: Dispatched section-registered event for ${defaultSection.section_id}`);
                         } else {
                             // Assign to first available section
                             componentData.sectionId = this.state.sections[0].section_id;

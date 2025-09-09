@@ -100,6 +100,13 @@
                         this.updateContainerDisplay(state);
                     });
                     
+                    // ROOT FIX: Listen for section rendered to update container display
+                    // This ensures empty state is hidden when sections are added
+                    document.addEventListener('gmkb:section-rendered-display-update', () => {
+                        const state = this.stateManager.getState();
+                        this.updateContainerDisplay(state);
+                    });
+                    
                     // ✅ ROOT CAUSE FIX: Don't render components on init - let sections request them
                     // Components with sections will be rendered by section system
                     // Components without sections will be rendered on first state change
@@ -142,6 +149,7 @@
             /**
              * ✅ ROOT FIX: Initialize container display based on actual state
              * Containers are always present in DOM (rendered by PHP), we only control visibility
+             * ROOT FIX: Also check for sections in the DOM, not just in state
              */
             initializeContainerDisplay() {
                 const initialState = this.stateManager.getState();
@@ -158,12 +166,21 @@
                     return;
                 }
                 
-                // Check for content
+                // Check state for content
                 const hasComponents = initialState?.components && Object.keys(initialState.components).length > 0;
                 const hasSections = initialState?.sections && Array.isArray(initialState.sections) && initialState.sections.length > 0;
-                const hasContent = hasComponents || hasSections;
                 
-                this.logger.info('RENDER', `🎆 Initializing container visibility - hasComponents: ${hasComponents}, hasSections: ${hasSections}`);
+                // ROOT FIX: Also check DOM for actual rendered sections
+                // Sometimes sections exist in DOM but not yet in state during initialization
+                const sectionsContainer = document.getElementById('gmkb-sections-container');
+                // Check for actual section elements, not just any children
+                const sectionElements = sectionsContainer ? sectionsContainer.querySelectorAll('.gmkb-section') : [];
+                const hasSectionsInDOM = sectionElements.length > 0;
+                
+                // Consider content present if ANY of these are true
+                const hasContent = hasComponents || hasSections || hasSectionsInDOM;
+                
+                this.logger.info('RENDER', `🎆 Initializing container visibility - hasComponents: ${hasComponents}, hasSections: ${hasSections}, hasSectionsInDOM: ${hasSectionsInDOM}`);
                 
                 // ROOT FIX: Simple visibility toggle - containers always exist
                 if (hasContent) {
@@ -1224,6 +1241,7 @@
             /**
              * ✅ SIMPLIFIED: Update container visibility based on state
              * Containers always exist, we only toggle visibility
+             * ROOT FIX: Also check for sections in the DOM, not just in state
              */
             updateContainerDisplay(state) {
                 const savedContainer = document.getElementById('saved-components-container');
@@ -1235,21 +1253,41 @@
                     return;
                 }
                 
+                // Check state for components and sections
                 const hasComponents = state.components && Object.keys(state.components).length > 0;
                 const hasSections = state.sections && Array.isArray(state.sections) && state.sections.length > 0;
-                const hasContent = hasComponents || hasSections;
                 
-                this.logger.debug('RENDER', `📊 Updating display - hasComponents: ${hasComponents}, hasSections: ${hasSections}`);
+                // ROOT FIX: Also check DOM for actual rendered sections
+                // Sometimes sections exist in DOM but not yet in state during initialization
+                const sectionsContainer = document.getElementById('gmkb-sections-container');
+                // Check for actual section elements, not just any children
+                const sectionElements = sectionsContainer ? sectionsContainer.querySelectorAll('.gmkb-section') : [];
+                const hasSectionsInDOM = sectionElements.length > 0;
+                
+                // Consider content present if ANY of these are true
+                const hasContent = hasComponents || hasSections || hasSectionsInDOM;
+                
+                this.logger.debug('RENDER', `📊 Updating display - hasComponents: ${hasComponents}, hasSections: ${hasSections}, hasSectionsInDOM: ${hasSectionsInDOM}`);
                 
                 // Simple visibility toggle
                 if (hasContent) {
                     savedContainer.style.display = 'block';
                     emptyState.style.display = 'none';
-                    this.logger.debug('RENDER', '👁️ Showing saved-components-container');
+                    this.logger.debug('RENDER', '👁️ Showing saved-components-container (has content)');
+                    
+                    // ROOT FIX: Also ensure empty state handlers know not to override this
+                    if (emptyState.dataset.allowJsControl === 'true') {
+                        emptyState.dataset.currentlyHidden = 'true';
+                    }
                 } else {
                     savedContainer.style.display = 'none';
                     emptyState.style.display = 'block';
-                    this.logger.debug('RENDER', '👁️ Showing empty-state');
+                    this.logger.debug('RENDER', '👁️ Showing empty-state (no content)');
+                    
+                    // ROOT FIX: Mark that empty state should be shown
+                    if (emptyState.dataset.allowJsControl === 'true') {
+                        emptyState.dataset.currentlyHidden = 'false';
+                    }
                 }
             }
             

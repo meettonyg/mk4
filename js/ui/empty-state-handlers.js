@@ -849,10 +849,21 @@ class EmptyStateHandlers {
                 // Get current component count after removal
                 const currentState = window.enhancedStateManager?.getState();
                 const componentCount = currentState ? Object.keys(currentState.components || {}).length : 0;
+                const sectionCount = currentState ? (currentState.sections?.length || 0) : 0;
                 
-                if (componentCount === 0) {
+                // ROOT FIX: Also check DOM for actual rendered sections
+                const sectionsContainer = document.getElementById('gmkb-sections-container');
+                const sectionElements = sectionsContainer ? sectionsContainer.querySelectorAll('.gmkb-section') : [];
+                const hasSectionsInDOM = sectionElements.length > 0;
+                
+                // ROOT FIX: Only show empty state if NO components AND NO sections (in state or DOM)
+                if (componentCount === 0 && sectionCount === 0 && !hasSectionsInDOM) {
                     emptyStateElement.style.display = 'block';
-                    structuredLogger.info('EMPTY_STATE', 'Last component removed - showing empty state with permission');
+                    structuredLogger.info('EMPTY_STATE', 'Last component removed and no sections - showing empty state with permission');
+                } else if (componentCount === 0 && (sectionCount > 0 || hasSectionsInDOM)) {
+                    // We have sections but no components - keep sections visible, hide empty state
+                    emptyStateElement.style.display = 'none';
+                    structuredLogger.info('EMPTY_STATE', 'Components removed but sections remain - keeping sections visible');
                 }
             }
             
