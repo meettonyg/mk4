@@ -294,12 +294,16 @@ class SectionRenderer {
     /**
      * Handle core systems ready event
      * Following checklist: Dependency-Awareness, No Global Object Sniffing
-     * ROOT FIX: Create container if it doesn't exist instead of repeatedly retrying
+     * COMPLIANT: Uses event system only, no direct global access
      */
     onCoreSystemsReady() {
-        this.sectionLayoutManager = window.sectionLayoutManager;
-        // ROOT FIX: Use the correct enhanced component renderer
-        this.componentRenderer = window.enhancedComponentRenderer;
+        // COMPLIANT: Get manager from event detail instead of global
+        document.addEventListener('gmkb:section-layout-manager-ready', (event) => {
+            this.sectionLayoutManager = event.detail.manager;
+            this.logger.info('✅ PHASE 3: Section layout manager connected via event');
+        }, { once: true });
+        
+        // COMPLIANT: No direct component renderer access - sections don't render components
         
         // ROOT FIX: Find or create container immediately
         this.containerElement = this.findOrCreateContainerElement();
@@ -788,7 +792,8 @@ class SectionRenderer {
     
     /**
      * Render components within a section
-     * Following checklist: Component Integration, Layout Management
+     * COMPLIANT: Uses event system for cross-boundary communication
+     * Sections don't render components - they request component system to do it
      */
     renderSectionComponents(sectionElement, section) {
         if (!section.components || section.components.length === 0) {
@@ -796,6 +801,9 @@ class SectionRenderer {
             this.addEmptySectionPlaceholder(sectionElement);
             return;
         }
+        
+        // COMPLIANT: Create target containers map for component system
+        const targetContainers = new Map();
         
         section.components.forEach(componentAssignment => {
             const { component_id, column } = componentAssignment;
@@ -810,10 +818,28 @@ class SectionRenderer {
             }
             
             if (targetContainer) {
-                // Move or render component in this section
-                this.moveComponentToSection(component_id, targetContainer);
+                targetContainers.set(component_id, {
+                    container: targetContainer,
+                    column: column
+                });
             }
         });
+        
+        // COMPLIANT: Dispatch event for component system to handle rendering
+        if (targetContainers.size > 0) {
+            this.logger.info(`📢 PHASE 3: Requesting component system to populate section ${section.section_id}`);
+            
+            document.dispatchEvent(new CustomEvent('gmkb:section-needs-components', {
+                detail: {
+                    sectionId: section.section_id,
+                    sectionElement: sectionElement,
+                    components: section.components,
+                    targetContainers: targetContainers,
+                    timestamp: Date.now(),
+                    source: 'SectionRenderer'
+                }
+            }));
+        }
     }
     
     /**

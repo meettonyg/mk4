@@ -1311,6 +1311,22 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // COMPLIANT: Section Component Loader - Event-driven component rendering for sections
+    if (!wp_script_is('gmkb-section-component-loader', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-section-component-loader',
+            $plugin_url . 'js/services/section-component-loader.js',
+            array(
+                'gmkb-structured-logger',
+                'gmkb-enhanced-state-manager',
+                'gmkb-enhanced-component-renderer-simplified',
+                'gmkb-section-renderer'
+            ),
+            $version,
+            true
+        );
+    }
+    
     // ROOT FIX: Initial State Loader - Loads components and sections from saved state
     if (!wp_script_is('gmkb-initial-state-loader', 'enqueued')) {
         wp_enqueue_script(
@@ -1656,6 +1672,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-section-state-persistence',
                 'gmkb-section-renderer',
                 'gmkb-sidebar-section-integration',
+                'gmkb-section-component-loader', // COMPLIANT: Event-driven component loading for sections
                 'gmkb-initial-state-loader', // ROOT FIX: Load saved state on page load
                 // PHASE 4: Theme layer systems (already loaded earlier)
                 // 'gmkb-theme-manager', // Already loaded before toolbar

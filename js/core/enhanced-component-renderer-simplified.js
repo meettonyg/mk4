@@ -115,15 +115,23 @@
                     this.initialized = true;
                     this.logger.info('RENDER', '✅ [PHASE 2] Simplified renderer initialized successfully');
                     
+                    // COMPLIANT: Listen for renderer requests via events
+                    document.addEventListener('gmkb:request-component-renderer', (event) => {
+                    const { callback } = event.detail;
+                    if (callback && typeof callback === 'function') {
+                    callback(this);
+                    }
+                    });
+                    
                     // ✅ CHECKLIST COMPLIANT: Emit ready event
-                    document.dispatchEvent(new CustomEvent('gmkb:enhanced-component-renderer-ready', {
-                        detail: { 
-                            renderer: this,
-                            simplified: true,
-                            phase2: true,
-                            timestamp: Date.now()
-                        }
-                    }));
+                document.dispatchEvent(new CustomEvent('gmkb:enhanced-component-renderer-ready', {
+                    detail: { 
+                        renderer: this,
+                        simplified: true,
+                        phase2: true,
+                        timestamp: Date.now()
+                    }
+                }));
                     
                 } catch (error) {
                     this.logger.error('RENDER', '❌ [PHASE 2] Initialization failed:', error);

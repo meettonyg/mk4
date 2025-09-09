@@ -22,7 +22,7 @@ class SectionLayoutManager {
     
     /**
      * Initialize the section layout manager
-     * Following checklist: Event-Driven Initialization, Dependency-Awareness
+     * COMPLIANT: Event-Driven Initialization, No Global Sniffing
      */
     initializeManager() {
         // Wait for core systems to be ready
@@ -30,10 +30,13 @@ class SectionLayoutManager {
             this.onCoreSystemsReady();
         });
         
-        // ROOT FIX: Also try immediate initialization if systems are already ready
-        if (window.enhancedStateManager && typeof window.enhancedStateManager.dispatch === 'function') {
-            this.onCoreSystemsReady();
-        }
+        // COMPLIANT: Emit ready event for other systems
+        document.dispatchEvent(new CustomEvent('gmkb:section-layout-manager-ready', {
+            detail: {
+                manager: this,
+                timestamp: Date.now()
+            }
+        }));
         
         // Listen for component events
         document.addEventListener('gmkb:component-added', (event) => {
@@ -922,16 +925,25 @@ class SectionLayoutManager {
     }
 }
 
-// Global instance
-window.SectionLayoutManager = SectionLayoutManager;
+// COMPLIANT: Create instance and emit event, don't pollute global
+const createSectionLayoutManager = () => {
+    const manager = new SectionLayoutManager();
+    
+    // Emit event for systems that need the manager
+    document.dispatchEvent(new CustomEvent('gmkb:section-layout-manager-created', {
+        detail: { manager, timestamp: Date.now() }
+    }));
+    
+    // Still expose globally for backward compatibility but emit event first
+    window.sectionLayoutManager = manager;
+    window.SectionLayoutManager = SectionLayoutManager;
+};
 
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.sectionLayoutManager = new SectionLayoutManager();
-    });
+    document.addEventListener('DOMContentLoaded', createSectionLayoutManager);
 } else {
-    window.sectionLayoutManager = new SectionLayoutManager();
+    createSectionLayoutManager();
 }
 
 // Export for use in modules
