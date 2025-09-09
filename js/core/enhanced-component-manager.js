@@ -122,6 +122,53 @@
         }
 
         /**
+         * Load existing component from saved state
+         * ROOT FIX: This properly renders components that already exist in saved state
+         * Unlike addComponent, this uses the existing ID and doesn't generate a new one
+         */
+        async loadExistingComponent(componentId, componentType, props = {}, sectionId = null, columnNumber = 1) {
+            try {
+                if (!this.isInitialized) {
+                    this.initialize();
+                }
+                
+                logger.info('COMPONENT', `Loading existing component: ${componentId} (${componentType})`);
+                
+                // Create component data with existing ID
+                const componentData = {
+                    id: componentId,
+                    type: componentType,
+                    props: props,
+                    timestamp: Date.now(),
+                    sectionId: sectionId || null,
+                    columnNumber: columnNumber || null
+                };
+                
+                // Render component via AJAX
+                const html = await this.renderComponentOnServer(componentType, props, componentId);
+                
+                if (!html) {
+                    throw new Error(`Failed to render existing component: ${componentType}`);
+                }
+                
+                // Add to preview with proper section assignment
+                this.addComponentToPreview(componentId, html, sectionId, columnNumber);
+                
+                // Track the component
+                this.components.set(componentId, componentData);
+                
+                // Don't update state (it's already there) and don't auto-save (we're loading, not changing)
+                
+                logger.info('COMPONENT', `Successfully loaded existing component: ${componentId}`);
+                return componentId;
+                
+            } catch (error) {
+                logger.error('COMPONENT', `Failed to load existing component: ${componentId}`, error);
+                throw error;
+            }
+        }
+        
+        /**
          * Add component with section assignment
          */
         async addComponent(componentType, props = {}, podsData = null) {
