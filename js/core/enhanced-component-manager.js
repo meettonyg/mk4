@@ -34,6 +34,35 @@
                 logger.warn('COMPONENT', 'Component manager already initialized');
                 return;
             }
+            
+            // ROOT FIX: Listen for section rendered events to move orphaned components
+            document.addEventListener('gmkb:section-rendered', (event) => {
+                const { sectionId } = event.detail;
+                logger.info('COMPONENT', `Received gmkb:section-rendered event for section ${sectionId}`);
+                this.moveOrphanedComponentsToSection(sectionId);
+            });
+            
+            // ROOT FIX: Listen for section-rendered-display-update which fires after section DOM is ready
+            document.addEventListener('gmkb:section-rendered-display-update', (event) => {
+                const { sectionId } = event.detail;
+                logger.info('COMPONENT', `Received gmkb:section-rendered-display-update event for section ${sectionId}`);
+                if (sectionId) {
+                    // Section DOM is ready, move any orphaned components
+                    this.moveOrphanedComponentsToSection(sectionId);
+                }
+            });
+            
+            // ROOT FIX: Also listen for the section-registered event since that's what the state manager dispatches
+            document.addEventListener('gmkb:section-registered', (event) => {
+                const { sectionId, source } = event.detail;
+                if (source === 'state-manager-auto-create') {
+                    logger.info('COMPONENT', `Received gmkb:section-registered from state-manager for section ${sectionId}`);
+                    // Give DOM a moment to update
+                    requestAnimationFrame(() => {
+                        this.moveOrphanedComponentsToSection(sectionId);
+                    });
+                }
+            });
 
             try {
                 if (!window.enhancedStateManager) {
@@ -154,27 +183,24 @@
                 // ROOT CAUSE FIX: Add to preview first, then handle section assignment
                 this.addComponentToPreview(componentId, html, componentData.sectionId, componentData.columnNumber);
                 
-                // ROOT CAUSE FIX: Smart section assignment with proper timing
+                // ROOT CAUSE FIX: Event-driven section assignment without timeouts
                 if (componentData.sectionId && window.sectionLayoutManager) {
-                // Wait for DOM to be ready before section assignment
-                setTimeout(() => {
-                try {
-                    const assignmentSuccess = window.sectionLayoutManager.assignComponentToSection(
-                        componentId, 
-                    componentData.sectionId, 
-                    componentData.columnNumber || 1
-                    );
+                    try {
+                        const assignmentSuccess = window.sectionLayoutManager.assignComponentToSection(
+                            componentId, 
+                            componentData.sectionId, 
+                            componentData.columnNumber || 1
+                        );
                         if (assignmentSuccess) {
-                        logger.info('COMPONENT', `Component assigned to section: ${componentData.sectionId}`);
-                            // Move component to correct container after assignment
-                                this.moveComponentToCorrectSection(componentId, componentData.sectionId, componentData.columnNumber || 1);
-                            } else {
-                                logger.warn('COMPONENT', `Section assignment failed for ${componentData.sectionId}`);
-                            }
-                        } catch (assignmentError) {
-                            logger.warn('COMPONENT', `Section assignment error:`, assignmentError.message);
+                            logger.info('COMPONENT', `Component assigned to section: ${componentData.sectionId}`);
+                            // Move component to correct container immediately
+                            this.moveComponentToCorrectSection(componentId, componentData.sectionId, componentData.columnNumber || 1);
+                        } else {
+                            logger.warn('COMPONENT', `Section assignment failed for ${componentData.sectionId}`);
                         }
-                }, 100);
+                    } catch (assignmentError) {
+                        logger.warn('COMPONENT', `Section assignment error:`, assignmentError.message);
+                    }
                 }
 
                 // Update state and internal tracking
@@ -210,6 +236,65 @@
             }
         }
 
+        /**
+         * Move orphaned components to their assigned section
+         * ROOT FIX: Called when a section is rendered to collect its components
+         */
+        moveOrphanedComponentsToSection(sectionId) {
+            try {
+                // Get all components that should be in this section from state
+                const state = window.enhancedStateManager?.getState();
+                if (!state || !state.sections) {
+                    logger.debug('COMPONENT', `No state/sections for orphaned component check`);
+                    return;
+                }
+                
+                const section = state.sections.find(s => s.section_id === sectionId);
+                if (!section) {
+                    logger.debug('COMPONENT', `Section ${sectionId} not found in state`);
+                    return;
+                }
+                
+                if (!section.components || section.components.length === 0) {
+                    logger.debug('COMPONENT', `Section ${sectionId} has no components assigned`);
+                    return;
+                }
+                
+                logger.info('COMPONENT', `Checking for orphaned components in section ${sectionId} (${section.components.length} components)`);
+                
+                let movedCount = 0;
+                
+                // Check each component that should be in this section
+                section.components.forEach(componentAssignment => {
+                    const { component_id, column } = componentAssignment;
+                    const componentElement = document.getElementById(component_id);
+                    
+                    if (componentElement) {
+                        // Check if component is not already in the correct section
+                        const currentSection = componentElement.closest('[data-section-id]');
+                        if (!currentSection || currentSection.dataset.sectionId !== sectionId) {
+                            logger.info('COMPONENT', `Component ${component_id} is orphaned, moving to section ${sectionId}`);
+                            // Move to correct section
+                            const moveSuccess = this.moveComponentToCorrectSection(component_id, sectionId, column || 1);
+                            if (moveSuccess) {
+                                movedCount++;
+                            }
+                        } else {
+                            logger.debug('COMPONENT', `Component ${component_id} already in correct section`);
+                        }
+                    } else {
+                        logger.warn('COMPONENT', `Component ${component_id} not found in DOM`);
+                    }
+                });
+                
+                if (movedCount > 0) {
+                    logger.info('COMPONENT', `Moved ${movedCount} orphaned components to section ${sectionId}`);
+                }
+            } catch (error) {
+                logger.error('COMPONENT', `Failed to move orphaned components to section ${sectionId}:`, error);
+            }
+        }
+        
         /**
          * Move component to correct section container
          */
@@ -330,13 +415,13 @@
             
             // ROOT CAUSE FIX: Smart fallback selection - avoid duplication when targeting sections
             if (!targetContainer) {
-            // ROOT FIX: If we have a target section ID, don't use fallback - create proper section targeting
-            if (sectionId && window.sectionLayoutManager) {
-            this.logger.info('COMPONENT', `No container found for section ${sectionId}, will retry after DOM update`);
-            // Let the component be added to saved-components-container temporarily
-            // The section assignment will move it to the correct location
-            targetContainer = document.getElementById('saved-components-container');
-            containerType = 'temporary-for-section-assignment';
+                // ROOT FIX: If we have a target section ID, don't use fallback - create proper section targeting
+                if (sectionId && window.sectionLayoutManager) {
+                    logger.info('COMPONENT', `No container found for section ${sectionId}, will retry after DOM update`);
+                    // Let the component be added to saved-components-container temporarily
+                    // The section assignment will move it to the correct location
+                    targetContainer = document.getElementById('saved-components-container');
+                    containerType = 'temporary-for-section-assignment';
             } else {
             // Try to find existing sections to use instead of saved-components-container
             if (window.sectionLayoutManager) {
