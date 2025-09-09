@@ -402,7 +402,13 @@ if ($post_id > 0) {
                     
                     <!-- Sections will be rendered here by SectionLayoutManager -->
                     <div class="gmkb-sections-container" id="gmkb-sections-container">
-                        <!-- Dynamic section rendering will happen here via JavaScript -->
+                        <?php 
+                        // ROOT FIX: Render saved sections and components on page load
+                        if ($post_id > 0 && ($has_saved_components || $has_saved_sections)) {
+                            require_once GMKB_PLUGIN_DIR . 'includes/rendering/SectionRenderer.php';
+                            echo \GMKB\Rendering\SectionRenderer::render_sections($post_id);
+                        }
+                        ?>
                     </div>
                     
                     <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>

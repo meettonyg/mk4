@@ -7,6 +7,13 @@
 (function() {
     'use strict';
     
+    // ROOT FIX: Prevent multiple initialization
+    if (window.topicsComponentInitialized) {
+        console.log('Topics Component: Already initialized, skipping');
+        return;
+    }
+    window.topicsComponentInitialized = true;
+    
     const logger = window.structuredLogger || console;
     
     // COMPLIANT: Initialize topics component UI behavior only
