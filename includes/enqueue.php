@@ -538,6 +538,9 @@ function gmkb_enqueue_assets() {
         'phase2Enabled' => true,
         'configurationDriven' => true,
         'dataBindingEnabled' => true,
+        // MKCG Dashboard data for console debugging
+        'mkcgDashboard' => $dashboard_data,
+        'hasMkcgData' => $has_mkcg_data,
         'debugInfo' => array(
             'timestamp' => time(),
             'componentsFound' => count($components_data),
@@ -546,9 +549,18 @@ function gmkb_enqueue_assets() {
             'savedComponentsCount' => count($saved_components),
             'hasSavedState' => !empty($saved_state),
             'schemaCount' => count($component_schemas),
-            'phase2Features' => array('configuration-manager', 'data-binding', 'schema-validation')
+            'phase2Features' => array('configuration-manager', 'data-binding', 'schema-validation'),
+            'mkcgComponents' => $dashboard_data ? count($dashboard_data['components']) : 0,
+            'mkcgQualityScore' => $dashboard_data ? $dashboard_data['quality_score'] : 0
         )
     );
+
+    // Make MKCG dashboard data available via global window object for console access
+    if ($dashboard_data) {
+        add_action('wp_footer', function() use ($dashboard_data) {
+            echo '<script>window.gmkbMkcgDashboard = ' . wp_json_encode($dashboard_data) . ';</script>';
+        }, 5);
+    }
 
     // ROOT FIX: Diagnostic scripts only loaded manually when needed
     // debug-duplicate-main.js is available for manual debugging but not auto-loaded

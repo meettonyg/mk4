@@ -273,86 +273,10 @@ if ($post_id > 0) {
             <div class="toolbar__logo">Guestify</div>
             <div class="toolbar__guest-name">Editing: Media Kit</div>
             
-            <?php if ($dashboard_data && $template_instructions['show_mkcg_dashboard']): ?>
-                <!-- ROOT FIX: Enhanced MKCG Dashboard (Auto-Loading) -->
-                <div class="mkcg-dashboard-optimized" id="mkcg-dashboard" data-post-id="<?php echo $post_id; ?>">
-                    <div class="mkcg-dashboard-trigger" id="dashboard-trigger">
-                        <div class="mkcg-connection-status">
-                            <div class="mkcg-status-indicator status-connected"></div>
-                            <div class="mkcg-connection-info">
-                                <span class="mkcg-connection-title">MKCG Data Connected</span>
-                                <span class="mkcg-connection-subtitle"><?php echo esc_html($dashboard_data['post_title']); ?></span>
-                            </div>
-                        </div>
-                        <div class="mkcg-dashboard-summary">
-                            <span class="mkcg-quality-score"><?php echo $dashboard_data['quality_score']; ?>%</span>
-                            <span class="mkcg-component-count"><?php echo $dashboard_data['available_count']; ?> Types</span>
-                        </div>
-                        <button class="mkcg-dashboard-toggle" title="Toggle Dashboard">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </button>
-                    </div>
-                    
-                    <div class="mkcg-dashboard-panel" id="dashboard-panel" style="display: none;">
-                        <div class="mkcg-dashboard-content">
-                            <div class="mkcg-dashboard-metrics">
-                                <div class="mkcg-metric">
-                                    <div class="mkcg-metric-value"><?php echo $dashboard_data['quality_score']; ?>%</div>
-                                    <div class="mkcg-metric-label">Quality</div>
-                                </div>
-                                <div class="mkcg-metric">
-                                    <div class="mkcg-metric-value"><?php echo $dashboard_data['available_count']; ?></div>
-                                    <div class="mkcg-metric-label">Available</div>
-                                </div>
-                                <div class="mkcg-metric">
-                                    <div class="mkcg-metric-value">0</div>
-                                    <div class="mkcg-metric-label">Generated</div>
-                                </div>
-                                <div class="mkcg-metric">
-                                    <div class="mkcg-metric-value"><?php echo esc_html($dashboard_data['last_update']); ?></div>
-                                    <div class="mkcg-metric-label">Updated</div>
-                                </div>
-                            </div>
-                            
-                            <div class="mkcg-dashboard-components">
-                                <div class="mkcg-components-title">Available Components:</div>
-                                <div class="mkcg-components-grid">
-                                    <?php foreach ($dashboard_data['components'] as $component): ?>
-                                        <div class="mkcg-component-badge">
-                                            <span class="mkcg-component-icon"><?php echo $component['icon']; ?></span>
-                                            <span class="mkcg-component-name"><?php echo esc_html($component['name']); ?></span>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                            
-                            <div class="mkcg-dashboard-actions">
-                                <button class="mkcg-action-btn mkcg-auto-generate-btn" id="mkcg-auto-generate-dashboard">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                    </svg>
-                                    Auto-Generate
-                                </button>
-                                <button class="mkcg-action-btn mkcg-refresh-btn" id="mkcg-refresh-dashboard">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-                                    </svg>
-                                    Refresh
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php elseif ($has_mkcg_data): ?>
-                <!-- Fallback: Simple indicator if dashboard data preparation failed -->
-                <div class="mkcg-indicator-optimized" data-post-id="<?php echo $post_id; ?>">
-                    <span class="mkcg-icon">🔗</span>
-                    <span class="mkcg-text">MKCG Data Available</span>
-                    <span class="mkcg-status">Loading...</span>
-                </div>
-            <?php endif; ?>
+            <?php 
+            // MKCG dashboard data available via console only
+            // Use console.log(window.gmkbMkcgDashboard) to access dashboard data
+            ?>
             
             <div class="toolbar__status">
                 <div class="toolbar__status-dot"></div>
