@@ -1,7 +1,7 @@
 /**
  * Topics Component Client-Side Script
- * ARCHITECTURE: Self-contained component script that registers its rendering requirements
- * Includes bi-directional sync functionality
+ * COMPLIANT: Self-contained component script for UI interactions only
+ * No global registration - configuration handled via component.json
  */
 
 (function() {
@@ -9,26 +9,19 @@
     
     const logger = window.structuredLogger || console;
     
-    // ARCHITECTURE: Register this component as requiring server-side rendering
-    // This ensures the component loads actual data from the database
-    function registerTopicsComponent() {
-        // Create global registry if it doesn't exist
-        if (!window.gmkbServerRenderComponents) {
-            window.gmkbServerRenderComponents = new Set();
-        }
-        
-        // Register topics as requiring server render for data loading
-        window.gmkbServerRenderComponents.add('topics');
+    // COMPLIANT: Initialize topics component UI behavior only
+    function initializeTopicsComponent() {
+        // Component configuration is read from component.json by discovery system
+        // No need to register globally - requiresServerRender flag handles it
         
         if (window.gmkbData?.debugMode) {
-            console.log('Topics Component: Registered for server-side rendering');
+            console.log('Topics Component: Initialized (server rendering configured via component.json)');
         }
         
         // Emit event that topics component is ready
         document.dispatchEvent(new CustomEvent('gmkb:component-registered', {
             detail: {
                 type: 'topics',
-                requiresServerRender: true,
                 timestamp: Date.now()
             }
         }));
@@ -135,9 +128,9 @@
     
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', registerTopicsComponent);
+        document.addEventListener('DOMContentLoaded', initializeTopicsComponent);
     } else {
-        registerTopicsComponent();
+        initializeTopicsComponent();
     }
     
     // ARCHITECTURE: Component-specific functionality

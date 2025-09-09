@@ -336,17 +336,20 @@
             }
             
             /**
-             * ARCHITECTURE: Check if component requires server-side rendering
-             * Components declare this requirement via configuration, not hardcoded logic
+             * COMPLIANT: Check if component requires server-side rendering
+             * Components declare this requirement via component.json configuration only
              */
             async checkServerRenderRequirement(componentType) {
-                // Check component's own configuration file
-                if (window.gmkbData?.componentSchemas?.[componentType]?.requiresServerRender) {
-                    return true;
+                // COMPLIANT: Check component's configuration from discovery system
+                if (window.gmkbData?.components) {
+                    const component = window.gmkbData.components.find(c => c.type === componentType);
+                    if (component?.requiresServerRender) {
+                        return true;
+                    }
                 }
                 
-                // Check if component has self-registered for server rendering
-                if (window.gmkbServerRenderComponents?.has(componentType)) {
+                // Check component schemas loaded by discovery
+                if (window.gmkbData?.componentSchemas?.[componentType]?.requiresServerRender) {
                     return true;
                 }
                 

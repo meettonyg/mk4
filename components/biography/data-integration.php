@@ -1,12 +1,12 @@
 <?php
 /**
- * Biography Component - Pods Data Integration
+ * Biography Component - Data Integration
  * 
- * PHASE 1 ARCHITECTURAL FIX: Component-level data integration
- * Handles all biography data operations with single responsibility
+ * COMPLIANT: Generic data-integration.php pattern that all components can follow
+ * Handles all data operations for Biography component
  * 
  * @package Guestify/Components/Biography
- * @version 1.0.0-phase1-component-isolation
+ * @version 2.0.0-compliant
  */
 
 // Prevent direct access
@@ -14,16 +14,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load abstract base class
-if (!class_exists('Abstract_Component_Integration')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'system/Abstract_Component_Integration.php';
-}
-
 /**
- * Biography-specific Pods data integration
- * Handles all data operations for Biography component only
+ * Biography Data Integration
+ * COMPLIANT: Uses generic class naming pattern: {Component}_Data_Integration
  */
-class Biography_Pods_Integration extends Abstract_Component_Integration {
+class Biography_Data_Integration {
     
     /**
      * Component identifier
@@ -46,8 +41,23 @@ class Biography_Pods_Integration extends Abstract_Component_Integration {
     );
     
     /**
+     * ROOT FIX: Validate post ID
+     */
+    protected static function validate_post_id($post_id) {
+        return is_numeric($post_id) && $post_id > 0;
+    }
+    
+    /**
+     * ROOT FIX: Debug logging
+     */
+    protected static function debug_log($message) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[Biography_Pods_Integration] ' . $message);
+        }
+    }
+    
+    /**
      * Load biography data from Pods fields only
-     * Implementation of abstract method
      * 
      * @param int $post_id Post ID
      * @return array Biography data with metadata
@@ -58,7 +68,6 @@ class Biography_Pods_Integration extends Abstract_Component_Integration {
     
     /**
      * Save biography data to Pods fields only
-     * Implementation of abstract method
      * 
      * @param int $post_id Post ID
      * @param array $data Biography data to save
@@ -70,7 +79,6 @@ class Biography_Pods_Integration extends Abstract_Component_Integration {
     
     /**
      * Check if biography data exists for post
-     * Implementation of abstract method
      * 
      * @param int $post_id Post ID
      * @return bool True if biography exists
@@ -80,7 +88,7 @@ class Biography_Pods_Integration extends Abstract_Component_Integration {
     }
     
     /**
-     * PHASE 1 FIX: Load biography from Pods fields only
+     * ROOT FIX: Load biography from Pods fields only
      * 
      * @param int $post_id Post ID
      * @return array Biography data with metadata
@@ -144,7 +152,7 @@ class Biography_Pods_Integration extends Abstract_Component_Integration {
     }
     
     /**
-     * PHASE 1 FIX: Save biography to Pods fields only
+     * Save biography to Pods fields only
      * 
      * @param int $post_id Post ID
      * @param array $biography_data Biography data to save
@@ -313,6 +321,40 @@ class Biography_Pods_Integration extends Abstract_Component_Integration {
     }
     
     /**
+     * COMPLIANT: Prepare template props from component data
+     * This keeps component-specific logic within the component
+     * 
+     * @param array $component_data Data from load_component_data
+     * @param array $existing_props Existing props to merge with
+     * @return array Props ready for template
+     */
+    public static function prepare_template_props($component_data, $existing_props = array()) {
+        $props = $existing_props;
+        
+        if (!empty($component_data['success']) && !empty($component_data['biography'])) {
+            // Prioritize 'medium' field (standard biography from Media Kit Content Generator)
+            $bio_content = '';
+            if (!empty($component_data['biography']['medium'])) {
+                $bio_content = $component_data['biography']['medium'];
+            } elseif (!empty($component_data['biography']['long'])) {
+                $bio_content = $component_data['biography']['long'];
+            } elseif (!empty($component_data['biography']['short'])) {
+                $bio_content = $component_data['biography']['short'];
+            }
+            
+            // Provide content in multiple formats for template compatibility
+            $props['bio'] = $bio_content;
+            $props['content'] = $bio_content;
+            $props['biography'] = $bio_content;
+            $props['name'] = $component_data['biography']['name'] ?? '';
+            $props['title'] = $component_data['biography']['title'] ?? '';
+            $props['organization'] = $component_data['biography']['organization'] ?? '';
+        }
+        
+        return $props;
+    }
+    
+    /**
      * Assess data quality
      * 
      * @param array $biography Biography data
@@ -342,5 +384,5 @@ class Biography_Pods_Integration extends Abstract_Component_Integration {
 }
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('✅ PHASE 1: Biography Pods Integration loaded - Component-level data integration');
+    error_log('✅ COMPLIANT: Biography Data Integration loaded - Generic data-integration.php pattern');
 }

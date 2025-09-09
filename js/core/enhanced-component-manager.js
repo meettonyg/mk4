@@ -54,13 +54,28 @@
             
             // ROOT FIX: Also listen for the section-registered event since that's what the state manager dispatches
             document.addEventListener('gmkb:section-registered', (event) => {
-                const { sectionId, source } = event.detail;
+                const { sectionId, source, componentId } = event.detail;
                 if (source === 'state-manager-auto-create') {
                     logger.info('COMPONENT', `Received gmkb:section-registered from state-manager for section ${sectionId}`);
-                    // Give DOM a moment to update
-                    requestAnimationFrame(() => {
-                        this.moveOrphanedComponentsToSection(sectionId);
-                    });
+                    
+                    // ROOT FIX: If we know which component triggered this section creation, move it immediately
+                    if (componentId) {
+                        logger.info('COMPONENT', `Section ${sectionId} was created for component ${componentId}, moving it now`);
+                        requestAnimationFrame(() => {
+                            const moveSuccess = this.moveComponentToCorrectSection(componentId, sectionId, 1);
+                            if (moveSuccess) {
+                                logger.info('COMPONENT', `Successfully moved component ${componentId} to newly created section ${sectionId}`);
+                            } else {
+                                // Try the general orphaned components check
+                                this.moveOrphanedComponentsToSection(sectionId);
+                            }
+                        });
+                    } else {
+                        // Give DOM a moment to update
+                        requestAnimationFrame(() => {
+                            this.moveOrphanedComponentsToSection(sectionId);
+                        });
+                    }
                 }
             });
 
@@ -183,6 +198,21 @@
                 // ROOT CAUSE FIX: Add to preview first, then handle section assignment
                 this.addComponentToPreview(componentId, html, componentData.sectionId, componentData.columnNumber);
                 
+                // ROOT CAUSE FIX: If component has a section but it doesn't exist yet (auto-created section)
+                // The state manager will create it and dispatch events
+                // We need to ensure the component gets moved once the section is rendered
+                if (componentData.sectionId && !document.querySelector(`[data-section-id="${componentData.sectionId}"]`)) {
+                    logger.info('COMPONENT', `Section ${componentData.sectionId} not in DOM yet, registering for deferred move`);
+                    // Register this component for moving once its section is rendered
+                    if (!this.pendingComponentMoves) {
+                        this.pendingComponentMoves = new Map();
+                    }
+                    this.pendingComponentMoves.set(componentId, {
+                        sectionId: componentData.sectionId,
+                        columnNumber: componentData.columnNumber || 1
+                    });
+                }
+                
                 // ROOT CAUSE FIX: Event-driven section assignment without timeouts
                 if (componentData.sectionId && window.sectionLayoutManager) {
                     try {
@@ -242,6 +272,27 @@
          */
         moveOrphanedComponentsToSection(sectionId) {
             try {
+                // ROOT FIX: First check for pending component moves
+                if (this.pendingComponentMoves && this.pendingComponentMoves.size > 0) {
+                    const pendingForThisSection = [];
+                    this.pendingComponentMoves.forEach((moveData, componentId) => {
+                        if (moveData.sectionId === sectionId) {
+                            pendingForThisSection.push({ componentId, ...moveData });
+                        }
+                    });
+                    
+                    if (pendingForThisSection.length > 0) {
+                        logger.info('COMPONENT', `Found ${pendingForThisSection.length} pending components for section ${sectionId}`);
+                        pendingForThisSection.forEach(({ componentId, sectionId, columnNumber }) => {
+                            const moveSuccess = this.moveComponentToCorrectSection(componentId, sectionId, columnNumber);
+                            if (moveSuccess) {
+                                this.pendingComponentMoves.delete(componentId);
+                                logger.info('COMPONENT', `Successfully moved pending component ${componentId} to section ${sectionId}`);
+                            }
+                        });
+                    }
+                }
+                
                 // Get all components that should be in this section from state
                 const state = window.enhancedStateManager?.getState();
                 if (!state || !state.sections) {
@@ -261,6 +312,9 @@
                 }
                 
                 logger.info('COMPONENT', `Checking for orphaned components in section ${sectionId} (${section.components.length} components)`);
+                
+                // ROOT FIX: Log the actual component assignments for debugging
+                logger.info('COMPONENT', `Section ${sectionId} components:`, section.components);
                 
                 let movedCount = 0;
                 

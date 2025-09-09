@@ -627,7 +627,8 @@
                                     section: defaultSection,
                                     sectionLayoutManager: window.sectionLayoutManager,
                                     source: 'state-manager-auto-create',
-                                    isNewSection: true  // Flag that this is a newly created section
+                                    isNewSection: true,  // Flag that this is a newly created section
+                                    componentId: componentData.id  // ROOT FIX: Pass the component that triggered this section creation
                                 }
                             }));
                             this.logger.info('STATE', `ROOT FIX: Dispatched section-registered event for ${defaultSection.section_id}`);
