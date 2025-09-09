@@ -197,7 +197,9 @@ function gmkb_enqueue_assets() {
                 'premium' => $component['isPremium'] ?? false,
                 'icon' => $component['icon'] ?? 'fa-puzzle-piece',
                 'directory' => $key,
-                'order' => $component['order'] ?? 999
+                'order' => $component['order'] ?? 999,
+                // COMPLIANT: Include requiresServerRender flag for data loading
+                'requiresServerRender' => $component['requiresServerRender'] ?? false
             );
         }
         
