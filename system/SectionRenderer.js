@@ -21,6 +21,9 @@ class SectionRenderer {
         this.componentRenderer = null;
         this.renderedSections = new Set();
         this.containerElement = null;
+        // ROOT FIX: Track sections being rendered to prevent duplicates
+        this.renderingInProgress = new Set();
+        this.renderedComponents = new Set();
         
         this.logger.info('🎨 PHASE 3: SectionRenderer initializing');
         this.initializeRenderer();
@@ -461,11 +464,29 @@ class SectionRenderer {
      * @param {object} sectionLayoutManager - Manager instance (required when passing ID)
      */
     renderSection(sectionOrId, sectionLayoutManager = null) {
+        // ROOT FIX: Get section ID for tracking
+        let sectionId = typeof sectionOrId === 'string' ? sectionOrId : sectionOrId?.section_id;
+        
+        if (!sectionId) {
+            this.logger.error('❌ PHASE 3: Cannot render section - no section ID');
+            return;
+        }
+        
+        // ROOT FIX: Prevent duplicate rendering - check if already rendering
+        if (this.renderingInProgress.has(sectionId)) {
+            this.logger.debug(`⏳ PHASE 3: Section ${sectionId} rendering already in progress, skipping`);
+            return;
+        }
+        
+        // Mark as rendering
+        this.renderingInProgress.add(sectionId);
+        
         if (!this.containerElement) {
             // ROOT FIX: Try to create container if missing
             this.containerElement = this.findOrCreateContainerElement();
             if (!this.containerElement) {
                 this.logger.error('❌ PHASE 3: Cannot render section - unable to create container');
+                this.renderingInProgress.delete(sectionId);
                 return;
             }
         }
@@ -481,12 +502,14 @@ class SectionRenderer {
             if (!manager) {
                 this.logger.error(`❌ PHASE 3: Cannot fetch section ${sectionOrId} - no manager available`);
                 this.logger.error('This is a critical error - section manager should be passed via event');
+                this.renderingInProgress.delete(sectionId);
                 return;
             }
             
             section = manager.getSection(sectionOrId);
             if (!section) {
                 this.logger.error(`❌ PHASE 3: Section not found: ${sectionOrId}`);
+                this.renderingInProgress.delete(sectionId);
                 return;
             }
         }
@@ -494,6 +517,7 @@ class SectionRenderer {
         // Validate section object
         if (!section || typeof section !== 'object') {
             this.logger.error('❌ PHASE 3: Invalid section parameter', sectionOrId);
+            this.renderingInProgress.delete(sectionId);
             return;
         }
         
@@ -504,6 +528,8 @@ class SectionRenderer {
         if (this.renderedSections.has(section.section_id)) {
             this.logger.debug(`🔄 PHASE 3: Section ${section.section_id} already rendered, updating`);
             this.updateSectionElement(section);
+            // ROOT FIX: Clear rendering flag
+            this.renderingInProgress.delete(section.section_id);
             return;
         }
         
@@ -512,6 +538,8 @@ class SectionRenderer {
         
         if (!sectionElement) {
             this.logger.error(`❌ PHASE 3: Failed to create section element for ${section.section_id}`);
+            // ROOT FIX: Clear rendering flag
+            this.renderingInProgress.delete(section.section_id);
             return;
         }
         
@@ -526,6 +554,9 @@ class SectionRenderer {
         
         // Render components in this section
         this.renderSectionComponents(sectionElement, section);
+        
+        // ROOT FIX: Clear rendering flag after successful render
+        this.renderingInProgress.delete(section.section_id);
         
         this.logger.info(`✅ PHASE 3: Section ${section.section_id} rendered successfully`);
         
@@ -778,14 +809,32 @@ class SectionRenderer {
      * ✅ ROOT FIX: Direct rendering without events or timeouts
      */
     async moveComponentToSection(componentId, targetContainer) {
+        // ROOT FIX: Prevent duplicate rendering - check if already in target
+        const existingInTarget = targetContainer.querySelector(`[data-component-id="${componentId}"]`);
+        if (existingInTarget) {
+            this.logger.debug(`✅ PHASE 3: Component ${componentId} already in target container`);
+            return;
+        }
+        
         // Find existing component element anywhere in the DOM
         let componentElement = document.querySelector(`[data-component-id="${componentId}"]`) || 
                                document.getElementById(componentId);
         
         if (componentElement) {
+            // ROOT FIX: Check if it's already in correct container to prevent unnecessary moves
+            if (componentElement.parentElement === targetContainer) {
+                this.logger.debug(`✅ PHASE 3: Component ${componentId} already in correct container`);
+                return;
+            }
             // Move existing component
             targetContainer.appendChild(componentElement);
             this.logger.debug(`🔄 PHASE 3: Moved component ${componentId} to section`);
+            return;
+        }
+        
+        // ROOT FIX: Prevent duplicate component rendering
+        if (this.renderedComponents.has(componentId)) {
+            this.logger.debug(`✅ PHASE 3: Component ${componentId} already rendered, skipping`);
             return;
         }
         
@@ -798,6 +847,9 @@ class SectionRenderer {
             this.logger.warn(`⚠️ PHASE 3: Component ${componentId} not found in state`);
             return;
         }
+        
+        // Mark component as rendered
+        this.renderedComponents.add(componentId);
         
         // ✅ CHECKLIST COMPLIANT: Wait for renderer if not available yet
         // The section renderer needs the component renderer to create components
@@ -887,13 +939,23 @@ class SectionRenderer {
                 continue;
             }
             
+            // ROOT FIX: Check if component was already rendered
+            if (this.renderedComponents.has(componentId)) {
+                this.logger.debug(`✅ PHASE 3: Deferred component ${componentId} already rendered, skipping`);
+                continue;
+            }
+            
             // Check if component wasn't already rendered elsewhere
             const existingElement = document.querySelector(`[data-component-id="${componentId}"]`);
             if (existingElement) {
                 targetContainer.appendChild(existingElement);
                 this.logger.debug(`🔄 PHASE 3: Moved existing component ${componentId} to section`);
+                this.renderedComponents.add(componentId);
                 continue;
             }
+            
+            // Mark as rendered before attempting render
+            this.renderedComponents.add(componentId);
             
             // Render the component
             const result = await window.enhancedComponentRenderer.renderSingleComponent({

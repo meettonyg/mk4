@@ -107,26 +107,10 @@
                         this.updateContainerDisplay(state);
                     });
                     
-                    // ✅ ROOT CAUSE FIX: Don't render components on init - let sections request them
-                    // Components with sections will be rendered by section system
-                    // Components without sections will be rendered on first state change
-                    const initialState = this.stateManager.getState();
-                    
-                    // Only render components that DON'T have section assignments
-                    if (initialState && initialState.components) {
-                        const componentsWithoutSections = {};
-                        for (const [id, component] of Object.entries(initialState.components)) {
-                            if (!component.sectionId) {
-                                componentsWithoutSections[id] = component;
-                            }
-                        }
-                        
-                        // Only render if we have components without sections
-                        if (Object.keys(componentsWithoutSections).length > 0) {
-                            const modifiedState = { ...initialState, components: componentsWithoutSections };
-                            await this.renderInitialComponents(modifiedState);
-                        }
-                    }
+                    // ✅ ROOT FIX: This renderer is now ONLY a service provider for sections
+                    // It does NOT render components directly - only provides the renderSingleComponent API
+                    // ALL components are rendered through the section system
+                    this.logger.info('RENDER', '✅ [PHASE 2] Component renderer service ready (sections-only mode)')
                     
                     this.initialized = true;
                     this.logger.info('RENDER', '✅ [PHASE 2] Simplified renderer initialized successfully');
@@ -256,7 +240,8 @@
             }
             
             /**
-             * ✅ SIMPLIFIED: Direct state change handling without complex diffing
+             * ✅ ROOT FIX: State changes are handled by sections only
+             * This renderer is just a service provider
              */
             onStateChange(newState) {
                 if (!this.initialized) {
@@ -264,8 +249,9 @@
                     return;
                 }
                 
-                this.logger.debug('RENDER', '🔄 [PHASE 2] Processing state change');
-                this.processStateChange(newState);
+                // ROOT FIX: Only update container visibility, don't render components
+                this.logger.debug('RENDER', '🔄 [PHASE 2] State change - updating container visibility only');
+                this.updateContainerDisplay(newState);
             }
             
             /**
@@ -283,25 +269,42 @@
                     return;
                 }
                 
+                // ROOT FIX: Properly filter components by section assignment
+                const componentsInSections = new Set();
+                const componentsWithoutSections = new Set();
+                
+                for (const componentId of componentIds) {
+                    const componentData = components[componentId];
+                    if (componentData) {
+                        if (componentData.sectionId) {
+                            componentsInSections.add(componentId);
+                        } else {
+                            componentsWithoutSections.add(componentId);
+                        }
+                    }
+                }
+                
+                this.logger.debug('RENDER', `State change: ${componentsInSections.size} in sections, ${componentsWithoutSections.size} orphaned`);
+                
                 // ✅ SIMPLIFIED: Smart update approach - don't remove everything
                 const currentComponents = Array.from(this.componentCache.keys());
                 
-                // Remove components that no longer exist in state (unless in sections)
+                // Remove components that no longer exist in state (only orphaned ones)
                 for (const componentId of currentComponents) {
-                    if (!components[componentId] && !this.isComponentInSection(componentId)) {
+                    if (!components[componentId]) {
+                        // Component deleted from state - remove it
+                        this.removeComponent(componentId);
+                    } else if (componentsInSections.has(componentId) && this.componentCache.has(componentId)) {
+                        // ROOT FIX: Component moved to a section - remove from our cache
+                        this.logger.info('RENDER', `Component ${componentId} now belongs to section - removing from orphan renderer`);
                         this.removeComponent(componentId);
                     }
                 }
                 
-                // Add or update components (unless handled by sections)
-                for (const componentId of componentIds) {
+                // Add or update ONLY components without sections
+                for (const componentId of componentsWithoutSections) {
                     const componentData = components[componentId];
                     if (componentData && componentData.type) {
-                        // Skip if component is managed by sections
-                        if (this.isComponentInSection(componentId)) {
-                            continue;
-                        }
-                        
                         // ROOT FIX: Check if component exists in DOM but not in cache (duplication case)
                         const existingElement = document.getElementById(componentId);
                         if (existingElement && !this.componentCache.has(componentId)) {
@@ -330,8 +333,8 @@
                 }
                 
                 // ✅ SIMPLIFIED: Direct layout ordering (only for non-section components)
-                const nonSectionComponents = componentIds.filter(id => !this.isComponentInSection(id));
-                this.applyLayout(newState.layout || nonSectionComponents);
+                const orphanComponentIds = Array.from(componentsWithoutSections);
+                this.applyLayout(newState.layout || orphanComponentIds);
                 this.updateContainerDisplay(newState);
             }
             
@@ -340,6 +343,12 @@
              * Components declare this requirement via component.json configuration only
              */
             async checkServerRenderRequirement(componentType) {
+                // ROOT FIX: Check if component has registered itself for server-side rendering
+                if (window.gmkbServerRenderComponents && window.gmkbServerRenderComponents.has(componentType)) {
+                    this.logger.debug('RENDER', `Component ${componentType} registered for server-side rendering via Set`);
+                    return true;
+                }
+                
                 // COMPLIANT: Check component's configuration from discovery system
                 if (window.gmkbData?.components) {
                     const component = window.gmkbData.components.find(c => c.type === componentType);

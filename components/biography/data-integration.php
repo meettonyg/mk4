@@ -27,17 +27,17 @@ class Biography_Data_Integration {
     
     /**
      * Pods field mappings for biography
+     * ROOT FIX: Map to actual Pods fields from guest post type
      */
     protected static $field_mappings = array(
-        'name' => 'biography_name',
-        'title' => 'biography_title',
-        'organization' => 'biography_organization',
-        'short' => 'biography_short',
-        'medium' => 'biography_medium',
-        'long' => 'biography_long',
-        'tone' => 'biography_tone',
-        'expertise' => 'biography_expertise',
-        'achievements' => 'biography_achievements'
+        'biography' => 'biography',          // Main biography field
+        'name' => 'full_name',              // Full name field  
+        'first_name' => 'first_name',      // First name
+        'last_name' => 'last_name',        // Last name
+        'title' => 'guest_title',          // Professional title
+        'company' => 'company',            // Company/organization
+        'tagline' => 'tagline',            // Tagline
+        'introduction' => 'introduction'    // Introduction field
     );
     
     /**
@@ -238,16 +238,16 @@ class Biography_Data_Integration {
             return false;
         }
         
-        // Check if any core biography field has data
-        $core_fields = array('name', 'short', 'medium', 'long');
-        foreach ($core_fields as $field_key) {
-            if (isset(self::$field_mappings[$field_key])) {
-                $meta_key = self::$field_mappings[$field_key];
-                $bio_value = get_post_meta($post_id, $meta_key, true);
-                if (!empty($bio_value) && is_string($bio_value) && strlen(trim($bio_value)) > 0) {
-                    return true;
-                }
-            }
+        // ROOT FIX: Check actual biography field from Pods
+        $bio_value = get_post_meta($post_id, 'biography', true);
+        if (!empty($bio_value) && is_string($bio_value) && strlen(trim($bio_value)) > 0) {
+            return true;
+        }
+        
+        // Also check for name and title as secondary indicators
+        $name_value = get_post_meta($post_id, 'full_name', true);
+        if (!empty($name_value) && is_string($name_value) && strlen(trim($name_value)) > 0) {
+            return true;
         }
         
         return false;
@@ -274,7 +274,8 @@ class Biography_Data_Integration {
             return $result;
         }
         
-        $core_fields = array('name', 'short', 'medium', 'long');
+        // ROOT FIX: Use actual field names
+        $core_fields = array('biography', 'name', 'title');
         
         foreach (self::$field_mappings as $field_key => $meta_key) {
             $bio_value = get_post_meta($post_id, $meta_key, true);
@@ -332,23 +333,40 @@ class Biography_Data_Integration {
         $props = $existing_props;
         
         if (!empty($component_data['success']) && !empty($component_data['biography'])) {
-            // Prioritize 'medium' field (standard biography from Media Kit Content Generator)
-            $bio_content = '';
-            if (!empty($component_data['biography']['medium'])) {
-                $bio_content = $component_data['biography']['medium'];
-            } elseif (!empty($component_data['biography']['long'])) {
-                $bio_content = $component_data['biography']['long'];
-            } elseif (!empty($component_data['biography']['short'])) {
-                $bio_content = $component_data['biography']['short'];
+            // ROOT FIX: Get the main biography field from Pods
+            $bio_content = $component_data['biography']['biography'] ?? '';
+            
+            // Fallback to introduction if biography is empty
+            if (empty($bio_content) && !empty($component_data['biography']['introduction'])) {
+                $bio_content = $component_data['biography']['introduction'];
             }
             
             // Provide content in multiple formats for template compatibility
             $props['bio'] = $bio_content;
             $props['content'] = $bio_content;
             $props['biography'] = $bio_content;
+            $props['bio_content'] = $bio_content;  // Add bio_content key used in template
+            
+            // Add name data - combine first and last if full_name not available
             $props['name'] = $component_data['biography']['name'] ?? '';
+            if (empty($props['name']) && (!empty($component_data['biography']['first_name']) || !empty($component_data['biography']['last_name']))) {
+                $props['name'] = trim(
+                    ($component_data['biography']['first_name'] ?? '') . ' ' . 
+                    ($component_data['biography']['last_name'] ?? '')
+                );
+            }
+            
             $props['title'] = $component_data['biography']['title'] ?? '';
-            $props['organization'] = $component_data['biography']['organization'] ?? '';
+            $props['company'] = $component_data['biography']['company'] ?? '';
+            $props['tagline'] = $component_data['biography']['tagline'] ?? '';
+            
+            // Add debugging info
+            self::debug_log('Biography props prepared: ' . json_encode(array(
+                'has_bio' => !empty($bio_content),
+                'bio_length' => strlen($bio_content),
+                'name' => $props['name'],
+                'title' => $props['title']
+            )));
         }
         
         return $props;
@@ -361,7 +379,8 @@ class Biography_Data_Integration {
      * @return string Quality level
      */
     private static function assess_data_quality($biography) {
-        $core_fields = array('name', 'short', 'medium', 'long');
+        // ROOT FIX: Use actual field names from Pods
+        $core_fields = array('biography', 'name', 'title');
         $filled_core = 0;
         $filled_optional = 0;
         
@@ -375,10 +394,11 @@ class Biography_Data_Integration {
             }
         }
         
+        // ROOT FIX: Adjust quality levels for actual fields
         if ($filled_core >= 3 && $filled_optional >= 2) return 'excellent';
         if ($filled_core >= 2 && $filled_optional >= 1) return 'good';
         if ($filled_core >= 2) return 'fair';
-        if ($filled_core >= 1) return 'poor';
+        if ($filled_core >= 1) return 'minimal';
         return 'empty';
     }
 }

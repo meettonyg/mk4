@@ -5,6 +5,7 @@
   "isPremium": false,
   "version": "2.0.0-phase2",
   "order": 2,
+  "hasPodsData": true,
   "requiresServerRender": true,
   
   "dataBindings": {

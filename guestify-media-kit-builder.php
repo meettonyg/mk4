@@ -742,6 +742,48 @@ class Guestify_Media_Kit_Builder {
         // --- ROOT FIX: SINGLE-STEP RENDER LOGIC ---
         // Pre-load data for components that need server-side data loading
         
+        // ROOT FIX: Biography components also need Pods data loading
+        if ($component_type === 'biography') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log("AJAX Handler: Processing biography component for post {$post_id}");
+            }
+            
+            // Load biography data using the data integration class
+            $biography_integration_file = GMKB_PLUGIN_DIR . 'components/biography/data-integration.php';
+            if (file_exists($biography_integration_file)) {
+                require_once $biography_integration_file;
+                if (class_exists('Biography_Data_Integration')) {
+                    $biography_data = Biography_Data_Integration::load_biography_data($post_id);
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("AJAX Handler: Biography data loaded: " . print_r($biography_data, true));
+                    }
+                    
+                    if ($biography_data && $biography_data['success']) {
+                        // Prepare template props
+                        $props = Biography_Data_Integration::prepare_template_props($biography_data, $props);
+                        
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("ROOT FIX: Loaded biography data for post {$post_id}");
+                            error_log("ROOT FIX: Biography content: " . substr($props['bio'] ?? '', 0, 100) . "...");
+                        }
+                    } else {
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log("ROOT FIX: No biography data found for post {$post_id}");
+                        }
+                    }
+                } else {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log("ROOT FIX: Biography_Data_Integration class not found");
+                    }
+                }
+            } else {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log("ROOT FIX: Biography data-integration.php file not found at: " . $biography_integration_file);
+                }
+            }
+        }
+        
         if ($component_type === 'topics') {
             $topics_ajax_handler_path = GMKB_PLUGIN_DIR . 'components/topics/ajax-handler.php';
             if (file_exists($topics_ajax_handler_path)) {

@@ -2,14 +2,16 @@
  * Biography Component JavaScript
  * COMPLIANT: Self-contained component behavior only
  */
+
+// ROOT FIX: Immediate registration before IIFE to ensure it runs first
+if (!window.gmkbServerRenderComponents) {
+    window.gmkbServerRenderComponents = new Set();
+}
+window.gmkbServerRenderComponents.add('biography');
+console.log('Biography component registered for server-side rendering');
+
 (function() {
     'use strict';
-    
-    // Register biography component for server-side rendering to load Pods data
-    if (!window.gmkbServerRenderComponents) {
-        window.gmkbServerRenderComponents = new Set();
-    }
-    window.gmkbServerRenderComponents.add('biography');
     
     // Dispatch event to notify system
     document.dispatchEvent(new CustomEvent('gmkb:component-requires-server-render', {

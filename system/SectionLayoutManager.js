@@ -77,13 +77,16 @@ class SectionLayoutManager {
     /**
      * Load sections from state
      * Following checklist: Centralized State, Schema Compliance
+     * ROOT FIX: Auto-create default section for orphaned components
      */
     loadSectionsFromState() {
         if (!this.stateManager) return;
         
         const state = this.stateManager.getState();
         const sections = state.sections || [];
+        const components = state.components || {};
         
+        // Load existing sections
         sections.forEach(sectionData => {
             this.registerSection(
                 sectionData.section_id,
@@ -93,6 +96,55 @@ class SectionLayoutManager {
         });
         
         this.logger.info(`📊 PHASE 3: Loaded ${sections.length} sections from state`);
+        
+        // ROOT FIX: Check for orphaned components and auto-create section
+        const orphanedComponents = [];
+        for (const [componentId, component] of Object.entries(components)) {
+            if (!component.sectionId) {
+                orphanedComponents.push(componentId);
+            }
+        }
+        
+        if (orphanedComponents.length > 0) {
+            this.logger.info(`🔧 PHASE 3: Found ${orphanedComponents.length} orphaned components - creating default section`);
+            
+            // Create a default section for orphaned components
+            const defaultSectionId = `section_default_${Date.now()}`;
+            const defaultSection = this.registerSection(defaultSectionId, 'full_width', {
+                section_id: defaultSectionId,
+                section_type: 'full_width',
+                auto_created: true,
+                created_for_orphans: true
+            });
+            
+            // Assign all orphaned components to this section
+            orphanedComponents.forEach(componentId => {
+                this.assignComponentToSection(componentId, defaultSectionId);
+                
+                // Update component in state to have sectionId
+                if (this.stateManager && typeof this.stateManager.dispatch === 'function') {
+                    this.stateManager.dispatch({
+                        type: 'UPDATE_COMPONENT',
+                        payload: {
+                            id: componentId,
+                            updates: { sectionId: defaultSectionId }
+                        }
+                    });
+                }
+            });
+            
+            this.logger.info(`✅ PHASE 3: Assigned ${orphanedComponents.length} orphaned components to default section ${defaultSectionId}`);
+        } else if (sections.length === 0 && Object.keys(components).length === 0) {
+            // No sections and no components - create empty default section for clean start
+            this.logger.info(`📦 PHASE 3: No sections or components - creating default empty section`);
+            const defaultSectionId = `section_default_${Date.now()}`;
+            this.registerSection(defaultSectionId, 'full_width', {
+                section_id: defaultSectionId,
+                section_type: 'full_width',
+                auto_created: true,
+                manual_creation: true // Mark as manual so it won't be auto-cleaned
+            });
+        }
     }
     
     /**
