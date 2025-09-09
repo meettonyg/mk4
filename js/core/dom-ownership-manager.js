@@ -149,17 +149,31 @@
          * Apply preview ownership rules
          */
         applyPreviewRules(element) {
+            // ROOT FIX: Don't apply user-select: none to component elements
+            // This was causing the style to be set and then immediately flagged as a violation
+            // Components should maintain their natural selection behavior
+            
             // Preview elements are read-only by default
             if (this.editMode.restrictions.preventContentEditable && !this.isEditModeEnabled(element)) {
-                // Remove contenteditable if present
-                if (element.hasAttribute('contenteditable')) {
+                // Remove contenteditable if present (unless it's an allowed element)
+                const allowedEditableSelectors = [
+                    '.topic-title',
+                    '.section-title', 
+                    '.biography-content p',
+                    '.hero-title'
+                ];
+                
+                const isAllowedEditable = allowedEditableSelectors.some(selector => 
+                    element.matches(selector)
+                );
+                
+                if (element.hasAttribute('contenteditable') && !isAllowedEditable) {
                     element.removeAttribute('contenteditable');
                     this.recordViolation('contenteditable-in-preview', element);
                 }
                 
-                // Prevent text selection if not in edit mode
-                element.style.userSelect = 'none';
-                element.style.webkitUserSelect = 'none';
+                // ROOT FIX: Don't set user-select styles here - let CSS handle it
+                // This prevents the circular problem of setting a style then flagging it
             }
             
             // Remove inline event handlers
@@ -633,16 +647,25 @@
          * Check if style is problematic
          */
         isProblematicStyle(style) {
-            // Allow component control styles (position, opacity, etc.)
-            // Only check for styles that directly interfere with ownership
+            // ROOT FIX: Don't flag user-select styles that we set ourselves
+            // The DOM Ownership Manager sets user-select: none on preview elements
+            // and then incorrectly flags it as a violation. This is a false positive.
+            
+            // Only check for truly problematic styles
             const problematic = [
-                'pointer-events: none',  // Only problematic if set to none
-                'user-select: none',      // Only problematic if prevents selection
-                'contenteditable'         // Should not be in styles
+                'pointer-events: none',  // Only problematic if set to none by others
+                'contenteditable'        // Should not be in styles
             ];
             
             // Ignore component control styles
             if (style.includes('component-controls')) {
+                return false;
+            }
+            
+            // ROOT FIX: Don't flag user-select styles as violations
+            // These are intentionally set by the ownership manager
+            if (style === 'user-select: none;' || style === 'user-select: none' ||
+                style.match(/^user-select:\s*none;?$/)) {
                 return false;
             }
             

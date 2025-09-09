@@ -404,10 +404,12 @@ if ($post_id > 0) {
                     <div class="gmkb-sections-container" id="gmkb-sections-container">
                         <?php 
                         // ROOT FIX: Render saved sections and components on page load
-                        if ($post_id > 0 && ($has_saved_components || $has_saved_sections)) {
+                        // Only render if we have actual saved sections to prevent empty section creation
+                        if ($post_id > 0 && $has_saved_sections && !empty($saved_state['sections'])) {
                             require_once GMKB_PLUGIN_DIR . 'includes/rendering/SectionRenderer.php';
                             echo \GMKB\Rendering\SectionRenderer::render_sections($post_id);
                         }
+                        // If we have components but no sections, let JavaScript handle section creation
                         ?>
                     </div>
                     

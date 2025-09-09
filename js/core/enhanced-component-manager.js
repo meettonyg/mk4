@@ -1224,27 +1224,27 @@
             const stateComponent = window.enhancedStateManager?.getComponent(componentId);
             const componentData = stateComponent || originalComponent;
             
-            // Create duplicate with new ID
-            const duplicateProps = { ...componentData.props };
+            // ROOT FIX: Get the section ID from the original component to place duplicate in same section
+            const originalElement = document.getElementById(componentId);
+            const sectionElement = originalElement?.closest('[data-section-id]');
+            const sectionId = componentData.sectionId || sectionElement?.dataset.sectionId || null;
+            
+            // Create duplicate with new ID and same section assignment
+            const duplicateProps = { 
+                ...componentData.props,
+                targetSectionId: sectionId  // Ensure duplicate goes to same section
+            };
+            
+            // Use addComponent which properly renders through server
             const duplicateId = await window.enhancedComponentManager.addComponent(
                 componentData.type,
                 duplicateProps
             );
             
-            logger.info('COMPONENT', `Duplicated ${componentId} as ${duplicateId}`);
+            logger.info('COMPONENT', `Duplicated ${componentId} as ${duplicateId} in section ${sectionId}`);
             
-            // Place duplicate after original
-            setTimeout(() => {
-                const originalElement = document.getElementById(componentId);
-                const duplicateElement = document.getElementById(duplicateId);
-                
-                if (originalElement && duplicateElement) {
-                    originalElement.parentElement.insertBefore(
-                        duplicateElement,
-                        originalElement.nextSibling
-                    );
-                }
-            }, 100);
+            // The component should be properly rendered with controls via addComponent
+            // No need for manual DOM manipulation
             
         } catch (error) {
             logger.error('COMPONENT', `Failed to duplicate component: ${componentId}`, error);

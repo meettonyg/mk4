@@ -524,9 +524,19 @@ class SectionRenderer {
         // ROOT FIX: Ensure containers are visible when rendering sections
         this.ensureContainersVisible();
         
-        // Check if section already rendered
+        // ROOT FIX: Check if section already exists in DOM (from PHP render)
+        const existingSectionElement = document.querySelector(`[data-section-id="${section.section_id}"]`);
+        if (existingSectionElement) {
+            this.logger.debug(`✅ PHASE 3: Section ${section.section_id} already exists in DOM (from PHP), skipping render`);
+            this.renderedSections.add(section.section_id);
+            // Clear rendering flag
+            this.renderingInProgress.delete(section.section_id);
+            return;
+        }
+        
+        // Check if section already rendered by JS
         if (this.renderedSections.has(section.section_id)) {
-            this.logger.debug(`🔄 PHASE 3: Section ${section.section_id} already rendered, updating`);
+            this.logger.debug(`🔄 PHASE 3: Section ${section.section_id} already rendered by JS, updating`);
             this.updateSectionElement(section);
             // ROOT FIX: Clear rendering flag
             this.renderingInProgress.delete(section.section_id);
