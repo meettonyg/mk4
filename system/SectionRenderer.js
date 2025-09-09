@@ -525,9 +525,11 @@ class SectionRenderer {
         this.ensureContainersVisible();
         
         // ROOT FIX: Check if section already exists in DOM (from PHP render)
+        // Since PHP no longer renders sections, this check is now redundant but kept for safety
         const existingSectionElement = document.querySelector(`[data-section-id="${section.section_id}"]`);
         if (existingSectionElement) {
-            this.logger.debug(`✅ PHASE 3: Section ${section.section_id} already exists in DOM (from PHP), skipping render`);
+            this.logger.debug(`✅ PHASE 3: Section ${section.section_id} already exists in DOM, updating`);
+            this.updateSectionElement(section);
             this.renderedSections.add(section.section_id);
             // Clear rendering flag
             this.renderingInProgress.delete(section.section_id);

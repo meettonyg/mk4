@@ -87,8 +87,9 @@ class SectionRenderer {
         $output .= 'data-section-id="' . esc_attr($section_id) . '" ';
         $output .= 'data-section-type="' . esc_attr($section_type) . '">';
         
-        // ROOT FIX: Don't render section controls server-side - JavaScript handles this
+        // ROOT FIX: Don't render ANY controls server-side - JavaScript handles ALL controls
         // Section controls are added dynamically by SectionControlsUI to avoid duplication
+        // NO CONTROLS should be rendered in PHP - only content structure
         
         // Section inner wrapper
         $output .= '<div class="gmkb-section__inner">';
@@ -112,12 +113,8 @@ class SectionRenderer {
                     }
                 }
                 
-                // Add drop zone if column is empty
-                if (!$column_has_components) {
-                    $output .= '<div class="gmkb-section__empty" data-column="' . $col . '">';
-                    $output .= '<p>Drop components here</p>';
-                    $output .= '</div>';
-                }
+                // ROOT FIX: Don't add placeholders - JavaScript handles this
+                // JavaScript SectionRenderer will add clickable placeholders with controls
                 
                 $output .= '</div>'; // Close column
             }
@@ -136,12 +133,8 @@ class SectionRenderer {
                 }
             }
             
-            // Add drop zone if section is empty
-            if (!$section_has_components) {
-                $output .= '<div class="gmkb-section__empty">';
-                $output .= '<p>Drop components here</p>';
-                $output .= '</div>';
-            }
+            // ROOT FIX: Don't add placeholders - JavaScript handles this
+            // JavaScript SectionRenderer will add clickable placeholders with controls
             
             $output .= '</div>'; // Close content
         }
