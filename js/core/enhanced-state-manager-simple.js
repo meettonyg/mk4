@@ -551,6 +551,8 @@
         startBatchUpdate() {
             this.isBatching = true;
             this.transactionQueue = [];
+            // ROOT FIX: Store initial state to compare after batch
+            this.batchInitialState = JSON.parse(JSON.stringify(this.state));
             const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 10)}`;
             
             this.logger.info('STATE', `Batch update started: ${batchId}`);
@@ -559,13 +561,44 @@
 
         /**
          * End batch update
+         * ROOT FIX: Properly process batch and check for empty state
          */
-        async endBatchUpdate() {
+        endBatchUpdate() {
+            if (!this.isBatching) {
+                this.logger.warn('STATE', 'endBatchUpdate called but no batch in progress');
+                return;
+            }
+            
             try {
                 this.isBatching = false;
+                
+                // Process any queued transactions
                 this.processTransactionQueue();
+                
+                // ROOT FIX: Check if all components were removed and dispatch event
+                const finalComponentCount = Object.keys(this.state.components || {}).length;
+                const initialComponentCount = this.batchInitialState ? 
+                    Object.keys(this.batchInitialState.components || {}).length : 0;
+                
+                // If we went from having components to having none
+                if (initialComponentCount > 0 && finalComponentCount === 0) {
+                    document.dispatchEvent(new CustomEvent('gmkb:all-components-removed', {
+                        detail: {
+                            source: 'batch-update',
+                            previousCount: initialComponentCount,
+                            timestamp: Date.now()
+                        }
+                    }));
+                    this.logger.info('STATE', '📭 All components removed during batch - dispatched gmkb:all-components-removed event');
+                }
+                
+                // Clear batch initial state
+                this.batchInitialState = null;
+                
             } catch (error) {
                 this.logger.error('STATE', 'Error during batch update completion', error);
+                this.isBatching = false;
+                this.batchInitialState = null;
             }
         }
 
@@ -705,7 +738,7 @@
                     }
                     break;
                 }
-                case 'REMOVE_COMPONENT':
+                case 'REMOVE_COMPONENT': {
                     // ROOT FIX: Ensure component is fully removed from all state properties
                     const componentToRemove = transaction.payload;
                     
@@ -722,8 +755,20 @@
                         );
                     }
                     
+                    // ROOT FIX: Also remove from sections' component lists
+                    if (this.state.sections && Array.isArray(this.state.sections)) {
+                        this.state.sections.forEach(section => {
+                            if (section.components && Array.isArray(section.components)) {
+                                section.components = section.components.filter(
+                                    comp => comp.component_id !== componentToRemove
+                                );
+                            }
+                        });
+                    }
+                    
                     this.logger.debug('STATE', `Component ${componentToRemove} removed from all state properties`);
                     break;
+                }
                 case 'UPDATE_COMPONENT': {
                     const { componentId, newProps } = transaction.payload;
                     if (this.state.components[componentId]) {
@@ -844,9 +889,18 @@
         /**
          * Generic dispatch method for Phase 3 systems
          * Following checklist: Centralized State, Schema Compliance
+         * ROOT FIX: Properly handle batching to prevent notifications during batch
          */
         dispatch(action) {
-            this.applyTransaction(action);
+            // ROOT FIX: During batch, queue the transaction without notifying
+            if (this.isBatching) {
+                // Apply the change directly without notifications
+                this.applyTransactionDirect(action);
+                // Transaction will be finalized when batch ends
+            } else {
+                // Normal dispatch with immediate notification
+                this.applyTransaction(action);
+            }
         }
 
         /**

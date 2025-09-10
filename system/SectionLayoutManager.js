@@ -876,7 +876,8 @@ class SectionLayoutManager {
                 this.logger.info(`🗑️ PHASE 3: Dispatched removal for component ${componentId}`);
             });
             
-            // End batch update
+            // ROOT FIX: Properly end batch update synchronously
+            // The state manager will handle notifications and event dispatching
             this.stateManager.endBatchUpdate();
             this.logger.debug(`✅ PHASE 3: Batch update completed for ${componentIdsToDelete.length} components`);
         }

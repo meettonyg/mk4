@@ -399,6 +399,11 @@ class EmptyStateHandlers {
                 this.handleComponentRemoved(e.detail);
             });
             
+            // ROOT FIX: Listen for all components removed event from section manager
+            document.addEventListener('gmkb:all-components-removed', (e) => {
+                this.handleAllComponentsRemoved(e.detail);
+            });
+            
             structuredLogger.info('EMPTY_STATE', 'State transition handlers setup complete');
             
         } catch (error) {
@@ -872,6 +877,51 @@ class EmptyStateHandlers {
             
         } catch (error) {
             structuredLogger.error('EMPTY_STATE', 'Component removal handling failed', error);
+        }
+    }
+    
+    /**
+     * ROOT FIX: Handle all components removed event from section manager
+     * This is fired when a section removal deletes all remaining components
+     * 
+     * @param {Object} detail - Event detail
+     */
+    handleAllComponentsRemoved(detail) {
+        try {
+            structuredLogger.info('EMPTY_STATE', 'All components removed event received', detail);
+            
+            // Show empty state
+            const emptyStateElement = document.getElementById('empty-state');
+            const savedComponentsContainer = document.getElementById('saved-components-container');
+            const sectionsContainer = document.getElementById('gmkb-sections-container');
+            
+            if (emptyStateElement) {
+                // Show empty state
+                emptyStateElement.style.display = 'block';
+                structuredLogger.info('EMPTY_STATE', 'Showing empty state after all components removed');
+            }
+            
+            if (savedComponentsContainer) {
+                // Hide the saved components container
+                savedComponentsContainer.style.display = 'none';
+                structuredLogger.info('EMPTY_STATE', 'Hiding saved components container');
+            }
+            
+            if (sectionsContainer) {
+                // Hide sections container if empty
+                const sectionElements = sectionsContainer.querySelectorAll('.gmkb-section');
+                if (sectionElements.length === 0) {
+                    sectionsContainer.style.display = 'none';
+                    structuredLogger.info('EMPTY_STATE', 'Hiding empty sections container');
+                }
+            }
+            
+            // Update UI feedback
+            this.showSuccess('All components removed. Ready to start fresh!');
+            this.trackInteraction('all_components_removed', detail);
+            
+        } catch (error) {
+            structuredLogger.error('EMPTY_STATE', 'All components removed handling failed', error);
         }
     }
     
