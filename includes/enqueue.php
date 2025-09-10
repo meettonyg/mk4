@@ -1319,7 +1319,7 @@ function gmkb_enqueue_assets() {
             array(
                 'gmkb-structured-logger',
                 'gmkb-enhanced-state-manager',
-                'gmkb-enhanced-component-renderer-simplified',
+                // 'gmkb-enhanced-component-renderer-simplified', // REMOVED: Circular dependency
                 'gmkb-section-renderer'
             ),
             $version,
@@ -1336,7 +1336,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-enhanced-state-manager',
                 'gmkb-section-layout-manager',
                 'gmkb-enhanced-component-manager',
-                'gmkb-enhanced-component-renderer-simplified',
+                // 'gmkb-enhanced-component-renderer-simplified', // REMOVED: Circular dependency
                 'gmkb-structured-logger'
             ),
             $version,

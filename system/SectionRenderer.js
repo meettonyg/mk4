@@ -73,24 +73,31 @@ class SectionRenderer {
     /**
      * ROOT FIX: Progressive initialization attempts
      * Tries to initialize immediately if possible, otherwise waits
+     * ARCHITECTURAL RULE: Must wait for component renderer since all components require sections
      */
     attemptInitialization() {
         // Check if systems are ready now
-        if (window.sectionLayoutManager && window.enhancedComponentRenderer) {
+        if (window.sectionLayoutManager) {
             this.onCoreSystemsReady();
+            
+            // ROOT FIX: After core systems ready, ensure component renderer is available
+            // Since ALL components must be in sections, we MUST have the renderer
+            this.ensureComponentRendererAvailable();
             return;
         }
         
         // Try again after DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                if (window.sectionLayoutManager && window.enhancedComponentRenderer) {
+                if (window.sectionLayoutManager) {
                     this.onCoreSystemsReady();
+                    this.ensureComponentRendererAvailable();
                 } else {
                     // Final attempt after a delay
                     setTimeout(() => {
                         if (window.sectionLayoutManager) {
                             this.onCoreSystemsReady();
+                            this.ensureComponentRendererAvailable();
                         }
                     }, 1000);
                 }
@@ -100,9 +107,56 @@ class SectionRenderer {
             setTimeout(() => {
                 if (window.sectionLayoutManager) {
                     this.onCoreSystemsReady();
+                    this.ensureComponentRendererAvailable();
                 }
             }, 500);
         }
+    }
+    
+    /**
+     * ROOT FIX: Ensure component renderer is available before rendering sections
+     * This is critical since ALL components must be rendered through sections
+     */
+    ensureComponentRendererAvailable() {
+        if (window.enhancedComponentRenderer) {
+            this.logger.info('✅ PHASE 3: Component renderer available - can render section components');
+            // Process any existing sections that might have components
+            if (this.renderedSections.size > 0) {
+                this.logger.info('🔄 PHASE 3: Re-processing sections now that component renderer is available');
+                this.renderedSections.forEach(sectionId => {
+                    const section = this.sectionLayoutManager?.getSection(sectionId);
+                    if (section && section.components && section.components.length > 0) {
+                        const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
+                        if (sectionElement) {
+                            this.renderSectionComponents(sectionElement, section);
+                        }
+                    }
+                });
+            }
+            return;
+        }
+        
+        // Component renderer not ready - wait for it
+        this.logger.info('⏳ PHASE 3: Waiting for component renderer before rendering section components');
+        
+        // Listen for renderer ready
+        document.addEventListener('gmkb:enhanced-component-renderer-ready', () => {
+            this.logger.info('🎆 PHASE 3: Component renderer ready event received');
+            setTimeout(() => {
+                this.ensureComponentRendererAvailable();
+            }, 10);
+        }, { once: true });
+        
+        // Also check periodically in case we missed the event
+        const checkInterval = setInterval(() => {
+            if (window.enhancedComponentRenderer) {
+                clearInterval(checkInterval);
+                this.ensureComponentRendererAvailable();
+            }
+        }, 100);
+        
+        // Stop checking after 5 seconds
+        setTimeout(() => clearInterval(checkInterval), 5000);
     }
     
     /**
@@ -416,6 +470,14 @@ class SectionRenderer {
             sections.forEach(section => {
                 this.renderSection(section);
             });
+            
+            // ROOT FIX: Ensure component renderer is available for sections with components
+            // This is critical since ALL components must be rendered through sections
+            const sectionsWithComponents = sections.filter(s => s.components && s.components.length > 0);
+            if (sectionsWithComponents.length > 0) {
+                this.logger.info(`🎯 PHASE 3: ${sectionsWithComponents.length} sections have components - ensuring renderer is available`);
+                this.ensureComponentRendererAvailable();
+            }
         } else {
             this.logger.info('📐 PHASE 3: No existing sections to render');
         }
@@ -815,6 +877,7 @@ class SectionRenderer {
      * Render components within a section
      * COMPLIANT: Uses event system for cross-boundary communication
      * Sections don't render components - they request component system to do it
+     * ROOT FIX: Also directly render components if we can
      */
     renderSectionComponents(sectionElement, section) {
         if (!section.components || section.components.length === 0) {
@@ -846,10 +909,17 @@ class SectionRenderer {
             }
         });
         
-        // COMPLIANT: Dispatch event for component system to handle rendering
+        // ROOT FIX: Try to render components directly if we have the necessary systems
         if (targetContainers.size > 0) {
-            this.logger.info(`📢 PHASE 3: Requesting component system to populate section ${section.section_id}`);
+            this.logger.info(`📢 PHASE 3: Processing ${targetContainers.size} components for section ${section.section_id}`);
             
+            // Process each component
+            targetContainers.forEach((containerInfo, componentId) => {
+                // Call moveComponentToSection which handles rendering
+                this.moveComponentToSection(componentId, containerInfo.container);
+            });
+            
+            // Still dispatch event for legacy compatibility
             document.dispatchEvent(new CustomEvent('gmkb:section-needs-components', {
                 detail: {
                     sectionId: section.section_id,
@@ -892,11 +962,7 @@ class SectionRenderer {
             return;
         }
         
-        // ROOT FIX: Prevent duplicate component rendering
-        if (this.renderedComponents.has(componentId)) {
-            this.logger.debug(`✅ PHASE 3: Component ${componentId} already rendered, skipping`);
-            return;
-        }
+        // Component doesn't exist in DOM, proceed with rendering
         
         // ✅ ROOT FIX: Component doesn't exist - render it directly here
         // This is the proper place to render section components
@@ -907,9 +973,6 @@ class SectionRenderer {
             this.logger.warn(`⚠️ PHASE 3: Component ${componentId} not found in state`);
             return;
         }
-        
-        // Mark component as rendered
-        this.renderedComponents.add(componentId);
         
         // ✅ CHECKLIST COMPLIANT: Wait for renderer if not available yet
         // The section renderer needs the component renderer to create components
@@ -953,25 +1016,36 @@ class SectionRenderer {
                     }, 100);
                 }, { once: true });
             }
+            
+            // ROOT FIX: CRITICAL - Also check immediately after setting up listeners
+            // The renderer might already be ready when sections load
+            setTimeout(() => {
+                if (window.enhancedComponentRenderer && this.deferredComponents && this.deferredComponents.length > 0) {
+                    this.logger.info('🔄 PHASE 3: Component renderer already available, processing deferred components immediately');
+                    this.processDeferredComponents();
+                }
+            }, 50);
             return;
         }
         
         // ROOT FIX: Use the renderComponent method which is an alias for the internal renderer
         // The enhancedComponentRenderer has renderComponent(id, data) method
         const element = await window.enhancedComponentRenderer.renderComponent(
-        componentId,
-        {
+            componentId,
+            {
                 type: componentData.type,
-                        props: componentData.props || componentData.data || {}
-                    }
-                );
+                props: componentData.props || componentData.data || {}
+            }
+        );
         
         if (element) {
-        // Add the rendered component directly to the section
-        targetContainer.appendChild(element);
-        this.logger.info(`✅ PHASE 3: Component ${componentId} rendered directly in section`);
+            // Add the rendered component directly to the section
+            targetContainer.appendChild(element);
+            // Mark component as rendered AFTER successful render
+            this.renderedComponents.add(componentId);
+            this.logger.info(`✅ PHASE 3: Component ${componentId} rendered directly in section`);
         } else {
-        this.logger.error(`❌ PHASE 3: Failed to render component ${componentId}`);
+            this.logger.error(`❌ PHASE 3: Failed to render component ${componentId}`);
         }
     }
     
@@ -1002,38 +1076,45 @@ class SectionRenderer {
                 continue;
             }
             
-            // ROOT FIX: Check if component was already rendered
-            if (this.renderedComponents.has(componentId)) {
-                this.logger.debug(`✅ PHASE 3: Deferred component ${componentId} already rendered, skipping`);
+            // ROOT FIX: Check if component was already rendered by looking in DOM
+            const existingElement = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (existingElement && targetContainer.contains(existingElement)) {
+                this.logger.debug(`✅ PHASE 3: Deferred component ${componentId} already in target, skipping`);
+                this.renderedComponents.add(componentId);
                 continue;
             }
             
             // Check if component wasn't already rendered elsewhere
-            const existingElement = document.querySelector(`[data-component-id="${componentId}"]`);
-            if (existingElement) {
-                targetContainer.appendChild(existingElement);
+            const existingElsewhere = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (existingElsewhere && !targetContainer.contains(existingElsewhere)) {
+                targetContainer.appendChild(existingElsewhere);
                 this.logger.debug(`🔄 PHASE 3: Moved existing component ${componentId} to section`);
                 this.renderedComponents.add(componentId);
                 continue;
             }
             
-            // Mark as rendered before attempting render
-            this.renderedComponents.add(componentId);
-            
-            // ROOT FIX: Use the renderComponent method consistently
-            const element = await window.enhancedComponentRenderer.renderComponent(
-                componentId,
-                {
-                    type: componentData.type,
-                    props: componentData.props || componentData.data || {}
+            // ROOT FIX: Only render if not already in DOM
+            if (!document.querySelector(`[data-component-id="${componentId}"]`)) {
+                // ROOT FIX: Use the renderComponent method consistently
+                const element = await window.enhancedComponentRenderer.renderComponent(
+                    componentId,
+                    {
+                        type: componentData.type,
+                        props: componentData.props || componentData.data || {}
+                    }
+                );
+                
+                if (element) {
+                    targetContainer.appendChild(element);
+                    // Only mark as rendered AFTER successful render
+                    this.renderedComponents.add(componentId);
+                    this.logger.info(`✅ PHASE 3: Deferred component ${componentId} rendered in section`);
+                } else {
+                    this.logger.error(`❌ PHASE 3: Failed to render deferred component ${componentId}`);
                 }
-            );
-            
-            if (element) {
-                targetContainer.appendChild(element);
-                this.logger.info(`✅ PHASE 3: Deferred component ${componentId} rendered in section`);
             } else {
-                this.logger.error(`❌ PHASE 3: Failed to render deferred component ${componentId}`);
+                this.logger.debug(`✅ PHASE 3: Deferred component ${componentId} already exists in DOM`);
+                this.renderedComponents.add(componentId);
             }
         }
         

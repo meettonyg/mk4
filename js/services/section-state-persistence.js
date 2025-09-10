@@ -157,17 +157,21 @@ class SectionStatePersistence {
             const state = this.stateManager.getState();
             const sections = state.sections || [];
             
+            // ROOT FIX: Include sections in the complete state save
+            // This ensures sections are saved along with components
+            const completeState = {
+            ...state,
+            sections: sections,
+            timestamp: Date.now()
+            };
+            
             // Prepare save data
             const saveData = {
-                action: 'guestify_save_media_kit', // ROOT FIX: Use correct action name
-                nonce: window.gmkbData.nonce,
-                post_id: window.gmkbData.postId,
-                state: JSON.stringify({
-                    ...state,
-                    sections: sections,
-                    timestamp: Date.now()
-                })
-            };
+                action: 'guestify_save_media_kit',
+                    nonce: window.gmkbData.nonce,
+                    post_id: window.gmkbData.postId,
+                    state: JSON.stringify(completeState)
+                };
             
             // Send AJAX request
             const response = await fetch(window.gmkbData.ajaxUrl, {

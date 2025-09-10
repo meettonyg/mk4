@@ -647,6 +647,7 @@ class SectionLayoutManager {
     /**
      * Update sections in state
      * Following checklist: Centralized State, No Direct Manipulation
+     * ROOT FIX: Also trigger save to WordPress
      */
     updateSectionsInState() {
         if (!this.stateManager || typeof this.stateManager.dispatch !== 'function') {
@@ -665,6 +666,15 @@ class SectionLayoutManager {
             this.logger.debug('💾 PHASE 3: Updated sections in state', {
                 sectionCount: sectionsArray.length
             });
+            
+            // ROOT FIX: Trigger save to WordPress after section updates
+            // This ensures sections persist to database
+            if (window.wordPressSaveService) {
+                setTimeout(() => {
+                    window.wordPressSaveService.saveToWordPress(true); // Silent auto-save
+                    this.logger.info('💾 PHASE 3: Triggered auto-save after section update');
+                }, 500);
+            }
         } catch (error) {
             this.logger.error('❌ PHASE 3: Error updating sections in state', error);
         }

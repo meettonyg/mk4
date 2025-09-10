@@ -65,6 +65,9 @@
                     components: Object.keys(state.components || {}).length
                 });
                 
+                // ROOT FIX: Check for components with section IDs but missing sections
+                await this.ensureSectionsForComponents(state.components || {}, state.sections || []);
+                
                 // Step 1: Load sections first (they create containers for components)
                 await this.loadSections(state.sections || []);
                 
@@ -89,6 +92,78 @@
                 
             } catch (error) {
                 logger.error('LOADER', 'Failed to load initial state:', error);
+            }
+        }
+        
+        /**
+         * ROOT FIX: Ensure sections exist for components that reference them
+         * IMPORTANT: Use the actual sectionId from components instead of creating new ones
+         */
+        async ensureSectionsForComponents(components, sections) {
+            if (!window.sectionLayoutManager) {
+                logger.warn('LOADER', 'Section layout manager not available');
+                return;
+            }
+            
+            const componentIds = Object.keys(components);
+            const existingSectionIds = sections.map(s => s.section_id || s.id);
+            const missingSectionIds = new Set();
+            
+            // Find all section IDs referenced by components
+            for (const componentId of componentIds) {
+                const component = components[componentId];
+                if (component.sectionId && !existingSectionIds.includes(component.sectionId)) {
+                    missingSectionIds.add(component.sectionId);
+                }
+            }
+            
+            // Create missing sections
+            if (missingSectionIds.size > 0) {
+                logger.info('LOADER', `🔧 Creating ${missingSectionIds.size} missing sections for components`);
+                
+                for (const sectionId of missingSectionIds) {
+                    try {
+                        // Determine layout type from section ID or default to full_width
+                        let layoutType = 'full_width';
+                        if (sectionId.includes('two_column')) {
+                            layoutType = 'two_column';
+                        } else if (sectionId.includes('three_column')) {
+                            layoutType = 'three_column';
+                        }
+                        
+                        logger.info('LOADER', `Creating missing section: ${sectionId} (${layoutType})`);
+                        
+                        // ROOT FIX: Register the section with the EXACT ID from the component
+                        // This preserves the original section-component relationship
+                        const section = window.sectionLayoutManager.registerSection(sectionId, layoutType, {
+                            section_id: sectionId,
+                            section_type: layoutType,
+                            auto_created: true,
+                            recovered_from_components: true,
+                            created_at: Date.now(),
+                            updated_at: Date.now()
+                        });
+                        
+                        if (section) {
+                            logger.info('LOADER', `✅ Recovered section: ${sectionId}`);
+                            
+                            // The section is already registered and in state via registerSection
+                            // No need to dispatch again, just mark that we updated the state
+                            logger.info('LOADER', `Section ${sectionId} registered with state manager`);
+                        }
+                    } catch (error) {
+                        logger.error('LOADER', `Failed to create section ${sectionId}:`, error);
+                    }
+                }
+                
+                // ROOT FIX: After creating all missing sections, trigger a save
+                // This ensures the recovered sections are persisted
+                if (window.wordPressSaveService) {
+                    setTimeout(() => {
+                        window.wordPressSaveService.saveToWordPress(true); // Silent auto-save
+                        logger.info('LOADER', '💾 Triggered auto-save after recovering sections');
+                    }, 1000);
+                }
             }
         }
         

@@ -15,22 +15,47 @@
 (function() {
     'use strict';
     
+    let rendererInitialized = false;
+    
     // ✅ CHECKLIST COMPLIANT: Event-driven initialization only
     const initWhenReady = () => {
+        if (rendererInitialized) return;
+        
         if (window.structuredLogger && window.enhancedStateManager) {
             initializeSimplifiedRenderer();
             return;
         }
         
         // ✅ NO POLLING: Listen for dependency ready events only
+        // Listen for state manager if not ready
+        if (!window.enhancedStateManager) {
+            document.addEventListener('gmkb:state-manager-ready', () => {
+                if (!rendererInitialized && window.structuredLogger && window.enhancedStateManager) {
+                    initializeSimplifiedRenderer();
+                }
+            }, { once: true });
+        }
+        
+        // Listen for logger if not ready
+        if (!window.structuredLogger) {
+            document.addEventListener('gmkb:structured-logger-ready', () => {
+                if (!rendererInitialized && window.structuredLogger && window.enhancedStateManager) {
+                    initializeSimplifiedRenderer();
+                }
+            }, { once: true });
+        }
+        
+        // Also listen for core systems ready as a catchall
         document.addEventListener('gmkb:core-systems-ready', () => {
-            if (window.structuredLogger && window.enhancedStateManager) {
+            if (!rendererInitialized && window.structuredLogger && window.enhancedStateManager) {
                 initializeSimplifiedRenderer();
             }
         }, { once: true });
     };
     
     const initializeSimplifiedRenderer = () => {
+        if (rendererInitialized) return;
+        
         const structuredLogger = window.structuredLogger;
         const stateManager = window.enhancedStateManager;
         
@@ -38,6 +63,8 @@
             console.error('❌ CRITICAL: Dependencies not available for simplified renderer');
             return;
         }
+        
+        rendererInitialized = true;
         
         structuredLogger.info('RENDER', '🎨 [PHASE 2] Simplified Component Renderer initializing...');
 
@@ -84,6 +111,10 @@
                     // ✅ ROOT FIX: Initialize container display based on initial state
                     this.initializeContainerDisplay();
                     
+                    // ✅ ARCHITECTURAL RULE: All components must be in sections
+                    // The section renderer will handle all component rendering
+                    // This renderer only provides the rendering API
+                    
                     // ✅ SIMPLIFIED: Direct state subscription without complex coordination
                     this.stateUnsubscribe = this.stateManager.subscribeGlobal((state) => {
                         this.onStateChange(state);
@@ -107,10 +138,10 @@
                         this.updateContainerDisplay(state);
                     });
                     
-                    // ✅ ROOT FIX: This renderer is now ONLY a service provider for sections
-                    // It does NOT render components directly - only provides the renderSingleComponent API
-                    // ALL components are rendered through the section system
-                    this.logger.info('RENDER', '✅ [PHASE 2] Component renderer service ready (sections-only mode)')
+                    // ✅ ARCHITECTURAL RULE: This renderer is a service provider only
+                    // All components MUST be in sections - the section renderer handles placement
+                    // This enforces the component-in-section architecture
+                    this.logger.info('RENDER', '✅ [PHASE 2] Component renderer service ready (sections-only architecture)');
                     
                     this.initialized = true;
                     this.logger.info('RENDER', '✅ [PHASE 2] Simplified renderer initialized successfully');
@@ -257,8 +288,9 @@
                     return;
                 }
                 
-                // ROOT FIX: Only update container visibility, don't render components
-                this.logger.debug('RENDER', '🔄 [PHASE 2] State change - updating container visibility only');
+                // ARCHITECTURAL RULE: Components are rendered by sections only
+                // This renderer only updates container visibility
+                this.logger.debug('RENDER', '🔄 [PHASE 2] State change - updating container visibility');
                 this.updateContainerDisplay(newState);
             }
             
@@ -1472,5 +1504,22 @@
     } else {
         initWhenReady();
     }
+    
+    // ROOT FIX: Also check after a micro-task to catch late-loading dependencies
+    // This is still event-driven, not polling - it's a one-time check
+    Promise.resolve().then(() => {
+        if (!rendererInitialized) {
+            initWhenReady();
+        }
+    });
+    
+    // ROOT FIX: Final safety check after systems should be ready
+    // This is a one-time delayed check, not polling
+    setTimeout(() => {
+        if (!rendererInitialized && window.structuredLogger && window.enhancedStateManager) {
+            console.log('🔄 Component Renderer: Late initialization triggered');
+            initializeSimplifiedRenderer();
+        }
+    }, 100);
     
 })();
