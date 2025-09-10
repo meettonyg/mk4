@@ -137,8 +137,15 @@ if (defined('WP_DEBUG') && WP_DEBUG && !empty($media_kit_state)) {
 ?>
 
 <?php
+// Debug output
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('MEDIAKIT TEMPLATE: Attempting to render with GMKB_Frontend_Display');
+    error_log('MEDIAKIT TEMPLATE: Class exists: ' . (class_exists('GMKB_Frontend_Display') ? 'YES' : 'NO'));
+}
+
 // Use the enhanced frontend display class if available
 if (class_exists('GMKB_Frontend_Display')) {
+    try {
     // Get the frontend display instance
     $frontend_display = GMKB_Frontend_Display::get_instance();
     
@@ -147,7 +154,15 @@ if (class_exists('GMKB_Frontend_Display')) {
     
     // Render the media kit with theme support
     $frontend_display->render_media_kit_template($media_kit_state, $post_id, $theme_id);
+    } catch (Exception $e) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('MEDIAKIT TEMPLATE ERROR: ' . $e->getMessage());
+        }
+        // Fall through to basic display mode
+        goto basic_display;
+    }
 } else {
+    basic_display:
     // Basic display mode (when enhanced display class is not available)
     ?>
     <!-- Media Kit Container -->
