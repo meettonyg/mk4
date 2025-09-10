@@ -25,7 +25,25 @@ class SectionLayoutManager {
      * COMPLIANT: Event-Driven Initialization, No Global Sniffing
      */
     initializeManager() {
-        // Wait for core systems to be ready
+        // CORRECT: Listen for the specific dependency's ready event
+        document.addEventListener('gmkb:state-manager:ready', (e) => {
+            this.logger.info('✅ SectionLayoutManager correctly received state-manager:ready event.');
+            if (e.detail && e.detail.stateManager) {
+                this.stateManager = e.detail.stateManager;
+                this.loadSectionsFromState();
+                
+                // Emit ready event now that we have state manager
+                document.dispatchEvent(new CustomEvent('gmkb:section-manager:ready', {
+                    detail: {
+                        source: 'SectionLayoutManager',
+                        manager: this,
+                        timestamp: Date.now()
+                    }
+                }));
+            }
+        });
+        
+        // Still listen for core systems for other dependencies
         document.addEventListener('gmkb:core-systems-ready', () => {
             this.onCoreSystemsReady();
         });
@@ -64,17 +82,9 @@ class SectionLayoutManager {
      * Following checklist: Centralized State, Dependency-Awareness
      */
     onCoreSystemsReady() {
-        // ROOT FIX: Ensure state manager is available before proceeding
-        this.stateManager = window.enhancedStateManager;
-        
-        if (this.stateManager && typeof this.stateManager.dispatch === 'function') {
-            this.loadSectionsFromState();
-            this.logger.info('🎯 PHASE 3: Core systems ready - sections loaded with state manager');
-        } else {
-            this.logger.error('❌ PHASE 3: State manager not available or missing dispatch method');
-            // Try to initialize without state manager for now
-            this.logger.info('🎯 PHASE 3: Core systems ready - sections initialized without state manager');
-        }
+        // This method is now simplified - state manager connection happens in initializeManager
+        // We only use this for any other core system dependencies if needed
+        this.logger.info('🎯 PHASE 3: Core systems ready - other dependencies can be initialized here');
     }
     
     /**
@@ -404,31 +414,10 @@ class SectionLayoutManager {
                 this.logger.info('💡 PHASE 3: Found similar section IDs:', similarIds);
             }
             
-            // ROOT CAUSE FIX: Try to recover by looking for section in DOM and auto-registering
-            this.logger.info(`🔧 PHASE 3: Attempting to auto-register section ${sectionId} from DOM`);
-            const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
-            
-            if (sectionElement) {
-                const sectionType = sectionElement.dataset.sectionType || 'full_width';
-                this.logger.info(`🔧 PHASE 3: Found section ${sectionId} in DOM with type ${sectionType}, registering...`);
-                
-                try {
-                    section = this.registerSection(sectionId, sectionType, {
-                        section_id: sectionId,
-                        section_type: sectionType,
-                        created_at: Date.now(),
-                        recovered_from_dom: true
-                    });
-                    
-                    this.logger.info(`✅ PHASE 3: Successfully recovered and registered section ${sectionId}`);
-                } catch (error) {
-                    this.logger.error(`❌ PHASE 3: Failed to recover section ${sectionId}:`, error);
-                    return false;
-                }
-            } else {
-                this.logger.error(`❌ PHASE 3: Section ${sectionId} not found in DOM either - cannot recover`);
-                return false;
-            }
+            // ROOT CAUSE FIX: Don't auto-recover from DOM - this prevents duplicate sections
+            // If section doesn't exist, it means it was deleted
+            this.logger.error(`❌ PHASE 3: Section ${sectionId} not found - it may have been deleted`);
+            return false;
         }
         
         // Remove component from other sections first
@@ -820,43 +809,63 @@ class SectionLayoutManager {
             return false;
         }
         
+        // STRICT: Check if we have state manager before proceeding
+        if (!this.stateManager) {
+            this.logger.error('❌ FATAL: Cannot remove section because state manager is not connected.');
+            return false;
+        }
+        
         // ROOT FIX: Actually delete components from the section
         // Collect component IDs first to avoid mutation during iteration
         const componentIdsToDelete = section.components.map(comp => comp.component_id);
         
         this.logger.info(`🗑️ PHASE 3: Removing section ${sectionId} with ${componentIdsToDelete.length} components`);
         
-        // Delete each component through the component manager
-        componentIdsToDelete.forEach(componentId => {
-            // First dispatch removal from section event
-            this.dispatchSectionEvent('gmkb:component-removed-from-section', {
-                componentId: componentId,
-                sectionId
+        // ROOT FIX: Delete components from state directly
+        if (componentIdsToDelete.length > 0 && this.stateManager) {
+            // Start a batch update for efficiency
+            const batchId = this.stateManager.startBatchUpdate();
+            this.logger.debug(`📦 PHASE 3: Started batch update ${batchId} for component removal`);
+            
+            // Delete each component
+            componentIdsToDelete.forEach(componentId => {
+                // First dispatch removal from section event
+                this.dispatchSectionEvent('gmkb:component-removed-from-section', {
+                    componentId: componentId,
+                    sectionId
+                });
+                
+                // Remove component via state manager dispatch
+                this.stateManager.dispatch({
+                    type: 'REMOVE_COMPONENT',
+                    payload: componentId
+                });
+                
+                this.logger.info(`🗑️ PHASE 3: Dispatched removal for component ${componentId}`);
             });
             
-            // ROOT FIX: Actually request component deletion
-            // This will trigger the component manager to remove the component
-            document.dispatchEvent(new CustomEvent('gmkb:component-delete-requested', {
-                detail: { 
-                    componentId: componentId,
-                    reason: 'section_deleted',
-                    sectionId: sectionId,
-                    skipConfirmation: true // Don't ask for confirmation when deleting section
-                }
-            }));
-            
-            this.logger.info(`🗑️ PHASE 3: Requested deletion of component ${componentId} from section ${sectionId}`);
-        });
+            // End batch update
+            this.stateManager.endBatchUpdate();
+            this.logger.debug(`✅ PHASE 3: Batch update completed for ${componentIdsToDelete.length} components`);
+        }
         
-        // Remove section
+        // Remove section from internal tracking
         this.sections.delete(sectionId);
         this.sectionOrder = this.sectionOrder.filter(id => id !== sectionId);
         
-        // Update state
+        // Update sections in state
         this.updateSectionsInState();
         
         // Dispatch event
         this.dispatchSectionEvent('gmkb:section-removed', { sectionId });
+        
+        // ROOT FIX: Check if we have no sections left and dispatch event
+        if (this.sections.size === 0) {
+            this.logger.info('🛫 PHASE 3: All sections removed - dispatching all-sections-removed event');
+            this.dispatchSectionEvent('gmkb:all-sections-removed', {
+                timestamp: Date.now()
+            });
+        }
         
         this.logger.info(`🗑️ PHASE 3: Removed section ${sectionId} and its ${componentIdsToDelete.length} components`);
         return true;

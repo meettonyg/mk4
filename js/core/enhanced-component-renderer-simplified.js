@@ -82,6 +82,67 @@
             }
             
             /**
+             * GEMINI FIX: Render all components for a specific section
+             */
+            async renderComponentsForSection(sectionId) {
+                const sectionElement = document.getElementById(`section-${sectionId}`) || 
+                                      document.querySelector(`[data-section-id="${sectionId}"]`);
+                
+                if (!sectionElement) {
+                    this.logger.warn('RENDER', `Section element not found for ${sectionId}`);
+                    return;
+                }
+                
+                const state = this.stateManager.getState();
+                if (!state || !state.components) {
+                    this.logger.debug('RENDER', 'No components in state to render');
+                    return;
+                }
+                
+                // Find all components that belong to this section
+                const componentsToRender = Object.values(state.components).filter(c => c.sectionId === sectionId);
+                
+                if (componentsToRender.length === 0) {
+                    this.logger.debug('RENDER', `No components found for section ${sectionId}`);
+                    return;
+                }
+                
+                this.logger.info('RENDER', `Rendering ${componentsToRender.length} components for section ${sectionId}`);
+                
+                // Find the target container within the section
+                const targetContainer = sectionElement.querySelector('.gmkb-section__content') || 
+                                       sectionElement.querySelector('.gmkb-section__column') ||
+                                       sectionElement.querySelector('.gmkb-section__inner');
+                
+                if (!targetContainer) {
+                    this.logger.error('RENDER', `No target container found in section ${sectionId}`);
+                    return;
+                }
+                
+                // Render each component
+                for (const component of componentsToRender) {
+                    // Check if component already exists
+                    const existingElement = document.getElementById(component.id);
+                    if (existingElement) {
+                        this.logger.debug('RENDER', `Component ${component.id} already exists, skipping`);
+                        continue;
+                    }
+                    
+                    // Render the component
+                    const element = await this._renderComponentInternal(component.id, {
+                        type: component.type,
+                        props: component.props || component.data || {}
+                    });
+                    
+                    if (element) {
+                        targetContainer.appendChild(element);
+                        this.componentCache.set(component.id, element);
+                        this.logger.info('RENDER', `✅ Component ${component.id} rendered in section ${sectionId}`);
+                    }
+                }
+            }
+            
+            /**
              * ✅ PHASE 2: Handle forced component rerender from options UI
              */
             async handleForceRerender(detail) {
@@ -118,6 +179,13 @@
                     // ✅ SIMPLIFIED: Direct state subscription without complex coordination
                     this.stateUnsubscribe = this.stateManager.subscribeGlobal((state) => {
                         this.onStateChange(state);
+                    });
+                    
+                    // GEMINI FIX: Listen for sections being rendered and populate them with components
+                    document.addEventListener('gmkb:section-rendered', (event) => {
+                        const { sectionId } = event.detail;
+                        this.logger.info(`[RENDER] 🎨 Section rendered: ${sectionId}. Now rendering its components.`);
+                        this.renderComponentsForSection(sectionId);
                     });
                     
                     // PHASE 2: Listen for forced component rerenders from options UI

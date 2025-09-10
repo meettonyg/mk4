@@ -489,7 +489,7 @@ class SectionRenderer {
      * CRITICAL: Use manager from event detail to avoid circular dependency
      */
     onSectionRegistered(event) {
-        const { sectionId, sectionLayoutManager } = event.detail;
+        const { sectionId, section, sectionLayoutManager, componentId, isNewSection } = event.detail;
         
         this.logger.info(`📐 PHASE 3: Rendering newly registered section ${sectionId}`);
         
@@ -509,8 +509,15 @@ class SectionRenderer {
         // ROOT FIX: Ensure containers are visible
         this.ensureContainersVisible();
         
-        // ROOT CAUSE FIX: Use passed manager reference to avoid global access
-        this.renderSection(sectionId, sectionLayoutManager || this.sectionLayoutManager);
+        // ROOT CAUSE FIX: Use section object from event if provided, otherwise fetch it
+        const sectionToRender = section || (sectionLayoutManager || this.sectionLayoutManager || window.sectionLayoutManager)?.getSection(sectionId);
+        
+        if (!sectionToRender) {
+            this.logger.error(`❌ PHASE 3: Cannot find section data for ${sectionId}`);
+            return;
+        }
+        
+        this.renderSection(sectionToRender, sectionLayoutManager || this.sectionLayoutManager);
         
         // ROOT FIX: Notify component renderer to update container display
         // This ensures empty state is hidden when sections are added
@@ -535,6 +542,25 @@ class SectionRenderer {
                 this.logger.warn(`⚠️ PHASE 3: Section ${sectionId} not found in DOM after render attempt`);
                 // Try to render again
                 this.renderSection(sectionId, sectionLayoutManager || this.sectionLayoutManager);
+            } else if (componentId && isNewSection) {
+                // ROOT FIX: If this was a new section created for a specific component, ensure the component is rendered
+                this.logger.info(`🎯 PHASE 3: Ensuring component ${componentId} is rendered in new section ${sectionId}`);
+                
+                // Get the component data from state
+                const state = window.enhancedStateManager?.getState();
+                const componentData = state?.components?.[componentId];
+                
+                if (componentData && sectionElement) {
+                    // Find the target container in the section
+                    const targetContainer = sectionElement.querySelector('.gmkb-section__content') || 
+                                          sectionElement.querySelector('.gmkb-section__column') ||
+                                          sectionElement.querySelector('.gmkb-section__inner');
+                    
+                    if (targetContainer) {
+                        // Trigger component rendering in the section
+                        this.moveComponentToSection(componentId, targetContainer);
+                    }
+                }
             }
         }, 100);
     }

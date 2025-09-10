@@ -121,9 +121,12 @@
                 this.isInitialized = true;
                 this.logger.info('STATE', 'Enhanced State Manager initialization completed');
                 
-                // ROOT FIX: Dispatch state manager ready event for component manager coordination
-                document.dispatchEvent(new CustomEvent('gmkb:state-manager-ready', {
+                // GEMINI FIX: Dispatch state manager ready event with consistent naming
+                // This is the canonical event that all systems should listen for
+                document.dispatchEvent(new CustomEvent('gmkb:state-manager:ready', {
                     detail: {
+                        stateManager: this,
+                        source: 'EnhancedStateManager',
                         timestamp: Date.now(),
                         componentCount: Object.keys(this.state.components || {}).length,
                         hasComponents: Object.keys(this.state.components || {}).length > 0
@@ -607,31 +610,28 @@
                             
                             this.logger.info('STATE', `ROOT FIX: Created default section ${defaultSection.section_id} for orphaned component`);
                             
-                            // ROOT FIX: Register with SectionLayoutManager if available
-                            // Note: Don't call registerSection as it will update state (circular)
-                            // Just ensure the manager knows about the section for tracking
-                            if (window.sectionLayoutManager && window.sectionLayoutManager.sections) {
-                                // Add directly to the manager's tracking without state update
-                                window.sectionLayoutManager.sections.set(defaultSection.section_id, defaultSection);
-                                if (!window.sectionLayoutManager.sectionOrder.includes(defaultSection.section_id)) {
-                                    window.sectionLayoutManager.sectionOrder.push(defaultSection.section_id);
-                                }
-                                this.logger.info('STATE', `ROOT FIX: Tracked section ${defaultSection.section_id} in SectionLayoutManager`);
-                            }
+                            // GEMINI FIX: Don't manipulate SectionLayoutManager directly
+                            // Let it handle the section through the proper event flow
+                            this.logger.info('STATE', `Created default section ${defaultSection.section_id} - will be handled by SectionLayoutManager via event`);
                             
                             // ROOT FIX: Dispatch section registered event so it gets rendered visually
                             // Dispatch immediately - the SectionRenderer will handle it properly
-                            document.dispatchEvent(new CustomEvent('gmkb:section-registered', {
-                                detail: {
-                                    sectionId: defaultSection.section_id,
-                                    section: defaultSection,
-                                    sectionLayoutManager: window.sectionLayoutManager,
-                                    source: 'state-manager-auto-create',
-                                    isNewSection: true,  // Flag that this is a newly created section
-                                    componentId: componentData.id  // ROOT FIX: Pass the component that triggered this section creation
-                                }
-                            }));
-                            this.logger.info('STATE', `ROOT FIX: Dispatched section-registered event for ${defaultSection.section_id}`);
+                            // Use setTimeout to ensure event fires after state is updated
+                            setTimeout(() => {
+                                document.dispatchEvent(new CustomEvent('gmkb:section-registered', {
+                                    detail: {
+                                        sectionId: defaultSection.section_id,
+                                        section: defaultSection,
+                                        sectionType: defaultSection.section_type,
+                                        configuration: defaultSection,
+                                        sectionLayoutManager: window.sectionLayoutManager,
+                                        source: 'state-manager-auto-create',
+                                        isNewSection: true,  // Flag that this is a newly created section
+                                        componentId: componentData.id  // ROOT FIX: Pass the component that triggered this section creation
+                                    }
+                                }));
+                                this.logger.info('STATE', `ROOT FIX: Dispatched section-registered event for ${defaultSection.section_id}`);
+                            }, 50);  // Increased delay to ensure systems are ready
                         } else {
                             // Assign to first available section
                             componentData.sectionId = this.state.sections[0].section_id;
