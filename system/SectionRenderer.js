@@ -24,6 +24,8 @@ class SectionRenderer {
         // ROOT FIX: Track sections being rendered to prevent duplicates
         this.renderingInProgress = new Set();
         this.renderedComponents = new Set();
+        this.hasRenderedExistingSections = false;
+        this.isProcessingDeferred = false;
         
         this.logger.info('🎨 PHASE 3: SectionRenderer initializing');
         this.initializeRenderer();
@@ -120,19 +122,8 @@ class SectionRenderer {
     ensureComponentRendererAvailable() {
         if (window.enhancedComponentRenderer) {
             this.logger.info('✅ PHASE 3: Component renderer available - can render section components');
-            // Process any existing sections that might have components
-            if (this.renderedSections.size > 0) {
-                this.logger.info('🔄 PHASE 3: Re-processing sections now that component renderer is available');
-                this.renderedSections.forEach(sectionId => {
-                    const section = this.sectionLayoutManager?.getSection(sectionId);
-                    if (section && section.components && section.components.length > 0) {
-                        const sectionElement = document.querySelector(`[data-section-id="${sectionId}"]`);
-                        if (sectionElement) {
-                            this.renderSectionComponents(sectionElement, section);
-                        }
-                    }
-                });
-            }
+            // ROOT FIX: Don't re-process sections here - they already have their components
+            // This was causing duplicate rendering
             return;
         }
         
@@ -463,12 +454,27 @@ class SectionRenderer {
     renderExistingSections() {
         if (!this.sectionLayoutManager) return;
         
+        // ROOT FIX: Prevent multiple calls to renderExistingSections
+        if (this.hasRenderedExistingSections) {
+            this.logger.debug('🚫 PHASE 3: Already rendered existing sections, skipping');
+            return;
+        }
+        this.hasRenderedExistingSections = true;
+        
         const sections = this.sectionLayoutManager.getSectionsInOrder();
         
         if (sections.length > 0) {
             this.logger.info(`📐 PHASE 3: Rendering ${sections.length} existing sections`);
+            
+            // ROOT FIX: Check if sections are already in DOM before rendering
             sections.forEach(section => {
-                this.renderSection(section);
+                const existingSection = document.querySelector(`[data-section-id="${section.section_id}"]`);
+                if (existingSection) {
+                    this.logger.debug(`✅ PHASE 3: Section ${section.section_id} already in DOM, skipping render`);
+                    this.renderedSections.add(section.section_id);
+                } else {
+                    this.renderSection(section);
+                }
             });
             
             // ROOT FIX: Ensure component renderer is available for sections with components
@@ -567,65 +573,91 @@ class SectionRenderer {
     
     /**
      * Render a section to DOM
-     * Following checklist: DOM Manipulation, Visual Consistency, Root Cause Fix
+     * REFACTORED: Now delegates to RenderCoordinator for duplicate prevention
      * @param {string|object} sectionOrId - Section object or ID
      * @param {object} sectionLayoutManager - Manager instance (required when passing ID)
      */
     renderSection(sectionOrId, sectionLayoutManager = null) {
-        // ROOT FIX: Get section ID for tracking
+        // Get section ID and data
         let sectionId = typeof sectionOrId === 'string' ? sectionOrId : sectionOrId?.section_id;
+        let sectionData = typeof sectionOrId === 'object' ? sectionOrId : null;
         
         if (!sectionId) {
             this.logger.error('❌ PHASE 3: Cannot render section - no section ID');
             return;
         }
         
-        // ROOT FIX: Prevent duplicate rendering - check if already rendering
-        if (this.renderingInProgress.has(sectionId)) {
-            this.logger.debug(`⏳ PHASE 3: Section ${sectionId} rendering already in progress, skipping`);
+        // ARCHITECTURE COMPLIANT: Use RenderCoordinator if available
+        if (window.renderCoordinator) {
+            // Delegate to coordinator for centralized duplicate prevention
+            document.dispatchEvent(new CustomEvent('gmkb:request-render-section', {
+                detail: {
+                    id: sectionId,
+                    data: sectionData || this.sectionLayoutManager?.getSection(sectionId),
+                    source: 'SectionRenderer',
+                    priority: 'normal'
+                }
+            }));
             return;
         }
         
-        // Mark as rendering
-        this.renderingInProgress.add(sectionId);
+        // Fallback: Direct render if coordinator not available
+        this.renderSectionDirect(sectionId, sectionData, sectionLayoutManager);
+    }
+    
+    /**
+     * Direct section rendering (called by RenderCoordinator)
+     * COMPLIANT: Single responsibility, no duplicate checking
+     */
+    renderSectionDirect(sectionId, sectionData = null, sectionLayoutManager = null) {
+        // BETTER ARCHITECTURE: Use RenderGate for duplicate prevention
+        if (window.renderGate && !window.renderGate.shouldRender('section', sectionId)) {
+            return;
+        }
         
         if (!this.containerElement) {
             // ROOT FIX: Try to create container if missing
             this.containerElement = this.findOrCreateContainerElement();
             if (!this.containerElement) {
                 this.logger.error('❌ PHASE 3: Cannot render section - unable to create container');
-                this.renderingInProgress.delete(sectionId);
+                if (window.renderGate) {
+                    window.renderGate.markRendered('section', sectionId);
+                }
                 return;
             }
         }
         
-        // ROOT CAUSE FIX: Handle both section object and section ID
-        let section = sectionOrId;
+        // Get section data
+        let section = sectionData;
         
-        // If a string ID was passed, fetch the actual section object
-        if (typeof sectionOrId === 'string') {
-            // ROOT CAUSE FIX: Use passed manager or fallback to instance manager
+        // If no section data provided, fetch it
+        if (!section) {
             const manager = sectionLayoutManager || this.sectionLayoutManager;
             
             if (!manager) {
-                this.logger.error(`❌ PHASE 3: Cannot fetch section ${sectionOrId} - no manager available`);
-                this.logger.error('This is a critical error - section manager should be passed via event');
-                this.renderingInProgress.delete(sectionId);
+                this.logger.error(`❌ PHASE 3: Cannot fetch section ${sectionId} - no manager available`);
+                if (window.renderGate) {
+                    window.renderGate.markRendered('section', sectionId);
+                }
                 return;
             }
             
-            section = manager.getSection(sectionOrId);
+            section = manager.getSection(sectionId);
             if (!section) {
-                this.logger.error(`❌ PHASE 3: Section not found: ${sectionOrId}`);
-                this.renderingInProgress.delete(sectionId);
+                this.logger.error(`❌ PHASE 3: Section not found: ${sectionId}`);
+                if (window.renderGate) {
+                    window.renderGate.markRendered('section', sectionId);
+                }
                 return;
             }
         }
         
         // Validate section object
         if (!section || typeof section !== 'object') {
-            this.logger.error('❌ PHASE 3: Invalid section parameter', sectionOrId);
-            this.renderingInProgress.delete(sectionId);
+            this.logger.error('❌ PHASE 3: Invalid section parameter', section);
+            if (window.renderGate) {
+                window.renderGate.markRendered('section', sectionId);
+            }
             return;
         }
         
@@ -669,6 +701,14 @@ class SectionRenderer {
         // Track rendered section
         this.renderedSections.add(section.section_id);
         
+        // ROOT FIX: Clear component tracking for this section to allow fresh rendering
+        // But only for the components in this specific section
+        if (section.components && section.components.length > 0) {
+            section.components.forEach(comp => {
+                this.renderedComponents.delete(comp.component_id);
+            });
+        }
+        
         // Apply CSS styles
         this.applySectionStyles(sectionElement, section);
         
@@ -680,6 +720,11 @@ class SectionRenderer {
         
         this.logger.info(`✅ PHASE 3: Section ${section.section_id} rendered successfully`);
         
+        // ARCHITECTURE COMPLIANT: Mark as rendered in RenderGate
+        if (window.renderGate) {
+            window.renderGate.markRendered('section', section.section_id);
+        }
+        
         // Dispatch rendered event
         this.dispatchSectionEvent('gmkb:section-rendered', {
             sectionId: section.section_id,
@@ -690,6 +735,7 @@ class SectionRenderer {
     /**
      * Create section DOM element
      * Following checklist: DOM Creation, Semantic HTML, Graceful Failure
+     * ROOT FIX: Ensure column structure is created correctly based on section type
      */
     createSectionElement(section) {
         // ROOT CAUSE FIX: Validate section structure before processing
@@ -731,15 +777,50 @@ class SectionRenderer {
             section.section_options?.custom_class || ''
         ].filter(Boolean).join(' ');
         
-        // Create inner container for layout
+        // ROOT FIX: Debug log the section type
+        this.logger.debug(`🎯 PHASE 3: Section ${section.section_id} type: ${section.section_type}, class: ${sectionElement.className}`);
+        
+        // ROOT FIX: Create the column layout structure ONCE based on section type
+        const innerContainer = this.createColumnLayout(section);
+        sectionElement.appendChild(innerContainer);
+        
+        // Add section controls (edit, remove, etc.)
+        this.addSectionControls(sectionElement, section);
+        
+        return sectionElement;
+    }
+    
+    /**
+     * Create the column layout structure for a section
+     * ROOT FIX: This is the single source of truth for column structure
+     * @param {object} section - Section configuration
+     * @returns {HTMLElement} Container with column structure
+     */
+    createColumnLayout(section) {
         const innerContainer = document.createElement('div');
         innerContainer.className = 'gmkb-section__inner';
         
-        // Handle column layouts - with defensive check
+        // Get the actual column count from section layout
         const columnCount = section.layout?.columns || 1;
-        if (columnCount > 1) {
-            // ROOT FIX: Handle main_sidebar special case with column labels
-            const isMainSidebar = section.section_type === 'main_sidebar';
+        const sectionType = section.section_type || 'full_width';
+        
+        // ROOT FIX: Debug logging
+        this.logger.debug(`🔍 PHASE 3: Creating layout for ${section.section_id} - type: ${sectionType}, columns: ${columnCount}`);
+        
+        // ROOT FIX: For full_width sections, ALWAYS use single column
+        // This prevents the bug where components create multiple columns
+        if (sectionType === 'full_width' || columnCount === 1) {
+            // Single column layout
+            innerContainer.classList.add('gmkb-section__content');
+            innerContainer.setAttribute('data-drop-zone', 'true');
+            innerContainer.setAttribute('data-section-id', section.section_id);
+            innerContainer.setAttribute('data-column-index', '1');
+            innerContainer.style.minHeight = '100px';
+            
+            this.logger.debug(`📐 PHASE 3: Created single-column layout for section ${section.section_id}`);
+        } else {
+            // Multi-column layout
+            const isMainSidebar = sectionType === 'main_sidebar';
             
             for (let i = 1; i <= columnCount; i++) {
                 const column = document.createElement('div');
@@ -751,30 +832,18 @@ class SectionRenderer {
                 }
                 
                 column.dataset.column = i;
-                // ROOT FIX: Add drop zone attributes to each column for drag-drop targeting
                 column.setAttribute('data-drop-zone', 'true');
                 column.setAttribute('data-section-id', section.section_id);
                 column.setAttribute('data-column-index', i);
                 column.setAttribute('data-column-label', isMainSidebar ? (i === 1 ? 'Main Content' : 'Sidebar') : `Column ${i}`);
-                column.style.minHeight = '100px'; // Ensure columns have minimum height for dropping
+                column.style.minHeight = '100px';
                 innerContainer.appendChild(column);
             }
-        } else {
-            // Single column or custom layout
-            innerContainer.classList.add('gmkb-section__content');
-            // ROOT FIX: Add drop zone attributes for single column sections
-            innerContainer.setAttribute('data-drop-zone', 'true');
-            innerContainer.setAttribute('data-section-id', section.section_id);
-            innerContainer.setAttribute('data-column-index', '1');
-            innerContainer.style.minHeight = '100px'; // Ensure container has minimum height
+            
+            this.logger.debug(`📐 PHASE 3: Created ${columnCount}-column layout for section ${section.section_id}`);
         }
         
-        sectionElement.appendChild(innerContainer);
-        
-        // Add section controls (edit, remove, etc.)
-        this.addSectionControls(sectionElement, section);
-        
-        return sectionElement;
+        return innerContainer;
     }
     
     /**
@@ -901,9 +970,8 @@ class SectionRenderer {
     
     /**
      * Render components within a section
-     * COMPLIANT: Uses event system for cross-boundary communication
-     * Sections don't render components - they request component system to do it
-     * ROOT FIX: Also directly render components if we can
+     * ROOT FIX: Respect the section's column layout structure
+     * Components are placed in the EXISTING columns, not creating new ones
      */
     renderSectionComponents(sectionElement, section) {
         if (!section.components || section.components.length === 0) {
@@ -912,63 +980,78 @@ class SectionRenderer {
             return;
         }
         
-        // COMPLIANT: Create target containers map for component system
-        const targetContainers = new Map();
+        // ROOT FIX: Find the existing column structure created by createColumnLayout
+        const innerElement = sectionElement.querySelector('.gmkb-section__inner');
+        if (!innerElement) {
+            this.logger.error(`❌ PHASE 3: No inner element found for section ${section.section_id}`);
+            return;
+        }
         
+        // Determine if this is single or multi-column
+        const isSingleColumn = innerElement.classList.contains('gmkb-section__content');
+        const columns = innerElement.querySelectorAll('.gmkb-section__column');
+        
+        // ROOT FIX: Process components and place them in the EXISTING structure
         section.components.forEach(componentAssignment => {
             const { component_id, column } = componentAssignment;
             
-            // Find target container based on layout
+            // Find the correct target container
             let targetContainer;
             
-            if (section.layout.columns > 1) {
-                targetContainer = sectionElement.querySelector(`.gmkb-section__column[data-column="${column}"]`);
+            if (isSingleColumn) {
+                // Single column - all components go to the same container
+                targetContainer = innerElement;
+                this.logger.debug(`🎯 PHASE 3: Placing component ${component_id} in single-column section`);
+            } else if (columns.length > 0) {
+                // Multi-column - place in specified column
+                const columnIndex = Math.min(column || 1, columns.length) - 1;
+                targetContainer = columns[columnIndex];
+                this.logger.debug(`🎯 PHASE 3: Placing component ${component_id} in column ${columnIndex + 1} of ${columns.length}`);
             } else {
-                targetContainer = sectionElement.querySelector('.gmkb-section__content');
+                // Fallback - shouldn't happen
+                targetContainer = innerElement;
+                this.logger.warn(`⚠️ PHASE 3: No columns found, using inner element for component ${component_id}`);
             }
             
+            // Move or render the component to the target container
             if (targetContainer) {
-                targetContainers.set(component_id, {
-                    container: targetContainer,
-                    column: column
-                });
+                this.moveComponentToSection(component_id, targetContainer);
             }
         });
         
-        // ROOT FIX: Try to render components directly if we have the necessary systems
-        if (targetContainers.size > 0) {
-            this.logger.info(`📢 PHASE 3: Processing ${targetContainers.size} components for section ${section.section_id}`);
-            
-            // Process each component
-            targetContainers.forEach((containerInfo, componentId) => {
-                // Call moveComponentToSection which handles rendering
-                this.moveComponentToSection(componentId, containerInfo.container);
-            });
-            
-            // Still dispatch event for legacy compatibility
-            document.dispatchEvent(new CustomEvent('gmkb:section-needs-components', {
-                detail: {
-                    sectionId: section.section_id,
-                    sectionElement: sectionElement,
-                    components: section.components,
-                    targetContainers: targetContainers,
-                    timestamp: Date.now(),
-                    source: 'SectionRenderer'
-                }
-            }));
-        }
+        // Dispatch event for compatibility (but section-component-loader is deprecated)
+        // The SectionRenderer now handles component rendering directly
+        // Keeping this event for potential future use or debugging
+        /*
+        document.dispatchEvent(new CustomEvent('gmkb:section-needs-components', {
+            detail: {
+                sectionId: section.section_id,
+                sectionElement: sectionElement,
+                components: section.components,
+                timestamp: Date.now(),
+                source: 'SectionRenderer'
+            }
+        }));
+        */
     }
     
     /**
      * Move component to section container
      * Following checklist: DOM Manipulation, Component Management
-     * ✅ ROOT FIX: Direct rendering without events or timeouts
+     * ROOT FIX: Prevent duplicate rendering
      */
     async moveComponentToSection(componentId, targetContainer) {
+        // ROOT FIX: Check if we've already processed this component
+        if (this.renderedComponents.has(componentId)) {
+            this.logger.debug(`✅ PHASE 3: Component ${componentId} already rendered, skipping`);
+            return;
+        }
+        
         // ROOT FIX: Prevent duplicate rendering - check if already in target
         const existingInTarget = targetContainer.querySelector(`[data-component-id="${componentId}"]`);
         if (existingInTarget) {
             this.logger.debug(`✅ PHASE 3: Component ${componentId} already in target container`);
+            this.renderedComponents.add(componentId);
             return;
         }
         
@@ -980,17 +1063,19 @@ class SectionRenderer {
             // ROOT FIX: Check if it's already in correct container to prevent unnecessary moves
             if (componentElement.parentElement === targetContainer) {
                 this.logger.debug(`✅ PHASE 3: Component ${componentId} already in correct container`);
+                this.renderedComponents.add(componentId);
                 return;
             }
             // Move existing component
             targetContainer.appendChild(componentElement);
+            this.renderedComponents.add(componentId);
             this.logger.debug(`🔄 PHASE 3: Moved component ${componentId} to section`);
             return;
         }
         
         // Component doesn't exist in DOM, proceed with rendering
         
-        // ✅ ROOT FIX: Component doesn't exist - render it directly here
+        // ROOT FIX: Component doesn't exist - render it directly here
         // This is the proper place to render section components
         const state = window.enhancedStateManager?.getState();
         const componentData = state?.components?.[componentId];
@@ -1000,8 +1085,7 @@ class SectionRenderer {
             return;
         }
         
-        // ✅ CHECKLIST COMPLIANT: Wait for renderer if not available yet
-        // The section renderer needs the component renderer to create components
+        // Check if component renderer is available
         if (!window.enhancedComponentRenderer) {
             // ROOT FIX: Component renderer not ready yet - defer rendering
             this.logger.debug(`⏳ PHASE 3: Component renderer not ready yet for ${componentId}, deferring...`);
@@ -1017,7 +1101,6 @@ class SectionRenderer {
                 this.listeningForRenderer = true;
                 document.addEventListener('gmkb:enhanced-component-renderer-ready', () => {
                     // ROOT FIX: Add small delay to ensure global variable is set
-                    // The event fires during init but before window.enhancedComponentRenderer is assigned
                     setTimeout(() => {
                         if (window.enhancedComponentRenderer) {
                             this.processDeferredComponents();
@@ -1043,8 +1126,7 @@ class SectionRenderer {
                 }, { once: true });
             }
             
-            // ROOT FIX: CRITICAL - Also check immediately after setting up listeners
-            // The renderer might already be ready when sections load
+            // ROOT FIX: Also check immediately after setting up listeners
             setTimeout(() => {
                 if (window.enhancedComponentRenderer && this.deferredComponents && this.deferredComponents.length > 0) {
                     this.logger.info('🔄 PHASE 3: Component renderer already available, processing deferred components immediately');
@@ -1054,8 +1136,7 @@ class SectionRenderer {
             return;
         }
         
-        // ROOT FIX: Use the renderComponent method which is an alias for the internal renderer
-        // The enhancedComponentRenderer has renderComponent(id, data) method
+        // ROOT FIX: Use the renderComponent method
         const element = await window.enhancedComponentRenderer.renderComponent(
             componentId,
             {
@@ -1080,6 +1161,12 @@ class SectionRenderer {
      * Following checklist: Event-Driven, Root Cause Fix
      */
     async processDeferredComponents() {
+        // ROOT FIX: Prevent multiple calls to processDeferredComponents
+        if (this.isProcessingDeferred) {
+            this.logger.debug('🚫 PHASE 3: Already processing deferred components, skipping');
+            return;
+        }
+        
         if (!this.deferredComponents || this.deferredComponents.length === 0) {
             return;
         }
@@ -1088,6 +1175,8 @@ class SectionRenderer {
             this.logger.error('❌ PHASE 3: Cannot process deferred components - renderer still not available');
             return;
         }
+        
+        this.isProcessingDeferred = true;
         
         this.logger.info(`🔄 PHASE 3: Processing ${this.deferredComponents.length} deferred components`);
         
@@ -1149,6 +1238,7 @@ class SectionRenderer {
         }
         
         this.logger.info(`✅ PHASE 3: Finished processing deferred components`);
+        this.isProcessingDeferred = false;
     }
     
     /**
@@ -1158,11 +1248,47 @@ class SectionRenderer {
     addEmptySectionPlaceholder(sectionElement) {
         const section = this.sectionLayoutManager?.getSection(sectionElement.dataset.sectionId);
         const columnCount = section?.layout?.columns || 1;
+        const sectionType = section?.section_type || 'full_width';
         
-        // ROOT FIX: Add placeholders to ALL columns in multi-column sections
-        if (columnCount > 1) {
+        // ROOT FIX: Check for actual columns in DOM instead of relying on config
+        const columns = sectionElement.querySelectorAll('.gmkb-section__column');
+        const hasMultipleColumns = columns.length > 1;
+        
+        // ROOT FIX: For full_width sections, ALWAYS use single placeholder
+        if (sectionType === 'full_width' || !hasMultipleColumns) {
+            // Single column section - add one placeholder
+            const innerElement = sectionElement.querySelector('.gmkb-section__inner');
+            
+            if (innerElement && !innerElement.querySelector('.gmkb-section__empty')) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'gmkb-section__empty';
+                placeholder.innerHTML = `
+                    <div class="gmkb-section__empty-icon">
+                        <span class="dashicons dashicons-plus-alt2"></span>
+                    </div>
+                    <div class="gmkb-section__empty-text">
+                        Drop components here or click to add
+                    </div>
+                `;
+                
+                // ROOT FIX: Make clickable to add components via modal
+                placeholder.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.handleAddComponentToSection(sectionElement.dataset.sectionId);
+                });
+                
+                placeholder.style.cursor = 'pointer';
+                placeholder.setAttribute('data-drop-zone', 'true');
+                placeholder.setAttribute('data-section-id', sectionElement.dataset.sectionId);
+                placeholder.setAttribute('data-column-index', '1');
+                
+                innerElement.appendChild(placeholder);
+                
+                this.logger.debug('PHASE 3: Added clickable placeholder to single-column section');
+            }
+        } else if (hasMultipleColumns) {
             // Multi-column section - add placeholder to each column
-            const columns = sectionElement.querySelectorAll('.gmkb-section__column');
             columns.forEach((column, index) => {
                 if (!column.querySelector('.gmkb-section__empty')) {
                     // Get column label from data attribute or default
@@ -1197,38 +1323,6 @@ class SectionRenderer {
                 }
             });
             this.logger.debug(`PHASE 3: Added placeholders to ${columns.length} columns in section`);
-        } else {
-            // Single column section - add one placeholder
-            const innerElement = sectionElement.querySelector('.gmkb-section__inner, .gmkb-section__content');
-            
-            if (innerElement && !innerElement.querySelector('.gmkb-section__empty')) {
-                const placeholder = document.createElement('div');
-                placeholder.className = 'gmkb-section__empty';
-                placeholder.innerHTML = `
-                    <div class="gmkb-section__empty-icon">
-                        <span class="dashicons dashicons-plus-alt2"></span>
-                    </div>
-                    <div class="gmkb-section__empty-text">
-                        Drop components here or click to add
-                    </div>
-                `;
-                
-                // ROOT FIX: Make clickable to add components via modal
-                placeholder.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.handleAddComponentToSection(sectionElement.dataset.sectionId);
-                });
-                
-                placeholder.style.cursor = 'pointer';
-                placeholder.setAttribute('data-drop-zone', 'true');
-                placeholder.setAttribute('data-section-id', sectionElement.dataset.sectionId);
-                placeholder.setAttribute('data-column-index', '1');
-                
-                innerElement.appendChild(placeholder);
-                
-                this.logger.debug('PHASE 3: Added clickable placeholder to single-column section');
-            }
         }
     }
     

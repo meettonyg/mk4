@@ -134,6 +134,13 @@
 /* Full Width Section */
 .gmkb-section--full_width .gmkb-section__inner {
     max-width: 100%;
+    display: block !important; /* ROOT FIX: Force single column */
+}
+
+/* ROOT FIX: Ensure single column content stays single */
+.gmkb-section--full_width .gmkb-section__content {
+    display: block !important;
+    width: 100%;
 }
 
 /* Two Column Section */

@@ -224,11 +224,10 @@ class SectionStatePersistence {
         if (sections.length > 0) {
             this.logger.info(`📥 Loading ${sections.length} sections from saved state`);
             
-            // Sections should already be loaded by SectionLayoutManager
-            // Just ensure they're rendered
-            if (window.sectionRenderer) {
-                window.sectionRenderer.renderExistingSections();
-            }
+            // ROOT FIX: Don't render sections here - they're already rendered by SectionRenderer
+            // This was causing duplicate rendering
+            // The SectionLayoutManager and SectionRenderer handle initial rendering
+            // We only need to handle persistence, not rendering
         }
     }
     

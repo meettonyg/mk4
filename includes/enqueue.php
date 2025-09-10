@@ -606,6 +606,18 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 1a. Render Gate - Centralized duplicate render prevention
+    // ARCHITECTURE COMPLIANT: Simple tracking, no polling, event-driven
+    if (!wp_script_is('gmkb-render-gate', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-render-gate',
+            $plugin_url . 'system/render-gate.js',
+            array('gmkb-structured-logger'),
+            $version,
+            true
+        );
+    }
+    
     // 2. CONSOLIDATED Modal System - ROOT FIX: All modal functionality
     // PHASE 5 OPTIMIZATION: Consolidated 5 files into 2 (modal-base + component-library → modal-system)
     if (!wp_script_is('gmkb-modal-system', 'enqueued')) {
