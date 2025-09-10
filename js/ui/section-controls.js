@@ -136,8 +136,8 @@ class SectionControlsUI {
                 return;
             }
             
-            // Section remove button
-            if (event.target.matches('.gmkb-section__control-btn--remove')) {
+            // Section remove button - Support both class patterns
+            if (event.target.matches('.gmkb-section__control-btn--remove, .gmkb-section__control--remove, .gmkb-section__control--remove *, .gmkb-section__control-btn--remove *')) {
                 event.preventDefault();
                 event.stopPropagation();
                 const section = event.target.closest('.gmkb-section');

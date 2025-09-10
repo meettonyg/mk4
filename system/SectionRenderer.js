@@ -151,6 +151,15 @@ class SectionRenderer {
                 transition: all 0.2s;
                 font-size: 16px;
                 color: #666;
+                padding: 0;
+                position: relative;
+                overflow: visible;
+            }
+            
+            /* Ensure click events work on icon too */
+            .gmkb-section__control i,
+            .gmkb-section__control .dashicons {
+                pointer-events: none;
             }
             
             .gmkb-section__control:hover {
@@ -302,6 +311,12 @@ class SectionRenderer {
             this.sectionLayoutManager = event.detail.manager;
             this.logger.info('✅ PHASE 3: Section layout manager connected via event');
         }, { once: true });
+        
+        // ROOT FIX: Also check if already available globally (for immediate operations)
+        if (!this.sectionLayoutManager && window.sectionLayoutManager) {
+            this.sectionLayoutManager = window.sectionLayoutManager;
+            this.logger.info('✅ PHASE 3: Section layout manager already available globally');
+        }
         
         // COMPLIANT: No direct component renderer access - sections don't render components
         
@@ -698,7 +713,9 @@ class SectionRenderer {
         editBtn.className = 'gmkb-section__control gmkb-section__control--edit';
         editBtn.innerHTML = '<i class="dashicons dashicons-edit"></i>';
         editBtn.title = 'Edit Section';
-        editBtn.addEventListener('click', () => {
+        editBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             this.handleSectionEdit(section.section_id);
         });
         
@@ -707,7 +724,11 @@ class SectionRenderer {
         removeBtn.className = 'gmkb-section__control gmkb-section__control--remove';
         removeBtn.innerHTML = '<i class="dashicons dashicons-trash"></i>';
         removeBtn.title = 'Remove Section';
-        removeBtn.addEventListener('click', () => {
+        removeBtn.setAttribute('data-section-id', section.section_id); // Add data attribute for easier targeting
+        removeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.logger.info(`🗑️ PHASE 3: Remove button clicked for section ${section.section_id}`);
             this.handleSectionRemove(section.section_id);
         });
         
@@ -1209,10 +1230,48 @@ class SectionRenderer {
      * Following checklist: User Confirmation, Safe Deletion
      */
     handleSectionRemove(sectionId) {
-        if (confirm('Are you sure you want to remove this section?')) {
+        if (!sectionId) {
+            this.logger.error('❌ PHASE 3: Cannot remove section - no sectionId provided');
+            return;
+        }
+        
+        // Check if section has components
+        const section = this.sectionLayoutManager?.getSection(sectionId);
+        const hasComponents = section?.components?.length > 0;
+        
+        const message = hasComponents 
+            ? `This section contains ${section.components.length} component(s). Are you sure you want to remove it?`
+            : 'Are you sure you want to remove this section?';
+            
+        if (confirm(message)) {
+            this.logger.info(`🗑️ PHASE 3: User confirmed removal of section ${sectionId}`);
+            
             if (this.sectionLayoutManager) {
-                this.sectionLayoutManager.removeSection(sectionId);
+                const success = this.sectionLayoutManager.removeSection(sectionId);
+                if (success) {
+                    this.logger.info(`✅ PHASE 3: Section ${sectionId} removed successfully`);
+                    // Show success message if toast is available
+                    if (window.enhancedToast) {
+                        window.enhancedToast.showSuccess('Section removed successfully');
+                    }
+                } else {
+                    this.logger.error(`❌ PHASE 3: Failed to remove section ${sectionId}`);
+                    if (window.enhancedToast) {
+                        window.enhancedToast.showError('Failed to remove section');
+                    }
+                }
+            } else {
+                this.logger.error('❌ PHASE 3: Cannot remove section - SectionLayoutManager not available');
+                // Try to get the manager from global if not available on instance
+                if (window.sectionLayoutManager) {
+                    this.sectionLayoutManager = window.sectionLayoutManager;
+                    this.handleSectionRemove(sectionId); // Retry with manager
+                } else {
+                    alert('Unable to remove section. Please refresh the page and try again.');
+                }
             }
+        } else {
+            this.logger.info(`ℹ️ PHASE 3: User cancelled removal of section ${sectionId}`);
         }
     }
     
