@@ -25,25 +25,25 @@ class SectionLayoutManager {
      * COMPLIANT: Event-Driven Initialization, No Global Sniffing
      */
     initializeManager() {
-        // CORRECT: Listen for the specific dependency's ready event
+        // Listen for state manager ready event
         document.addEventListener('gmkb:state-manager:ready', (e) => {
-            this.logger.info('✅ SectionLayoutManager correctly received state-manager:ready event.');
-            if (e.detail && e.detail.stateManager) {
-                this.stateManager = e.detail.stateManager;
-                this.loadSectionsFromState();
-                
-                // Emit ready event now that we have state manager
-                document.dispatchEvent(new CustomEvent('gmkb:section-manager:ready', {
-                    detail: {
-                        source: 'SectionLayoutManager',
-                        manager: this,
-                        timestamp: Date.now()
-                    }
-                }));
-            }
+            this.onStateManagerReady(e);
         });
         
-        // Still listen for core systems for other dependencies
+        // Request state manager status in case it's already initialized
+        // This is the proper event-driven way to check for already-ready systems
+        document.dispatchEvent(new CustomEvent('gmkb:request-state-manager', {
+            detail: {
+                requester: 'SectionLayoutManager',
+                callback: (stateManager) => {
+                    if (stateManager && !this.stateManager) {
+                        this.onStateManagerReady({ detail: { stateManager } });
+                    }
+                }
+            }
+        }));
+        
+        // Listen for core systems for other dependencies
         document.addEventListener('gmkb:core-systems-ready', () => {
             this.onCoreSystemsReady();
         });
@@ -78,11 +78,40 @@ class SectionLayoutManager {
     }
     
     /**
+     * Handle state manager ready event
+     * COMPLIANT: Event-driven, no global access
+     */
+    onStateManagerReady(event) {
+        if (this.stateManager) {
+            this.logger.debug('🔄 PHASE 3: State manager already connected, ignoring duplicate ready event');
+            return;
+        }
+        
+        if (!event.detail || !event.detail.stateManager) {
+            this.logger.error('❌ PHASE 3: State manager ready event missing stateManager in detail');
+            return;
+        }
+        
+        this.stateManager = event.detail.stateManager;
+        this.logger.info('✅ PHASE 3: Connected to state manager via event');
+        this.loadSectionsFromState();
+        
+        // Emit ready event now that we have state manager
+        document.dispatchEvent(new CustomEvent('gmkb:section-manager:ready', {
+            detail: {
+                source: 'SectionLayoutManager',
+                manager: this,
+                timestamp: Date.now()
+            }
+        }));
+    }
+    
+    /**
      * Handle core systems ready event
      * Following checklist: Centralized State, Dependency-Awareness
      */
     onCoreSystemsReady() {
-        // This method is now simplified - state manager connection happens in initializeManager
+        // This method is now simplified - state manager connection happens via events
         // We only use this for any other core system dependencies if needed
         this.logger.info('🎯 PHASE 3: Core systems ready - other dependencies can be initialized here');
     }
@@ -93,7 +122,10 @@ class SectionLayoutManager {
      * ROOT FIX: Auto-create default section for orphaned components
      */
     loadSectionsFromState() {
-        if (!this.stateManager) return;
+        if (!this.stateManager) {
+            this.logger.error('❌ PHASE 3: Cannot load sections - state manager not connected');
+            return;
+        }
         
         const state = this.stateManager.getState();
         const sections = state.sections || [];
@@ -809,9 +841,9 @@ class SectionLayoutManager {
             return false;
         }
         
-        // STRICT: Check if we have state manager before proceeding
+        // Check if we have state manager before proceeding
         if (!this.stateManager) {
-            this.logger.error('❌ FATAL: Cannot remove section because state manager is not connected.');
+            this.logger.error('❌ PHASE 3: Cannot remove section - state manager not connected');
             return false;
         }
         

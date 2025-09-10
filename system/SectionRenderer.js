@@ -1121,27 +1121,31 @@ class SectionRenderer {
             
             // ROOT FIX: Only render if not already in DOM
             if (!document.querySelector(`[data-component-id="${componentId}"]`)) {
-                // ROOT FIX: Use the renderComponent method consistently
-                const element = await window.enhancedComponentRenderer.renderComponent(
-                    componentId,
-                    {
-                        type: componentData.type,
-                        props: componentData.props || componentData.data || {}
+            // ROOT FIX: Check if renderer has the method we need
+            if (window.enhancedComponentRenderer && typeof window.enhancedComponentRenderer.renderComponent === 'function') {
+            const element = await window.enhancedComponentRenderer.renderComponent(
+                componentId,
+            {
+                type: componentData.type,
+                    props: componentData.props || componentData.data || {}
                     }
                 );
                 
-                if (element) {
-                    targetContainer.appendChild(element);
-                    // Only mark as rendered AFTER successful render
-                    this.renderedComponents.add(componentId);
-                    this.logger.info(`✅ PHASE 3: Deferred component ${componentId} rendered in section`);
-                } else {
-                    this.logger.error(`❌ PHASE 3: Failed to render deferred component ${componentId}`);
-                }
-            } else {
-                this.logger.debug(`✅ PHASE 3: Deferred component ${componentId} already exists in DOM`);
+            if (element) {
+                targetContainer.appendChild(element);
+                // Only mark as rendered AFTER successful render
                 this.renderedComponents.add(componentId);
-            }
+                    this.logger.info(`✅ PHASE 3: Deferred component ${componentId} rendered in section`);
+            } else {
+                    this.logger.error(`❌ PHASE 3: Failed to render deferred component ${componentId}`);
+                    }
+            } else {
+                this.logger.error(`❌ PHASE 3: Component renderer not ready with renderComponent method`);
+                }
+        } else {
+            this.logger.debug(`✅ PHASE 3: Deferred component ${componentId} already exists in DOM`);
+            this.renderedComponents.add(componentId);
+        }
         }
         
         this.logger.info(`✅ PHASE 3: Finished processing deferred components`);

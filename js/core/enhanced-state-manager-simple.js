@@ -61,6 +61,33 @@
             }
             
             this.logger.info('STATE', 'Enhanced State Manager initialized (simplified)');
+            
+            // Set up request handler immediately so systems can check if we're ready
+            // This handles the race condition where systems initialize after us
+            this.setupRequestHandler();
+        }
+        
+        /**
+         * Set up handler for state manager status requests
+         * COMPLIANT: Event-driven communication pattern
+         */
+        setupRequestHandler() {
+            document.addEventListener('gmkb:request-state-manager', (event) => {
+                if (event.detail && event.detail.callback && typeof event.detail.callback === 'function') {
+                    // Respond with our instance if we're initialized
+                    if (this.isInitialized) {
+                        event.detail.callback(this);
+                        this.logger.debug('STATE', `Responded to state manager request from ${event.detail.requester || 'unknown'}`);
+                    } else {
+                        // If not initialized yet, store the callback to respond later
+                        if (!this.pendingRequests) {
+                            this.pendingRequests = [];
+                        }
+                        this.pendingRequests.push(event.detail);
+                        this.logger.debug('STATE', `Queued state manager request from ${event.detail.requester || 'unknown'} - not ready yet`);
+                    }
+                }
+            });
         }
 
         /**
@@ -121,7 +148,7 @@
                 this.isInitialized = true;
                 this.logger.info('STATE', 'Enhanced State Manager initialization completed');
                 
-                // GEMINI FIX: Dispatch state manager ready event with consistent naming
+                // Dispatch state manager ready event with consistent naming
                 // This is the canonical event that all systems should listen for
                 document.dispatchEvent(new CustomEvent('gmkb:state-manager:ready', {
                     detail: {
@@ -132,6 +159,18 @@
                         hasComponents: Object.keys(this.state.components || {}).length > 0
                     }
                 }));
+                
+                // Process any pending requests that came in before we were ready
+                if (this.pendingRequests && this.pendingRequests.length > 0) {
+                    this.logger.debug('STATE', `Processing ${this.pendingRequests.length} pending state manager requests`);
+                    this.pendingRequests.forEach(request => {
+                        if (request.callback && typeof request.callback === 'function') {
+                            request.callback(this);
+                            this.logger.debug('STATE', `Fulfilled pending request from ${request.requester || 'unknown'}`);
+                        }
+                    });
+                    this.pendingRequests = [];
+                }
                 
             } catch (error) {
                 this.logger.error('STATE', 'Error during initialization', error);
