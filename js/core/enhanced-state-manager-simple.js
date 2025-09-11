@@ -348,13 +348,19 @@
         }
 
         /**
-         * ✅ ROOT CAUSE FIX: Single WordPress data source only
-         * Eliminates complex multi-source logic and race conditions
+         * CLIENT-ONLY RENDERING: Get initial state from JavaScript object
+         * No more complex PHP/localStorage merging - single source of truth
          */
         getInitialStateFromSources() {
-            this.logger.info('STATE', '💾 Single source state loading from WordPress data...');
+            this.logger.info('STATE', '💾 Loading initial state for client-only rendering...');
             
-            // ✅ SIMPLIFIED: Only use WordPress data - no fallback complexity
+            // Check if we're in client-only rendering mode
+            if (window.GMKB_RENDER_MODE === 'client' && window.gmkbInitialState) {
+                this.logger.info('STATE', '✅ Using client-only rendering with initial state');
+                return this.validateAndNormalizeState(window.gmkbInitialState);
+            }
+            
+            // Fallback to existing logic for backwards compatibility
             const wpData = window.gmkbData;
 
             if (!wpData) {

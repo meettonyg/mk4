@@ -82,7 +82,8 @@
             }
             
             /**
-             * GEMINI FIX: Render all components for a specific section
+             * ARCHITECTURE COMPLIANT: Render all components for a specific section
+             * Components ONLY render through sections - no orphans allowed
              */
             async renderComponentsForSection(sectionId) {
                 const sectionElement = document.getElementById(`section-${sectionId}`) || 
@@ -121,10 +122,16 @@
                 
                 // Render each component
                 for (const component of componentsToRender) {
-                    // Check if component already exists
-                    const existingElement = document.getElementById(component.id);
+                    // CRITICAL: Check if component already exists ANYWHERE in DOM
+                    const existingElement = document.getElementById(component.id) ||
+                                          document.querySelector(`[data-component-id="${component.id}"]`);
                     if (existingElement) {
-                        this.logger.debug('RENDER', `Component ${component.id} already exists, skipping`);
+                        this.logger.debug('RENDER', `Component ${component.id} already exists, ensuring it's in correct section`);
+                        // If it exists but not in this section, move it
+                        if (existingElement.parentElement !== targetContainer) {
+                            targetContainer.appendChild(existingElement);
+                            this.logger.info('RENDER', `Moved component ${component.id} to correct section`);
+                        }
                         continue;
                     }
                     
