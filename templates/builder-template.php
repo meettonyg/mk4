@@ -403,10 +403,17 @@ if ($post_id > 0) {
                     <!-- Sections will be rendered here by SectionLayoutManager -->
                     <div class="gmkb-sections-container" id="gmkb-sections-container">
                         <?php 
-                        // ROOT FIX: NO PHP RENDERING - JavaScript handles everything
-                        // PHP only provides the data, JavaScript renders all sections and components
-                        // This ensures single rendering pipeline and eliminates duplication
-                        ?>
+                        // CLIENT-ONLY RENDERING: PHP provides containers only, no component rendering
+                        // JavaScript is the ONLY system that renders components
+                        // This prevents duplicate rendering
+                        
+                    // Do NOT render any components here
+                    // Do NOT iterate through saved_components
+                    // Do NOT call any render functions
+                    
+                    // The sections container is empty - JavaScript will populate it
+                    ?>
+                    <!-- Components render here via JavaScript only -->
                     </div>
                     
                     <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>

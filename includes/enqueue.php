@@ -1409,23 +1409,15 @@ function gmkb_enqueue_assets() {
     $use_bundled_renderers = !$debug_mode; // Use bundle in production, individual files in debug
     
     if ($use_bundled_renderers) {
-        // PRODUCTION: Load bundled renderers (single file, better performance)
-        $bundle_file = GUESTIFY_PLUGIN_DIR . 'js/bundles/component-renderers-bundle.js';
-        if (file_exists($bundle_file)) {
-            wp_enqueue_script(
-                'gmkb-component-renderers-bundle',
-                $plugin_url . 'js/bundles/component-renderers-bundle.js',
-                array('gmkb-component-registry'),
-                $version,
-                true
-            );
-            
-            if ($debug_mode) {
-                error_log('🚀 GMKB: Using bundled component renderers for better performance');
-            }
-        } else {
-            // Fallback to individual files if bundle doesn't exist
-            $use_bundled_renderers = false;
+        // ARCHITECTURE FIX: Bundle disabled - violates single renderer principle
+        // The bundle was creating duplicate components with truncated IDs
+        // All rendering now handled by enhanced-component-renderer-simplified.js
+        
+        // Force disable the bundle to fix duplicate rendering
+        $use_bundled_renderers = false;
+        
+        if ($debug_mode) {
+            error_log('ARCHITECTURE FIX: Component renderers bundle disabled to prevent duplicate rendering');
         }
     }
     
