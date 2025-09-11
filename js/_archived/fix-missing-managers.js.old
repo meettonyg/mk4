@@ -1,0 +1,359 @@
+/**
+ * Fix Missing Managers - Immediate initialization
+ * This file creates and initializes the missing managers
+ */
+
+(function() {
+    'use strict';
+    
+    console.log('🔧 Fix Missing Managers: Starting...');
+    
+    // Wait for core dependencies
+    const initManagers = () => {
+        if (!window.enhancedStateManager || !window.structuredLogger) {
+            console.log('⏳ Waiting for dependencies...');
+            setTimeout(initManagers, 100);
+            return;
+        }
+        
+        const logger = window.structuredLogger || console;
+        
+        // Create Enhanced Component Manager if missing
+        if (!window.enhancedComponentManager) {
+            logger.info('[FIX] Creating Enhanced Component Manager');
+            
+            class EnhancedComponentManager {
+                constructor() {
+                    this.isInitialized = false;
+                    this.stateManager = window.enhancedStateManager;
+                    this.renderer = window.enhancedComponentRenderer;
+                    this.logger = logger;
+                    
+                    // Initialize immediately
+                    this.initialize();
+                }
+                
+                initialize() {
+                    if (this.isInitialized) return;
+                    
+                    this.isInitialized = true;
+                    this.logger.info('[COMPONENT_MANAGER] ✅ Initialized via fix');
+                    
+                    // Dispatch ready event
+                    document.dispatchEvent(new CustomEvent('gmkb:component-manager-ready'));
+                    
+                    // Load initial components
+                    this.loadInitialComponents();
+                }
+                
+                loadInitialComponents() {
+                    const state = this.stateManager.getState();
+                    
+                    if (!state.components || Object.keys(state.components).length === 0) {
+                        this.logger.info('[COMPONENT_MANAGER] No components to load');
+                        return;
+                    }
+                    
+                    this.logger.info('[COMPONENT_MANAGER] Loading components:', Object.keys(state.components).length);
+                    
+                    // Ensure sections exist
+                    if (!state.sections || state.sections.length === 0) {
+                        this.createDefaultSection();
+                    }
+                    
+                    // Render components
+                    if (this.renderer && this.renderer.renderAllComponents) {
+                        this.renderer.renderAllComponents();
+                    }
+                }
+                
+                createDefaultSection() {
+                    const sectionId = 'section_' + Date.now();
+                    const section = {
+                        section_id: sectionId,
+                        type: 'full_width',
+                        components: [],
+                        created_at: Date.now()
+                    };
+                    
+                    this.stateManager.dispatch({
+                        type: 'UPDATE_SECTIONS',
+                        payload: [section]
+                    });
+                    
+                    // Update components to use this section
+                    const state = this.stateManager.getState();
+                    Object.values(state.components).forEach(comp => {
+                        if (!comp.sectionId) {
+                            comp.sectionId = sectionId;
+                        }
+                    });
+                    
+                    this.logger.info('[COMPONENT_MANAGER] Created default section:', sectionId);
+                }
+                
+                async addComponent(type, data = {}) {
+                    const componentId = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    const state = this.stateManager.getState();
+                    const sections = state.sections || [];
+                    
+                    let sectionId = sections.length > 0 ? sections[0].section_id : null;
+                    if (!sectionId) {
+                        this.createDefaultSection();
+                        const newState = this.stateManager.getState();
+                        sectionId = newState.sections[0].section_id;
+                    }
+                    
+                    const component = {
+                        id: componentId,
+                        type: type,
+                        props: data,
+                        data: data,
+                        sectionId: sectionId,
+                        timestamp: Date.now()
+                    };
+                    
+                    this.stateManager.dispatch({
+                        type: 'ADD_COMPONENT',
+                        payload: component
+                    });
+                    
+                    return componentId;
+                }
+            }
+            
+            window.enhancedComponentManager = new EnhancedComponentManager();
+        }
+        
+        // Create Section Layout Manager if missing
+        if (!window.sectionLayoutManager) {
+            logger.info('[FIX] Creating Section Layout Manager');
+            
+            class SectionLayoutManager {
+                constructor() {
+                    this.initialized = false;
+                    this.sections = new Map();
+                    this.stateManager = window.enhancedStateManager;
+                    this.logger = logger;
+                    
+                    this.init();
+                }
+                
+                init() {
+                    if (this.initialized) return;
+                    
+                    this.initialized = true;
+                    this.logger.info('[SECTION_MANAGER] ✅ Initialized via fix');
+                    
+                    // Load sections from state
+                    const state = this.stateManager.getState();
+                    if (state.sections) {
+                        state.sections.forEach(section => {
+                            this.sections.set(section.section_id, section);
+                        });
+                    }
+                    
+                    // Dispatch ready event
+                    document.dispatchEvent(new CustomEvent('gmkb:section-manager-ready'));
+                    
+                    // Render sections
+                    this.renderAllSections();
+                }
+                
+                registerSection(sectionId, type = 'full_width') {
+                    const section = {
+                        section_id: sectionId,
+                        type: type,
+                        components: [],
+                        created_at: Date.now()
+                    };
+                    
+                    this.sections.set(sectionId, section);
+                    this.updateSectionsInState();
+                    this.renderSection(section);
+                    
+                    return section;
+                }
+                
+                updateSectionsInState() {
+                    const sectionsArray = Array.from(this.sections.values());
+                    this.stateManager.dispatch({
+                        type: 'UPDATE_SECTIONS',
+                        payload: sectionsArray
+                    });
+                }
+                
+                renderAllSections() {
+                    const container = document.getElementById('saved-components-container');
+                    if (!container) return;
+                    
+                    this.logger.info('[SECTION_MANAGER] Rendering sections:', this.sections.size);
+                    
+                    // Clear existing sections
+                    container.querySelectorAll('[data-section-id]').forEach(el => el.remove());
+                    
+                    // Render each section
+                    this.sections.forEach(section => {
+                        this.renderSection(section);
+                    });
+                }
+                
+                renderSection(section) {
+                    const container = document.getElementById('saved-components-container');
+                    if (!container) return;
+                    
+                    // Check if section already exists
+                    if (document.querySelector(`[data-section-id="${section.section_id}"]`)) {
+                        return;
+                    }
+                    
+                    const sectionEl = document.createElement('div');
+                    sectionEl.className = `gmkb-section gmkb-section--${section.type || 'full_width'}`;
+                    sectionEl.setAttribute('data-section-id', section.section_id);
+                    sectionEl.innerHTML = `
+                        <div class="gmkb-section__content" data-drop-zone="true"></div>
+                        <div class="gmkb-section__controls">
+                            <button class="gmkb-section__control gmkb-section__control--delete" 
+                                    data-section-id="${section.section_id}" title="Delete Section">×</button>
+                        </div>
+                    `;
+                    
+                    container.appendChild(sectionEl);
+                    this.logger.info('[SECTION_MANAGER] Rendered section:', section.section_id);
+                }
+                
+                getAllSections() {
+                    return Array.from(this.sections.values());
+                }
+            }
+            
+            window.sectionLayoutManager = new SectionLayoutManager();
+            window.SectionLayoutManager = window.sectionLayoutManager;
+        }
+        
+        // Create Section Renderer if missing
+        if (!window.sectionRenderer) {
+            logger.info('[FIX] Creating Section Renderer');
+            
+            class SectionRenderer {
+                constructor() {
+                    this.initialized = true;
+                    this.logger = logger;
+                    this.stateManager = window.enhancedStateManager;
+                    this.sectionManager = window.sectionLayoutManager;
+                    
+                    this.logger.info('[SECTION_RENDERER] ✅ Initialized via fix');
+                    document.dispatchEvent(new CustomEvent('gmkb:section-renderer-ready'));
+                }
+                
+                renderAllSections() {
+                    if (this.sectionManager) {
+                        this.sectionManager.renderAllSections();
+                    }
+                }
+            }
+            
+            window.sectionRenderer = new SectionRenderer();
+            window.SectionRenderer = window.sectionRenderer;
+        }
+        
+        // Create Initial State Loader if missing
+        if (!window.initialStateLoader) {
+            logger.info('[FIX] Creating Initial State Loader');
+            
+            class InitialStateLoader {
+                constructor() {
+                    this.isLoaded = false;
+                    this.logger = logger;
+                    
+                    // Load immediately
+                    setTimeout(() => this.loadInitialState(), 100);
+                }
+                
+                async loadInitialState() {
+                    if (this.isLoaded) return;
+                    
+                    const stateManager = window.enhancedStateManager;
+                    const sectionManager = window.sectionLayoutManager;
+                    const renderer = window.enhancedComponentRenderer;
+                    
+                    if (!stateManager || !sectionManager || !renderer) {
+                        this.logger.error('[STATE_LOADER] Required systems not available');
+                        return;
+                    }
+                    
+                    this.isLoaded = true;
+                    
+                    const state = stateManager.getState();
+                    
+                    this.logger.info('[STATE_LOADER] Loading state:', {
+                        components: Object.keys(state.components || {}).length,
+                        sections: (state.sections || []).length
+                    });
+                    
+                    // Ensure sections exist
+                    if (state.sections && state.sections.length > 0) {
+                        sectionManager.renderAllSections();
+                    } else if (state.components && Object.keys(state.components).length > 0) {
+                        // Create default section for orphaned components
+                        const sectionId = 'section_' + Date.now();
+                        sectionManager.registerSection(sectionId, 'full_width');
+                        
+                        // Update components
+                        Object.values(state.components).forEach(comp => {
+                            if (!comp.sectionId) {
+                                comp.sectionId = sectionId;
+                            }
+                        });
+                    }
+                    
+                    // Render components
+                    if (state.components && Object.keys(state.components).length > 0) {
+                        // Hide empty state
+                        const emptyState = document.getElementById('empty-state');
+                        if (emptyState) {
+                            emptyState.style.display = 'none';
+                        }
+                        
+                        // Show container
+                        const container = document.getElementById('saved-components-container');
+                        if (container) {
+                            container.style.display = 'block';
+                        }
+                        
+                        // Render all components
+                        if (renderer.renderAllComponents) {
+                            renderer.renderAllComponents();
+                        }
+                    }
+                    
+                    this.logger.info('[STATE_LOADER] ✅ Initial state loaded');
+                    document.dispatchEvent(new CustomEvent('gmkb:initial-state-loaded'));
+                }
+                
+                reload() {
+                    this.isLoaded = false;
+                    this.loadInitialState();
+                }
+            }
+            
+            window.initialStateLoader = new InitialStateLoader();
+        }
+        
+        // Force check core systems
+        if (window.coreSystemsCoordinator) {
+            setTimeout(() => {
+                window.coreSystemsCoordinator.checkSystemReadiness(true);
+            }, 200);
+        }
+        
+        console.log('✅ Fix Missing Managers: Complete');
+    };
+    
+    // Start initialization
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initManagers);
+    } else {
+        initManagers();
+    }
+})();

@@ -209,12 +209,56 @@ class InitialStateLoader {
     }
 }
 
-// Create and expose globally
-window.initialStateLoader = new InitialStateLoader();
-
-// Log availability
-if (window.structuredLogger) {
-    window.structuredLogger.info('[STATE_LOADER] Initial State Loader available globally');
-} else {
-    console.log('✅ Initial State Loader available globally');
-}
+// Wait for all dependencies before creating the loader
+// ARCHITECTURE COMPLIANT: Event-driven initialization
+(function() {
+    'use strict';
+    
+    let loaderCreated = false;
+    
+    const createLoader = () => {
+        if (loaderCreated) return;
+        
+        // Check if all dependencies are available
+        if (!window.structuredLogger || 
+            !window.enhancedStateManager || 
+            !window.sectionLayoutManager ||
+            !window.sectionRenderer ||
+            !window.enhancedComponentManager ||
+            !window.enhancedComponentRenderer) {
+            
+            // Wait a bit more for all systems
+            return;
+        }
+        
+        loaderCreated = true;
+        
+        // Create and expose globally
+        window.initialStateLoader = new InitialStateLoader();
+        
+        // Log availability
+        if (window.structuredLogger) {
+            window.structuredLogger.info('[STATE_LOADER] Initial State Loader available globally');
+        } else {
+            console.log('✅ Initial State Loader available globally');
+        }
+    };
+    
+    // Listen for all systems to be ready
+    document.addEventListener('gmkb:core-systems-ready', () => {
+        // Wait a moment for all managers to initialize
+        setTimeout(createLoader, 100);
+    });
+    
+    document.addEventListener('gmkb:section-manager-ready', () => {
+        setTimeout(createLoader, 100);
+    });
+    
+    document.addEventListener('gmkb:component-manager-ready', () => {
+        setTimeout(createLoader, 100);
+    });
+    
+    document.addEventListener('gmkb:section-renderer-ready', () => {
+        setTimeout(createLoader, 100);
+    });
+})();

@@ -22,7 +22,7 @@
         console.log('Component Manager:', {
             exists: !!window.enhancedComponentManager,
             initialized: window.enhancedComponentManager?.isInitialized || false,
-            hasInitialize: typeof window.enhancedComponentManager?.initialize === 'function'
+            hasAddComponent: typeof window.enhancedComponentManager?.addComponent === 'function'
         });
         
         console.log('Component Renderer:', {
@@ -34,6 +34,11 @@
         console.log('Section Layout Manager:', {
             exists: !!window.sectionLayoutManager,
             initialized: window.sectionLayoutManager?.initialized || false
+        });
+        
+        console.log('Section Renderer:', {
+            exists: !!window.sectionRenderer,
+            initialized: window.sectionRenderer?.initialized || false
         });
         
         console.log('Initial State Loader:', {
@@ -88,77 +93,75 @@
         console.group('🔧 GMKB Automatic Fix');
         
         try {
-            // Step 1: Initialize State Manager
-            if (window.enhancedStateManager && !window.enhancedStateManager.isInitialized) {
-                console.log('Initializing State Manager...');
-                if (window.enhancedStateManager.initializeAfterSystems) {
-                    await window.enhancedStateManager.initializeAfterSystems();
-                }
+            // Step 1: Check if managers exist, if not create them
+            if (!window.enhancedComponentManager) {
+                console.log('Creating Enhanced Component Manager...');
+                // Load the script dynamically
+                const script = document.createElement('script');
+                script.src = window.gmkbData?.pluginUrl + 'js/core/enhanced-component-manager.js';
+                document.head.appendChild(script);
+                await new Promise(resolve => script.onload = resolve);
             }
             
-            // Step 2: Initialize Component Manager
+            if (!window.sectionLayoutManager) {
+                console.log('Creating Section Layout Manager...');
+                const script = document.createElement('script');
+                script.src = window.gmkbData?.pluginUrl + 'system/SectionLayoutManager.js';
+                document.head.appendChild(script);
+                await new Promise(resolve => script.onload = resolve);
+            }
+            
+            if (!window.sectionRenderer) {
+                console.log('Creating Section Renderer...');
+                const script = document.createElement('script');
+                script.src = window.gmkbData?.pluginUrl + 'system/SectionRenderer.js';
+                document.head.appendChild(script);
+                await new Promise(resolve => script.onload = resolve);
+            }
+            
+            if (!window.initialStateLoader) {
+                console.log('Creating Initial State Loader...');
+                const script = document.createElement('script');
+                script.src = window.gmkbData?.pluginUrl + 'js/loaders/initial-state-loader.js';
+                document.head.appendChild(script);
+                await new Promise(resolve => script.onload = resolve);
+            }
+            
+            // Wait a moment for scripts to initialize
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 2: Initialize managers if not initialized
             if (window.enhancedComponentManager && !window.enhancedComponentManager.isInitialized) {
                 console.log('Initializing Component Manager...');
                 window.enhancedComponentManager.initialize();
             }
             
-            // Step 3: Initialize Section Layout Manager
             if (window.sectionLayoutManager && !window.sectionLayoutManager.initialized) {
                 console.log('Initializing Section Layout Manager...');
                 window.sectionLayoutManager.init();
             }
             
-            // Step 4: Force Core Systems Ready
+            if (window.sectionRenderer && !window.sectionRenderer.initialized) {
+                console.log('Initializing Section Renderer...');
+                window.sectionRenderer.init();
+            }
+            
+            // Step 3: Force core systems ready if needed
             if (window.coreSystemsCoordinator) {
                 console.log('Forcing core systems ready...');
                 window.coreSystemsCoordinator.forceCoreSystemsReady();
             }
             
-            // Step 5: Load Initial State
+            // Wait for systems to respond to events
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 4: Load initial state
             if (window.initialStateLoader && !window.initialStateLoader.isLoaded) {
                 console.log('Loading initial state...');
-                await window.initialStateLoader.loadInitialState();
-            }
-            
-            // Step 6: Check for orphaned components and create sections
-            const state = window.enhancedStateManager?.getState?.();
-            if (state && state.components) {
-                const componentsWithSections = [];
-                Object.entries(state.components).forEach(([id, comp]) => {
-                    if (comp.sectionId) {
-                        componentsWithSections.push({
-                            componentId: id,
-                            sectionId: comp.sectionId,
-                            type: comp.type
-                        });
-                    }
-                });
-                
-                if (componentsWithSections.length > 0) {
-                    console.log(`Found ${componentsWithSections.length} components with section assignments`);
-                    
-                    // Create missing sections
-                    const existingSectionIds = (state.sections || []).map(s => s.section_id);
-                    const neededSections = new Set(componentsWithSections.map(c => c.sectionId));
-                    
-                    for (const sectionId of neededSections) {
-                        if (!existingSectionIds.includes(sectionId)) {
-                            console.log(`Creating missing section: ${sectionId}`);
-                            if (window.sectionLayoutManager) {
-                                window.sectionLayoutManager.registerSection(sectionId, 'full_width', {
-                                    auto_created: true,
-                                    recovered: true
-                                });
-                            }
-                        }
-                    }
-                    
-                    // Re-render sections
-                    if (window.sectionRenderer) {
-                        console.log('Rendering all sections...');
-                        window.sectionRenderer.renderAllSections();
-                    }
-                }
+                window.initialStateLoader.loadInitialState();
+            } else if (window.initialStateLoader) {
+                console.log('Reloading initial state...');
+                window.initialStateLoader.reload();
             }
             
             console.log('✅ Fix complete! Running diagnosis...\n');
@@ -175,38 +178,56 @@
         console.groupEnd();
     };
     
-    // Auto-fix helper
-    window.gmkbQuickFix = function() {
+    // Quick fix helper
+    window.gmkbQuickFix = async function() {
         console.log('🚀 Running quick fix sequence...');
         
-        // Force all systems to initialize
         try {
-            // 1. State manager
-            if (window.enhancedStateManager && !window.enhancedStateManager.isInitialized) {
-                window.enhancedStateManager.initializeAfterSystems();
-            }
+            // Load missing scripts
+            const scripts = [
+                'js/core/enhanced-component-manager.js',
+                'system/SectionLayoutManager.js', 
+                'system/SectionRenderer.js',
+                'js/loaders/initial-state-loader.js'
+            ];
             
-            // 2. Component manager
-            if (window.enhancedComponentManager && !window.enhancedComponentManager.isInitialized) {
-                window.enhancedComponentManager.initialize();
-            }
-            
-            // 3. Section manager
-            if (window.sectionLayoutManager && !window.sectionLayoutManager.initialized) {
-                window.sectionLayoutManager.init();
-            }
-            
-            // 4. Force core systems ready
-            if (window.forceCoreSystemsReady) {
-                window.forceCoreSystemsReady();
-            }
-            
-            // 5. Load initial state after a delay
-            setTimeout(() => {
-                if (window.initialStateLoader) {
-                    window.initialStateLoader.loadInitialState();
+            for (const scriptPath of scripts) {
+                if (!document.querySelector(`script[src*="${scriptPath}"]`)) {
+                    console.log(`Loading ${scriptPath}...`);
+                    const script = document.createElement('script');
+                    script.src = window.gmkbData?.pluginUrl + scriptPath;
+                    document.head.appendChild(script);
+                    await new Promise(resolve => {
+                        script.onload = resolve;
+                        script.onerror = () => {
+                            console.error(`Failed to load ${scriptPath}`);
+                            resolve();
+                        };
+                    });
                 }
-                console.log('✅ Quick fix complete!');
+            }
+            
+            // Wait for scripts to initialize
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Force initialization
+            if (window.coreSystemsCoordinator) {
+                window.coreSystemsCoordinator.forceCoreSystemsReady();
+            }
+            
+            // Wait for events
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Trigger initial state load
+            if (window.initialStateLoader) {
+                window.initialStateLoader.reload();
+            }
+            
+            console.log('✅ Quick fix complete!');
+            
+            // Show results
+            setTimeout(() => {
+                window.gmkbDiagnose();
             }, 500);
             
         } catch (error) {

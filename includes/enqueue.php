@@ -1258,12 +1258,12 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 3: Section Layout Manager
+    // PHASE 3: Section Layout Manager - FIXED PATH
     if (!wp_script_is('gmkb-section-layout-manager', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-layout-manager',
             $plugin_url . 'system/SectionLayoutManager.js',
-            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager', 'gmkb-core-systems-coordinator'),
             $version,
             true
         );
@@ -1274,7 +1274,7 @@ function gmkb_enqueue_assets() {
         wp_enqueue_script(
             'gmkb-section-renderer',
             $plugin_url . 'system/SectionRenderer.js',
-            array('gmkb-section-layout-manager', 'gmkb-structured-logger'),
+            array('gmkb-section-layout-manager', 'gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
             $version,
             true
         );
@@ -1393,8 +1393,9 @@ function gmkb_enqueue_assets() {
             array(
                 'gmkb-enhanced-state-manager',
                 'gmkb-section-layout-manager',
+                'gmkb-section-renderer',
                 'gmkb-enhanced-component-manager',
-                // 'gmkb-enhanced-component-renderer-simplified', // REMOVED: Circular dependency
+                'gmkb-enhanced-component-renderer-simplified',
                 'gmkb-structured-logger'
             ),
             $version,

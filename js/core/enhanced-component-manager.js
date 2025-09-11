@@ -251,12 +251,48 @@ class EnhancedComponentManager {
     }
 }
 
-// Create and expose globally
-window.enhancedComponentManager = new EnhancedComponentManager();
-
-// Log availability
-if (window.structuredLogger) {
-    window.structuredLogger.info('[COMPONENT_MANAGER] Enhanced Component Manager available globally');
-} else {
-    console.log('✅ Enhanced Component Manager available globally');
-}
+// Wait for dependencies before creating the manager
+// ARCHITECTURE COMPLIANT: Event-driven initialization
+(function() {
+    'use strict';
+    
+    let managerCreated = false;
+    
+    const createManager = () => {
+        if (managerCreated) return;
+        
+        // Check if dependencies are available
+        if (!window.structuredLogger || !window.enhancedStateManager) {
+            // Listen for dependencies
+            if (!window.structuredLogger) {
+                document.addEventListener('gmkb:structured-logger-ready', createManager, { once: true });
+            }
+            if (!window.enhancedStateManager) {
+                document.addEventListener('gmkb:state-manager-ready', createManager, { once: true });
+            }
+            return;
+        }
+        
+        managerCreated = true;
+        
+        // Create and expose globally
+        window.enhancedComponentManager = new EnhancedComponentManager();
+        
+        // Log availability
+        if (window.structuredLogger) {
+            window.structuredLogger.info('[COMPONENT_MANAGER] Enhanced Component Manager available globally');
+        } else {
+            console.log('✅ Enhanced Component Manager available globally');
+        }
+    };
+    
+    // Try to create immediately if dependencies are ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', createManager);
+    } else {
+        createManager();
+    }
+    
+    // Also listen for state manager ready event
+    document.addEventListener('gmkb:state-manager-ready', createManager);
+})();
