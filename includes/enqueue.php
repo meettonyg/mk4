@@ -1520,6 +1520,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // GMKB Diagnostic & Fix Tool - Always available
+    if (!wp_script_is('gmkb-diagnostic-fix', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-diagnostic-fix',
+            $plugin_url . 'js/debug/gmkb-diagnostic-fix.js',
+            array('gmkb-main-script'),
+            $version,
+            true
+        );
+    }
+    
     // Design Panel Debug Tool - ROOT FIX: Diagnose design panel issues
     if (defined('WP_DEBUG') && WP_DEBUG) {
         wp_enqueue_script(
@@ -1780,14 +1791,7 @@ function gmkb_enqueue_assets() {
             true
         );
         
-        // ROOT FIX: Component move test script
-        wp_enqueue_script(
-            'gmkb-test-component-move',
-            $plugin_url . 'test-component-move-fix.js',
-            array('gmkb-main-script'),
-            $version . '-debug',
-            true
-        );
+        // ROOT FIX: Component move test script (removed - patch files violate architecture)
         
         // ROOT FIX: Component overwrite fix test script
         wp_enqueue_script(

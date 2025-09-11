@@ -35,6 +35,9 @@
                 return;
             }
             
+            // ROOT FIX: Mark as initialized early to prevent duplicate initialization
+            this.isInitialized = true;
+            
             // ROOT FIX: Listen for section rendered events to move orphaned components
             document.addEventListener('gmkb:section-rendered', (event) => {
                 const { sectionId } = event.detail;
@@ -101,9 +104,11 @@
                 }
 
                 this.synchronizeWithState();
-                this.isInitialized = true;
                 logger.info('COMPONENT', 'Enhanced Component Manager initialized successfully');
 
+                // ROOT FIX: Ensure window reference is set
+                window.enhancedComponentManager = this;
+                
                 document.dispatchEvent(new CustomEvent('gmkb:component-manager-ready', {
                     detail: {
                         timestamp: Date.now(),
@@ -128,7 +133,9 @@
          */
         async loadExistingComponent(componentId, componentType, props = {}, sectionId = null, columnNumber = 1) {
             try {
+                // ROOT FIX: Initialize if needed FIRST
                 if (!this.isInitialized) {
+                    logger.info('COMPONENT', 'Component manager not initialized, initializing now...');
                     this.initialize();
                 }
                 
@@ -136,6 +143,8 @@
                 if (this.idGenerator && typeof this.idGenerator.registerId === 'function') {
                     this.idGenerator.registerId(componentId);
                     logger.debug('COMPONENT', `Registered existing ID with central generator: ${componentId}`);
+                } else {
+                    logger.warn('COMPONENT', 'ID generator not available for registration');
                 }
                 
                 logger.info('COMPONENT', `Loading existing component: ${componentId} (${componentType})`);
@@ -1113,53 +1122,100 @@
     window.EnhancedComponentManager = EnhancedComponentManager;
     window.enhancedComponentManager = new EnhancedComponentManager();
     
-    // Event-driven initialization
+    // Event-driven initialization - ROOT FIX: Initialize immediately if state manager exists
     let componentManagerInitialized = false;
     
     const initializeComponentManager = () => {
         if (componentManagerInitialized) return;
         
-        const isStateManagerReady = window.enhancedStateManager && 
-                                   (window.enhancedStateManager.isInitialized || 
-                                    (window.enhancedStateManager.getState && 
-                                     typeof window.enhancedStateManager.getState === 'function'));
+        // ROOT FIX: More aggressive initialization
+        // Check if state manager has the minimum required method
+        const stateManagerReady = window.enhancedStateManager && 
+                                 (typeof window.enhancedStateManager.getState === 'function' ||
+                                  typeof window.enhancedStateManager.initializeAfterSystems === 'function');
         
-        if (isStateManagerReady) {
+        if (stateManagerReady) {
             if (window.enhancedComponentManager.isInitialized) {
                 componentManagerInitialized = true;
+                logger.info('COMPONENT', 'Component Manager already initialized');
                 return;
             }
             
             try {
+                logger.info('COMPONENT', 'Attempting to initialize Component Manager...');
                 componentManagerInitialized = true;
                 window.enhancedComponentManager.initialize();
-                logger.info('COMPONENT', 'Component Manager initialized successfully');
+                logger.info('COMPONENT', '✅ Component Manager initialized successfully');
+                
+                // ROOT FIX: Also trigger initial state load if available
+                if (window.initialStateLoader && !window.initialStateLoader.isLoaded) {
+                    logger.info('COMPONENT', 'Triggering initial state load...');
+                    window.initialStateLoader.loadInitialState();
+                }
+                
             } catch (error) {
                 componentManagerInitialized = false;
                 logger.error('COMPONENT', 'Failed to initialize component manager:', error);
+                
+                // ROOT FIX: Retry after a short delay if initialization fails
+                setTimeout(() => {
+                    if (!componentManagerInitialized) {
+                        logger.info('COMPONENT', 'Retrying component manager initialization...');
+                        initializeComponentManager();
+                    }
+                }, 100);
             }
         } else {
+            logger.debug('COMPONENT', 'State manager not ready yet, setting up listeners...');
+            
+            // ROOT FIX: Listen for both possible events
             if (!componentManagerInitialized) {
-                document.addEventListener('gmkb:state-manager-ready', () => {
+                // Listen for state manager ready event
+                const onStateManagerReady = () => {
+                    logger.info('COMPONENT', 'State manager ready event received');
                     if (!componentManagerInitialized && !window.enhancedComponentManager.isInitialized) {
-                        try {
-                            componentManagerInitialized = true;
-                            window.enhancedComponentManager.initialize();
-                            logger.info('COMPONENT', 'Component Manager initialized via state manager ready event');
-                        } catch (error) {
-                            componentManagerInitialized = false;
-                            logger.error('COMPONENT', 'Failed to initialize component manager via event:', error);
-                        }
+                        initializeComponentManager();
                     }
-                }, { once: true });
+                };
+                document.addEventListener('gmkb:state-manager-ready', onStateManagerReady, { once: true });
+                
+                // ROOT FIX: Also listen for core systems ready
+                const onCoreSystemsReady = () => {
+                    logger.info('COMPONENT', 'Core systems ready event received');
+                    if (!componentManagerInitialized && !window.enhancedComponentManager.isInitialized) {
+                        initializeComponentManager();
+                    }
+                };
+                document.addEventListener('gmkb:core-systems-ready', onCoreSystemsReady, { once: true });
+                
+                // ROOT FIX: Check again after DOM ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        logger.debug('COMPONENT', 'DOM loaded, checking state manager again...');
+                        setTimeout(initializeComponentManager, 50);
+                    });
+                } else {
+                    setTimeout(initializeComponentManager, 50);
+                }
             }
         }
     };
     
+    // ROOT FIX: Initialize immediately and also on DOM ready
+    logger.info('COMPONENT', 'Starting component manager initialization sequence...');
+    initializeComponentManager();
+    
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeComponentManager);
+        document.addEventListener('DOMContentLoaded', () => {
+            logger.info('COMPONENT', 'DOM content loaded, checking initialization...');
+            initializeComponentManager();
+        });
     } else {
-        initializeComponentManager();
+        // Try again after a short delay
+        setTimeout(() => {
+            logger.info('COMPONENT', 'Delayed initialization check...');
+            initializeComponentManager();
+        }, 10);
     }
     
     // Listen for component events
@@ -1377,6 +1433,13 @@
         setupStateChangeListener();
     }
 
+    // ROOT FIX: Expose manual initialization function for debugging
+    window.forceInitComponentManager = () => {
+        logger.info('COMPONENT', '🔧 Manual component manager initialization requested');
+        componentManagerInitialized = false; // Reset flag to force re-init
+        initializeComponentManager();
+    };
+    
     if (window.gmkbData?.debugMode) {
         console.log('Enhanced Component Manager: Available globally and ready');
         console.log('Enhanced Component Manager: Event listeners for gmkb:add-component ready');

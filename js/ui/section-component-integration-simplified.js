@@ -95,13 +95,19 @@
                     this.makeDraggable(component);
                 });
                 
-                // Make library items draggable
-                const libraryItems = document.querySelectorAll('.component-card, .component-item, [data-component-type], [data-component]');
+                // Make library items draggable - ROOT FIX: More specific selectors
+                const libraryItems = document.querySelectorAll('.component-card, .component-item, [data-component-type]:not([data-component-id]), .gmkb-component-library__item');
                 libraryItems.forEach(item => {
                     this.makeDraggable(item);
                 });
                 
-                this.logger.debug('DRAG', `Made ${components.length} components and ${libraryItems.length} library items draggable`);
+                // ROOT FIX: Also make sidebar component buttons draggable
+                const sidebarButtons = document.querySelectorAll('[data-component]:not([data-component-id])');
+                sidebarButtons.forEach(button => {
+                    this.makeDraggable(button);
+                });
+                
+                this.logger.debug('DRAG', `Made ${components.length} components, ${libraryItems.length} library items, and ${sidebarButtons.length} sidebar buttons draggable`);
             }
             
             /**
@@ -118,6 +124,23 @@
              * ROOT FIX: Setup drop zones for all existing sections
              */
             setupExistingSectionDropZones() {
+                // ROOT FIX: First make the main preview area a drop zone
+                const previewArea = document.getElementById('media-kit-preview');
+                if (previewArea) {
+                    previewArea.setAttribute('data-drop-zone', 'true');
+                    previewArea.setAttribute('data-drop-zone-type', 'main-preview');
+                    this.logger.info('DRAG', 'Main preview area set as drop zone');
+                }
+                
+                // Also make saved components container a drop zone
+                const savedContainer = document.getElementById('saved-components-container');
+                if (savedContainer) {
+                    savedContainer.setAttribute('data-drop-zone', 'true');
+                    savedContainer.setAttribute('data-drop-zone-type', 'saved-components');
+                    this.logger.info('DRAG', 'Saved components container set as drop zone');
+                }
+                
+                // Setup section drop zones
                 const sections = document.querySelectorAll('[data-section-id], .gmkb-section');
                 sections.forEach(section => {
                     this.setupSectionDropZones(section);
@@ -316,13 +339,15 @@
              * ✅ ROOT CAUSE FIX: Simple drag over with enhanced section detection
              */
             handleDragOver(e) {
+                // ROOT FIX: Always prevent default on dragover to enable drop
+                e.preventDefault();
+                
                 if (!this.dragData) return;
                 
                 // ✅ SIMPLIFIED: Find valid drop targets directly
                 const dropTarget = this.findDropTarget(e.target);
                 
                 if (dropTarget) {
-                    e.preventDefault();
                     e.stopPropagation();
                     
                     if (e.dataTransfer) {

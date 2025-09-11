@@ -29,17 +29,38 @@
          * Initialize the loader when systems are ready
          */
         initialize() {
+            // ROOT FIX: More aggressive initialization
+            const checkAndLoad = () => {
+                if (window.enhancedStateManager && window.sectionLayoutManager && !this.isLoaded) {
+                    logger.info('LOADER', '🚀 Systems ready - beginning initial load');
+                    this.loadInitialState();
+                    return true;
+                }
+                return false;
+            };
+            
+            // Try immediately
+            if (checkAndLoad()) return;
+            
             // Listen for core systems ready
             document.addEventListener('gmkb:core-systems-ready', () => {
-                logger.info('LOADER', '🚀 Core systems ready - beginning initial load');
-                this.loadInitialState();
+                logger.info('LOADER', '🚀 Core systems ready event - checking for load');
+                checkAndLoad();
             });
             
-            // Also check if systems are already ready
-            if (window.enhancedStateManager && window.sectionLayoutManager) {
-                logger.info('LOADER', '🚀 Systems already ready - beginning initial load');
-                this.loadInitialState();
-            }
+            // Also listen for component manager ready
+            document.addEventListener('gmkb:component-manager-ready', () => {
+                logger.info('LOADER', '🚀 Component manager ready - checking for load');
+                checkAndLoad();
+            });
+            
+            // Check after a delay as fallback
+            setTimeout(() => {
+                if (!this.isLoaded) {
+                    logger.info('LOADER', '🚀 Delayed check - attempting load');
+                    checkAndLoad();
+                }
+            }, 500);
         }
         
         /**
@@ -240,10 +261,33 @@
             
             logger.info('LOADER', `📦 Loading ${orphanedComponents.length} orphaned components`);
             
-            // Check if component manager is available
+            // ROOT FIX: Initialize component manager if needed
             if (!window.enhancedComponentManager) {
-                logger.error('LOADER', 'Component manager not available');
+                logger.error('LOADER', 'Component manager not available - cannot load orphaned components');
+                
+                // Try to trigger initialization
+                if (window.forceInitComponentManager) {
+                    logger.info('LOADER', 'Attempting to force initialize component manager...');
+                    window.forceInitComponentManager();
+                    
+                    // Check again after a delay
+                    setTimeout(() => {
+                        if (window.enhancedComponentManager) {
+                            this.loadOrphanedComponents(components);
+                        }
+                    }, 100);
+                }
                 return;
+            }
+            
+            // ROOT FIX: Ensure component manager is initialized
+            if (!window.enhancedComponentManager.isInitialized) {
+                logger.info('LOADER', 'Initializing component manager...');
+                try {
+                    window.enhancedComponentManager.initialize();
+                } catch (error) {
+                    logger.error('LOADER', 'Failed to initialize component manager:', error);
+                }
             }
             
             // Load each orphaned component

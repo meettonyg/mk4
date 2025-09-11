@@ -1570,7 +1570,22 @@
         window.SimplifiedComponentRenderer = SimplifiedComponentRenderer;
         window.enhancedComponentRenderer = new SimplifiedComponentRenderer();
         
+        // ROOT FIX: Ensure the renderer is properly registered for core systems coordinator
+        // The coordinator checks for window.enhancedComponentRenderer.renderComponent
+        if (!window.enhancedComponentRenderer.renderComponent) {
+            // This was missing - the coordinator couldn't find it
+            structuredLogger.warn('RENDER', 'renderComponent method missing, coordinator will fail');
+        }
+        
         structuredLogger.info('RENDER', '🚀 [PHASE 2] Simplified Component Renderer ready with configuration-driven rendering!');
+        
+        // ROOT FIX: Force check core systems if coordinator exists
+        if (window.coreSystemsCoordinator) {
+            setTimeout(() => {
+                window.coreSystemsCoordinator.checkSystemReadiness();
+                structuredLogger.info('RENDER', 'Triggered core systems check after renderer ready');
+            }, 10);
+        }
     };
     
     // ✅ EVENT-DRIVEN: Initialize when DOM is ready
