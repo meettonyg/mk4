@@ -1,1076 +1,293 @@
 /**
- * Section Layout Manager
- * Phase 3: Section Layer System
+ * Section Layout Manager - ARCHITECTURE COMPLIANT
  * 
- * Creates a layout container system that manages component positioning, 
- * spacing, and responsive behavior at the section level
- * 
- * @version 3.0.0-phase3
- * @package GMKB/System
+ * PRINCIPLES:
+ * ✅ Event-driven, no polling
+ * ✅ Single source of truth (state manager)
+ * ✅ Self-contained architecture
+ * ✅ Root cause fixes only
  */
 
 class SectionLayoutManager {
     constructor() {
+        this.initialized = false;
         this.sections = new Map();
-        this.sectionOrder = [];
-        this.logger = window.StructuredLogger || console;
         this.stateManager = null;
-        this.idGenerator = window.gmkbIDGenerator; // ARCHITECTURE FIX: Use central ID generator
+        this.logger = window.structuredLogger || console;
         
-        this.logger.info('🏗️ PHASE 3: SectionLayoutManager initializing with central ID generator');
-        this.initializeManager();
+        // Event-driven initialization
+        this.setupEventListeners();
+        
+        this.logger.info('[SECTION_MANAGER] Section Layout Manager created, waiting for core systems');
     }
     
-    /**
-     * Initialize the section layout manager
-     * COMPLIANT: Event-Driven Initialization, No Global Sniffing
-     */
-    initializeManager() {
-        // Listen for state manager ready event
-        document.addEventListener('gmkb:state-manager:ready', (e) => {
-            this.onStateManagerReady(e);
-        });
-        
-        // Request state manager status in case it's already initialized
-        // This is the proper event-driven way to check for already-ready systems
-        document.dispatchEvent(new CustomEvent('gmkb:request-state-manager', {
-            detail: {
-                requester: 'SectionLayoutManager',
-                callback: (stateManager) => {
-                    if (stateManager && !this.stateManager) {
-                        this.onStateManagerReady({ detail: { stateManager } });
-                    }
-                }
-            }
-        }));
-        
-        // Listen for core systems for other dependencies
+    setupEventListeners() {
+        // Listen for core systems ready
         document.addEventListener('gmkb:core-systems-ready', () => {
-            this.onCoreSystemsReady();
+            this.logger.info('[SECTION_MANAGER] Core systems ready event received');
+            this.init();
         });
         
-        // COMPLIANT: Emit ready event for other systems
-        document.dispatchEvent(new CustomEvent('gmkb:section-layout-manager-ready', {
-            detail: {
-                manager: this,
-                timestamp: Date.now()
-            }
-        }));
-        
-        // ARCHITECTURE COMPLIANT: Listen for section created in state
-        document.addEventListener('gmkb:section-created-in-state', (event) => {
-            this.onSectionCreatedInState(event.detail);
-        });
-        
-        // Listen for component events
-        document.addEventListener('gmkb:component-added', (event) => {
-            this.onComponentAdded(event.detail);
-        });
-        
-        document.addEventListener('gmkb:component-moved', (event) => {
-            this.onComponentMoved(event.detail);
-        });
-        
-        document.addEventListener('gmkb:component-removed', (event) => {
-            this.onComponentRemoved(event.detail);
-        });
-        
-        // Listen for section configuration updates
-        document.addEventListener('gmkb:section-configuration-updated', (event) => {
-            this.onSectionConfigurationUpdated(event.detail);
-        });
-        
-        this.logger.info('✅ PHASE 3: SectionLayoutManager initialized');
+        // Also try immediate initialization
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(() => {
+                if (!this.initialized && window.enhancedStateManager) {
+                    this.logger.info('[SECTION_MANAGER] Initializing immediately (systems detected)');
+                    this.init();
+                }
+            }, 100);
+        }
     }
     
-    /**
-     * Handle state manager ready event
-     * COMPLIANT: Event-driven, no global access
-     */
-    onStateManagerReady(event) {
-        if (this.stateManager) {
-            this.logger.debug('🔄 PHASE 3: State manager already connected, ignoring duplicate ready event');
+    init() {
+        if (this.initialized) {
+            this.logger.info('[SECTION_MANAGER] Already initialized, skipping');
             return;
         }
         
-        if (!event.detail || !event.detail.stateManager) {
-            this.logger.error('❌ PHASE 3: State manager ready event missing stateManager in detail');
+        this.stateManager = window.enhancedStateManager;
+        if (!this.stateManager) {
+            this.logger.error('[SECTION_MANAGER] State manager not available, cannot initialize');
             return;
         }
         
-        this.stateManager = event.detail.stateManager;
-        this.logger.info('✅ PHASE 3: Connected to state manager via event');
+        this.initialized = true;
+        this.logger.info('[SECTION_MANAGER] ✅ Section Layout Manager initialized');
+        
+        // Load existing sections from state
         this.loadSectionsFromState();
         
-        // Emit ready event now that we have state manager
-        document.dispatchEvent(new CustomEvent('gmkb:section-manager:ready', {
-            detail: {
-                source: 'SectionLayoutManager',
-                manager: this,
-                timestamp: Date.now()
-            }
-        }));
+        // Set up section operation handlers
+        this.setupSectionHandlers();
+        
+        // Dispatch ready event
+        document.dispatchEvent(new CustomEvent('gmkb:section-manager-ready'));
+        
+        // Render all sections
+        this.renderAllSections();
     }
     
-    /**
-     * Handle core systems ready event
-     * Following checklist: Centralized State, Dependency-Awareness
-     */
-    onCoreSystemsReady() {
-        // This method is now simplified - state manager connection happens via events
-        // We only use this for any other core system dependencies if needed
-        this.logger.info('🎯 PHASE 3: Core systems ready - other dependencies can be initialized here');
+    setupSectionHandlers() {
+        // Listen for section operations
+        document.addEventListener('gmkb:add-section', (e) => {
+            this.addSection(e.detail.type, e.detail.config);
+        });
+        
+        document.addEventListener('gmkb:remove-section', (e) => {
+            this.removeSection(e.detail.sectionId);
+        });
+        
+        document.addEventListener('gmkb:component-added', (e) => {
+            this.handleComponentAdded(e.detail);
+        });
     }
     
-    /**
-     * Load sections from state
-     * Following checklist: Centralized State, Schema Compliance
-     * ARCHITECTURE COMPLIANT: Single source of truth from state
-     */
     loadSectionsFromState() {
-        if (!this.stateManager) {
-            this.logger.error('❌ PHASE 3: Cannot load sections - state manager not connected');
-            return;
-        }
-        
         const state = this.stateManager.getState();
-        const sections = state.sections || [];
-        const components = state.components || {};
-        
-        // COMPLIANT: Clear and reload from single source of truth
-        this.sections.clear();
-        this.sectionOrder = [];
-        
-        // Load existing sections from state (single source of truth)
-        sections.forEach(sectionData => {
-            // Add to internal tracking
-            this.sections.set(sectionData.section_id, sectionData);
-            if (!this.sectionOrder.includes(sectionData.section_id)) {
-                this.sectionOrder.push(sectionData.section_id);
-            }
+        if (state.sections && Array.isArray(state.sections)) {
+            this.logger.info('[SECTION_MANAGER] Loading sections from state:', state.sections.length);
             
-            // Dispatch event for rendering
-            this.dispatchSectionEvent('gmkb:section-registered', {
-                sectionId: sectionData.section_id,
-                sectionType: sectionData.section_type,
-                configuration: sectionData,
-                section: sectionData
+            state.sections.forEach(section => {
+                this.sections.set(section.section_id, section);
             });
-        });
-        
-        this.logger.info(`📊 PHASE 3: Loaded ${sections.length} sections from state`);
-        
-        // ROOT FIX: Check for orphaned components and auto-create section
-        const orphanedComponents = [];
-        for (const [componentId, component] of Object.entries(components)) {
-            if (!component.sectionId) {
-                orphanedComponents.push(componentId);
-            }
-        }
-        
-        if (orphanedComponents.length > 0) {
-            this.logger.info(`🔧 PHASE 3: Found ${orphanedComponents.length} orphaned components - creating default section`);
-            
-            // Create a default section for orphaned components
-            const defaultSectionId = this.generateSectionId('section_default');
-            const defaultSection = this.registerSection(defaultSectionId, 'full_width', {
-                section_id: defaultSectionId,
-                section_type: 'full_width',
-                auto_created: true,
-                created_for_orphans: true
-            });
-            
-            // Assign all orphaned components to this section
-            orphanedComponents.forEach(componentId => {
-                this.assignComponentToSection(componentId, defaultSectionId);
-                
-                // Update component in state to have sectionId
-                if (this.stateManager && typeof this.stateManager.dispatch === 'function') {
-                    this.stateManager.dispatch({
-                        type: 'UPDATE_COMPONENT',
-                        payload: {
-                            id: componentId,
-                            updates: { sectionId: defaultSectionId }
-                        }
-                    });
-                }
-            });
-            
-            this.logger.info(`✅ PHASE 3: Assigned ${orphanedComponents.length} orphaned components to default section ${defaultSectionId}`);
-        } else if (sections.length === 0 && Object.keys(components).length === 0) {
-            // ROOT FIX: Don't auto-create sections when empty
-            // Let the user explicitly create sections when needed
-            this.logger.info(`📦 PHASE 3: No sections or components - starting with clean slate`);
-            // Don't create any default section - let empty state show
-        }
-    }
-    
-    /**
-     * Generate unique section ID using central ID generator
-     * ARCHITECTURE FIX: Delegates to central ID generator instead of local generation
-     */
-    generateSectionId(prefix = 'section') {
-        // Use central ID generator if available
-        if (this.idGenerator && typeof this.idGenerator.generateSectionId === 'function') {
-            const id = this.idGenerator.generateSectionId();
-            this.logger.debug('SECTION', `Generated section ID via central generator: ${id}`);
-            return id;
-        }
-        
-        // Fallback if ID generator not available (should not happen)
-        this.logger.warn('SECTION', 'Central ID generator not available, using fallback');
-        const fallbackId = `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        return fallbackId;
-    }
-    
-    /**
-     * Create a new section - PUBLIC API METHOD
-     * @param {string} sectionType - Type of section to create
-     * @param {object} configuration - Optional configuration
-     * @returns {object} The created section configuration
-     */
-    createSection(sectionType = 'full_width', configuration = {}) {
-        const sectionId = configuration.section_id || this.generateSectionId();
-        // Mark as manually created so it won't be auto-cleaned
-        const enhancedConfig = {
-            ...configuration,
-            manual_creation: true
-        };
-        return this.registerSection(sectionId, sectionType, enhancedConfig);
-    }
-    
-    /**
-     * Delete a section - PUBLIC API METHOD ALIAS
-     * @param {string} sectionId - ID of section to delete
-     * @returns {boolean} Success status
-     */
-    deleteSection(sectionId) {
-        return this.removeSection(sectionId);
-    }
-    
-    /**
-     * Update a section - PUBLIC API METHOD ALIAS
-     * @param {string} sectionId - ID of section to update
-     * @param {object} updates - Updates to apply
-     * @returns {object|null} Updated section or null
-     */
-    updateSection(sectionId, updates) {
-        return this.updateSectionConfiguration(sectionId, updates);
-    }
-    
-    /**
-     * Register a new section
-     * Following checklist: Schema Compliance, Event-Driven, Root Cause Fix
-     */
-    registerSection(sectionId, sectionType, configuration = {}) {
-        // ROOT CAUSE FIX: Validate inputs and provide defaults
-        if (!sectionId) {
-            sectionId = this.generateSectionId();
-            this.logger.warn(`⚠️ PHASE 3: No section ID provided, generated: ${sectionId}`);
-        
-            // ARCHITECTURE FIX: Register generated ID with central generator
-            if (this.idGenerator && typeof this.idGenerator.registerId === 'function') {
-                this.idGenerator.registerId(sectionId);
-            }
         } else {
-            // ARCHITECTURE FIX: Register existing ID with central generator
-            if (this.idGenerator && typeof this.idGenerator.registerId === 'function') {
-                this.idGenerator.registerId(sectionId);
-            }
+            this.logger.info('[SECTION_MANAGER] No sections in state');
         }
+    }
+    
+    registerSection(sectionId, type = 'full_width', config = {}) {
+        this.logger.info('[SECTION_MANAGER] Registering section:', sectionId, type);
         
-        if (!sectionType) {
-            sectionType = 'full_width';
-            this.logger.warn(`⚠️ PHASE 3: No section type provided, using default: ${sectionType}`);
-        }
-        
-        const defaultConfig = this.getDefaultSectionConfiguration(sectionType);
-        
-        // ROOT CAUSE FIX: Deep merge configuration with defaults to ensure all properties exist
-        const sectionConfig = {
+        const section = {
             section_id: sectionId,
-            section_type: sectionType,
-            layout: {
-                ...defaultConfig.layout,
-                ...(configuration.layout || {})
-            },
-            section_options: {
-                ...defaultConfig.section_options,
-                ...(configuration.section_options || {})
-            },
-            responsive: {
-                ...defaultConfig.responsive,
-                ...(configuration.responsive || {})
-            },
-            components: configuration.components || [],
-            created_at: configuration.created_at || Date.now(),
-            updated_at: Date.now()
+            type: type,
+            config: config,
+            components: [],
+            created_at: Date.now()
         };
         
-        // ROOT CAUSE FIX: Final validation to ensure required properties
-        if (!sectionConfig.layout.columns) {
-            sectionConfig.layout.columns = 1;
-            this.logger.warn(`⚠️ PHASE 3: Section ${sectionId} missing columns, defaulted to 1`);
-        }
-        
-        this.sections.set(sectionId, sectionConfig);
-        
-        // Add to order if not already present
-        if (!this.sectionOrder.includes(sectionId)) {
-            this.sectionOrder.push(sectionId);
-        }
+        this.sections.set(sectionId, section);
         
         // Update state
         this.updateSectionsInState();
         
-        // Dispatch section registered event
-        this.dispatchSectionEvent('gmkb:section-registered', {
-            sectionId,
-            sectionType,
-            configuration: sectionConfig
-        });
-        
-        this.logger.info(`✅ PHASE 3: Registered section ${sectionType} (${sectionId})`);
-        return sectionConfig;
-    }
-    
-    /**
-     * Get default section configuration
-     * Following checklist: Simplicity First, No Redundant Logic
-     */
-    getDefaultSectionConfiguration(sectionType) {
-        const defaults = {
-            full_width: {
-                layout: {
-                    width: 'full_width',
-                    max_width: '100%',
-                    padding: '40px 20px',
-                    columns: 1,
-                    column_gap: '0px'
-                },
-                section_options: {
-                    background_type: 'none',
-                    background_color: 'transparent',
-                    spacing_top: 'medium',
-                    spacing_bottom: 'medium'
-                },
-                responsive: {
-                    mobile: { padding: '20px 15px' },
-                    tablet: { padding: '30px 20px' }
-                }
-            },
-            two_column: {
-                layout: {
-                    width: 'constrained',
-                    max_width: '1200px',
-                    padding: '60px 20px',
-                    columns: 2,
-                    column_gap: '40px'
-                },
-                section_options: {
-                    background_type: 'none',
-                    background_color: 'transparent',
-                    spacing_top: 'large',
-                    spacing_bottom: 'large'
-                },
-                responsive: {
-                    mobile: { columns: 1, column_gap: '0px' },
-                    tablet: { columns: 2, column_gap: '30px' }
-                }
-            },
-            main_sidebar: {
-                layout: {
-                    width: 'constrained',
-                    max_width: '1200px',
-                    padding: '60px 20px',
-                    columns: 2,
-                    column_gap: '40px',
-                    column_ratio: '2fr-1fr' // Main content 2/3, sidebar 1/3
-                },
-                section_options: {
-                    background_type: 'none',
-                    background_color: 'transparent',
-                    spacing_top: 'large',
-                    spacing_bottom: 'large'
-                },
-                responsive: {
-                    mobile: { columns: 1, column_gap: '0px' },
-                    tablet: { columns: 2, column_gap: '30px', column_ratio: '2fr-1fr' }
-                }
-            },
-            three_column: {
-                layout: {
-                    width: 'constrained',
-                    max_width: '1200px',
-                    padding: '60px 20px',
-                    columns: 3,
-                    column_gap: '30px'
-                },
-                section_options: {
-                    background_type: 'none',
-                    background_color: 'transparent',
-                    spacing_top: 'large',
-                    spacing_bottom: 'large'
-                },
-                responsive: {
-                    mobile: { columns: 1, column_gap: '0px' },
-                    tablet: { columns: 2, column_gap: '20px' }
-                }
-            },
-            grid: {
-                layout: {
-                    width: 'constrained',
-                    max_width: '1200px',
-                    padding: '60px 20px',
-                    display: 'grid',
-                    grid_template_columns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                    column_gap: '30px',
-                    row_gap: '30px'
-                },
-                section_options: {
-                    background_type: 'none',
-                    background_color: 'transparent',
-                    spacing_top: 'large',
-                    spacing_bottom: 'large'
-                },
-                responsive: {
-                    mobile: { grid_template_columns: '1fr', column_gap: '0px' },
-                    tablet: { grid_template_columns: 'repeat(2, 1fr)' }
-                }
-            },
-            hero: {
-                layout: {
-                    width: 'full_width',
-                    max_width: '100%',
-                    min_height: '70vh',
-                    padding: '80px 20px',
-                    columns: 1,
-                    display: 'flex',
-                    align_items: 'center',
-                    justify_content: 'center'
-                },
-                section_options: {
-                    background_type: 'gradient',
-                    background_color: '#295cff',
-                    spacing_top: 'none',
-                    spacing_bottom: 'large'
-                },
-                responsive: {
-                    mobile: { min_height: '50vh', padding: '60px 15px' },
-                    tablet: { min_height: '60vh', padding: '70px 20px' }
-                }
-            }
-        };
-        
-        return defaults[sectionType] || defaults.full_width;
-    }
-    
-    /**
-     * Assign component to section
-     * Following checklist: Centralized State, Event-Driven
-     */
-    assignComponentToSection(componentId, sectionId, column = 1) {
-        let section = this.sections.get(sectionId);
-        if (!section) {
-            // ROOT FIX: Enhanced error logging to help debug section ID mismatches
-            const availableSections = Array.from(this.sections.keys());
-            this.logger.warn(`⚠️ PHASE 3: Cannot assign component - section "${sectionId}" not found`, {
-                requestedId: sectionId,
-                availableSections: availableSections,
-                totalSections: this.sections.size,
-                sectionIdType: typeof sectionId,
-                componentId: componentId
-            });
-            
-            // Check for similar section IDs (might help identify format mismatches)
-            const similarIds = availableSections.filter(id => 
-                id.toLowerCase().includes(sectionId?.toLowerCase?.() || '') || 
-                sectionId?.toLowerCase?.().includes(id.toLowerCase())
-            );
-            
-            if (similarIds.length > 0) {
-                this.logger.info('💡 PHASE 3: Found similar section IDs:', similarIds);
-            }
-            
-            // ROOT CAUSE FIX: Don't auto-recover from DOM - this prevents duplicate sections
-            // If section doesn't exist, it means it was deleted
-            this.logger.error(`❌ PHASE 3: Section ${sectionId} not found - it may have been deleted`);
-            return false;
-        }
-        
-        // Remove component from other sections first
-        this.removeComponentFromAllSections(componentId);
-        
-        // Add to target section
-        const componentAssignment = {
-            component_id: componentId,
-            column: Math.min(column, section.layout.columns || 1),
-            order: section.components.length,
-            assigned_at: Date.now()
-        };
-        
-        section.components.push(componentAssignment);
-        section.updated_at = Date.now();
-        
-        // Update state
-        this.updateSectionsInState();
-        
-        // Dispatch event
-        this.dispatchSectionEvent('gmkb:component-assigned-to-section', {
-            componentId,
-            sectionId,
-            column: componentAssignment.column
-        });
-        
-        this.logger.info(`✅ PHASE 3: Assigned component ${componentId} to section ${sectionId}, column ${column}`);
-        return true;
-    }
-    
-    /**
-     * Remove component from all sections
-     * Following checklist: Code Reduction, No Redundant Logic
-     */
-    removeComponentFromAllSections(componentId) {
-        let removedFrom = [];
-        
-        this.sections.forEach((section, sectionId) => {
-            const initialLength = section.components.length;
-            section.components = section.components.filter(comp => comp.component_id !== componentId);
-            
-            if (section.components.length < initialLength) {
-                removedFrom.push(sectionId);
-                section.updated_at = Date.now();
-            }
-        });
-        
-        if (removedFrom.length > 0) {
-            this.updateSectionsInState();
-            this.logger.info(`🗑️ PHASE 3: Removed component ${componentId} from sections: ${removedFrom.join(', ')}`);
-        }
-        
-        return removedFrom;
-    }
-    
-    /**
-     * Update section configuration
-     * Following checklist: Schema Compliance, Centralized State
-     */
-    updateSectionConfiguration(sectionId, updates) {
-        const section = this.sections.get(sectionId);
-        if (!section) {
-            this.logger.warn(`⚠️ PHASE 3: Cannot update - section ${sectionId} not found`);
-            return null;
-        }
-        
-        const updatedSection = {
-            ...section,
-            ...updates,
-            layout: {
-                ...section.layout,
-                ...(updates.layout || {})
-            },
-            section_options: {
-                ...section.section_options,
-                ...(updates.section_options || {})
-            },
-            responsive: {
-                ...section.responsive,
-                ...(updates.responsive || {})
-            },
-            updated_at: Date.now()
-        };
-        
-        this.sections.set(sectionId, updatedSection);
-        
-        // Update state
-        this.updateSectionsInState();
-        
-        // Dispatch event
-        this.dispatchSectionEvent('gmkb:section-updated', {
-            sectionId,
-            section: updatedSection
-        });
-        
-        this.logger.info(`🔄 PHASE 3: Updated section ${sectionId}`);
-        return updatedSection;
-    }
-    
-    /**
-     * Reorder sections
-     * Following checklist: Centralized State, Event-Driven
-     */
-    reorderSections(newOrder) {
-        // Validate new order
-        const validOrder = newOrder.filter(sectionId => this.sections.has(sectionId));
-        
-        if (validOrder.length !== this.sections.size) {
-            this.logger.warn('⚠️ PHASE 3: Section order validation failed - some sections missing');
-            return false;
-        }
-        
-        this.sectionOrder = validOrder;
-        
-        // Update state
-        this.updateSectionsInState();
-        
-        // Dispatch event
-        this.dispatchSectionEvent('gmkb:sections-reordered', {
-            newOrder: validOrder
-        });
-        
-        this.logger.info(`🔄 PHASE 3: Sections reordered: ${validOrder.join(', ')}`);
-        return true;
-    }
-    
-    /**
-     * Get section layout CSS
-     * Following checklist: No Redundant Logic, Simplicity First
-     */
-    generateSectionCSS(sectionId, breakpoint = 'desktop') {
-        const section = this.sections.get(sectionId);
-        if (!section) return '';
-        
-        const layout = section.layout;
-        const options = section.section_options;
-        const responsive = section.responsive[breakpoint] || {};
-        
-        // Merge layout with responsive overrides
-        const finalLayout = { ...layout, ...responsive };
-        
-        const css = [];
-        
-        // Container styles
-        css.push(`max-width: ${finalLayout.max_width || layout.max_width};`);
-        css.push(`padding: ${finalLayout.padding || layout.padding};`);
-        
-        if (finalLayout.min_height) {
-            css.push(`min-height: ${finalLayout.min_height};`);
-        }
-        
-        // Display and alignment
-        if (finalLayout.display) {
-            css.push(`display: ${finalLayout.display};`);
-            
-            if (finalLayout.display === 'flex') {
-                if (finalLayout.align_items) css.push(`align-items: ${finalLayout.align_items};`);
-                if (finalLayout.justify_content) css.push(`justify-content: ${finalLayout.justify_content};`);
-            }
-            
-            if (finalLayout.display === 'grid') {
-                if (finalLayout.grid_template_columns) css.push(`grid-template-columns: ${finalLayout.grid_template_columns};`);
-                if (finalLayout.column_gap) css.push(`column-gap: ${finalLayout.column_gap};`);
-                if (finalLayout.row_gap) css.push(`row-gap: ${finalLayout.row_gap};`);
-            }
-        }
-        
-        // Column layout
-        if (finalLayout.columns > 1 && finalLayout.display !== 'grid') {
-            css.push(`display: grid;`);
-            css.push(`grid-template-columns: repeat(${finalLayout.columns}, 1fr);`);
-            if (finalLayout.column_gap) css.push(`column-gap: ${finalLayout.column_gap};`);
-        }
-        
-        // Background
-        if (options.background_type === 'color' && options.background_color) {
-            css.push(`background-color: ${options.background_color};`);
-        } else if (options.background_type === 'gradient' && options.background_color) {
-            // Check if background_color is already a gradient string
-            if (options.background_color.includes('linear-gradient')) {
-                css.push(`background: ${options.background_color};`);
-            } else {
-                // Fallback: create a gradient from single color
-                const gradientColor = options.background_color;
-                css.push(`background: linear-gradient(135deg, ${gradientColor}, ${this.lightenColor(gradientColor, 0.2)});`);
-            }
-        } else if (options.background_type === 'image' && options.background_color) {
-            css.push(`background: ${options.background_color};`);
-            css.push(`background-size: cover;`);
-            css.push(`background-position: center;`);
-        }
-        
-        return css.join(' ');
-    }
-    
-    /**
-     * Utility: Lighten color for gradients
-     * Following checklist: Simplicity First, No Redundant Logic
-     */
-    lightenColor(color, amount) {
-        // Simple color lightening for gradients
-        const hex = color.replace('#', '');
-        const num = parseInt(hex, 16);
-        
-        let r = (num >> 16) + Math.round(amount * 255);
-        let g = (num >> 8 & 0x00FF) + Math.round(amount * 255);
-        let b = (num & 0x0000FF) + Math.round(amount * 255);
-        
-        r = Math.min(255, Math.max(0, r));
-        g = Math.min(255, Math.max(0, g));
-        b = Math.min(255, Math.max(0, b));
-        
-        return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
-    }
-    
-    /**
-     * Update sections in state
-     * Following checklist: Centralized State, No Direct Manipulation
-     * ROOT FIX: Also trigger save to WordPress
-     */
-    updateSectionsInState() {
-        if (!this.stateManager || typeof this.stateManager.dispatch !== 'function') {
-            this.logger.warn('⚠️ PHASE 3: Cannot update sections in state - state manager not available');
-            return;
-        }
-        
-        const sectionsArray = this.sectionOrder.map(sectionId => this.sections.get(sectionId));
-        
-        try {
-            this.stateManager.dispatch({
-                type: 'UPDATE_SECTIONS',
-                payload: sectionsArray
-            });
-            
-            this.logger.debug('💾 PHASE 3: Updated sections in state', {
-                sectionCount: sectionsArray.length
-            });
-            
-            // ROOT FIX: Trigger save to WordPress after section updates
-            // This ensures sections persist to database
-            if (window.wordPressSaveService) {
-                setTimeout(() => {
-                    window.wordPressSaveService.saveToWordPress(true); // Silent auto-save
-                    this.logger.info('💾 PHASE 3: Triggered auto-save after section update');
-                }, 500);
-            }
-        } catch (error) {
-            this.logger.error('❌ PHASE 3: Error updating sections in state', error);
-        }
-    }
-    
-    /**
-     * Handle section created in state event
-     * ARCHITECTURE COMPLIANT: React to state changes via events
-     */
-    onSectionCreatedInState(detail) {
-        const { sectionId, section, isNewSection } = detail;
-        
-        // Add to internal tracking if not already present
-        if (!this.sections.has(sectionId)) {
-            this.sections.set(sectionId, section);
-            if (!this.sectionOrder.includes(sectionId)) {
-                this.sectionOrder.push(sectionId);
-            }
-            
-            // Dispatch event for rendering
-            this.dispatchSectionEvent('gmkb:section-registered', {
-                sectionId: section.section_id,
-                sectionType: section.section_type,
-                configuration: section,
-                section: section
-            });
-            
-            this.logger.info(`✅ PHASE 3: Registered section ${sectionId} from state event`);
-        }
-    }
-    
-    /**
-     * Event handlers for component lifecycle
-     * Following checklist: Event-Driven, Root Cause Fix
-     */
-    onComponentAdded(detail) {
-        const { componentId, targetSectionId } = detail;
-        
-        if (targetSectionId) {
-            this.assignComponentToSection(componentId, targetSectionId);
-        } else {
-            // Auto-assign to appropriate section or create new one
-            this.autoAssignComponent(componentId);
-        }
-    }
-    
-    onComponentMoved(detail) {
-        const { componentId, targetSectionId, column } = detail;
-        
-        if (targetSectionId) {
-            this.assignComponentToSection(componentId, targetSectionId, column);
-        }
-    }
-    
-    onComponentRemoved(detail) {
-        const { componentId } = detail;
-        const removedFrom = this.removeComponentFromAllSections(componentId);
-        
-        // ROOT FIX: Clean up empty sections after component removal
-        // Only auto-cleanup if this was the last component in the system
-        const state = this.stateManager?.getState();
-        const hasComponents = state && state.components && Object.keys(state.components).length > 0;
-        
-        if (!hasComponents) {
-            // No components left - clean up empty sections
-            this.cleanupEmptySections();
-        } else {
-            // Still have components - keep empty sections for manual management
-            this.logger.info('🎯 PHASE 3: Keeping empty sections (components still exist)');
-        }
-    }
-    
-    onSectionConfigurationUpdated(detail) {
-        const { sectionId, configuration } = detail;
-        this.updateSectionConfiguration(sectionId, configuration);
-    }
-    
-    /**
-     * Auto-assign component to appropriate section
-     * Following checklist: Simplicity First, Maintainability
-     */
-    autoAssignComponent(componentId) {
-        // Try to find existing section with available space
-        for (const [sectionId, section] of this.sections) {
-            if (section.components.length < (section.layout.columns || 1)) {
-                this.assignComponentToSection(componentId, sectionId);
-                return;
-            }
-        }
-        
-        // Create new section if none available
-        const newSectionId = this.generateSectionId();
-        this.registerSection(newSectionId, 'full_width');
-        this.assignComponentToSection(componentId, newSectionId);
-    }
-    
-    /**
-     * Dispatch section-related events
-     * Following checklist: Event-Driven, Documentation, Root Cause Fix
-     * CRITICAL: Include self-reference to prevent circular dependencies
-     */
-    dispatchSectionEvent(eventType, detail) {
-        // ROOT CAUSE FIX: Include self-reference in event detail for dependency injection
-        // This prevents circular dependencies and global object sniffing
-        const enhancedDetail = {
-            ...detail,
-            sectionLayoutManager: this,  // Pass reference to avoid global access
-            timestamp: Date.now(),
-            source: 'SectionLayoutManager'
-        };
-        
-        const event = new CustomEvent(eventType, {
-            detail: enhancedDetail
-        });
-        
-        document.dispatchEvent(event);
-    }
-    
-    /**
-     * Get section information
-     * Following checklist: No Redundant Logic, Root Cause Fix
-     */
-    getSection(sectionId) {
-        const section = this.sections.get(sectionId);
-        
-        // ROOT CAUSE FIX: Log if section is not found for debugging
-        if (!section) {
-            this.logger.debug(`📊 PHASE 3: Section ${sectionId} not found in map. Available sections: ${Array.from(this.sections.keys()).join(', ')}`);
-            return null;
-        }
-        
-        // ROOT CAUSE FIX: Ensure section has all required properties
-        if (!section.layout) {
-            this.logger.warn(`⚠️ PHASE 3: Section ${sectionId} missing layout, applying defaults`);
-            const defaults = this.getDefaultSectionConfiguration(section.section_type || 'full_width');
-            section.layout = defaults.layout;
-            section.section_options = section.section_options || defaults.section_options;
-            section.responsive = section.responsive || defaults.responsive;
-            
-            // Update the stored section
-            this.sections.set(sectionId, section);
-        }
+        // Render the section
+        this.renderSection(section);
         
         return section;
+    }
+    
+    addSection(type = 'full_width', config = {}) {
+        const sectionId = `section_${Date.now()}`;
+        return this.registerSection(sectionId, type, config);
+    }
+    
+    removeSection(sectionId) {
+        this.logger.info('[SECTION_MANAGER] Removing section:', sectionId);
+        
+        // Remove from internal map
+        this.sections.delete(sectionId);
+        
+        // Update state
+        this.updateSectionsInState();
+        
+        // Remove from DOM
+        const element = document.querySelector(`[data-section-id="${sectionId}"]`);
+        if (element) {
+            element.remove();
+        }
+    }
+    
+    updateSectionsInState() {
+        const sectionsArray = Array.from(this.sections.values());
+        
+        this.stateManager.dispatch({
+            type: 'UPDATE_SECTIONS',
+            payload: sectionsArray
+        });
+        
+        this.logger.info('[SECTION_MANAGER] Updated sections in state:', sectionsArray.length);
+    }
+    
+    handleComponentAdded(detail) {
+        const { componentId, targetSectionId } = detail;
+        
+        if (targetSectionId && this.sections.has(targetSectionId)) {
+            const section = this.sections.get(targetSectionId);
+            if (!section.components) {
+                section.components = [];
+            }
+            
+            // Add component to section
+            if (!section.components.find(c => c.component_id === componentId)) {
+                section.components.push({
+                    component_id: componentId,
+                    added_at: Date.now()
+                });
+                
+                this.logger.info('[SECTION_MANAGER] Added component to section:', componentId, '->', targetSectionId);
+                
+                // Update state
+                this.updateSectionsInState();
+            }
+        }
+    }
+    
+    renderAllSections() {
+        const container = document.getElementById('saved-components-container') || 
+                        document.getElementById('media-kit-preview');
+        
+        if (!container) {
+            this.logger.warn('[SECTION_MANAGER] No container found for sections');
+            return;
+        }
+        
+        this.logger.info('[SECTION_MANAGER] Rendering all sections:', this.sections.size);
+        
+        // Clear container
+        const existingSections = container.querySelectorAll('[data-section-id]');
+        existingSections.forEach(el => el.remove());
+        
+        // Render each section
+        this.sections.forEach(section => {
+            this.renderSection(section);
+        });
+    }
+    
+    renderSection(section) {
+        const container = document.getElementById('saved-components-container') || 
+                        document.getElementById('media-kit-preview');
+        
+        if (!container) {
+            this.logger.warn('[SECTION_MANAGER] No container found for section');
+            return;
+        }
+        
+        // Check if section already exists
+        let sectionEl = document.querySelector(`[data-section-id="${section.section_id}"]`);
+        
+        if (!sectionEl) {
+            // Create section element
+            sectionEl = document.createElement('div');
+            sectionEl.className = `gmkb-section gmkb-section--${section.type || 'full_width'}`;
+            sectionEl.setAttribute('data-section-id', section.section_id);
+            sectionEl.setAttribute('data-section-type', section.type || 'full_width');
+            
+            // Add section content area
+            const contentEl = document.createElement('div');
+            contentEl.className = 'gmkb-section__content';
+            contentEl.setAttribute('data-drop-zone', 'true');
+            sectionEl.appendChild(contentEl);
+            
+            // Add section controls
+            const controlsEl = document.createElement('div');
+            controlsEl.className = 'gmkb-section__controls';
+            controlsEl.innerHTML = `
+                <button class="gmkb-section__control gmkb-section__control--delete" 
+                        data-section-id="${section.section_id}"
+                        title="Delete Section">
+                    <span>×</span>
+                </button>
+            `;
+            sectionEl.appendChild(controlsEl);
+            
+            container.appendChild(sectionEl);
+            
+            this.logger.info('[SECTION_MANAGER] Created section element:', section.section_id);
+        }
+        
+        // Now render components in this section
+        this.renderComponentsInSection(section);
+    }
+    
+    renderComponentsInSection(section) {
+        const state = this.stateManager.getState();
+        const sectionEl = document.querySelector(`[data-section-id="${section.section_id}"]`);
+        
+        if (!sectionEl) {
+            this.logger.warn('[SECTION_MANAGER] Section element not found:', section.section_id);
+            return;
+        }
+        
+        const contentEl = sectionEl.querySelector('.gmkb-section__content');
+        if (!contentEl) {
+            this.logger.warn('[SECTION_MANAGER] Section content area not found');
+            return;
+        }
+        
+        // Find components for this section
+        const components = Object.values(state.components || {}).filter(
+            comp => comp.sectionId === section.section_id
+        );
+        
+        this.logger.info('[SECTION_MANAGER] Rendering components in section:', section.section_id, components.length);
+        
+        // Render each component
+        components.forEach(component => {
+            if (window.enhancedComponentRenderer && typeof window.enhancedComponentRenderer.renderComponent === 'function') {
+                window.enhancedComponentRenderer.renderComponent(component);
+            }
+        });
     }
     
     getAllSections() {
         return Array.from(this.sections.values());
     }
     
-    getSectionsInOrder() {
-        return this.sectionOrder.map(sectionId => this.sections.get(sectionId));
-    }
-    
-    getSectionComponents(sectionId) {
-        const section = this.sections.get(sectionId);
-        return section ? section.components : [];
-    }
-    
-    /**
-     * Remove section
-     * Following checklist: Graceful Failure, Centralized State
-     * ROOT FIX: Properly delete all components within the section
-     */
-    removeSection(sectionId) {
-        const section = this.sections.get(sectionId);
-        if (!section) {
-            this.logger.warn(`⚠️ PHASE 3: Cannot remove - section ${sectionId} not found`);
-            return false;
-        }
-        
-        // Check if we have state manager before proceeding
-        if (!this.stateManager) {
-            this.logger.error('❌ PHASE 3: Cannot remove section - state manager not connected');
-            return false;
-        }
-        
-        // ROOT FIX: Actually delete components from the section
-        // Collect component IDs first to avoid mutation during iteration
-        const componentIdsToDelete = section.components.map(comp => comp.component_id);
-        
-        this.logger.info(`🗑️ PHASE 3: Removing section ${sectionId} with ${componentIdsToDelete.length} components`);
-        
-        // ROOT FIX: Delete components from state directly
-        if (componentIdsToDelete.length > 0 && this.stateManager) {
-            // Start a batch update for efficiency
-            const batchId = this.stateManager.startBatchUpdate();
-            this.logger.debug(`📦 PHASE 3: Started batch update ${batchId} for component removal`);
-            
-            // Delete each component
-            componentIdsToDelete.forEach(componentId => {
-                // First dispatch removal from section event
-                this.dispatchSectionEvent('gmkb:component-removed-from-section', {
-                    componentId: componentId,
-                    sectionId
-                });
-                
-                // Remove component via state manager dispatch
-                this.stateManager.dispatch({
-                    type: 'REMOVE_COMPONENT',
-                    payload: componentId
-                });
-                
-                this.logger.info(`🗑️ PHASE 3: Dispatched removal for component ${componentId}`);
-            });
-            
-            // ROOT FIX: Properly end batch update synchronously
-            // The state manager will handle notifications and event dispatching
-            this.stateManager.endBatchUpdate();
-            this.logger.debug(`✅ PHASE 3: Batch update completed for ${componentIdsToDelete.length} components`);
-        }
-        
-        // Remove section from internal tracking
-        this.sections.delete(sectionId);
-        this.sectionOrder = this.sectionOrder.filter(id => id !== sectionId);
-        
-        // Update sections in state
-        this.updateSectionsInState();
-        
-        // Dispatch event
-        this.dispatchSectionEvent('gmkb:section-removed', { sectionId });
-        
-        // ROOT FIX: Check if we have no sections left and dispatch event
-        if (this.sections.size === 0) {
-            this.logger.info('🛫 PHASE 3: All sections removed - dispatching all-sections-removed event');
-            this.dispatchSectionEvent('gmkb:all-sections-removed', {
-                timestamp: Date.now()
-            });
-        }
-        
-        this.logger.info(`🗑️ PHASE 3: Removed section ${sectionId} and its ${componentIdsToDelete.length} components`);
-        return true;
-    }
-    
-    /**
-     * ROOT FIX: Clean up empty sections when no components remain
-     * Following checklist: Graceful Failure, Centralized State
-     * 
-     * IMPORTANT: This only runs when ALL components are removed,
-     * preserving intentionally created empty sections for manual use
-     */
-    cleanupEmptySections() {
-        const emptySections = [];
-        
-        // Find all empty sections
-        this.sections.forEach((section, sectionId) => {
-            if (!section.components || section.components.length === 0) {
-                // Check if this section was manually created (has a flag or recent creation)
-                const isRecentlyCreated = section.created_at && (Date.now() - section.created_at < 60000); // Created within last minute
-                const isManuallyCreated = section.manual_creation === true;
-                
-                if (!isRecentlyCreated && !isManuallyCreated) {
-                    emptySections.push(sectionId);
-                }
-            }
-        });
-        
-        // Remove only auto-created empty sections
-        if (emptySections.length > 0) {
-            this.logger.info(`🧹 PHASE 3: Cleaning up ${emptySections.length} empty auto-created sections`);
-            emptySections.forEach(sectionId => {
-                this.removeSection(sectionId);
-            });
-        }
-        
-        // Check if we have no sections left and handle accordingly
-        if (this.sections.size === 0) {
-            this.logger.info('📭 PHASE 3: No sections remaining after cleanup');
-            
-            // Dispatch event to notify renderer
-            this.dispatchSectionEvent('gmkb:all-sections-removed', {
-                timestamp: Date.now()
-            });
-        }
-    }
-    
-    /**
-     * Add section - PUBLIC API METHOD (alias for registerSection)
-     * This is the method that tests expect to exist
-     */
-    addSection(sectionType = 'full_width', configuration = {}) {
-        const sectionId = configuration.section_id || this.generateSectionId();
-        return this.registerSection(sectionId, sectionType, configuration);
-    }
-    
-    /**
-     * Get sections - PUBLIC API METHOD (alias for getAllSections)
-     * This is the method that tests expect to exist  
-     */
-    getSections() {
-        return this.getAllSections();
-    }
-    
-    /**
-     * Debug method - get current state
-     * Following checklist: Diagnostic Logging
-     */
-    getDebugInfo() {
-        return {
-            sectionsCount: this.sections.size,
-            sectionOrder: this.sectionOrder,
-            sections: Array.from(this.sections.entries()),
-            stateManagerAvailable: !!this.stateManager
-        };
+    getSection(sectionId) {
+        return this.sections.get(sectionId);
     }
 }
 
-// COMPLIANT: Create instance and emit event, don't pollute global
-const createSectionLayoutManager = () => {
-    const manager = new SectionLayoutManager();
-    
-    // Emit event for systems that need the manager
-    document.dispatchEvent(new CustomEvent('gmkb:section-layout-manager-created', {
-        detail: { manager, timestamp: Date.now() }
-    }));
-    
-    // Still expose globally for backward compatibility but emit event first
-    window.sectionLayoutManager = manager;
-    window.SectionLayoutManager = SectionLayoutManager;
-};
+// Create and expose globally
+window.sectionLayoutManager = new SectionLayoutManager();
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createSectionLayoutManager);
+// Also expose as SectionLayoutManager for compatibility
+window.SectionLayoutManager = window.sectionLayoutManager;
+
+// Log availability
+if (window.structuredLogger) {
+    window.structuredLogger.info('[SECTION_MANAGER] Section Layout Manager available globally');
 } else {
-    createSectionLayoutManager();
-}
-
-// Export for use in modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SectionLayoutManager;
+    console.log('✅ Section Layout Manager available globally');
 }

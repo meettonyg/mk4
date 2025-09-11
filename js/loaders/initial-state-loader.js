@@ -1,386 +1,220 @@
 /**
- * Initial State Loader
- * ROOT FIX: Loads components and sections from saved state on page load
+ * Initial State Loader - ARCHITECTURE COMPLIANT
  * 
- * CHECKLIST COMPLIANT:
- * ✅ Phase 1: Event-driven, no polling
- * ✅ Phase 2: Uses state manager centrally
- * ✅ Phase 3: Graceful error handling
- * ✅ Phase 4: Proper WordPress integration
- * 
- * @version 1.0.0
+ * PRINCIPLES:
+ * ✅ Event-driven, no polling
+ * ✅ Loads saved state on initialization
+ * ✅ Coordinates section and component rendering
+ * ✅ Root cause fixes only
  */
 
-(function() {
-    'use strict';
-    
-    const logger = window.structuredLogger || console;
-    
-    class InitialStateLoader {
-        constructor() {
-            this.isLoaded = false;
-            this.sectionsLoaded = false;
-            this.componentsLoaded = false;
-            
-            logger.info('LOADER', '🔄 Initial State Loader created');
-        }
+class InitialStateLoader {
+    constructor() {
+        this.isLoaded = false;
+        this.logger = window.structuredLogger || console;
         
-        /**
-         * Initialize the loader when systems are ready
-         */
-        initialize() {
-            // ROOT FIX: More aggressive initialization
-            const checkAndLoad = () => {
-                if (window.enhancedStateManager && window.sectionLayoutManager && !this.isLoaded) {
-                    logger.info('LOADER', '🚀 Systems ready - beginning initial load');
-                    this.loadInitialState();
-                    return true;
-                }
-                return false;
-            };
-            
-            // Try immediately
-            if (checkAndLoad()) return;
-            
-            // Listen for core systems ready
-            document.addEventListener('gmkb:core-systems-ready', () => {
-                logger.info('LOADER', '🚀 Core systems ready event - checking for load');
-                checkAndLoad();
-            });
-            
-            // Also listen for component manager ready
-            document.addEventListener('gmkb:component-manager-ready', () => {
-                logger.info('LOADER', '🚀 Component manager ready - checking for load');
-                checkAndLoad();
-            });
-            
-            // Check after a delay as fallback
-            setTimeout(() => {
-                if (!this.isLoaded) {
-                    logger.info('LOADER', '🚀 Delayed check - attempting load');
-                    checkAndLoad();
-                }
-            }, 500);
-        }
+        // Event-driven initialization
+        this.setupEventListeners();
         
-        /**
-         * Load the initial state from the state manager
-         */
-        async loadInitialState() {
-            if (this.isLoaded) {
-                logger.warn('LOADER', 'Initial state already loaded');
-                return;
-            }
-            
-            try {
-                // Get the current state
-                const state = window.enhancedStateManager?.getState();
-                
-                if (!state) {
-                    logger.warn('LOADER', 'No state available from state manager');
-                    return;
-                }
-                
-                logger.info('LOADER', '📦 Loading initial state', {
-                    sections: state.sections?.length || 0,
-                    components: Object.keys(state.components || {}).length
-                });
-                
-                // ROOT FIX: Check for components with section IDs but missing sections
-                await this.ensureSectionsForComponents(state.components || {}, state.sections || []);
-                
-                // Step 1: Load sections first (they create containers for components)
-                await this.loadSections(state.sections || []);
-                
-                // Step 2: Load orphaned components (components without sections)
-                await this.loadOrphanedComponents(state.components || {});
-                
-                // Step 3: Update container display
-                this.updateContainerDisplay(state);
-                
-                this.isLoaded = true;
-                
-                // Dispatch initial load complete event
-                document.dispatchEvent(new CustomEvent('gmkb:initial-load-complete', {
-                    detail: {
-                        sectionsLoaded: this.sectionsLoaded,
-                        componentsLoaded: this.componentsLoaded,
-                        timestamp: Date.now()
-                    }
-                }));
-                
-                logger.info('LOADER', '✅ Initial state load complete');
-                
-            } catch (error) {
-                logger.error('LOADER', 'Failed to load initial state:', error);
-            }
-        }
-        
-        /**
-         * ROOT FIX: Ensure sections exist for components that reference them
-         * IMPORTANT: Use the actual sectionId from components instead of creating new ones
-         */
-        async ensureSectionsForComponents(components, sections) {
-            if (!window.sectionLayoutManager) {
-                logger.warn('LOADER', 'Section layout manager not available');
-                return;
-            }
-            
-            const componentIds = Object.keys(components);
-            const existingSectionIds = sections.map(s => s.section_id || s.id);
-            const missingSectionIds = new Set();
-            
-            // Find all section IDs referenced by components
-            for (const componentId of componentIds) {
-                const component = components[componentId];
-                if (component.sectionId && !existingSectionIds.includes(component.sectionId)) {
-                    missingSectionIds.add(component.sectionId);
-                }
-            }
-            
-            // Create missing sections
-            if (missingSectionIds.size > 0) {
-                logger.info('LOADER', `🔧 Creating ${missingSectionIds.size} missing sections for components`);
-                
-                for (const sectionId of missingSectionIds) {
-                    try {
-                        // Determine layout type from section ID or default to full_width
-                        let layoutType = 'full_width';
-                        if (sectionId.includes('two_column')) {
-                            layoutType = 'two_column';
-                        } else if (sectionId.includes('three_column')) {
-                            layoutType = 'three_column';
-                        }
-                        
-                        logger.info('LOADER', `Creating missing section: ${sectionId} (${layoutType})`);
-                        
-                        // ROOT FIX: Register the section with the EXACT ID from the component
-                        // This preserves the original section-component relationship
-                        const section = window.sectionLayoutManager.registerSection(sectionId, layoutType, {
-                            section_id: sectionId,
-                            section_type: layoutType,
-                            auto_created: true,
-                            recovered_from_components: true,
-                            created_at: Date.now(),
-                            updated_at: Date.now()
-                        });
-                        
-                        if (section) {
-                            logger.info('LOADER', `✅ Recovered section: ${sectionId}`);
-                            
-                            // The section is already registered and in state via registerSection
-                            // No need to dispatch again, just mark that we updated the state
-                            logger.info('LOADER', `Section ${sectionId} registered with state manager`);
-                        }
-                    } catch (error) {
-                        logger.error('LOADER', `Failed to create section ${sectionId}:`, error);
-                    }
-                }
-                
-                // ROOT FIX: After creating all missing sections, trigger a save
-                // This ensures the recovered sections are persisted
-                if (window.wordPressSaveService) {
-                    setTimeout(() => {
-                        window.wordPressSaveService.saveToWordPress(true); // Silent auto-save
-                        logger.info('LOADER', '💾 Triggered auto-save after recovering sections');
-                    }, 1000);
-                }
-            }
-        }
-        
-        /**
-         * Load sections from state
-         */
-        async loadSections(sections) {
-            if (!sections || sections.length === 0) {
-                logger.info('LOADER', 'No sections to load');
-                return;
-            }
-            
-            if (!window.sectionLayoutManager) {
-                logger.error('LOADER', 'Section layout manager not available');
-                return;
-            }
-            
-            logger.info('LOADER', `🏗️ Loading ${sections.length} sections`);
-            
-            // Sections should already be registered in state
-            // Just ensure they're rendered
-            for (const section of sections) {
-                try {
-                    // Check if section is already in DOM
-                    const existingSection = document.querySelector(`[data-section-id="${section.section_id}"]`);
-                    
-                    if (!existingSection) {
-                        // Section not in DOM, needs to be rendered
-                        logger.info('LOADER', `Rendering section: ${section.section_id}`);
-                        
-                        // The section should already be in the layout manager
-                        // Just trigger rendering via event
-                        document.dispatchEvent(new CustomEvent('gmkb:section-registered', {
-                            detail: {
-                                sectionId: section.section_id,
-                                sectionLayoutManager: window.sectionLayoutManager,
-                                source: 'initial-load'
-                            }
-                        }));
-                    } else {
-                        logger.debug('LOADER', `Section already in DOM: ${section.section_id}`);
-                    }
-                } catch (error) {
-                    logger.error('LOADER', `Failed to load section ${section.section_id}:`, error);
-                }
-            }
-            
-            this.sectionsLoaded = true;
-            logger.info('LOADER', '✅ Sections loaded');
-        }
-        
-        /**
-         * Load orphaned components (components not assigned to sections)
-         */
-        async loadOrphanedComponents(components) {
-            const componentIds = Object.keys(components);
-            
-            if (componentIds.length === 0) {
-                logger.info('LOADER', 'No components to load');
-                return;
-            }
-            
-            // Filter out components that are in sections
-            const orphanedComponents = componentIds.filter(id => {
-                const component = components[id];
-                return !component.sectionId; // No section assignment
-            });
-            
-            if (orphanedComponents.length === 0) {
-                logger.info('LOADER', 'No orphaned components to load (all components are in sections)');
-                this.componentsLoaded = true;
-                return;
-            }
-            
-            logger.info('LOADER', `📦 Loading ${orphanedComponents.length} orphaned components`);
-            
-            // ROOT FIX: Initialize component manager if needed
-            if (!window.enhancedComponentManager) {
-                logger.error('LOADER', 'Component manager not available - cannot load orphaned components');
-                
-                // Try to trigger initialization
-                if (window.forceInitComponentManager) {
-                    logger.info('LOADER', 'Attempting to force initialize component manager...');
-                    window.forceInitComponentManager();
-                    
-                    // Check again after a delay
-                    setTimeout(() => {
-                        if (window.enhancedComponentManager) {
-                            this.loadOrphanedComponents(components);
-                        }
-                    }, 100);
-                }
-                return;
-            }
-            
-            // ROOT FIX: Ensure component manager is initialized
-            if (!window.enhancedComponentManager.isInitialized) {
-                logger.info('LOADER', 'Initializing component manager...');
-                try {
-                    window.enhancedComponentManager.initialize();
-                } catch (error) {
-                    logger.error('LOADER', 'Failed to initialize component manager:', error);
-                }
-            }
-            
-            // Load each orphaned component
-            for (const componentId of orphanedComponents) {
-                try {
-                    const componentData = components[componentId];
-                    
-                    // Check if component already exists in DOM
-                    const existingElement = document.getElementById(componentId) || 
-                                          document.querySelector(`[data-component-id="${componentId}"]`);
-                    
-                    if (!existingElement) {
-                        // Component not in DOM, needs to be loaded
-                        logger.info('LOADER', `Loading orphaned component: ${componentId} (${componentData.type})`);
-                        
-                        // Use the loadExistingComponent method if available
-                        if (window.enhancedComponentManager.loadExistingComponent) {
-                            await window.enhancedComponentManager.loadExistingComponent(
-                                componentId,
-                                componentData.type,
-                                componentData.props || componentData.data || {},
-                                null, // No section
-                                null  // No column
-                            );
-                        } else {
-                            // Fallback: trigger component add via renderer
-                            logger.warn('LOADER', 'loadExistingComponent not available, using renderer');
-                            
-                            // The renderer's state change handler should pick this up
-                            // but we can also trigger it directly
-                            if (window.enhancedComponentRenderer) {
-                                const element = await window.enhancedComponentRenderer.renderComponent(
-                                    componentId,
-                                    componentData
-                                );
-                                
-                                if (element) {
-                                    const container = document.getElementById('saved-components-container') ||
-                                                    document.getElementById('media-kit-preview');
-                                    if (container) {
-                                        container.appendChild(element);
-                                        logger.info('LOADER', `✅ Rendered orphaned component: ${componentId}`);
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        logger.debug('LOADER', `Component already in DOM: ${componentId}`);
-                    }
-                } catch (error) {
-                    logger.error('LOADER', `Failed to load component ${componentId}:`, error);
-                }
-            }
-            
-            this.componentsLoaded = true;
-            logger.info('LOADER', '✅ Orphaned components loaded');
-        }
-        
-        /**
-         * Update container display based on state
-         */
-        updateContainerDisplay(state) {
-            const hasComponents = state.components && Object.keys(state.components).length > 0;
-            const hasSections = state.sections && state.sections.length > 0;
-            
-            const savedContainer = document.getElementById('saved-components-container');
-            const emptyState = document.getElementById('empty-state');
-            
-            if (hasComponents || hasSections) {
-                if (savedContainer) savedContainer.style.display = 'block';
-                if (emptyState) emptyState.style.display = 'none';
-                logger.info('LOADER', '👁️ Showing content containers');
-            } else {
-                if (savedContainer) savedContainer.style.display = 'none';
-                if (emptyState) emptyState.style.display = 'block';
-                logger.info('LOADER', '👁️ Showing empty state');
-            }
-        }
+        this.logger.info('[STATE_LOADER] Initial State Loader created');
     }
     
-    // Create and initialize the loader
-    window.initialStateLoader = new InitialStateLoader();
-    
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            window.initialStateLoader.initialize();
+    setupEventListeners() {
+        // Wait for all required systems to be ready
+        let systemsReady = {
+            stateManager: false,
+            sectionManager: false,
+            componentManager: false,
+            renderer: false
+        };
+        
+        const checkAllSystemsReady = () => {
+            const allReady = Object.values(systemsReady).every(ready => ready === true);
+            if (allReady && !this.isLoaded) {
+                this.logger.info('[STATE_LOADER] All systems ready, loading initial state');
+                this.loadInitialState();
+            }
+        };
+        
+        // Listen for individual system ready events
+        document.addEventListener('gmkb:core-systems-ready', () => {
+            systemsReady.stateManager = true;
+            systemsReady.renderer = true; // Core systems include renderer
+            checkAllSystemsReady();
         });
-    } else {
-        // DOM already loaded
-        window.initialStateLoader.initialize();
+        
+        document.addEventListener('gmkb:section-manager-ready', () => {
+            systemsReady.sectionManager = true;
+            checkAllSystemsReady();
+        });
+        
+        document.addEventListener('gmkb:component-manager-ready', () => {
+            systemsReady.componentManager = true;
+            checkAllSystemsReady();
+        });
+        
+        // Fallback: Check after DOM ready
+        if (document.readyState === 'complete') {
+            this.checkSystemsAndLoad();
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.checkSystemsAndLoad();
+            });
+        }
     }
     
-    logger.info('LOADER', '✅ Initial State Loader ready');
+    checkSystemsAndLoad() {
+        // Give systems time to initialize
+        setTimeout(() => {
+            if (!this.isLoaded && this.areSystemsAvailable()) {
+                this.logger.info('[STATE_LOADER] Systems available, loading initial state (fallback)');
+                this.loadInitialState();
+            }
+        }, 500);
+    }
     
-})();
+    areSystemsAvailable() {
+        return !!(
+            window.enhancedStateManager &&
+            window.sectionLayoutManager &&
+            window.enhancedComponentManager &&
+            window.enhancedComponentRenderer
+        );
+    }
+    
+    async loadInitialState() {
+        if (this.isLoaded) {
+            this.logger.info('[STATE_LOADER] Initial state already loaded');
+            return;
+        }
+        
+        const stateManager = window.enhancedStateManager;
+        const sectionManager = window.sectionLayoutManager;
+        const componentManager = window.enhancedComponentManager;
+        const renderer = window.enhancedComponentRenderer;
+        
+        if (!this.areSystemsAvailable()) {
+            this.logger.error('[STATE_LOADER] Required systems not available:', {
+                stateManager: !!stateManager,
+                sectionManager: !!sectionManager,
+                componentManager: !!componentManager,
+                renderer: !!renderer
+            });
+            return;
+        }
+        
+        this.isLoaded = true;
+        
+        try {
+            const state = stateManager.getState();
+            
+            this.logger.info('[STATE_LOADER] Loading initial state:', {
+                components: Object.keys(state.components || {}).length,
+                sections: (state.sections || []).length
+            });
+            
+            // Step 1: Ensure sections exist
+            if (state.sections && state.sections.length > 0) {
+                this.logger.info('[STATE_LOADER] Rendering sections from state');
+                
+                // Render all sections
+                if (sectionManager.renderAllSections) {
+                    sectionManager.renderAllSections();
+                }
+            } else if (state.components && Object.keys(state.components).length > 0) {
+                // Have components but no sections - create default section
+                this.logger.info('[STATE_LOADER] No sections found but have components, creating default section');
+                
+                const defaultSectionId = `section_${Date.now()}`;
+                sectionManager.registerSection(defaultSectionId, 'full_width');
+                
+                // Assign all orphaned components to this section
+                Object.values(state.components).forEach(component => {
+                    if (!component.sectionId) {
+                        component.sectionId = defaultSectionId;
+                        stateManager.dispatch({
+                            type: 'UPDATE_COMPONENT',
+                            payload: {
+                                id: component.id,
+                                updates: { sectionId: defaultSectionId }
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Step 2: Render all components
+            if (state.components && Object.keys(state.components).length > 0) {
+                this.logger.info('[STATE_LOADER] Rendering components from state');
+                
+                // Hide empty state
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+                
+                // Show saved components container
+                const container = document.getElementById('saved-components-container');
+                if (container) {
+                    container.style.display = 'block';
+                }
+                
+                // Render all components
+                if (renderer.renderAllComponents) {
+                    renderer.renderAllComponents();
+                } else {
+                    // Fallback: render each component
+                    Object.values(state.components).forEach(component => {
+                        if (renderer.renderComponent) {
+                            renderer.renderComponent(component);
+                        }
+                    });
+                }
+            } else {
+                this.logger.info('[STATE_LOADER] No components to load, showing empty state');
+                
+                // Show empty state
+                const emptyState = document.getElementById('empty-state');
+                if (emptyState) {
+                    emptyState.style.display = 'block';
+                }
+                
+                // Hide saved components container
+                const container = document.getElementById('saved-components-container');
+                if (container) {
+                    container.style.display = 'none';
+                }
+            }
+            
+            this.logger.info('[STATE_LOADER] ✅ Initial state loaded successfully');
+            
+            // Dispatch loaded event
+            document.dispatchEvent(new CustomEvent('gmkb:initial-state-loaded', {
+                detail: {
+                    componentsLoaded: Object.keys(state.components || {}).length,
+                    sectionsLoaded: (state.sections || []).length
+                }
+            }));
+            
+        } catch (error) {
+            this.logger.error('[STATE_LOADER] Error loading initial state:', error);
+            this.isLoaded = false; // Allow retry
+        }
+    }
+    
+    // Public method to force reload
+    reload() {
+        this.isLoaded = false;
+        this.loadInitialState();
+    }
+}
+
+// Create and expose globally
+window.initialStateLoader = new InitialStateLoader();
+
+// Log availability
+if (window.structuredLogger) {
+    window.structuredLogger.info('[STATE_LOADER] Initial State Loader available globally');
+} else {
+    console.log('✅ Initial State Loader available globally');
+}

@@ -56,7 +56,7 @@ class CoreSystemsCoordinator {
         this.systemsReady.stateManager = !!(window.enhancedStateManager && window.enhancedStateManager.getState);
         
         // Check component manager  
-        this.systemsReady.componentManager = !!(window.enhancedComponentManager && window.enhancedComponentManager.addComponent);
+        this.systemsReady.componentManager = !!(window.enhancedComponentManager && (window.enhancedComponentManager.isInitialized || window.enhancedComponentManager.addComponent));
         
         // Check component renderer
         this.systemsReady.componentRenderer = !!(window.enhancedComponentRenderer && window.enhancedComponentRenderer.renderComponent);

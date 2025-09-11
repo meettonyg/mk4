@@ -1419,16 +1419,66 @@
             }
             
             /**
+             * ✅ PUBLIC API: Render all components from state
+             * ARCHITECTURE COMPLIANT: Respects section assignments
+             */
+            async renderAllComponents() {
+                const state = this.stateManager.getState();
+                const components = state.components || {};
+                
+                if (Object.keys(components).length === 0) {
+                    this.logger.info('RENDER', 'No components to render');
+                    return;
+                }
+                
+                this.logger.info('RENDER', `Rendering ${Object.keys(components).length} components`);
+                
+                // Group components by section
+                const orphanedComponents = [];
+                const sectionComponents = new Map();
+                
+                Object.values(components).forEach(component => {
+                    if (component.sectionId) {
+                        if (!sectionComponents.has(component.sectionId)) {
+                            sectionComponents.set(component.sectionId, []);
+                        }
+                        sectionComponents.get(component.sectionId).push(component);
+                    } else {
+                        orphanedComponents.push(component);
+                    }
+                });
+                
+                // Render components by section
+                for (const [sectionId, comps] of sectionComponents) {
+                    this.logger.info('RENDER', `Rendering ${comps.length} components for section ${sectionId}`);
+                    for (const component of comps) {
+                        await this.renderComponent(component);
+                    }
+                }
+                
+                // Render orphaned components
+                if (orphanedComponents.length > 0) {
+                    this.logger.info('RENDER', `Rendering ${orphanedComponents.length} orphaned components`);
+                    for (const component of orphanedComponents) {
+                        await this.renderComponent(component);
+                    }
+                }
+                
+                this.logger.info('RENDER', '✅ All components rendered');
+            }
+            
+            /**
              * ✅ PUBLIC API: Render single component (for external use)
              */
             async renderSingleComponent(componentConfig) {
                 const componentId = componentConfig.id || `component_${Date.now()}`;
                 const componentData = {
                     type: componentConfig.type,
-                    props: componentConfig.props || componentConfig.data || {}
+                    props: componentConfig.props || componentConfig.data || {},
+                    sectionId: componentConfig.sectionId || null
                 };
                 
-                const element = await this._renderComponentInternal(componentId, componentData);
+                const element = await this.renderComponent(componentData);
                 
                 return {
                     success: !!element,
@@ -1440,13 +1490,84 @@
             }
             
             /**
-             * ✅ PUBLIC API: Alias for renderComponent (for CoreSystemsCoordinator compatibility)
-             * This method exists to satisfy the dependency check in CoreSystemsCoordinator
-             * which looks for window.enhancedComponentRenderer.renderComponent
+             * ✅ PUBLIC API: Render component with section awareness
+             * ARCHITECTURE COMPLIANT: Components render in their assigned sections
              */
-            async renderComponent(componentId, componentData) {
-                // This is the actual implementation called by both public APIs
-                return this._renderComponentInternal(componentId, componentData);
+            async renderComponent(component) {
+                // Handle both component object and separate id/data parameters
+                let componentId, componentData;
+                
+                if (typeof component === 'object' && component.id) {
+                    // Component object passed
+                    componentId = component.id;
+                    componentData = component;
+                } else if (typeof component === 'string') {
+                    // Component ID passed, get from state
+                    componentId = component;
+                    const state = this.stateManager.getState();
+                    componentData = state.components[componentId];
+                    
+                    if (!componentData) {
+                        this.logger.error('RENDER', `Component ${componentId} not found in state`);
+                        return null;
+                    }
+                } else {
+                    // Legacy format: componentId, componentData as separate params
+                    componentId = arguments[0];
+                    componentData = arguments[1] || {};
+                }
+                
+                // Check if component has a section assignment
+                if (componentData.sectionId) {
+                    // Find the section element
+                    const sectionEl = document.querySelector(`[data-section-id="${componentData.sectionId}"]`);
+                    
+                    if (!sectionEl) {
+                        this.logger.warn('RENDER', `Section ${componentData.sectionId} not found, component ${componentId} will be orphaned`);
+                        return this._renderComponentInternal(componentId, componentData);
+                    }
+                    
+                    // Find target container in section
+                    let targetContainer = sectionEl.querySelector('.gmkb-section__content');
+                    
+                    // Handle multi-column sections
+                    if (componentData.columnNumber) {
+                        const column = sectionEl.querySelector(`[data-column="${componentData.columnNumber}"]`);
+                        if (column) {
+                            targetContainer = column;
+                        }
+                    }
+                    
+                    // Check for temporary render target
+                    if (componentData._renderTarget) {
+                        targetContainer = componentData._renderTarget;
+                        delete componentData._renderTarget;
+                    }
+                    
+                    if (!targetContainer) {
+                        targetContainer = sectionEl;
+                    }
+                    
+                    // Check if component already exists
+                    const existing = document.querySelector(`[data-component-id="${componentId}"]`);
+                    if (existing) {
+                        this.logger.debug('RENDER', `Component ${componentId} already rendered`);
+                        return existing;
+                    }
+                    
+                    // Render the component
+                    const element = await this._renderComponentInternal(componentId, componentData);
+                    if (element && targetContainer) {
+                        targetContainer.appendChild(element);
+                        this.componentCache.set(componentId, element);
+                        this.logger.info('RENDER', `✅ Rendered component ${componentId} in section ${componentData.sectionId}`);
+                    }
+                    
+                    return element;
+                } else {
+                    // No section assignment, render normally
+                    return this._renderComponentInternal(componentId, componentData);
+                }
             }
             
             /**
