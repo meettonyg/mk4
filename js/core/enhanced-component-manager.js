@@ -24,20 +24,27 @@ class EnhancedComponentManager {
     }
     
     setupEventListeners() {
-        // Listen for core systems ready event
-        document.addEventListener('gmkb:core-systems-ready', () => {
-            this.logger.info('[COMPONENT_MANAGER] Core systems ready event received');
-            this.initialize();
-        });
+        // ROOT FIX: Initialize when state manager is ready, not waiting for all systems
+        // This breaks the circular dependency where systems wait for each other
+        const tryInitialize = () => {
+            if (!this.isInitialized && window.enhancedStateManager) {
+                this.logger.info('[COMPONENT_MANAGER] State manager detected, initializing');
+                this.initialize();
+            }
+        };
         
-        // Also try immediate initialization in case event already fired
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setTimeout(() => {
-                if (!this.isInitialized && window.enhancedStateManager) {
-                    this.logger.info('[COMPONENT_MANAGER] Initializing immediately (systems detected)');
-                    this.initialize();
-                }
-            }, 100);
+        // Listen for state manager ready
+        document.addEventListener('gmkb:state-manager-ready', tryInitialize);
+        
+        // Also listen for core systems ready as backup
+        document.addEventListener('gmkb:core-systems-ready', tryInitialize);
+        
+        // Try immediate initialization if state manager already exists
+        if (window.enhancedStateManager) {
+            tryInitialize();
+        } else if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            // Check after a micro-task
+            setTimeout(tryInitialize, 10);
         }
     }
     
@@ -64,8 +71,29 @@ class EnhancedComponentManager {
         // Set up component operation handlers
         this.setupComponentHandlers();
         
+        // ROOT FIX: Add renderComponent method for coordinator detection
+        // The coordinator checks for this method to determine if manager is ready
+        if (!this.renderComponent) {
+            this.renderComponent = (component) => {
+                if (this.renderer && typeof this.renderer.renderComponent === 'function') {
+                    return this.renderer.renderComponent(component);
+                } else {
+                    this.logger.warn('[COMPONENT_MANAGER] Renderer not available for renderComponent call');
+                    return null;
+                }
+            };
+        }
+        
         // Dispatch ready event
         document.dispatchEvent(new CustomEvent('gmkb:component-manager-ready'));
+        
+        // ROOT FIX: Also notify coordinator directly if it exists
+        if (window.coreSystemsCoordinator) {
+            setTimeout(() => {
+                window.coreSystemsCoordinator.checkSystemReadiness();
+                this.logger.info('[COMPONENT_MANAGER] Notified coordinator of readiness');
+            }, 10);
+        }
         
         // Load initial components if they exist
         this.loadInitialComponents();

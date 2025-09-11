@@ -223,11 +223,33 @@
                     
                     // COMPLIANT: Listen for renderer requests via events
                     document.addEventListener('gmkb:request-component-renderer', (event) => {
-                    const { callback } = event.detail;
-                    if (callback && typeof callback === 'function') {
-                    callback(this);
-                    }
+                        const { callback } = event.detail;
+                        if (callback && typeof callback === 'function') {
+                            callback(this);
+                        }
                     });
+                    
+                    // ROOT FIX: Check if we have components to render from initial state
+                    const state = this.stateManager.getState();
+                    if (state.components && Object.keys(state.components).length > 0) {
+                        this.logger.info('RENDER', `Found ${Object.keys(state.components).length} components in initial state`);
+                        
+                        // Wait for sections to be ready, then render components
+                        const waitForSections = () => {
+                            if (window.sectionRenderer && window.sectionRenderer.initialized) {
+                                this.logger.info('RENDER', 'Section renderer ready, will render components in sections');
+                                // Section renderer will handle component rendering
+                            } else if (window.sectionLayoutManager && window.sectionLayoutManager.initialized) {
+                                this.logger.info('RENDER', 'Section manager ready, rendering components');
+                                // If no section renderer, render components directly
+                                setTimeout(() => this.renderAllComponents(), 100);
+                            } else {
+                                // No sections yet, wait a bit
+                                setTimeout(waitForSections, 100);
+                            }
+                        };
+                        waitForSections();
+                    }
                     
                     // ✅ CHECKLIST COMPLIANT: Emit ready event
                 document.dispatchEvent(new CustomEvent('gmkb:enhanced-component-renderer-ready', {
@@ -1707,6 +1729,14 @@
                 structuredLogger.info('RENDER', 'Triggered core systems check after renderer ready');
             }, 10);
         }
+        
+        // ROOT FIX: Dispatch renderer ready event for other systems
+        document.dispatchEvent(new CustomEvent('gmkb:component-renderer-ready', {
+            detail: {
+                renderer: window.enhancedComponentRenderer,
+                timestamp: Date.now()
+            }
+        }))
     };
     
     // ✅ EVENT-DRIVEN: Initialize when DOM is ready

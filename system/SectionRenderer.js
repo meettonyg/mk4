@@ -22,28 +22,39 @@ class SectionRenderer {
     }
     
     setupEventListeners() {
+        // ROOT FIX: Initialize when both state manager and section manager are ready
+        const tryInitialize = () => {
+            if (!this.initialized && window.sectionLayoutManager && window.enhancedStateManager) {
+                this.logger.info('[SECTION_RENDERER] Required managers available, initializing');
+                this.init();
+            }
+        };
+        
         // Listen for section manager ready
-        document.addEventListener('gmkb:section-manager-ready', () => {
-            this.logger.info('[SECTION_RENDERER] Section manager ready, initializing renderer');
-            this.init();
-        });
+        document.addEventListener('gmkb:section-manager-ready', tryInitialize);
+        
+        // Listen for state manager ready
+        document.addEventListener('gmkb:state-manager-ready', tryInitialize);
         
         // Listen for section events
         document.addEventListener('gmkb:render-section', (e) => {
-            this.renderSection(e.detail.sectionId);
+            if (this.initialized) {
+                this.renderSection(e.detail.sectionId);
+            }
         });
         
         document.addEventListener('gmkb:render-all-sections', () => {
-            this.renderAllSections();
+            if (this.initialized) {
+                this.renderAllSections();
+            }
         });
         
         // Try immediate init if systems are ready
         if (window.sectionLayoutManager && window.enhancedStateManager) {
-            setTimeout(() => {
-                if (!this.initialized) {
-                    this.init();
-                }
-            }, 100);
+            tryInitialize();
+        } else if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            // Check after a micro-task
+            setTimeout(tryInitialize, 10);
         }
     }
     
@@ -65,6 +76,13 @@ class SectionRenderer {
         
         // Dispatch ready event
         document.dispatchEvent(new CustomEvent('gmkb:section-renderer-ready'));
+        
+        // ROOT FIX: Render sections and components if state has them
+        const state = this.stateManager.getState();
+        if (state.sections && state.sections.length > 0) {
+            this.logger.info('[SECTION_RENDERER] Rendering initial sections from state');
+            this.renderAllSections();
+        }
     }
     
     getContainer() {

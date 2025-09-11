@@ -22,20 +22,26 @@ class SectionLayoutManager {
     }
     
     setupEventListeners() {
-        // Listen for core systems ready
-        document.addEventListener('gmkb:core-systems-ready', () => {
-            this.logger.info('[SECTION_MANAGER] Core systems ready event received');
-            this.init();
-        });
+        // ROOT FIX: Initialize when state manager is ready, not waiting for all core systems
+        const tryInitialize = () => {
+            if (!this.initialized && window.enhancedStateManager) {
+                this.logger.info('[SECTION_MANAGER] State manager available, initializing');
+                this.init();
+            }
+        };
         
-        // Also try immediate initialization
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setTimeout(() => {
-                if (!this.initialized && window.enhancedStateManager) {
-                    this.logger.info('[SECTION_MANAGER] Initializing immediately (systems detected)');
-                    this.init();
-                }
-            }, 100);
+        // Listen for state manager ready
+        document.addEventListener('gmkb:state-manager-ready', tryInitialize);
+        
+        // Also listen for core systems ready as backup
+        document.addEventListener('gmkb:core-systems-ready', tryInitialize);
+        
+        // Try immediate initialization if state manager already exists
+        if (window.enhancedStateManager) {
+            tryInitialize();
+        } else if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            // Check after a micro-task
+            setTimeout(tryInitialize, 10);
         }
     }
     
@@ -63,8 +69,33 @@ class SectionLayoutManager {
         // Dispatch ready event
         document.dispatchEvent(new CustomEvent('gmkb:section-manager-ready'));
         
-        // Render all sections
-        this.renderAllSections();
+        // ROOT FIX: Auto-create section if components exist without sections
+        const state = this.stateManager.getState();
+        const hasComponents = state.components && Object.keys(state.components).length > 0;
+        const hasSections = this.sections.size > 0;
+        
+        if (hasComponents && !hasSections) {
+            this.logger.info('[SECTION_MANAGER] Components exist without sections, creating default section');
+            const defaultSection = this.addSection('full_width', { isDefault: true });
+            
+            // Assign all orphaned components to this section
+            Object.values(state.components).forEach(component => {
+                if (!component.sectionId) {
+                    this.stateManager.dispatch({
+                        type: 'UPDATE_COMPONENT',
+                        payload: {
+                            id: component.id,
+                            updates: { sectionId: defaultSection.section_id }
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Render all sections if they exist
+        if (this.sections.size > 0) {
+            this.renderAllSections();
+        }
     }
     
     setupSectionHandlers() {
