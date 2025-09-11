@@ -595,15 +595,61 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 1. Structured logger SECOND (prevents all undefined errors) - with duplicate prevention
-    if (!wp_script_is('gmkb-structured-logger', 'enqueued')) {
+    // 1. ID Generator SECOND (centralized ID generation) - ARCHITECTURE FIX
+    if (!wp_script_is('gmkb-id-generator', 'enqueued')) {
         wp_enqueue_script(
-            'gmkb-structured-logger',
-            $plugin_url . 'js/utils/structured-logger.js',
+            'gmkb-id-generator',
+            $plugin_url . 'js/core/id-generator.js',
             array('gmkb'), // Depends on GMKB core
             $version,
             true
         );
+    }
+    
+    // 2. Structured logger THIRD (prevents all undefined errors) - with duplicate prevention
+    if (!wp_script_is('gmkb-structured-logger', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-structured-logger',
+            $plugin_url . 'js/utils/structured-logger.js',
+            array('gmkb', 'gmkb-id-generator'), // Depends on GMKB core and ID generator
+            $version,
+            true
+        );
+    }
+    
+    // 2a. Architecture Validator (development only) - ARCHITECTURE FIX
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        if (!wp_script_is('gmkb-architecture-validator', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-architecture-validator',
+                $plugin_url . 'js/core/architecture-validator.js',
+                array('gmkb-id-generator', 'gmkb-structured-logger'),
+                $version,
+                true
+            );
+        }
+        
+        // 2b. Health Check Utility (development only) - ARCHITECTURE FIX
+        if (!wp_script_is('gmkb-health-check', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-health-check',
+                $plugin_url . 'js/utils/health-check.js',
+                array('gmkb-id-generator', 'gmkb-structured-logger'),
+                $version,
+                true
+            );
+        }
+        
+        // 2c. Architecture Fix Test (development only) - ARCHITECTURE FIX VERIFICATION
+        if (!wp_script_is('gmkb-test-architecture-fix', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-test-architecture-fix',
+                $plugin_url . 'js/test-architecture-fix.js',
+                array('gmkb-id-generator', 'gmkb-enhanced-component-manager', 'gmkb-section-layout-manager'),
+                $version . '-test',
+                true
+            );
+        }
     }
     
     // 1a. Render Gate - Centralized duplicate render prevention
@@ -696,7 +742,7 @@ function gmkb_enqueue_assets() {
         wp_enqueue_script(
             'gmkb-enhanced-component-manager',
             $plugin_url . 'js/core/enhanced-component-manager.js',
-            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
+            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger', 'gmkb-id-generator'), // Added ID generator dependency
             $version,
             true
         );

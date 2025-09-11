@@ -15,8 +15,9 @@ class SectionLayoutManager {
         this.sectionOrder = [];
         this.logger = window.StructuredLogger || console;
         this.stateManager = null;
+        this.idGenerator = window.gmkbIDGenerator; // ARCHITECTURE FIX: Use central ID generator
         
-        this.logger.info('🏗️ PHASE 3: SectionLayoutManager initializing');
+        this.logger.info('🏗️ PHASE 3: SectionLayoutManager initializing with central ID generator');
         this.initializeManager();
     }
     
@@ -154,7 +155,7 @@ class SectionLayoutManager {
             this.logger.info(`🔧 PHASE 3: Found ${orphanedComponents.length} orphaned components - creating default section`);
             
             // Create a default section for orphaned components
-            const defaultSectionId = `section_default_${Date.now()}`;
+            const defaultSectionId = this.generateSectionId('section_default');
             const defaultSection = this.registerSection(defaultSectionId, 'full_width', {
                 section_id: defaultSectionId,
                 section_type: 'full_width',
@@ -188,13 +189,31 @@ class SectionLayoutManager {
     }
     
     /**
+     * Generate unique section ID using central ID generator
+     * ARCHITECTURE FIX: Delegates to central ID generator instead of local generation
+     */
+    generateSectionId(prefix = 'section') {
+        // Use central ID generator if available
+        if (this.idGenerator && typeof this.idGenerator.generateSectionId === 'function') {
+            const id = this.idGenerator.generateSectionId();
+            this.logger.debug('SECTION', `Generated section ID via central generator: ${id}`);
+            return id;
+        }
+        
+        // Fallback if ID generator not available (should not happen)
+        this.logger.warn('SECTION', 'Central ID generator not available, using fallback');
+        const fallbackId = `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return fallbackId;
+    }
+    
+    /**
      * Create a new section - PUBLIC API METHOD
      * @param {string} sectionType - Type of section to create
      * @param {object} configuration - Optional configuration
      * @returns {object} The created section configuration
      */
     createSection(sectionType = 'full_width', configuration = {}) {
-        const sectionId = configuration.section_id || `section_${Date.now()}`;
+        const sectionId = configuration.section_id || this.generateSectionId();
         // Mark as manually created so it won't be auto-cleaned
         const enhancedConfig = {
             ...configuration,
@@ -229,8 +248,18 @@ class SectionLayoutManager {
     registerSection(sectionId, sectionType, configuration = {}) {
         // ROOT CAUSE FIX: Validate inputs and provide defaults
         if (!sectionId) {
-            sectionId = `section_${Date.now()}`;
+            sectionId = this.generateSectionId();
             this.logger.warn(`⚠️ PHASE 3: No section ID provided, generated: ${sectionId}`);
+        
+            // ARCHITECTURE FIX: Register generated ID with central generator
+            if (this.idGenerator && typeof this.idGenerator.registerId === 'function') {
+                this.idGenerator.registerId(sectionId);
+            }
+        } else {
+            // ARCHITECTURE FIX: Register existing ID with central generator
+            if (this.idGenerator && typeof this.idGenerator.registerId === 'function') {
+                this.idGenerator.registerId(sectionId);
+            }
         }
         
         if (!sectionType) {
@@ -761,7 +790,7 @@ class SectionLayoutManager {
         }
         
         // Create new section if none available
-        const newSectionId = `section_${Date.now()}`;
+        const newSectionId = this.generateSectionId();
         this.registerSection(newSectionId, 'full_width');
         this.assignComponentToSection(componentId, newSectionId);
     }
@@ -951,7 +980,7 @@ class SectionLayoutManager {
      * This is the method that tests expect to exist
      */
     addSection(sectionType = 'full_width', configuration = {}) {
-        const sectionId = configuration.section_id || `section_${Date.now()}`;
+        const sectionId = configuration.section_id || this.generateSectionId();
         return this.registerSection(sectionId, sectionType, configuration);
     }
     

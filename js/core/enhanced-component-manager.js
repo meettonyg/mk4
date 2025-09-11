@@ -19,11 +19,11 @@
         constructor() {
             this.components = new Map();
             this.isInitialized = false;
-            this.componentCounter = 0;
+            this.idGenerator = window.gmkbIDGenerator; // Use central ID generator
             this.cachedWordPressData = null;
             this.isCurrentlyRendering = false;
             
-            logger.info('COMPONENT', 'Enhanced Component Manager created');
+            logger.info('COMPONENT', 'Enhanced Component Manager created with central ID generator');
         }
 
         /**
@@ -130,6 +130,12 @@
             try {
                 if (!this.isInitialized) {
                     this.initialize();
+                }
+                
+                // ARCHITECTURE FIX: Register existing ID with central generator
+                if (this.idGenerator && typeof this.idGenerator.registerId === 'function') {
+                    this.idGenerator.registerId(componentId);
+                    logger.debug('COMPONENT', `Registered existing ID with central generator: ${componentId}`);
                 }
                 
                 logger.info('COMPONENT', `Loading existing component: ${componentId} (${componentType})`);
@@ -858,11 +864,21 @@
         }
 
         /**
-         * Generate unique component ID
+         * Generate unique component ID using central ID generator
+         * ARCHITECTURE FIX: Delegates to central ID generator instead of local generation
          */
         generateComponentId(componentType) {
-            this.componentCounter++;
-            return `${componentType}-${Date.now()}-${this.componentCounter}`;
+            // Use central ID generator if available
+            if (this.idGenerator && typeof this.idGenerator.generateComponentId === 'function') {
+                const id = this.idGenerator.generateComponentId(componentType);
+                logger.debug('COMPONENT', `Generated component ID via central generator: ${id}`);
+                return id;
+            }
+            
+            // Fallback if ID generator not available (should not happen)
+            logger.warn('COMPONENT', 'Central ID generator not available, using fallback');
+            const fallbackId = `${componentType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            return fallbackId;
         }
 
         /**
