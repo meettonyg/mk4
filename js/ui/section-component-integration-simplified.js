@@ -69,8 +69,18 @@
                 // ✅ SIMPLIFIED: Make components and library items draggable
                 this.setupDraggableElements();
                 
+                // ROOT FIX: Setup drop zones for existing sections
+                this.setupExistingSectionDropZones();
+                
                 // ✅ CHECKLIST COMPLIANT: Watch for new elements via mutation observer
                 this.observeForNewElements();
+                
+                // ROOT FIX: Listen for section events to refresh drop zones
+                document.addEventListener('gmkb:section-rendered', (e) => {
+                    if (e.detail && e.detail.element) {
+                        this.setupSectionDropZones(e.detail.element);
+                    }
+                });
                 
                 this.logger.info('DRAG', 'Drag-drop event listeners attached');
             }
@@ -105,6 +115,67 @@
             }
             
             /**
+             * ROOT FIX: Setup drop zones for all existing sections
+             */
+            setupExistingSectionDropZones() {
+                const sections = document.querySelectorAll('[data-section-id], .gmkb-section');
+                sections.forEach(section => {
+                    this.setupSectionDropZones(section);
+                });
+                this.logger.info('DRAG', `Setup drop zones for ${sections.length} existing sections`);
+            }
+            
+            /**
+             * ROOT FIX: Setup drop zones for a section
+             */
+            setupSectionDropZones(sectionElement) {
+                if (!sectionElement) return;
+                
+                // Find all drop zones in the section
+                const dropZones = sectionElement.querySelectorAll('.gmkb-section__content, .gmkb-section__column, .gmkb-section__inner');
+                
+                dropZones.forEach(zone => {
+                    // Ensure drop zone attributes are set
+                    if (!zone.hasAttribute('data-drop-zone')) {
+                        zone.setAttribute('data-drop-zone', 'true');
+                    }
+                    
+                    // Get section ID from parent if not set
+                    if (!zone.hasAttribute('data-section-id')) {
+                        const sectionId = sectionElement.getAttribute('data-section-id') || 
+                                        sectionElement.id?.replace('section-', '');
+                        if (sectionId) {
+                            zone.setAttribute('data-section-id', sectionId);
+                        }
+                    }
+                    
+                    // Set column index if it's a column
+                    if (zone.classList.contains('gmkb-section__column')) {
+                        const columnMatch = zone.className.match(/gmkb-section__column--([0-9]+)/);
+                        if (columnMatch && !zone.hasAttribute('data-column-index')) {
+                            zone.setAttribute('data-column-index', columnMatch[1]);
+                        }
+                    }
+                    
+                    this.logger.debug('DRAG', `Setup drop zone: ${zone.className}`);
+                });
+                
+                // Also check for empty placeholders that should be drop zones
+                const emptyPlaceholders = sectionElement.querySelectorAll('.gmkb-section__empty');
+                emptyPlaceholders.forEach(placeholder => {
+                    if (!placeholder.hasAttribute('data-drop-zone')) {
+                        placeholder.setAttribute('data-drop-zone', 'true');
+                        const sectionId = sectionElement.getAttribute('data-section-id');
+                        if (sectionId) {
+                            placeholder.setAttribute('data-section-id', sectionId);
+                        }
+                    }
+                });
+                
+                this.logger.debug('DRAG', `Setup ${dropZones.length} drop zones for section`);
+            }
+            
+            /**
              * ✅ CHECKLIST COMPLIANT: Watch for new elements via mutation observer (no polling)
              */
             observeForNewElements() {
@@ -112,6 +183,15 @@
                     mutations.forEach(mutation => {
                         mutation.addedNodes.forEach(node => {
                             if (node.nodeType === Node.ELEMENT_NODE) {
+                                // ROOT FIX: Check if it's a section and setup drop zones
+                                if (node.hasAttribute('data-section-id') || node.classList.contains('gmkb-section')) {
+                                    this.setupSectionDropZones(node);
+                                }
+                                
+                                // Check if it contains sections
+                                const sections = node.querySelectorAll('[data-section-id], .gmkb-section');
+                                sections.forEach(section => this.setupSectionDropZones(section));
+                                
                                 // Check if it's a component
                                 if (node.hasAttribute('data-component-id')) {
                                     this.makeDraggable(node);
@@ -243,7 +323,11 @@
                 
                 if (dropTarget) {
                     e.preventDefault();
-                    e.dataTransfer.dropEffect = this.dragData.isNewComponent ? 'copy' : 'move';
+                    e.stopPropagation();
+                    
+                    if (e.dataTransfer) {
+                        e.dataTransfer.dropEffect = this.dragData.isNewComponent ? 'copy' : 'move';
+                    }
                     
                     // ROOT FIX: Enhanced visual feedback for sections
                     const sectionElement = e.target.closest('[data-section-id]') || dropTarget.closest('[data-section-id]');
@@ -269,18 +353,32 @@
             findDropTarget(element) {
                 if (!element || element.nodeType !== Node.ELEMENT_NODE) return null;
                 
-                // ROOT FIX: Check for column drop zones FIRST (most specific)
-                const columnDropZone = element.closest('[data-drop-zone="true"]');
-                if (columnDropZone) {
-                    this.logger.debug('DRAG', `Found column drop zone: Column ${columnDropZone.dataset.columnIndex || 1}`);
-                    return columnDropZone;
+                // ROOT FIX: Check for section content areas (single column sections)
+                const sectionContent = element.closest('.gmkb-section__content');
+                if (sectionContent) {
+                    this.logger.debug('DRAG', `Found section content area`);
+                    return sectionContent;
                 }
                 
-                // Check for section columns specifically
+                // Check for section columns (multi-column sections)
                 const sectionColumn = element.closest('.gmkb-section__column');
                 if (sectionColumn) {
                     this.logger.debug('DRAG', `Found section column: ${sectionColumn.dataset.column}`);
                     return sectionColumn;
+                }
+                
+                // Check for elements with drop-zone attribute
+                const columnDropZone = element.closest('[data-drop-zone="true"]');
+                if (columnDropZone) {
+                    this.logger.debug('DRAG', `Found drop zone: Column ${columnDropZone.dataset.columnIndex || 1}`);
+                    return columnDropZone;
+                }
+                
+                // Check for section inner containers
+                const sectionInner = element.closest('.gmkb-section__inner');
+                if (sectionInner) {
+                    this.logger.debug('DRAG', `Found section inner container`);
+                    return sectionInner;
                 }
                 
                 // ✅ SIMPLIFIED: Check common drop targets directly
@@ -334,6 +432,7 @@
              */
             handleDrop(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 
                 if (!this.dragData) {
                     this.logger.warn('DRAG', 'Drop occurred without drag data');
@@ -350,42 +449,49 @@
                 let targetSectionId = null;
                 let targetColumn = 1;
                 
-                // ROOT FIX: Check if drop target has column information
-                if (dropTarget.hasAttribute('data-column-index')) {
-                    targetColumn = parseInt(dropTarget.getAttribute('data-column-index')) || 1;
+                // ROOT FIX: Determine section ID and column from drop target
+                // Priority 1: Direct section ID from drop target
+                if (dropTarget.hasAttribute('data-section-id')) {
                     targetSectionId = dropTarget.getAttribute('data-section-id');
-                    this.logger.info('DRAG', `Drop on column ${targetColumn} of section ${targetSectionId}`);
-                } else if (dropTarget.hasAttribute('data-column')) {
-                    // Fallback for column attribute
-                    targetColumn = parseInt(dropTarget.getAttribute('data-column')) || 1;
-                    // Find parent section
-                    const parentSection = dropTarget.closest('[data-section-id]');
-                    if (parentSection) {
-                        targetSectionId = parentSection.getAttribute('data-section-id');
-                    }
-                    this.logger.info('DRAG', `Drop on column ${targetColumn} (fallback detection)`);
-                } else {
-                    // Check if we dropped directly on a section element or its children
-                    const sectionElement = e.target.closest('[data-section-id]') || dropTarget.closest('[data-section-id]');
+                }
+                
+                // Priority 2: Find parent section
+                if (!targetSectionId) {
+                    const sectionElement = dropTarget.closest('[data-section-id]');
                     if (sectionElement) {
                         targetSectionId = sectionElement.getAttribute('data-section-id');
-                        
-                        // Check if dropped on a specific column
-                        const columnElement = e.target.closest('.gmkb-section__column');
-                        if (columnElement) {
-                            targetColumn = parseInt(columnElement.getAttribute('data-column')) || 1;
-                        }
-                        
-                        this.logger.info('DRAG', `Targeting section ${targetSectionId}, column ${targetColumn}`);
-                    } else {
-                        // Check if the drop target itself is a section or section container
-                        if (dropTarget.id && dropTarget.id.includes('section-')) {
-                            targetSectionId = dropTarget.id.replace('section-', '');
-                            this.logger.info('DRAG', `Targeting section from drop target ID: ${targetSectionId}`);
-                        } else if (dropTarget.dataset && dropTarget.dataset.sectionId) {
-                            targetSectionId = dropTarget.dataset.sectionId;
-                            this.logger.info('DRAG', `Targeting section from dataset: ${targetSectionId}`);
-                        }
+                    }
+                }
+                
+                // Priority 3: Extract from ID attribute
+                if (!targetSectionId && dropTarget.id) {
+                    const match = dropTarget.id.match(/section[_-]([^_-]+)/);
+                    if (match) {
+                        targetSectionId = match[1];
+                    }
+                }
+                
+                // Determine column number
+                if (dropTarget.hasAttribute('data-column-index')) {
+                    targetColumn = parseInt(dropTarget.getAttribute('data-column-index')) || 1;
+                } else if (dropTarget.hasAttribute('data-column')) {
+                    targetColumn = parseInt(dropTarget.getAttribute('data-column')) || 1;
+                } else if (dropTarget.classList.contains('gmkb-section__column')) {
+                    // Extract column number from class (e.g., gmkb-section__column--2)
+                    const match = dropTarget.className.match(/gmkb-section__column--([0-9]+)/);
+                    if (match) {
+                        targetColumn = parseInt(match[1]) || 1;
+                    }
+                }
+                
+                this.logger.info('DRAG', `Drop detected - Section: ${targetSectionId || 'none'}, Column: ${targetColumn}`);
+                
+                // ROOT FIX: If no section found, create a default one
+                if (!targetSectionId && window.sectionLayoutManager) {
+                    const newSection = window.sectionLayoutManager.createSection('full_width');
+                    if (newSection) {
+                        targetSectionId = newSection.section_id;
+                        this.logger.info('DRAG', `Created new section ${targetSectionId} for drop`);
                     }
                 }
                 

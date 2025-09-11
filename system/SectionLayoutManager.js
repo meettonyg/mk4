@@ -57,6 +57,11 @@ class SectionLayoutManager {
             }
         }));
         
+        // ARCHITECTURE COMPLIANT: Listen for section created in state
+        document.addEventListener('gmkb:section-created-in-state', (event) => {
+            this.onSectionCreatedInState(event.detail);
+        });
+        
         // Listen for component events
         document.addEventListener('gmkb:component-added', (event) => {
             this.onComponentAdded(event.detail);
@@ -120,7 +125,7 @@ class SectionLayoutManager {
     /**
      * Load sections from state
      * Following checklist: Centralized State, Schema Compliance
-     * ROOT FIX: Auto-create default section for orphaned components
+     * ARCHITECTURE COMPLIANT: Single source of truth from state
      */
     loadSectionsFromState() {
         if (!this.stateManager) {
@@ -132,13 +137,25 @@ class SectionLayoutManager {
         const sections = state.sections || [];
         const components = state.components || {};
         
-        // Load existing sections
+        // COMPLIANT: Clear and reload from single source of truth
+        this.sections.clear();
+        this.sectionOrder = [];
+        
+        // Load existing sections from state (single source of truth)
         sections.forEach(sectionData => {
-            this.registerSection(
-                sectionData.section_id,
-                sectionData.section_type,
-                sectionData
-            );
+            // Add to internal tracking
+            this.sections.set(sectionData.section_id, sectionData);
+            if (!this.sectionOrder.includes(sectionData.section_id)) {
+                this.sectionOrder.push(sectionData.section_id);
+            }
+            
+            // Dispatch event for rendering
+            this.dispatchSectionEvent('gmkb:section-registered', {
+                sectionId: sectionData.section_id,
+                sectionType: sectionData.section_type,
+                configuration: sectionData,
+                section: sectionData
+            });
         });
         
         this.logger.info(`📊 PHASE 3: Loaded ${sections.length} sections from state`);
@@ -727,6 +744,32 @@ class SectionLayoutManager {
             }
         } catch (error) {
             this.logger.error('❌ PHASE 3: Error updating sections in state', error);
+        }
+    }
+    
+    /**
+     * Handle section created in state event
+     * ARCHITECTURE COMPLIANT: React to state changes via events
+     */
+    onSectionCreatedInState(detail) {
+        const { sectionId, section, isNewSection } = detail;
+        
+        // Add to internal tracking if not already present
+        if (!this.sections.has(sectionId)) {
+            this.sections.set(sectionId, section);
+            if (!this.sectionOrder.includes(sectionId)) {
+                this.sectionOrder.push(sectionId);
+            }
+            
+            // Dispatch event for rendering
+            this.dispatchSectionEvent('gmkb:section-registered', {
+                sectionId: section.section_id,
+                sectionType: section.section_type,
+                configuration: section,
+                section: section
+            });
+            
+            this.logger.info(`✅ PHASE 3: Registered section ${sectionId} from state event`);
         }
     }
     

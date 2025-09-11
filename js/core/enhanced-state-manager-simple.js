@@ -682,28 +682,24 @@
                             
                             this.logger.info('STATE', `ROOT FIX: Created default section ${defaultSection.section_id} for orphaned component`);
                             
-                            // GEMINI FIX: Don't manipulate SectionLayoutManager directly
-                            // Let it handle the section through the proper event flow
-                            this.logger.info('STATE', `Created default section ${defaultSection.section_id} - will be handled by SectionLayoutManager via event`);
+                            // ARCHITECTURE COMPLIANT: Only dispatch event, no direct manipulation
+                            // The SectionLayoutManager will handle registration via event
+                            this.logger.info('STATE', `Created default section ${defaultSection.section_id} - dispatching event`);
                             
-                            // ROOT FIX: Dispatch section registered event so it gets rendered visually
-                            // Dispatch immediately - the SectionRenderer will handle it properly
-                            // Use setTimeout to ensure event fires after state is updated
-                            setTimeout(() => {
-                                document.dispatchEvent(new CustomEvent('gmkb:section-registered', {
+                            // COMPLIANT: Use microtask for immediate but async execution
+                            Promise.resolve().then(() => {
+                                document.dispatchEvent(new CustomEvent('gmkb:section-created-in-state', {
                                     detail: {
                                         sectionId: defaultSection.section_id,
                                         section: defaultSection,
                                         sectionType: defaultSection.section_type,
-                                        configuration: defaultSection,
-                                        sectionLayoutManager: window.sectionLayoutManager,
                                         source: 'state-manager-auto-create',
-                                        isNewSection: true,  // Flag that this is a newly created section
-                                        componentId: componentData.id  // ROOT FIX: Pass the component that triggered this section creation
+                                        isNewSection: true,
+                                        componentId: componentData.id
                                     }
                                 }));
-                                this.logger.info('STATE', `ROOT FIX: Dispatched section-registered event for ${defaultSection.section_id}`);
-                            }, 50);  // Increased delay to ensure systems are ready
+                                this.logger.info('STATE', `Dispatched section-created-in-state event for ${defaultSection.section_id}`);
+                            });
                         } else {
                             // Assign to first available section
                             componentData.sectionId = this.state.sections[0].section_id;
