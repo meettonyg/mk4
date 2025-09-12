@@ -1,3 +1,5 @@
+console.log('📦 enhanced-component-manager.js LOADING');
+
 /**
  * Enhanced Component Manager - ARCHITECTURE COMPLIANT
  * 
@@ -24,11 +26,10 @@ class EnhancedComponentManager {
     }
     
     setupEventListeners() {
-        // ROOT FIX: Initialize when state manager is ready, not waiting for all systems
-        // This breaks the circular dependency where systems wait for each other
+        // ROOT FIX: Break circular dependency - initialize directly when state manager is available
         const tryInitialize = () => {
             if (!this.isInitialized && window.enhancedStateManager) {
-                this.logger.info('[COMPONENT_MANAGER] State manager detected, initializing');
+                this.logger.info('[COMPONENT_MANAGER] State manager detected, initializing immediately');
                 this.initialize();
             }
         };
@@ -36,15 +37,25 @@ class EnhancedComponentManager {
         // Listen for state manager ready
         document.addEventListener('gmkb:state-manager-ready', tryInitialize);
         
-        // Also listen for core systems ready as backup
-        document.addEventListener('gmkb:core-systems-ready', tryInitialize);
+        // ROOT FIX: Don't wait for core-systems-ready as we ARE part of core systems
+        // Instead, initialize immediately when our dependency (state manager) is available
         
         // Try immediate initialization if state manager already exists
         if (window.enhancedStateManager) {
             tryInitialize();
-        } else if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            // Check after a micro-task
-            setTimeout(tryInitialize, 10);
+        } else {
+            // Check periodically (max 20 attempts over 2 seconds)
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                if (window.enhancedStateManager) {
+                    clearInterval(checkInterval);
+                    tryInitialize();
+                } else if (attempts >= 20) {
+                    clearInterval(checkInterval);
+                    this.logger.error('[COMPONENT_MANAGER] State manager not found after 2 seconds');
+                }
+            }, 100);
         }
     }
     
@@ -87,12 +98,15 @@ class EnhancedComponentManager {
         // Dispatch ready event
         document.dispatchEvent(new CustomEvent('gmkb:component-manager-ready'));
         
-        // ROOT FIX: Also notify coordinator directly if it exists
-        if (window.coreSystemsCoordinator) {
-            setTimeout(() => {
-                window.coreSystemsCoordinator.checkSystemReadiness();
-                this.logger.info('[COMPONENT_MANAGER] Notified coordinator of readiness');
-            }, 10);
+        // ROOT FIX: Notify coordinator immediately of our readiness
+        if (window.coreSystemsCoordinator && typeof window.coreSystemsCoordinator.checkSystemReadiness === 'function') {
+            window.coreSystemsCoordinator.checkSystemReadiness();
+            this.logger.info('[COMPONENT_MANAGER] Notified coordinator of readiness');
+        } else {
+            // Coordinator not ready yet, dispatch event for it to catch
+            document.dispatchEvent(new CustomEvent('gmkb:manager-initialized', {
+                detail: { manager: 'componentManager', timestamp: Date.now() }
+            }));
         }
         
         // Load initial components if they exist
@@ -279,15 +293,26 @@ class EnhancedComponentManager {
     }
 }
 
-// ARCHITECTURE COMPLIANT: Direct instantiation
-// The class constructor handles event-driven initialization internally
-// Instantiate immediately - the class handles dependency checking
+// ARCHITECTURE COMPLIANT: Expose class globally first
+window.EnhancedComponentManager = EnhancedComponentManager;
+
+// Wrap initialization in IIFE to prevent script execution issues
 (function() {
     'use strict';
-    try {
-        window.enhancedComponentManager = new EnhancedComponentManager();
-        console.log('✅ Enhanced Component Manager instantiated');
-    } catch (error) {
-        console.error('❌ Failed to instantiate Enhanced Component Manager:', error);
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!window.enhancedComponentManager) {
+                window.enhancedComponentManager = new EnhancedComponentManager();
+                console.log('✅ Component Manager initialized on DOM ready');
+            }
+        });
+    } else {
+        // DOM already loaded
+        if (!window.enhancedComponentManager) {
+            window.enhancedComponentManager = new EnhancedComponentManager();
+            console.log('✅ Component Manager initialized immediately');
+        }
     }
 })();

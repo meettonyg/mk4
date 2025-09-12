@@ -4,6 +4,39 @@
  * Phase 1: Architectural Integrity & Race Condition Prevention - COMPLETE
  */
 
+// MIGRATION FIX: Force client-side rendering by removing obsolete server-render flags
+(function() {
+    'use strict';
+    
+    // Fix component definitions before any system initializes
+    if (window.gmkbData && window.gmkbData.components) {
+        window.gmkbData.components.forEach(comp => {
+            // Force all components to client-side rendering
+            comp.requiresServerRender = false;
+            delete comp.serverTemplate;
+            delete comp.phpRenderer;
+            delete comp.needsServerData;
+        });
+        console.log('✅ MIGRATION FIX: Disabled server-render flags for', window.gmkbData.components.length, 'components');
+    }
+    
+    // Also fix saved components if they exist
+    if (window.gmkbData && window.gmkbData.saved_components) {
+        window.gmkbData.saved_components.forEach(saved => {
+            delete saved.requiresServerRender;
+            delete saved.serverRendered;
+            delete saved.html;
+            delete saved.rendered;
+        });
+    }
+    
+    // Set render mode to client-only
+    if (window.gmkbData) {
+        window.gmkbData.renderMode = 'client';
+        window.gmkbData.serverSideRendering = false;
+    }
+})();
+
 // Debug control is now loaded via enqueue.php before all other scripts
 // This ensures it's available for all initialization logging
 

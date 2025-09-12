@@ -198,8 +198,9 @@ function gmkb_enqueue_assets() {
                 'icon' => $component['icon'] ?? 'fa-puzzle-piece',
                 'directory' => $key,
                 'order' => $component['order'] ?? 999,
-                // COMPLIANT: Include requiresServerRender flag for data loading
-                'requiresServerRender' => $component['requiresServerRender'] ?? false
+                // MIGRATION FIX: Force all components to client-side rendering
+                // Old: 'requiresServerRender' => $component['requiresServerRender'] ?? false
+                'requiresServerRender' => false  // Always false - we use client-side rendering only
             );
         }
         
@@ -235,7 +236,8 @@ function gmkb_enqueue_assets() {
                 'premium' => false,
                 'icon' => 'fa-star',
                 'directory' => 'hero',
-                'order' => 1
+                'order' => 1,
+                'requiresServerRender' => false  // Client-side only
             ),
             array(
                 'type' => 'biography',
@@ -246,7 +248,8 @@ function gmkb_enqueue_assets() {
                 'premium' => false,
                 'icon' => 'fa-user',
                 'directory' => 'biography',
-                'order' => 2
+                'order' => 2,
+                'requiresServerRender' => false  // Client-side only
             ),
             array(
                 'type' => 'topics',
@@ -257,7 +260,8 @@ function gmkb_enqueue_assets() {
                 'premium' => false,
                 'icon' => 'fa-lightbulb',
                 'directory' => 'topics',
-                'order' => 3
+                'order' => 3,
+                'requiresServerRender' => false  // Client-side only
             ),
             array(
                 'type' => 'contact',
@@ -268,7 +272,8 @@ function gmkb_enqueue_assets() {
                 'premium' => false,
                 'icon' => 'fa-envelope',
                 'directory' => 'contact',
-                'order' => 4
+                'order' => 4,
+                'requiresServerRender' => false  // Client-side only
             )
         );
         
@@ -299,7 +304,8 @@ function gmkb_enqueue_assets() {
                 'premium' => false,
                 'icon' => 'fa-star',
                 'directory' => 'hero',
-                'order' => 1
+                'order' => 1,
+                'requiresServerRender' => false  // Client-side only
             )
         );
         
@@ -750,6 +756,7 @@ function gmkb_enqueue_assets() {
         // ROOT FIX: Provide WordPress data to component manager for AJAX calls
         wp_localize_script( 'gmkb-enhanced-component-manager', 'gmkbData', $wp_data );
     }
+
     
     // 5a. Component Registry - ROOT FIX: Component self-registration system
     if (!wp_script_is('gmkb-component-registry', 'enqueued')) {

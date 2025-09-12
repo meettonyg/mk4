@@ -1,3 +1,5 @@
+console.log('🎨 enhanced-component-renderer-simplified.js LOADING');
+
 /**
  * @file enhanced-component-renderer-simplified.js
  * @description ROOT FIX: Simplified Direct Component Renderer with Phase 2 Integration
@@ -28,7 +30,7 @@ class SimplifiedComponentRenderer {
     }
     
     setupEventListeners() {
-        // Initialize when state manager is ready
+        // ROOT FIX: Break circular dependency - initialize directly when dependencies are available
         const tryInit = () => {
             if (!this.initialized && window.enhancedStateManager && window.structuredLogger) {
                 this.stateManager = window.enhancedStateManager;
@@ -40,14 +42,24 @@ class SimplifiedComponentRenderer {
         // Listen for state manager ready
         document.addEventListener('gmkb:state-manager-ready', tryInit);
         
-        // Also listen for core systems ready as backup
-        document.addEventListener('gmkb:core-systems-ready', tryInit);
+        // ROOT FIX: Don't wait for core-systems-ready as we ARE part of core systems
         
         // Try immediate initialization if dependencies exist
         if (window.enhancedStateManager && window.structuredLogger) {
             tryInit();
-        } else if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setTimeout(tryInit, 10);
+        } else {
+            // Check periodically (max 20 attempts over 2 seconds)
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                if (window.enhancedStateManager && window.structuredLogger) {
+                    clearInterval(checkInterval);
+                    tryInit();
+                } else if (attempts >= 20) {
+                    clearInterval(checkInterval);
+                    console.error('[RENDERER] Dependencies not found after 2 seconds');
+                }
+            }, 100);
         }
     }
     
@@ -90,6 +102,16 @@ class SimplifiedComponentRenderer {
                     timestamp: Date.now()
                 }
             }));
+            
+            // ROOT FIX: Notify coordinator of our readiness
+            if (window.coreSystemsCoordinator && typeof window.coreSystemsCoordinator.checkSystemReadiness === 'function') {
+                window.coreSystemsCoordinator.checkSystemReadiness();
+                this.logger.info('RENDER', 'Notified coordinator of readiness');
+            } else {
+                document.dispatchEvent(new CustomEvent('gmkb:manager-initialized', {
+                    detail: { manager: 'componentRenderer', timestamp: Date.now() }
+                }));
+            }
             
             // Check for initial components
             const state = this.stateManager.getState();
@@ -293,15 +315,40 @@ class SimplifiedComponentRenderer {
     }
 }
 
-// ARCHITECTURE COMPLIANT: Direct instantiation
-// The class constructor handles event-driven initialization internally
+// ARCHITECTURE COMPLIANT: Expose class globally first  
 window.SimplifiedComponentRenderer = SimplifiedComponentRenderer;
-window.enhancedComponentRenderer = new SimplifiedComponentRenderer();
 
-// Dispatch ready event for systems that may be waiting
-document.dispatchEvent(new CustomEvent('gmkb:component-renderer-ready', {
-    detail: {
-        renderer: window.enhancedComponentRenderer,
-        timestamp: Date.now()
+// Wrap initialization in IIFE to prevent script execution issues
+(function() {
+    'use strict';
+    
+    function initializeRenderer() {
+        if (!window.enhancedComponentRenderer) {
+            window.enhancedComponentRenderer = new SimplifiedComponentRenderer();
+            console.log('✅ Component Renderer initialized');
+            
+            // Dispatch ready event
+            document.dispatchEvent(new CustomEvent('gmkb:component-renderer-ready', {
+                detail: {
+                    renderer: window.enhancedComponentRenderer,
+                    timestamp: Date.now()
+                }
+            }));
+            
+            // Render any existing components
+            setTimeout(() => {
+                if (window.enhancedComponentRenderer && window.enhancedComponentRenderer.renderAllComponents) {
+                    window.enhancedComponentRenderer.renderAllComponents();
+                }
+            }, 100);
+        }
     }
-}));
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeRenderer);
+    } else {
+        // DOM already loaded
+        initializeRenderer();
+    }
+})();

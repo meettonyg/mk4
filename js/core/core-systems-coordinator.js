@@ -28,6 +28,29 @@ class CoreSystemsCoordinator {
      * Following checklist: Event-Driven Initialization, Root Cause Fix
      */
     initializeCoordinator() {
+        // ROOT FIX: Listen for manager initialization events
+        document.addEventListener('gmkb:manager-initialized', (event) => {
+            const { manager } = event.detail;
+            this.logger.info(`📍 Manager initialized: ${manager}`);
+            this.checkSystemReadiness();
+        });
+        
+        // Also listen for specific manager ready events
+        document.addEventListener('gmkb:component-manager-ready', () => {
+            this.logger.info('📍 Component manager ready event received');
+            this.checkSystemReadiness();
+        });
+        
+        document.addEventListener('gmkb:section-manager-ready', () => {
+            this.logger.info('📍 Section manager ready event received');
+            this.checkSystemReadiness();
+        });
+        
+        document.addEventListener('gmkb:enhanced-component-renderer-ready', () => {
+            this.logger.info('📍 Component renderer ready event received');
+            this.checkSystemReadiness();
+        });
+        
         // Check systems immediately if already loaded
         this.checkSystemReadiness();
         
@@ -55,11 +78,15 @@ class CoreSystemsCoordinator {
         // Check state manager
         this.systemsReady.stateManager = !!(window.enhancedStateManager && window.enhancedStateManager.getState);
         
-        // Check component manager  
-        this.systemsReady.componentManager = !!(window.enhancedComponentManager && (window.enhancedComponentManager.isInitialized || window.enhancedComponentManager.addComponent));
+        // Check component manager - ROOT FIX: Check for initialization properly
+        this.systemsReady.componentManager = !!(window.enhancedComponentManager && 
+            (window.enhancedComponentManager.isInitialized === true || 
+             typeof window.enhancedComponentManager.addComponent === 'function'));
         
-        // Check component renderer
-        this.systemsReady.componentRenderer = !!(window.enhancedComponentRenderer && window.enhancedComponentRenderer.renderComponent);
+        // Check component renderer - ROOT FIX: Check for initialization properly
+        this.systemsReady.componentRenderer = !!(window.enhancedComponentRenderer && 
+            (window.enhancedComponentRenderer.initialized === true ||
+             typeof window.enhancedComponentRenderer.renderComponent === 'function'));
         
         // ROOT FIX: Check UI systems (tabs, toolbar, modals, etc.)
         const hasModals = !!(window.GMKB_Modals || window.modalSystem);
