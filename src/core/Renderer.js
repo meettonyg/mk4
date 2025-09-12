@@ -15,6 +15,12 @@ export class Renderer {
       return;
     }
     
+    // Hide empty state and saved components initially
+    const emptyState = document.getElementById('empty-state');
+    const savedContainer = document.getElementById('saved-components-container');
+    if (emptyState) emptyState.style.display = 'none';
+    if (savedContainer) savedContainer.style.display = 'block';
+    
     // Subscribe to state changes
     this.unsubscribe = this.stateManager.subscribe(() => this.render());
     
@@ -26,19 +32,39 @@ export class Renderer {
     const state = this.stateManager.getState();
     logger.debug('🎨 Rendering state:', state);
     
+    // Check if we have components to render
+    const hasComponents = Object.keys(state.components).length > 0;
+    const hasSections = state.sections && state.sections.length > 0;
+    
+    // Handle empty state visibility
+    const emptyState = document.getElementById('empty-state');
+    const savedContainer = document.getElementById('saved-components-container');
+    
+    if (!hasComponents && !hasSections) {
+      // Show empty state
+      if (emptyState) emptyState.style.display = 'block';
+      if (savedContainer) savedContainer.style.display = 'none';
+      this.renderEmptyState();
+      return;
+    }
+    
+    // Hide empty state, show components
+    if (emptyState) emptyState.style.display = 'none';
+    if (savedContainer) savedContainer.style.display = 'block';
+    
     // Clear container
     this.container.innerHTML = '';
     
-    // Add theme class
-    this.container.className = `preview-area theme-${state.theme || 'default'}`;
+    // Add theme class if we're the main container
+    if (this.container.id === 'media-kit-preview' || this.container.id === 'gmkb-preview-area') {
+      this.container.className = `preview-area theme-${state.theme || 'default'}`;
+    }
     
     // Render sections or components directly
-    if (state.sections && state.sections.length > 0) {
+    if (hasSections) {
       this.renderSections(state);
-    } else if (Object.keys(state.components).length > 0) {
+    } else if (hasComponents) {
       this.renderComponentsDirectly(state);
-    } else {
-      this.renderEmptyState();
     }
   }
 
@@ -208,6 +234,31 @@ export class Renderer {
   }
 
   renderEmptyState() {
+    // If the empty state element already exists in the DOM, just ensure its handlers are set
+    const existingEmptyState = document.getElementById('empty-state');
+    if (existingEmptyState) {
+      // Use the existing empty state from the template
+      const addBtn = existingEmptyState.querySelector('#add-first-component');
+      const sectionBtn = existingEmptyState.querySelector('#add-first-section');
+      
+      if (addBtn && !addBtn.hasAttribute('data-listener-attached')) {
+        addBtn.addEventListener('click', () => {
+          document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
+        });
+        addBtn.setAttribute('data-listener-attached', 'true');
+      }
+      
+      if (sectionBtn && !sectionBtn.hasAttribute('data-listener-attached')) {
+        sectionBtn.addEventListener('click', () => {
+          this.addSection();
+        });
+        sectionBtn.setAttribute('data-listener-attached', 'true');
+      }
+      
+      return;
+    }
+    
+    // Fallback: create empty state if it doesn't exist
     this.container.innerHTML = `
       <div class="gmkb-empty-state">
         <h3>No components yet</h3>
@@ -223,6 +274,17 @@ export class Renderer {
         document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
       });
     }
+  }
+  
+  addSection() {
+    const sectionId = `section_${Date.now()}`;
+    const section = {
+      section_id: sectionId,
+      type: 'full_width',
+      components: []
+    };
+    
+    this.stateManager.dispatch({ type: 'ADD_SECTION', payload: section });
   }
 
   destroy() {

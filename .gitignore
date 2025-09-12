@@ -3112,3 +3112,4 @@ node_modules/jsdom/lib/jsdom/living/generated/OnBeforeUnloadEventHandlerNonNull.
 node_modules/@babel/types/lib/builders/flow/createTypeAnnotationBasedOnTypeof.js.map
 node_modules/jsdom/lib/jsdom/living/constraint-validation/DefaultConstraintValidation-impl.js
 build-lean.bat
+build.sh

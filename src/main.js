@@ -47,8 +47,25 @@ async function initialize() {
     // Create state manager with initial state
     stateManager = new StateManager(initialState);
     
-    // Initialize renderer (will auto-render on state changes)
-    renderer = new Renderer(stateManager);
+    // Initialize renderer with correct container ID
+    // Try multiple container IDs to find the right one
+  const possibleContainers = [
+    'gmkb-sections-container',
+    'saved-components-container', 
+    'media-kit-preview',
+    'gmkb-preview-area'
+  ];
+  
+  let containerId = 'media-kit-preview';
+  for (const id of possibleContainers) {
+    if (document.getElementById(id)) {
+      containerId = id;
+      logger.info(`Using container: ${id}`);
+      break;
+    }
+  }
+  
+  renderer = new Renderer(stateManager, containerId);
     
     // Set up UI event handlers
     setupUIHandlers();
