@@ -26,6 +26,11 @@ define( 'GMKB_WORDPRESS_COMPATIBLE', true );
 
 // Include primary files
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
+
+// LEAN ARCHITECTURE: Admin settings for toggling between architectures
+if ( is_admin() ) {
+    require_once GUESTIFY_PLUGIN_DIR . 'admin/gmkb-settings.php';
+}
 require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 // Component schemas are now self-contained in each component directory (schema.json)
 

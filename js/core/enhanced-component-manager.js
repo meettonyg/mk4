@@ -1,5 +1,19 @@
 console.log('📦 enhanced-component-manager.js LOADING');
 
+// Test if script executes at all
+try {
+    console.log('✅ enhanced-component-manager.js script executing');
+} catch (e) {
+    console.error('❌ enhanced-component-manager.js error:', e);
+}
+
+// Test if file executes at all
+try {
+    console.log('✅ enhanced-component-manager.js executing');
+} catch(e) {
+    console.error('❌ enhanced-component-manager.js error:', e);
+}
+
 /**
  * Enhanced Component Manager - ARCHITECTURE COMPLIANT
  * 

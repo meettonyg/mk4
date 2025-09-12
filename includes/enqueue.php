@@ -47,6 +47,12 @@ add_action( 'wp_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Later priority
 add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Consistent priority
 
 /**
+ * LEAN ARCHITECTURE: Feature flag for new lean bundle
+ * Set to true to use the new Vite-built lean bundle instead of 60+ individual files
+ */
+define( 'GMKB_USE_LEAN_BUNDLE', get_option( 'gmkb_use_lean_bundle', false ) );
+
+/**
  * Enqueues all necessary scripts and styles for the Media Kit Builder.
  *
  * ROOT CAUSE FIX: This function has been rewritten to establish a clear
@@ -152,6 +158,65 @@ function gmkb_enqueue_assets() {
 
     $plugin_url = GUESTIFY_PLUGIN_URL;
     $version = '2.3.0-CONSOLIDATED-ARCHITECTURE-' . time(); // ✅ Script consolidation completed - duplicate systems eliminated
+    
+    // Get post ID early for data preparation
+    $post_id = get_current_post_id_safe();
+    
+    // LEAN ARCHITECTURE: Check if we should use the lean bundle
+    if ( GMKB_USE_LEAN_BUNDLE && file_exists( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ) ) {
+        // Use the new lean bundle - single file instead of 60+ files
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '🚀 GMKB: Using LEAN BUNDLE architecture - single optimized file' );
+        }
+        
+        // Load saved state for lean bundle
+        $saved_state = array();
+        if ( $post_id > 0 ) {
+            $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
+            if ( empty( $saved_state ) ) {
+                $saved_state = array(
+                    'components' => array(),
+                    'sections' => array(),
+                    'theme' => 'default',
+                    'globalSettings' => array()
+                );
+            }
+        }
+        
+        // Prepare minimal WordPress data for lean bundle
+        $lean_wp_data = array(
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'nonce' => wp_create_nonce( 'gmkb_nonce' ),
+            'postId' => $post_id,
+            'pluginUrl' => $plugin_url,
+            'savedState' => $saved_state,
+            'debugMode' => defined( 'WP_DEBUG' ) && WP_DEBUG,
+            'components' => array() // Will be loaded dynamically by the bundle
+        );
+        
+        // Enqueue the lean bundle
+        wp_enqueue_script(
+            'gmkb-lean-bundle',
+            $plugin_url . 'dist/gmkb.iife.js',
+            array(), // No dependencies - it's self-contained
+            filemtime( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ), // Use file modified time for cache busting
+            true
+        );
+        
+        // Pass WordPress data to the lean bundle
+        wp_localize_script( 'gmkb-lean-bundle', 'gmkbData', $lean_wp_data );
+        
+        // Enqueue minimal CSS
+        wp_enqueue_style(
+            'gmkb-lean-styles',
+            $plugin_url . 'css/guestify-builder.css',
+            array(),
+            $version
+        );
+        
+        // Skip all the individual script enqueues
+        return;
+    }
     
     // ROOT CAUSE FIX: Direct component discovery with immediate error detection
     $components_data = array();
@@ -704,6 +769,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // 3.0a CRITICAL LOADER - Ensures core scripts load even if dependency chain breaks
+    if (!wp_script_is('gmkb-critical-loader', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-critical-loader',
+            $plugin_url . 'js/core/critical-loader.js',
+            array('gmkb-enhanced-state-manager'), // Only depends on state manager
+            $version . '-critical',
+            true
+        );
+    }
+    
     // 3.1 State Schema - ROOT FIX: Load state schema definitions
     if (!wp_script_is('gmkb-state-schema', 'enqueued')) {
         wp_enqueue_script(
@@ -722,6 +798,17 @@ function gmkb_enqueue_assets() {
             $plugin_url . 'js/core/core-systems-coordinator.js',
             array('gmkb', 'gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
             $version,
+            true
+        );
+    }
+    
+    // CRITICAL FIX: Load bundled classes when individual files fail
+    if (!wp_script_is('gmkb-critical-classes-bundle', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-critical-classes-bundle',
+            $plugin_url . 'js/core/critical-classes-bundle.js',
+            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger'),
+            $version . '-bundle',
             true
         );
     }
@@ -755,6 +842,17 @@ function gmkb_enqueue_assets() {
         
         // ROOT FIX: Provide WordPress data to component manager for AJAX calls
         wp_localize_script( 'gmkb-enhanced-component-manager', 'gmkbData', $wp_data );
+    }
+    
+    // CRITICAL FIX: Force initialization when managers fail to load
+    if (!wp_script_is('gmkb-force-init', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-force-init',
+            $plugin_url . 'js/core/force-init.js',
+            array('gmkb-enhanced-state-manager'),
+            $version . '-force',
+            true
+        );
     }
 
     
@@ -1414,6 +1512,7 @@ function gmkb_enqueue_assets() {
     
     // ✅ COMPONENT SELF-REGISTRATION: Load component renderers
     // PERFORMANCE OPTIMIZATION: Use bundled version in production, individual files in development
+    $debug_mode = defined('WP_DEBUG') && WP_DEBUG;
     $use_bundled_renderers = !$debug_mode; // Use bundle in production, individual files in debug
     
     if ($use_bundled_renderers) {

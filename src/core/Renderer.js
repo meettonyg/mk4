@@ -1,0 +1,233 @@
+/**
+ * Simple Direct Renderer - No Virtual DOM, No Diffing
+ * Just clear and re-render - fast enough for dozens of components
+ */
+import { getComponentRenderer } from '../registry/ComponentRegistry.js';
+import { logger } from '../utils/logger.js';
+
+export class Renderer {
+  constructor(stateManager, containerId = 'media-kit-preview') {
+    this.stateManager = stateManager;
+    this.container = document.getElementById(containerId);
+    
+    if (!this.container) {
+      logger.error(`Container #${containerId} not found`);
+      return;
+    }
+    
+    // Subscribe to state changes
+    this.unsubscribe = this.stateManager.subscribe(() => this.render());
+    
+    // Initial render
+    this.render();
+  }
+
+  render() {
+    const state = this.stateManager.getState();
+    logger.debug('🎨 Rendering state:', state);
+    
+    // Clear container
+    this.container.innerHTML = '';
+    
+    // Add theme class
+    this.container.className = `preview-area theme-${state.theme || 'default'}`;
+    
+    // Render sections or components directly
+    if (state.sections && state.sections.length > 0) {
+      this.renderSections(state);
+    } else if (Object.keys(state.components).length > 0) {
+      this.renderComponentsDirectly(state);
+    } else {
+      this.renderEmptyState();
+    }
+  }
+
+  renderSections(state) {
+    state.sections.forEach(section => {
+      const sectionEl = this.renderSection(section, state);
+      if (sectionEl) {
+        this.container.appendChild(sectionEl);
+      }
+    });
+  }
+
+  renderSection(section, state) {
+    const sectionEl = document.createElement('div');
+    sectionEl.className = `gmkb-section gmkb-section--${section.type || 'full-width'}`;
+    sectionEl.setAttribute('data-section-id', section.section_id);
+    
+    // Create section content wrapper
+    const contentEl = document.createElement('div');
+    contentEl.className = 'gmkb-section__content';
+    
+    // Render components in this section
+    if (section.components && section.components.length > 0) {
+      section.components.forEach(componentId => {
+        const component = state.components[componentId];
+        if (component) {
+          const componentEl = this.renderComponent(component);
+          if (componentEl) {
+            contentEl.appendChild(componentEl);
+          }
+        }
+      });
+    } else {
+      // Empty section placeholder
+      contentEl.innerHTML = `
+        <div class="gmkb-section__empty" data-drop-zone="true">
+          <p>Drop components here</p>
+        </div>
+      `;
+    }
+    
+    // Add section controls
+    this.addSectionControls(sectionEl, section);
+    
+    sectionEl.appendChild(contentEl);
+    return sectionEl;
+  }
+
+  renderComponentsDirectly(state) {
+    // If no sections, render components directly
+    Object.values(state.components).forEach(component => {
+      const componentEl = this.renderComponent(component);
+      if (componentEl) {
+        this.container.appendChild(componentEl);
+      }
+    });
+  }
+
+  renderComponent(component) {
+    const renderer = getComponentRenderer(component.type);
+    if (!renderer) {
+      logger.warn(`No renderer for component type: ${component.type}`);
+      return this.renderFallbackComponent(component);
+    }
+    
+    try {
+      // Call the renderer function
+      let element;
+      if (typeof renderer === 'function') {
+        element = renderer(component);
+      } else if (renderer.render) {
+        element = renderer.render(component);
+      } else {
+        throw new Error('Invalid renderer format');
+      }
+      
+      // Ensure element is a DOM node
+      if (typeof element === 'string') {
+        const div = document.createElement('div');
+        div.innerHTML = element;
+        element = div.firstElementChild || div;
+      }
+      
+      // Add wrapper with metadata
+      const wrapper = document.createElement('div');
+      wrapper.className = `gmkb-component gmkb-component--${component.type}`;
+      wrapper.setAttribute('data-component-id', component.id);
+      wrapper.setAttribute('data-component-type', component.type);
+      
+      // Add component controls
+      this.addComponentControls(wrapper, component);
+      
+      wrapper.appendChild(element);
+      return wrapper;
+    } catch (error) {
+      logger.error(`Error rendering component ${component.id}:`, error);
+      return this.renderFallbackComponent(component);
+    }
+  }
+
+  renderFallbackComponent(component) {
+    const div = document.createElement('div');
+    div.className = `gmkb-component gmkb-component--${component.type} gmkb-component--fallback`;
+    div.setAttribute('data-component-id', component.id);
+    div.innerHTML = `
+      <div class="component-fallback">
+        <h4>${component.type}</h4>
+        <p>Component ID: ${component.id}</p>
+      </div>
+    `;
+    this.addComponentControls(div, component);
+    return div;
+  }
+
+  addComponentControls(element, component) {
+    const controls = document.createElement('div');
+    controls.className = 'component-controls';
+    controls.innerHTML = `
+      <button class="control-btn move-up" data-action="move-up" title="Move Up">↑</button>
+      <button class="control-btn move-down" data-action="move-down" title="Move Down">↓</button>
+      <button class="control-btn edit" data-action="edit" title="Edit">✏️</button>
+      <button class="control-btn duplicate" data-action="duplicate" title="Duplicate">📋</button>
+      <button class="control-btn delete" data-action="delete" title="Delete">🗑️</button>
+    `;
+    
+    // Add event listeners
+    controls.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      if (action) {
+        this.handleComponentAction(action, component.id);
+      }
+    });
+    
+    element.appendChild(controls);
+  }
+
+  addSectionControls(element, section) {
+    const controls = document.createElement('div');
+    controls.className = 'section-controls';
+    controls.innerHTML = `
+      <button class="control-btn delete" data-action="delete-section" title="Delete Section">🗑️</button>
+      <button class="control-btn settings" data-action="section-settings" title="Section Settings">⚙️</button>
+    `;
+    
+    controls.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      if (action) {
+        this.handleSectionAction(action, section.section_id);
+      }
+    });
+    
+    element.appendChild(controls);
+  }
+
+  handleComponentAction(action, componentId) {
+    // Emit events for component actions
+    document.dispatchEvent(new CustomEvent('gmkb:component-action', {
+      detail: { action, componentId }
+    }));
+  }
+
+  handleSectionAction(action, sectionId) {
+    // Emit events for section actions
+    document.dispatchEvent(new CustomEvent('gmkb:section-action', {
+      detail: { action, sectionId }
+    }));
+  }
+
+  renderEmptyState() {
+    this.container.innerHTML = `
+      <div class="gmkb-empty-state">
+        <h3>No components yet</h3>
+        <p>Click "Add Component" to get started</p>
+        <button id="empty-state-add-btn" class="btn btn-primary">Add Component</button>
+      </div>
+    `;
+    
+    // Add event listener for the button
+    const btn = this.container.querySelector('#empty-state-add-btn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
+      });
+    }
+  }
+
+  destroy() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
+  }
+}

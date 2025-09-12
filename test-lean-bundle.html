@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lean Bundle Test - Media Kit Builder</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #007cba;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        #preview-area {
+            min-height: 300px;
+            border: 2px dashed #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        .component-controls {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: none;
+            gap: 5px;
+        }
+        .gmkb-component {
+            position: relative;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .gmkb-component:hover .component-controls {
+            display: flex;
+        }
+        .control-btn {
+            padding: 4px 8px;
+            font-size: 12px;
+            background: #666;
+        }
+        .control-btn:hover {
+            background: #444;
+        }
+        .gmkb-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+        }
+        .gmkb-empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: #333;
+            color: white;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        .toast--visible {
+            opacity: 1;
+        }
+        .toast--success {
+            background: #28a745;
+        }
+        .toast--error {
+            background: #dc3545;
+        }
+        .test-result {
+            margin: 5px 0;
+            padding: 5px 10px;
+            border-left: 3px solid #ddd;
+        }
+        .test-result.pass {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        .test-result.fail {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Lean Bundle Test Suite</h1>
+        
+        <div id="load-status" class="status warning">
+            Checking bundle status...
+        </div>
+
+        <div class="test-section">
+            <h2>1. Bundle Load Test</h2>
+            <div id="bundle-test-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Core Systems Test</h2>
+            <div id="systems-test-results"></div>
+            <button onclick="testCoreSystems()">Run Systems Test</button>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Component Operations Test</h2>
+            <button onclick="testAddComponent('hero')">Add Hero Component</button>
+            <button onclick="testAddComponent('biography')">Add Biography Component</button>
+            <button onclick="testAddComponent('topics')">Add Topics Component</button>
+            <button onclick="testRemoveComponent()">Remove Last Component</button>
+            <button onclick="testClearAll()">Clear All</button>
+            <div id="component-test-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Section Operations Test</h2>
+            <button onclick="testAddSection('full_width')">Add Full Width Section</button>
+            <button onclick="testAddSection('two_column')">Add Two Column Section</button>
+            <button onclick="testAddSection('three_column')">Add Three Column Section</button>
+            <div id="section-test-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. State Management Test</h2>
+            <button onclick="testSaveState()">Test Save</button>
+            <button onclick="testLoadState()">Test Load</button>
+            <button onclick="showCurrentState()">Show Current State</button>
+            <div id="state-test-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>6. Preview Area</h2>
+            <div id="preview-area"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>7. Performance Metrics</h2>
+            <button onclick="runPerformanceTest()">Run Performance Test</button>
+            <div id="performance-results"></div>
+        </div>
+    </div>
+
+    <!-- Mock WordPress data -->
+    <script>
+        // Simulate WordPress environment
+        window.gmkbData = {
+            ajaxUrl: '/wp-admin/admin-ajax.php',
+            nonce: 'test-nonce-123',
+            postId: 123,
+            pluginUrl: '/wp-content/plugins/mk4/',
+            savedState: {
+                components: {},
+                sections: [],
+                theme: 'default',
+                globalSettings: {}
+            },
+            debugMode: true,
+            components: [
+                { type: 'hero', name: 'Hero', description: 'Hero section' },
+                { type: 'biography', name: 'Biography', description: 'Bio section' },
+                { type: 'topics', name: 'Topics', description: 'Topics section' },
+                { type: 'contact', name: 'Contact', description: 'Contact section' }
+            ]
+        };
+    </script>
+
+    <!-- Load the lean bundle -->
+    <script src="dist/gmkb.js"></script>
+
+    <!-- Test Suite -->
+    <script>
+        // Test functions
+        function checkBundleLoad() {
+            const statusEl = document.getElementById('load-status');
+            const resultsEl = document.getElementById('bundle-test-results');
+            
+            const tests = [
+                { name: 'GMKB global exists', pass: !!window.GMKB },
+                { name: 'Version is 3.0.0', pass: window.GMKB?.version === '3.0.0' },
+                { name: 'StateManager loaded', pass: !!window.GMKB?.stateManager },
+                { name: 'EventBus loaded', pass: !!window.GMKB?.eventBus },
+                { name: 'Renderer loaded', pass: !!window.GMKB?.renderer },
+                { name: 'APIService loaded', pass: !!window.GMKB?.apiService }
+            ];
+            
+            const allPass = tests.every(t => t.pass);
+            
+            statusEl.className = 'status ' + (allPass ? 'success' : 'error');
+            statusEl.textContent = allPass 
+                ? '✅ Lean bundle loaded successfully!' 
+                : '❌ Bundle load incomplete';
+            
+            resultsEl.innerHTML = tests.map(test => 
+                `<div class="test-result ${test.pass ? 'pass' : 'fail'}">
+                    ${test.pass ? '✅' : '❌'} ${test.name}
+                </div>`
+            ).join('');
+            
+            return allPass;
+        }
+
+        function testCoreSystems() {
+            const resultsEl = document.getElementById('systems-test-results');
+            const tests = [];
+            
+            // Test StateManager
+            try {
+                const state = window.GMKB.getState();
+                tests.push({ name: 'Get state', pass: !!state });
+                tests.push({ name: 'State has components', pass: 'components' in state });
+                tests.push({ name: 'State has sections', pass: 'sections' in state });
+            } catch (e) {
+                tests.push({ name: 'StateManager', pass: false, error: e.message });
+            }
+            
+            // Test EventBus
+            try {
+                let eventFired = false;
+                const unsubscribe = window.GMKB.eventBus.on('test-event', () => {
+                    eventFired = true;
+                });
+                window.GMKB.eventBus.emit('test-event', {});
+                tests.push({ name: 'EventBus emit/subscribe', pass: eventFired });
+                unsubscribe();
+            } catch (e) {
+                tests.push({ name: 'EventBus', pass: false, error: e.message });
+            }
+            
+            resultsEl.innerHTML = tests.map(test => 
+                `<div class="test-result ${test.pass ? 'pass' : 'fail'}">
+                    ${test.pass ? '✅' : '❌'} ${test.name} ${test.error ? `(${test.error})` : ''}
+                </div>`
+            ).join('');
+        }
+
+        function testAddComponent(type) {
+            try {
+                const componentId = window.GMKB.addComponent(type, {
+                    title: `Test ${type}`,
+                    content: `This is a test ${type} component`
+                });
+                
+                const state = window.GMKB.getState();
+                const count = Object.keys(state.components).length;
+                
+                document.getElementById('component-test-results').innerHTML = 
+                    `<div class="test-result pass">
+                        ✅ Added ${type} component (ID: ${componentId})<br>
+                        Total components: ${count}
+                    </div>`;
+            } catch (e) {
+                document.getElementById('component-test-results').innerHTML = 
+                    `<div class="test-result fail">❌ Failed to add component: ${e.message}</div>`;
+            }
+        }
+
+        function testRemoveComponent() {
+            try {
+                const state = window.GMKB.getState();
+                const componentIds = Object.keys(state.components);
+                
+                if (componentIds.length === 0) {
+                    throw new Error('No components to remove');
+                }
+                
+                const lastId = componentIds[componentIds.length - 1];
+                window.GMKB.removeComponent(lastId);
+                
+                const newCount = Object.keys(window.GMKB.getState().components).length;
+                
+                document.getElementById('component-test-results').innerHTML = 
+                    `<div class="test-result pass">
+                        ✅ Removed component ${lastId}<br>
+                        Remaining components: ${newCount}
+                    </div>`;
+            } catch (e) {
+                document.getElementById('component-test-results').innerHTML = 
+                    `<div class="test-result fail">❌ Failed to remove component: ${e.message}</div>`;
+            }
+        }
+
+        function testClearAll() {
+            try {
+                window.GMKB.stateManager.dispatch({
+                    type: 'SET_STATE',
+                    payload: {
+                        components: {},
+                        sections: [],
+                        theme: 'default',
+                        globalSettings: {}
+                    }
+                });
+                
+                document.getElementById('component-test-results').innerHTML = 
+                    `<div class="test-result pass">✅ Cleared all components and sections</div>`;
+            } catch (e) {
+                document.getElementById('component-test-results').innerHTML = 
+                    `<div class="test-result fail">❌ Failed to clear: ${e.message}</div>`;
+            }
+        }
+
+        function testAddSection(type) {
+            try {
+                const sectionId = `section_${Date.now()}`;
+                window.GMKB.stateManager.dispatch({
+                    type: 'ADD_SECTION',
+                    payload: {
+                        section_id: sectionId,
+                        type: type,
+                        components: []
+                    }
+                });
+                
+                const sections = window.GMKB.getState().sections;
+                
+                document.getElementById('section-test-results').innerHTML = 
+                    `<div class="test-result pass">
+                        ✅ Added ${type} section (ID: ${sectionId})<br>
+                        Total sections: ${sections.length}
+                    </div>`;
+            } catch (e) {
+                document.getElementById('section-test-results').innerHTML = 
+                    `<div class="test-result fail">❌ Failed to add section: ${e.message}</div>`;
+            }
+        }
+
+        function testSaveState() {
+            const state = window.GMKB.getState();
+            localStorage.setItem('gmkb_test_state', JSON.stringify(state));
+            
+            document.getElementById('state-test-results').innerHTML = 
+                `<div class="test-result pass">
+                    ✅ State saved to localStorage<br>
+                    Components: ${Object.keys(state.components).length}<br>
+                    Sections: ${state.sections.length}
+                </div>`;
+        }
+
+        function testLoadState() {
+            try {
+                const savedState = localStorage.getItem('gmkb_test_state');
+                if (!savedState) {
+                    throw new Error('No saved state found');
+                }
+                
+                const state = JSON.parse(savedState);
+                window.GMKB.stateManager.dispatch({
+                    type: 'SET_STATE',
+                    payload: state
+                });
+                
+                document.getElementById('state-test-results').innerHTML = 
+                    `<div class="test-result pass">
+                        ✅ State loaded from localStorage<br>
+                        Components: ${Object.keys(state.components).length}<br>
+                        Sections: ${state.sections.length}
+                    </div>`;
+            } catch (e) {
+                document.getElementById('state-test-results').innerHTML = 
+                    `<div class="test-result fail">❌ Failed to load state: ${e.message}</div>`;
+            }
+        }
+
+        function showCurrentState() {
+            const state = window.GMKB.getState();
+            document.getElementById('state-test-results').innerHTML = 
+                `<div class="test-result pass">
+                    <strong>Current State:</strong><br>
+                    <pre style="background: #f5f5f5; padding: 10px; overflow: auto; max-height: 300px;">
+${JSON.stringify(state, null, 2)}
+                    </pre>
+                </div>`;
+        }
+
+        function runPerformanceTest() {
+            const results = [];
+            
+            // Test 1: Add 10 components
+            const startAdd = performance.now();
+            for (let i = 0; i < 10; i++) {
+                window.GMKB.addComponent('hero', { title: `Component ${i}` });
+            }
+            const addTime = performance.now() - startAdd;
+            results.push(`Add 10 components: ${addTime.toFixed(2)}ms`);
+            
+            // Test 2: Render time
+            const startRender = performance.now();
+            window.GMKB.renderer.render();
+            const renderTime = performance.now() - startRender;
+            results.push(`Render time: ${renderTime.toFixed(2)}ms`);
+            
+            // Test 3: State serialization
+            const startSerialize = performance.now();
+            const serialized = JSON.stringify(window.GMKB.getState());
+            const serializeTime = performance.now() - startSerialize;
+            results.push(`Serialize state: ${serializeTime.toFixed(2)}ms (${(serialized.length / 1024).toFixed(2)}KB)`);
+            
+            // Test 4: Clear all
+            const startClear = performance.now();
+            testClearAll();
+            const clearTime = performance.now() - startClear;
+            results.push(`Clear all: ${clearTime.toFixed(2)}ms`);
+            
+            document.getElementById('performance-results').innerHTML = 
+                `<div class="test-result pass">
+                    <strong>Performance Results:</strong><br>
+                    ${results.map(r => `• ${r}`).join('<br>')}
+                    <br><br>
+                    <strong>Bundle Info:</strong><br>
+                    • Version: ${window.GMKB.version}<br>
+                    • Architecture: Lean Bundle<br>
+                    • Load Time: ${window.performance.timing.loadEventEnd - window.performance.timing.navigationStart}ms
+                </div>`;
+        }
+
+        // Run initial test on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const bundleLoaded = checkBundleLoad();
+                if (bundleLoaded) {
+                    console.log('✅ Lean bundle test suite ready!');
+                    console.log('Available tests:', {
+                        bundle: 'checkBundleLoad()',
+                        systems: 'testCoreSystems()',
+                        components: 'testAddComponent(type)',
+                        sections: 'testAddSection(type)',
+                        state: 'testSaveState(), testLoadState()',
+                        performance: 'runPerformanceTest()'
+                    });
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>
