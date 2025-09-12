@@ -50,7 +50,7 @@ add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Consistent 
  * LEAN ARCHITECTURE: Feature flag for new lean bundle
  * Set to true to use the new Vite-built lean bundle instead of 60+ individual files
  */
-define( 'GMKB_USE_LEAN_BUNDLE', get_option( 'gmkb_use_lean_bundle', false ) );
+define( 'GMKB_USE_LEAN_BUNDLE', get_option( 'gmkb_use_lean_bundle', true ) ); // ENABLED: Using lean bundle
 
 /**
  * Enqueues all necessary scripts and styles for the Media Kit Builder.

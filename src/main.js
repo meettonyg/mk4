@@ -30,6 +30,20 @@ async function initialize() {
     // Load initial state from WordPress or use default
     const initialState = window.gmkbData?.savedState || window.gmkbData?.saved_state || {};
     
+    // Ensure we have default structure
+    if (!initialState.components) initialState.components = {};
+    if (!initialState.sections || !Array.isArray(initialState.sections)) {
+      initialState.sections = [];
+      // Create a default section if we have components but no sections
+      if (Object.keys(initialState.components).length > 0) {
+        initialState.sections = [{
+          section_id: `section_${Date.now()}`,
+          type: 'full_width',
+          components: Object.keys(initialState.components)
+        }];
+      }
+    }
+    
     // Create state manager with initial state
     stateManager = new StateManager(initialState);
     

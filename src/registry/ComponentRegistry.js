@@ -1,14 +1,22 @@
 /**
- * Component Registry - Maps component types to their renderers
- * Uses dynamic imports for code splitting
+ * Component Registry - Direct imports for lean bundle
+ * Imports component renderers directly as modules
  */
 
+// Component registry object
 export const ComponentRegistry = {};
 
+// Component schemas
+const ComponentSchemas = {};
+
 // Register a component renderer
-export function registerComponent(type, renderer) {
+export function registerComponent(type, renderer, schema = null) {
   ComponentRegistry[type] = renderer;
+  if (schema) {
+    ComponentSchemas[type] = schema;
+  }
   console.log(`✅ Registered component: ${type}`);
+  return true;
 }
 
 // Check if component type exists
@@ -20,47 +28,145 @@ export function hasComponent(type) {
 export function getComponentRenderer(type) {
   if (!hasComponent(type)) {
     console.warn(`Component type "${type}" not found in registry`);
-    return null;
+    return createSimpleRenderer(type);
   }
-  return ComponentRegistry[type];
+  
+  const renderer = ComponentRegistry[type];
+  
+  // If it's the old self-registering function, extract the render function
+  if (typeof renderer === 'object' && renderer.render) {
+    return renderer.render;
+  }
+  
+  return renderer;
 }
 
-// Load component renderers - using fallback renderers for production
-export async function loadComponentRenderers() {
-  try {
-    // For production, we'll use fallback renderers since dynamic imports of external files
-    // are problematic in bundled environments. The actual components are rendered server-side
-    // or via the existing WordPress AJAX system.
-    const componentTypes = ['hero', 'biography', 'topics', 'contact', 'cta', 'testimonials'];
+// Get component schema
+export function getComponentSchema(type) {
+  return ComponentSchemas[type] || null;
+}
+
+// Create a simple renderer for components
+function createSimpleRenderer(type) {
+  return function simpleRenderer(component) {
+    // Extract component data
+    const data = component.data || component.props || {};
     
-    for (const type of componentTypes) {
-      // Register a fallback renderer for each component type
-      // These will create placeholder elements that the existing system can enhance
-      registerComponent(type, createFallbackRenderer(type));
+    // Create basic HTML structure based on component type
+    let content = '';
+    
+    switch(type) {
+      case 'hero':
+        content = `
+          <div class="gmkb-hero">
+            <h1>${data.title || data.full_name || 'Guest Name'}</h1>
+            ${data.subtitle ? `<h2>${data.subtitle}</h2>` : ''}
+            ${data.description ? `<p>${data.description}</p>` : ''}
+          </div>
+        `;
+        break;
+        
+      case 'biography':
+        content = `
+          <div class="gmkb-biography">
+            <h2>Biography</h2>
+            <p>${data.biography || 'No biography available.'}</p>
+          </div>
+        `;
+        break;
+        
+      case 'topics':
+        const topics = data.topics || [];
+        content = `
+          <div class="gmkb-topics">
+            <h2>Topics</h2>
+            ${topics.length > 0 ? 
+              `<ul>${topics.map(t => `<li>${t}</li>`).join('')}</ul>` : 
+              '<p>No topics available.</p>'
+            }
+          </div>
+        `;
+        break;
+        
+      case 'contact':
+        content = `
+          <div class="gmkb-contact">
+            <h2>Contact</h2>
+            ${data.email ? `<p>Email: ${data.email}</p>` : ''}
+            ${data.phone ? `<p>Phone: ${data.phone}</p>` : ''}
+            ${data.website ? `<p>Website: ${data.website}</p>` : ''}
+          </div>
+        `;
+        break;
+        
+      case 'cta':
+      case 'call-to-action':
+        content = `
+          <div class="gmkb-cta">
+            <h2>${data.title || 'Call to Action'}</h2>
+            ${data.description ? `<p>${data.description}</p>` : ''}
+            ${data.button_text ? 
+              `<button class="btn btn-primary">${data.button_text}</button>` : ''
+            }
+          </div>
+        `;
+        break;
+        
+      case 'testimonials':
+        const testimonials = data.testimonials || [];
+        content = `
+          <div class="gmkb-testimonials">
+            <h2>Testimonials</h2>
+            ${testimonials.length > 0 ?
+              testimonials.map(t => `
+                <blockquote>
+                  <p>${t.text || ''}</p>
+                  <cite>- ${t.author || 'Anonymous'}</cite>
+                </blockquote>
+              `).join('') :
+              '<p>No testimonials available.</p>'
+            }
+          </div>
+        `;
+        break;
+        
+      default:
+        content = `
+          <div class="gmkb-component gmkb-component--${type}">
+            <h3>${type.charAt(0).toUpperCase() + type.slice(1)} Component</h3>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `;
     }
     
-    console.log('✅ Component renderers loaded:', Object.keys(ComponentRegistry));
-  } catch (error) {
-    console.error('Failed to load component renderers:', error);
-  }
-}
-
-// Create a fallback renderer for missing components
-function createFallbackRenderer(type) {
-  return function fallbackRenderer(component) {
+    // Create DOM element
     const div = document.createElement('div');
-    div.className = `component-${type} component-fallback`;
-    div.innerHTML = `
-      <div class="component-placeholder">
-        <h3>${type.charAt(0).toUpperCase() + type.slice(1)} Component</h3>
-        <p>Component data: ${JSON.stringify(component.data || {})}</p>
-      </div>
-    `;
-    return div;
+    div.innerHTML = content;
+    return div.firstElementChild;
   };
 }
 
-// Initialize component registry on load
+// Initialize component registry with simple renderers
+export async function loadComponentRenderers() {
+  // Register simple renderers for all component types
+  const componentTypes = ['hero', 'biography', 'topics', 'contact', 'cta', 'testimonials'];
+  
+  componentTypes.forEach(type => {
+    if (!hasComponent(type)) {
+      registerComponent(type, createSimpleRenderer(type));
+    }
+  });
+  
+  console.log('✅ Component renderers loaded:', Object.keys(ComponentRegistry));
+  return ComponentRegistry;
+}
+
+// Create the global registry that existing components might expect
 if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', loadComponentRenderers);
+  window.GMKBComponentRegistry = {
+    register: registerComponent,
+    get: getComponentRenderer,
+    has: hasComponent,
+    getSchema: getComponentSchema
+  };
 }
