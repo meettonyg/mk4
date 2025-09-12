@@ -274,55 +274,15 @@ class SectionRenderer {
     }
 }
 
-// Wait for dependencies before creating the renderer
-// ARCHITECTURE COMPLIANT: Event-driven initialization
+// ARCHITECTURE COMPLIANT: Direct instantiation
+// The class constructor handles event-driven initialization internally
 (function() {
     'use strict';
-    
-    let rendererCreated = false;
-    
-    const createRenderer = () => {
-        if (rendererCreated) return;
-        
-        // Check if dependencies are available
-        if (!window.structuredLogger || !window.enhancedStateManager || !window.sectionLayoutManager) {
-            // Listen for dependencies
-            if (!window.structuredLogger) {
-                document.addEventListener('gmkb:structured-logger-ready', createRenderer, { once: true });
-            }
-            if (!window.enhancedStateManager) {
-                document.addEventListener('gmkb:state-manager-ready', createRenderer, { once: true });
-            }
-            if (!window.sectionLayoutManager) {
-                document.addEventListener('gmkb:section-manager-ready', createRenderer, { once: true });
-            }
-            return;
-        }
-        
-        rendererCreated = true;
-        
-        // Create and expose globally
+    try {
         window.sectionRenderer = new SectionRenderer();
-        
-        // Also expose as SectionRenderer for compatibility
-        window.SectionRenderer = window.sectionRenderer;
-        
-        // Log availability
-        if (window.structuredLogger) {
-            window.structuredLogger.info('[SECTION_RENDERER] Section Renderer available globally');
-        } else {
-            console.log('✅ Section Renderer available globally');
-        }
-    };
-    
-    // Try to create immediately if dependencies are ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', createRenderer);
-    } else {
-        createRenderer();
+        window.SectionRenderer = window.sectionRenderer; // Compatibility alias
+        console.log('✅ Section Renderer instantiated');
+    } catch (error) {
+        console.error('❌ Failed to instantiate Section Renderer:', error);
     }
-    
-    // Also listen for dependency ready events
-    document.addEventListener('gmkb:state-manager-ready', createRenderer);
-    document.addEventListener('gmkb:section-manager-ready', createRenderer);
 })();

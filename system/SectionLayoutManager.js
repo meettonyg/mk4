@@ -310,51 +310,15 @@ class SectionLayoutManager {
     }
 }
 
-// Wait for dependencies before creating the manager
-// ARCHITECTURE COMPLIANT: Event-driven initialization
+// ARCHITECTURE COMPLIANT: Direct instantiation
+// The class constructor handles event-driven initialization internally
 (function() {
     'use strict';
-    
-    let managerCreated = false;
-    
-    const createManager = () => {
-        if (managerCreated) return;
-        
-        // Check if dependencies are available
-        if (!window.structuredLogger || !window.enhancedStateManager) {
-            // Listen for dependencies
-            if (!window.structuredLogger) {
-                document.addEventListener('gmkb:structured-logger-ready', createManager, { once: true });
-            }
-            if (!window.enhancedStateManager) {
-                document.addEventListener('gmkb:state-manager-ready', createManager, { once: true });
-            }
-            return;
-        }
-        
-        managerCreated = true;
-        
-        // Create and expose globally
+    try {
         window.sectionLayoutManager = new SectionLayoutManager();
-        
-        // Also expose as SectionLayoutManager for compatibility
-        window.SectionLayoutManager = window.sectionLayoutManager;
-        
-        // Log availability
-        if (window.structuredLogger) {
-            window.structuredLogger.info('[SECTION_MANAGER] Section Layout Manager available globally');
-        } else {
-            console.log('✅ Section Layout Manager available globally');
-        }
-    };
-    
-    // Try to create immediately if dependencies are ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', createManager);
-    } else {
-        createManager();
+        window.SectionLayoutManager = window.sectionLayoutManager; // Compatibility alias
+        console.log('✅ Section Layout Manager instantiated');
+    } catch (error) {
+        console.error('❌ Failed to instantiate Section Layout Manager:', error);
     }
-    
-    // Also listen for state manager ready event
-    document.addEventListener('gmkb:state-manager-ready', createManager);
 })();

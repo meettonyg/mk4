@@ -1263,7 +1263,7 @@ function gmkb_enqueue_assets() {
         wp_enqueue_script(
             'gmkb-section-layout-manager',
             $plugin_url . 'system/SectionLayoutManager.js',
-            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager', 'gmkb-core-systems-coordinator'),
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'), // REMOVED circular dependency on coordinator
             $version,
             true
         );
