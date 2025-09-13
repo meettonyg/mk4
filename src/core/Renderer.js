@@ -2,13 +2,14 @@
  * Simple Direct Renderer - No Virtual DOM, No Diffing
  * Just clear and re-render - fast enough for dozens of components
  */
-import { getComponentRenderer } from '../registry/ComponentRegistry.js';
+import { getComponentRenderer, isVueComponent } from '../registry/ComponentRegistry.js';
 import { logger } from '../utils/logger.js';
 
 export class Renderer {
   constructor(stateManager, containerId = 'media-kit-preview') {
     this.stateManager = stateManager;
     this.container = document.getElementById(containerId);
+    this.vueInstances = {}; // Track Vue component instances for cleanup
     
     if (!this.container) {
       logger.error(`Container #${containerId} not found`);
@@ -51,6 +52,9 @@ export class Renderer {
     // Hide empty state, show components
     if (emptyState) emptyState.style.display = 'none';
     if (savedContainer) savedContainer.style.display = 'block';
+    
+    // Clean up Vue instances before clearing container
+    this.cleanupVueInstances();
     
     // Clear container
     this.container.innerHTML = '';
@@ -131,33 +135,50 @@ export class Renderer {
     }
     
     try {
-      // Call the renderer function
-      let element;
-      if (typeof renderer === 'function') {
-        element = renderer(component);
-      } else if (renderer.render) {
-        element = renderer.render(component);
-      } else {
-        throw new Error('Invalid renderer format');
-      }
-      
-      // Ensure element is a DOM node
-      if (typeof element === 'string') {
-        const div = document.createElement('div');
-        div.innerHTML = element;
-        element = div.firstElementChild || div;
-      }
-      
-      // Add wrapper with metadata
+      // Create wrapper first
       const wrapper = document.createElement('div');
       wrapper.className = `gmkb-component gmkb-component--${component.type}`;
       wrapper.setAttribute('data-component-id', component.id);
       wrapper.setAttribute('data-component-type', component.type);
       
+      // Create content container for the component
+      const contentContainer = document.createElement('div');
+      contentContainer.className = 'gmkb-component__content';
+      
+      // Check if this is a Vue component
+      if (isVueComponent(component.type)) {
+        // Vue component rendering
+        const vueInstance = renderer(contentContainer, component.data || component.props || {});
+        
+        // Store Vue instance for cleanup
+        if (vueInstance) {
+          this.vueInstances[component.id] = vueInstance;
+        }
+      } else {
+        // Standard rendering
+        let element;
+        if (typeof renderer === 'function') {
+          element = renderer(component);
+        } else if (renderer.render) {
+          element = renderer.render(component);
+        } else {
+          throw new Error('Invalid renderer format');
+        }
+        
+        // Ensure element is a DOM node
+        if (typeof element === 'string') {
+          const div = document.createElement('div');
+          div.innerHTML = element;
+          element = div.firstElementChild || div;
+        }
+        
+        contentContainer.appendChild(element);
+      }
+      
       // Add component controls
       this.addComponentControls(wrapper, component);
       
-      wrapper.appendChild(element);
+      wrapper.appendChild(contentContainer);
       return wrapper;
     } catch (error) {
       logger.error(`Error rendering component ${component.id}:`, error);
@@ -287,7 +308,18 @@ export class Renderer {
     this.stateManager.dispatch({ type: 'ADD_SECTION', payload: section });
   }
 
+  cleanupVueInstances() {
+    // Clean up any existing Vue instances
+    Object.values(this.vueInstances).forEach(instance => {
+      if (instance && instance.destroy) {
+        instance.destroy();
+      }
+    });
+    this.vueInstances = {};
+  }
+
   destroy() {
+    this.cleanupVueInstances();
     if (this.unsubscribe) {
       this.unsubscribe();
     }

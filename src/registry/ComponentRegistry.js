@@ -33,12 +33,23 @@ export function getComponentRenderer(type) {
   
   const renderer = ComponentRegistry[type];
   
-  // If it's the old self-registering function, extract the render function
+  // Check if it's a Vue renderer object
   if (typeof renderer === 'object' && renderer.render) {
     return renderer.render;
   }
   
+  // Check if it's a function that needs to be called
+  if (typeof renderer === 'function') {
+    return renderer;
+  }
+  
   return renderer;
+}
+
+// Check if a component uses Vue
+export function isVueComponent(type) {
+  const renderer = ComponentRegistry[type];
+  return renderer && typeof renderer === 'object' && renderer.framework === 'vue';
 }
 
 // Get component schema
@@ -146,16 +157,48 @@ function createSimpleRenderer(type) {
   };
 }
 
+// Try to load Vue renderer for a component
+async function tryLoadVueRenderer(type) {
+  try {
+    // Try to import Vue renderer
+    const vueRendererPath = `../../components/${type}/renderer.vue.js`;
+    const module = await import(vueRendererPath);
+    
+    if (module.render) {
+      console.log(`✅ Loaded Vue renderer for ${type}`);
+      return module.render;
+    }
+  } catch (error) {
+    // Vue renderer not found, fall back to regular renderer
+    console.log(`ℹ️ No Vue renderer for ${type}, using standard renderer`);
+  }
+  
+  return null;
+}
+
 // Initialize component registry with simple renderers
 export async function loadComponentRenderers() {
   // Register simple renderers for all component types
   const componentTypes = ['hero', 'biography', 'topics', 'contact', 'cta', 'testimonials'];
   
-  componentTypes.forEach(type => {
+  // Try to load Vue renderers first, fall back to simple renderers
+  for (const type of componentTypes) {
     if (!hasComponent(type)) {
-      registerComponent(type, createSimpleRenderer(type));
+      // Try Vue renderer first
+      const vueRenderer = await tryLoadVueRenderer(type);
+      
+      if (vueRenderer) {
+        // Register Vue renderer with metadata
+        registerComponent(type, {
+          render: vueRenderer,
+          framework: 'vue'
+        });
+      } else {
+        // Fall back to simple renderer
+        registerComponent(type, createSimpleRenderer(type));
+      }
     }
-  });
+  }
   
   console.log('✅ Component renderers loaded:', Object.keys(ComponentRegistry));
   return ComponentRegistry;

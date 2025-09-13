@@ -542,6 +542,11 @@ if ($post_id > 0) {
                 </div>
                 <!-- END: Empty State -->
                 
+                <!-- Vue.js Mount Point for Progressive Enhancement -->
+                <div id="vue-app" style="display: none;">
+                    <!-- Vue components will be mounted here progressively -->
+                </div>
+                
                 <!-- ROOT FIX: Minimal drop zone (no complex bridge elements) -->
                 <div class="drop-zone drop-zone--empty" data-zone="0" style="display: none;">
                     <div class="drop-zone__content">

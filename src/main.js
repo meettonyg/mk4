@@ -1,7 +1,13 @@
 /**
  * Media Kit Builder - Main Entry Point
  * Clean, modern architecture with minimal dependencies
+ * Phase 3: Vue.js Integration Foundation
  */
+
+// Vue 3 imports
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+
 // Phase 2: Using Enhanced State Manager with reducer pattern
 import { StateManager, ACTION_TYPES } from './core/StateManager.js';
 import { EventBus } from './core/EventBus.js';
@@ -15,6 +21,7 @@ let stateManager;
 let eventBus;
 let apiService;
 let renderer;
+let vueApp = null; // Vue app instance
 
 // Define ALL functions before they're used
 function showToast(message, type = 'info', duration = 3000) {
@@ -36,9 +43,68 @@ function showToast(message, type = 'info', duration = 3000) {
 function showError(message) {
   showToast(message, 'error', 5000);
 }
+// Initialize Vue application
+function initializeVue() {
+  try {
+    // Check if Vue mount point exists
+    const mountPoint = document.getElementById('vue-app');
+    if (!mountPoint) {
+      logger.warn('Vue mount point not found, skipping Vue initialization');
+      return null;
+    }
+
+    // Create Vue app with minimal root component
+    const app = createApp({
+      name: 'MediaKitBuilderVue',
+      data() {
+        return {
+          message: 'Vue.js successfully integrated!',
+          isVisible: false
+        };
+      },
+      mounted() {
+        logger.success('✅ Vue app mounted successfully');
+        // Dispatch Vue ready event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-ready', {
+          detail: { version: '3.4.0' }
+        }));
+      },
+      template: `
+        <div v-if="isVisible" class="vue-integration-notice" style="background: #10b981; color: white; padding: 10px; border-radius: 4px; margin: 10px 0;">
+          <strong>{{ message }}</strong>
+          <br>Vue components can now be progressively integrated.
+        </div>
+      `
+    });
+
+    // Create and use Pinia store
+    const pinia = createPinia();
+    app.use(pinia);
+
+    // Mount the app
+    const instance = app.mount('#vue-app');
+    
+    // Make visible briefly to confirm integration
+    mountPoint.style.display = 'block';
+    instance.isVisible = true;
+    setTimeout(() => {
+      instance.isVisible = false;
+      setTimeout(() => {
+        mountPoint.style.display = 'none';
+      }, 300);
+    }, 3000);
+
+    logger.info('Vue 3 and Pinia initialized successfully');
+    return app;
+  } catch (error) {
+    logger.error('Failed to initialize Vue:', error);
+    return null;
+  }
+}
+
 // Initialize application
 async function initialize() {
-  logger.info('🚀 Initializing Media Kit Builder v3.0');
+  logger.info('🚀 Initializing Media Kit Builder v3.0 with Vue.js');
   
   try {
     // Create core instances
@@ -110,6 +176,7 @@ async function initialize() {
       eventBus,
       apiService,
       renderer,
+      vueApp, // Expose Vue app instance
       version: '3.0.0',
       
       // Helper methods
@@ -152,11 +219,17 @@ async function initialize() {
       getState: () => stateManager.getState()
     };
     
+    // Initialize Vue.js after core systems
+    vueApp = initializeVue();
+    
     logger.success('Media Kit Builder initialized successfully');
     
-    // Dispatch ready event
+    // Dispatch ready event with Vue status
     document.dispatchEvent(new CustomEvent('gmkb:ready', {
-      detail: { version: '3.0.0' }
+      detail: { 
+        version: '3.0.0',
+        vueEnabled: vueApp !== null
+      }
     }));
     
   } catch (error) {
