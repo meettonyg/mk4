@@ -1,0 +1,176 @@
+/**
+ * Temporary Toolbar Fix
+ * This script adds the missing event handlers for toolbar buttons
+ * Load this AFTER the lean bundle to fix the toolbar buttons
+ */
+
+(function() {
+  'use strict';
+  
+  console.log('🔧 Applying toolbar button fixes...');
+  
+  // Wait for DOM and GMKB to be ready
+  function initToolbarFix() {
+    // Device preview buttons
+    document.querySelectorAll('.toolbar__preview-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const device = this.dataset.preview || this.textContent.toLowerCase();
+        
+        // Remove active class from all buttons
+        document.querySelectorAll('.toolbar__preview-btn').forEach(b => {
+          b.classList.remove('toolbar__preview-btn--active');
+        });
+        
+        // Add active class to clicked button
+        this.classList.add('toolbar__preview-btn--active');
+        
+        // Update preview container
+        const preview = document.getElementById('media-kit-preview') || 
+                       document.getElementById('gmkb-preview-area');
+        if (preview) {
+          preview.className = preview.className.replace(/device-\w+/g, '');
+          preview.classList.add(`device-${device}`);
+        }
+        
+        console.log(`Switched to ${device} preview`);
+      });
+    });
+    
+    // Theme button
+    const themeBtn = document.getElementById('global-theme-btn');
+    if (themeBtn && !themeBtn.hasListener) {
+      themeBtn.addEventListener('click', () => {
+        showToast('Theme customizer coming soon', 'info');
+        console.log('Theme button clicked');
+      });
+      themeBtn.hasListener = true;
+    }
+    
+    // Export button
+    const exportBtn = document.getElementById('export-btn');
+    if (exportBtn && !exportBtn.hasListener) {
+      exportBtn.addEventListener('click', () => {
+        if (window.GMKB && window.GMKB.stateManager) {
+          const state = window.GMKB.stateManager.getState();
+          const dataStr = JSON.stringify(state, null, 2);
+          const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+          
+          const exportFileDefaultName = `media-kit-${Date.now()}.json`;
+          
+          const linkElement = document.createElement('a');
+          linkElement.setAttribute('href', dataUri);
+          linkElement.setAttribute('download', exportFileDefaultName);
+          linkElement.click();
+          
+          showToast('Media kit exported', 'success');
+        } else {
+          showToast('Export not available yet', 'error');
+        }
+      });
+      exportBtn.hasListener = true;
+    }
+    
+    // Share button
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn && !shareBtn.hasListener) {
+      shareBtn.addEventListener('click', () => {
+        showToast('Share functionality coming soon', 'info');
+        console.log('Share button clicked');
+      });
+      shareBtn.hasListener = true;
+    }
+    
+    // Undo button
+    const undoBtn = document.getElementById('undo-btn');
+    if (undoBtn && !undoBtn.hasListener) {
+      undoBtn.addEventListener('click', () => {
+        if (!undoBtn.disabled) {
+          showToast('Undo functionality coming soon', 'info');
+          console.log('Undo button clicked');
+        }
+      });
+      undoBtn.hasListener = true;
+    }
+    
+    // Redo button
+    const redoBtn = document.getElementById('redo-btn');
+    if (redoBtn && !redoBtn.hasListener) {
+      redoBtn.addEventListener('click', () => {
+        if (!redoBtn.disabled) {
+          showToast('Redo functionality coming soon', 'info');
+          console.log('Redo button clicked');
+        }
+      });
+      redoBtn.hasListener = true;
+    }
+    
+    // Save button (backup in case main handler fails)
+    const saveBtn = document.getElementById('save-btn');
+    if (saveBtn && !saveBtn.hasListener) {
+      saveBtn.addEventListener('click', async () => {
+        if (window.GMKB && window.GMKB.save) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Saving...';
+          
+          try {
+            await window.GMKB.save();
+            showToast('Saved successfully', 'success');
+          } catch (error) {
+            showToast('Save failed', 'error');
+            console.error('Save error:', error);
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+          }
+        } else {
+          console.error('Save function not available');
+          showToast('Save not available', 'error');
+        }
+      });
+      saveBtn.hasListener = true;
+    }
+    
+    console.log('✅ Toolbar button fixes applied');
+  }
+  
+  // Simple toast function if not available
+  if (typeof showToast === 'undefined') {
+    window.showToast = function(message, type = 'info', duration = 3000) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+        color: white;
+        border-radius: 4px;
+        z-index: 10000;
+        transition: opacity 0.3s;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    };
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initToolbarFix);
+  } else {
+    // DOM already loaded
+    setTimeout(initToolbarFix, 100); // Small delay to ensure GMKB is initialized
+  }
+  
+  // Also try when GMKB is ready
+  document.addEventListener('gmkb:ready', initToolbarFix);
+  
+})();

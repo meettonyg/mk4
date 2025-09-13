@@ -757,23 +757,66 @@
         applyTheme(theme) {
             // Apply via theme manager
             if (this.themeManager) {
-                this.themeManager.applyTheme(theme.theme_id || 'custom', theme);
+                // If it's a custom theme object, update the current theme
+                if (typeof theme === 'object' && theme.theme_id) {
+                    // Update the theme in theme manager
+                    this.themeManager.themes.set(theme.theme_id || 'custom', theme);
+                    this.themeManager.applyTheme(theme.theme_id || 'custom');
+                } else if (typeof theme === 'string') {
+                    // It's just a theme ID
+                    this.themeManager.applyTheme(theme);
+                } else {
+                    console.error('Invalid theme parameter:', theme);
+                }
             }
             
-            // Apply CSS variables for immediate preview
+            // Also apply CSS variables directly for immediate preview
             const root = document.documentElement;
             if (theme.colors) {
                 Object.keys(theme.colors).forEach(key => {
-                    root.style.setProperty(`--theme-color-${key}`, theme.colors[key]);
+                    const cssKey = key.replace(/_/g, '-');
+                    root.style.setProperty(`--gmkb-color-${cssKey}`, theme.colors[key]);
                 });
             }
             if (theme.typography) {
-                if (theme.typography.fontFamily) root.style.setProperty('--theme-font-family', theme.typography.fontFamily);
-                if (theme.typography.baseFontSize) root.style.setProperty('--theme-font-size', `${theme.typography.baseFontSize}px`);
-                if (theme.typography.lineHeight) root.style.setProperty('--theme-line-height', theme.typography.lineHeight);
+                if (theme.typography.fontFamily || theme.typography.primary_font?.family) {
+                    const fontFamily = theme.typography.fontFamily || theme.typography.primary_font?.family;
+                    root.style.setProperty('--gmkb-font-primary', fontFamily);
+                }
+                if (theme.typography.heading_font?.family) {
+                    root.style.setProperty('--gmkb-font-heading', theme.typography.heading_font.family);
+                }
+                if (theme.typography.baseFontSize) {
+                    root.style.setProperty('--gmkb-font-size-base', `${theme.typography.baseFontSize}px`);
+                }
+                if (theme.typography.lineHeight || theme.typography.line_height?.body) {
+                    const lineHeight = theme.typography.lineHeight || theme.typography.line_height?.body;
+                    root.style.setProperty('--gmkb-line-height-body', lineHeight);
+                }
             }
             if (theme.spacing) {
-                if (theme.spacing.baseUnit) root.style.setProperty('--theme-spacing-unit', `${theme.spacing.baseUnit}px`);
+                if (theme.spacing.baseUnit || theme.spacing.base_unit) {
+                    const baseUnit = theme.spacing.baseUnit || theme.spacing.base_unit;
+                    const unitValue = typeof baseUnit === 'string' ? baseUnit : `${baseUnit}px`;
+                    root.style.setProperty('--gmkb-spacing-base-unit', unitValue);
+                }
+                if (theme.spacing.component_gap) {
+                    root.style.setProperty('--gmkb-spacing-component-gap', theme.spacing.component_gap);
+                }
+                if (theme.spacing.section_gap) {
+                    root.style.setProperty('--gmkb-spacing-section-gap', theme.spacing.section_gap);
+                }
+            }
+            if (theme.effects) {
+                if (theme.effects.border_radius) {
+                    root.style.setProperty('--gmkb-border-radius', theme.effects.border_radius);
+                }
+                if (theme.effects.shadow) {
+                    root.style.setProperty('--gmkb-shadow', theme.effects.shadow);
+                }
+                if (theme.effects.transitions) {
+                    root.style.setProperty('--gmkb-transitions', theme.effects.transitions);
+                }
             }
         }
         

@@ -49,8 +49,9 @@ add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Consistent 
 /**
  * LEAN ARCHITECTURE: Feature flag for new lean bundle
  * Set to true to use the new Vite-built lean bundle instead of 60+ individual files
+ * The bundle must be rebuilt with: npm run build
  */
-define( 'GMKB_USE_LEAN_BUNDLE', true ); // FORCE ENABLED: Using lean bundle always
+define( 'GMKB_USE_LEAN_BUNDLE', true ); // Using lean bundle for better performance
 
 /**
  * Enqueues all necessary scripts and styles for the Media Kit Builder.
@@ -214,7 +215,44 @@ function gmkb_enqueue_assets() {
             $version
         );
         
-        // Skip all the individual script enqueues
+        // CRITICAL: Also load theme system even with lean bundle
+        // The lean bundle doesn't include the advanced theme customizer
+        if (!wp_script_is('gmkb-theme-manager', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-theme-manager',
+                $plugin_url . 'system/ThemeManager.js',
+                array('gmkb-lean-bundle'), // Depends on lean bundle
+                $version,
+                true
+            );
+        }
+        
+        if (!wp_script_is('gmkb-theme-customizer', 'enqueued')) {
+            wp_enqueue_script(
+                'gmkb-theme-customizer',
+                $plugin_url . 'system/ThemeCustomizer.js',
+                array('gmkb-theme-manager'),
+                $version . '-advanced',
+                true
+            );
+        }
+        
+        // Enqueue theme CSS
+        wp_enqueue_style(
+            'gmkb-theme-variables',
+            $plugin_url . 'css/theme-variables.css',
+            array('gmkb-lean-styles'),
+            $version
+        );
+        
+        wp_enqueue_style(
+            'gmkb-theme-customizer',
+            $plugin_url . 'css/theme-customizer.css',
+            array('gmkb-theme-variables'),
+            $version
+        );
+        
+        // Skip all the other individual script enqueues
         return;
     }
     

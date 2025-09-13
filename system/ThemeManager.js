@@ -441,16 +441,88 @@ class ThemeManager {
             existingStyle.remove();
         }
         
-        // Create new style element
+        // Create new style element with higher specificity CSS
+        const enhancedCSS = css + `
+        
+        /* Apply theme to all builder elements */
+        .builder-container,
+        .preview__container,
+        #media-kit-preview,
+        #gmkb-sections-container,
+        .gmkb-sections-container,
+        .media-kit-preview {
+            font-family: var(--gmkb-font-primary);
+            color: var(--gmkb-color-text);
+            background: var(--gmkb-color-background);
+        }
+        
+        /* Apply to all components */
+        .component,
+        .gmkb-component,
+        [data-component-id] {
+            background: var(--gmkb-color-surface);
+            color: var(--gmkb-color-text);
+            border-color: var(--gmkb-color-border);
+            border-radius: var(--gmkb-border-radius);
+        }
+        
+        /* Apply to all headings */
+        h1, h2, h3, h4, h5, h6,
+        .component h1, .component h2, .component h3,
+        .gmkb-component h1, .gmkb-component h2, .gmkb-component h3 {
+            font-family: var(--gmkb-font-heading);
+            color: var(--gmkb-color-text);
+        }
+        
+        /* Apply to buttons */
+        button, .btn, .button,
+        .toolbar button,
+        .component-control {
+            background-color: var(--gmkb-color-primary);
+            color: white;
+            border-radius: var(--gmkb-border-radius);
+        }
+        
+        button:hover, .btn:hover, .button:hover {
+            background-color: var(--gmkb-color-primary-hover);
+        }
+        
+        /* Apply to sidebar */
+        .sidebar,
+        .gmkb-sidebar {
+            background: var(--gmkb-color-surface);
+            border-color: var(--gmkb-color-border);
+        }
+        
+        /* Apply to toolbar */
+        .toolbar,
+        .gmkb-toolbar,
+        #gmkb-toolbar {
+            background: var(--gmkb-color-background);
+            border-color: var(--gmkb-color-border);
+        }
+        `;
+        
         const styleElement = document.createElement('style');
         styleElement.id = 'gmkb-theme-styles';
-        styleElement.textContent = css;
+        styleElement.textContent = enhancedCSS;
         
-        // Append to head
+        // Append to head with high priority
         document.head.appendChild(styleElement);
         
         // Also apply data attribute for CSS hooks
         document.documentElement.setAttribute('data-gmkb-theme', this.currentTheme.theme_id);
+        
+        // Apply class to body and main containers for better specificity
+        document.body.classList.add('gmkb-theme-active', `gmkb-theme-${this.currentTheme.theme_id}`);
+        
+        // Find and update main containers
+        const containers = document.querySelectorAll('.builder-container, .preview__container, #media-kit-preview, #gmkb-sections-container');
+        containers.forEach(container => {
+            container.classList.add('gmkb-media-kit-builder');
+        });
+        
+        this.logger.info('🎨 Theme CSS applied with enhanced selectors');
     }
     
     /**
