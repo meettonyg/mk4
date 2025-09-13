@@ -639,8 +639,18 @@ export class EnhancedStateManager {
         
         // Check if state actually changed
         if (this.state !== previousState) {
-            // Add to history if not a history action itself
-            if (!['UNDO', 'REDO', 'ADD_TO_HISTORY'].includes(finalAction.type)) {
+            // Add to history if not a history action or persistence action
+            const skipHistory = [
+                'UNDO', 
+                'REDO', 
+                'ADD_TO_HISTORY',
+                PERSISTENCE_ACTIONS.SAVE_STATE_SUCCESS,
+                PERSISTENCE_ACTIONS.SAVE_STATE_FAILURE,
+                PERSISTENCE_ACTIONS.LOAD_STATE_SUCCESS,
+                PERSISTENCE_ACTIONS.LOAD_STATE_FAILURE
+            ];
+            
+            if (!skipHistory.includes(finalAction.type)) {
                 this.dispatch({
                     type: 'ADD_TO_HISTORY',
                     payload: previousState
@@ -845,12 +855,17 @@ export class EnhancedStateManager {
     }
     
     persistenceMiddleware = (state, action, manager) => {
-        // Skip persistence for UI-only actions
+        // Skip persistence for UI-only actions and HISTORY actions
         const skipPersistence = [
             'SELECT_COMPONENT',
             'DESELECT_COMPONENT',
             'HOVER_COMPONENT',
-            'FOCUS_COMPONENT'
+            'FOCUS_COMPONENT',
+            'ADD_TO_HISTORY',  // Don't trigger save for history actions
+            'UNDO',
+            'REDO',
+            PERSISTENCE_ACTIONS.SAVE_STATE_SUCCESS,
+            PERSISTENCE_ACTIONS.SAVE_STATE_FAILURE
         ];
         
         if (!skipPersistence.includes(action.type)) {
