@@ -2,7 +2,8 @@
  * Media Kit Builder - Main Entry Point
  * Clean, modern architecture with minimal dependencies
  */
-import { StateManager } from './core/StateManager.js';
+// Phase 2: Using Enhanced State Manager with reducer pattern
+import { StateManager, ACTION_TYPES } from './core/StateManager.js';
 import { EventBus } from './core/EventBus.js';
 import { Renderer } from './core/Renderer.js';
 import { APIService } from './services/APIService.js';
@@ -68,8 +69,11 @@ async function initialize() {
       }
     }
     
-    // Create state manager with initial state
+    // Create enhanced state manager with initial state
     stateManager = new StateManager(initialState);
+    
+    // Load from localStorage if available
+    stateManager.loadFromStorage();
     
     // Initialize renderer with correct container ID
     // Try multiple container IDs to find the right one
@@ -123,7 +127,7 @@ async function initialize() {
         if (state.sections.length === 0) {
           const sectionId = `section_${Date.now()}`;
           stateManager.dispatch({
-            type: 'ADD_SECTION',
+            type: ACTION_TYPES.ADD_SECTION,
             payload: {
               section_id: sectionId,
               type: 'full_width',
@@ -135,12 +139,12 @@ async function initialize() {
           component.sectionId = state.sections[0].section_id;
         }
         
-        stateManager.dispatch({ type: 'ADD_COMPONENT', payload: component });
+        stateManager.dispatch({ type: ACTION_TYPES.ADD_COMPONENT, payload: component });
         return componentId;
       },
       
       removeComponent: (componentId) => {
-        stateManager.dispatch({ type: 'REMOVE_COMPONENT', payload: componentId });
+        stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
       },
       
       save: () => saveState(),
@@ -352,7 +356,7 @@ function setupComponentHandlers() {
     switch (action) {
       case 'delete':
         if (confirm('Delete this component?')) {
-          stateManager.dispatch({ type: 'REMOVE_COMPONENT', payload: componentId });
+          stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
         }
         break;
         
@@ -583,7 +587,7 @@ function addSection(type = 'full_width') {
     components: []
   };
   
-  stateManager.dispatch({ type: 'ADD_SECTION', payload: section });
+  stateManager.dispatch({ type: ACTION_TYPES.ADD_SECTION, payload: section });
   showToast('Section added', 'success');
 }
 
@@ -595,11 +599,11 @@ function deleteSection(sectionId) {
   const section = state.sections.find(s => s.section_id === sectionId);
   if (section && section.components) {
     section.components.forEach(componentId => {
-      stateManager.dispatch({ type: 'REMOVE_COMPONENT', payload: componentId });
+      stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
     });
   }
   
-  stateManager.dispatch({ type: 'UPDATE_SECTIONS', payload: sections });
+  stateManager.dispatch({ type: ACTION_TYPES.UPDATE_SECTIONS, payload: sections });
 }
 
 function duplicateComponent(componentId) {
@@ -614,7 +618,7 @@ function duplicateComponent(componentId) {
       data: { ...original.data }
     };
     
-    stateManager.dispatch({ type: 'ADD_COMPONENT', payload: duplicate });
+    stateManager.dispatch({ type: ACTION_TYPES.ADD_COMPONENT, payload: duplicate });
     showToast('Component duplicated', 'success');
   }
 }
@@ -645,7 +649,7 @@ function moveComponent(componentId, direction) {
       : s
   );
   
-  stateManager.dispatch({ type: 'UPDATE_SECTIONS', payload: updatedSections });
+  stateManager.dispatch({ type: ACTION_TYPES.UPDATE_SECTIONS, payload: updatedSections });
 }
 
 function openComponentEditor(componentId) {
@@ -775,7 +779,7 @@ function openSimpleThemeModal() {
         
         // Update state
         if (stateManager) {
-          stateManager.dispatch({ type: 'SET_THEME', payload: theme });
+          stateManager.dispatch({ type: ACTION_TYPES.SET_THEME, payload: theme });
         }
         
         showToast(`Theme changed to ${theme}`, 'success');
