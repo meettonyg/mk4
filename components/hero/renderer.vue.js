@@ -1,72 +1,80 @@
 /**
- * Vue Renderer Bridge for Hero Component
- * This bridges the existing system with the new Vue component
+ * Hero Component Vue Renderer
+ * Bridges the Hero Vue component with the existing component system
+ * Follows self-contained component architecture
  */
 
-import { createApp } from 'vue';
-import HeroComponent from './Hero.vue';
+import HeroVue from './Hero.vue';
+import vueComponentBridge from '../../src/vue/VueComponentBridge.js';
 
-export function render(container, data = {}) {
-  // Clear the container
-  container.innerHTML = '';
+export default {
+  name: 'hero',
   
-  // Create a mount point for Vue
-  const mountPoint = document.createElement('div');
-  container.appendChild(mountPoint);
-  
-  // Create Vue app instance for this component
-  const app = createApp(HeroComponent, {
-    // Map data to props
-    title: data.title || data.heading || 'Welcome',
-    subtitle: data.subtitle || data.subheading || '',
-    description: data.description || data.content || '',
-    imageUrl: data.imageUrl || data.image_url || data.image || '',
-    imageAlt: data.imageAlt || data.image_alt || '',
-    primaryButton: data.primaryButton || data.primary_button || data.cta_primary || '',
-    secondaryButton: data.secondaryButton || data.secondary_button || data.cta_secondary || '',
-    theme: data.theme || 'default',
+  /**
+   * Render the Hero component using Vue
+   * @param {Object} data - Component data
+   * @param {HTMLElement} container - Container element
+   * @returns {Object} Component instance
+   */
+  render(data = {}, container) {
+    // Ensure container exists
+    if (!container) {
+      console.error('Hero Vue renderer: No container provided');
+      return null;
+    }
     
-    // Event handlers
-    onButtonClick: (event) => {
-      console.log('Hero button clicked:', event);
-      // Dispatch custom event for the main system to handle
-      document.dispatchEvent(new CustomEvent('gmkb:component-action', {
-        detail: {
-          action: 'button-click',
-          componentId: data.id,
-          buttonType: event.type
-        }
-      }));
-    }
-  });
+    // Prepare props from data
+    const props = {
+      title: data.title || data.heading || 'Welcome',
+      subtitle: data.subtitle || data.subheading || '',
+      backgroundImage: data.backgroundImage || data.background_image || '',
+      ctaText: data.ctaText || data.cta_text || 'Get Started',
+      ctaUrl: data.ctaUrl || data.cta_url || '#',
+      alignment: data.alignment || 'center',
+      componentId: data.id || `hero_${Date.now()}`
+    };
+    
+    // Mount the Vue component
+    const instance = vueComponentBridge.mountComponent(HeroVue, container, props);
+    
+    console.log('Hero Vue component mounted with props:', props);
+    
+    return instance;
+  },
   
-  // Mount the Vue component
-  const instance = app.mount(mountPoint);
+  /**
+   * Update the component with new data
+   * @param {Object} data - New component data
+   * @param {HTMLElement} container - Container element
+   */
+  update(data, container) {
+    if (!container) return;
+    
+    const props = {
+      title: data.title || data.heading || 'Welcome',
+      subtitle: data.subtitle || data.subheading || '',
+      backgroundImage: data.backgroundImage || data.background_image || '',
+      ctaText: data.ctaText || data.cta_text || 'Get Started',
+      ctaUrl: data.ctaUrl || data.cta_url || '#',
+      alignment: data.alignment || 'center',
+      componentId: data.id
+    };
+    
+    vueComponentBridge.updateProps(container, props);
+  },
   
-  // Return Vue app instance for cleanup if needed
-  return {
-    app,
-    instance,
-    update: (newData) => {
-      // Update props reactively
-      Object.keys(newData).forEach(key => {
-        if (key in instance.$props) {
-          instance[key] = newData[key];
-        }
-      });
-    },
-    destroy: () => {
-      app.unmount();
-      container.innerHTML = '';
+  /**
+   * Unmount the component
+   * @param {HTMLElement} container - Container element
+   */
+  destroy(container) {
+    if (container) {
+      vueComponentBridge.unmountComponent(container);
     }
-  };
-}
-
-// Export component metadata for discovery
-export const metadata = {
-  type: 'hero',
-  name: 'Hero Section',
-  description: 'Hero section with title, description, image, and CTAs',
-  framework: 'vue',
-  version: '2.0.0'
+  },
+  
+  /**
+   * Check if this is a Vue renderer
+   */
+  isVueRenderer: true
 };

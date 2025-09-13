@@ -7,6 +7,7 @@
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+import vueComponentBridge from './vue/VueComponentBridge.js';
 
 // Phase 2: Using Enhanced State Manager with reducer pattern
 import { StateManager, ACTION_TYPES } from './core/StateManager.js';
@@ -176,7 +177,7 @@ async function initialize() {
       eventBus,
       apiService,
       renderer,
-      vueApp, // Expose Vue app instance
+      vueApp: null, // Will be set after Vue initialization
       version: '3.0.0',
       
       // Helper methods
@@ -221,6 +222,13 @@ async function initialize() {
     
     // Initialize Vue.js after core systems
     vueApp = initializeVue();
+    
+    // Store Vue app reference globally
+    if (vueApp) {
+      window.GMKB.vueApp = vueApp;
+      window.GMKB.vue = vueApp;
+      window.GMKB.vueComponentBridge = vueComponentBridge;
+    }
     
     logger.success('Media Kit Builder initialized successfully');
     

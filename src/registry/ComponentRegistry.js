@@ -160,13 +160,22 @@ function createSimpleRenderer(type) {
 // Try to load Vue renderer for a component
 async function tryLoadVueRenderer(type) {
   try {
-    // Try to import Vue renderer
-    const vueRendererPath = `../../components/${type}/renderer.vue.js`;
-    const module = await import(vueRendererPath);
+    // Get the plugin URL from WordPress data
+    const pluginUrl = window.gmkbData?.pluginUrl || '/wp-content/plugins/guestify-media-kit-builder/';
+    const vueRendererUrl = `${pluginUrl}components/${type}/renderer.vue.js`;
     
-    if (module.render) {
+    // First check if the file exists
+    const response = await fetch(vueRendererUrl, { method: 'HEAD' });
+    if (!response.ok) {
+      return null;
+    }
+    
+    // Try to import Vue renderer using dynamic import
+    const module = await import(vueRendererUrl);
+    
+    if (module.default) {
       console.log(`✅ Loaded Vue renderer for ${type}`);
-      return module.render;
+      return module.default;
     }
   } catch (error) {
     // Vue renderer not found, fall back to regular renderer
