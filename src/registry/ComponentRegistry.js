@@ -1,3 +1,5 @@
+import { initializeVueComponents, renderVueComponent } from '../loaders/VueComponentLoader.js';
+
 /**
  * Component Registry - Direct imports for lean bundle
  * Imports component renderers directly as modules
@@ -187,24 +189,40 @@ async function tryLoadVueRenderer(type) {
 
 // Initialize component registry with simple renderers
 export async function loadComponentRenderers() {
+  // Initialize Vue components first
+  try {
+    await initializeVueComponents();
+    console.log('✅ Vue components initialized');
+  } catch (error) {
+    console.warn('Vue component initialization failed:', error);
+  }
+  
   // Register simple renderers for all component types
   const componentTypes = ['hero', 'biography', 'topics', 'contact', 'cta', 'testimonials'];
   
-  // Try to load Vue renderers first, fall back to simple renderers
   for (const type of componentTypes) {
     if (!hasComponent(type)) {
-      // Try Vue renderer first
-      const vueRenderer = await tryLoadVueRenderer(type);
-      
-      if (vueRenderer) {
-        // Register Vue renderer with metadata
+      // Check if Vue component is available
+      if (window.GMKBVueRenderer && window.GMKBVueRenderer.hasComponent(type)) {
+        // Register Vue renderer wrapper
         registerComponent(type, {
-          render: vueRenderer,
+          render: function(component) {
+            const container = document.createElement('div');
+            const props = {
+              ...component.data,
+              ...component.props,
+              componentId: component.id
+            };
+            window.GMKBVueRenderer.render(type, container, props);
+            return container;
+          },
           framework: 'vue'
         });
+        console.log(`✅ Registered Vue renderer for ${type}`);
       } else {
         // Fall back to simple renderer
         registerComponent(type, createSimpleRenderer(type));
+        console.log(`✅ Registered simple renderer for ${type}`);
       }
     }
   }

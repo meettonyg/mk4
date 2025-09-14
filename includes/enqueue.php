@@ -184,6 +184,53 @@ function gmkb_enqueue_assets() {
             }
         }
         
+        // Load Pods data for lean bundle
+        $pods_data = array();
+        if ($post_id > 0) {
+            // Get all post meta
+            $all_meta = get_post_meta($post_id);
+            
+            // Look for biography field
+            $pods_data['biography'] = get_post_meta($post_id, 'biography', true);
+            
+            // Try with pods_ prefix
+            if (empty($pods_data['biography'])) {
+                $pods_data['biography'] = get_post_meta($post_id, 'pods_biography', true);
+            }
+            
+            // Try using Pods API if available
+            if (function_exists('pods') && empty($pods_data['biography'])) {
+                try {
+                    $pod = pods('mkcg', $post_id);
+                    if ($pod && $pod->exists()) {
+                        $pods_data['biography'] = $pod->field('biography');
+                    }
+                } catch (Exception $e) {
+                    // Pods API failed
+                }
+            }
+            
+            // Get other fields
+            $pods_data['first_name'] = get_post_meta($post_id, 'first_name', true);
+            $pods_data['last_name'] = get_post_meta($post_id, 'last_name', true);
+            $pods_data['email'] = get_post_meta($post_id, 'email', true);
+            
+            // Topics
+            for ($i = 1; $i <= 5; $i++) {
+                $topic = get_post_meta($post_id, "topic_{$i}", true);
+                if ($topic) {
+                    $pods_data["topic_{$i}"] = $topic;
+                }
+            }
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Lean Bundle: Loaded ' . count(array_filter($pods_data)) . ' Pods fields for post ' . $post_id);
+                if (!empty($all_meta)) {
+                    error_log('GMKB Lean Bundle: Available meta keys: ' . implode(', ', array_keys($all_meta)));
+                }
+            }
+        }
+        
         // Prepare minimal WordPress data for lean bundle
         $lean_wp_data = array(
             'ajaxUrl' => admin_url( 'admin-ajax.php' ),
@@ -192,7 +239,9 @@ function gmkb_enqueue_assets() {
             'pluginUrl' => $plugin_url,
             'savedState' => $saved_state,
             'debugMode' => defined( 'WP_DEBUG' ) && WP_DEBUG,
-            'components' => array() // Will be loaded dynamically by the bundle
+            'components' => array(), // Will be loaded dynamically by the bundle
+            'pods_data' => $pods_data, // Add Pods data
+            'pods_fields_loaded' => !empty(array_filter($pods_data))
         );
         
         // Enqueue the lean bundle

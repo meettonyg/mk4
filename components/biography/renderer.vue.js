@@ -1,9 +1,13 @@
 /**
  * Biography Component Vue Renderer
- * Full-featured version with editing, design panel, and Pods integration
+ * Browser-compatible version without ES6 imports
  */
 
-import { createApp, ref, computed, reactive, onMounted, onUnmounted, h } from 'vue';
+(function() {
+    'use strict';
+    
+    // Use Vue from the global scope (already loaded by the bundle)
+    const { createApp, ref, computed, reactive, onMounted, onUnmounted, h } = Vue;
 
 // Full-featured Biography Vue Component
 const BiographyVue = {
