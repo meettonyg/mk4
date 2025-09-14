@@ -149,18 +149,18 @@ export class Renderer {
       if (isVueComponent(component.type) || (typeof renderer === 'object' && renderer.framework === 'vue')) {
         // Vue component rendering
         if (typeof renderer === 'object' && renderer.render) {
-          // Vue renderer object format - call render with component and target container
-          const result = renderer.render(component, contentContainer);
+          // Vue renderer object format - pass the component without contentContainer
+          // The renderer will create its own container and return it
+          const vueContainer = renderer.render(component);
           
-          // If result is true, the Vue component was rendered directly into contentContainer
-          // If result is a DOM element, append it
-          if (result && result !== true && result.nodeType) {
-            contentContainer.appendChild(result);
+          // Append the returned container to our content container
+          if (vueContainer && vueContainer.nodeType) {
+            contentContainer.appendChild(vueContainer);
           }
           
           // Store reference for cleanup if needed
-          if (contentContainer._vueApp) {
-            this.vueInstances[component.id] = contentContainer._vueApp;
+          if (vueContainer && vueContainer._vueApp) {
+            this.vueInstances[component.id] = vueContainer._vueApp;
           }
         } else if (typeof renderer === 'function') {
           // Direct Vue render function

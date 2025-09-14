@@ -35,16 +35,8 @@ export function getComponentRenderer(type) {
   
   const renderer = ComponentRegistry[type];
   
-  // Check if it's a Vue renderer object
-  if (typeof renderer === 'object' && renderer.render) {
-    return renderer.render;
-  }
-  
-  // Check if it's a function that needs to be called
-  if (typeof renderer === 'function') {
-    return renderer;
-  }
-  
+  // Return the full renderer object/function as registered
+  // Don't extract the render method - let Renderer.js handle the structure
   return renderer;
 }
 
@@ -207,11 +199,9 @@ export async function loadComponentRenderers() {
         // Register Vue renderer wrapper
         registerComponent(type, {
           render: function(component, targetContainer) {
-            // If no target container, create one
-            if (!targetContainer) {
-              targetContainer = document.createElement('div');
-              targetContainer.className = `${type}-vue-wrapper`;
-            }
+            // Always create a fresh container for Vue to mount into
+            const vueContainer = document.createElement('div');
+            vueContainer.className = `${type}-vue-wrapper`;
             
             const props = {
               ...component.data,
@@ -219,11 +209,11 @@ export async function loadComponentRenderers() {
               componentId: component.id
             };
             
-            // Render Vue component directly into the target container
-            const instance = window.GMKBVueRenderer.render(type, targetContainer, props);
+            // Render Vue component into our container
+            const instance = window.GMKBVueRenderer.render(type, vueContainer, props);
             
-            // Return the container with the Vue component mounted
-            return targetContainer;
+            // Return the container - Renderer.js will append it
+            return vueContainer;
           },
           framework: 'vue'
         });
