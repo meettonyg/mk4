@@ -1,0 +1,92 @@
+// Vue renderer wrapper for guest-intro component
+import { createApp } from 'vue';
+import GuestIntro from './GuestIntro.vue';
+
+export default {
+    render(container, data = {}) {
+        console.log('🎭 Rendering Guest Intro component with data:', data);
+        
+        // Extract Pods data if available
+        const podsData = window.gmkbData?.pods_data || {};
+        
+        // Merge component data with Pods data (component data takes precedence)
+        const mergedData = {
+            full_name: data.full_name || podsData.full_name || '',
+            first_name: data.first_name || podsData.first_name || '',
+            last_name: data.last_name || podsData.last_name || '',
+            guest_title: data.guest_title || podsData.guest_title || '',
+            company: data.company || podsData.company || '',
+            introduction: data.introduction || podsData.introduction || '',
+            tagline: data.tagline || podsData.tagline || '',
+            layout: data.layout || 'centered'
+        };
+        
+        const app = createApp(GuestIntro, mergedData);
+        
+        // Set up update handler for edit panel
+        app.config.globalProperties.$updateData = (newData) => {
+            Object.assign(mergedData, newData);
+            app.unmount();
+            this.render(container, mergedData);
+        };
+        
+        app.mount(container);
+        return app;
+    },
+    
+    // Configuration for the edit panel
+    editConfig: {
+        fields: [
+            {
+                type: 'select',
+                name: 'layout',
+                label: 'Layout Style',
+                options: [
+                    { value: 'centered', label: 'Centered' },
+                    { value: 'left-aligned', label: 'Left Aligned' },
+                    { value: 'card', label: 'Card Style' }
+                ]
+            },
+            {
+                type: 'text',
+                name: 'full_name',
+                label: 'Full Name',
+                placeholder: 'Or use First + Last name below'
+            },
+            {
+                type: 'text',
+                name: 'first_name',
+                label: 'First Name'
+            },
+            {
+                type: 'text',
+                name: 'last_name',
+                label: 'Last Name'
+            },
+            {
+                type: 'text',
+                name: 'guest_title',
+                label: 'Professional Title',
+                placeholder: 'e.g., CEO, Author, Speaker'
+            },
+            {
+                type: 'text',
+                name: 'company',
+                label: 'Company/Organization'
+            },
+            {
+                type: 'text',
+                name: 'tagline',
+                label: 'Tagline',
+                placeholder: 'A memorable quote or tagline'
+            },
+            {
+                type: 'textarea',
+                name: 'introduction',
+                label: 'Introduction',
+                placeholder: 'Brief introduction paragraph',
+                rows: 4
+            }
+        ]
+    }
+};

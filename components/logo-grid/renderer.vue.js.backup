@@ -1,0 +1,142 @@
+// Vue renderer wrapper for logo-grid component
+import { createApp } from 'vue';
+import LogoGrid from './LogoGrid.vue';
+
+export default {
+    render(container, data = {}) {
+        console.log('🏢 Rendering Logo Grid component with data:', data);
+        
+        // Extract Pods data if available
+        const podsData = window.gmkbData?.pods_data || {};
+        
+        // Merge component data with Pods data
+        const mergedData = {
+            guest_logo: data.guest_logo || podsData.guest_logo || '',
+            logo_image: data.logo_image || podsData.logo_image || '',
+            logos: data.logos || [],
+            title: data.title || '',
+            subtitle: data.subtitle || '',
+            columns: data.columns || 4,
+            displayStyle: data.displayStyle || 'boxed',
+            grayscaleEffect: data.grayscaleEffect !== false,
+            showNames: data.showNames || false,
+            openInNewTab: data.openInNewTab !== false
+        };
+        
+        const app = createApp(LogoGrid, mergedData);
+        
+        // Set up update handler for edit panel
+        app.config.globalProperties.$updateData = (newData) => {
+            Object.assign(mergedData, newData);
+            app.unmount();
+            this.render(container, mergedData);
+        };
+        
+        app.mount(container);
+        return app;
+    },
+    
+    // Configuration for the edit panel
+    editConfig: {
+        fields: [
+            {
+                type: 'text',
+                name: 'title',
+                label: 'Title',
+                placeholder: 'Featured In'
+            },
+            {
+                type: 'text',
+                name: 'subtitle',
+                label: 'Subtitle',
+                placeholder: 'As seen on these platforms'
+            },
+            {
+                type: 'select',
+                name: 'columns',
+                label: 'Number of Columns',
+                options: [
+                    { value: 2, label: '2 Columns' },
+                    { value: 3, label: '3 Columns' },
+                    { value: 4, label: '4 Columns' },
+                    { value: 5, label: '5 Columns' },
+                    { value: 6, label: '6 Columns' },
+                    { value: 8, label: '8 Columns' }
+                ]
+            },
+            {
+                type: 'select',
+                name: 'displayStyle',
+                label: 'Display Style',
+                options: [
+                    { value: 'boxed', label: 'Boxed' },
+                    { value: 'minimal', label: 'Minimal' },
+                    { value: 'circular', label: 'Circular' }
+                ]
+            },
+            {
+                type: 'checkbox',
+                name: 'grayscaleEffect',
+                label: 'Grayscale Effect (Color on Hover)'
+            },
+            {
+                type: 'checkbox',
+                name: 'showNames',
+                label: 'Show Logo Names'
+            },
+            {
+                type: 'checkbox',
+                name: 'openInNewTab',
+                label: 'Open Links in New Tab'
+            },
+            {
+                type: 'separator',
+                label: 'Pods Logos (Auto-loaded)'
+            },
+            {
+                type: 'image',
+                name: 'guest_logo',
+                label: 'Guest Logo',
+                placeholder: 'URL or select image'
+            },
+            {
+                type: 'image',
+                name: 'logo_image',
+                label: 'Company Logo',
+                placeholder: 'URL or select image'
+            },
+            {
+                type: 'separator',
+                label: 'Additional Logos'
+            },
+            {
+                type: 'repeater',
+                name: 'logos',
+                label: 'Logo List',
+                fields: [
+                    {
+                        type: 'image',
+                        name: 'url',
+                        label: 'Logo Image URL'
+                    },
+                    {
+                        type: 'text',
+                        name: 'name',
+                        label: 'Logo Name'
+                    },
+                    {
+                        type: 'text',
+                        name: 'alt',
+                        label: 'Alt Text'
+                    },
+                    {
+                        type: 'text',
+                        name: 'link',
+                        label: 'Link URL',
+                        placeholder: 'https://...'
+                    }
+                ]
+            }
+        ]
+    }
+};

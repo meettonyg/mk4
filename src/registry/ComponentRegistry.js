@@ -1,43 +1,69 @@
-import { initializeVueComponents, renderVueComponent } from '../loaders/VueComponentLoader.js';
-
 /**
- * Component Registry - Direct imports for lean bundle
- * Imports component renderers directly as modules
+ * Component Registry - Discovery-based architecture
+ * Components are discovered, not registered
+ * Maintains self-contained component architecture
  */
 
-// Component registry object
+import VueComponentDiscovery from '../loaders/VueComponentDiscovery.js';
+
+// Component registry object - populated by discovery
 export const ComponentRegistry = {};
 
-// Component schemas
+// Component schemas - populated by discovery
 const ComponentSchemas = {};
 
-// Register a component renderer
-export function registerComponent(type, renderer, schema = null) {
-  ComponentRegistry[type] = renderer;
-  if (schema) {
-    ComponentSchemas[type] = schema;
+/**
+ * Discover and register a component
+ * This respects the self-contained architecture
+ */
+export async function discoverComponent(type) {
+  // First check if it's a Vue component
+  const hasVue = await VueComponentDiscovery.hasVueRenderer(type);
+  
+  if (hasVue) {
+    // Create Vue wrapper for this component
+    ComponentRegistry[type] = VueComponentDiscovery.createWrapper(type);
+    console.log(`✅ Discovered Vue component: ${type}`);
+    return true;
   }
-  console.log(`✅ Registered component: ${type}`);
+  
+  // Check for standard renderer.js
+  try {
+    const rendererModule = await import(`../../components/${type}/renderer.js`);
+    if (rendererModule.default) {
+      ComponentRegistry[type] = rendererModule.default;
+      console.log(`✅ Discovered standard component: ${type}`);
+      return true;
+    }
+  } catch (error) {
+    // No standard renderer found
+  }
+  
+  // Fallback to simple renderer
+  ComponentRegistry[type] = createSimpleRenderer(type);
+  console.log(`ℹ️ Using fallback renderer for: ${type}`);
   return true;
+}
+
+/**
+ * Discover component schema
+ */
+export async function discoverSchema(type) {
+  try {
+    const schemaModule = await import(`../../components/${type}/schema.json`);
+    if (schemaModule.default) {
+      ComponentSchemas[type] = schemaModule.default;
+      return schemaModule.default;
+    }
+  } catch (error) {
+    // No schema found
+  }
+  return null;
 }
 
 // Check if component type exists
 export function hasComponent(type) {
   return type in ComponentRegistry;
-}
-
-// Get component renderer
-export function getComponentRenderer(type) {
-  if (!hasComponent(type)) {
-    console.warn(`Component type "${type}" not found in registry`);
-    return createSimpleRenderer(type);
-  }
-  
-  const renderer = ComponentRegistry[type];
-  
-  // Return the full renderer object/function as registered
-  // Don't extract the render method - let Renderer.js handle the structure
-  return renderer;
 }
 
 // Check if a component uses Vue
@@ -46,8 +72,26 @@ export function isVueComponent(type) {
   return renderer && typeof renderer === 'object' && renderer.framework === 'vue';
 }
 
-// Get component schema
-export function getComponentSchema(type) {
+// Get component renderer (with lazy discovery)
+export async function getComponentRenderer(type) {
+  if (!hasComponent(type)) {
+    // Try to discover it
+    await discoverComponent(type);
+  }
+  
+  if (!hasComponent(type)) {
+    console.warn(`Component type "${type}" not found`);
+    return createSimpleRenderer(type);
+  }
+  
+  return ComponentRegistry[type];
+}
+
+// Get component schema (with lazy discovery)
+export async function getComponentSchema(type) {
+  if (!ComponentSchemas[type]) {
+    await discoverSchema(type);
+  }
   return ComponentSchemas[type] || null;
 }
 
@@ -80,13 +124,76 @@ function createSimpleRenderer(type) {
         `;
         break;
         
+      case 'guest-intro':
+        const fullName = data.full_name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Guest Name';
+        content = `
+          <div class="gmkb-guest-intro">
+            <h2>${fullName}</h2>
+            ${data.guest_title ? `<h3>${data.guest_title}</h3>` : ''}
+            ${data.company ? `<p>${data.company}</p>` : ''}
+            ${data.tagline ? `<blockquote>${data.tagline}</blockquote>` : ''}
+            ${data.introduction ? `<p>${data.introduction}</p>` : ''}
+          </div>
+        `;
+        break;
+        
+      case 'topics-questions':
+        const topics = [];
+        const questions = [];
+        
+        // Collect topics
+        for (let i = 1; i <= 5; i++) {
+          if (data[`topic_${i}`]) topics.push(data[`topic_${i}`]);
+        }
+        
+        // Collect questions  
+        for (let i = 1; i <= 25; i++) {
+          if (data[`question_${i}`]) questions.push(data[`question_${i}`]);
+        }
+        
+        content = `
+          <div class="gmkb-topics-questions">
+            ${topics.length > 0 ? `
+              <div class="topics-section">
+                <h3>Topics</h3>
+                <ul>${topics.map(t => `<li>${t}</li>`).join('')}</ul>
+              </div>
+            ` : ''}
+            ${questions.length > 0 ? `
+              <div class="questions-section">
+                <h3>Questions</h3>
+                <ol>${questions.map(q => `<li>${q}</li>`).join('')}</ol>
+              </div>
+            ` : ''}
+          </div>
+        `;
+        break;
+        
+      case 'photo-gallery':
+        content = `
+          <div class="gmkb-photo-gallery">
+            <h3>${data.title || 'Photo Gallery'}</h3>
+            <p>Gallery component - images would display here</p>
+          </div>
+        `;
+        break;
+        
+      case 'logo-grid':
+        content = `
+          <div class="gmkb-logo-grid">
+            <h3>${data.title || 'Logos'}</h3>
+            <p>Logo grid component - logos would display here</p>
+          </div>
+        `;
+        break;
+        
       case 'topics':
-        const topics = data.topics || [];
+        const topicList = data.topics || [];
         content = `
           <div class="gmkb-topics">
             <h2>Topics</h2>
-            ${topics.length > 0 ? 
-              `<ul>${topics.map(t => `<li>${t}</li>`).join('')}</ul>` : 
+            ${topicList.length > 0 ? 
+              `<ul>${topicList.map(t => `<li>${t}</li>`).join('')}</ul>` : 
               '<p>No topics available.</p>'
             }
           </div>
@@ -151,91 +258,52 @@ function createSimpleRenderer(type) {
   };
 }
 
-// Try to load Vue renderer for a component
-async function tryLoadVueRenderer(type) {
-  try {
-    // Get the plugin URL from WordPress data
-    const pluginUrl = window.gmkbData?.pluginUrl || '/wp-content/plugins/guestify-media-kit-builder/';
-    const vueRendererUrl = `${pluginUrl}components/${type}/renderer.vue.js`;
-    
-    // First check if the file exists
-    const response = await fetch(vueRendererUrl, { method: 'HEAD' });
-    if (!response.ok) {
-      return null;
-    }
-    
-    // Try to import Vue renderer using dynamic import
-    const module = await import(vueRendererUrl);
-    
-    if (module.default) {
-      console.log(`✅ Loaded Vue renderer for ${type}`);
-      return module.default;
-    }
-  } catch (error) {
-    // Vue renderer not found, fall back to regular renderer
-    console.log(`ℹ️ No Vue renderer for ${type}, using standard renderer`);
-  }
-  
-  return null;
-}
-
-// Initialize component registry with simple renderers
+/**
+ * Load all component renderers through discovery
+ * This maintains the self-contained architecture
+ */
 export async function loadComponentRenderers() {
-  // Initialize Vue components first
-  try {
-    await initializeVueComponents();
-    console.log('✅ Vue components initialized');
-  } catch (error) {
-    console.warn('Vue component initialization failed:', error);
-  }
+  console.log('🔍 Starting component discovery...');
   
-  // Register simple renderers for all component types
-  const componentTypes = ['hero', 'biography', 'topics', 'contact', 'cta', 'testimonials'];
+  // Initialize Vue discovery system
+  await VueComponentDiscovery.initialize();
   
-  for (const type of componentTypes) {
-    if (!hasComponent(type)) {
-      // Check if Vue component is available
-      if (window.GMKBVueRenderer && window.GMKBVueRenderer.hasComponent(type)) {
-        // Register Vue renderer wrapper
-        registerComponent(type, {
-          render: function(component, targetContainer) {
-            // Always create a fresh container for Vue to mount into
-            const vueContainer = document.createElement('div');
-            vueContainer.className = `${type}-vue-wrapper`;
-            
-            const props = {
-              ...component.data,
-              ...component.props,
-              componentId: component.id
-            };
-            
-            // Render Vue component into our container
-            const instance = window.GMKBVueRenderer.render(type, vueContainer, props);
-            
-            // Return the container - Renderer.js will append it
-            return vueContainer;
-          },
-          framework: 'vue'
-        });
-        console.log(`✅ Registered Vue renderer for ${type}`);
-      } else {
-        // Fall back to simple renderer
-        registerComponent(type, createSimpleRenderer(type));
-        console.log(`✅ Registered simple renderer for ${type}`);
-      }
-    }
-  }
+  // Get component types from WordPress data
+  // In production, this comes from PHP ComponentDiscovery
+  const componentTypes = window.gmkbData?.componentTypes || [
+    // Default list for development
+    'hero', 'biography', 'topics', 'contact', 'cta', 'testimonials',
+    'guest-intro', 'topics-questions', 'photo-gallery', 'logo-grid',
+    'call-to-action', 'social', 'stats', 'questions',
+    'video-intro', 'podcast-player', 'booking-calendar',
+    'authority-hook'
+  ];
   
-  console.log('✅ Component renderers loaded:', Object.keys(ComponentRegistry));
+  // Discover all components in parallel
+  const discoveries = componentTypes.map(type => discoverComponent(type));
+  await Promise.all(discoveries);
+  
+  console.log('✅ Component discovery complete:', Object.keys(ComponentRegistry));
   return ComponentRegistry;
 }
 
 // Create the global registry that existing components might expect
 if (typeof window !== 'undefined') {
   window.GMKBComponentRegistry = {
-    register: registerComponent,
+    discover: discoverComponent,
     get: getComponentRenderer,
     has: hasComponent,
-    getSchema: getComponentSchema
+    getSchema: getComponentSchema,
+    registry: ComponentRegistry
   };
 }
+
+export default {
+  ComponentRegistry,
+  discoverComponent,
+  hasComponent,
+  isVueComponent,
+  getComponentRenderer,
+  getComponentSchema,
+  loadComponentRenderers
+};

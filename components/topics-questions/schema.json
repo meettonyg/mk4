@@ -1,0 +1,61 @@
+{
+    "name": "topics-questions",
+    "title": "Topics & Questions",
+    "description": "Display guest topics of expertise and interview questions",
+    "category": "content",
+    "icon": "list-checks",
+    "pods_integration": true,
+    "fields": {
+        "topics": {
+            "type": "array",
+            "label": "Topics",
+            "pods_fields": ["topic_1", "topic_2", "topic_3", "topic_4", "topic_5"],
+            "max_items": 5
+        },
+        "questions": {
+            "type": "array",
+            "label": "Questions",
+            "pods_fields": [
+                "question_1", "question_2", "question_3", "question_4", "question_5",
+                "question_6", "question_7", "question_8", "question_9", "question_10",
+                "question_11", "question_12", "question_13", "question_14", "question_15",
+                "question_16", "question_17", "question_18", "question_19", "question_20",
+                "question_21", "question_22", "question_23", "question_24", "question_25"
+            ],
+            "max_items": 25
+        },
+        "displayMode": {
+            "type": "select",
+            "label": "Display Mode",
+            "default": "combined",
+            "options": ["topics", "questions", "combined"]
+        },
+        "topicsDisplay": {
+            "type": "select",
+            "label": "Topics Display Style",
+            "default": "cards",
+            "options": ["cards", "list"]
+        },
+        "questionsDisplay": {
+            "type": "select",
+            "label": "Questions Display Style",
+            "default": "list",
+            "options": ["list", "accordion"]
+        },
+        "showModeSelector": {
+            "type": "boolean",
+            "label": "Show Mode Selector",
+            "default": true
+        },
+        "topicsTitle": {
+            "type": "string",
+            "label": "Topics Title",
+            "default": "Topics of Expertise"
+        },
+        "questionsTitle": {
+            "type": "string",
+            "label": "Questions Title",
+            "default": "Interview Questions"
+        }
+    }
+}

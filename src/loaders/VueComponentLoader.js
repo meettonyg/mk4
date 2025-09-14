@@ -182,10 +182,16 @@ export function renderVueComponent(type, container, props = {}) {
   }
 }
 
+// Note: New Vue components are now registered via VueComponentDiscovery.js
+// This avoids build-time import issues with renderer.vue.js files
+// Components are discovered and imported directly as .vue files
+
 // Initialize Vue components
 export async function initializeVueComponents() {
   await registerBiographyVue();
   await registerHeroVue();
+  
+  // New Vue components are discovered via VueComponentDiscovery.js
   
   // Make render function globally available
   window.GMKBVueRenderer = {
@@ -193,6 +199,6 @@ export async function initializeVueComponents() {
     hasComponent: (type) => vueComponents.has(type)
   };
   
-  console.log('✅ Vue component system initialized');
+  console.log('✅ Vue component system initialized with', vueComponents.size, 'components');
   return true;
 }

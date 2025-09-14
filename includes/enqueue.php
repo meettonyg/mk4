@@ -231,6 +231,25 @@ function gmkb_enqueue_assets() {
             }
         }
         
+        // Get component types for discovery
+        $component_types = array();
+        if (class_exists('ComponentDiscovery')) {
+            $components_dir = GUESTIFY_PLUGIN_DIR . 'components';
+            $component_discovery = new ComponentDiscovery($components_dir);
+            $component_discovery->scan();
+            $components = $component_discovery->getComponents();
+            $component_types = array_keys($components);
+        } else {
+            // Fallback list
+            $component_types = array(
+                'hero', 'biography', 'topics', 'contact', 'testimonials',
+                'guest-intro', 'topics-questions', 'photo-gallery', 'logo-grid',
+                'call-to-action', 'social', 'stats', 'questions',
+                'video-intro', 'podcast-player', 'booking-calendar',
+                'authority-hook'
+            );
+        }
+        
         // Prepare minimal WordPress data for lean bundle
         $lean_wp_data = array(
             'ajaxUrl' => admin_url( 'admin-ajax.php' ),
@@ -240,6 +259,7 @@ function gmkb_enqueue_assets() {
             'savedState' => $saved_state,
             'debugMode' => defined( 'WP_DEBUG' ) && WP_DEBUG,
             'components' => array(), // Will be loaded dynamically by the bundle
+            'componentTypes' => $component_types, // Pass component types for discovery
             'pods_data' => $pods_data, // Add Pods data
             'pods_fields_loaded' => !empty(array_filter($pods_data))
         );
@@ -756,6 +776,7 @@ function gmkb_enqueue_assets() {
         'componentsSource' => 'direct_discovery',
         'rootCauseFixActive' => true,
         'componentKeys' => array_column($components_data, 'type'),
+        'componentTypes' => array_column($components_data, 'type'), // For discovery system
         // ROOT FIX: Include saved state data for auto-save functionality
         'saved_components' => $saved_components,
         'saved_state' => $saved_state,

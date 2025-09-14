@@ -7,7 +7,8 @@
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
-import vueComponentBridge from './vue/VueComponentBridge.js';
+import VueComponentDiscovery from './loaders/VueComponentDiscovery.js';
+import { initializeEditPanel } from './ui/ComponentEditPanel.js';
 
 // Phase 2: Using Enhanced State Manager with reducer pattern
 import { StateManager, ACTION_TYPES } from './core/StateManager.js';
@@ -16,6 +17,8 @@ import { Renderer } from './core/Renderer.js';
 import { APIService } from './services/APIService.js';
 import { logger } from './utils/logger.js';
 import { loadComponentRenderers } from './registry/ComponentRegistry.js';
+import podsDataIntegration from './core/PodsDataIntegration.js';
+import SectionDragDropManager from './core/SectionDragDropManager.js';
 
 // Initialize core systems
 let stateManager;
@@ -23,6 +26,7 @@ let eventBus;
 let apiService;
 let renderer;
 let vueApp = null; // Vue app instance
+let dragDropManager = null; // Drag and drop manager
 
 // Define ALL functions before they're used
 function showToast(message, type = 'info', duration = 3000) {
@@ -116,7 +120,10 @@ async function initialize() {
       window.gmkbData?.postId
     );
     
-    // Load component renderers first
+    // Initialize Vue component discovery
+    await VueComponentDiscovery.initialize();
+    
+    // Load component renderers
     await loadComponentRenderers();
     
     // Load initial state from WordPress or use default
@@ -162,8 +169,14 @@ async function initialize() {
   
   renderer = new Renderer(stateManager, containerId);
     
+    // Initialize drag and drop manager
+    dragDropManager = new SectionDragDropManager(stateManager, eventBus);
+    
     // Set up UI event handlers
     setupUIHandlers();
+    
+    // Initialize component edit panel
+    initializeEditPanel();
     
     // Set up component action handlers
     setupComponentHandlers();
@@ -189,6 +202,9 @@ async function initialize() {
           data,
           props: data
         };
+        
+        // ROOT FIX: Enrich component with Pods data
+        podsDataIntegration.enrichComponentData(component);
         
         // Ensure we have at least one section
         const state = stateManager.getState();
@@ -227,7 +243,7 @@ async function initialize() {
     if (vueApp) {
       window.GMKB.vueApp = vueApp;
       window.GMKB.vue = vueApp;
-      window.GMKB.vueComponentBridge = vueComponentBridge;
+      window.GMKB.vueDiscovery = VueComponentDiscovery;
     }
     
     logger.success('Media Kit Builder initialized successfully');

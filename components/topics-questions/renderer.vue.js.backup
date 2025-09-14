@@ -1,0 +1,121 @@
+// Vue renderer wrapper for topics-questions component
+import { createApp } from 'vue';
+import TopicsQuestions from './TopicsQuestions.vue';
+
+export default {
+    render(container, data = {}) {
+        console.log('📚 Rendering Topics-Questions component with data:', data);
+        
+        // Extract Pods data if available
+        const podsData = window.gmkbData?.pods_data || {};
+        
+        // Merge component data with Pods data
+        const mergedData = {
+            // Topics
+            ...Object.fromEntries(
+                Array.from({ length: 5 }, (_, i) => {
+                    const key = `topic_${i + 1}`;
+                    return [key, data[key] || podsData[key] || ''];
+                })
+            ),
+            // Questions
+            ...Object.fromEntries(
+                Array.from({ length: 25 }, (_, i) => {
+                    const key = `question_${i + 1}`;
+                    return [key, data[key] || podsData[key] || ''];
+                })
+            ),
+            // Display options
+            displayMode: data.displayMode || 'combined',
+            showModeSelector: data.showModeSelector !== false,
+            topicsDisplay: data.topicsDisplay || 'cards',
+            questionsDisplay: data.questionsDisplay || 'list',
+            topicsTitle: data.topicsTitle || 'Topics of Expertise',
+            questionsTitle: data.questionsTitle || 'Interview Questions'
+        };
+        
+        const app = createApp(TopicsQuestions, mergedData);
+        
+        // Set up update handler for edit panel
+        app.config.globalProperties.$updateData = (newData) => {
+            Object.assign(mergedData, newData);
+            app.unmount();
+            this.render(container, mergedData);
+        };
+        
+        app.mount(container);
+        return app;
+    },
+    
+    // Configuration for the edit panel
+    editConfig: {
+        fields: [
+            {
+                type: 'select',
+                name: 'displayMode',
+                label: 'Display Mode',
+                options: [
+                    { value: 'topics', label: 'Topics Only' },
+                    { value: 'questions', label: 'Questions Only' },
+                    { value: 'combined', label: 'Topics & Questions' }
+                ]
+            },
+            {
+                type: 'checkbox',
+                name: 'showModeSelector',
+                label: 'Show Mode Selector Buttons'
+            },
+            {
+                type: 'select',
+                name: 'topicsDisplay',
+                label: 'Topics Display Style',
+                options: [
+                    { value: 'cards', label: 'Cards' },
+                    { value: 'list', label: 'List' }
+                ]
+            },
+            {
+                type: 'select',
+                name: 'questionsDisplay',
+                label: 'Questions Display Style',
+                options: [
+                    { value: 'list', label: 'List' },
+                    { value: 'accordion', label: 'Accordion' }
+                ]
+            },
+            {
+                type: 'text',
+                name: 'topicsTitle',
+                label: 'Topics Section Title',
+                placeholder: 'Topics of Expertise'
+            },
+            {
+                type: 'text',
+                name: 'questionsTitle',
+                label: 'Questions Section Title',
+                placeholder: 'Interview Questions'
+            },
+            {
+                type: 'separator',
+                label: 'Topics (Leave blank to use Pods data)'
+            },
+            ...Array.from({ length: 5 }, (_, i) => ({
+                type: 'text',
+                name: `topic_${i + 1}`,
+                label: `Topic ${i + 1}`,
+                placeholder: `Enter topic ${i + 1}`
+            })),
+            {
+                type: 'separator',
+                label: 'Questions (Leave blank to use Pods data)'
+            },
+            ...Array.from({ length: 10 }, (_, i) => ({
+                type: 'textarea',
+                name: `question_${i + 1}`,
+                label: `Question ${i + 1}`,
+                placeholder: `Enter question ${i + 1}`,
+                rows: 2
+            }))
+        ]
+    }
+};
