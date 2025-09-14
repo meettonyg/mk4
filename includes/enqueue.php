@@ -571,40 +571,113 @@ function gmkb_enqueue_assets() {
     // PHASE 1 FIX: Load Pods field data for enrichment
     $pods_data = array();
     if ($post_id > 0) {
-        // Topics fields
-        for ($i = 1; $i <= 5; $i++) {
-            $topic_value = get_post_meta($post_id, "topic_{$i}", true);
-            if (!empty($topic_value)) {
-                $pods_data["topic_{$i}"] = $topic_value;
-            }
-        }
-        
-        // Biography fields
-        $pods_data['biography'] = get_post_meta($post_id, 'biography', true);
-        $pods_data['biography_short'] = get_post_meta($post_id, 'biography_short', true);
-        
-        // Contact fields
-        $pods_data['email'] = get_post_meta($post_id, 'email', true);
-        $pods_data['phone'] = get_post_meta($post_id, 'phone', true);
-        $pods_data['website'] = get_post_meta($post_id, 'website', true);
-        
-        // Hero fields
-        $pods_data['first_name'] = get_post_meta($post_id, 'first_name', true);
-        $pods_data['last_name'] = get_post_meta($post_id, 'last_name', true);
-        $pods_data['guest_title'] = get_post_meta($post_id, 'guest_title', true);
-        $pods_data['tagline'] = get_post_meta($post_id, 'tagline', true);
-        $pods_data['guest_headshot'] = get_post_meta($post_id, 'guest_headshot', true);
-        
-        // Questions fields
-        for ($i = 1; $i <= 10; $i++) {
-            $question_value = get_post_meta($post_id, "question_{$i}", true);
-            if (!empty($question_value)) {
-                $pods_data["question_{$i}"] = $question_value;
-            }
-        }
-        
+        // Debug: Log the post type
+        $post_type = get_post_type($post_id);
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('PHASE 1 FIX: Loaded ' . count($pods_data) . ' Pods fields for post ' . $post_id);
+            error_log('GMKB Pods: Loading data for post ID ' . $post_id . ' (type: ' . $post_type . ')');
+        }
+        
+        // Try multiple methods to get Pods data
+        // Method 1: Direct meta fields
+        $biography_meta = get_post_meta($post_id, 'biography', true);
+        if ($biography_meta) {
+            $pods_data['biography'] = $biography_meta;
+        }
+        
+        // Method 2: Try with pods_ prefix (common in some Pods setups)
+        if (empty($pods_data['biography'])) {
+            $biography_pods = get_post_meta($post_id, 'pods_biography', true);
+            if ($biography_pods) {
+                $pods_data['biography'] = $biography_pods;
+            }
+        }
+        
+        // Method 3: Try using Pods API if available
+        if (function_exists('pods') && empty($pods_data['biography'])) {
+            try {
+                $pod = pods('mkcg', $post_id);
+                if ($pod && $pod->exists()) {
+                    $biography_pods_api = $pod->field('biography');
+                    if ($biography_pods_api) {
+                        $pods_data['biography'] = $biography_pods_api;
+                    }
+                    
+                    // Get all other fields via Pods API
+                    $pods_data['biography_short'] = $pod->field('biography_short');
+                    $pods_data['first_name'] = $pod->field('first_name');
+                    $pods_data['last_name'] = $pod->field('last_name');
+                    $pods_data['email'] = $pod->field('email');
+                    $pods_data['phone'] = $pod->field('phone');
+                    $pods_data['website'] = $pod->field('website');
+                    $pods_data['guest_title'] = $pod->field('guest_title');
+                    $pods_data['tagline'] = $pod->field('tagline');
+                    
+                    // Topics
+                    for ($i = 1; $i <= 5; $i++) {
+                        $topic = $pod->field("topic_{$i}");
+                        if ($topic) {
+                            $pods_data["topic_{$i}"] = $topic;
+                        }
+                    }
+                    
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('GMKB Pods: Loaded via Pods API');
+                    }
+                }
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB Pods: Error using Pods API: ' . $e->getMessage());
+                }
+            }
+        }
+        
+        // Fallback: Load all methods for remaining fields
+        if (empty($pods_data['biography'])) {
+            // Topics fields
+            for ($i = 1; $i <= 5; $i++) {
+                $topic_value = get_post_meta($post_id, "topic_{$i}", true);
+                if (!empty($topic_value)) {
+                    $pods_data["topic_{$i}"] = $topic_value;
+                }
+            }
+            
+            // Biography fields
+            $pods_data['biography'] = get_post_meta($post_id, 'biography', true);
+            $pods_data['biography_short'] = get_post_meta($post_id, 'biography_short', true);
+            
+            // Contact fields
+            $pods_data['email'] = get_post_meta($post_id, 'email', true);
+            $pods_data['phone'] = get_post_meta($post_id, 'phone', true);
+            $pods_data['website'] = get_post_meta($post_id, 'website', true);
+            
+            // Hero fields
+            $pods_data['first_name'] = get_post_meta($post_id, 'first_name', true);
+            $pods_data['last_name'] = get_post_meta($post_id, 'last_name', true);
+            $pods_data['guest_title'] = get_post_meta($post_id, 'guest_title', true);
+            $pods_data['tagline'] = get_post_meta($post_id, 'tagline', true);
+            $pods_data['guest_headshot'] = get_post_meta($post_id, 'guest_headshot', true);
+            
+            // Questions fields
+            for ($i = 1; $i <= 10; $i++) {
+                $question_value = get_post_meta($post_id, "question_{$i}", true);
+                if (!empty($question_value)) {
+                    $pods_data["question_{$i}"] = $question_value;
+                }
+            }
+        }
+        
+        // Debug: Show all available meta keys for this post
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $all_meta = get_post_meta($post_id);
+            error_log('GMKB Pods: All meta keys for post ' . $post_id . ': ' . implode(', ', array_keys($all_meta)));
+            error_log('GMKB Pods: Loaded ' . count(array_filter($pods_data)) . ' non-empty Pods fields');
+            if (!empty($pods_data['biography'])) {
+                error_log('GMKB Pods: Biography loaded: ' . substr($pods_data['biography'], 0, 50) . '...');
+            }
+        }
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB Pods: No post ID available, cannot load Pods data');
         }
     }
 

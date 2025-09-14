@@ -35,11 +35,19 @@
     
     function renderComponent(data, options = {}) {
         try {
+            // Get Pods data as fallback
+            const podsData = window.gmkbData?.pods_data || {};
+            
             const title = data.title || schema.defaults.title;
-            const content = data.content || data.biography || data.longBio || data.professionalBio || '';
-            const shortBio = data.shortBio || '';
+            const content = data.content || data.biography || podsData.biography || data.longBio || data.professionalBio || '';
+            const shortBio = data.shortBio || podsData.biography_short || '';
             const layout = options.layout || schema.defaults.layout;
             const showReadMore = options.showReadMore !== undefined ? options.showReadMore : schema.defaults.showReadMore;
+            
+            // Log if using Pods data
+            if (!data.biography && podsData.biography) {
+                console.log('Biography: Using Pods data as fallback');
+            }
             
             let html = `<div class="gmkb-biography gmkb-biography--${layout} gmkb-component--self-registered">`;
             
