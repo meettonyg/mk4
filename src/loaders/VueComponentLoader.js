@@ -132,6 +132,16 @@ export function renderVueComponent(type, container, props = {}) {
     return null;
   }
   
+  // Ensure container is a proper DOM element
+  if (typeof container === 'string') {
+    container = document.querySelector(container);
+  }
+  
+  if (!container || !container.nodeType) {
+    console.error('Invalid container for Vue component');
+    return null;
+  }
+  
   // Add Pods data to props if not already provided
   const podsData = window.gmkbData?.pods_data || {};
   if (type === 'biography' && !props.biography && podsData.biography) {
@@ -146,16 +156,30 @@ export function renderVueComponent(type, container, props = {}) {
     }
   }
   
-  // Create and mount Vue app
-  const app = createApp(VueComponent, props);
-  const instance = app.mount(container);
-  
-  // Store app reference for cleanup
-  container._vueApp = app;
-  
-  console.log(`✅ ${type} Vue component rendered with props:`, props);
-  
-  return instance;
+  try {
+    // Create and mount Vue app
+    const app = createApp(VueComponent, props);
+    const instance = app.mount(container);
+    
+    // Store app reference for cleanup
+    container._vueApp = app;
+    
+    console.log(`✅ ${type} Vue component rendered with props:`, props);
+    
+    return instance;
+  } catch (error) {
+    console.error(`Failed to mount Vue component ${type}:`, error);
+    // Fallback: render as HTML
+    if (type === 'biography' && props.biography) {
+      container.innerHTML = `
+        <div class="biography-component">
+          <h2>${props.title || 'Biography'}</h2>
+          <div class="biography__text">${props.biography}</div>
+        </div>
+      `;
+    }
+    return null;
+  }
 }
 
 // Initialize Vue components

@@ -146,21 +146,28 @@ export class Renderer {
       contentContainer.className = 'gmkb-component__content';
       
       // Check if this is a Vue component or Vue renderer object
-      if (isVueComponent(component.type) || (typeof renderer === 'object' && renderer.isVueRenderer)) {
+      if (isVueComponent(component.type) || (typeof renderer === 'object' && renderer.framework === 'vue')) {
         // Vue component rendering
-        let vueInstance;
-        
         if (typeof renderer === 'object' && renderer.render) {
-          // Vue renderer object format
-          vueInstance = renderer.render(component.data || component.props || {}, contentContainer);
+          // Vue renderer object format - call render with component and target container
+          const result = renderer.render(component, contentContainer);
+          
+          // If result is true, the Vue component was rendered directly into contentContainer
+          // If result is a DOM element, append it
+          if (result && result !== true && result.nodeType) {
+            contentContainer.appendChild(result);
+          }
+          
+          // Store reference for cleanup if needed
+          if (contentContainer._vueApp) {
+            this.vueInstances[component.id] = contentContainer._vueApp;
+          }
         } else if (typeof renderer === 'function') {
           // Direct Vue render function
-          vueInstance = renderer(contentContainer, component.data || component.props || {});
-        }
-        
-        // Store Vue instance for cleanup
-        if (vueInstance) {
-          this.vueInstances[component.id] = vueInstance;
+          const vueInstance = renderer(contentContainer, component.data || component.props || {});
+          if (vueInstance) {
+            this.vueInstances[component.id] = vueInstance;
+          }
         }
       } else {
         // Standard rendering
