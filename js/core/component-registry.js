@@ -135,22 +135,25 @@
         }
     }
     
-    // Create and expose global instance
-    window.GMKBComponentRegistry = new GMKBComponentRegistry();
+    // Create and expose global instance (NOT the class)
+    const registryInstance = new GMKBComponentRegistry();
+    window.GMKBComponentRegistry = registryInstance;
     
     // Also attach to GMKB namespace
-    window.GMKB.ComponentRegistry = window.GMKBComponentRegistry;
+    window.GMKB.ComponentRegistry = registryInstance;
     
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            window.GMKBComponentRegistry.init();
+            registryInstance.init();
         });
     } else {
-        window.GMKBComponentRegistry.init();
+        registryInstance.init();
     }
     
-    // Log availability
-    console.log('✅ GMKBComponentRegistry available globally');
+    // Log availability with verification
+    console.log('✅ GMKBComponentRegistry instance created');
+    console.log('   Methods available:', typeof registryInstance.register === 'function' ? '✓ register' : '✗ register');
+    console.log('   Instance check:', registryInstance instanceof GMKBComponentRegistry);
     
 })();

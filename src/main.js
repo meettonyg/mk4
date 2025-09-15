@@ -239,11 +239,12 @@ async function initialize() {
     // Initialize Vue.js after core systems
     vueApp = initializeVue();
     
-    // Store Vue app reference globally
+    // Store Vue app reference globally - ROOT FIX: Also expose as window.vueApp
     if (vueApp) {
       window.GMKB.vueApp = vueApp;
       window.GMKB.vue = vueApp;
       window.GMKB.vueDiscovery = VueComponentDiscovery;
+      window.vueApp = vueApp; // ROOT FIX: Expose globally for bundle compatibility
     }
     
     logger.success('Media Kit Builder initialized successfully');
