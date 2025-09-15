@@ -1096,33 +1096,86 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
-        // ROOT FIX: Prevent component duplication on save
-        if (isset($state['components']) && is_array($state['components'])) {
+        // ROOT FIX: Clean up orphaned components and prevent duplication
+        if (isset($state['components']) && is_array($state['components']) && 
+            isset($state['layout']) && is_array($state['layout'])) {
+            
+            $original_count = count($state['components']);
+            $cleaned_components = array();
+            $orphaned_count = 0;
+            
+            // Only keep components that are referenced in the layout
+            foreach ($state['layout'] as $component_id) {
+                if (isset($state['components'][$component_id])) {
+                    $cleaned_components[$component_id] = $state['components'][$component_id];
+                } else {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('⚠️ GMKB: Layout references missing component: ' . $component_id);
+                    }
+                }
+            }
+            
+            // Also check if sections reference any components
+            if (isset($state['sections']) && is_array($state['sections'])) {
+                foreach ($state['sections'] as $section) {
+                    if (isset($section['components']) && is_array($section['components'])) {
+                        foreach ($section['components'] as $component_id) {
+                            if (isset($state['components'][$component_id]) && !isset($cleaned_components[$component_id])) {
+                                $cleaned_components[$component_id] = $state['components'][$component_id];
+                                if (defined('WP_DEBUG') && WP_DEBUG) {
+                                    error_log('✅ GMKB: Keeping component from section: ' . $component_id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Calculate orphaned components
+            $orphaned_count = $original_count - count($cleaned_components);
+            
+            // Log cleanup results
+            if (defined('WP_DEBUG') && WP_DEBUG && $orphaned_count > 0) {
+                error_log('🧹 GMKB: Cleaning up orphaned components');
+                error_log('  Original components: ' . $original_count);
+                error_log('  Active components: ' . count($cleaned_components));
+                error_log('  Orphaned removed: ' . $orphaned_count);
+                
+                // Log which components were removed
+                foreach ($state['components'] as $id => $component) {
+                    if (!isset($cleaned_components[$id])) {
+                        $type = isset($component['type']) ? $component['type'] : 'unknown';
+                        error_log('  ❌ Removed orphaned: ' . $id . ' (type: ' . $type . ')');
+                    }
+                }
+                
+                // Calculate size reduction
+                $original_size = strlen(serialize($state['components']));
+                $cleaned_size = strlen(serialize($cleaned_components));
+                $size_reduction = $original_size - $cleaned_size;
+                error_log('  💾 Size reduction: ' . number_format($size_reduction) . ' bytes (' . 
+                         round(($size_reduction / $original_size) * 100, 1) . '%)');
+            }
+            
+            // Replace components with cleaned version
+            $state['components'] = $cleaned_components;
+            
+            // Also remove any duplicates (shouldn't happen after cleanup, but just in case)
             $deduped_components = array();
             $seen_ids = array();
             
             foreach ($state['components'] as $id => $component) {
-                // Skip if we've already seen this component ID
                 if (!in_array($id, $seen_ids)) {
                     $deduped_components[$id] = $component;
                     $seen_ids[] = $id;
                 } else {
                     if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log('⚠️ GMKB: Skipping duplicate component: ' . $id);
+                        error_log('⚠️ GMKB: Removing duplicate component: ' . $id);
                     }
                 }
             }
             
-            // Replace components with deduplicated version
             $state['components'] = $deduped_components;
-            
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                $original_count = count($state['components']);
-                $deduped_count = count($deduped_components);
-                if ($original_count !== $deduped_count) {
-                    error_log('✅ GMKB: Deduplication removed ' . ($original_count - $deduped_count) . ' duplicate components');
-                }
-            }
         }
         
         // ROOT FIX: Validate state structure
