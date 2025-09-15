@@ -135,12 +135,26 @@
         }
     }
     
-    // Create and expose global instance (NOT the class)
+    // Create and expose global instance
     const registryInstance = new GMKBComponentRegistry();
+    
+    // ROOT FIX: Ensure the registry is immediately available with all methods
+    // Some bundlers might try to access it before DOM ready
     window.GMKBComponentRegistry = registryInstance;
+    
+    // Also expose the class for compatibility
+    window.GMKBComponentRegistryClass = GMKBComponentRegistry;
+    
+    // Ensure register method is available as a direct function for legacy code
+    window.GMKBComponentRegistry.register = function(type, component) {
+        return registryInstance.register(type, component);
+    };
     
     // Also attach to GMKB namespace
     window.GMKB.ComponentRegistry = registryInstance;
+    
+    // Add a fallback in case something tries to instantiate it
+    window.GMKB.ComponentRegistryClass = GMKBComponentRegistry;
     
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
@@ -152,8 +166,11 @@
     }
     
     // Log availability with verification
-    console.log('✅ GMKBComponentRegistry instance created');
-    console.log('   Methods available:', typeof registryInstance.register === 'function' ? '✓ register' : '✗ register');
-    console.log('   Instance check:', registryInstance instanceof GMKBComponentRegistry);
+    if (window.gmkbData?.debugMode || window.GMKB_DEBUG) {
+        console.log('✅ GMKBComponentRegistry instance created');
+        console.log('   Methods available:', typeof registryInstance.register === 'function' ? '✓ register' : '✗ register');
+        console.log('   Direct method:', typeof window.GMKBComponentRegistry.register === 'function' ? '✓ register' : '✗ register');
+        console.log('   Instance check:', registryInstance instanceof GMKBComponentRegistry);
+    }
     
 })();

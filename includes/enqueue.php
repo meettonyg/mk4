@@ -171,6 +171,8 @@ function gmkb_enqueue_assets() {
         }
     }
     
+    // ROOT FIX: No patches - registry loads properly through dependency chain
+    
     // LEAN ARCHITECTURE: Check if we should use the lean bundle
     if ( GMKB_USE_LEAN_BUNDLE && file_exists( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ) ) {
         // Use the new lean bundle - single file instead of 60+ files
@@ -282,13 +284,13 @@ function gmkb_enqueue_assets() {
             'pods_fields_loaded' => !empty(array_filter($pods_data))
         );
         
-        // ROOT FIX: Load Component Registry BEFORE lean bundle
+        // ROOT FIX: Load Component Registry in HEAD so it's available for lean bundle
         wp_enqueue_script(
             'gmkb-component-registry-lean',
             $plugin_url . 'js/core/component-registry.js',
             array(), // No dependencies
             $version,
-            true // Load in footer but before bundle
+            false // Load in HEAD, not footer - MUST be available before bundle
         );
         
         // Pass WordPress data to the lean bundle
@@ -531,6 +533,7 @@ function gmkb_enqueue_assets() {
             $version . '-diagnostic',
             false // Load in head, not footer
         );
+        // Component diagnostic removed - violates no-polling checklist with setTimeout
     }
     
     // ROOT FIX: Load saved media kit state from database
@@ -874,7 +877,19 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 1. ID Generator SECOND (centralized ID generation) - ARCHITECTURE FIX
+    // 0a. Component Registry SECOND - ROOT FIX: Must load before ANY components
+    // CRITICAL: This provides the global registration system for all components
+    if (!wp_script_is('gmkb-component-registry', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-registry',
+            $plugin_url . 'js/core/component-registry.js',
+            array('gmkb'), // Only depends on core GMKB
+            $version,
+            false // Load in HEAD to ensure availability
+        );
+    }
+    
+    // 1. ID Generator THIRD (centralized ID generation) - ARCHITECTURE FIX
     if (!wp_script_is('gmkb-id-generator', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-id-generator',
@@ -1064,16 +1079,7 @@ function gmkb_enqueue_assets() {
     }
 
     
-    // 5a. Component Registry - ROOT FIX: Component self-registration system
-    if (!wp_script_is('gmkb-component-registry', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-component-registry',
-            $plugin_url . 'js/core/component-registry.js',
-            array('gmkb-structured-logger'),
-            $version,
-            true
-        );
-    }
+    // Component Registry already loaded early in the script order (line ~890)
     
     // 6. Event bus (handles global events) - ROOT FIX: Added missing script
     if (!wp_script_is('gmkb-event-bus', 'enqueued')) {

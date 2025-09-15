@@ -1055,6 +1055,11 @@ class Guestify_Media_Kit_Builder {
             
             // Check if components contain large nested objects
             foreach ($state['components'] ?? [] as $comp_id => $component) {
+                // FIX: Skip if component ID is not scalar
+                if (!is_scalar($comp_id)) {
+                    error_log('⚠️ GMKB: WARNING - Non-scalar component ID detected: ' . gettype($comp_id));
+                    continue;
+                }
                 $comp_json = json_encode($component);
                 $comp_size = strlen($comp_json);
                 
@@ -1064,13 +1069,18 @@ class Guestify_Media_Kit_Builder {
                     // Check for suspicious keys that might contain duplicated data
                     $suspicious_keys = array('state', 'props', 'data', 'content', '__vueComponent', '_state', 'renderer');
                     foreach ($suspicious_keys as $key) {
+                        // FIX: Ensure key is scalar before using in isset
+                        if (!is_scalar($key)) {
+                            continue;
+                        }
                         if (isset($component[$key])) {
                             $key_size = strlen(json_encode($component[$key]));
                             if ($key_size > 5000) {
                                 error_log('  🚨 Component ' . $comp_id . ' has large "' . $key . '" property: ' . number_format($key_size) . ' bytes');
                                 
                                 // Check if this property contains other components
-                                if (is_array($component[$key])) {
+                                // FIX: Ensure $key is scalar before using it as array key
+                                if (!is_array($key) && isset($component[$key]) && is_array($component[$key])) {
                                     $nested_json = json_encode($component[$key]);
                                     if (strpos($nested_json, 'hero_') !== false || 
                                         strpos($nested_json, 'biography_') !== false ||
@@ -1132,26 +1142,53 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
-        // EMERGENCY FIX: Simple truncation to prevent timeout
-        // The complex cleaning was causing 504 timeouts
-        if (isset($state['components']) && is_array($state['components'])) {
-            foreach ($state['components'] as $comp_id => &$component) {
-                if (!is_array($component)) continue;
-                
-                // Just remove the most problematic keys quickly
-                unset($component['__vueComponent']);
-                unset($component['_state']);
-                unset($component['renderer']);
-                unset($component['components']); // Nested components cause recursion
-                
-                // Truncate any huge strings to prevent data explosion
-                foreach ($component as $key => $value) {
-                    if (is_string($value) && strlen($value) > 5000) {
-                        $component[$key] = substr($value, 0, 5000) . '...[truncated]';
+        // Log the actual data size being processed
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $data_size = strlen($state_data);
+            error_log('GMKB: Processing save request with data size: ' . $data_size . ' bytes');
+            error_log('GMKB: Components count before cleaning: ' . count($state['components'] ?? []));
+        }
+        
+        // Add error handling to catch what's causing the 500 error
+        try {
+            // EMERGENCY FIX: Simple truncation to prevent timeout
+            // The complex cleaning was causing 504 timeouts
+            if (isset($state['components']) && is_array($state['components'])) {
+                foreach ($state['components'] as $comp_id => &$component) {
+                    // FIX: Ensure comp_id is scalar
+                    if (!is_scalar($comp_id)) {
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            error_log('⚠️ GMKB: Skipping non-scalar component ID in cleaning: ' . gettype($comp_id));
+                        }
+                        continue;
+                    }
+                    
+                    if (!is_array($component)) continue;
+                    
+                    // Just remove the most problematic keys quickly
+                    unset($component['__vueComponent']);
+                    unset($component['_state']);
+                    unset($component['renderer']);
+                    unset($component['components']); // Nested components cause recursion
+                    
+                    // Truncate any huge strings to prevent data explosion
+                    foreach ($component as $key => $value) {
+                        // FIX: Skip if key is not scalar (can't use arrays as keys)
+                        if (!is_scalar($key)) {
+                            continue;
+                        }
+                        if (is_string($value) && strlen($value) > 5000) {
+                            $component[$key] = substr($value, 0, 5000) . '...[truncated]';
+                        }
                     }
                 }
+                unset($component); // Clear reference
             }
-            unset($component); // Clear reference
+        } catch (Exception $e) {
+            error_log('GMKB ERROR in component cleaning: ' . $e->getMessage());
+            error_log('GMKB ERROR trace: ' . $e->getTraceAsString());
+            wp_send_json_error('Component cleaning failed: ' . $e->getMessage());
+            return;
         }
         
         // ROOT FIX: Clean up orphaned components and prevent duplication
@@ -1164,6 +1201,10 @@ class Guestify_Media_Kit_Builder {
             
             // Only keep components that are referenced in the layout
             foreach ($state['layout'] as $component_id) {
+                // FIX: Ensure component_id is scalar before using as array key
+                if (!is_scalar($component_id)) {
+                    continue;
+                }
                 if (isset($state['components'][$component_id])) {
                     $cleaned_components[$component_id] = $state['components'][$component_id];
                 } else {
@@ -1178,6 +1219,10 @@ class Guestify_Media_Kit_Builder {
                 foreach ($state['sections'] as $section) {
                     if (isset($section['components']) && is_array($section['components'])) {
                         foreach ($section['components'] as $component_id) {
+                            // FIX: Ensure component_id is scalar before using as array key
+                            if (!is_scalar($component_id)) {
+                                continue;
+                            }
                             if (isset($state['components'][$component_id]) && !isset($cleaned_components[$component_id])) {
                                 $cleaned_components[$component_id] = $state['components'][$component_id];
                                 if (defined('WP_DEBUG') && WP_DEBUG) {

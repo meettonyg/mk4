@@ -57,8 +57,11 @@ export class HistoryManager {
     extractMinimalData(action) {
         switch (action.type) {
             case 'ADD_COMPONENT':
-                // To undo: just need the component ID
-                return { componentId: action.payload.id };
+                // For redo, we need full component data
+                return {
+                    componentId: action.payload.id,
+                    componentData: this.cleanComponentData(action.payload)
+                };
                 
             case 'DELETE_COMPONENT':
                 // To undo: need the component data (but cleaned)
@@ -97,15 +100,47 @@ export class HistoryManager {
     cleanComponentData(component) {
         if (!component) return null;
         
-        // Extract only serializable properties
-        return {
+        // Extract ONLY the absolute minimum needed to recreate the component
+        const cleaned = {
             id: component.id,
             type: component.type,
-            props: component.props || {},
-            data: component.data || {},
-            position: component.position
-            // Explicitly NOT storing: __vueComponent, renderer, stateManager, etc.
+            sectionId: component.sectionId
         };
+        
+        // Only store simple string/number props, max 5 properties
+        if (component.props && typeof component.props === 'object') {
+            cleaned.props = {};
+            let propCount = 0;
+            for (const key in component.props) {
+                if (propCount >= 5) break; // Limit to 5 props
+                const val = component.props[key];
+                if (typeof val === 'string' && val.length < 100) {
+                    cleaned.props[key] = val;
+                    propCount++;
+                } else if (typeof val === 'number' || typeof val === 'boolean') {
+                    cleaned.props[key] = val;
+                    propCount++;
+                }
+            }
+        }
+        
+        // Similar for data, but even more restrictive
+        if (component.data && typeof component.data === 'object') {
+            cleaned.data = {};
+            let dataCount = 0;
+            for (const key in component.data) {
+                if (dataCount >= 3) break; // Only 3 data properties
+                const val = component.data[key];
+                if ((typeof val === 'string' && val.length < 50) || 
+                    typeof val === 'number' || 
+                    typeof val === 'boolean') {
+                    cleaned.data[key] = val;
+                    dataCount++;
+                }
+            }
+        }
+        
+        return cleaned;
     }
 
     /**
@@ -174,8 +209,43 @@ export class HistoryManager {
         const nextEntry = this.future.shift();
         this.past.push(nextEntry);
         
-        // Return the original action to reapply
-        return nextEntry.action;
+        // Reconstruct the proper action format with payload
+        const action = nextEntry.action;
+        let properAction = {
+            type: action.type,
+            payload: null
+        };
+        
+        // Reconstruct payload based on action type
+        switch (action.type) {
+            case 'ADD_COMPONENT':
+                properAction.payload = action.data.componentData;
+                break;
+                
+            case 'DELETE_COMPONENT':
+                properAction.payload = action.data.componentId;
+                break;
+                
+            case 'UPDATE_COMPONENT':
+                properAction.payload = {
+                    id: action.data.componentId,
+                    updates: action.data.updates || action.data.previousValues
+                };
+                break;
+                
+            case 'MOVE_COMPONENT':
+                properAction.payload = {
+                    componentId: action.data.componentId,
+                    fromIndex: action.data.fromIndex,
+                    toIndex: action.data.toIndex
+                };
+                break;
+                
+            default:
+                properAction.payload = action.data;
+        }
+        
+        return properAction;
     }
 
     /**

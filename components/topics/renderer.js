@@ -262,27 +262,28 @@
     
     /**
      * Register the component with the global registry
+     * ROOT FIX: Event-driven, no polling, proper API usage
      */
     function registerComponent() {
-        if (window.GMKBComponentRegistry) {
-            const success = window.GMKBComponentRegistry.register(COMPONENT_TYPE, renderComponent, schema);
-            if (success) {
+        if (window.GMKBComponentRegistry && typeof window.GMKBComponentRegistry.register === 'function') {
+            // Register with proper component object structure
+            const success = window.GMKBComponentRegistry.register(COMPONENT_TYPE, {
+                renderer: renderComponent,
+                schema: schema,
+                type: COMPONENT_TYPE
+            });
+            if (success && window.gmkbData?.debugMode) {
                 console.log(`✅ Topics component registered successfully`);
-            } else {
-                console.error(`❌ Failed to register topics component`);
-            }
-        } else {
-            // Registry not ready yet, wait for it
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', registerComponent);
-            } else {
-                // Try once more after a short delay
-                setTimeout(registerComponent, 100);
             }
         }
     }
     
-    // Start registration process
-    registerComponent();
+    // Try immediate registration if registry exists
+    if (window.GMKBComponentRegistry) {
+        registerComponent();
+    } else {
+        // Listen for registry ready event - EVENT-DRIVEN, no polling
+        document.addEventListener('gmkb:component-registry-ready', registerComponent);
+    }
     
 })();

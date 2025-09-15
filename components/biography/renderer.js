@@ -108,20 +108,26 @@
         return div.innerHTML;
     }
     
+    // ROOT FIX: Event-driven registration - no polling
     function registerComponent() {
-        if (window.GMKBComponentRegistry) {
-            const success = window.GMKBComponentRegistry.register(COMPONENT_TYPE, renderComponent, schema);
-            if (success) {
+        if (window.GMKBComponentRegistry && typeof window.GMKBComponentRegistry.register === 'function') {
+            // Register with proper component object structure
+            const success = window.GMKBComponentRegistry.register(COMPONENT_TYPE, {
+                renderer: renderComponent,
+                schema: schema,
+                type: COMPONENT_TYPE
+            });
+            if (success && window.gmkbData?.debugMode) {
                 console.log(`✅ Biography component registered successfully`);
-            }
-        } else {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', registerComponent);
-            } else {
-                setTimeout(registerComponent, 100);
             }
         }
     }
     
-    registerComponent();
+    // Try immediate registration if registry exists
+    if (window.GMKBComponentRegistry) {
+        registerComponent();
+    } else {
+        // Listen for registry ready event - EVENT-DRIVEN, no polling
+        document.addEventListener('gmkb:component-registry-ready', registerComponent);
+    }
 })();

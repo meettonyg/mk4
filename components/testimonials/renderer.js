@@ -52,6 +52,23 @@
         return div.innerHTML;
     }
     
-    window.GMKBComponentRegistry?.register(COMPONENT_TYPE, renderComponent, schema) || 
-    setTimeout(() => window.GMKBComponentRegistry?.register(COMPONENT_TYPE, renderComponent, schema), 100);
+    // ROOT FIX: Event-driven registration - no polling
+    function registerComponent() {
+        if (window.GMKBComponentRegistry && typeof window.GMKBComponentRegistry.register === 'function') {
+            // Register with proper component object structure
+            window.GMKBComponentRegistry.register(COMPONENT_TYPE, {
+                renderer: renderComponent,
+                schema: schema,
+                type: COMPONENT_TYPE
+            });
+        }
+    }
+    
+    // Try immediate registration if registry exists
+    if (window.GMKBComponentRegistry) {
+        registerComponent();
+    } else {
+        // Listen for registry ready event - EVENT-DRIVEN, no polling
+        document.addEventListener('gmkb:component-registry-ready', registerComponent);
+    }
 })();
