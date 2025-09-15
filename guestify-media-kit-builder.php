@@ -1144,12 +1144,15 @@ class Guestify_Media_Kit_Builder {
             error_log('📊 GMKB: Components count: ' . count($state['components']));
         }
         
-        // ROOT FIX: Check WordPress meta value size limit (usually 64KB for most setups)
-        if ($data_size > 65536) {
+        // ROOT FIX: Check WordPress meta value size limit
+        // WordPress can handle up to 1MB in meta values on most modern setups
+        // Increased from 64KB to 1MB to handle larger media kits
+        $max_size = 1048576; // 1MB limit
+        if ($data_size > $max_size) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: Data too large for meta storage: ' . number_format($data_size) . ' bytes');
+                error_log('❌ GMKB: Data too large for meta storage: ' . number_format($data_size) . ' bytes (max: ' . number_format($max_size) . ')');
             }
-            wp_send_json_error('Data too large to save (' . number_format($data_size) . ' bytes)');
+            wp_send_json_error('Data too large to save (' . number_format($data_size) . ' bytes, max: ' . number_format($max_size) . ')');
             return;
         }
         
