@@ -1049,6 +1049,42 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
+        // CRITICAL DEBUG: Detect recursive/nested data structures
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB: Analyzing state structure for recursion...');
+            
+            // Check if components contain large nested objects
+            foreach ($state['components'] ?? [] as $comp_id => $component) {
+                $comp_json = json_encode($component);
+                $comp_size = strlen($comp_json);
+                
+                if ($comp_size > 10000) { // Component larger than 10KB is suspicious
+                    error_log('⚠️ GMKB: Large component detected: ' . $comp_id . ' (' . number_format($comp_size) . ' bytes)');
+                    
+                    // Check for suspicious keys that might contain duplicated data
+                    $suspicious_keys = array('state', 'props', 'data', 'content', '__vueComponent', '_state', 'renderer');
+                    foreach ($suspicious_keys as $key) {
+                        if (isset($component[$key])) {
+                            $key_size = strlen(json_encode($component[$key]));
+                            if ($key_size > 5000) {
+                                error_log('  🚨 Component ' . $comp_id . ' has large "' . $key . '" property: ' . number_format($key_size) . ' bytes');
+                                
+                                // Check if this property contains other components
+                                if (is_array($component[$key])) {
+                                    $nested_json = json_encode($component[$key]);
+                                    if (strpos($nested_json, 'hero_') !== false || 
+                                        strpos($nested_json, 'biography_') !== false ||
+                                        strpos($nested_json, 'topics_') !== false) {
+                                        error_log('    💀 CRITICAL: Component contains nested components in "' . $key . '" - RECURSIVE STRUCTURE DETECTED!');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('✅ GMKB: JSON decoded successfully');
             error_log('📊 GMKB: State structure keys: ' . implode(', ', array_keys($state)));
@@ -1094,6 +1130,28 @@ class Guestify_Media_Kit_Builder {
             }
             wp_send_json_error('Invalid state data structure');
             return;
+        }
+        
+        // EMERGENCY FIX: Simple truncation to prevent timeout
+        // The complex cleaning was causing 504 timeouts
+        if (isset($state['components']) && is_array($state['components'])) {
+            foreach ($state['components'] as $comp_id => &$component) {
+                if (!is_array($component)) continue;
+                
+                // Just remove the most problematic keys quickly
+                unset($component['__vueComponent']);
+                unset($component['_state']);
+                unset($component['renderer']);
+                unset($component['components']); // Nested components cause recursion
+                
+                // Truncate any huge strings to prevent data explosion
+                foreach ($component as $key => $value) {
+                    if (is_string($value) && strlen($value) > 5000) {
+                        $component[$key] = substr($value, 0, 5000) . '...[truncated]';
+                    }
+                }
+            }
+            unset($component); // Clear reference
         }
         
         // ROOT FIX: Clean up orphaned components and prevent duplication
@@ -1228,69 +1286,39 @@ class Guestify_Media_Kit_Builder {
         // ROOT FIX: Enhanced save operation with detailed error reporting
         $meta_key = 'gmkb_media_kit_state';
         
-        // CRITICAL FIX: Ensure saved_components array format for template compatibility and respects layout order
-        // Handle BOTH layout array AND components object for maximum compatibility
-        $saved_components = array();
-        
-        // ROOT FIX: Synchronize layout array with components object
-        // When components are deleted, ensure layout array is also updated
-        if (isset($state['layout']) && is_array($state['layout'])) {
-            // Filter out deleted components from layout
-            $filtered_layout = array();
-            foreach ($state['layout'] as $component_id) {
-                if (isset($state['components'][$component_id])) {
-                    $filtered_layout[] = $component_id;
-                }
-            }
-            $state['layout'] = $filtered_layout;
-            
+        // ROOT FIX: Remove redundant saved_components array that was causing data duplication
+        // This array was not used anywhere in the codebase and was doubling data size
+        if (isset($state['saved_components'])) {
+            unset($state['saved_components']);
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('ROOT FIX: Filtered layout to remove deleted components. New layout: ' . implode(', ', $filtered_layout));
+                error_log('🧹 GMKB: Removed redundant saved_components array to prevent data duplication');
             }
         }
-        
-        // First try to use layout order if available
-        if (isset($state['layout']) && is_array($state['layout']) && !empty($state['layout'])) {
-            foreach ($state['layout'] as $component_id) {
-                if (isset($state['components'][$component_id])) {
-                    $component_data = $state['components'][$component_id];
-                    if (is_array($component_data) || is_object($component_data)) {
-                        $component_array = (array) $component_data;
-                        $component_array['id'] = $component_id; // Ensure ID is set
-                        $saved_components[] = $component_array;
-                    }
-                }
-            }
-        }
-        // Fallback: If no layout array or it's empty, use all components
-        elseif (isset($state['components']) && !empty($state['components'])) {
-            foreach ($state['components'] as $component_id => $component_data) {
-                if (is_array($component_data) || is_object($component_data)) {
-                    $component_array = (array) $component_data;
-                    $component_array['id'] = $component_id; // Ensure ID is set
-                    $saved_components[] = $component_array;
-                }
-            }
-        }
-        
-        // Always set saved_components array even if empty
-        $state['saved_components'] = $saved_components;
         
         if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: Added saved_components array with ' . count($saved_components) . ' components for template compatibility.');
-        if (isset($state['layout']) && !empty($state['layout'])) {
-        error_log('✅ GMKB: Layout order: ' . implode(', ', $state['layout']));
-        } else {
-        error_log('⚠️ GMKB: No layout array found, using all components in object order');
-        }
+            // ROOT FIX: Log clean state structure
+            error_log('🔍 GMKB: Final state being saved:');
+            error_log('  - Components count: ' . count($state['components'] ?? []));
+            error_log('  - Layout count: ' . count($state['layout'] ?? []));
             
-                // ROOT FIX: Log exact state being saved for debugging
-                error_log('🔍 GMKB: Final state being saved:');
-                error_log('  - Components count: ' . count($state['components'] ?? []));
-                error_log('  - Layout count: ' . count($state['layout'] ?? []));
-                error_log('  - saved_components count: ' . count($state['saved_components'] ?? []));
-                error_log('  - Component IDs: ' . implode(', ', array_keys($state['components'] ?? [])));
+            if (isset($state['layout']) && !empty($state['layout'])) {
+                error_log('  - Layout order: ' . implode(', ', array_slice($state['layout'], 0, 5)) . 
+                         (count($state['layout']) > 5 ? '... (' . count($state['layout']) . ' total)' : ''));
             }
+            
+            // Log component types summary
+            $component_types = array();
+            foreach ($state['components'] ?? [] as $component) {
+                $type = $component['type'] ?? 'unknown';
+                if (!isset($component_types[$type])) {
+                    $component_types[$type] = 0;
+                }
+                $component_types[$type]++;
+            }
+            if (!empty($component_types)) {
+                error_log('  - Component types: ' . json_encode($component_types));
+            }
+        }
         
         // ROOT FIX: Components will be handled as-is, JavaScript will manage format
         

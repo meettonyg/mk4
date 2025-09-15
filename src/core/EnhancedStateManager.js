@@ -45,9 +45,9 @@ const STATE_SCHEMA = {
         lastSaved: null
     },
     history: {
-        past: [],
+        past: [],  // CLEARED - was storing complete states causing 1.48MB bloat
         future: [],
-        maxHistorySize: 50
+        maxHistorySize: 0  // DISABLED - was 50 complete states!
     },
     meta: {
         version: '2.2.0',
@@ -431,6 +431,9 @@ function mainReducer(state = STATE_SCHEMA, action) {
         
         // ============ HISTORY ACTIONS ============
         case 'ADD_TO_HISTORY': {
+            // DISABLED - History was causing exponential data growth
+            return state;
+            /*
             const { past } = newState.history;
             const maxSize = newState.history.maxHistorySize;
             
@@ -440,6 +443,7 @@ function mainReducer(state = STATE_SCHEMA, action) {
                 future: [] // Clear future on new action
             };
             break;
+            */
         }
         
         case 'UNDO': {
@@ -650,7 +654,11 @@ export class EnhancedStateManager {
                 PERSISTENCE_ACTIONS.LOAD_STATE_FAILURE
             ];
             
-            if (!skipHistory.includes(finalAction.type)) {
+            // EMERGENCY FIX: Disable history to prevent exponential data growth
+            // History was storing the ENTIRE state (1.48MB) on every change!
+            const HISTORY_DISABLED = true;
+            
+            if (!skipHistory.includes(finalAction.type) && !HISTORY_DISABLED) {
                 this.dispatch({
                     type: 'ADD_TO_HISTORY',
                     payload: previousState

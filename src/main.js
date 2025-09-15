@@ -27,6 +27,7 @@ let apiService;
 let renderer;
 let vueApp = null; // Vue app instance
 let dragDropManager = null; // Drag and drop manager
+let isSaving = false; // ROOT FIX: Prevent double save triggers
 
 // Define ALL functions before they're used
 function showToast(message, type = 'info', duration = 3000) {
@@ -558,12 +559,21 @@ function setupAutoSave() {
   stateManager.subscribe(() => {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
-      saveState(true); // true = auto-save
+      if (!isSaving) { // Don't auto-save if manual save in progress
+        saveState(true); // true = auto-save
+      }
     }, 5000); // 5 seconds debounce
   });
 }
 
 async function saveState(isAutoSave = false) {
+  // ROOT FIX: Prevent double saves
+  if (isSaving) {
+    console.log('Save already in progress, skipping duplicate save');
+    return;
+  }
+  
+  isSaving = true;
   const saveBtn = document.getElementById('save-btn');
   
   if (!isAutoSave && saveBtn) {
@@ -573,7 +583,82 @@ async function saveState(isAutoSave = false) {
   
   try {
     const state = stateManager.getState();
-    await apiService.save(state);
+    
+    // EMERGENCY FIX: Complete rebuild to remove all recursive data
+    const cleanState = {
+      components: {},
+      layout: [],
+      sections: state.sections || [],
+      theme: state.theme || 'default',
+      themeSettings: state.themeSettings || [],
+      globalSettings: state.globalSettings || {}
+    };
+    
+    // Only keep components that are in the layout
+    if (state.layout && Array.isArray(state.layout)) {
+      state.layout.forEach(compId => {
+        if (state.components && state.components[compId]) {
+          const comp = state.components[compId];
+          
+          // Rebuild component with ONLY safe properties
+          const safeComponent = {
+            id: compId,
+            type: comp.type || 'unknown'
+          };
+          
+          // Only copy simple string/number/boolean props
+          if (comp.props && typeof comp.props === 'object') {
+            safeComponent.props = {};
+            Object.keys(comp.props).forEach(key => {
+              const val = comp.props[key];
+              if (typeof val === 'string' && val.length < 1000) {
+                safeComponent.props[key] = val;
+              } else if (typeof val === 'number' || typeof val === 'boolean') {
+                safeComponent.props[key] = val;
+              }
+            });
+          }
+          
+          // Only copy simple data
+          if (comp.data && typeof comp.data === 'object') {
+            safeComponent.data = {};
+            Object.keys(comp.data).forEach(key => {
+              const val = comp.data[key];
+              if (typeof val === 'string' && val.length < 1000) {
+                safeComponent.data[key] = val;
+              } else if (typeof val === 'number' || typeof val === 'boolean') {
+                safeComponent.data[key] = val;
+              } else if (Array.isArray(val) && val.length < 20) {
+                // Small arrays of simple values only
+                const simpleArray = val.filter(item => 
+                  typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean'
+                );
+                if (simpleArray.length === val.length) {
+                  safeComponent.data[key] = simpleArray;
+                }
+              }
+            });
+          }
+          
+          // Add position if exists
+          if (typeof comp.position === 'number') {
+            safeComponent.position = comp.position;
+          }
+          
+          cleanState.components[compId] = safeComponent;
+          cleanState.layout.push(compId);
+        }
+      });
+    }
+    
+    // Log the size reduction
+    const originalSize = JSON.stringify(state).length;
+    const cleanSize = JSON.stringify(cleanState).length;
+    console.log(`Cleaned state size: ${(cleanSize / 1024).toFixed(1)}KB (was ${(originalSize / 1024).toFixed(1)}KB)`);
+    console.log(`Size reduction: ${(100 - (cleanSize / originalSize * 100)).toFixed(1)}%`);
+    console.log('Components cleaned:', Object.keys(cleanState.components).length);
+    
+    await apiService.save(cleanState);
     
     if (!isAutoSave) {
       showToast('Saved successfully', 'success');
@@ -586,6 +671,7 @@ async function saveState(isAutoSave = false) {
       showToast('Save failed', 'error');
     }
   } finally {
+    isSaving = false; // ROOT FIX: Reset flag
     if (!isAutoSave && saveBtn) {
       saveBtn.disabled = false;
       saveBtn.textContent = 'Save';
