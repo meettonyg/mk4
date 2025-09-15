@@ -1876,113 +1876,41 @@ class Guestify_Media_Kit_Builder {
 }
 
 /**
- * ROOT FIX: Helper function for safe post ID detection
- * Used by enqueue.php to get the current post ID
- */
-function get_current_post_id_safe() {
-    $post_id = 0;
-    
-    // Priority 1: Check for mkcg_id (primary parameter for guest posts)
-    if (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
-        $post_id = intval($_GET['mkcg_id']);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: Post ID detected from mkcg_id: ' . $post_id);
-        }
-        return $post_id;
-    }
-    
-    // Priority 2: Check for guest_id
-    if (isset($_GET['guest_id']) && is_numeric($_GET['guest_id'])) {
-        $post_id = intval($_GET['guest_id']);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: Post ID detected from guest_id: ' . $post_id);
-        }
-        return $post_id;
-    }
-    
-    // Priority 3: Check for post_id
-    if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
-        $post_id = intval($_GET['post_id']);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('GMKB: Post ID detected from post_id: ' . $post_id);
-        }
-        return $post_id;
-    }
-    
-    // Priority 4: Check other common parameters
-    if (isset($_GET['p']) && is_numeric($_GET['p'])) {
-        $post_id = intval($_GET['p']);
-    } elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
-        $post_id = intval($_GET['page_id']);
-    } elseif (isset($_GET['media_kit_id']) && is_numeric($_GET['media_kit_id'])) {
-        $post_id = intval($_GET['media_kit_id']);
-    }
-    
-    // Priority 5: WordPress context
-    if (!$post_id && function_exists('get_the_ID')) {
-        $wp_id = get_the_ID();
-        if ($wp_id) {
-            $post_id = $wp_id;
-        }
-    }
-    
-    // Priority 6: Global post object
-    if (!$post_id && isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
-        $post_id = intval($GLOBALS['post']->ID);
-    }
-    
-    // Validate post exists and is accessible
-    if ($post_id > 0) {
-        $post = get_post($post_id);
-        if (!$post || $post->post_status === 'trash') {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: Invalid post ID ' . $post_id . ' - post not found or in trash');
-            }
-            return 0;
-        }
-    }
-    
-    if (defined('WP_DEBUG') && WP_DEBUG && $post_id > 0) {
-        error_log('GMKB: get_current_post_id_safe() returning post ID: ' . $post_id);
-    }
-    
-    return $post_id;
-}
-
-/**
  * ROOT FIX: Helper function to check if current page is a media kit builder page
  */
-function is_media_kit_builder_page() {
-    global $gmkb_template_active;
-    
-    // Quick check for global flag
-    if ($gmkb_template_active === true) {
-        return true;
-    }
-    
-    $is_builder_page = false;
-    
-    // Strategy 1: EXACT page slug detection
-    if (is_page('media-kit') || is_page('guestify-media-kit')) {
-        $is_builder_page = true;
-    }
-    // Strategy 2: EXACT URL path detection for tools/media-kit
-    elseif (isset($_SERVER['REQUEST_URI'])) {
-        $uri = $_SERVER['REQUEST_URI'];
-        if (preg_match('#/tools/media-kit/?($|\?)#', $uri)) {
+if (!function_exists('is_media_kit_builder_page')) {
+    function is_media_kit_builder_page() {
+        global $gmkb_template_active;
+        
+        // Quick check for global flag
+        if ($gmkb_template_active === true) {
+            return true;
+        }
+        
+        $is_builder_page = false;
+        
+        // Strategy 1: EXACT page slug detection
+        if (is_page('media-kit') || is_page('guestify-media-kit')) {
             $is_builder_page = true;
         }
+        // Strategy 2: EXACT URL path detection for tools/media-kit
+        elseif (isset($_SERVER['REQUEST_URI'])) {
+            $uri = $_SERVER['REQUEST_URI'];
+            if (preg_match('#/tools/media-kit/?($|\?)#', $uri)) {
+                $is_builder_page = true;
+            }
+        }
+        // Strategy 3: Admin page with specific parameter
+        elseif (is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit-builder') {
+            $is_builder_page = true;
+        }
+        // Strategy 4: Check for mkcg_id parameter (indicates we're on a media kit page)
+        elseif (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
+            $is_builder_page = true;
+        }
+        
+        return $is_builder_page;
     }
-    // Strategy 3: Admin page with specific parameter
-    elseif (is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit-builder') {
-        $is_builder_page = true;
-    }
-    // Strategy 4: Check for mkcg_id parameter (indicates we're on a media kit page)
-    elseif (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
-        $is_builder_page = true;
-    }
-    
-    return $is_builder_page;
 }
 
 // === GEMINI FIX: INSTANTIATE CLASS AT THE END ===

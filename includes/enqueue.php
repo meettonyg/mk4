@@ -163,6 +163,14 @@ function gmkb_enqueue_assets() {
     // Get post ID early for data preparation
     $post_id = get_current_post_id_safe();
     
+    // ROOT FIX: Log post ID detection for debugging
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB Enqueue: Detected post_id = ' . $post_id);
+        if (isset($_GET['mkcg_id'])) {
+            error_log('GMKB Enqueue: mkcg_id parameter = ' . $_GET['mkcg_id']);
+        }
+    }
+    
     // LEAN ARCHITECTURE: Check if we should use the lean bundle
     if ( GMKB_USE_LEAN_BUNDLE && file_exists( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ) ) {
         // Use the new lean bundle - single file instead of 60+ files
@@ -250,11 +258,21 @@ function gmkb_enqueue_assets() {
             );
         }
         
+        // ROOT FIX: Ensure post ID is captured from mkcg_id for lean bundle
+        if (!$post_id && isset($_GET['mkcg_id'])) {
+            $post_id = intval($_GET['mkcg_id']);
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Lean Bundle: Using mkcg_id as post_id: ' . $post_id);
+            }
+        }
+        
         // Prepare minimal WordPress data for lean bundle
         $lean_wp_data = array(
             'ajaxUrl' => admin_url( 'admin-ajax.php' ),
             'nonce' => wp_create_nonce( 'gmkb_nonce' ),
             'postId' => $post_id,
+            'post_id' => $post_id, // Also include snake_case version
+            'mkcg_id' => $post_id, // Include as mkcg_id for compatibility
             'pluginUrl' => $plugin_url,
             'savedState' => $saved_state,
             'debugMode' => defined( 'WP_DEBUG' ) && WP_DEBUG,
@@ -264,17 +282,26 @@ function gmkb_enqueue_assets() {
             'pods_fields_loaded' => !empty(array_filter($pods_data))
         );
         
-        // Enqueue the lean bundle
+        // ROOT FIX: Load Component Registry BEFORE lean bundle
         wp_enqueue_script(
-            'gmkb-lean-bundle',
-            $plugin_url . 'dist/gmkb.iife.js',
-            array(), // No dependencies - it's self-contained
-            filemtime( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ), // Use file modified time for cache busting
-            true
+            'gmkb-component-registry-lean',
+            $plugin_url . 'js/core/component-registry.js',
+            array(), // No dependencies
+            $version,
+            true // Load in footer but before bundle
         );
         
         // Pass WordPress data to the lean bundle
-        wp_localize_script( 'gmkb-lean-bundle', 'gmkbData', $lean_wp_data );
+        wp_localize_script( 'gmkb-component-registry-lean', 'gmkbData', $lean_wp_data );
+        
+        // Enqueue the lean bundle with dependencies
+        wp_enqueue_script(
+            'gmkb-lean-bundle',
+            $plugin_url . 'dist/gmkb.iife.js',
+            array('gmkb-component-registry-lean'), // Depends on Component Registry
+            filemtime( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ), // Use file modified time for cache busting
+            true
+        );
         
         // Enqueue minimal CSS
         wp_enqueue_style(
