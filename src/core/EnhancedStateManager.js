@@ -8,6 +8,7 @@
  * @description Enhanced state management with action types and reducer pattern
  */
 
+import HistoryManager from './HistoryManager.js';
 import ACTION_TYPES, { 
     createAction, 
     isValidActionType,
@@ -45,9 +46,9 @@ const STATE_SCHEMA = {
         lastSaved: null
     },
     history: {
-        past: [],  // CLEARED - was storing complete states causing 1.48MB bloat
+        past: [],  // TODO: Implement diff-based history instead of full state copies
         future: [],
-        maxHistorySize: 0  // DISABLED - was 50 complete states!
+        maxHistorySize: 10  // Limited to 10 entries when properly implemented
     },
     meta: {
         version: '2.2.0',
@@ -595,7 +596,10 @@ export class EnhancedStateManager {
         // Initialize persistence middleware
         this.addMiddleware(this.persistenceMiddleware);
         
-        console.log('✅ Enhanced State Manager initialized with reducer pattern');
+        // Initialize proper history manager
+        this.historyManager = new HistoryManager(10); // Max 10 undo levels
+        
+        console.log('✅ Enhanced State Manager initialized with reducer pattern and proper history');
     }
     
     /**
@@ -643,26 +647,25 @@ export class EnhancedStateManager {
         
         // Check if state actually changed
         if (this.state !== previousState) {
-            // Add to history if not a history action or persistence action
+            // FIXED: Use the new HistoryManager instead of storing full states
             const skipHistory = [
                 'UNDO', 
                 'REDO', 
-                'ADD_TO_HISTORY',
+                'ADD_TO_HISTORY',  // No longer used
                 PERSISTENCE_ACTIONS.SAVE_STATE_SUCCESS,
                 PERSISTENCE_ACTIONS.SAVE_STATE_FAILURE,
                 PERSISTENCE_ACTIONS.LOAD_STATE_SUCCESS,
                 PERSISTENCE_ACTIONS.LOAD_STATE_FAILURE
             ];
             
-            // EMERGENCY FIX: Disable history to prevent exponential data growth
-            // History was storing the ENTIRE state (1.48MB) on every change!
-            const HISTORY_DISABLED = true;
-            
-            if (!skipHistory.includes(finalAction.type) && !HISTORY_DISABLED) {
-                this.dispatch({
-                    type: 'ADD_TO_HISTORY',
-                    payload: previousState
-                });
+            if (!skipHistory.includes(finalAction.type)) {
+                // Record action in the new history manager (stores only diffs)
+                this.historyManager.recordAction(finalAction);
+                
+                if (window.gmkbData?.debugMode) {
+                    const stats = this.historyManager.getStats();
+                    console.log(`📜 History: ${stats.pastCount} undo levels, ~${(stats.estimatedSize / 1024).toFixed(1)}KB`);
+                }
             }
             
             // Notify all listeners
@@ -678,7 +681,22 @@ export class EnhancedStateManager {
     }
     
     updateComponent(id, updates) {
-        this.dispatch(createAction(COMPONENT_ACTIONS.UPDATE_COMPONENT, { id, updates }));
+        // Store previous values for undo
+        const currentComponent = this.state.components[id];
+        const previousValues = {};
+        
+        if (currentComponent) {
+            // Store only the properties being updated
+            Object.keys(updates).forEach(key => {
+                previousValues[key] = currentComponent[key];
+            });
+        }
+        
+        this.dispatch(createAction(COMPONENT_ACTIONS.UPDATE_COMPONENT, { 
+            id, 
+            updates,
+            previousValues // Include for undo functionality
+        }));
     }
     
     removeComponent(componentId) {
@@ -726,11 +744,39 @@ export class EnhancedStateManager {
     }
     
     undo() {
-        this.dispatch({ type: 'UNDO' });
+        // Use the new HistoryManager to get the inverse action
+        const inverseAction = this.historyManager.undo();
+        
+        if (inverseAction) {
+            // Temporarily disable history recording while undoing
+            this.historyManager.isRecording = false;
+            this.dispatch(inverseAction);
+            this.historyManager.isRecording = true;
+            
+            console.log('⟲ Undo:', inverseAction.type);
+            return true;
+        }
+        
+        console.log('⚠️ No actions to undo');
+        return false;
     }
     
     redo() {
-        this.dispatch({ type: 'REDO' });
+        // Use the new HistoryManager to get the action to redo
+        const actionToRedo = this.historyManager.redo();
+        
+        if (actionToRedo) {
+            // Temporarily disable history recording while redoing
+            this.historyManager.isRecording = false;
+            this.dispatch(actionToRedo);
+            this.historyManager.isRecording = true;
+            
+            console.log('⟳ Redo:', actionToRedo.type);
+            return true;
+        }
+        
+        console.log('⚠️ No actions to redo');
+        return false;
     }
     
     /**
