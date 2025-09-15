@@ -37,6 +37,9 @@ require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 // PHASE 1 FIX: Include Pods data enrichment system
 require_once GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php';
 
+// ROOT FIX: Include bi-directional field sync system
+require_once GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php';
+
 // PHASE 4: Theme Generator for dynamic CSS generation
 require_once GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php';
 require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php';
@@ -946,6 +949,7 @@ class Guestify_Media_Kit_Builder {
     /**
      * ROOT FIX: Save media kit state to database with comprehensive error handling and diagnostics
      * CRITICAL FIX: Ensures proper data format consistency between save and load operations
+     * FIXED: Save to guest post, not just any post_id
      */
     public function ajax_save_media_kit() {
         // Enhanced error logging for debugging
@@ -983,13 +987,36 @@ class Guestify_Media_Kit_Builder {
         $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
         $state_data = isset($_POST['state']) ? $_POST['state'] : '';
         
-        // ROOT FIX: Enhanced post ID validation
+        // ROOT FIX: Enhanced post ID validation AND ensure it's a guest post
         if (!$post_id || $post_id <= 0) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('❌ GMKB: Invalid post ID provided: ' . var_export($post_id, true));
             }
             wp_send_json_error('Valid post ID is required');
             return;
+        }
+        
+        // ROOT FIX: Ensure we're saving to a guest post (or allow any post type for flexibility)
+        $post = get_post($post_id);
+        if (!$post) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB: Post not found: ' . $post_id);
+            }
+            wp_send_json_error('Post not found (ID: ' . $post_id . ')');
+            return;
+        }
+        
+        // ROOT FIX: Prefer saving to 'guests' post type
+        if ($post->post_type !== 'guests') {
+            // Log a warning if not saving to a guest post
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('⚠️ GMKB: WARNING - Saving to non-guest post type: ' . $post->post_type . ', ID: ' . $post_id);
+                error_log('⚠️ GMKB: Consider using guest_id parameter to specify guest post');
+            }
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Saving to post type: ' . $post->post_type . ', ID: ' . $post_id . ', Title: ' . $post->post_title);
         }
         
         // ROOT FIX: Handle empty state data gracefully for auto-save
@@ -1045,19 +1072,7 @@ class Guestify_Media_Kit_Builder {
             }
         }
         
-        // ROOT FIX: Enhanced post validation with detailed diagnostics
-        $post = get_post($post_id);
-        if (!$post) {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB: Post not found: ' . $post_id);
-                // Check if post exists in database
-                global $wpdb;
-                $post_exists = $wpdb->get_var($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE ID = %d", $post_id));
-                error_log('❌ GMKB: Database check - post exists: ' . ($post_exists ? 'YES' : 'NO'));
-            }
-            wp_send_json_error('Post not found (ID: ' . $post_id . ')');
-            return;
-        }
+
         
         // ROOT FIX: Check post status and permissions
         if ($post->post_status === 'trash') {
@@ -1267,6 +1282,12 @@ class Guestify_Media_Kit_Builder {
             }
             
             if ($verification_success) {
+                // ROOT FIX: Trigger field sync after successful save
+                do_action('gmkb_after_save_media_kit', $post_id, $state);
+                
+                // Check if fields were synced
+                $fields_synced = isset($state['field_sync_enabled']) ? 'yes' : 'no';
+                
                 wp_send_json_success(array(
                     'message' => 'Media kit saved successfully',
                     'timestamp' => time(),
@@ -1274,7 +1295,8 @@ class Guestify_Media_Kit_Builder {
                     'components_count' => count($state['components'] ?? []),
                     'data_size' => $data_size,
                     'save_duration_ms' => round($save_duration * 1000, 2),
-                    'operation_type' => $is_update ? 'update' : 'create'
+                    'operation_type' => $is_update ? 'update' : 'create',
+                    'fields_synced' => $fields_synced
                 ));
             } else {
                 wp_send_json_error('Save completed but verification failed - data may be corrupted');
@@ -1851,6 +1873,116 @@ class Guestify_Media_Kit_Builder {
         
         return $post_id;
     }
+}
+
+/**
+ * ROOT FIX: Helper function for safe post ID detection
+ * Used by enqueue.php to get the current post ID
+ */
+function get_current_post_id_safe() {
+    $post_id = 0;
+    
+    // Priority 1: Check for mkcg_id (primary parameter for guest posts)
+    if (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
+        $post_id = intval($_GET['mkcg_id']);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Post ID detected from mkcg_id: ' . $post_id);
+        }
+        return $post_id;
+    }
+    
+    // Priority 2: Check for guest_id
+    if (isset($_GET['guest_id']) && is_numeric($_GET['guest_id'])) {
+        $post_id = intval($_GET['guest_id']);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Post ID detected from guest_id: ' . $post_id);
+        }
+        return $post_id;
+    }
+    
+    // Priority 3: Check for post_id
+    if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+        $post_id = intval($_GET['post_id']);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Post ID detected from post_id: ' . $post_id);
+        }
+        return $post_id;
+    }
+    
+    // Priority 4: Check other common parameters
+    if (isset($_GET['p']) && is_numeric($_GET['p'])) {
+        $post_id = intval($_GET['p']);
+    } elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
+        $post_id = intval($_GET['page_id']);
+    } elseif (isset($_GET['media_kit_id']) && is_numeric($_GET['media_kit_id'])) {
+        $post_id = intval($_GET['media_kit_id']);
+    }
+    
+    // Priority 5: WordPress context
+    if (!$post_id && function_exists('get_the_ID')) {
+        $wp_id = get_the_ID();
+        if ($wp_id) {
+            $post_id = $wp_id;
+        }
+    }
+    
+    // Priority 6: Global post object
+    if (!$post_id && isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
+        $post_id = intval($GLOBALS['post']->ID);
+    }
+    
+    // Validate post exists and is accessible
+    if ($post_id > 0) {
+        $post = get_post($post_id);
+        if (!$post || $post->post_status === 'trash') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: Invalid post ID ' . $post_id . ' - post not found or in trash');
+            }
+            return 0;
+        }
+    }
+    
+    if (defined('WP_DEBUG') && WP_DEBUG && $post_id > 0) {
+        error_log('GMKB: get_current_post_id_safe() returning post ID: ' . $post_id);
+    }
+    
+    return $post_id;
+}
+
+/**
+ * ROOT FIX: Helper function to check if current page is a media kit builder page
+ */
+function is_media_kit_builder_page() {
+    global $gmkb_template_active;
+    
+    // Quick check for global flag
+    if ($gmkb_template_active === true) {
+        return true;
+    }
+    
+    $is_builder_page = false;
+    
+    // Strategy 1: EXACT page slug detection
+    if (is_page('media-kit') || is_page('guestify-media-kit')) {
+        $is_builder_page = true;
+    }
+    // Strategy 2: EXACT URL path detection for tools/media-kit
+    elseif (isset($_SERVER['REQUEST_URI'])) {
+        $uri = $_SERVER['REQUEST_URI'];
+        if (preg_match('#/tools/media-kit/?($|\?)#', $uri)) {
+            $is_builder_page = true;
+        }
+    }
+    // Strategy 3: Admin page with specific parameter
+    elseif (is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit-builder') {
+        $is_builder_page = true;
+    }
+    // Strategy 4: Check for mkcg_id parameter (indicates we're on a media kit page)
+    elseif (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
+        $is_builder_page = true;
+    }
+    
+    return $is_builder_page;
 }
 
 // === GEMINI FIX: INSTANTIATE CLASS AT THE END ===

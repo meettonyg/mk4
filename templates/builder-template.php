@@ -47,34 +47,63 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
 
 // ROOT FIX: Lightweight post detection without heavy processing
 $post_id = 0;
+$guest_post_id = 0; // The actual guest post to save/load media kit
 $has_mkcg_data = false;
 
-// Quick post ID detection - ROOT FIX: Added mkcg_id support
-if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
-    $post_id = intval($_GET['post_id']);
-} elseif (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
+// Quick post ID detection - mkcg_id is the primary parameter for guest posts
+if (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
+    // mkcg_id ALWAYS refers to a guest post - this is the primary way to identify
     $post_id = intval($_GET['mkcg_id']);
+    $guest_post_id = $post_id;
+} elseif (isset($_GET['guest_id']) && is_numeric($_GET['guest_id'])) {
+    // Alternative explicit guest post parameter
+    $guest_post_id = intval($_GET['guest_id']);
+    $post_id = $guest_post_id;
+} elseif (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
+    $temp_id = intval($_GET['post_id']);
+    // Check if this is a guest post
+    $temp_post = get_post($temp_id);
+    if ($temp_post && $temp_post->post_type === 'guests') {
+        $guest_post_id = $temp_id;
+        $post_id = $guest_post_id;
+    } else {
+        // Not a guest post, might be the builder page itself
+        $post_id = $temp_id;
+    }
 } elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
     $post_id = intval($_GET['p']);
 } elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
     $post_id = intval($_GET['page_id']);
 } elseif (isset($_GET['media_kit_id']) && is_numeric($_GET['media_kit_id'])) {
     $post_id = intval($_GET['media_kit_id']);
-} elseif (function_exists('get_the_ID') && get_the_ID()) {
-    // Try to get current post ID from WordPress context
-    $post_id = get_the_ID();
-} elseif (is_page('guestify-media-kit') || is_page('media-kit')) {
-    // Try to get the ID of the current page
-    global $post;
-    if ($post && $post->ID) {
-        $post_id = $post->ID;
+    $guest_post_id = $post_id;
+}
+
+// ROOT FIX: If we have a post_id but no guest_post_id, try to find associated guest
+if ($post_id && !$guest_post_id) {
+    // Check if post_id itself is a guest post
+    $check_post = get_post($post_id);
+    if ($check_post && $check_post->post_type === 'guests') {
+        $guest_post_id = $post_id;
     }
+}
+
+// Use guest_post_id for all media kit operations if available
+if ($guest_post_id) {
+    $post_id = $guest_post_id;
 }
 
 // Add debug logging for post ID detection
 if (defined('WP_DEBUG') && WP_DEBUG) {
     error_log('🔧 GMKB Template: POST ID detection - GET params: ' . print_r($_GET, true));
     error_log('🔧 GMKB Template: Detected POST ID: ' . $post_id);
+    error_log('🔧 GMKB Template: Guest POST ID: ' . $guest_post_id);
+    if ($post_id) {
+        $detected_post = get_post($post_id);
+        if ($detected_post) {
+            error_log('🔧 GMKB Template: Post type: ' . $detected_post->post_type . ', Title: ' . $detected_post->post_title);
+        }
+    }
 }
 
 // ROOT FIX: Load saved media kit state FIRST to determine template behavior

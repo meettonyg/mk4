@@ -29,7 +29,7 @@ export class Renderer {
     this.render();
   }
 
-  render() {
+  async render() {
     const state = this.stateManager.getState();
     logger.debug('🎨 Rendering state:', state);
     
@@ -66,22 +66,22 @@ export class Renderer {
     
     // Render sections or components directly
     if (hasSections) {
-      this.renderSections(state);
+      await this.renderSections(state);
     } else if (hasComponents) {
-      this.renderComponentsDirectly(state);
+      await this.renderComponentsDirectly(state);
     }
   }
 
-  renderSections(state) {
-    state.sections.forEach(section => {
-      const sectionEl = this.renderSection(section, state);
+  async renderSections(state) {
+    for (const section of state.sections) {
+      const sectionEl = await this.renderSection(section, state);
       if (sectionEl) {
         this.container.appendChild(sectionEl);
       }
-    });
+    }
   }
 
-  renderSection(section, state) {
+  async renderSection(section, state) {
     const sectionEl = document.createElement('div');
     sectionEl.className = `gmkb-section gmkb-section--${section.type || 'full-width'}`;
     sectionEl.setAttribute('data-section-id', section.section_id);
@@ -92,15 +92,15 @@ export class Renderer {
     
     // Render components in this section
     if (section.components && section.components.length > 0) {
-      section.components.forEach(componentId => {
+      for (const componentId of section.components) {
         const component = state.components[componentId];
         if (component) {
-          const componentEl = this.renderComponent(component);
+          const componentEl = await this.renderComponent(component);
           if (componentEl) {
             contentEl.appendChild(componentEl);
           }
         }
-      });
+      }
     } else {
       // Empty section placeholder
       contentEl.innerHTML = `
@@ -117,18 +117,18 @@ export class Renderer {
     return sectionEl;
   }
 
-  renderComponentsDirectly(state) {
+  async renderComponentsDirectly(state) {
     // If no sections, render components directly
-    Object.values(state.components).forEach(component => {
-      const componentEl = this.renderComponent(component);
+    for (const component of Object.values(state.components)) {
+      const componentEl = await this.renderComponent(component);
       if (componentEl) {
         this.container.appendChild(componentEl);
       }
-    });
+    }
   }
 
-  renderComponent(component) {
-    const renderer = getComponentRenderer(component.type);
+  async renderComponent(component) {
+    const renderer = await getComponentRenderer(component.type);
     if (!renderer) {
       logger.warn(`No renderer for component type: ${component.type}`);
       return this.renderFallbackComponent(component);
@@ -145,49 +145,43 @@ export class Renderer {
       const contentContainer = document.createElement('div');
       contentContainer.className = 'gmkb-component__content';
       
-      // Check if this is a Vue component or Vue renderer object
-      if (isVueComponent(component.type) || (typeof renderer === 'object' && renderer.framework === 'vue')) {
-        // Vue component rendering
-        if (typeof renderer === 'object' && renderer.render) {
-          // Vue renderer object format - pass the component without contentContainer
-          // The renderer will create its own container and return it
-          const vueContainer = renderer.render(component);
-          
-          // Append the returned container to our content container
-          if (vueContainer && vueContainer.nodeType) {
-            contentContainer.appendChild(vueContainer);
-          }
-          
-          // Store reference for cleanup if needed
-          if (vueContainer && vueContainer._vueApp) {
-            this.vueInstances[component.id] = vueContainer._vueApp;
-          }
-        } else if (typeof renderer === 'function') {
-          // Direct Vue render function
-          const vueInstance = renderer(contentContainer, component.data || component.props || {});
-          if (vueInstance) {
-            this.vueInstances[component.id] = vueInstance;
-          }
+      // Check if this is a Vue component wrapper
+      if (typeof renderer === 'object' && renderer.framework === 'vue' && renderer.render) {
+        // Vue component wrapper - async render
+        const vueElement = await renderer.render(component, contentContainer);
+        if (vueElement && vueElement.nodeType) {
+          contentContainer.appendChild(vueElement);
         }
-      } else {
-        // Standard rendering
-        let element;
-        if (typeof renderer === 'function') {
-          element = renderer(component);
-        } else if (renderer.render) {
-          element = renderer.render(component);
-        } else {
-          throw new Error('Invalid renderer format');
-        }
+      } else if (typeof renderer === 'function') {
+        // Standard renderer function
+        const element = renderer(component);
         
         // Ensure element is a DOM node
         if (typeof element === 'string') {
           const div = document.createElement('div');
           div.innerHTML = element;
-          element = div.firstElementChild || div;
+          contentContainer.appendChild(div.firstElementChild || div);
+        } else if (element && element.nodeType) {
+          contentContainer.appendChild(element);
+        } else {
+          throw new Error('Renderer did not return a valid element');
         }
+      } else if (typeof renderer === 'object' && renderer.render) {
+        // Object with render method (non-Vue)
+        const element = renderer.render(component);
         
-        contentContainer.appendChild(element);
+        // Ensure element is a DOM node
+        if (typeof element === 'string') {
+          const div = document.createElement('div');
+          div.innerHTML = element;
+          contentContainer.appendChild(div.firstElementChild || div);
+        } else if (element && element.nodeType) {
+          contentContainer.appendChild(element);
+        } else {
+          throw new Error('Renderer did not return a valid element');
+        }
+      } else {
+        throw new Error('Invalid renderer format');
       }
       
       // Add component controls
