@@ -137,18 +137,42 @@ async function initialize() {
     // Load component renderers
     await loadComponentRenderers();
     
-    // Load initial state from WordPress or use default
-    const initialState = window.gmkbData?.savedState || window.gmkbData?.saved_state || {};
+    // ROOT FIX: Proper data loading hierarchy
+    // 1. WordPress database is the source of truth when editing a post
+    // 2. localStorage is only for temporary unsaved changes or new media kits
     
-    // ROOT FIX: Let EnhancedStateManager's processWordPressData handle section assignment
-    // Don't pre-process sections here, let the state manager do it properly
+    const postId = window.gmkbData?.postId || apiService.postId;
+    const hasPostId = postId && postId !== 'new' && postId !== '0';
     
-    // Create enhanced state manager with initial state
-    // The processWordPressData method will ensure components are properly assigned to sections
-    stateManager = new StateManager(initialState);
+    let initialState = {};
     
-    // Load from localStorage if available
-    stateManager.loadFromStorage();
+    if (hasPostId) {
+      // EDITING AN EXISTING POST - WordPress is source of truth
+      console.log('Loading media kit from WordPress database for post:', postId);
+      initialState = window.gmkbData?.savedState || window.gmkbData?.saved_state || {};
+      
+      // Create state manager with WordPress data
+      stateManager = new StateManager(initialState);
+      
+      // DO NOT load from localStorage when editing a specific post
+      // localStorage might have stale data from a different post!
+      console.log('✅ Loaded state from WordPress database');
+      
+    } else {
+      // NEW MEDIA KIT - localStorage can be used for drafts
+      console.log('Creating new media kit - checking localStorage for draft');
+      
+      // Create state manager with empty state
+      stateManager = new StateManager({});
+      
+      // Check localStorage for unsaved draft
+      const hasDraft = stateManager.loadFromStorage();
+      if (hasDraft) {
+        console.log('✅ Loaded draft from localStorage');
+      } else {
+        console.log('✅ Starting with fresh media kit');
+      }
+    }
     
     // Initialize renderer with correct container ID
     // Try multiple container IDs to find the right one
@@ -678,11 +702,19 @@ async function saveState(isAutoSave = false) {
     
     await apiService.save(cleanState);
     
+    // ROOT FIX: Clear localStorage after successful database save
+    // WordPress is the source of truth, localStorage was just for temporary changes
+    if (apiService.postId && apiService.postId !== 'new' && apiService.postId !== '0') {
+      const storageKey = `gmkb_state_post_${apiService.postId}`;
+      localStorage.removeItem(storageKey);
+      console.log(`✅ Cleared temporary localStorage for post ${apiService.postId}`);
+    }
+    
     if (!isAutoSave) {
       showToast('Saved successfully', 'success');
     }
     
-    logger.success('State saved');
+    logger.success('State saved to WordPress database');
   } catch (error) {
     logger.error('Save failed:', error);
     if (!isAutoSave) {

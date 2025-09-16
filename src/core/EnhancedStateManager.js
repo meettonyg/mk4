@@ -611,6 +611,9 @@ export class EnhancedStateManager {
         // Initialize with schema defaults merged with initial state
         this.state = mainReducer(undefined, { type: '@@INIT' });
         
+        // ROOT FIX: Clean up any corrupted localStorage state before processing
+        this.cleanupCorruptedLocalStorage();
+        
         // Process WordPress data if available
         const wpState = this.processWordPressData(initialState);
         if (wpState && Object.keys(wpState).length > 0) {
@@ -965,13 +968,21 @@ export class EnhancedStateManager {
         ];
         
         if (!skipPersistence.includes(action.type)) {
-            // Schedule save (debounced)
-            if (manager.saveTimeout) {
-                clearTimeout(manager.saveTimeout);
+            // ROOT FIX: Only auto-save to localStorage for drafts, not existing posts
+            // For existing posts, localStorage is only for emergency recovery
+            const postId = window.gmkbData?.postId;
+            const isDraft = !postId || postId === 'new' || postId === '0';
+            
+            if (isDraft) {
+                // Schedule save for drafts (debounced)
+                if (manager.saveTimeout) {
+                    clearTimeout(manager.saveTimeout);
+                }
+                manager.saveTimeout = setTimeout(() => {
+                    manager.saveToStorage();
+                }, 1000);
             }
-            manager.saveTimeout = setTimeout(() => {
-                manager.saveToStorage();
-            }, 1000);
+            // For existing posts, rely on auto-save to WordPress database instead
         }
         
         return action;
@@ -979,9 +990,16 @@ export class EnhancedStateManager {
     
     /**
      * Save state to localStorage
+     * ROOT FIX: Post-aware localStorage with proper key naming
      */
     saveToStorage() {
         try {
+            // ROOT FIX: Use post-specific key or draft key
+            const postId = window.gmkbData?.postId;
+            const storageKey = postId && postId !== 'new' && postId !== '0' 
+                ? `gmkb_state_post_${postId}`  // Post-specific key
+                : 'gmkb_state_draft';           // Draft for new media kits
+            
             const stateToSave = {
                 components: this.state.components,
                 layout: this.state.layout,
@@ -989,10 +1007,39 @@ export class EnhancedStateManager {
                 theme: this.state.theme,
                 themeSettings: this.state.themeSettings,
                 globalSettings: this.state.globalSettings,
-                meta: this.state.meta
+                meta: {
+                    ...this.state.meta,
+                    savedAt: Date.now(),
+                    postId: postId || 'draft'
+                }
             };
             
-            localStorage.setItem('gmkb_state', JSON.stringify(stateToSave));
+            // ROOT FIX: Validate state before saving
+            // Never save components without proper sections
+            if (stateToSave.components && Object.keys(stateToSave.components).length > 0) {
+                if (!stateToSave.sections || stateToSave.sections.length === 0) {
+                    console.warn('Fixing invalid state before saving: components without sections');
+                    // Create default section with all components
+                    const componentIds = stateToSave.layout || Object.keys(stateToSave.components);
+                    stateToSave.sections = [{
+                        section_id: `section_default_${Date.now()}`,
+                        section_type: 'full_width',
+                        type: 'full_width',
+                        components: componentIds.map(id => ({
+                            component_id: id,
+                            column: 1,
+                            order: componentIds.indexOf(id),
+                            assigned_at: Date.now()
+                        })),
+                        layout: {},
+                        section_options: {},
+                        created_at: Date.now(),
+                        updated_at: Date.now()
+                    }];
+                }
+            }
+            
+            localStorage.setItem(storageKey, JSON.stringify(stateToSave));
             
             this.dispatch({
                 type: PERSISTENCE_ACTIONS.SAVE_STATE_SUCCESS
@@ -1006,6 +1053,65 @@ export class EnhancedStateManager {
                 type: PERSISTENCE_ACTIONS.SAVE_STATE_FAILURE,
                 payload: { message: error.message }
             });
+        }
+    }
+    
+    /**
+     * Clean up corrupted localStorage state
+     * ROOT FIX: Clean up old localStorage keys and fix corrupted data
+     */
+    cleanupCorruptedLocalStorage() {
+        try {
+            // ROOT FIX: Migrate from old key format
+            const oldKey = 'gmkb_state';
+            const oldState = localStorage.getItem(oldKey);
+            
+            if (oldState) {
+                console.log('🔧 Migrating from old localStorage key format');
+                
+                // Remove the old key - we'll use post-specific keys going forward
+                localStorage.removeItem(oldKey);
+                
+                // Only migrate if we're not editing a specific post
+                // (If editing a post, WordPress data is the source of truth)
+                const postId = window.gmkbData?.postId;
+                if (!postId || postId === 'new' || postId === '0') {
+                    // Save as draft for potential recovery
+                    const state = JSON.parse(oldState);
+                    
+                    // Fix corrupted state if needed
+                    if (state.components && 
+                        Object.keys(state.components).length > 0 && 
+                        (!state.sections || state.sections.length === 0)) {
+                        
+                        console.log('Fixing corrupted state during migration');
+                        const componentIds = state.layout || Object.keys(state.components);
+                        state.sections = [{
+                            section_id: `section_recovered_${Date.now()}`,
+                            section_type: 'full_width',
+                            type: 'full_width',
+                            components: componentIds.map(id => ({
+                                component_id: id,
+                                column: 1,
+                                order: componentIds.indexOf(id),
+                                assigned_at: Date.now()
+                            })),
+                            layout: {},
+                            section_options: {},
+                            created_at: Date.now(),
+                            updated_at: Date.now()
+                        }];
+                    }
+                    
+                    // Save as draft
+                    localStorage.setItem('gmkb_state_draft', JSON.stringify(state));
+                    console.log('✅ Migrated old localStorage to draft');
+                } else {
+                    console.log('✅ Removed old localStorage - using WordPress data for post', postId);
+                }
+            }
+        } catch (error) {
+            console.error('Error cleaning up localStorage:', error);
         }
     }
     
@@ -1145,14 +1251,41 @@ export class EnhancedStateManager {
     
     /**
      * Load state from localStorage
+     * ROOT FIX: Post-aware loading with proper key selection
      */
     loadFromStorage() {
         try {
-            const saved = localStorage.getItem('gmkb_state');
+            // ROOT FIX: Use correct storage key based on context
+            const postId = window.gmkbData?.postId;
+            const storageKey = postId && postId !== 'new' && postId !== '0' 
+                ? `gmkb_state_post_${postId}`  // Post-specific temporary changes
+                : 'gmkb_state_draft';           // Draft for new media kits
+            
+            const saved = localStorage.getItem(storageKey);
             if (saved) {
                 const loadedState = JSON.parse(saved);
+                
+                // ROOT FIX: Validate loaded state
+                // If loaded state has components but no proper sections, create them
+                if (loadedState.components && Object.keys(loadedState.components).length > 0) {
+                    if (!loadedState.sections || loadedState.sections.length === 0) {
+                        // Check if current state already has sections with these components
+                        const currentSections = this.state.sections;
+                        if (currentSections && currentSections.length > 0) {
+                            // Use existing sections
+                            loadedState.sections = currentSections;
+                            console.log('Preserving existing sections during localStorage load');
+                        } else {
+                            // Create new sections for the components
+                            const processedState = this.processWordPressData(loadedState);
+                            loadedState.sections = processedState.sections;
+                            console.log('Created sections for localStorage components');
+                        }
+                    }
+                }
+                
                 this.dispatch(createAction(STATE_ACTIONS.MERGE_STATE, loadedState));
-                console.log('✅ State loaded from localStorage');
+                console.log(`✅ State loaded from localStorage (${storageKey})`);
                 return true;
             }
         } catch (error) {
