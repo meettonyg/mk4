@@ -24,7 +24,7 @@ class SectionRenderer {
     }
     
     setupEventListeners() {
-        // ROOT FIX: Break circular dependency - initialize when dependencies are available
+        // CHECKLIST COMPLIANT: Event-driven initialization only - NO POLLING
         const tryInitialize = () => {
             if (!this.initialized && window.enhancedStateManager && window.sectionLayoutManager) {
                 this.logger.info('[SECTION_RENDERER] Dependencies available, initializing immediately');
@@ -35,23 +35,12 @@ class SectionRenderer {
         // Listen for dependencies
         document.addEventListener('gmkb:state-manager-ready', tryInitialize);
         document.addEventListener('gmkb:section-manager-ready', tryInitialize);
+        document.addEventListener('gmkb:section-layout-manager-created', tryInitialize);
+        document.addEventListener('gmkb:core-systems-ready', tryInitialize);
         
         // Try immediate initialization if dependencies exist
         if (window.enhancedStateManager && window.sectionLayoutManager) {
             tryInitialize();
-        } else {
-            // Check periodically (max 20 attempts over 2 seconds)
-            let attempts = 0;
-            const checkInterval = setInterval(() => {
-                attempts++;
-                if (window.enhancedStateManager && window.sectionLayoutManager) {
-                    clearInterval(checkInterval);
-                    tryInitialize();
-                } else if (attempts >= 20) {
-                    clearInterval(checkInterval);
-                    this.logger.error('[SECTION_RENDERER] Dependencies not found after 2 seconds');
-                }
-            }, 100);
         }
     }
     
@@ -378,27 +367,44 @@ class SectionRenderer {
     }
 }
 
-// ARCHITECTURE COMPLIANT: Direct initialization on DOM ready
-// No waiting, no circular dependencies, just simple initialization
+// ARCHITECTURE COMPLIANT: Expose class globally first
 window.SectionRenderer = SectionRenderer;
 
-// Wrap initialization in IIFE to prevent script execution issues
+// CHECKLIST COMPLIANT: Event-driven initialization
 (function() {
     'use strict';
     
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
+    function initializeSectionRenderer() {
+        if (window.sectionRenderer) {
+            console.log('✅ Section Renderer already exists');
+            return;
+        }
+        
+        // Create instance
+        window.sectionRenderer = new SectionRenderer();
+        console.log('✅ Section Renderer instance created');
+        
+        // Dispatch event for other systems
+        document.dispatchEvent(new CustomEvent('gmkb:section-renderer-created', {
+            detail: { renderer: window.sectionRenderer }
+        }));
+    }
+    
+    // Listen for section manager to be ready
+    document.addEventListener('gmkb:section-manager-ready', initializeSectionRenderer);
+    document.addEventListener('gmkb:section-layout-manager-created', initializeSectionRenderer);
+    document.addEventListener('gmkb:core-systems-ready', initializeSectionRenderer);
+    
+    // If DOM is ready and dependencies exist, initialize immediately
+    if (document.readyState !== 'loading') {
+        if (window.enhancedStateManager && window.sectionLayoutManager) {
+            initializeSectionRenderer();
+        }
+    } else {
         document.addEventListener('DOMContentLoaded', function() {
-            if (!window.sectionRenderer) {
-                window.sectionRenderer = new SectionRenderer();
-                console.log('✅ Section Renderer initialized on DOM ready');
+            if (window.enhancedStateManager && window.sectionLayoutManager) {
+                initializeSectionRenderer();
             }
         });
-    } else {
-        // DOM already loaded
-        if (!window.sectionRenderer) {
-            window.sectionRenderer = new SectionRenderer();
-            console.log('✅ Section Renderer initialized immediately');
-        }
     }
 })();

@@ -24,7 +24,7 @@ class SectionLayoutManager {
     }
     
     setupEventListeners() {
-        // ROOT FIX: Break circular dependency - initialize directly when state manager is available
+        // ROOT FIX: Event-driven initialization only - NO POLLING
         const tryInitialize = () => {
             if (!this.initialized && window.enhancedStateManager) {
                 this.logger.info('[SECTION_MANAGER] State manager available, initializing immediately');
@@ -32,27 +32,15 @@ class SectionLayoutManager {
             }
         };
         
-        // Listen for state manager ready
+        // Listen for state manager ready event
         document.addEventListener('gmkb:state-manager-ready', tryInitialize);
         
-        // ROOT FIX: Don't wait for core-systems-ready as we ARE part of core systems
+        // Listen for core systems ready as fallback
+        document.addEventListener('gmkb:core-systems-ready', tryInitialize);
         
         // Try immediate initialization if state manager already exists
         if (window.enhancedStateManager) {
             tryInitialize();
-        } else {
-            // Check periodically (max 20 attempts over 2 seconds)
-            let attempts = 0;
-            const checkInterval = setInterval(() => {
-                attempts++;
-                if (window.enhancedStateManager) {
-                    clearInterval(checkInterval);
-                    tryInitialize();
-                } else if (attempts >= 20) {
-                    clearInterval(checkInterval);
-                    this.logger.error('[SECTION_MANAGER] State manager not found after 2 seconds');
-                }
-            }, 100);
         }
     }
     
@@ -413,23 +401,43 @@ class SectionLayoutManager {
 // ARCHITECTURE COMPLIANT: Expose class globally first
 window.SectionLayoutManager = SectionLayoutManager;
 
-// Wrap initialization in IIFE to prevent script execution issues
+// ROOT FIX: Event-driven initialization - listen for dependencies
 (function() {
     'use strict';
     
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
+    function initializeSectionManager() {
+        if (window.sectionLayoutManager) {
+            console.log('✅ Section Manager already exists');
+            return;
+        }
+        
+        // Create instance
+        window.sectionLayoutManager = new SectionLayoutManager();
+        console.log('✅ Section Manager instance created');
+        
+        // Dispatch event for other systems
+        document.dispatchEvent(new CustomEvent('gmkb:section-layout-manager-created', {
+            detail: { manager: window.sectionLayoutManager }
+        }));
+    }
+    
+    // CHECKLIST COMPLIANT: Event-driven initialization only
+    // Listen for state manager to be ready
+    document.addEventListener('gmkb:state-manager-ready', initializeSectionManager);
+    
+    // Listen for core systems ready as fallback
+    document.addEventListener('gmkb:core-systems-ready', initializeSectionManager);
+    
+    // If DOM is ready and state manager exists, initialize immediately
+    if (document.readyState !== 'loading') {
+        if (window.enhancedStateManager) {
+            initializeSectionManager();
+        }
+    } else {
         document.addEventListener('DOMContentLoaded', function() {
-            if (!window.sectionLayoutManager) {
-                window.sectionLayoutManager = new SectionLayoutManager();
-                console.log('✅ Section Manager initialized on DOM ready');
+            if (window.enhancedStateManager) {
+                initializeSectionManager();
             }
         });
-    } else {
-        // DOM already loaded
-        if (!window.sectionLayoutManager) {
-            window.sectionLayoutManager = new SectionLayoutManager();
-            console.log('✅ Section Manager initialized immediately');
-        }
     }
 })();
