@@ -218,40 +218,127 @@ class SectionRenderer {
         sectionEl.setAttribute('data-section-id', section.section_id);
         sectionEl.setAttribute('data-section-type', section.type || 'full_width');
         
+        // Create inner container for proper structure
+        const innerContainer = document.createElement('div');
+        innerContainer.className = 'gmkb-section__inner';
+        
         // Add section content area(s) based on type
         if (section.type === 'two_column') {
-            sectionEl.innerHTML = `
-                <div class="gmkb-section__row">
-                    <div class="gmkb-section__column gmkb-section__column--left" data-drop-zone="true"></div>
-                    <div class="gmkb-section__column gmkb-section__column--right" data-drop-zone="true"></div>
+            // Two column layout with proper drop zones
+            innerContainer.innerHTML = `
+                <div class="gmkb-section__column gmkb-section__column--1 gmkb-section__column--left" 
+                     data-drop-zone="true" 
+                     data-column="left"
+                     data-column-index="1">
+                    <div class="gmkb-section__drop-zone">
+                        <span class="gmkb-section__drop-text">Drop to Column 1</span>
+                    </div>
+                </div>
+                <div class="gmkb-section__column gmkb-section__column--2 gmkb-section__column--right" 
+                     data-drop-zone="true" 
+                     data-column="right"
+                     data-column-index="2">
+                    <div class="gmkb-section__drop-zone">
+                        <span class="gmkb-section__drop-text">Drop to Column 2</span>
+                    </div>
                 </div>
             `;
         } else if (section.type === 'three_column') {
-            sectionEl.innerHTML = `
-                <div class="gmkb-section__row">
-                    <div class="gmkb-section__column gmkb-section__column--left" data-drop-zone="true"></div>
-                    <div class="gmkb-section__column gmkb-section__column--center" data-drop-zone="true"></div>
-                    <div class="gmkb-section__column gmkb-section__column--right" data-drop-zone="true"></div>
+            // Three column layout with proper drop zones
+            innerContainer.innerHTML = `
+                <div class="gmkb-section__column gmkb-section__column--1 gmkb-section__column--left" 
+                     data-drop-zone="true" 
+                     data-column="left"
+                     data-column-index="1">
+                    <div class="gmkb-section__drop-zone">
+                        <span class="gmkb-section__drop-text">Drop to Column 1</span>
+                    </div>
+                </div>
+                <div class="gmkb-section__column gmkb-section__column--2 gmkb-section__column--center" 
+                     data-drop-zone="true" 
+                     data-column="center"
+                     data-column-index="2">
+                    <div class="gmkb-section__drop-zone">
+                        <span class="gmkb-section__drop-text">Drop to Column 2</span>
+                    </div>
+                </div>
+                <div class="gmkb-section__column gmkb-section__column--3 gmkb-section__column--right" 
+                     data-drop-zone="true" 
+                     data-column="right"
+                     data-column-index="3">
+                    <div class="gmkb-section__drop-zone">
+                        <span class="gmkb-section__drop-text">Drop to Column 3</span>
+                    </div>
+                </div>
+            `;
+        } else if (section.type === 'main_sidebar' || section.type === 'sidebar') {
+            // Main + Sidebar layout
+            innerContainer.innerHTML = `
+                <div class="gmkb-section__column gmkb-section__column--1 gmkb-section__column--main" 
+                     data-drop-zone="true" 
+                     data-column="main"
+                     data-column-index="1">
+                    <div class="gmkb-section__drop-zone">
+                        <span class="gmkb-section__drop-text">Drop to Main Area</span>
+                    </div>
+                </div>
+                <div class="gmkb-section__column gmkb-section__column--2 gmkb-section__column--sidebar" 
+                     data-drop-zone="true" 
+                     data-column="sidebar"
+                     data-column-index="2">
+                    <div class="gmkb-section__drop-zone">
+                        <span class="gmkb-section__drop-text">Drop to Sidebar</span>
+                    </div>
                 </div>
             `;
         } else {
-            // Full width or default
-            sectionEl.innerHTML = `
-                <div class="gmkb-section__content" data-drop-zone="true"></div>
+            // Full width or default - single content area
+            innerContainer.innerHTML = `
+                <div class="gmkb-section__content" 
+                     data-drop-zone="true" 
+                     data-column="full"
+                     data-column-index="1">
+                    <div class="gmkb-section__drop-zone">
+                        <span class="gmkb-section__drop-text">Drop components here</span>
+                    </div>
+                </div>
             `;
         }
+        
+        // Add inner container to section
+        sectionEl.appendChild(innerContainer);
         
         // Add section controls
         const controlsEl = document.createElement('div');
         controlsEl.className = 'gmkb-section__controls';
         controlsEl.innerHTML = `
+            <button class="gmkb-section__control gmkb-section__control--move gmkb-section__control--move-up" 
+                    data-section-id="${section.section_id}"
+                    data-action="move-up"
+                    title="Move Section Up">
+                <span>↑</span>
+            </button>
+            <button class="gmkb-section__control gmkb-section__control--move gmkb-section__control--move-down" 
+                    data-section-id="${section.section_id}"
+                    data-action="move-down"
+                    title="Move Section Down">
+                <span>↓</span>
+            </button>
             <button class="gmkb-section__control gmkb-section__control--settings" 
                     data-section-id="${section.section_id}"
+                    data-action="settings"
                     title="Section Settings">
                 <span>⚙</span>
             </button>
+            <button class="gmkb-section__control gmkb-section__control--duplicate" 
+                    data-section-id="${section.section_id}"
+                    data-action="duplicate"
+                    title="Duplicate Section">
+                <span>⧉</span>
+            </button>
             <button class="gmkb-section__control gmkb-section__control--delete" 
                     data-section-id="${section.section_id}"
+                    data-action="delete"
                     title="Delete Section">
                 <span>×</span>
             </button>

@@ -46,11 +46,20 @@ export default {
       return null;
     }
     
-    // Prepare props from data
+    // ROOT FIX: Fetch Pods data for hero content
+    const podsData = window.gmkbData?.pods_data || {};
+    
+    // Build hero title from Pods data
+    const fullName = podsData.first_name && podsData.last_name 
+      ? `${podsData.first_name} ${podsData.last_name}` 
+      : podsData.full_name || '';
+    
+    // Prepare props from Pods data first, component config second
     const props = {
-      title: data.title || data.heading || 'Welcome',
-      subtitle: data.subtitle || data.subheading || '',
-      backgroundImage: data.backgroundImage || data.background_image || '',
+      // Content from Pods data
+      title: fullName || data.title || data.heading || 'Welcome',
+      subtitle: podsData.guest_title || podsData.tagline || data.subtitle || data.subheading || '',
+      backgroundImage: podsData.hero_image || podsData.guest_headshot || data.backgroundImage || data.background_image || '',
       ctaText: data.ctaText || data.cta_text || 'Get Started',
       ctaUrl: data.ctaUrl || data.cta_url || '#',
       alignment: data.alignment || 'center',
@@ -59,9 +68,38 @@ export default {
     
     // Mount the Vue component directly
     const app = createApp(HeroVue, props);
+    
+    // ROOT FIX: Set up update handler for consistency
+    app.config.globalProperties.$updateData = (newData) => {
+      // Only save configuration, not Pods content
+      const configOnly = {
+        ctaText: newData.ctaText,
+        ctaUrl: newData.ctaUrl,
+        alignment: newData.alignment,
+        // Don't save title/subtitle - those come from Pods
+      };
+      
+      if (window.GMKB?.stateManager) {
+        window.GMKB.stateManager.updateComponent(props.componentId, {
+          config: configOnly,
+          data: { dataSource: 'pods' },
+          props: {}
+        });
+      }
+      
+      // Re-render with fresh data
+      app.unmount();
+      this.render({ ...data, ...configOnly }, container);
+    };
+    
     const instance = app.mount(container);
     
-    console.log('Hero Vue component mounted with props:', props);
+    console.log('🤸 Hero Vue component mounted with props:', props);
+    console.log('🤸 Hero: Full name from Pods:', fullName);
+    console.log('🤸 Hero: Title/subtitle from Pods:', podsData.guest_title || podsData.tagline || 'No subtitle');
+    
+    // Store app reference for cleanup
+    container._vueApp = app;
     
     return instance;
   },
@@ -81,7 +119,11 @@ export default {
    * @param {HTMLElement} container - Container element
    */
   destroy(container) {
-    // Component cleanup handled by Vue
+    // ROOT FIX: Properly clean up Vue app
+    if (container && container._vueApp) {
+      container._vueApp.unmount();
+      delete container._vueApp;
+    }
   },
   
   /**

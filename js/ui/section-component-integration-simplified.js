@@ -146,6 +146,36 @@
                     this.setupSectionDropZones(section);
                 });
                 this.logger.info('DRAG', `Setup drop zones for ${sections.length} existing sections`);
+                
+                // ROOT FIX: Add empty section placeholders if sections have no components
+                this.addEmptySectionPlaceholders();
+            }
+            
+            /**
+             * ROOT FIX: Add placeholders to empty sections to make drop zones visible
+             */
+            addEmptySectionPlaceholders() {
+                const sections = document.querySelectorAll('[data-section-id], .gmkb-section');
+                sections.forEach(section => {
+                    // Find all columns in the section
+                    const columns = section.querySelectorAll('.gmkb-section__column, .gmkb-section__content');
+                    
+                    columns.forEach((column, index) => {
+                        // Check if column is empty (no components)
+                        const hasComponents = column.querySelector('[data-component-id]');
+                        const hasPlaceholder = column.querySelector('.gmkb-section__drop-zone');
+                        
+                        if (!hasComponents && !hasPlaceholder) {
+                            // Add placeholder to make drop zone visible
+                            const placeholder = document.createElement('div');
+                            placeholder.className = 'gmkb-section__drop-zone';
+                            placeholder.innerHTML = `<span class="gmkb-section__drop-text">Drop to Column ${index + 1}</span>`;
+                            column.appendChild(placeholder);
+                            
+                            this.logger.debug('DRAG', `Added placeholder to empty column ${index + 1} in section`);
+                        }
+                    });
+                });
             }
             
             /**

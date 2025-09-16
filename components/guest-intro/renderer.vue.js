@@ -5,6 +5,7 @@ import GuestIntro from './GuestIntro.vue';
 export default {
     render(data = {}, container) {
         console.log('🎭 Rendering Guest Intro component with data:', data);
+        console.log('🎭 Guest Intro: Available Pods data:', window.gmkbData?.pods_data || {});
         
         // Ensure container exists
         if (!container) {
@@ -12,37 +13,84 @@ export default {
             return null;
         }
         
-        // Extract Pods data if available
+        // ROOT FIX: Pods data is the source of truth for content
         const podsData = window.gmkbData?.pods_data || {};
         
-        // Merge component data with Pods data (component data takes precedence)
+        // Build full name from Pods data
+        const fullName = podsData.first_name && podsData.last_name 
+            ? `${podsData.first_name} ${podsData.last_name}` 
+            : podsData.full_name || '';
+        
+        // Pods data takes precedence for content, component data for configuration
         const mergedData = {
-            full_name: data.full_name || podsData.full_name || '',
-            first_name: data.first_name || podsData.first_name || '',
-            last_name: data.last_name || podsData.last_name || '',
-            guest_title: data.guest_title || podsData.guest_title || '',
-            company: data.company || podsData.company || '',
-            introduction: data.introduction || podsData.introduction || '',
-            tagline: data.tagline || podsData.tagline || '',
-            layout: data.layout || 'centered',
+            // Content from Pods
+            full_name: fullName,
+            first_name: podsData.first_name || '',
+            last_name: podsData.last_name || '',
+            guest_title: podsData.guest_title || podsData.title || '',
+            company: podsData.company || podsData.organization || '',
+            introduction: podsData.introduction || podsData.bio_short || podsData.biography_short || '',
+            tagline: podsData.tagline || podsData.motto || '',
+            // Configuration from component
+            layout: data.layout || data.config?.layout || 'centered',
             componentId: data.id || data.componentId || `guest-intro_${Date.now()}`
         };
+        
+        console.log('🎭 Guest Intro: Merged data being passed to Vue component:', mergedData);
+        console.log('🎭 Guest Intro: Full name:', fullName);
         
         const app = createApp(GuestIntro, mergedData);
         
         // Set up update handler for edit panel
         app.config.globalProperties.$updateData = (newData) => {
-            Object.assign(mergedData, newData);
+            // ROOT FIX: Only save configuration, not Pods content
+            const configOnly = {
+                layout: newData.layout,
+                // Don't save name/title/content fields - those come from Pods
+            };
+            
+            if (window.GMKB?.stateManager) {
+                window.GMKB.stateManager.updateComponent(mergedData.componentId, {
+                    config: configOnly,
+                    data: { dataSource: 'pods' },
+                    props: {}
+                });
+            }
+            
+            // Re-render with fresh Pods data
             app.unmount();
-            this.render(mergedData, container);
+            this.render({ ...data, ...configOnly }, container);
         };
         
-        app.mount(container);
-        return app;
+        const instance = app.mount(container);
+        
+        // Store app reference for cleanup
+        container._vueApp = app;
+        
+        return instance;
+    },
+    
+    /**
+     * Update the component with new data
+     */
+    update(data, container) {
+        this.destroy(container);
+        this.render(data, container);
+    },
+    
+    /**
+     * Unmount the component
+     */
+    destroy(container) {
+        if (container && container._vueApp) {
+            container._vueApp.unmount();
+            delete container._vueApp;
+        }
     },
     
     // Mark as Vue renderer
     isVueRenderer: true,
+    framework: 'vue',
     
     // Configuration for the edit panel
     editConfig: {

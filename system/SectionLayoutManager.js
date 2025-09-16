@@ -247,6 +247,20 @@ class SectionLayoutManager {
     }
     
     renderSection(section) {
+        // ROOT FIX: Use SectionRenderer if available for proper multi-column HTML structure
+        if (window.sectionRenderer && typeof window.sectionRenderer.renderSection === 'function') {
+            this.logger.info('[SECTION_MANAGER] Using SectionRenderer for section:', section.section_id);
+            window.sectionRenderer.renderSection(section.section_id);
+            return;
+        }
+        
+        // Fallback to basic rendering if SectionRenderer not available
+        this.logger.warn('[SECTION_MANAGER] SectionRenderer not available, using fallback rendering');
+        this.basicRenderSection(section);
+    }
+    
+    // Fallback basic rendering method
+    basicRenderSection(section) {
         const container = document.getElementById('saved-components-container') || 
                         document.getElementById('media-kit-preview');
         
@@ -328,6 +342,71 @@ class SectionLayoutManager {
     
     getSection(sectionId) {
         return this.sections.get(sectionId);
+    }
+    
+    /**
+     * ROOT FIX: Assign a component to a specific section and column
+     */
+    assignComponentToSection(componentId, sectionId, columnIndex = 1) {
+        const section = this.sections.get(sectionId);
+        if (!section) {
+            this.logger.warn('[SECTION_MANAGER] Section not found:', sectionId);
+            return false;
+        }
+        
+        // Update component's section assignment in state
+        if (this.stateManager) {
+            this.stateManager.dispatch({
+                type: 'UPDATE_COMPONENT',
+                payload: {
+                    id: componentId,
+                    updates: { 
+                        sectionId: sectionId,
+                        columnIndex: columnIndex
+                    }
+                }
+            });
+            
+            this.logger.info('[SECTION_MANAGER] Assigned component', componentId, 'to section', sectionId, 'column', columnIndex);
+        }
+        
+        // Add component to section's component list if not already there
+        if (!section.components) {
+            section.components = [];
+        }
+        
+        const existingComponent = section.components.find(c => c.component_id === componentId);
+        if (!existingComponent) {
+            section.components.push({
+                component_id: componentId,
+                column_index: columnIndex,
+                added_at: Date.now()
+            });
+        } else {
+            // Update column index if component already in section
+            existingComponent.column_index = columnIndex;
+        }
+        
+        // Update state
+        this.updateSectionsInState();
+        
+        return true;
+    }
+    
+    /**
+     * Get sections in their proper order
+     */
+    getSectionsInOrder() {
+        const state = this.stateManager ? this.stateManager.getState() : {};
+        const sections = state.sections || [];
+        return sections;
+    }
+    
+    /**
+     * Create a new section and return it
+     */
+    createSection(type = 'full_width', config = {}) {
+        return this.addSection(type, config);
     }
 }
 
