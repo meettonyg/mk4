@@ -1156,9 +1156,36 @@ export class EnhancedStateManager {
             processedData = data;
         }
         
-        // ROOT FIX: Ensure components are properly assigned to sections
+        // ROOT FIX: Repair corrupted data structures and ensure proper section assignment
         if (processedData.components && Object.keys(processedData.components).length > 0) {
-            const componentIds = processedData.layout || Object.keys(processedData.components);
+        // Fix array corruption in all components
+                    Object.keys(processedData.components).forEach(id => {
+                        const comp = processedData.components[id];
+                        
+                        // Convert corrupted arrays back to objects
+                        if (Array.isArray(comp.props)) {
+                            console.log(`Fixing corrupted props for ${comp.type} component ${id}`);
+                            comp.props = {};
+                        }
+                        if (Array.isArray(comp.data)) {
+                            console.log(`Fixing corrupted data for ${comp.type} component ${id}`);
+                            comp.data = {};
+                        }
+                        if (Array.isArray(comp.content)) {
+                            console.log(`Fixing corrupted content for ${comp.type} component ${id}`);
+                            comp.content = {};
+                        }
+                        
+                        // Ensure all components have proper object structures
+                        if (!comp.props || typeof comp.props !== 'object') {
+                            comp.props = {};
+                        }
+                        if (!comp.data || typeof comp.data !== 'object') {
+                            comp.data = {};
+                        }
+                    });
+                    
+                    const componentIds = processedData.layout || Object.keys(processedData.components);
             
             // If no sections exist, create a default section with all components
             if (!processedData.sections || processedData.sections.length === 0) {

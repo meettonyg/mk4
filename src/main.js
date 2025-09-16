@@ -648,38 +648,35 @@ async function saveState(isAutoSave = false) {
             type: comp.type || 'unknown'
           };
           
-          // Only copy simple string/number/boolean props
-          if (comp.props && typeof comp.props === 'object') {
-            safeComponent.props = {};
-            Object.keys(comp.props).forEach(key => {
-              const val = comp.props[key];
-              if (typeof val === 'string' && val.length < 1000) {
-                safeComponent.props[key] = val;
-              } else if (typeof val === 'number' || typeof val === 'boolean') {
-                safeComponent.props[key] = val;
-              }
-            });
+          // ROOT FIX: Only save component configuration, not Pods content
+          // Configuration settings (layout, display options, etc.)
+          if (comp.config && typeof comp.config === 'object') {
+            safeComponent.config = { ...comp.config };
+          } else {
+            safeComponent.config = {};
           }
           
-          // Only copy simple data
+          // Data source reference (tells component where to fetch data)
           if (comp.data && typeof comp.data === 'object') {
-            safeComponent.data = {};
-            Object.keys(comp.data).forEach(key => {
-              const val = comp.data[key];
-              if (typeof val === 'string' && val.length < 1000) {
-                safeComponent.data[key] = val;
-              } else if (typeof val === 'number' || typeof val === 'boolean') {
-                safeComponent.data[key] = val;
-              } else if (Array.isArray(val) && val.length < 20) {
-                // Small arrays of simple values only
-                const simpleArray = val.filter(item => 
-                  typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean'
-                );
-                if (simpleArray.length === val.length) {
-                  safeComponent.data[key] = simpleArray;
-                }
-              }
-            });
+            // Only save metadata about data source, not actual content
+            safeComponent.data = {
+              dataSource: comp.data.dataSource || 'pods',
+              field: comp.data.field || null
+            };
+          } else {
+            safeComponent.data = { dataSource: 'pods' };
+          }
+          
+          // Keep empty props for backward compatibility
+          safeComponent.props = {};
+          
+          // Display settings
+          if (comp.settings && typeof comp.settings === 'object') {
+            safeComponent.settings = {
+              alignment: comp.settings.alignment,
+              visibility: comp.settings.visibility,
+              customClass: comp.settings.customClass
+            };
           }
           
           // Add position if exists

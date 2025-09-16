@@ -129,26 +129,28 @@ export class PodsDataIntegration {
   }
 
   /**
-   * Enrich component data with Pods data
-   * This is called when a component is created
+   * ROOT FIX: Mark component as Pods-enabled without copying content
+   * Components should fetch Pods data at render time, not store it
    */
   enrichComponentData(component) {
-    const podsData = this.getComponentData(component.type);
+    const mapping = this.componentDataMap[component.type];
     
-    if (Object.keys(podsData).length > 0) {
-      // Merge Pods data with existing component data
+    if (mapping) {
+      // Don't copy Pods data into component
+      // Instead, just mark it as Pods-enabled with field references
       component.data = {
-        ...component.data,
-        ...podsData
+        dataSource: 'pods',
+        fields: mapping.fields,
+        // Only store field mapping, not actual content
       };
       
-      // Also update props for Vue components
-      component.props = {
-        ...component.props,
-        ...podsData
-      };
+      // Configuration only - no content
+      component.config = component.config || {};
       
-      console.log(`✅ Enriched ${component.type} component with Pods data:`, podsData);
+      // Props should be empty - content comes from Pods at render time
+      component.props = {};
+      
+      console.log(`✅ Configured ${component.type} component to use Pods fields:`, mapping.fields);
     }
     
     return component;

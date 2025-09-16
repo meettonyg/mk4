@@ -20,21 +20,21 @@ const BiographyVue = {
   },
   
   setup(props) {
-    // Reactive state
+    // ROOT FIX: Use props.biography which already contains the Pods data
+    const podsData = window.gmkbData?.pods_data || {};
+    
+    // Reactive state - use the biography from props
     const state = reactive({
       isSelected: false,
       isEditing: false,
       showDesignPanel: false,
-      localBiography: props.biography,
+      localBiography: props.biography || '', // Use the prop value
       localTitle: props.title,
       localShowTitle: props.showTitle,
       localAlignment: props.alignment,
       localFontSize: props.fontSize,
       localPreserveLineBreaks: props.preserveLineBreaks
     });
-    
-    // Get Pods data
-    const podsData = window.gmkbData?.pods_data || {};
     
     // Format biography for display
     const formattedBiography = computed(() => {
@@ -67,7 +67,7 @@ const BiographyVue = {
     };
     
     const cancelEdit = () => {
-      state.localBiography = props.biography;
+      state.localBiography = props.biography || '';
       state.isEditing = false;
     };
     
@@ -236,8 +236,8 @@ const BiographyVue = {
     };
     
     const updateComponent = () => {
-      const updates = {
-        biography: state.localBiography,
+      // ROOT FIX: Only save configuration, not content
+      const config = {
         title: state.localTitle,
         showTitle: state.localShowTitle,
         alignment: state.localAlignment,
@@ -245,17 +245,22 @@ const BiographyVue = {
         preserveLineBreaks: state.localPreserveLineBreaks
       };
       
-      // Update state manager
+      // If biography was edited, it should update Pods, not component state
+      // This would require an API call to update the custom post field
+      
+      // Update state manager with configuration only
       if (window.GMKB?.stateManager) {
         window.GMKB.stateManager.updateComponent(props.componentId, {
-          data: updates,
-          props: updates
+          config: config,
+          // Don't store content in data or props
+          data: { dataSource: 'pods', field: 'guest_biography' },
+          props: {}
         });
       }
       
       // Emit update event
       document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
-        detail: { componentId: props.componentId, updates }
+        detail: { componentId: props.componentId, updates: config }
       }));
     };
     
@@ -308,10 +313,9 @@ const BiographyVue = {
       document.addEventListener('click', handleGlobalClick);
       document.addEventListener('keydown', handleEscKey);
       
-      // Auto-load from Pods if empty
-      if (!state.localBiography && podsData.biography) {
-        state.localBiography = podsData.biography;
-        updateComponent();
+      // Auto-load from props if the local state is empty
+      if (!state.localBiography && props.biography) {
+        state.localBiography = props.biography;
       }
     });
     
@@ -419,16 +423,24 @@ export default {
     
     const podsData = window.gmkbData?.pods_data || {};
     
-    // Prepare props
+    // ROOT FIX: Always fetch content from Pods, configuration from component
+    // Debug what we're receiving
+    console.log('Biography renderer received data:', data);
+    console.log('Available Pods data:', podsData);
+    
     const props = {
-      biography: data.biography || data.bio || podsData.biography || '',
-      title: data.title || 'Biography',
-      showTitle: data.showTitle !== undefined ? data.showTitle : true,
-      alignment: data.alignment || 'left',
-      fontSize: data.fontSize || 'medium',
-      preserveLineBreaks: data.preserveLineBreaks !== undefined ? data.preserveLineBreaks : true,
-      componentId: data.id || `biography_${Date.now()}`
+      // Content ALWAYS comes from Pods data - check both possible field names
+      biography: podsData.guest_biography || podsData.biography || podsData.Biography || '',
+      // Configuration from component (handle both old and new structure)
+      title: data.config?.title || data.title || 'Biography',
+      showTitle: data.config?.showTitle !== undefined ? data.config.showTitle : (data.showTitle !== undefined ? data.showTitle : true),
+      alignment: data.config?.alignment || data.alignment || 'left',
+      fontSize: data.config?.fontSize || data.fontSize || 'medium',
+      preserveLineBreaks: data.config?.preserveLineBreaks !== undefined ? data.config.preserveLineBreaks : (data.preserveLineBreaks !== undefined ? data.preserveLineBreaks : true),
+      componentId: data.id || data.componentId || `biography_${Date.now()}`
     };
+    
+    console.log('Biography props being passed to Vue component:', props);
     
     // Create and mount Vue app
     const app = createApp(BiographyVue, props);
