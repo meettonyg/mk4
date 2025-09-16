@@ -3,8 +3,14 @@ import { createApp } from 'vue';
 import LogoGrid from './LogoGrid.vue';
 
 export default {
-    render(container, data = {}) {
+    render(data = {}, container) {
         console.log('🏢 Rendering Logo Grid component with data:', data);
+        
+        // Ensure container exists
+        if (!container) {
+            console.error('Logo Grid Vue renderer: No container provided');
+            return null;
+        }
         
         // Extract Pods data if available
         const podsData = window.gmkbData?.pods_data || {};
@@ -20,7 +26,8 @@ export default {
             displayStyle: data.displayStyle || 'boxed',
             grayscaleEffect: data.grayscaleEffect !== false,
             showNames: data.showNames || false,
-            openInNewTab: data.openInNewTab !== false
+            openInNewTab: data.openInNewTab !== false,
+            componentId: data.id || data.componentId || `logo-grid_${Date.now()}`
         };
         
         const app = createApp(LogoGrid, mergedData);
@@ -29,12 +36,15 @@ export default {
         app.config.globalProperties.$updateData = (newData) => {
             Object.assign(mergedData, newData);
             app.unmount();
-            this.render(container, mergedData);
+            this.render(mergedData, container);
         };
         
         app.mount(container);
         return app;
     },
+    
+    // Mark as Vue renderer
+    isVueRenderer: true,
     
     // Configuration for the edit panel
     editConfig: {

@@ -1,7 +1,7 @@
 /**
  * Vue Component Discovery System
+ * ROOT FIX: Use existing renderer.vue.js files instead of trying to import .vue files
  * Maintains self-contained architecture by discovering Vue components automatically
- * No manual registration required - components are found by convention
  */
 
 import { createApp } from 'vue';
@@ -11,7 +11,7 @@ const vueRendererCache = new Map();
 
 /**
  * Discover Vue renderer for a component type
- * Checks if a component has a Vue renderer without manual registration
+ * ROOT FIX: Check for both .vue files and renderer.vue.js files
  */
 export async function discoverVueRenderer(componentType) {
   // Check cache first
@@ -19,124 +19,88 @@ export async function discoverVueRenderer(componentType) {
     return vueRendererCache.get(componentType);
   }
 
+  // ROOT FIX: First try to load the renderer.vue.js file if it exists
   try {
-    // For build time, we need to handle the known Vue components differently
-    // These will be bundled with the app
-    let rendererModule = null;
+    const rendererModule = await import(`../../components/${componentType}/renderer.vue.js`);
     
-    // Import known Vue components that exist
-    // This allows Vite to bundle them properly
-    switch(componentType) {
-      case 'biography':
-        // Check if biography has a Vue renderer
-        try {
-          const { default: BiographyVue } = await import('../../components/biography/Biography.vue');
-          rendererModule = {
-            render(container, data) {
-              const app = createApp(BiographyVue, data);
-              app.mount(container);
-              return app;
-            }
-          };
-        } catch (e) {
-          // No Vue component for biography
-        }
-        break;
-        
-      case 'hero':
-        // Check if hero has a Vue renderer
-        try {
-          const { default: HeroVue } = await import('../../components/hero/Hero.vue');
-          rendererModule = {
-            render(container, data) {
-              const app = createApp(HeroVue, data);
-              app.mount(container);
-              return app;
-            }
-          };
-        } catch (e) {
-          // No Vue component for hero
-        }
-        break;
-        
-      case 'guest-intro':
-        // Check if guest-intro has a Vue renderer
-        try {
-          const { default: GuestIntroVue } = await import('../../components/guest-intro/GuestIntro.vue');
-          rendererModule = {
-            render(container, data) {
-              const app = createApp(GuestIntroVue, data);
-              app.mount(container);
-              return app;
-            }
-          };
-        } catch (e) {
-          // No Vue component for guest-intro
-        }
-        break;
-        
-      case 'topics-questions':
-        // Check if topics-questions has a Vue renderer
-        try {
-          const { default: TopicsQuestionsVue } = await import('../../components/topics-questions/TopicsQuestions.vue');
-          rendererModule = {
-            render(container, data) {
-              const app = createApp(TopicsQuestionsVue, data);
-              app.mount(container);
-              return app;
-            }
-          };
-        } catch (e) {
-          // No Vue component for topics-questions
-        }
-        break;
-        
-      case 'photo-gallery':
-        // Check if photo-gallery has a Vue renderer
-        try {
-          const { default: PhotoGalleryVue } = await import('../../components/photo-gallery/PhotoGallery.vue');
-          rendererModule = {
-            render(container, data) {
-              const app = createApp(PhotoGalleryVue, data);
-              app.mount(container);
-              return app;
-            }
-          };
-        } catch (e) {
-          // No Vue component for photo-gallery
-        }
-        break;
-        
-      case 'logo-grid':
-        // Check if logo-grid has a Vue renderer
-        try {
-          const { default: LogoGridVue } = await import('../../components/logo-grid/LogoGrid.vue');
-          rendererModule = {
-            render(container, data) {
-              const app = createApp(LogoGridVue, data);
-              app.mount(container);
-              return app;
-            }
-          };
-        } catch (e) {
-          // No Vue component for logo-grid
-        }
-        break;
-        
-      default:
-        // Component not known at build time
-        // Will use standard renderer
-        break;
-    }
-    
-    if (rendererModule) {
-      console.log(`✅ Discovered Vue renderer for ${componentType}`);
-      vueRendererCache.set(componentType, rendererModule);
-      return rendererModule;
+    if (rendererModule && rendererModule.default) {
+      console.log(`✅ Discovered Vue renderer.vue.js for ${componentType}`);
+      vueRendererCache.set(componentType, rendererModule.default);
+      return rendererModule.default;
     }
   } catch (error) {
-    // No Vue renderer found - this is fine, component might use regular renderer
-    console.log(`ℹ️ No Vue renderer found for ${componentType}, will use standard renderer`);
+    // No renderer.vue.js file, try .vue file next
+  }
+  
+  // ROOT FIX: Try to load the .vue file and create a renderer for it
+  try {
+    let vueComponent = null;
+    
+    // Try to import the Vue component based on known components
+    switch(componentType) {
+      case 'hero':
+        vueComponent = (await import('../../components/hero/Hero.vue')).default;
+        break;
+      case 'biography':
+        vueComponent = (await import('../../components/biography/Biography.vue')).default;
+        break;
+      case 'guest-intro':
+        vueComponent = (await import('../../components/guest-intro/GuestIntro.vue')).default;
+        break;
+      case 'photo-gallery':
+        vueComponent = (await import('../../components/photo-gallery/PhotoGallery.vue')).default;
+        break;
+      case 'logo-grid':
+        vueComponent = (await import('../../components/logo-grid/LogoGrid.vue')).default;
+        break;
+      case 'topics-questions':
+        vueComponent = (await import('../../components/topics-questions/TopicsQuestions.vue')).default;
+        break;
+    }
+    
+    if (vueComponent) {
+      // Create a renderer wrapper for the Vue component
+      const renderer = {
+        name: componentType,
+        render(data = {}, container) {
+          if (!container) {
+            console.error(`${componentType} Vue renderer: No container provided`);
+            return null;
+          }
+          
+          // Prepare props with all possible data sources
+          const props = {
+            ...data,
+            componentId: data.id || data.componentId || `${componentType}_${Date.now()}`
+          };
+          
+          // Create and mount Vue app
+          const app = createApp(vueComponent, props);
+          const instance = app.mount(container);
+          
+          console.log(`${componentType} Vue component mounted with data:`, props);
+          
+          // Store app reference for cleanup
+          container._vueApp = app;
+          
+          return instance;
+        },
+        destroy(container) {
+          if (container && container._vueApp) {
+            container._vueApp.unmount();
+            delete container._vueApp;
+          }
+        },
+        isVueRenderer: true
+      };
+      
+      console.log(`✅ Created Vue renderer for ${componentType} from .vue file`);
+      vueRendererCache.set(componentType, renderer);
+      return renderer;
+    }
+  } catch (error) {
+    // No Vue component found
+    console.log(`ℹ️ No Vue component found for ${componentType}`);
   }
   
   return null;
@@ -159,7 +123,7 @@ export async function hasVueRenderer(componentType) {
 
 /**
  * Render a Vue component using discovered renderer
- * This maintains the self-contained architecture
+ * ROOT FIX: Properly handle both render method signatures
  */
 export async function renderVueComponent(componentType, container, data = {}) {
   const renderer = await discoverVueRenderer(componentType);
@@ -171,7 +135,9 @@ export async function renderVueComponent(componentType, container, data = {}) {
   
   // Ensure we have a render method
   if (typeof renderer.render === 'function') {
-    return renderer.render(container, data);
+    // ROOT FIX: Call with correct parameter order (data, container)
+    // The renderer.vue.js files expect (data, container) not (container, data)
+    return renderer.render(data, container);
   }
   
   console.error(`Vue renderer for ${componentType} does not have a render method`);
@@ -180,26 +146,42 @@ export async function renderVueComponent(componentType, container, data = {}) {
 
 /**
  * Create a Vue component wrapper that can be used by the ComponentRegistry
- * This allows Vue components to work within the existing architecture
+ * ROOT FIX: Use the renderer.vue.js render method directly
  */
 export function createVueComponentWrapper(componentType) {
   return {
     async render(component, targetContainer) {
+      // ROOT FIX: Get the actual Vue renderer for this component
+      const vueRenderer = await discoverVueRenderer(componentType);
+      
+      if (!vueRenderer || !vueRenderer.render) {
+        console.warn(`No Vue renderer found for ${componentType}`);
+        return null;
+      }
+      
       // Always create a fresh container for Vue
       const vueContainer = document.createElement('div');
       vueContainer.className = `${componentType}-vue-wrapper`;
       vueContainer.setAttribute('data-component-id', component.id);
       
-      // Prepare component data
+      // ROOT FIX: Prepare component data with all properties
+      // Merge component.data and component.props, add the component ID
       const componentData = {
         ...component.data,
         ...component.props,
+        id: component.id,
         componentId: component.id
       };
       
-      // Render using discovered Vue renderer
       try {
-        await renderVueComponent(componentType, vueContainer, componentData);
+        // ROOT FIX: Call the renderer's render method directly
+        // This properly passes data to the Vue component
+        const instance = vueRenderer.render(componentData, vueContainer);
+        
+        if (instance) {
+          console.log(`✅ Rendered Vue component ${componentType} with data:`, componentData);
+        }
+        
         return vueContainer;
       } catch (error) {
         console.error(`Failed to render Vue component ${componentType}:`, error);
@@ -207,13 +189,15 @@ export function createVueComponentWrapper(componentType) {
         vueContainer.innerHTML = `
           <div class="component-error">
             <p>Failed to render ${componentType} component</p>
+            <small>${error.message}</small>
           </div>
         `;
         return vueContainer;
       }
     },
     framework: 'vue',
-    discoverable: true
+    discoverable: true,
+    isVueRenderer: true
   };
 }
 
@@ -243,6 +227,11 @@ export async function initializeVueComponentDiscovery() {
   await Promise.all(discoveries);
   
   console.log(`✅ Vue Component Discovery complete. Found ${vueRendererCache.size} Vue components`);
+  
+  // List discovered components
+  if (vueRendererCache.size > 0) {
+    console.log('Discovered Vue components:', Array.from(vueRendererCache.keys()));
+  }
   
   // Make discovery functions globally available
   window.GMKBVueDiscovery = {

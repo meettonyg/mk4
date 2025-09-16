@@ -51,7 +51,7 @@ add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Consistent 
  * Set to true to use the new Vite-built lean bundle instead of 60+ individual files
  * The bundle must be rebuilt with: npm run build
  */
-define( 'GMKB_USE_LEAN_BUNDLE', true ); // Using lean bundle for better performance
+define( 'GMKB_USE_LEAN_BUNDLE', false ); // TEMPORARILY DISABLED - Testing vanilla renderers
 
 /**
  * Enqueues all necessary scripts and styles for the Media Kit Builder.

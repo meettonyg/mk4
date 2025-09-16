@@ -20,6 +20,11 @@ import { loadComponentRenderers } from './registry/ComponentRegistry.js';
 import podsDataIntegration from './core/PodsDataIntegration.js';
 import SectionDragDropManager from './core/SectionDragDropManager.js';
 
+// Phase 4: Advanced Features
+import InlineEditor from './features/InlineEditor.js';
+import ComponentTemplates from './features/ComponentTemplates.js';
+import ImportExportManager from './features/ImportExportManager.js';
+
 // Initialize core systems
 let stateManager;
 let eventBus;
@@ -28,6 +33,11 @@ let renderer;
 let vueApp = null; // Vue app instance
 let dragDropManager = null; // Drag and drop manager
 let isSaving = false; // ROOT FIX: Prevent double save triggers
+
+// Phase 4: Advanced feature instances
+let inlineEditor = null;
+let componentTemplates = null;
+let importExportManager = null;
 
 // Define ALL functions before they're used
 function showToast(message, type = 'info', duration = 3000) {
@@ -173,6 +183,19 @@ async function initialize() {
     // Initialize drag and drop manager
     dragDropManager = new SectionDragDropManager(stateManager, eventBus);
     
+    // Phase 4: Initialize advanced features
+    // Initialize inline editor
+    inlineEditor = new InlineEditor(stateManager);
+    
+    // Initialize component templates
+    componentTemplates = new ComponentTemplates();
+    componentTemplates.loadCustomTemplates(); // Load any saved custom templates
+    
+    // Initialize import/export manager
+    importExportManager = new ImportExportManager(stateManager, '3.0.0');
+    
+    console.log('✅ Phase 4 features initialized: Inline Editor, Templates, Import/Export');
+    
     // Set up UI event handlers
     setupUIHandlers();
     
@@ -193,6 +216,11 @@ async function initialize() {
       renderer,
       vueApp: null, // Will be set after Vue initialization
       version: '3.0.0',
+      
+      // Phase 4: Advanced features
+      inlineEditor,
+      componentTemplates,
+      importExportManager,
       
       // Helper methods
       addComponent: (type, data = {}) => {
@@ -979,111 +1007,101 @@ function openSimpleThemeModal() {
 function exportMediaKit() {
   console.log('Opening export modal...');
   
-  // First, remove any existing export modal to avoid conflicts
-  const existingModal = document.getElementById('export-modal');
-  if (existingModal) {
-    existingModal.remove();
-  }
-  
-  // Check if our modal exists
-  let modal = document.getElementById('gmkb-export-modal');
-  
-  if (!modal) {
-    // Create export modal with unique ID
-    modal = document.createElement('div');
-    modal.id = 'gmkb-export-modal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-      <div class="modal__content">
-        <div class="modal__header">
-          <h2 class="modal__title">Export Media Kit</h2>
-          <button class="modal__close">&times;</button>
-        </div>
-        <div class="modal__body">
-          <div class="export-options">
-            <div class="export-option" data-format="json">
-              <div class="export-option__icon">📄</div>
-              <div class="export-option__title">JSON</div>
-              <div class="export-option__description">For backup and import</div>
-            </div>
-            <div class="export-option" data-format="html">
-              <div class="export-option__icon">🌐</div>
-              <div class="export-option__title">HTML</div>
-              <div class="export-option__description">Static webpage (coming soon)</div>
-            </div>
-            <div class="export-option" data-format="pdf">
-              <div class="export-option__icon">📑</div>
-              <div class="export-option__title">PDF</div>
-              <div class="export-option__description">Document format (coming soon)</div>
-            </div>
-            <div class="export-option" data-format="link">
-              <div class="export-option__icon">🔗</div>
-              <div class="export-option__title">Share Link</div>
-              <div class="export-option__description">Get shareable link (coming soon)</div>
+  // Use the new ImportExportManager if available
+  if (importExportManager) {
+    // Create export modal with new options
+    let modal = document.getElementById('gmkb-export-modal');
+    
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'gmkb-export-modal';
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal__content">
+          <div class="modal__header">
+            <h2 class="modal__title">Export Media Kit</h2>
+            <button class="modal__close">&times;</button>
+          </div>
+          <div class="modal__body">
+            <div class="export-options">
+              <div class="export-option" data-format="json">
+                <div class="export-option__icon">📄</div>
+                <div class="export-option__title">Full Export</div>
+                <div class="export-option__description">Complete media kit with all content</div>
+              </div>
+              <div class="export-option" data-format="template">
+                <div class="export-option__icon">🎨</div>
+                <div class="export-option__title">Template</div>
+                <div class="export-option__description">Structure only, no content</div>
+              </div>
+              <div class="export-option" data-format="with-pods">
+                <div class="export-option__icon">🔗</div>
+                <div class="export-option__title">With Pods Data</div>
+                <div class="export-option__description">Include WordPress custom fields</div>
+              </div>
+              <div class="export-option" data-format="pdf">
+                <div class="export-option__icon">📑</div>
+                <div class="export-option__title">PDF</div>
+                <div class="export-option__description">Document format (coming soon)</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Close button - use direct onclick to avoid conflicts
-    const closeBtn = modal.querySelector('.modal__close');
-    if (closeBtn) {
-      closeBtn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        modal.classList.remove('modal--open');
-        modal.style.display = 'none';
-      };
-    }
-    
-    // Close on backdrop click
-    modal.onclick = function(e) {
-      if (e.target === modal) {
-        modal.classList.remove('modal--open');
-        modal.style.display = 'none';
-      }
-    };
-    
-    // Export options
-    modal.querySelectorAll('.export-option').forEach(option => {
-      option.onclick = function(e) {
-        e.preventDefault();
-        const format = this.dataset.format;
-        
-        if (format === 'json') {
-          // Export as JSON
-          if (!stateManager) {
-            showToast('Export not ready', 'error');
-            return;
-          }
-          
-          const state = stateManager.getState();
-          const dataStr = JSON.stringify(state, null, 2);
-          const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-          
-          const exportFileDefaultName = `media-kit-${Date.now()}.json`;
-          
-          const linkElement = document.createElement('a');
-          linkElement.setAttribute('href', dataUri);
-          linkElement.setAttribute('download', exportFileDefaultName);
-          linkElement.click();
-          
-          showToast('Media kit exported as JSON', 'success');
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Close button
+      const closeBtn = modal.querySelector('.modal__close');
+      if (closeBtn) {
+        closeBtn.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
           modal.classList.remove('modal--open');
           modal.style.display = 'none';
-        } else {
-          showToast(`${format.toUpperCase()} export coming soon`, 'info');
+        };
+      }
+      
+      // Close on backdrop click
+      modal.onclick = function(e) {
+        if (e.target === modal) {
+          modal.classList.remove('modal--open');
+          modal.style.display = 'none';
         }
       };
-    });
+      
+      // Export options
+      modal.querySelectorAll('.export-option').forEach(option => {
+        option.onclick = async function(e) {
+          e.preventDefault();
+          const format = this.dataset.format;
+          
+          if (format === 'json') {
+            await importExportManager.exportMediaKit('json');
+            showToast('Media kit exported as JSON', 'success');
+            modal.classList.remove('modal--open');
+            modal.style.display = 'none';
+          } else if (format === 'template') {
+            await importExportManager.exportMediaKit('template');
+            showToast('Template exported successfully', 'success');
+            modal.classList.remove('modal--open');
+            modal.style.display = 'none';
+          } else if (format === 'with-pods') {
+            await importExportManager.exportMediaKit('json', { includePods: true });
+            showToast('Media kit exported with Pods data', 'success');
+            modal.classList.remove('modal--open');
+            modal.style.display = 'none';
+          } else {
+            showToast(`${format.toUpperCase()} export coming soon`, 'info');
+          }
+        };
+      });
+    }
+    
+    // Show modal
+    modal.classList.add('modal--open');
+    modal.style.display = 'flex';
   }
-  
-  // Show modal with both class and style for compatibility
-  modal.classList.add('modal--open');
-  modal.style.display = 'flex';
 }
 
 function shareMediaKit() {

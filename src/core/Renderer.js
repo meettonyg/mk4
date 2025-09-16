@@ -148,6 +148,7 @@ export class Renderer {
       // Check if this is a Vue component wrapper
       if (typeof renderer === 'object' && renderer.framework === 'vue' && renderer.render) {
         // Vue component wrapper - async render
+        // ROOT FIX: Pass complete component data to Vue renderer
         const vueElement = await renderer.render(component, contentContainer);
         if (vueElement && vueElement.nodeType) {
           contentContainer.appendChild(vueElement);

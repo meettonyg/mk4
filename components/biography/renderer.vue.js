@@ -1,13 +1,9 @@
 /**
  * Biography Component Vue Renderer
- * Browser-compatible version without ES6 imports
+ * ES6 Module version for Vite build
  */
 
-(function() {
-    'use strict';
-    
-    // Use Vue from the global scope (already loaded by the bundle)
-    const { createApp, ref, computed, reactive, onMounted, onUnmounted, h } = Vue;
+import { createApp, ref, computed, reactive, onMounted, onUnmounted, h } from 'vue';
 
 // Full-featured Biography Vue Component
 const BiographyVue = {
@@ -398,7 +394,8 @@ const BiographyVue = {
           h('div', { 
             class: ['biography__text', `biography__text--${state.localFontSize}`],
             innerHTML: formattedBiography.value,
-            onDblclick: startEdit
+            onDblclick: startEdit,
+            'data-editable': 'biography'
           }) :
           
         // Empty State
@@ -457,5 +454,6 @@ export default {
     }
   },
   
-  isVueRenderer: true
+  isVueRenderer: true,
+  framework: 'vue'
 };

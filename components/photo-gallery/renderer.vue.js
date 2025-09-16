@@ -3,8 +3,14 @@ import { createApp } from 'vue';
 import PhotoGallery from './PhotoGallery.vue';
 
 export default {
-    render(container, data = {}) {
+    render(data = {}, container) {
         console.log('🖼️ Rendering Photo Gallery component with data:', data);
+        
+        // Ensure container exists
+        if (!container) {
+            console.error('Photo Gallery Vue renderer: No container provided');
+            return null;
+        }
         
         // Extract Pods data if available
         const podsData = window.gmkbData?.pods_data || {};
@@ -20,7 +26,8 @@ export default {
             columns: data.columns || 3,
             galleryStyle: data.galleryStyle || 'masonry',
             lazyLoad: data.lazyLoad !== false,
-            showCaptions: data.showCaptions !== false
+            showCaptions: data.showCaptions !== false,
+            componentId: data.id || data.componentId || `photo-gallery_${Date.now()}`
         };
         
         const app = createApp(PhotoGallery, mergedData);
@@ -29,12 +36,15 @@ export default {
         app.config.globalProperties.$updateData = (newData) => {
             Object.assign(mergedData, newData);
             app.unmount();
-            this.render(container, mergedData);
+            this.render(mergedData, container);
         };
         
         app.mount(container);
         return app;
     },
+    
+    // Mark as Vue renderer
+    isVueRenderer: true,
     
     // Configuration for the edit panel
     editConfig: {

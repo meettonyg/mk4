@@ -3,8 +3,14 @@ import { createApp } from 'vue';
 import GuestIntro from './GuestIntro.vue';
 
 export default {
-    render(container, data = {}) {
+    render(data = {}, container) {
         console.log('🎭 Rendering Guest Intro component with data:', data);
+        
+        // Ensure container exists
+        if (!container) {
+            console.error('Guest Intro Vue renderer: No container provided');
+            return null;
+        }
         
         // Extract Pods data if available
         const podsData = window.gmkbData?.pods_data || {};
@@ -18,7 +24,8 @@ export default {
             company: data.company || podsData.company || '',
             introduction: data.introduction || podsData.introduction || '',
             tagline: data.tagline || podsData.tagline || '',
-            layout: data.layout || 'centered'
+            layout: data.layout || 'centered',
+            componentId: data.id || data.componentId || `guest-intro_${Date.now()}`
         };
         
         const app = createApp(GuestIntro, mergedData);
@@ -27,12 +34,15 @@ export default {
         app.config.globalProperties.$updateData = (newData) => {
             Object.assign(mergedData, newData);
             app.unmount();
-            this.render(container, mergedData);
+            this.render(mergedData, container);
         };
         
         app.mount(container);
         return app;
     },
+    
+    // Mark as Vue renderer
+    isVueRenderer: true,
     
     // Configuration for the edit panel
     editConfig: {

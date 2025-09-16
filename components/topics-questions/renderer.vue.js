@@ -3,8 +3,14 @@ import { createApp } from 'vue';
 import TopicsQuestions from './TopicsQuestions.vue';
 
 export default {
-    render(container, data = {}) {
+    render(data = {}, container) {
         console.log('📚 Rendering Topics-Questions component with data:', data);
+        
+        // Ensure container exists
+        if (!container) {
+            console.error('Topics-Questions Vue renderer: No container provided');
+            return null;
+        }
         
         // Extract Pods data if available
         const podsData = window.gmkbData?.pods_data || {};
@@ -31,7 +37,8 @@ export default {
             topicsDisplay: data.topicsDisplay || 'cards',
             questionsDisplay: data.questionsDisplay || 'list',
             topicsTitle: data.topicsTitle || 'Topics of Expertise',
-            questionsTitle: data.questionsTitle || 'Interview Questions'
+            questionsTitle: data.questionsTitle || 'Interview Questions',
+            componentId: data.id || data.componentId || `topics-questions_${Date.now()}`
         };
         
         const app = createApp(TopicsQuestions, mergedData);
@@ -40,12 +47,15 @@ export default {
         app.config.globalProperties.$updateData = (newData) => {
             Object.assign(mergedData, newData);
             app.unmount();
-            this.render(container, mergedData);
+            this.render(mergedData, container);
         };
         
         app.mount(container);
         return app;
     },
+    
+    // Mark as Vue renderer
+    isVueRenderer: true,
     
     // Configuration for the edit panel
     editConfig: {
