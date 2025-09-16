@@ -194,6 +194,14 @@ async function initialize() {
     // Initialize import/export manager
     importExportManager = new ImportExportManager(stateManager, '3.0.0');
     
+    // Phase 4: Auto-initialize inline editing after DOM is ready
+    setTimeout(() => {
+      if (inlineEditor) {
+        inlineEditor.init();
+        console.log('✅ Inline editor initialized - double-click text to edit');
+      }
+    }, 1000);
+    
     console.log('✅ Phase 4 features initialized: Inline Editor, Templates, Import/Export');
     
     // Set up UI event handlers
@@ -345,6 +353,12 @@ function setupUIHandlers() {
       btn.hasEventListener = true;
     } else if (action === 'add-section' && !btn.hasEventListener) {
       btn.addEventListener('click', () => addSection());
+      btn.hasEventListener = true;
+    } else if (action === 'open-templates' && !btn.hasEventListener) {
+      btn.addEventListener('click', () => openTemplateLibrary());
+      btn.hasEventListener = true;
+    } else if (action === 'import-media-kit' && !btn.hasEventListener) {
+      btn.addEventListener('click', () => openImportModal());
       btn.hasEventListener = true;
     }
   })
@@ -1158,6 +1172,238 @@ function undo() {
 function redo() {
   showToast('Redo functionality coming soon', 'info');
   // TODO: Integrate with state history
+}
+
+// Phase 4: Template Library Modal
+function openTemplateLibrary() {
+  console.log('Opening template library...');
+  
+  if (!componentTemplates) {
+    showToast('Template system not initialized', 'error');
+    return;
+  }
+  
+  let modal = document.getElementById('template-library-modal');
+  
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'template-library-modal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal__content" style="max-width: 800px;">
+        <div class="modal__header">
+          <h2 class="modal__title">Template Library</h2>
+          <button class="modal__close">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div class="template-categories">
+            <button class="template-category-btn active" data-category="all">All Templates</button>
+            <button class="template-category-btn" data-category="hero">Hero</button>
+            <button class="template-category-btn" data-category="biography">Biography</button>
+            <button class="template-category-btn" data-category="topics">Topics</button>
+            <button class="template-category-btn" data-category="contact">Contact</button>
+          </div>
+          <div class="template-grid" id="template-grid">
+            <!-- Templates will be loaded here -->
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close button
+    modal.querySelector('.modal__close').addEventListener('click', () => {
+      modal.classList.remove('modal--open');
+    });
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('modal--open');
+      }
+    });
+    
+    // Category buttons
+    modal.querySelectorAll('.template-category-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modal.querySelectorAll('.template-category-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const category = btn.dataset.category;
+        renderTemplates(category);
+      });
+    });
+  }
+  
+  // Show modal and render templates
+  modal.classList.add('modal--open');
+  renderTemplates('all');
+}
+
+function renderTemplates(category = 'all') {
+  const grid = document.getElementById('template-grid');
+  if (!grid || !componentTemplates) return;
+  
+  const templates = componentTemplates.templates || {};
+  const filteredTemplates = category === 'all' 
+    ? Object.values(templates)
+    : Object.values(templates).filter(t => t.category === category);
+  
+  if (filteredTemplates.length === 0) {
+    grid.innerHTML = '<p style="text-align: center; color: #94a3b8;">No templates available for this category</p>';
+    return;
+  }
+  
+  grid.innerHTML = filteredTemplates.map(template => `
+    <div class="template-card" data-template-id="${template.id}">
+      <div class="template-preview">
+        ${template.thumbnail ? `<img src="${template.thumbnail}" alt="${template.name}">` : '<div class="template-placeholder">📄</div>'}
+      </div>
+      <h4>${template.name}</h4>
+      <p>${template.description || 'No description'}</p>
+      <button class="btn btn-primary apply-template-btn" data-template="${template.id}" data-component="${template.component || template.category}">
+        Apply Template
+      </button>
+    </div>
+  `).join('');
+  
+  // Add click handlers for apply buttons
+  grid.querySelectorAll('.apply-template-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const templateId = btn.dataset.template;
+      const componentType = btn.dataset.component;
+      const template = templates[templateId];
+      
+      if (template && template.data) {
+        // Add new component with template data
+        window.GMKB.addComponent(componentType, template.data);
+        
+        // Close modal
+        const modal = document.getElementById('template-library-modal');
+        if (modal) {
+          modal.classList.remove('modal--open');
+        }
+        
+        showToast(`Applied ${template.name} template`, 'success');
+      }
+    });
+  });
+}
+
+// Phase 4: Import Modal
+function openImportModal() {
+  console.log('Opening import modal...');
+  
+  if (!importExportManager) {
+    showToast('Import/Export system not initialized', 'error');
+    return;
+  }
+  
+  let modal = document.getElementById('import-modal');
+  
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'import-modal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal__content">
+        <div class="modal__header">
+          <h2 class="modal__title">Import Media Kit</h2>
+          <button class="modal__close">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div style="padding: 20px; text-align: center;">
+            <div style="border: 2px dashed #475569; border-radius: 8px; padding: 40px 20px;">
+              <div style="font-size: 48px; margin-bottom: 20px;">📁</div>
+              <h3 style="color: #e2e8f0; margin-bottom: 10px;">Choose a file to import</h3>
+              <p style="color: #94a3b8; margin-bottom: 20px;">Select a JSON file exported from Media Kit Builder</p>
+              <input type="file" id="import-file-input" accept=".json" style="display: none;">
+              <button class="btn btn-primary" id="import-browse-btn">Browse Files</button>
+            </div>
+            <div id="import-preview" style="display: none; margin-top: 20px; padding: 20px; background: #1e293b; border-radius: 8px;">
+              <h4 style="color: #e2e8f0;">File selected:</h4>
+              <p id="import-filename" style="color: #94a3b8;"></p>
+              <div style="margin-top: 20px;">
+                <button class="btn btn-primary" id="import-confirm-btn">Import</button>
+                <button class="btn btn-secondary" id="import-cancel-btn" style="margin-left: 10px;">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close button
+    modal.querySelector('.modal__close').addEventListener('click', () => {
+      modal.classList.remove('modal--open');
+    });
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('modal--open');
+      }
+    });
+    
+    // File input handlers
+    const fileInput = modal.querySelector('#import-file-input');
+    const browseBtn = modal.querySelector('#import-browse-btn');
+    const preview = modal.querySelector('#import-preview');
+    const filename = modal.querySelector('#import-filename');
+    const confirmBtn = modal.querySelector('#import-confirm-btn');
+    const cancelBtn = modal.querySelector('#import-cancel-btn');
+    
+    let selectedFile = null;
+    
+    browseBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file && file.type === 'application/json') {
+        selectedFile = file;
+        filename.textContent = file.name;
+        preview.style.display = 'block';
+      } else {
+        showToast('Please select a valid JSON file', 'error');
+      }
+    });
+    
+    confirmBtn.addEventListener('click', async () => {
+      if (selectedFile) {
+        try {
+          const text = await selectedFile.text();
+          const data = JSON.parse(text);
+          
+          // Import the media kit
+          await importExportManager.importMediaKit(data);
+          
+          modal.classList.remove('modal--open');
+          showToast('Media kit imported successfully', 'success');
+          
+          // Refresh the page to show imported content
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } catch (error) {
+          console.error('Import error:', error);
+          showToast('Failed to import media kit', 'error');
+        }
+      }
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+      selectedFile = null;
+      preview.style.display = 'none';
+      fileInput.value = '';
+    });
+  }
+  
+  // Show modal
+  modal.classList.add('modal--open');
 }
 
 // Initialize when DOM is ready

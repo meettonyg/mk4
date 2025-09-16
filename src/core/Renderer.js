@@ -60,15 +60,22 @@ export class Renderer {
     this.container.innerHTML = '';
     
     // Add theme class if we're the main container
-    if (this.container.id === 'media-kit-preview' || this.container.id === 'gmkb-preview-area') {
+    if (this.container.id === 'media-kit-preview' || this.container.id === 'gmkb-preview-area' || this.container.id === 'gmkb-sections-container') {
       this.container.className = `preview-area theme-${state.theme || 'default'}`;
     }
     
-    // Render sections or components directly
-    if (hasSections) {
+    // Determine render mode - prefer flat rendering if sections are empty
+    const hasNonEmptySections = hasSections && state.sections.some(s => s.components && s.components.length > 0);
+    
+    if (hasNonEmptySections) {
+      // Render with sections only if sections have components
       await this.renderSections(state);
     } else if (hasComponents) {
+      // Render components directly (flat mode)
       await this.renderComponentsDirectly(state);
+    } else if (hasSections) {
+      // Empty sections - render them to show drop zones
+      await this.renderSections(state);
     }
   }
 
@@ -118,8 +125,21 @@ export class Renderer {
   }
 
   async renderComponentsDirectly(state) {
-    // If no sections, render components directly
-    for (const component of Object.values(state.components)) {
+    // Use layout order if available, otherwise use components object order
+    let componentsToRender = [];
+    
+    if (state.layout && Array.isArray(state.layout)) {
+      // Render in layout order
+      componentsToRender = state.layout
+        .map(id => state.components[id])
+        .filter(Boolean); // Remove any undefined components
+    } else {
+      // Fall back to object values
+      componentsToRender = Object.values(state.components);
+    }
+    
+    // Render each component
+    for (const component of componentsToRender) {
       const componentEl = await this.renderComponent(component);
       if (componentEl) {
         this.container.appendChild(componentEl);

@@ -384,8 +384,18 @@ Fourth paragraph: Personal touch - hobbies, values, or fun facts that make you r
             template: template.id
         };
         
-        // Add component to state
-        stateManager.addComponent(component);
+        // Add component to state using dispatch
+        if (typeof stateManager.dispatch === 'function') {
+            stateManager.dispatch({ 
+                type: 'ADD_COMPONENT', 
+                payload: component 
+            });
+        } else if (typeof stateManager.addComponent === 'function') {
+            stateManager.addComponent(component);
+        } else {
+            console.error('Unable to add component - no compatible method found on state manager');
+            return null;
+        }
         
         console.log(`✅ Applied template: ${template.name}`);
         

@@ -30,7 +30,12 @@ export class InlineEditor {
         // Listen for state changes to update editable elements
         document.addEventListener('gmkb:state-changed', this.updateEditableElements.bind(this));
         
-        console.log('✅ Inline Editor initialized');
+        // Initialize editable elements on existing components
+        setTimeout(() => {
+            this.updateEditableElements();
+        }, 500);
+        
+        console.log('✅ Inline Editor initialized - double-click any text to edit');
     }
     
     handleDoubleClick(e) {
@@ -49,6 +54,12 @@ export class InlineEditor {
     }
     
     startEditing(element, componentId, field) {
+        // Check if element exists
+        if (!element) {
+            console.error('Cannot edit - element not found');
+            return;
+        }
+        
         // Prevent multiple editors
         if (this.isEditing) {
             this.stopEditing(false);
@@ -189,7 +200,12 @@ export class InlineEditor {
             'h2[class*="__title"]',
             'h3[class*="__title"]',
             'p[class*="__text"]',
-            'p[class*="__subtitle"]'
+            'p[class*="__subtitle"]',
+            // Vue component selectors
+            '.vue-hero h1',
+            '.vue-hero h2',
+            '.vue-biography .biography-content',
+            '.vue-component [contenteditable="false"]'
         ];
         
         editableSelectors.forEach(selector => {

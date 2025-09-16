@@ -138,17 +138,49 @@
     // Create and expose global instance
     const registryInstance = new GMKBComponentRegistry();
     
-    // ROOT FIX: Ensure the registry is immediately available with all methods
-    // Some bundlers might try to access it before DOM ready
-    window.GMKBComponentRegistry = registryInstance;
-    
-    // Also expose the class for compatibility
-    window.GMKBComponentRegistryClass = GMKBComponentRegistry;
-    
-    // Ensure register method is available as a direct function for legacy code
-    window.GMKBComponentRegistry.register = function(type, component) {
-        return registryInstance.register(type, component);
-    };
+    // ROOT FIX: Check if a registry already exists from the bundle
+    if (window.GMKBComponentRegistry && window.GMKBComponentRegistry.discover) {
+        // Bundle's registry exists, create compatibility layer
+        console.log('✅ Component Registry: Bundle registry detected, creating compatibility layer');
+        
+        // Add register method to bundle's registry for backward compatibility
+        if (!window.GMKBComponentRegistry.register) {
+            window.GMKBComponentRegistry.register = function(type, component) {
+                // Store in local registry
+                registryInstance.register(type, component);
+                // Also trigger discovery in new system if available
+                if (window.GMKBComponentRegistry.discover) {
+                    window.GMKBComponentRegistry.discover(type);
+                }
+                return true;
+            };
+        }
+        
+        // Add other missing methods
+        window.GMKBComponentRegistry.getRenderer = window.GMKBComponentRegistry.getRenderer || function(type) {
+            return registryInstance.getRenderer(type);
+        };
+        window.GMKBComponentRegistry.getEditor = window.GMKBComponentRegistry.getEditor || function(type) {
+            return registryInstance.getEditor(type);
+        };
+        window.GMKBComponentRegistry.getTypes = window.GMKBComponentRegistry.getTypes || function() {
+            return registryInstance.getTypes();
+        };
+    } else {
+        // No bundle registry, use our instance
+        window.GMKBComponentRegistry = registryInstance;
+        
+        // Also expose the class for compatibility
+        window.GMKBComponentRegistryClass = GMKBComponentRegistry;
+        
+        // Ensure register method is available as a direct function for legacy code
+        // But check first to avoid infinite recursion
+        if (!window.GMKBComponentRegistry.register || window.GMKBComponentRegistry.register !== registryInstance.register) {
+            window.GMKBComponentRegistry.register = function(type, component) {
+                return registryInstance.register(type, component);
+            };
+        }
+    }
     
     // Also attach to GMKB namespace
     window.GMKB.ComponentRegistry = registryInstance;
