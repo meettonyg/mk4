@@ -87,6 +87,28 @@ function mainReducer(state = STATE_SCHEMA, action) {
                 return state;
             }
             
+            // ROOT FIX: If no sections exist, create a default one
+            if (!newState.sections || newState.sections.length === 0) {
+                const defaultSectionId = `section_default_${Date.now()}`;
+                newState.sections = [{
+                    section_id: defaultSectionId,
+                    section_type: 'full_width',
+                    type: 'full_width',
+                    components: [],
+                    layout: {},
+                    section_options: {},
+                    created_at: Date.now(),
+                    updated_at: Date.now()
+                }];
+                console.log('Created default section for new component');
+            }
+            
+            // ROOT FIX: Ensure component has a sectionId
+            if (!component.sectionId && newState.sections.length > 0) {
+                // Assign to first section by default
+                component.sectionId = newState.sections[0].section_id;
+            }
+            
             // Ensure component has required fields
             const normalizedComponent = {
                 id: component.id,
@@ -111,9 +133,9 @@ function mainReducer(state = STATE_SCHEMA, action) {
                 newState.layout = [...newState.layout, component.id];
             }
             
-            // Add to section if specified
-            if (component.sectionId) {
-                newState = addComponentToSection(newState, component.id, component.sectionId);
+            // Add to section
+            if (normalizedComponent.sectionId) {
+                newState = addComponentToSection(newState, component.id, normalizedComponent.sectionId);
             }
             
             break;
@@ -375,7 +397,27 @@ function mainReducer(state = STATE_SCHEMA, action) {
         
         case STATE_ACTIONS.MERGE_STATE: {
             // Deep merge with existing state
-            newState = deepMerge(newState, action.payload);
+            const mergedState = deepMerge(newState, action.payload);
+            
+            // ROOT FIX: If incoming state has no sections but current state has properly configured sections,
+            // don't overwrite them. This prevents localStorage from clearing section assignments.
+            if (action.payload.sections && 
+                Array.isArray(action.payload.sections) && 
+                action.payload.sections.length === 0 &&
+                newState.sections && 
+                newState.sections.length > 0) {
+                // Keep existing sections if they have components assigned
+                const hasAssignedComponents = newState.sections.some(s => 
+                    s.components && s.components.length > 0
+                );
+                
+                if (hasAssignedComponents) {
+                    console.log('Preserving existing sections with assigned components');
+                    mergedState.sections = newState.sections;
+                }
+            }
+            
+            newState = mergedState;
             break;
         }
         
@@ -975,13 +1017,14 @@ export class EnhancedStateManager {
             return {};
         }
         
-        // If it's already in the correct format, return as-is
-        if (data.components && typeof data.components === 'object') {
-            return data;
-        }
+        let processedData = {};
         
+        // If it's already in the correct format, start with that
+        if (data.components && typeof data.components === 'object') {
+            processedData = { ...data };
+        }
         // Convert saved_components array to components object
-        if (data.saved_components && Array.isArray(data.saved_components)) {
+        else if (data.saved_components && Array.isArray(data.saved_components)) {
             const components = {};
             const layout = [];
             
@@ -992,7 +1035,7 @@ export class EnhancedStateManager {
                 }
             });
             
-            return {
+            processedData = {
                 components,
                 layout,
                 sections: data.sections || [],
@@ -1003,9 +1046,101 @@ export class EnhancedStateManager {
                     version: data.version || '2.2.0'
                 }
             };
+        } else {
+            processedData = data;
         }
         
-        return data;
+        // ROOT FIX: Ensure components are properly assigned to sections
+        if (processedData.components && Object.keys(processedData.components).length > 0) {
+            const componentIds = processedData.layout || Object.keys(processedData.components);
+            
+            // If no sections exist, create a default section with all components
+            if (!processedData.sections || processedData.sections.length === 0) {
+                processedData.sections = [{
+                    section_id: `section_default_${Date.now()}`,
+                    section_type: 'full_width',
+                    type: 'full_width',
+                    components: componentIds.map(id => ({
+                        component_id: id,
+                        column: 1,
+                        order: componentIds.indexOf(id),
+                        assigned_at: Date.now()
+                    })),
+                    layout: {},
+                    section_options: {},
+                    created_at: Date.now(),
+                    updated_at: Date.now()
+                }];
+                
+                // Mark components as assigned to this section
+                componentIds.forEach(id => {
+                    if (processedData.components[id]) {
+                        processedData.components[id].sectionId = processedData.sections[0].section_id;
+                    }
+                });
+                
+                console.log('Created default section for', componentIds.length, 'components');
+            }
+            // If sections exist but components aren't properly assigned
+            else if (processedData.sections && processedData.sections.length > 0) {
+                // Check if components are properly assigned
+                let assignedComponents = new Set();
+                
+                processedData.sections.forEach(section => {
+                    if (section.components && Array.isArray(section.components)) {
+                        section.components.forEach(comp => {
+                            const compId = typeof comp === 'string' ? comp : comp.component_id;
+                            assignedComponents.add(compId);
+                        });
+                    }
+                });
+                
+                // Find unassigned components
+                const unassignedIds = componentIds.filter(id => !assignedComponents.has(id));
+                
+                if (unassignedIds.length > 0) {
+                    // Add unassigned components to the first section
+                    const firstSection = processedData.sections[0];
+                    if (!firstSection.components) {
+                        firstSection.components = [];
+                    }
+                    
+                    // Convert existing components to proper format if needed
+                    const existingComponents = firstSection.components.map(comp => {
+                        if (typeof comp === 'string') {
+                            return {
+                                component_id: comp,
+                                column: 1,
+                                order: firstSection.components.indexOf(comp),
+                                assigned_at: Date.now()
+                            };
+                        }
+                        return comp;
+                    });
+                    
+                    // Add unassigned components
+                    const newComponents = unassignedIds.map((id, index) => ({
+                        component_id: id,
+                        column: 1,
+                        order: existingComponents.length + index,
+                        assigned_at: Date.now()
+                    }));
+                    
+                    firstSection.components = [...existingComponents, ...newComponents];
+                    
+                    // Mark components as assigned
+                    unassignedIds.forEach(id => {
+                        if (processedData.components[id]) {
+                            processedData.components[id].sectionId = firstSection.section_id;
+                        }
+                    });
+                    
+                    console.log('Assigned', unassignedIds.length, 'unassigned components to first section');
+                }
+            }
+        }
+        
+        return processedData;
     }
     
     /**

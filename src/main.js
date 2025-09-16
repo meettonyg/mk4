@@ -140,21 +140,11 @@ async function initialize() {
     // Load initial state from WordPress or use default
     const initialState = window.gmkbData?.savedState || window.gmkbData?.saved_state || {};
     
-    // Ensure we have default structure
-    if (!initialState.components) initialState.components = {};
-    if (!initialState.sections || !Array.isArray(initialState.sections)) {
-      initialState.sections = [];
-      // Create a default section if we have components but no sections
-      if (Object.keys(initialState.components).length > 0) {
-        initialState.sections = [{
-          section_id: `section_${Date.now()}`,
-          type: 'full_width',
-          components: Object.keys(initialState.components)
-        }];
-      }
-    }
+    // ROOT FIX: Let EnhancedStateManager's processWordPressData handle section assignment
+    // Don't pre-process sections here, let the state manager do it properly
     
     // Create enhanced state manager with initial state
+    // The processWordPressData method will ensure components are properly assigned to sections
     stateManager = new StateManager(initialState);
     
     // Load from localStorage if available
@@ -243,22 +233,8 @@ async function initialize() {
         // ROOT FIX: Enrich component with Pods data
         podsDataIntegration.enrichComponentData(component);
         
-        // Ensure we have at least one section
-        const state = stateManager.getState();
-        if (state.sections.length === 0) {
-          const sectionId = `section_${Date.now()}`;
-          stateManager.dispatch({
-            type: ACTION_TYPES.ADD_SECTION,
-            payload: {
-              section_id: sectionId,
-              type: 'full_width',
-              components: []
-            }
-          });
-          component.sectionId = sectionId;
-        } else {
-          component.sectionId = state.sections[0].section_id;
-        }
+        // ROOT FIX: Let the ADD_COMPONENT action in reducer handle section creation/assignment
+        // Don't duplicate the logic here - the reducer will ensure proper section assignment
         
         stateManager.dispatch({ type: ACTION_TYPES.ADD_COMPONENT, payload: component });
         return componentId;

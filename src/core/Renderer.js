@@ -64,8 +64,16 @@ export class Renderer {
       this.container.className = `preview-area theme-${state.theme || 'default'}`;
     }
     
-    // Determine render mode - prefer flat rendering if sections are empty
-    const hasNonEmptySections = hasSections && state.sections.some(s => s.components && s.components.length > 0);
+    // Determine render mode - prefer section rendering when sections exist
+    // ROOT FIX: Always use sections when they exist and have components assigned
+    const hasNonEmptySections = hasSections && state.sections.some(s => {
+      if (!s.components || !Array.isArray(s.components)) return false;
+      // Check if section actually has valid components
+      return s.components.some(comp => {
+        const componentId = typeof comp === 'string' ? comp : comp.component_id;
+        return state.components[componentId] !== undefined;
+      });
+    });
     
     if (hasNonEmptySections) {
       // Render with sections only if sections have components
@@ -99,8 +107,12 @@ export class Renderer {
     
     // Render components in this section
     if (section.components && section.components.length > 0) {
-      for (const componentId of section.components) {
+      // ROOT FIX: Handle both string IDs and component objects
+      for (const compRef of section.components) {
+        // Extract the component ID from either string or object
+        const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
         const component = state.components[componentId];
+        
         if (component) {
           const componentEl = await this.renderComponent(component);
           if (componentEl) {
