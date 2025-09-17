@@ -350,6 +350,15 @@ function gmkb_enqueue_assets() {
             $version
         );
         
+        // ROOT FIX: Load console API after bundle for command access
+        wp_enqueue_script(
+            'gmkb-console-api',
+            $plugin_url . 'js/console-api.js',
+            array('gmkb-lean-bundle'), // Depends on the bundle being loaded first
+            $version . '-console',
+            true // Load in footer after bundle
+        );
+        
         // Skip all the other individual script enqueues
         return;
     }

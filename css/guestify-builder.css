@@ -29,6 +29,7 @@
 @import url('modules/toolbar.css');
 @import url('modules/sidebar.css');
 @import url('modules/preview.css');
+@import url('sections.css'); /* Phase 3: Section layouts */
 
 /* UI Modules */
 @import url('modules/ui-elements.css');

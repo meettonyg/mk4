@@ -10,6 +10,9 @@ import { createPinia } from 'pinia';
 import VueComponentDiscovery from './loaders/VueComponentDiscovery.js';
 import { initializeEditPanel } from './ui/ComponentEditPanel.js';
 
+// ROOT FIX: Import global commands to ensure they're in the bundle
+import { initializeGlobalCommands } from './global-commands.js';
+
 // Phase 2: Using Enhanced State Manager with reducer pattern
 import { StateManager, ACTION_TYPES } from './core/StateManager.js';
 import { EventBus } from './core/EventBus.js';
@@ -100,6 +103,41 @@ function initializeVue() {
     // Mount the app
     const instance = app.mount('#vue-app');
     
+    // ROOT FIX: Expose Vue app and Pinia globally for access
+    window.gmkbApp = app;
+    window.gmkbVueInstance = instance;
+    window.gmkbPinia = pinia;
+    
+    // ROOT FIX: Also expose direct access to the state manager as a fallback
+    // The actual store is the stateManager, not a Pinia store
+    window.gmkbStore = window.stateManager;
+    
+    // ROOT FIX: Create helper functions for console access
+    window.getSections = () => {
+      const state = window.stateManager?.getState();
+      console.log('Sections:', state?.sections || []);
+      return state?.sections || [];
+    };
+    
+    window.addSection = (type = 'two_column') => {
+      if (window.GMKB?.addSection) {
+        return window.GMKB.addSection(type);
+      }
+      console.error('Section manager not available');
+    };
+    
+    window.removeSection = (sectionId) => {
+      if (window.GMKB?.removeSection) {
+        window.GMKB.removeSection(sectionId);
+      } else {
+        console.error('Section manager not available');
+      }
+    };
+    
+    window.getState = () => {
+      return window.stateManager?.getState() || {};
+    };
+    
     // Make visible briefly to confirm integration
     mountPoint.style.display = 'block';
     instance.isVisible = true;
@@ -111,6 +149,18 @@ function initializeVue() {
     }, 3000);
 
     logger.info('Vue 3 and Pinia initialized successfully');
+    
+    // ROOT FIX: Log available console commands
+    console.log(`
+🎯 Section Commands Available:
+- getSections() - View current sections
+- addSection('two_column') - Add a section
+- removeSection(sectionId) - Remove a section  
+- getState() - View complete state
+- window.stateManager - Direct state access
+- window.gmkbStore - Store reference
+    `);
+    
     return app;
   } catch (error) {
     logger.error('Failed to initialize Vue:', error);
@@ -173,6 +223,11 @@ async function initialize() {
         console.log('✅ Starting with fresh media kit');
       }
     }
+    
+    // ROOT FIX: Expose state manager globally for Vue bundle access
+    window.stateManager = stateManager;
+    window.gmkbStateManager = stateManager;
+    window.gmkbStore = stateManager; // Also expose as store for consistency
     
     // Initialize renderer with correct container ID
     // Try multiple container IDs to find the right one
@@ -268,10 +323,53 @@ async function initialize() {
         stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
       },
       
+      // ROOT FIX: Add section management methods
+      addSection: (type = 'two_column') => {
+        const sectionId = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const section = {
+          id: sectionId,
+          section_id: sectionId,
+          type,
+          components: []
+        };
+        stateManager.dispatch({ type: ACTION_TYPES.ADD_SECTION, payload: section });
+        console.log('✅ Section added:', section);
+        return section;
+      },
+      
+      getSections: () => {
+        const state = stateManager.getState();
+        return state.sections || [];
+      },
+      
+      removeSection: (sectionId) => {
+        stateManager.dispatch({ type: ACTION_TYPES.REMOVE_SECTION, payload: sectionId });
+        console.log('✅ Section removed:', sectionId);
+      },
+      
       save: () => saveState(),
       
       getState: () => stateManager.getState()
     };
+    
+    // ROOT FIX: Also expose section commands globally for easy console access
+    window.addSection = window.GMKB.addSection;
+    window.getSections = window.GMKB.getSections;
+    window.removeSection = window.GMKB.removeSection;
+    window.getState = window.GMKB.getState;
+    
+    // ROOT FIX: Initialize global commands for console access
+    initializeGlobalCommands();
+    
+    // ROOT FIX: Log available commands
+    console.log(`
+🎆 Media Kit Builder Commands Available:
+- addSection('two_column') - Create a new section
+- getSections() - View all sections
+- removeSection(sectionId) - Remove a section
+- getState() - View complete state
+- GMKB.addComponent(type) - Add a component
+    `);
     
     // Initialize Vue.js after core systems
     vueApp = initializeVue();
@@ -315,6 +413,9 @@ function setupUIHandlers() {
   
   // Setup sidebar tab switching
   setupSidebarTabs();
+  
+  // Setup layout panel options
+  setupLayoutPanel();
   // Save button
   const saveBtn = document.getElementById('save-btn');
   if (saveBtn) {
@@ -485,6 +586,63 @@ function setupSidebarTabs() {
       });
     });
   });
+}
+
+function setupLayoutPanel() {
+  console.log('Setting up layout panel handlers...');
+  
+  // Handle layout option clicks
+  const layoutOptions = document.querySelectorAll('.layout-option');
+  layoutOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const layoutType = option.dataset.layout;
+      
+      // Remove active class from all options
+      layoutOptions.forEach(opt => opt.classList.remove('layout-option--active'));
+      
+      // Add active class to clicked option
+      option.classList.add('layout-option--active');
+      
+      console.log(`Layout selected: ${layoutType}`);
+      
+      // When a layout is clicked, add a new section of that type
+      if (layoutType === 'full-width') {
+        window.GMKB.addSection('full_width');
+        showToast('Full Width section added', 'success');
+      } else if (layoutType === 'two-column') {
+        window.GMKB.addSection('two_column');
+        showToast('Two Column section added', 'success');
+      } else if (layoutType === 'three-column') {
+        window.GMKB.addSection('three_column');
+        showToast('Three Column section added', 'success');
+      } else if (layoutType === 'sidebar' || layoutType === 'main-sidebar') {
+        window.GMKB.addSection('sidebar');
+        showToast('Main + Sidebar section added', 'success');
+      }
+    });
+  });
+  
+  // Handle Add Section button in layout tab
+  const addSectionBtn = document.getElementById('add-section-btn');
+  if (addSectionBtn) {
+    addSectionBtn.addEventListener('click', () => {
+      // Get the active layout option
+      const activeLayout = document.querySelector('.layout-option--active');
+      const layoutType = activeLayout ? activeLayout.dataset.layout : 'full-width';
+      
+      // Map layout type to section type
+      let sectionType = 'full_width';
+      if (layoutType === 'two-column') sectionType = 'two_column';
+      else if (layoutType === 'three-column') sectionType = 'three_column';
+      else if (layoutType === 'sidebar' || layoutType === 'main-sidebar') sectionType = 'sidebar';
+      
+      // Add the section
+      window.GMKB.addSection(sectionType);
+      showToast(`${layoutType} section added`, 'success');
+    });
+  }
+  
+  console.log('Layout panel handlers attached');
 }
 
 function setupComponentHandlers() {

@@ -49,52 +49,89 @@
     padding: 10px;
 }
 
-/* Section Controls */
-.gmkb-section__controls {
+/* Section Controls - Professional Styling */
+.section-controls {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
     display: flex;
-    gap: 5px;
+    gap: 4px;
     opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: 10;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 5px;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.98);
+    padding: 4px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-.gmkb-section:hover .gmkb-section__controls {
+.gmkb-section:hover .section-controls {
     opacity: 1;
+    visibility: visible;
 }
 
-.gmkb-section__control {
-    width: 30px;
-    height: 30px;
+.section-controls .control-btn {
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 3px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
+    padding: 0;
+    color: #64748b;
 }
 
-.gmkb-section__control:hover {
-    background: #f0f0f0;
-    border-color: #999;
+.section-controls .control-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    stroke-width: 2;
+    pointer-events: none;
 }
 
-.gmkb-section__control--move {
-    cursor: move;
+.section-controls .control-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b;
+    transform: translateY(-1px);
 }
 
-.gmkb-section__control .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
+.section-controls .control-btn:active {
+    transform: translateY(0);
+}
+
+/* Specific button hover states */
+.section-controls .control-btn--delete:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.section-controls .control-btn--settings:hover {
+    background: #f0f9ff;
+    border-color: #7dd3fc;
+    color: #0284c7;
+}
+
+.section-controls .control-btn--move-up:hover,
+.section-controls .control-btn--move-down:hover {
+    background: #faf5ff;
+    border-color: #c4b5fd;
+    color: #7c3aed;
+}
+
+/* Disabled state for boundary sections */
+.gmkb-section:first-child .control-btn--move-up,
+.gmkb-section:last-child .control-btn--move-down {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 /* Empty Section Placeholder */
@@ -158,7 +195,8 @@
 }
 
 /* Main + Sidebar Section */
-.gmkb-section--main_sidebar .gmkb-section__inner {
+.gmkb-section--main_sidebar .gmkb-section__inner,
+.gmkb-section--sidebar .gmkb-section__inner {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: var(--gmkb-column-gap, 40px);
@@ -199,6 +237,46 @@
     100% {
         background: transparent;
         transform: scale(1);
+    }
+}
+
+/* DROP ZONES - Enhanced visibility for multi-column sections */
+.gmkb-section__drop-zone {
+    min-height: 80px;
+    padding: 20px;
+    text-align: center;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    background: rgba(248, 250, 252, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.gmkb-section__drop-text {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.7;
+    user-select: none;
+}
+
+.gmkb-section__drop-zone:hover {
+    border-color: #0ea5e9;
+    background: rgba(14, 165, 233, 0.05);
+}
+
+.gmkb-section__drop-zone:hover .gmkb-section__drop-text {
+    color: #0ea5e9;
+    opacity: 1;
+}
+
+/* Ensure columns with content don't show drop zones */
+.gmkb-section__column:has(.gmkb-component),
+.gmkb-section__content:has(.gmkb-component) {
+    .gmkb-section__drop-zone {
+        display: none;
     }
 }
 

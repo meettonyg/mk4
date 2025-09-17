@@ -98,41 +98,206 @@ export class Renderer {
 
   async renderSection(section, state) {
     const sectionEl = document.createElement('div');
-    sectionEl.className = `gmkb-section gmkb-section--${section.type || 'full-width'}`;
+    sectionEl.className = `gmkb-section gmkb-section--${section.type || 'full_width'}`;
     sectionEl.setAttribute('data-section-id', section.section_id);
+    sectionEl.setAttribute('data-section-type', section.type || 'full_width');
     
-    // Create section content wrapper
-    const contentEl = document.createElement('div');
-    contentEl.className = 'gmkb-section__content';
+    // Create inner container for proper structure
+    const innerContainer = document.createElement('div');
+    innerContainer.className = 'gmkb-section__inner';
     
-    // Render components in this section
-    if (section.components && section.components.length > 0) {
-      // ROOT FIX: Handle both string IDs and component objects
-      for (const compRef of section.components) {
-        // Extract the component ID from either string or object
-        const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-        const component = state.components[componentId];
+    // ROOT FIX: Create proper multi-column structure based on section type
+    if (section.type === 'two_column') {
+      // Two column layout with proper drop zones
+      innerContainer.innerHTML = `
+        <div class="gmkb-section__column gmkb-section__column--1 gmkb-section__column--left" 
+             data-drop-zone="true" 
+             data-column="left"
+             data-column-index="1">
+          <div class="gmkb-section__drop-zone">
+            <span class="gmkb-section__drop-text">Drop to Column 1</span>
+          </div>
+        </div>
+        <div class="gmkb-section__column gmkb-section__column--2 gmkb-section__column--right" 
+             data-drop-zone="true" 
+             data-column="right"
+             data-column-index="2">
+          <div class="gmkb-section__drop-zone">
+            <span class="gmkb-section__drop-text">Drop to Column 2</span>
+          </div>
+        </div>
+      `;
+      
+      // Render components into appropriate columns
+      if (section.components && section.components.length > 0) {
+        const leftColumn = innerContainer.querySelector('.gmkb-section__column--left');
+        const rightColumn = innerContainer.querySelector('.gmkb-section__column--right');
         
-        if (component) {
-          const componentEl = await this.renderComponent(component);
-          if (componentEl) {
-            contentEl.appendChild(componentEl);
+        // Clear drop zone text when components exist
+        leftColumn.innerHTML = '';
+        rightColumn.innerHTML = '';
+        
+        for (const compRef of section.components) {
+          const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
+          const component = state.components[componentId];
+          
+          if (component) {
+            const componentEl = await this.renderComponent(component);
+            if (componentEl) {
+              // Place component in appropriate column based on columnIndex
+              const columnIndex = component.columnIndex || 1;
+              if (columnIndex === 2) {
+                rightColumn.appendChild(componentEl);
+              } else {
+                leftColumn.appendChild(componentEl);
+              }
+            }
           }
         }
       }
-    } else {
-      // Empty section placeholder
-      contentEl.innerHTML = `
-        <div class="gmkb-section__empty" data-drop-zone="true">
-          <p>Drop components here</p>
+      
+    } else if (section.type === 'three_column') {
+      // Three column layout with proper drop zones
+      innerContainer.innerHTML = `
+        <div class="gmkb-section__column gmkb-section__column--1 gmkb-section__column--left" 
+             data-drop-zone="true" 
+             data-column="left"
+             data-column-index="1">
+          <div class="gmkb-section__drop-zone">
+            <span class="gmkb-section__drop-text">Drop to Column 1</span>
+          </div>
+        </div>
+        <div class="gmkb-section__column gmkb-section__column--2 gmkb-section__column--center" 
+             data-drop-zone="true" 
+             data-column="center"
+             data-column-index="2">
+          <div class="gmkb-section__drop-zone">
+            <span class="gmkb-section__drop-text">Drop to Column 2</span>
+          </div>
+        </div>
+        <div class="gmkb-section__column gmkb-section__column--3 gmkb-section__column--right" 
+             data-drop-zone="true" 
+             data-column="right"
+             data-column-index="3">
+          <div class="gmkb-section__drop-zone">
+            <span class="gmkb-section__drop-text">Drop to Column 3</span>
+          </div>
         </div>
       `;
+      
+      // Render components into appropriate columns
+      if (section.components && section.components.length > 0) {
+        const columns = innerContainer.querySelectorAll('.gmkb-section__column');
+        
+        // Clear drop zone text when components exist
+        columns.forEach(col => col.innerHTML = '');
+        
+        for (const compRef of section.components) {
+          const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
+          const component = state.components[componentId];
+          
+          if (component) {
+            const componentEl = await this.renderComponent(component);
+            if (componentEl) {
+              // Place component in appropriate column based on columnIndex
+              const columnIndex = Math.min(component.columnIndex || 1, 3);
+              const targetColumn = columns[columnIndex - 1];
+              if (targetColumn) {
+                targetColumn.appendChild(componentEl);
+              }
+            }
+          }
+        }
+      }
+      
+    } else if (section.type === 'sidebar' || section.type === 'main_sidebar') {
+      // Main + Sidebar layout
+      innerContainer.innerHTML = `
+        <div class="gmkb-section__column gmkb-section__column--1 gmkb-section__column--main" 
+             data-drop-zone="true" 
+             data-column="main"
+             data-column-index="1">
+          <div class="gmkb-section__drop-zone">
+            <span class="gmkb-section__drop-text">Drop to Main Area</span>
+          </div>
+        </div>
+        <div class="gmkb-section__column gmkb-section__column--2 gmkb-section__column--sidebar" 
+             data-drop-zone="true" 
+             data-column="sidebar"
+             data-column-index="2">
+          <div class="gmkb-section__drop-zone">
+            <span class="gmkb-section__drop-text">Drop to Sidebar</span>
+          </div>
+        </div>
+      `;
+      
+      // Render components into appropriate columns
+      if (section.components && section.components.length > 0) {
+        const mainColumn = innerContainer.querySelector('.gmkb-section__column--main');
+        const sidebarColumn = innerContainer.querySelector('.gmkb-section__column--sidebar');
+        
+        // Clear drop zone text when components exist
+        mainColumn.innerHTML = '';
+        sidebarColumn.innerHTML = '';
+        
+        for (const compRef of section.components) {
+          const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
+          const component = state.components[componentId];
+          
+          if (component) {
+            const componentEl = await this.renderComponent(component);
+            if (componentEl) {
+              // Place component in appropriate column based on columnIndex
+              const columnIndex = component.columnIndex || 1;
+              if (columnIndex === 2) {
+                sidebarColumn.appendChild(componentEl);
+              } else {
+                mainColumn.appendChild(componentEl);
+              }
+            }
+          }
+        }
+      }
+      
+    } else {
+      // Full width or default - single content area
+      const contentEl = document.createElement('div');
+      contentEl.className = 'gmkb-section__content';
+      contentEl.setAttribute('data-drop-zone', 'true');
+      contentEl.setAttribute('data-column', 'full');
+      contentEl.setAttribute('data-column-index', '1');
+      
+      // Render components in this section
+      if (section.components && section.components.length > 0) {
+        for (const compRef of section.components) {
+          const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
+          const component = state.components[componentId];
+          
+          if (component) {
+            const componentEl = await this.renderComponent(component);
+            if (componentEl) {
+              contentEl.appendChild(componentEl);
+            }
+          }
+        }
+      } else {
+        // Empty section placeholder
+        contentEl.innerHTML = `
+          <div class="gmkb-section__drop-zone">
+            <span class="gmkb-section__drop-text">Drop components here</span>
+          </div>
+        `;
+      }
+      
+      innerContainer.appendChild(contentEl);
     }
+    
+    // Add inner container to section
+    sectionEl.appendChild(innerContainer);
     
     // Add section controls
     this.addSectionControls(sectionEl, section);
     
-    sectionEl.appendChild(contentEl);
     return sectionEl;
   }
 
@@ -268,14 +433,40 @@ export class Renderer {
     const controls = document.createElement('div');
     controls.className = 'section-controls';
     controls.innerHTML = `
-      <button class="control-btn delete" data-action="delete-section" title="Delete Section">🗑️</button>
-      <button class="control-btn settings" data-action="section-settings" title="Section Settings">⚙️</button>
+      <button class="control-btn control-btn--move-up" data-action="move-section-up" title="Move Section Up">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="19" x2="12" y2="5"></line>
+          <polyline points="5 12 12 5 19 12"></polyline>
+        </svg>
+      </button>
+      <button class="control-btn control-btn--move-down" data-action="move-section-down" title="Move Section Down">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <polyline points="19 12 12 19 5 12"></polyline>
+        </svg>
+      </button>
+      <button class="control-btn control-btn--settings" data-action="section-settings" title="Section Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6m3.22-10.22l4.24-4.24M4.54 7.54l4.24-4.24M20.46 16.46l-4.24-4.24M7.78 13.78l-4.24 4.24"></path>
+        </svg>
+      </button>
+      <button class="control-btn control-btn--delete" data-action="delete-section" title="Delete Section">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
     `;
     
     controls.addEventListener('click', (e) => {
-      const action = e.target.dataset.action;
-      if (action) {
-        this.handleSectionAction(action, section.section_id);
+      e.stopPropagation();
+      const btn = e.target.closest('.control-btn');
+      if (btn) {
+        const action = btn.dataset.action;
+        if (action) {
+          this.handleSectionAction(action, section.section_id);
+        }
       }
     });
     
@@ -290,10 +481,49 @@ export class Renderer {
   }
 
   handleSectionAction(action, sectionId) {
-    // Emit events for section actions
-    document.dispatchEvent(new CustomEvent('gmkb:section-action', {
-      detail: { action, sectionId }
-    }));
+    const state = this.stateManager.getState();
+    const sections = [...state.sections];
+    const sectionIndex = sections.findIndex(s => s.section_id === sectionId);
+    
+    switch (action) {
+      case 'delete-section':
+        if (confirm('Delete this section and all its components?')) {
+          // Emit event for main app to handle
+          document.dispatchEvent(new CustomEvent('gmkb:section-action', {
+            detail: { action, sectionId }
+          }));
+        }
+        break;
+        
+      case 'move-section-up':
+        if (sectionIndex > 0) {
+          [sections[sectionIndex - 1], sections[sectionIndex]] = 
+          [sections[sectionIndex], sections[sectionIndex - 1]];
+          this.stateManager.dispatch({ 
+            type: 'UPDATE_SECTIONS', 
+            payload: sections 
+          });
+        }
+        break;
+        
+      case 'move-section-down':
+        if (sectionIndex < sections.length - 1) {
+          [sections[sectionIndex], sections[sectionIndex + 1]] = 
+          [sections[sectionIndex + 1], sections[sectionIndex]];
+          this.stateManager.dispatch({ 
+            type: 'UPDATE_SECTIONS', 
+            payload: sections 
+          });
+        }
+        break;
+        
+      case 'section-settings':
+        // Emit event for settings panel
+        document.dispatchEvent(new CustomEvent('gmkb:section-action', {
+          detail: { action, sectionId }
+        }));
+        break;
+    }
   }
 
   renderEmptyState() {
