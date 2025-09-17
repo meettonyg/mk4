@@ -411,16 +411,41 @@ export class Renderer {
     const controls = document.createElement('div');
     controls.className = 'component-controls';
     controls.innerHTML = `
-      <button class="control-btn move-up" data-action="move-up" title="Move Up">↑</button>
-      <button class="control-btn move-down" data-action="move-down" title="Move Down">↓</button>
-      <button class="control-btn edit" data-action="edit" title="Edit">✏️</button>
-      <button class="control-btn duplicate" data-action="duplicate" title="Duplicate">📋</button>
-      <button class="control-btn delete" data-action="delete" title="Delete">🗑️</button>
+      <button class="control-btn move-up" data-action="move-up" title="Move Up">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="19" x2="12" y2="5"></line>
+          <polyline points="5 12 12 5 19 12"></polyline>
+        </svg>
+      </button>
+      <button class="control-btn move-down" data-action="move-down" title="Move Down">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <polyline points="19 12 12 19 5 12"></polyline>
+        </svg>
+      </button>
+      <button class="control-btn edit" data-action="edit" title="Edit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+      </button>
+      <button class="control-btn duplicate" data-action="duplicate" title="Duplicate">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+      <button class="control-btn delete" data-action="delete" title="Delete">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
     `;
     
     // Add event listeners
     controls.addEventListener('click', (e) => {
-      const action = e.target.dataset.action;
+      const action = e.target.dataset.action || e.target.closest('[data-action]')?.dataset.action;
       if (action) {
         this.handleComponentAction(action, component.id);
       }

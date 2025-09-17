@@ -321,6 +321,22 @@ function gmkb_enqueue_assets() {
             $version
         );
         
+        // ROOT FIX: Component controls styling with professional SVG icons
+        wp_enqueue_style(
+            'gmkb-component-controls',
+            $plugin_url . 'css/component-controls.css',
+            array('gmkb-lean-styles'),
+            $version
+        );
+        
+        // ROOT FIX: Component library modal styling
+        wp_enqueue_style(
+            'gmkb-component-library',
+            $plugin_url . 'css/component-library.css',
+            array('gmkb-lean-styles'),
+            $version
+        );
+        
         // CRITICAL: Also load theme system even with lean bundle
         // The lean bundle doesn't include the advanced theme customizer
         if (!wp_script_is('gmkb-theme-manager', 'enqueued')) {

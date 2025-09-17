@@ -932,21 +932,59 @@ function renderComponentLibrary() {
   const list = document.getElementById('component-library-list');
   if (!list) return;
   
-  const components = window.gmkbData?.components || [
-    { type: 'hero', name: 'Hero', description: 'Hero section with title and image' },
-    { type: 'biography', name: 'Biography', description: 'Professional biography' },
-    { type: 'topics', name: 'Topics', description: 'Speaking topics list' },
-    { type: 'contact', name: 'Contact', description: 'Contact information' },
-    { type: 'cta', name: 'Call to Action', description: 'CTA button section' },
-    { type: 'testimonials', name: 'Testimonials', description: 'Client testimonials' }
-  ];
+  // ROOT FIX: Get components from multiple sources
+  let components = [];
   
+  // First try to get from gmkbData
+  if (window.gmkbData?.components && Array.isArray(window.gmkbData.components)) {
+    components = window.gmkbData.components;
+  }
+  
+  // If no components from gmkbData, try componentTypes
+  if (components.length === 0 && window.gmkbData?.componentTypes) {
+    // Convert component types to component objects
+    components = window.gmkbData.componentTypes.map(type => ({
+      type: type,
+      name: type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' '),
+      description: `Add ${type} component to your media kit`
+    }));
+  }
+  
+  // If still no components, use default fallback list
+  if (components.length === 0) {
+    components = [
+      { type: 'hero', name: 'Hero', description: 'Hero section with title and image' },
+      { type: 'biography', name: 'Biography', description: 'Professional biography' },
+      { type: 'topics', name: 'Topics', description: 'Speaking topics list' },
+      { type: 'contact', name: 'Contact', description: 'Contact information' },
+      { type: 'social', name: 'Social Media', description: 'Social media links' },
+      { type: 'testimonials', name: 'Testimonials', description: 'Client testimonials' },
+      { type: 'call-to-action', name: 'Call to Action', description: 'CTA button section' },
+      { type: 'questions', name: 'Questions', description: 'FAQ section' },
+      { type: 'stats', name: 'Statistics', description: 'Key numbers and stats' },
+      { type: 'video-intro', name: 'Video Introduction', description: 'Embedded video' },
+      { type: 'photo-gallery', name: 'Photo Gallery', description: 'Image gallery' },
+      { type: 'podcast-player', name: 'Podcast Player', description: 'Audio player' },
+      { type: 'booking-calendar', name: 'Booking Calendar', description: 'Schedule availability' },
+      { type: 'authority-hook', name: 'Authority Hook', description: 'Credibility builder' },
+      { type: 'guest-intro', name: 'Guest Introduction', description: 'Introduction section' },
+      { type: 'logo-grid', name: 'Logo Grid', description: 'Client or partner logos' },
+      { type: 'topics-questions', name: 'Topics & Questions', description: 'Combined topics and Q&A' }
+    ];
+  }
+  
+  console.log('Rendering component library with', components.length, 'components');
+  
+  // Create component cards
   list.innerHTML = components.map(comp => `
     <div class="component-card" data-component-type="${comp.type}">
-      <h3>${comp.name}</h3>
-      <p>${comp.description}</p>
+      <div class="component-card__icon">
+        ${getComponentIcon(comp.type)}
+      </div>
+      <h3 class="component-card__title">${comp.name || comp.type}</h3>
+      <p class="component-card__description">${comp.description || 'No description available'}</p>
       <button class="btn btn-primary add-component-btn" data-type="${comp.type}">
-        Add ${comp.name}
+        Add Component
       </button>
     </div>
   `).join('');
@@ -966,6 +1004,20 @@ function renderComponentLibrary() {
       showToast(`Added ${type} component`, 'success');
     });
   });
+}
+
+// Helper function to get component icons
+function getComponentIcon(type) {
+  const icons = {
+    hero: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
+    biography: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    topics: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+    contact: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    social: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>',
+    testimonials: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>'
+  };
+  
+  return icons[type] || '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>';
 }
 
 function addSection(type = 'full_width') {
