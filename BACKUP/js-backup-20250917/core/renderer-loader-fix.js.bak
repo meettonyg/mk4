@@ -1,0 +1,57 @@
+/**
+ * Temporary fix to ensure the component renderer loads
+ * This addresses the dependency chain issue where the renderer isn't loading
+ */
+(function() {
+    'use strict';
+    
+    console.log('🔧 Renderer loader fix initializing...');
+    
+    // Check if renderer is already loaded
+    if (window.enhancedComponentRenderer) {
+        console.log('✅ Renderer already loaded');
+        return;
+    }
+    
+    // Function to load the renderer
+    const loadRenderer = () => {
+        if (window.enhancedComponentRenderer) {
+            return; // Already loaded
+        }
+        
+        // Check if dependencies are ready
+        if (!window.structuredLogger || !window.enhancedStateManager) {
+            console.log('⏳ Renderer dependencies not ready yet');
+            return;
+        }
+        
+        console.log('📦 Loading component renderer script...');
+        
+        // Load the renderer script
+        const script = document.createElement('script');
+        script.src = window.gmkbData.pluginUrl + 'js/core/enhanced-component-renderer-simplified.js';
+        script.onload = () => {
+            console.log('✅ Renderer script loaded successfully');
+        };
+        script.onerror = () => {
+            console.error('❌ Failed to load renderer script');
+        };
+        document.head.appendChild(script);
+    };
+    
+    // Try to load immediately if dependencies are ready
+    if (window.structuredLogger && window.enhancedStateManager) {
+        loadRenderer();
+    } else {
+        // Wait for core systems to be ready
+        document.addEventListener('gmkb:core-systems-ready', loadRenderer);
+        document.addEventListener('gmkb:state-manager-ready', loadRenderer);
+        
+        // Also try after DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadRenderer);
+        } else {
+            setTimeout(loadRenderer, 100);
+        }
+    }
+})();

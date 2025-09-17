@@ -25,7 +25,7 @@ define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'GMKB_WORDPRESS_COMPATIBLE', true );
 
 // Include primary files
-require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
+require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue-separated.php';
 
 // LEAN ARCHITECTURE: Admin settings for toggling between architectures
 if ( is_admin() ) {

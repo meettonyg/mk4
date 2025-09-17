@@ -1,0 +1,274 @@
+<?php
+/**
+ * Section Renderer
+ * 
+ * ROOT FIX: Server-side rendering of sections with components
+ * Ensures components are rendered on page load, not just via JavaScript
+ */
+
+namespace GMKB\Rendering;
+
+class SectionRenderer {
+    
+    /**
+     * Render all sections with their components
+     */
+    public static function render_sections($post_id) {
+        $output = '';
+        
+        // Get saved state
+        $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+        
+        if (empty($saved_state)) {
+            return '';
+        }
+        
+        // Debug logging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🎨 SectionRenderer: Rendering sections for post ' . $post_id);
+            error_log('🎨 SectionRenderer: Saved state structure: ' . print_r(array_keys($saved_state), true));
+        }
+        
+        // Get sections and components
+        $sections = isset($saved_state['sections']) ? $saved_state['sections'] : array();
+        $components = isset($saved_state['components']) ? $saved_state['components'] : array();
+        
+        // Handle both array and object format for components
+        if (!is_array($components) && is_object($components)) {
+            $components = (array)$components;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🎨 SectionRenderer: Found ' . count($sections) . ' sections and ' . count($components) . ' components');
+        }
+        
+        // If we have sections, render them with their components
+        if (!empty($sections)) {
+            foreach ($sections as $section) {
+                $output .= self::render_section($section, $components, $post_id);
+            }
+        }
+        // If no sections but have components, create a default section
+        elseif (!empty($components)) {
+            $default_section = array(
+                'section_id' => 'section_default_' . time(),
+                'type' => 'full_width',
+                'components' => array()
+            );
+            
+            // Add all components to default section
+            foreach ($components as $component_id => $component) {
+                $default_section['components'][] = array(
+                    'component_id' => $component_id,
+                    'column' => 1
+                );
+            }
+            
+            $output .= self::render_section($default_section, $components, $post_id);
+        }
+        
+        return $output;
+    }
+    
+    /**
+     * Render a single section with its components
+     */
+    private static function render_section($section, $all_components, $post_id) {
+        $section_id = $section['section_id'] ?? 'section_' . uniqid();
+        $section_type = $section['type'] ?? 'full_width';
+        $section_components = $section['components'] ?? array();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🎨 SectionRenderer: Rendering section ' . $section_id . ' with ' . count($section_components) . ' components');
+        }
+        
+        // Start section wrapper
+        $output = '<div class="gmkb-section gmkb-section--' . esc_attr($section_type) . '" ';
+        $output .= 'data-section-id="' . esc_attr($section_id) . '" ';
+        $output .= 'data-section-type="' . esc_attr($section_type) . '">';
+        
+        // ROOT FIX: Don't render ANY controls server-side - JavaScript handles ALL controls
+        // Section controls are added dynamically by SectionControlsUI to avoid duplication
+        // NO CONTROLS should be rendered in PHP - only content structure
+        
+        // Section inner wrapper
+        $output .= '<div class="gmkb-section__inner">';
+        
+        // Handle different section layouts
+        if ($section_type === 'two_column' || $section_type === 'three_column') {
+            $columns = $section_type === 'two_column' ? 2 : 3;
+            
+            for ($col = 1; $col <= $columns; $col++) {
+                $output .= '<div class="gmkb-section__column" data-column="' . $col . '">';
+                
+                // Render components in this column
+                $column_has_components = false;
+                foreach ($section_components as $component_ref) {
+                    $component_id = $component_ref['component_id'] ?? '';
+                    $component_column = $component_ref['column'] ?? 1;
+                    
+                    if ($component_column == $col && isset($all_components[$component_id])) {
+                        $output .= self::render_component($all_components[$component_id], $component_id, $post_id);
+                        $column_has_components = true;
+                    }
+                }
+                
+                // ROOT FIX: Don't add placeholders - JavaScript handles this
+                // JavaScript SectionRenderer will add clickable placeholders with controls
+                
+                $output .= '</div>'; // Close column
+            }
+        } else {
+            // Full width section
+            $output .= '<div class="gmkb-section__content">';
+            
+            // Render all components in this section
+            $section_has_components = false;
+            foreach ($section_components as $component_ref) {
+                $component_id = $component_ref['component_id'] ?? '';
+                
+                if (isset($all_components[$component_id])) {
+                    $output .= self::render_component($all_components[$component_id], $component_id, $post_id);
+                    $section_has_components = true;
+                }
+            }
+            
+            // ROOT FIX: Don't add placeholders - JavaScript handles this
+            // JavaScript SectionRenderer will add clickable placeholders with controls
+            
+            $output .= '</div>'; // Close content
+        }
+        
+        $output .= '</div>'; // Close inner
+        $output .= '</div>'; // Close section
+        
+        return $output;
+    }
+    
+    /**
+     * Render a single component
+     */
+    private static function render_component($component_data, $component_id, $post_id) {
+        $component_type = $component_data['type'] ?? '';
+        $props = $component_data['props'] ?? array();
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🎨 SectionRenderer: Rendering component ' . $component_id . ' of type ' . $component_type);
+        }
+        
+        // Start component wrapper
+        $output = '<div id="' . esc_attr($component_id) . '" ';
+        $output .= 'class="gmkb-component gmkb-component--' . esc_attr($component_type) . '" ';
+        $output .= 'data-component-id="' . esc_attr($component_id) . '" ';
+        $output .= 'data-component-type="' . esc_attr($component_type) . '">';
+        
+        // ROOT FIX: Don't render controls server-side - JavaScript handles this
+        // Controls are added dynamically by ComponentControlsManager to avoid duplication
+        
+        // Component content
+        $output .= '<div class="gmkb-component__content">';
+        
+        // Load component data if integration exists
+        $integration_file = GMKB_PLUGIN_DIR . "components/{$component_type}/data-integration.php";
+        
+        if (file_exists($integration_file)) {
+            require_once $integration_file;
+            
+            // Build the class name
+            $class_name_parts = array_map('ucfirst', explode('-', $component_type));
+            $integration_class = implode('_', $class_name_parts) . '_Data_Integration';
+            
+            if (class_exists($integration_class) && method_exists($integration_class, 'load_component_data')) {
+                // Load component data
+                $component_data = $integration_class::load_component_data($post_id);
+                
+                // Prepare template props
+                if (method_exists($integration_class, 'prepare_template_props')) {
+                    $props = $integration_class::prepare_template_props($component_data, $props);
+                }
+            }
+        }
+        
+        // Get component template
+        $template_file = GMKB_PLUGIN_DIR . "components/{$component_type}/template.php";
+        
+        if (file_exists($template_file)) {
+            // Render template with props
+            ob_start();
+            
+            // Make props available to template
+            extract($props);
+            
+            // Set component ID for template
+            $component_id = $component_id;
+            
+            // Include the template
+            include $template_file;
+            
+            $output .= ob_get_clean();
+        } else {
+            // Fallback rendering
+            $output .= self::render_component_fallback($component_type, $props);
+        }
+        
+        $output .= '</div>'; // Close content
+        $output .= '</div>'; // Close component
+        
+        return $output;
+    }
+    
+    /**
+     * Fallback component rendering
+     */
+    private static function render_component_fallback($component_type, $props) {
+        $output = '<div class="component-fallback">';
+        
+        switch ($component_type) {
+            case 'biography':
+                $bio_content = $props['bio_content'] ?? $props['bio'] ?? $props['content'] ?? '';
+                $name = $props['name'] ?? '';
+                $title = $props['title'] ?? '';
+                
+                if ($name) {
+                    $output .= '<h3>' . esc_html($name) . '</h3>';
+                }
+                if ($title) {
+                    $output .= '<p class="title">' . esc_html($title) . '</p>';
+                }
+                if ($bio_content) {
+                    $output .= '<div class="bio-content">' . wp_kses_post($bio_content) . '</div>';
+                } else {
+                    $output .= '<p>Add your biography here...</p>';
+                }
+                break;
+                
+            case 'topics':
+                $output .= '<h3>Topics</h3>';
+                $topics = $props['topics'] ?? array();
+                if (!empty($topics)) {
+                    $output .= '<ul class="topics-list">';
+                    foreach ($topics as $topic) {
+                        $output .= '<li>' . esc_html($topic) . '</li>';
+                    }
+                    $output .= '</ul>';
+                } else {
+                    $output .= '<p>Add your topics here...</p>';
+                }
+                break;
+                
+            case 'hero':
+                $headline = $props['headline'] ?? 'Welcome';
+                $subheadline = $props['subheadline'] ?? 'Add your subheadline here';
+                $output .= '<h1>' . esc_html($headline) . '</h1>';
+                $output .= '<p>' . esc_html($subheadline) . '</p>';
+                break;
+                
+            default:
+                $output .= '<p>Component: ' . esc_html($component_type) . '</p>';
+                break;
+        }
+        
+        $output .= '</div>';
+        return $output;
+    }
+}
