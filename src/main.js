@@ -172,6 +172,34 @@ function initializeVue() {
 async function initialize() {
   logger.info('🚀 Initializing Media Kit Builder v3.0 with Vue.js');
   
+  // ROOT FIX: Debug Pods data availability
+  setTimeout(() => {
+    console.log('📊 GMKB Debug: Checking Pods data availability...');
+    console.log('  window.gmkbData:', window.gmkbData ? 'Available' : 'Not available');
+    console.log('  window.gmkbVueData:', window.gmkbVueData ? 'Available' : 'Not available');
+    
+    const podsData = window.gmkbData?.pods_data || 
+                     window.gmkbData?.podsData || 
+                     window.gmkbVueData?.pods_data || 
+                     window.gmkbVueData?.podsData || 
+                     {};
+    
+    const fieldCount = Object.keys(podsData).length;
+    console.log(`  Pods fields loaded: ${fieldCount}`);
+    
+    if (fieldCount > 0) {
+      console.log('  Available Pods fields:', Object.keys(podsData));
+      if (podsData.biography) {
+        console.log(`  ✅ Biography field: ${podsData.biography.substring(0, 50)}...`);
+      }
+      if (podsData.guest_biography) {
+        console.log(`  ✅ Guest biography field: ${podsData.guest_biography.substring(0, 50)}...`);
+      }
+    } else {
+      console.log('  ❌ No Pods data available - check post_id and field names');
+    }
+  }, 1000);
+  
   try {
     // Create core instances
     eventBus = new EventBus();
@@ -810,8 +838,74 @@ async function saveState(isAutoSave = false) {
       globalSettings: state.globalSettings || {}
     };
     
-    // Only keep components that are in the layout
-    if (state.layout && Array.isArray(state.layout)) {
+    // ROOT FIX: Save components from sections OR layout
+    const hasSections = state.sections && state.sections.length > 0;
+    
+    if (hasSections) {
+      // When using sections, get components from sections
+      state.sections.forEach(section => {
+        if (section.components && Array.isArray(section.components)) {
+          section.components.forEach(compRef => {
+            // Handle both string IDs and object references
+            const compId = typeof compRef === 'string' ? compRef : (compRef.component_id || compRef.id);
+            
+            if (compId && state.components && state.components[compId]) {
+              const comp = state.components[compId];
+              
+              // Rebuild component with ONLY safe properties
+              const safeComponent = {
+                id: compId,
+                type: comp.type || 'unknown',
+                sectionId: comp.sectionId || section.section_id
+              };
+              
+              // ROOT FIX: Only save component configuration, not Pods content
+              // Configuration settings (layout, display options, etc.)
+              if (comp.config && typeof comp.config === 'object') {
+                safeComponent.config = { ...comp.config };
+              } else {
+                safeComponent.config = {};
+              }
+              
+              // Data source reference (tells component where to fetch data)
+              if (comp.data && typeof comp.data === 'object') {
+                // Only save metadata about data source, not actual content
+                safeComponent.data = {
+                  dataSource: comp.data.dataSource || 'pods',
+                  fields: comp.data.fields || [],
+                  field: comp.data.field || null
+                };
+              } else {
+                safeComponent.data = { dataSource: 'pods' };
+              }
+              
+              // Keep empty props for backward compatibility
+              safeComponent.props = {};
+              
+              // Display settings
+              if (comp.settings && typeof comp.settings === 'object') {
+                safeComponent.settings = {
+                  alignment: comp.settings.alignment,
+                  visibility: comp.settings.visibility,
+                  customClass: comp.settings.customClass
+                };
+              }
+              
+              // Add position if exists
+              if (typeof comp.position === 'number') {
+                safeComponent.position = comp.position;
+              }
+              
+              // Add to components map if not already added
+              if (!cleanState.components[compId]) {
+                cleanState.components[compId] = safeComponent;
+              }
+            }
+          });
+        }
+      });
+    } else if (state.layout && Array.isArray(state.layout)) {
+      // Fallback to flat layout mode (no sections)
       state.layout.forEach(compId => {
         if (state.components && state.components[compId]) {
           const comp = state.components[compId];
@@ -1058,9 +1152,15 @@ function deleteSection(sectionId) {
   
   // Also remove components in this section
   const section = state.sections.find(s => s.section_id === sectionId);
-  if (section && section.components) {
-    section.components.forEach(componentId => {
-      stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
+  if (section && section.components && section.components.length > 0) {
+    section.components.forEach(compRef => {
+      // Handle both string IDs and object references
+      const componentId = typeof compRef === 'string' ? compRef : (compRef.component_id || compRef.id);
+      
+      // Only remove if component exists
+      if (componentId && state.components[componentId]) {
+        stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
+      }
     });
   }
   

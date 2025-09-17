@@ -21,7 +21,8 @@ const BiographyVue = {
   
   setup(props) {
     // ROOT FIX: Use props.biography which already contains the Pods data
-    const podsData = window.gmkbData?.pods_data || {};
+    // ROOT FIX: Get pods data from the correct location
+    const podsData = window.gmkbData?.pods_data || window.gmkbData?.podsData || window.gmkbVueData?.pods_data || window.gmkbVueData?.podsData || {};
     
     // Reactive state - use the biography from props
     const state = reactive({
@@ -443,7 +444,12 @@ export default {
       return null;
     }
     
-    const podsData = window.gmkbData?.pods_data || {};
+    // ROOT FIX: Get Pods data from all possible sources
+    const podsData = window.gmkbData?.pods_data || 
+                     window.gmkbData?.podsData || 
+                     window.gmkbVueData?.pods_data || 
+                     window.gmkbVueData?.podsData || 
+                     {};
     
     // ROOT FIX: Always fetch content from Pods, configuration from component
     // Process received data

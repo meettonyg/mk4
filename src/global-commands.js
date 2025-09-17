@@ -63,7 +63,7 @@ export function initializeGlobalCommands() {
         console.log('Current sections:', state.sections || []);
         return state.sections || [];
       }
-      console.error('State manager not found');
+      // State manager not found - silently return
       return [];
     };
     
@@ -126,7 +126,7 @@ export function initializeGlobalCommands() {
       if (stateManager) {
         return stateManager.getState();
       }
-      console.error('State manager not found');
+      // State manager not found - silently return
       return {};
     };
     

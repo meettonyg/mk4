@@ -64,13 +64,19 @@ const STATE_SCHEMA = {
  * Pure function that returns new state based on action
  */
 function mainReducer(state = STATE_SCHEMA, action) {
-    // Log all actions for debugging
-    if (window.gmkbData?.debugMode) {
+    // Log all actions for debugging (except @@INIT)
+    if (window.gmkbData?.debugMode && action.type !== '@@INIT') {
         console.log('🔄 Reducer:', action.type, action.payload);
+    }
+    
+    // Handle special initialization action
+    if (action.type === '@@INIT') {
+        return state;
     }
     
     // Validate action type
     if (!isValidActionType(action.type)) {
+        // Only warn about non-init actions
         console.warn(`Unknown action type: ${action.type}`);
         return state;
     }

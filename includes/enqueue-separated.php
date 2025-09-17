@@ -97,6 +97,13 @@ function gmkb_enqueue_vue_assets() {
     // Localize data for Vue
     wp_localize_script( 'gmkb-vue-bundle', 'gmkbVueData', $bundle_data );
     
+    // ROOT FIX: Also make data available as gmkbData for component compatibility
+    wp_add_inline_script( 
+        'gmkb-vue-bundle', 
+        'window.gmkbData = window.gmkbVueData;', 
+        'before' 
+    );
+    
     // Vue-specific styles
     gmkb_enqueue_vue_styles();
     
@@ -303,12 +310,14 @@ function gmkb_prepare_vue_data( $post_id ) {
         'restUrl' => rest_url(),
         'nonce' => wp_create_nonce( 'gmkb_nonce' ), // Use gmkb_nonce for consistency with AJAX handlers
         'postId' => $post_id,
+        'post_id' => $post_id, // Also provide snake_case version
         'architecture' => 'vue',
         'version' => '3.0.0',
         'components' => gmkb_get_component_definitions(),
         'themes' => gmkb_get_theme_definitions(),
         'savedState' => gmkb_get_saved_state( $post_id ),
         'podsData' => gmkb_get_pods_data( $post_id ),
+        'pods_data' => gmkb_get_pods_data( $post_id ), // Also provide snake_case version
     );
     
     return apply_filters( 'gmkb_vue_data', $data );
@@ -393,6 +402,70 @@ function gmkb_get_saved_components( $post_id ) {
 }
 
 function gmkb_get_pods_data( $post_id ) {
-    // Your existing Pods data logic
-    return array();
+    // ROOT FIX: Load actual Pods data for JavaScript components
+    if ( ! $post_id || $post_id <= 0 ) {
+        return array();
+    }
+    
+    $pods_data = array();
+    
+    // Biography fields
+    $pods_data['guest_biography'] = get_post_meta( $post_id, 'guest_biography', true );
+    $pods_data['biography'] = get_post_meta( $post_id, 'biography', true );
+    $pods_data['Biography'] = get_post_meta( $post_id, 'Biography', true );
+    $pods_data['bio'] = get_post_meta( $post_id, 'bio', true );
+    $pods_data['biography_short'] = get_post_meta( $post_id, 'biography_short', true );
+    $pods_data['professional_bio'] = get_post_meta( $post_id, 'professional_bio', true );
+    
+    // Guest info fields
+    $pods_data['first_name'] = get_post_meta( $post_id, 'first_name', true );
+    $pods_data['last_name'] = get_post_meta( $post_id, 'last_name', true );
+    $pods_data['guest_title'] = get_post_meta( $post_id, 'guest_title', true );
+    $pods_data['tagline'] = get_post_meta( $post_id, 'tagline', true );
+    $pods_data['company'] = get_post_meta( $post_id, 'company', true );
+    $pods_data['introduction'] = get_post_meta( $post_id, 'introduction', true );
+    
+    // Topics fields (topic_1 through topic_5)
+    for ( $i = 1; $i <= 5; $i++ ) {
+        $field_key = "topic_{$i}";
+        $pods_data[ $field_key ] = get_post_meta( $post_id, $field_key, true );
+    }
+    
+    // Questions fields (question_1 through question_25)
+    for ( $i = 1; $i <= 25; $i++ ) {
+        $field_key = "question_{$i}";
+        $pods_data[ $field_key ] = get_post_meta( $post_id, $field_key, true );
+    }
+    
+    // Contact fields
+    $pods_data['email'] = get_post_meta( $post_id, 'email', true );
+    $pods_data['phone'] = get_post_meta( $post_id, 'phone', true );
+    $pods_data['website'] = get_post_meta( $post_id, 'website', true );
+    $pods_data['linkedin'] = get_post_meta( $post_id, 'linkedin', true );
+    $pods_data['twitter'] = get_post_meta( $post_id, 'twitter', true );
+    $pods_data['facebook'] = get_post_meta( $post_id, 'facebook', true );
+    $pods_data['instagram'] = get_post_meta( $post_id, 'instagram', true );
+    
+    // Other useful fields
+    $pods_data['guest_headshot'] = get_post_meta( $post_id, 'guest_headshot', true );
+    $pods_data['credentials'] = get_post_meta( $post_id, 'credentials', true );
+    $pods_data['achievements'] = get_post_meta( $post_id, 'achievements', true );
+    
+    // Clean up empty values
+    $pods_data = array_filter( $pods_data, function( $value ) {
+        return ! empty( $value );
+    });
+    
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        $field_count = count( $pods_data );
+        error_log( "GMKB: Loaded {$field_count} Pods fields for post {$post_id}" );
+        if ( isset( $pods_data['biography'] ) ) {
+            error_log( "GMKB: Biography field loaded with " . strlen( $pods_data['biography'] ) . " characters" );
+        }
+        if ( isset( $pods_data['guest_biography'] ) ) {
+            error_log( "GMKB: Guest biography field loaded with " . strlen( $pods_data['guest_biography'] ) . " characters" );
+        }
+    }
+    
+    return $pods_data;
 }

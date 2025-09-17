@@ -35,7 +35,7 @@ export class Renderer {
     
     // ROOT FIX: Add render guard to prevent double rendering
     if (this._isRendering) {
-      console.warn('Render already in progress, skipping');
+      // Silently skip if already rendering to prevent race conditions
       return;
     }
     this._isRendering = true;
