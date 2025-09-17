@@ -212,21 +212,65 @@ export class SectionDragDropManager {
   }
 
   addNewComponentToSection(componentType, sectionId) {
-    // Use the global addComponent function but specify the section
-    if (window.GMKB && window.GMKB.addComponent) {
-      const componentId = window.GMKB.addComponent(componentType);
-      
-      // Move it to the correct section if needed
-      setTimeout(() => {
-        const state = this.stateManager.getState();
-        const component = state.components[componentId];
-        if (component && component.sectionId !== sectionId) {
-          this.moveComponentToSection(componentId, component.sectionId, sectionId);
-        }
-      }, 100);
-      
-      console.log(`✅ Added new ${componentType} component to section ${sectionId}`);
+    // ROOT FIX: Properly add component directly to the section
+    // Generate component ID
+    const componentId = `${componentType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create component data with section assignment
+    const componentData = {
+      id: componentId,
+      type: componentType,
+      sectionId: sectionId,
+      props: {},
+      data: {},
+      createdAt: Date.now()
+    };
+    
+    // If using Pods fields, configure the component
+    if (window.gmkbVueData && window.gmkbVueData.podsFields) {
+      const podsConfig = this.getPodsConfigForComponent(componentType);
+      if (podsConfig) {
+        componentData.dataSource = 'pods';
+        componentData.fields = podsConfig.fields;
+        console.log(`✅ Configured ${componentType} component to use Pods fields:`, podsConfig.fields);
+      }
     }
+    
+    // Add component using state manager
+    this.stateManager.addComponent(componentData);
+    
+    // ROOT FIX: Force a render update immediately
+    // The state manager should automatically trigger a render, but let's ensure it happens
+    setTimeout(() => {
+      // Trigger a manual render if needed
+      if (window.GMKB && window.GMKB.renderer) {
+        window.GMKB.renderer.render();
+      }
+      
+      // Also emit state change event
+      this.eventBus.emit('state:changed');
+    }, 100);
+    
+    console.log(`✅ Added new ${componentType} component to section ${sectionId}`);
+  }
+  
+  /**
+   * ROOT FIX: Get Pods configuration for component type
+   */
+  getPodsConfigForComponent(componentType) {
+    const podsFieldMapping = {
+      'biography': {
+        fields: ['biography', 'biography_short']
+      },
+      'guest-intro': {
+        fields: ['first_name', 'last_name', 'guest_title', 'tagline', 'company']
+      },
+      'topics-questions': {
+        fields: ['topic_1', 'topic_2', 'topic_3', 'topic_4', 'question_1', 'question_2', 'question_3', 'question_4', 'question_5']
+      }
+    };
+    
+    return podsFieldMapping[componentType];
   }
 
   updateDraggableComponents() {

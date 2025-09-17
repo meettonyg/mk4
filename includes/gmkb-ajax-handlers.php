@@ -9,6 +9,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Include debug logger
+require_once plugin_dir_path(dirname(__FILE__)) . 'includes/gmkb-debug-logger.php';
+
 class GMKB_Ajax_Handlers {
     
     public function __construct() {
@@ -16,10 +19,14 @@ class GMKB_Ajax_Handlers {
         add_action('wp_ajax_gmkb_get_available_components', array($this, 'get_available_components'));
         add_action('wp_ajax_gmkb_get_themes', array($this, 'get_available_themes'));
         add_action('wp_ajax_gmkb_load_media_kit', array($this, 'load_media_kit'));
+        add_action('wp_ajax_gmkb_save_media_kit', array($this, 'save_media_kit')); // ROOT FIX: Added missing save handler
         
         // ROOT FIX: Add server-side component rendering handler
         add_action('wp_ajax_guestify_render_component', array($this, 'render_component_server'));
         add_action('wp_ajax_nopriv_guestify_render_component', array($this, 'render_component_server'));
+        
+        // Debug endpoint
+        add_action('wp_ajax_gmkb_get_debug_logs', array($this, 'get_debug_logs'));
     }
     
     /**
@@ -201,10 +208,138 @@ class GMKB_Ajax_Handlers {
         $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
         
         if ($saved_state) {
-            wp_send_json_success(array('state' => $saved_state));
+            // ROOT FIX: Use debug logger for detailed tracking
+            $debug_info = GMKB_Debug_Logger::log_load_operation($post_id, $saved_state);
+            
+            wp_send_json_success(array(
+                'state' => $saved_state,
+                'debug' => $debug_info
+            ));
         } else {
             wp_send_json_success(array('state' => null, 'message' => 'No saved state found'));
         }
+    }
+    
+    /**
+     * Save media kit - ROOT FIX: Extract components from sections
+     */
+    public function save_media_kit() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
+        
+        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+        
+        if (!$post_id) {
+            wp_send_json_error('No post ID provided');
+            return;
+        }
+        
+        // Check user capabilities
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error('You do not have permission to edit this media kit');
+            return;
+        }
+        
+        // Get state from POST
+        $state_json = isset($_POST['state']) ? stripslashes($_POST['state']) : '';
+        
+        if (empty($state_json)) {
+            wp_send_json_error('No state data provided');
+            return;
+        }
+        
+        // Decode state
+        $state = json_decode($state_json, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            wp_send_json_error('Invalid JSON data');
+            return;
+        }
+        
+        // ROOT FIX: Properly count components in both formats
+        // Components are stored in the top-level 'components' object AND referenced in sections
+        $components_count = 0;
+        
+        // Count components in the components object (this is the main storage)
+        if (isset($state['components']) && is_array($state['components'])) {
+            // Fix: If components is an object (associative array), count its keys
+            if (count($state['components']) > 0 && !isset($state['components'][0])) {
+                // It's an associative array (object in JS)
+                $components_count = count($state['components']);
+            } else if (isset($state['components'][0])) {
+                // It's an indexed array
+                $components_count = count($state['components']);
+            }
+        }
+        
+        // Count sections and component references in sections
+        $sections_count = 0;
+        $components_in_sections = 0;
+        if (isset($state['sections']) && is_array($state['sections'])) {
+            $sections_count = count($state['sections']);
+            
+            // Count component references in sections
+            foreach ($state['sections'] as $section) {
+                if (isset($section['components']) && is_array($section['components'])) {
+                    $components_in_sections += count($section['components']);
+                }
+            }
+        }
+        
+        // ROOT FIX: Ensure components object is properly maintained
+        // If components in sections but no components object, build it from sections
+        if ($components_count === 0 && $components_in_sections > 0 && !isset($state['components'])) {
+            error_log('GMKB Warning: Components in sections but no components object. State may be corrupted.');
+        }
+        
+        // ROOT FIX: Use debug logger for comprehensive logging
+        $debug_info = GMKB_Debug_Logger::log_save_operation($post_id, $state);
+        
+        // Save the state
+        update_post_meta($post_id, 'gmkb_media_kit_state', $state);
+        
+        // Get data size for debugging
+        $data_size = strlen($state_json);
+        
+        wp_send_json_success(array(
+            'message' => 'Media kit saved successfully',
+            'timestamp' => time(),
+            'post_id' => $post_id,
+            'components_count' => $components_count,
+            'sections_count' => $sections_count,
+            'components_in_sections' => $components_in_sections,
+            'data_size' => $data_size,
+            'save_method' => 'database',
+            'debug' => $debug_info
+        ));
+    }
+    
+    /**
+     * Get debug logs for troubleshooting
+     */
+    public function get_debug_logs() {
+        // Verify nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
+        
+        // Check user capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        $lines = isset($_POST['lines']) ? intval($_POST['lines']) : 100;
+        $logs = GMKB_Debug_Logger::get_recent_logs($lines);
+        
+        wp_send_json_success(array(
+            'logs' => $logs,
+            'lines' => $lines
+        ));
     }
 }
 

@@ -401,6 +401,87 @@ async function initialize() {
     // ROOT FIX: Initialize global commands for console access
     initializeGlobalCommands();
     
+    // ROOT FIX: Add debug commands
+    window.debugGMKB = {
+      showState: () => {
+        const state = stateManager.getState();
+        console.log('Current State:', state);
+        console.log('Components:', Object.keys(state.components || {}).length);
+        console.log('Sections:', (state.sections || []).length);
+        let componentRefs = 0;
+        if (state.sections) {
+          state.sections.forEach(s => {
+            if (s.components) componentRefs += s.components.length;
+          });
+        }
+        console.log('Component references in sections:', componentRefs);
+        return state;
+      },
+      
+      showComponents: () => {
+        const state = stateManager.getState();
+        console.log('Components Map:', state.components);
+        return state.components;
+      },
+      
+      showSections: () => {
+        const state = stateManager.getState();
+        console.log('Sections:', state.sections);
+        return state.sections;
+      },
+      
+      checkComponentInSection: (componentId) => {
+        const state = stateManager.getState();
+        const component = state.components[componentId];
+        if (!component) {
+          console.log('Component not found:', componentId);
+          return null;
+        }
+        console.log('Component:', component);
+        console.log('Assigned to section:', component.sectionId || 'NONE');
+        
+        // Find in sections
+        let foundInSection = null;
+        if (state.sections) {
+          state.sections.forEach(section => {
+            if (section.components) {
+              const found = section.components.find(c => 
+                (typeof c === 'string' ? c : c.component_id) === componentId
+              );
+              if (found) {
+                foundInSection = section.section_id;
+              }
+            }
+          });
+        }
+        console.log('Found in section:', foundInSection || 'NOT FOUND');
+        return { component, foundInSection };
+      },
+      
+      getLogs: async () => {
+        try {
+          const formData = new FormData();
+          formData.append('action', 'gmkb_get_debug_logs');
+          formData.append('nonce', apiService.nonce);
+          formData.append('lines', '50');
+          
+          const response = await fetch(apiService.ajaxUrl, {
+            method: 'POST',
+            body: formData
+          });
+          
+          const result = await response.json();
+          if (result.success && result.data.logs) {
+            console.log('=== GMKB Debug Logs ===');
+            console.log(result.data.logs);
+            return result.data.logs;
+          }
+        } catch (error) {
+          console.error('Failed to get logs:', error);
+        }
+      }
+    };
+    
     // ROOT FIX: Log available commands
     console.log(`
 🎆 Media Kit Builder Commands Available:
@@ -409,6 +490,13 @@ async function initialize() {
 - removeSection(sectionId) - Remove a section
 - getState() - View complete state
 - GMKB.addComponent(type) - Add a component
+
+📊 Debug Commands:
+- debugGMKB.showState() - Show full state with counts
+- debugGMKB.showComponents() - Show components map
+- debugGMKB.showSections() - Show sections array
+- debugGMKB.checkComponentInSection(id) - Check component assignment
+- debugGMKB.getLogs() - Get server debug logs
     `);
     
     // Initialize Vue.js after core systems
@@ -838,125 +926,79 @@ async function saveState(isAutoSave = false) {
       globalSettings: state.globalSettings || {}
     };
     
-    // ROOT FIX: Save components from sections OR layout
-    const hasSections = state.sections && state.sections.length > 0;
-    
-    if (hasSections) {
-      // When using sections, get components from sections
-      state.sections.forEach(section => {
-        if (section.components && Array.isArray(section.components)) {
-          section.components.forEach(compRef => {
-            // Handle both string IDs and object references
-            const compId = typeof compRef === 'string' ? compRef : (compRef.component_id || compRef.id);
-            
-            if (compId && state.components && state.components[compId]) {
-              const comp = state.components[compId];
-              
-              // Rebuild component with ONLY safe properties
-              const safeComponent = {
-                id: compId,
-                type: comp.type || 'unknown',
-                sectionId: comp.sectionId || section.section_id
-              };
-              
-              // ROOT FIX: Only save component configuration, not Pods content
-              // Configuration settings (layout, display options, etc.)
-              if (comp.config && typeof comp.config === 'object') {
-                safeComponent.config = { ...comp.config };
-              } else {
-                safeComponent.config = {};
-              }
-              
-              // Data source reference (tells component where to fetch data)
-              if (comp.data && typeof comp.data === 'object') {
-                // Only save metadata about data source, not actual content
-                safeComponent.data = {
-                  dataSource: comp.data.dataSource || 'pods',
-                  fields: comp.data.fields || [],
-                  field: comp.data.field || null
-                };
-              } else {
-                safeComponent.data = { dataSource: 'pods' };
-              }
-              
-              // Keep empty props for backward compatibility
-              safeComponent.props = {};
-              
-              // Display settings
-              if (comp.settings && typeof comp.settings === 'object') {
-                safeComponent.settings = {
-                  alignment: comp.settings.alignment,
-                  visibility: comp.settings.visibility,
-                  customClass: comp.settings.customClass
-                };
-              }
-              
-              // Add position if exists
-              if (typeof comp.position === 'number') {
-                safeComponent.position = comp.position;
-              }
-              
-              // Add to components map if not already added
-              if (!cleanState.components[compId]) {
-                cleanState.components[compId] = safeComponent;
-              }
-            }
-          });
+    // ROOT FIX: Save components from state.components map directly
+    // The components map is the source of truth
+    if (state.components && typeof state.components === 'object') {
+      Object.entries(state.components).forEach(([compId, comp]) => {
+        // Rebuild component with ONLY safe properties
+        const safeComponent = {
+          id: compId,
+          type: comp.type || 'unknown',
+          sectionId: comp.sectionId || null
+        };
+        
+        // ROOT FIX: Save component configuration properly
+        // For Pods-based components, save the data source info
+        if (comp.dataSource === 'pods' && comp.fields) {
+          safeComponent.dataSource = 'pods';
+          safeComponent.fields = comp.fields;
         }
-      });
-    } else if (state.layout && Array.isArray(state.layout)) {
-      // Fallback to flat layout mode (no sections)
-      state.layout.forEach(compId => {
-        if (state.components && state.components[compId]) {
-          const comp = state.components[compId];
-          
-          // Rebuild component with ONLY safe properties
-          const safeComponent = {
-            id: compId,
-            type: comp.type || 'unknown'
+        
+        // Configuration settings (layout, display options, etc.)
+        if (comp.config && typeof comp.config === 'object') {
+          safeComponent.config = { ...comp.config };
+        } else {
+          safeComponent.config = {};
+        }
+        
+        // Data source reference (tells component where to fetch data)
+        if (comp.data && typeof comp.data === 'object') {
+          // Only save metadata about data source, not actual content
+          safeComponent.data = {
+            dataSource: comp.data.dataSource || comp.dataSource || 'pods',
+            fields: comp.data.fields || comp.fields || [],
+            field: comp.data.field || null
           };
-          
-          // ROOT FIX: Only save component configuration, not Pods content
-          // Configuration settings (layout, display options, etc.)
-          if (comp.config && typeof comp.config === 'object') {
-            safeComponent.config = { ...comp.config };
-          } else {
-            safeComponent.config = {};
-          }
-          
-          // Data source reference (tells component where to fetch data)
-          if (comp.data && typeof comp.data === 'object') {
-            // Only save metadata about data source, not actual content
-            safeComponent.data = {
-              dataSource: comp.data.dataSource || 'pods',
-              field: comp.data.field || null
-            };
-          } else {
-            safeComponent.data = { dataSource: 'pods' };
-          }
-          
-          // Keep empty props for backward compatibility
-          safeComponent.props = {};
-          
-          // Display settings
-          if (comp.settings && typeof comp.settings === 'object') {
-            safeComponent.settings = {
-              alignment: comp.settings.alignment,
-              visibility: comp.settings.visibility,
-              customClass: comp.settings.customClass
-            };
-          }
-          
-          // Add position if exists
-          if (typeof comp.position === 'number') {
-            safeComponent.position = comp.position;
-          }
-          
-          cleanState.components[compId] = safeComponent;
-          cleanState.layout.push(compId);
+        } else if (comp.dataSource || comp.fields) {
+          // Handle components with dataSource/fields at root level
+          safeComponent.data = {
+            dataSource: comp.dataSource || 'pods',
+            fields: comp.fields || [],
+            field: comp.field || null
+          };
+        } else {
+          safeComponent.data = { dataSource: 'manual' };
         }
+        
+        // Keep empty props for backward compatibility
+        safeComponent.props = comp.props || {};
+        
+        // Display settings
+        if (comp.settings && typeof comp.settings === 'object') {
+          safeComponent.settings = {
+            alignment: comp.settings.alignment,
+            visibility: comp.settings.visibility,
+            customClass: comp.settings.customClass
+          };
+        }
+        
+        // Add position if exists
+        if (typeof comp.position === 'number') {
+          safeComponent.position = comp.position;
+        }
+        
+        // Add metadata
+        if (comp.createdAt) {
+          safeComponent.createdAt = comp.createdAt;
+        }
+        if (comp.updatedAt) {
+          safeComponent.updatedAt = comp.updatedAt;
+        }
+        
+        cleanState.components[compId] = safeComponent;
       });
     }
+
     
     // State cleaned and ready to save
     
