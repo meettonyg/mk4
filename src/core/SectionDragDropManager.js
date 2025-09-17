@@ -239,6 +239,12 @@ export class SectionDragDropManager {
     // Add component using state manager
     this.stateManager.addComponent(componentData);
     
+    // ROOT FIX: Log what's happening
+    console.log('Component added to state:', componentData.id);
+    const newState = this.stateManager.getState();
+    console.log('Component in components object?', !!newState.components[componentData.id]);
+    console.log('Total components:', Object.keys(newState.components || {}).length);
+    
     // ROOT FIX: Force a render update immediately
     // The state manager should automatically trigger a render, but let's ensure it happens
     setTimeout(() => {

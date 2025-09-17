@@ -31,36 +31,104 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue-separated.php';
 if ( is_admin() ) {
     require_once GUESTIFY_PLUGIN_DIR . 'admin/gmkb-settings.php';
 }
-require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB CRITICAL: Base_Component_Data_Service.php not found');
+    }
+}
 // Component schemas are now self-contained in each component directory (schema.json)
 
 // PHASE 1 FIX: Include Pods data enrichment system
-require_once GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: component-pods-enrichment.php not found, skipping include');
+    }
+}
 
 // ROOT FIX: Include bi-directional field sync system
-require_once GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: component-field-sync.php not found, skipping include');
+    }
+}
 
 // PHASE 4: Theme Generator for dynamic CSS generation
-require_once GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php';
-require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: class-theme-generator.php not found, skipping include');
+    }
+}
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: theme-ajax-handlers.php not found, skipping include');
+    }
+}
 
 // PHASE 4.2: Theme Customizer AJAX handlers
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: theme-customizer-ajax.php not found, skipping include');
+    }
 }
 
 // PHASE 5: Component Marketplace Ready
 if (is_admin()) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageManager.php';
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageValidator.php';
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageManager.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageManager.php';
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ComponentPackageManager.php not found, skipping include');
+        }
+    }
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageValidator.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageValidator.php';
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ComponentPackageValidator.php not found, skipping include');
+        }
+    }
 }
 
 // PHASE 6: Import/Export System
-require_once GUESTIFY_PLUGIN_DIR . 'includes/export/ExportManager.php';
-require_once GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/export/ExportManager.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/export/ExportManager.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: ExportManager.php not found, skipping include');
+    }
+}
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: ImportManager.php not found, skipping include');
+    }
+}
+
+// ROOT FIX: Removed ajax-output-protection.php patch
+// Fixed at root: disabled polling-detector-injector.php that was corrupting AJAX responses
+// Debug scripts should never inject into production AJAX responses
 
 // ROOT FIX: Single source AJAX handlers - no fallbacks
-require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: gmkb-ajax-handlers.php not found, skipping include');
+    }
+}
 
 // ROOT FIX: Database state inspector for debugging persistence issues
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php')) {
@@ -76,9 +144,27 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php
 // ComponentDiscovery will load schemas when discovering components
 
 // Component system files
-require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
-require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';
-require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB CRITICAL: ComponentDiscovery.php not found');
+    }
+}
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB CRITICAL: ComponentLoader.php not found');
+    }
+}
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB CRITICAL: DesignPanel.php not found');
+    }
+}
 
 // Theme AJAX handlers are loaded with the theme generator
 
@@ -91,14 +177,38 @@ if (defined('WP_DEBUG') && WP_DEBUG) {
     error_log('ARCHITECTURE FIX: No more hard-coded component includes in main plugin');
 }
 
-require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
-require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: enhanced-ajax.php not found, skipping include');
+    }
+}
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: admin-init.php not found, skipping include');
+    }
+}
 
 // ROOT FIX: Include frontend template router for conditional media kit display
-require_once GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: frontend-template-router.php not found, skipping include');
+    }
+}
 
 // PHASE 8: Enhanced Frontend Display with Theme Support
-require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: class-gmkb-frontend-display.php not found, skipping include');
+    }
+}
 
 // Also protect the admin cleanup script loading
 if (is_admin()) {

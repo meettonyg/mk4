@@ -79,8 +79,8 @@ class GMKB_Polling_Detector_Injector {
     }
 }
 
-// Hook into wp_head with high priority to inject before other scripts
-add_action('wp_head', array('GMKB_Polling_Detector_Injector', 'inject_detector'), 1);
-
-// Hook into wp_footer to add debug info
-add_action('wp_footer', array('GMKB_Polling_Detector_Injector', 'add_debug_info'), 1);
+// ROOT FIX: COMPLETELY DISABLE POLLING DETECTOR
+// This was injecting scripts that corrupted AJAX responses
+// Debug features should NEVER inject into production responses
+// add_action('wp_head', array('GMKB_Polling_Detector_Injector', 'inject_detector'), 1);
+// add_action('wp_footer', array('GMKB_Polling_Detector_Injector', 'add_debug_info'), 1);

@@ -407,17 +407,50 @@ async function initialize() {
     window.removeSection = window.GMKB.removeSection;
     window.getState = window.GMKB.getState;
     
+    // ROOT FIX: Add quick diagnostic function
+    window.checkComponents = () => {
+      const state = stateManager.getState();
+      const componentCount = Object.keys(state.components || {}).length;
+      const componentIds = Object.keys(state.components || {});
+      
+      console.log('=== Component Check ===');
+      console.log('Components type:', typeof state.components, Array.isArray(state.components) ? '(ARRAY!)' : '(object)');
+      console.log('Component count:', componentCount);
+      
+      if (componentCount > 0) {
+        console.log('Component IDs:', componentIds);
+        componentIds.forEach(id => {
+          const comp = state.components[id];
+          console.log(`  - ${id}: type=${comp?.type}, section=${comp?.sectionId}`);
+        });
+      } else {
+        console.log('No components in state.components');
+        
+        // Check sections
+        let componentsInSections = 0;
+        state.sections?.forEach(section => {
+          const sectionComps = section.components || [];
+          if (sectionComps.length > 0) {
+            console.log(`Section ${section.section_id} has ${sectionComps.length} components`);
+            componentsInSections += sectionComps.length;
+          }
+        });
+        
+        if (componentsInSections > 0) {
+          console.warn('⚠️ Components exist in sections but NOT in components object!');
+          console.log('This is why save shows 0 components');
+        }
+      }
+      
+      return { componentCount, componentIds, state };
+    };
+    
     // ROOT FIX: Initialize global commands for console access
     initializeGlobalCommands();
     
-    // ROOT FIX: Load test script if available
-    if (window.gmkbData?.debugMode) {
-    const script = document.createElement('script');
-    script.src = window.gmkbData.pluginUrl + 'test-save-fix.js';
-    script.onload = () => console.log('✅ Save fix test functions loaded');
-    script.onerror = () => console.log('⚠️ Test script not found (optional)');
-        document.head.appendChild(script);
-        }
+    // ROOT FIX: Test/debug scripts removed from production
+    // Debug functions can be accessed via debugGMKB object instead
+    // This prevents 404 errors for test-save-fix.js in production
     
     // ROOT FIX: Add debug commands
     window.debugGMKB = {

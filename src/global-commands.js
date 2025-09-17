@@ -39,6 +39,55 @@ Post ID: ${info.postId}
 };
 
 export function initializeGlobalCommands() {
+    // ROOT FIX: Create fix function for orphaned components
+    window.fixOrphanedComponents = () => {
+        const sm = window.stateManager || window.gmkbStateManager;
+        if (!sm) {
+            console.error('State manager not found');
+            return;
+        }
+        
+        const state = sm.getState();
+        let fixed = 0;
+        
+        // Ensure components is an object
+        if (!state.components || Array.isArray(state.components)) {
+            state.components = {};
+        }
+        
+        // Find components in sections that aren't in components object
+        state.sections?.forEach(section => {
+            section.components?.forEach(compRef => {
+                const id = typeof compRef === 'string' ? compRef : compRef.component_id;
+                if (id && !state.components[id]) {
+                    // Add missing component
+                    state.components[id] = {
+                        id: id,
+                        type: id.split('_')[0], // Guess type from ID
+                        sectionId: section.section_id,
+                        props: {},
+                        data: {},
+                        createdAt: Date.now()
+                    };
+                    fixed++;
+                    console.log(`✅ Added ${id} to components object`);
+                }
+            });
+        });
+        
+        if (fixed > 0) {
+            sm.setState(state);
+            console.log(`\n✅ Fixed ${fixed} orphaned components`);
+            console.log('Now try saving again');
+        } else {
+            console.log('✅ No orphaned components found');
+            console.log('Components in state:', Object.keys(state.components || {}));
+        }
+        
+        return fixed;
+    };
+    
+    console.log('✅ Global fix function available: fixOrphanedComponents()');
   // Wait for state manager to be available
   const setupCommands = () => {
     // Find the state manager from various possible locations

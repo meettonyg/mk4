@@ -63,11 +63,25 @@ export class APIService {
       }
     }
     
+    // ROOT FIX: Clean the state before sending
+    const cleanState = {
+      components: state.components || {},
+      layout: state.layout || [],
+      sections: state.sections || [],
+      theme: state.theme || 'default',
+      themeSettings: state.themeSettings || {},
+      globalSettings: state.globalSettings || {}
+    };
+    
+    // ROOT FIX: Log what we're sending
+    console.log('APIService: Sending state with', Object.keys(cleanState.components).length, 'components');
+    console.log('Components being sent:', Object.keys(cleanState.components));
+    
     const formData = new FormData();
     formData.append('action', 'gmkb_save_media_kit');
     formData.append('nonce', this.nonce);
     formData.append('post_id', this.postId);
-    formData.append('state', JSON.stringify(state));
+    formData.append('state', JSON.stringify(cleanState));
     
     console.log('APIService: Saving to post ID:', this.postId);
     
@@ -82,10 +96,34 @@ export class APIService {
       let result;
       
       try {
-        result = JSON.parse(text);
+        // ROOT FIX: Strip out any script tags or HTML before JSON
+        let jsonText = text;
+        
+        // If there's a script tag, find the JSON part
+        if (text.includes('<script>')) {
+          // Try to find the JSON part (starts with { or [)
+          const jsonStart = text.search(/\{|\[/);
+          if (jsonStart !== -1) {
+            jsonText = text.substring(jsonStart);
+            console.warn('APIService: Stripped script tag from response');
+          }
+        }
+        
+        result = JSON.parse(jsonText);
       } catch (e) {
         console.error('APIService: Invalid JSON response:', text);
-        throw new Error('Server returned invalid response');
+        // Try to extract JSON from the response
+        const jsonMatch = text.match(/\{.*\}$/);
+        if (jsonMatch) {
+          try {
+            result = JSON.parse(jsonMatch[0]);
+            console.log('APIService: Extracted JSON from corrupted response');
+          } catch (e2) {
+            throw new Error('Server returned invalid response');
+          }
+        } else {
+          throw new Error('Server returned invalid response');
+        }
       }
       
       if (!result.success) {

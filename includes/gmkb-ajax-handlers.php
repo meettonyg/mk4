@@ -15,6 +15,12 @@ require_once plugin_dir_path(dirname(__FILE__)) . 'includes/gmkb-debug-logger.ph
 class GMKB_Ajax_Handlers {
     
     public function __construct() {
+        // ROOT FIX: Proper error handling for AJAX requests
+        // Only disable display errors in production, not during development
+        if (defined('DOING_AJAX') && DOING_AJAX && !WP_DEBUG) {
+            @ini_set('display_errors', 0);
+            @ini_set('display_startup_errors', 0);
+        }
         // Register missing AJAX handlers
         add_action('wp_ajax_gmkb_get_available_components', array($this, 'get_available_components'));
         add_action('wp_ajax_gmkb_get_themes', array($this, 'get_available_themes'));
@@ -243,6 +249,9 @@ class GMKB_Ajax_Handlers {
      * Save media kit - ROOT FIX: Extract components from sections
      */
     public function save_media_kit() {
+        // ROOT FIX: Fixed at source - disabled polling-detector-injector.php
+        // No need for defensive output buffering
+        
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
             wp_send_json_error('Invalid nonce');
@@ -279,43 +288,36 @@ class GMKB_Ajax_Handlers {
         }
         
         // ROOT FIX: Debug the state structure
-        if (isset($state['components'])) {
-            GMKB_Debug_Logger::log('Components type: ' . gettype($state['components']));
-            if (is_array($state['components'])) {
-                GMKB_Debug_Logger::log('Components is array, count: ' . count($state['components']));
-                if (count($state['components']) > 0) {
-                    // Check if it's associative (object-like) or indexed array
-                    $first_key = array_key_first($state['components']);
-                    GMKB_Debug_Logger::log('First component key: ' . $first_key);
-                    GMKB_Debug_Logger::log('First component value type: ' . gettype($state['components'][$first_key]));
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            if (isset($state['components'])) {
+                GMKB_Debug_Logger::log('Components type: ' . gettype($state['components']));
+                
+                if (is_array($state['components'])) {
+                    GMKB_Debug_Logger::log('Components count: ' . count($state['components']));
+                    if (count($state['components']) > 0) {
+                        $first_key = array_key_first($state['components']);
+                        GMKB_Debug_Logger::log('First component key: ' . $first_key);
+                    }
                 }
+            } else {
+                GMKB_Debug_Logger::log('No components key in state');
             }
-        } else {
-            GMKB_Debug_Logger::log('No components key in state');
         }
         
-        // ROOT FIX: Properly count components in both formats
-        // Components are stored in the top-level 'components' object AND referenced in sections
+        // ROOT FIX: Properly count components
         $components_count = 0;
         
         // Count components in the components object (this is the main storage)
         if (isset($state['components'])) {
-            // ROOT FIX: Check if components is an associative array (object from JSON)
-            // When JavaScript sends an object, PHP decodes it as an associative array
             if (is_array($state['components'])) {
-                // For associative arrays from JS objects, count non-numeric keys
-                $is_assoc = array_keys($state['components']) !== range(0, count($state['components']) - 1);
+                // Simply count the array - PHP handles both indexed and associative arrays
+                $components_count = count($state['components']);
                 
-                if ($is_assoc || !empty($state['components'])) {
-                    // This handles both object-style and array-style components
-                    $components_count = count($state['components']);
-                    
-                    // Log component IDs for debugging
-                    if ($components_count > 0) {
-                        $component_ids = array_keys($state['components']);
-                        GMKB_Debug_Logger::log('Components being saved: ' . implode(', ', array_slice($component_ids, 0, 5)) . 
-                                              ($components_count > 5 ? '... (' . $components_count . ' total)' : ''));
-                    }
+                // Log component IDs for debugging
+                if ($components_count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
+                    $component_ids = array_keys($state['components']);
+                    GMKB_Debug_Logger::log('Components being saved: ' . implode(', ', array_slice($component_ids, 0, 5)) . 
+                                          ($components_count > 5 ? '... (' . $components_count . ' total)' : ''));
                 }
             } else if (is_object($state['components'])) {
                 // If it's a standard object, convert and count
@@ -323,7 +325,7 @@ class GMKB_Ajax_Handlers {
                 $components_count = count($components_array);
                 
                 // Log component IDs for debugging
-                if ($components_count > 0) {
+                if ($components_count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
                     $component_ids = array_keys($components_array);
                     GMKB_Debug_Logger::log('Components being saved (object): ' . implode(', ', array_slice($component_ids, 0, 5)) . 
                                           ($components_count > 5 ? '... (' . $components_count . ' total)' : ''));
@@ -346,9 +348,11 @@ class GMKB_Ajax_Handlers {
         }
         
         // ROOT FIX: Ensure components object is properly maintained
-        // If components in sections but no components object, build it from sections
+        // If components in sections but no components object, log warning
         if ($components_count === 0 && $components_in_sections > 0 && !isset($state['components'])) {
-            error_log('GMKB Warning: Components in sections but no components object. State may be corrupted.');
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB Warning: Components in sections but no components object. State may be corrupted.');
+            }
         }
         
         // ROOT FIX: Use debug logger for comprehensive logging
@@ -360,6 +364,7 @@ class GMKB_Ajax_Handlers {
         // Get data size for debugging
         $data_size = strlen($state_json);
         
+        // Send clean JSON response
         wp_send_json_success(array(
             'message' => 'Media kit saved successfully',
             'timestamp' => time(),
