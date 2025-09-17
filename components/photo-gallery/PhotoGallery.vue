@@ -1,42 +1,61 @@
 <template>
-  <div class="gmkb-photo-gallery">
-    <h3 v-if="title" class="gallery-title">{{ title }}</h3>
-    
-    <div :class="['gallery-grid', `columns-${columns}`, `style-${galleryStyle}`]">
-      <div 
-        v-for="(image, index) in displayImages" 
-        :key="`image-${index}`"
-        :class="['gallery-item', getImageOrientation(image)]"
-        @click="openLightbox(index)"
-      >
-        <img 
-          :src="image.url" 
-          :alt="image.alt || `Gallery image ${index + 1}`"
-          :loading="lazyLoad ? 'lazy' : 'eager'"
-        />
-        <div class="image-overlay">
-          <span class="zoom-icon">🔍</span>
+  <div>
+    <!-- ROOT FIX: Use correct CSS classes that match styles.css -->
+    <div class="photo-gallery-component" :class="[`layout-${galleryStyle}`]">
+      <div class="photo-gallery-container">
+        <h3 v-if="title" class="photo-gallery-title">{{ title }}</h3>
+        
+        <div v-if="displayImages.length > 0" 
+             :class="['photo-gallery-grid', `spacing-medium`]"
+             :data-columns="columns"
+             :data-hover="'zoom'"
+             :data-caption-style="showCaptions ? 'hover' : 'none'">
+          <div 
+            v-for="(image, index) in displayImages" 
+            :key="`image-${index}`"
+            :class="['photo-item', 'image-standard', getImageOrientation(image)]"
+            @click="openLightbox(index)"
+          >
+            <div class="photo-wrapper">
+              <img 
+                class="photo-image"
+                :src="image.url" 
+                :alt="image.alt || `Gallery image ${index + 1}`"
+                :loading="lazyLoad ? 'lazy' : 'eager'"
+              />
+            </div>
+            <div v-if="showCaptions && image.caption" class="photo-caption">
+              {{ image.caption }}
+            </div>
+          </div>
+        </div>
+        <!-- Placeholder when no images -->
+        <div v-else class="photo-gallery-placeholder">
+          <div class="placeholder-content">
+            <div class="placeholder-icon"></div>
+            <p>No images in gallery. Click "Edit" to add photos.</p>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Lightbox -->
     <div v-if="lightboxOpen" class="lightbox" @click="closeLightbox">
-      <div class="lightbox-content" @click.stop>
-        <button class="lightbox-close" @click="closeLightbox">×</button>
-        <button class="lightbox-prev" @click="prevImage" v-if="currentImageIndex > 0">‹</button>
-        <button class="lightbox-next" @click="nextImage" v-if="currentImageIndex < displayImages.length - 1">›</button>
-        
-        <img 
-          :src="displayImages[currentImageIndex].url" 
-          :alt="displayImages[currentImageIndex].alt"
-        />
-        
-        <div v-if="displayImages[currentImageIndex].caption" class="lightbox-caption">
-          {{ displayImages[currentImageIndex].caption }}
-        </div>
+    <div class="lightbox-content" @click.stop>
+      <button class="lightbox-close" @click="closeLightbox">×</button>
+      <button class="lightbox-prev" @click="prevImage" v-if="currentImageIndex > 0">‹</button>
+      <button class="lightbox-next" @click="nextImage" v-if="currentImageIndex < displayImages.length - 1">›</button>
+      
+      <img 
+        :src="displayImages[currentImageIndex].url" 
+        :alt="displayImages[currentImageIndex].alt"
+      />
+      
+      <div v-if="displayImages[currentImageIndex].caption" class="lightbox-caption">
+        {{ displayImages[currentImageIndex].caption }}
       </div>
     </div>
+  </div>
   </div>
 </template>
 
@@ -240,93 +259,8 @@ export default {
 </script>
 
 <style scoped>
-.gmkb-photo-gallery {
-  padding: var(--gmkb-spacing-lg, 1.5rem) 0;
-}
-
-.gallery-title {
-  font-family: var(--gmkb-font-heading, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-  font-size: var(--gmkb-font-size-lg, 1.25rem);
-  font-weight: 600;
-  color: var(--gmkb-color-text, #333);
-  margin-bottom: var(--gmkb-spacing-md, 1rem);
-  text-align: center;
-}
-
-/* Gallery Grid */
-.gallery-grid {
-  display: grid;
-  gap: var(--gmkb-spacing-md, 1rem);
-}
-
-.gallery-grid.columns-1 { grid-template-columns: 1fr; }
-.gallery-grid.columns-2 { grid-template-columns: repeat(2, 1fr); }
-.gallery-grid.columns-3 { grid-template-columns: repeat(3, 1fr); }
-.gallery-grid.columns-4 { grid-template-columns: repeat(4, 1fr); }
-.gallery-grid.columns-5 { grid-template-columns: repeat(5, 1fr); }
-.gallery-grid.columns-6 { grid-template-columns: repeat(6, 1fr); }
-
-/* Gallery Styles */
-.gallery-grid.style-masonry {
-  grid-auto-rows: 200px;
-  grid-auto-flow: dense;
-}
-
-.gallery-grid.style-masonry .orientation-vertical {
-  grid-row: span 2;
-}
-
-.gallery-grid.style-masonry .orientation-horizontal {
-  grid-column: span 2;
-}
-
-.gallery-grid.style-uniform .gallery-item {
-  aspect-ratio: 1;
-}
-
-/* Gallery Items */
-.gallery-item {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--gmkb-border-radius, 8px);
-  cursor: pointer;
-  background: var(--gmkb-color-surface, #f5f5f5);
-}
-
-.gallery-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--gmkb-transition-speed, 0.3s);
-}
-
-.gallery-item:hover img {
-  transform: scale(1.05);
-}
-
-/* Image Overlay */
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity var(--gmkb-transition-speed, 0.3s);
-}
-
-.gallery-item:hover .image-overlay {
-  opacity: 1;
-}
-
-.zoom-icon {
-  font-size: 2rem;
-  color: white;
-}
+/* ROOT FIX: Use external styles.css for component styling */
+/* Only keep lightbox-specific styles that aren't in the external CSS */
 
 /* Lightbox */
 .lightbox {
