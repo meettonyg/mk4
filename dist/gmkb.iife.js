@@ -382,9 +382,31 @@ Current sections: ${window.getSections().length}
       <button class="control-btn duplicate" data-action="duplicate" title="Duplicate">📋</button>
       <button class="control-btn delete" data-action="delete" title="Delete">🗑️</button>
     `,o.addEventListener("click",s=>{const i=s.target.dataset.action;i&&this.handleComponentAction(i,n.id)}),t.appendChild(o)}addSectionControls(t,n){const o=document.createElement("div");o.className="section-controls",o.innerHTML=`
-      <button class="control-btn delete" data-action="delete-section" title="Delete Section">🗑️</button>
-      <button class="control-btn settings" data-action="section-settings" title="Section Settings">⚙️</button>
-    `,o.addEventListener("click",s=>{const i=s.target.dataset.action;i&&this.handleSectionAction(i,n.section_id)}),t.appendChild(o)}handleComponentAction(t,n){document.dispatchEvent(new CustomEvent("gmkb:component-action",{detail:{action:t,componentId:n}}))}handleSectionAction(t,n){document.dispatchEvent(new CustomEvent("gmkb:section-action",{detail:{action:t,sectionId:n}}))}renderEmptyState(){const t=document.getElementById("empty-state");if(t){const o=t.querySelector("#add-first-component"),s=t.querySelector("#add-first-section");o&&!o.hasAttribute("data-listener-attached")&&(o.addEventListener("click",()=>{document.dispatchEvent(new CustomEvent("gmkb:open-component-library"))}),o.setAttribute("data-listener-attached","true")),s&&!s.hasAttribute("data-listener-attached")&&(s.addEventListener("click",()=>{this.addSection()}),s.setAttribute("data-listener-attached","true"));return}this.container.innerHTML=`
+      <button class="control-btn control-btn--move-up" data-action="move-section-up" title="Move Section Up">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="19" x2="12" y2="5"></line>
+          <polyline points="5 12 12 5 19 12"></polyline>
+        </svg>
+      </button>
+      <button class="control-btn control-btn--move-down" data-action="move-section-down" title="Move Section Down">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <polyline points="19 12 12 19 5 12"></polyline>
+        </svg>
+      </button>
+      <button class="control-btn control-btn--settings" data-action="section-settings" title="Section Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6m3.22-10.22l4.24-4.24M4.54 7.54l4.24-4.24M20.46 16.46l-4.24-4.24M7.78 13.78l-4.24 4.24"></path>
+        </svg>
+      </button>
+      <button class="control-btn control-btn--delete" data-action="delete-section" title="Delete Section">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
+    `,o.addEventListener("click",s=>{s.stopPropagation();const i=s.target.closest(".control-btn");if(i){const r=i.dataset.action;r&&this.handleSectionAction(r,n.section_id)}}),t.appendChild(o)}handleComponentAction(t,n){document.dispatchEvent(new CustomEvent("gmkb:component-action",{detail:{action:t,componentId:n}}))}handleSectionAction(t,n){const s=[...this.stateManager.getState().sections],i=s.findIndex(r=>r.section_id===n);switch(t){case"delete-section":confirm("Delete this section and all its components?")&&document.dispatchEvent(new CustomEvent("gmkb:section-action",{detail:{action:t,sectionId:n}}));break;case"move-section-up":i>0&&([s[i-1],s[i]]=[s[i],s[i-1]],this.stateManager.dispatch({type:"UPDATE_SECTIONS",payload:s}));break;case"move-section-down":i<s.length-1&&([s[i],s[i+1]]=[s[i+1],s[i]],this.stateManager.dispatch({type:"UPDATE_SECTIONS",payload:s}));break;case"section-settings":document.dispatchEvent(new CustomEvent("gmkb:section-action",{detail:{action:t,sectionId:n}}));break}}renderEmptyState(){const t=document.getElementById("empty-state");if(t){const o=t.querySelector("#add-first-component"),s=t.querySelector("#add-first-section");o&&!o.hasAttribute("data-listener-attached")&&(o.addEventListener("click",()=>{document.dispatchEvent(new CustomEvent("gmkb:open-component-library"))}),o.setAttribute("data-listener-attached","true")),s&&!s.hasAttribute("data-listener-attached")&&(s.addEventListener("click",()=>{this.addSection()}),s.setAttribute("data-listener-attached","true"));return}this.container.innerHTML=`
       <div class="gmkb-empty-state">
         <h3>No components yet</h3>
         <p>Click "Add Component" to get started</p>

@@ -313,6 +313,14 @@ function gmkb_enqueue_assets() {
             $version
         );
         
+        // ROOT FIX: Section controls styling with professional SVG icons
+        wp_enqueue_style(
+            'gmkb-section-controls',
+            $plugin_url . 'css/section-controls.css',
+            array('gmkb-lean-styles'),
+            $version
+        );
+        
         // CRITICAL: Also load theme system even with lean bundle
         // The lean bundle doesn't include the advanced theme customizer
         if (!wp_script_is('gmkb-theme-manager', 'enqueued')) {

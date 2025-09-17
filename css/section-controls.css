@@ -1,0 +1,291 @@
+/**
+ * Section Controls Styling
+ * Professional SVG-based controls for sections
+ */
+
+/* Section wrapper styles */
+.gmkb-section {
+    position: relative;
+    margin-bottom: 1rem;
+    min-height: 100px;
+    transition: box-shadow 0.3s ease;
+}
+
+.gmkb-section:hover {
+    box-shadow: 0 0 0 2px var(--gmkb-color-primary-alpha, rgba(59, 130, 246, 0.2));
+}
+
+/* Section controls container */
+.section-controls,
+.gmkb-section__controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    padding: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gmkb-section:hover .section-controls,
+.gmkb-section:hover .gmkb-section__controls {
+    opacity: 1;
+}
+
+/* Control button styles */
+.control-btn,
+.gmkb-section__control,
+.gmkb-section__control-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #64748b;
+    padding: 0;
+    font-size: 0;
+    line-height: 0;
+}
+
+.control-btn:hover,
+.gmkb-section__control:hover,
+.gmkb-section__control-btn:hover {
+    background: #f8f9fa;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
+/* Specific button hover states */
+.control-btn--move-up:hover,
+.control-btn--move-down:hover,
+.gmkb-section__control--move-up:hover,
+.gmkb-section__control--move-down:hover {
+    background: #e0f2fe;
+    border-color: #0ea5e9;
+    color: #0ea5e9;
+}
+
+.control-btn--settings:hover,
+.gmkb-section__control--settings:hover,
+.gmkb-section__control-btn--settings:hover {
+    background: #f3e8ff;
+    border-color: #a855f7;
+    color: #a855f7;
+}
+
+.control-btn--delete:hover,
+.gmkb-section__control--delete:hover,
+.gmkb-section__control--remove:hover,
+.gmkb-section__control-btn--remove:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.gmkb-section__control-btn--add:hover {
+    background: #dcfce7;
+    border-color: #22c55e;
+    color: #22c55e;
+}
+
+/* SVG icon styles */
+.control-btn svg,
+.gmkb-section__control svg,
+.gmkb-section__control-btn svg {
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+/* Hide emoji text if present */
+.control-btn span,
+.gmkb-section__control span {
+    display: none;
+}
+
+/* Section inner structure */
+.gmkb-section__inner {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    min-height: 150px;
+}
+
+/* Column styles */
+.gmkb-section__column,
+.gmkb-section__content {
+    flex: 1;
+    min-height: 100px;
+    padding: 1rem;
+    background: var(--gmkb-color-surface-alt, #f8f9fa);
+    border: 2px dashed var(--gmkb-color-border, #e2e8f0);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.gmkb-section__column--left,
+.gmkb-section__column--1 {
+    flex: 1;
+}
+
+.gmkb-section__column--right,
+.gmkb-section__column--2 {
+    flex: 1;
+}
+
+.gmkb-section__column--center,
+.gmkb-section__column--3 {
+    flex: 1;
+}
+
+/* Two column layout */
+.gmkb-section--two_column .gmkb-section__inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Three column layout */
+.gmkb-section--three_column .gmkb-section__inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Sidebar layout */
+.gmkb-section--sidebar .gmkb-section__inner,
+.gmkb-section--main_sidebar .gmkb-section__inner {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+}
+
+/* Drop zone styles */
+.gmkb-section__drop-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    text-align: center;
+    padding: 1rem;
+}
+
+.gmkb-section__drop-text {
+    color: var(--gmkb-color-text-light, #94a3b8);
+    font-size: 14px;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+/* When dragging over */
+.gmkb-section__column.drag-over,
+.gmkb-section__content.drag-over {
+    background: var(--gmkb-color-primary-alpha, rgba(59, 130, 246, 0.1));
+    border-color: var(--gmkb-color-primary, #3b82f6);
+    border-style: solid;
+}
+
+/* When section has components */
+.gmkb-section__column:has(.gmkb-component),
+.gmkb-section__content:has(.gmkb-component) {
+    border-style: solid;
+    background: transparent;
+    padding: 0.5rem;
+}
+
+/* Component wrapper within sections */
+.gmkb-section .gmkb-component {
+    margin-bottom: 1rem;
+}
+
+.gmkb-section .gmkb-component:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .gmkb-section--two_column .gmkb-section__inner,
+    .gmkb-section--three_column .gmkb-section__inner,
+    .gmkb-section--sidebar .gmkb-section__inner,
+    .gmkb-section--main_sidebar .gmkb-section__inner {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-controls,
+    .gmkb-section__controls {
+        top: 5px;
+        right: 5px;
+        gap: 2px;
+        padding: 2px;
+    }
+    
+    .control-btn,
+    .gmkb-section__control,
+    .gmkb-section__control-btn {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .control-btn svg,
+    .gmkb-section__control svg,
+    .gmkb-section__control-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Section type indicators */
+.gmkb-section::before {
+    content: attr(data-section-type);
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gmkb-color-text-light, #94a3b8);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.gmkb-section:hover::before {
+    opacity: 1;
+}
+
+/* Loading state for sections */
+.gmkb-section--loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.gmkb-section--loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border: 2px solid var(--gmkb-color-primary, #3b82f6);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

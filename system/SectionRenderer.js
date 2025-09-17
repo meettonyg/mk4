@@ -76,29 +76,28 @@ class SectionRenderer {
         // Auto-create sections for existing components if needed
         this.autoCreateSectionsForExistingComponents();
         
-        // Render all sections
-        this.renderAllSections();
+        // ROOT FIX: DO NOT render sections here - main Renderer handles it
+        this.logger.info('[SECTION_RENDERER] Skipping initial render (handled by main renderer)');
     }
     
     setupSectionHandlers() {
-        // Listen for section-related events
+        // ROOT FIX: DISABLE auto-rendering to prevent duplicates
+        // The main Renderer.js already handles section rendering
+        // This class should only provide section management utilities
+        
+        // Listen for explicit render requests only
         document.addEventListener('gmkb:render-section', (e) => {
-            this.renderSection(e.detail.sectionId);
+            // Disabled to prevent duplicate rendering
+            this.logger.info('[SECTION_RENDERER] Render request received but ignored (handled by main renderer)');
         });
         
         document.addEventListener('gmkb:render-all-sections', () => {
-            this.renderAllSections();
+            // Disabled to prevent duplicate rendering
+            this.logger.info('[SECTION_RENDERER] Render all request received but ignored (handled by main renderer)');
         });
         
-        // Listen for state changes
-        if (this.stateManager.subscribeGlobal) {
-            this.stateManager.subscribeGlobal((state) => {
-                // Only re-render if sections changed
-                if (this.sectionsChanged(state)) {
-                    this.renderAllSections();
-                }
-            });
-        }
+        // ROOT FIX: DO NOT subscribe to state changes for rendering
+        // Main renderer already handles this
     }
     
     sectionsChanged(newState) {
