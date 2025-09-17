@@ -36,22 +36,17 @@ const BiographyVue = {
       localPreserveLineBreaks: props.preserveLineBreaks !== undefined ? props.preserveLineBreaks : true
     });
     
-    // Log initial state
-    console.log('🎯 Biography: Initial state setup with biography:', state.localBiography ? state.localBiography.substring(0, 50) + '...' : 'empty');
+    // Initial state setup - logging removed for cleaner console
     
     // Watch for prop changes and update local state
     watch(() => props.biography, (newBiography) => {
-      console.log('🔄 Biography prop changed:', newBiography ? newBiography.substring(0, 50) + '...' : 'empty');
       if (!state.isEditing) {
         state.localBiography = newBiography || '';
-        console.log('🔄 Updated localBiography:', state.localBiography ? state.localBiography.substring(0, 50) + '...' : 'empty');
       }
     }, { immediate: true }); // Run immediately on mount
     
     // Format biography for display
     const formattedBiography = computed(() => {
-      console.log('🔍 Biography: Computing formatted biography, localBiography:', state.localBiography);
-      
       // Use localBiography if available, fallback to prop
       const content = state.localBiography || props.biography || '';
       if (!content) return '';
@@ -62,7 +57,6 @@ const BiographyVue = {
         formatted = formatted.replace(/\n/g, '<br>');
         formatted = `<p>${formatted}</p>`;
       }
-      console.log('🔍 Biography: Formatted content:', formatted.substring(0, 100) + '...');
       return formatted;
     });
     
@@ -377,13 +371,7 @@ const BiographyVue = {
       deleteComponent
     } = this;
     
-    console.log('🎨 Biography: Rendering with state:', { 
-      localBiography: state.localBiography?.substring(0, 50) + '...', 
-      showTitle: state.localShowTitle,
-      isEditing: state.isEditing,
-      formattedBiography: formattedBiography ? 'Has content' : 'No content',
-      thisBiography: this.biography?.substring(0, 50) + '...'
-    });
+    // Component rendering - logging removed
     
     return h('div', {
       class: ['biography-component', 'gmkb-component', state.isSelected && 'is-selected'],
@@ -458,9 +446,7 @@ export default {
     const podsData = window.gmkbData?.pods_data || {};
     
     // ROOT FIX: Always fetch content from Pods, configuration from component
-    // Debug what we're receiving
-    console.log('Biography renderer received data:', data);
-    console.log('Available Pods data:', podsData);
+    // Process received data
     
     // Check all possible field names for biography
     const biographyContent = podsData.guest_biography || 
@@ -468,8 +454,7 @@ export default {
                            podsData.Biography || 
                            podsData.bio || 
                            '';
-    
-    console.log('Biography content found:', biographyContent ? biographyContent.substring(0, 100) + '...' : 'NO CONTENT');
+
     
     const props = {
       // Content ALWAYS comes from Pods data
@@ -482,16 +467,13 @@ export default {
       preserveLineBreaks: data.config?.preserveLineBreaks !== undefined ? data.config.preserveLineBreaks : (data.preserveLineBreaks !== undefined ? data.preserveLineBreaks : true),
       componentId: data.id || data.componentId || `biography_${Date.now()}`
     };
-    
-    console.log('Biography props being passed to Vue component:', props);
-    console.log('Biography prop specifically:', props.biography ? props.biography.substring(0, 100) + '...' : 'EMPTY');
+
     
     // ROOT FIX: Force a re-render after mount to ensure content displays
     // Create and mount Vue app
     const app = createApp(BiographyVue, props);
     const instance = app.mount(container);
-    
-    console.log('✅ Biography Vue component mounted with full features');
+
     
     // Force update to ensure content displays
     setTimeout(() => {

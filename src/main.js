@@ -193,7 +193,7 @@ async function initialize() {
       window.gmkbData?.postId
     );
     
-    console.log('APIService initialized with:', { ajaxUrl, nonce: nonce.substring(0, 10) + '...' });
+    // Removed verbose logging for cleaner console
     
     // Initialize Vue component discovery
     await VueComponentDiscovery.initialize();
@@ -326,8 +326,7 @@ async function initialize() {
         // ROOT FIX: Enrich component with Pods data
         podsDataIntegration.enrichComponentData(component);
         
-        // ROOT FIX: Let the ADD_COMPONENT action in reducer handle section creation/assignment
-        // Don't duplicate the logic here - the reducer will ensure proper section assignment
+        // Let the ADD_COMPONENT action in reducer handle section creation/assignment
         
         stateManager.dispatch({ type: ACTION_TYPES.ADD_COMPONENT, payload: component });
         return componentId;
@@ -347,7 +346,6 @@ async function initialize() {
           components: []
         };
         stateManager.dispatch({ type: ACTION_TYPES.ADD_SECTION, payload: section });
-        console.log('✅ Section added:', section);
         return section;
       },
       
@@ -773,10 +771,14 @@ function setupAutoSave() {
   stateManager.subscribe(() => {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
-      if (!isSaving) { // Don't auto-save if manual save in progress
+      // ROOT FIX: Only auto-save if we have a valid nonce and post ID
+      const hasValidNonce = window.gmkbData?.nonce || window.mkcg_vars?.nonce || window.mkcg_nonce;
+      const hasPostId = apiService?.postId && apiService.postId !== 'new' && apiService.postId !== '0';
+      
+      if (!isSaving && hasValidNonce && hasPostId) { 
         saveState(true); // true = auto-save
       }
-    }, 5000); // 5 seconds debounce
+    }, 30000); // 30 seconds debounce (was 5 seconds)
   });
 }
 
@@ -862,21 +864,22 @@ async function saveState(isAutoSave = false) {
       });
     }
     
-    // Log the size reduction
-    const originalSize = JSON.stringify(state).length;
-    const cleanSize = JSON.stringify(cleanState).length;
-    console.log(`Cleaned state size: ${(cleanSize / 1024).toFixed(1)}KB (was ${(originalSize / 1024).toFixed(1)}KB)`);
-    console.log(`Size reduction: ${(100 - (cleanSize / originalSize * 100)).toFixed(1)}%`);
-    console.log('Components cleaned:', Object.keys(cleanState.components).length);
+    // State cleaned and ready to save
     
-    await apiService.save(cleanState);
+    const saveResult = await apiService.save(cleanState);
+    
+    // ROOT FIX: Handle silent failures (like nonce expiry) gracefully
+    if (saveResult?.silent) {
+      // Don't show error for silent failures like expired nonce on auto-save
+      return;
+    }
     
     // ROOT FIX: Clear localStorage after successful database save
     // WordPress is the source of truth, localStorage was just for temporary changes
     if (apiService.postId && apiService.postId !== 'new' && apiService.postId !== '0') {
-      const storageKey = `gmkb_state_post_${apiService.postId}`;
-      localStorage.removeItem(storageKey);
-      console.log(`✅ Cleared temporary localStorage for post ${apiService.postId}`);
+    const storageKey = `gmkb_state_post_${apiService.postId}`;
+    localStorage.removeItem(storageKey);
+    // Removed console.log for cleaner output
     }
     
     if (!isAutoSave) {
@@ -885,9 +888,12 @@ async function saveState(isAutoSave = false) {
     
     logger.success('State saved to WordPress database');
   } catch (error) {
-    logger.error('Save failed:', error);
-    if (!isAutoSave) {
-      showToast('Save failed', 'error');
+    // ROOT FIX: Only log and show errors if not a silent failure
+    if (!error.message?.includes('Invalid nonce')) {
+      logger.error('Save failed:', error);
+      if (!isAutoSave) {
+        showToast('Save failed', 'error');
+      }
     }
   } finally {
     isSaving = false; // ROOT FIX: Reset flag

@@ -89,6 +89,11 @@ export class APIService {
       }
       
       if (!result.success) {
+        // ROOT FIX: Handle nonce errors silently for auto-save
+        if (result.data === 'Invalid nonce') {
+          // Silently fail for auto-save nonce errors
+          return { success: false, silent: true, reason: 'nonce_expired' };
+        }
         throw new Error(result.data?.message || result.data || 'Save failed');
       }
       
