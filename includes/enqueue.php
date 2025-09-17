@@ -188,7 +188,7 @@ function gmkb_enqueue_assets() {
             $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
             if ( empty( $saved_state ) ) {
                 $saved_state = array(
-                    'components' => array(),
+                    'components' => new stdClass(), // Empty object, not array
                     'sections' => array(),
                     'theme' => 'default',
                     'globalSettings' => array()
@@ -365,6 +365,15 @@ function gmkb_enqueue_assets() {
                 true
             );
         }
+        
+        // ROOT FIX: Load components array fix
+        wp_enqueue_script(
+            'gmkb-fix-components-array',
+            $plugin_url . 'fix-components-array.js',
+            array('gmkb-lean-bundle'),
+            $version . '-fix',
+            true
+        );
         
         // ROOT FIX: When using lean bundle, ONLY load the bundle for JavaScript
         // Do NOT load additional scripts that duplicate functionality
@@ -608,7 +617,7 @@ function gmkb_enqueue_assets() {
         
         if ( empty( $saved_state ) ) {
             $saved_state = array(
-                'components' => array(), // Empty array
+                'components' => new stdClass(), // Empty object for JS to interpret as {}
                 'layout' => array(),
                 'globalSettings' => array(),
                 'sections' => array() // PHASE 3 support
@@ -616,7 +625,10 @@ function gmkb_enqueue_assets() {
         } else {
             // Ensure all required fields exist
             if ( !isset( $saved_state['components'] ) ) {
-                $saved_state['components'] = array();
+                $saved_state['components'] = new stdClass(); // Empty object, not array
+            } else if ( is_array( $saved_state['components'] ) && empty( $saved_state['components'] ) ) {
+                // Fix empty array to be empty object
+                $saved_state['components'] = new stdClass();
             }
             if ( !isset( $saved_state['layout'] ) ) {
                 $saved_state['layout'] = array();

@@ -208,12 +208,31 @@ class GMKB_Ajax_Handlers {
         $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
         
         if ($saved_state) {
+            // ROOT FIX: Ensure components is an object for JavaScript
+            if (isset($saved_state['components']) && is_array($saved_state['components']) && empty($saved_state['components'])) {
+                // Convert empty array to empty object for JavaScript
+                $saved_state['components'] = new stdClass();
+                GMKB_Debug_Logger::log('Converted empty components array to object');
+            }
+            
             // ROOT FIX: Use debug logger for detailed tracking
             $debug_info = GMKB_Debug_Logger::log_load_operation($post_id, $saved_state);
             
+            // ROOT FIX: Add component count to response for debugging
+            $components_loaded = 0;
+            if (isset($saved_state['components'])) {
+                if (is_object($saved_state['components'])) {
+                    $components_loaded = count((array)$saved_state['components']);
+                } else if (is_array($saved_state['components'])) {
+                    $components_loaded = count($saved_state['components']);
+                }
+            }
+            
             wp_send_json_success(array(
                 'state' => $saved_state,
-                'debug' => $debug_info
+                'debug' => $debug_info,
+                'components_loaded' => $components_loaded,
+                'message' => $components_loaded > 0 ? 'Loaded ' . $components_loaded . ' components' : 'No components found'
             ));
         } else {
             wp_send_json_success(array('state' => null, 'message' => 'No saved state found'));
@@ -259,19 +278,56 @@ class GMKB_Ajax_Handlers {
             return;
         }
         
+        // ROOT FIX: Debug the state structure
+        if (isset($state['components'])) {
+            GMKB_Debug_Logger::log('Components type: ' . gettype($state['components']));
+            if (is_array($state['components'])) {
+                GMKB_Debug_Logger::log('Components is array, count: ' . count($state['components']));
+                if (count($state['components']) > 0) {
+                    // Check if it's associative (object-like) or indexed array
+                    $first_key = array_key_first($state['components']);
+                    GMKB_Debug_Logger::log('First component key: ' . $first_key);
+                    GMKB_Debug_Logger::log('First component value type: ' . gettype($state['components'][$first_key]));
+                }
+            }
+        } else {
+            GMKB_Debug_Logger::log('No components key in state');
+        }
+        
         // ROOT FIX: Properly count components in both formats
         // Components are stored in the top-level 'components' object AND referenced in sections
         $components_count = 0;
         
         // Count components in the components object (this is the main storage)
-        if (isset($state['components']) && is_array($state['components'])) {
-            // Fix: If components is an object (associative array), count its keys
-            if (count($state['components']) > 0 && !isset($state['components'][0])) {
-                // It's an associative array (object in JS)
-                $components_count = count($state['components']);
-            } else if (isset($state['components'][0])) {
-                // It's an indexed array
-                $components_count = count($state['components']);
+        if (isset($state['components'])) {
+            // ROOT FIX: Check if components is an associative array (object from JSON)
+            // When JavaScript sends an object, PHP decodes it as an associative array
+            if (is_array($state['components'])) {
+                // For associative arrays from JS objects, count non-numeric keys
+                $is_assoc = array_keys($state['components']) !== range(0, count($state['components']) - 1);
+                
+                if ($is_assoc || !empty($state['components'])) {
+                    // This handles both object-style and array-style components
+                    $components_count = count($state['components']);
+                    
+                    // Log component IDs for debugging
+                    if ($components_count > 0) {
+                        $component_ids = array_keys($state['components']);
+                        GMKB_Debug_Logger::log('Components being saved: ' . implode(', ', array_slice($component_ids, 0, 5)) . 
+                                              ($components_count > 5 ? '... (' . $components_count . ' total)' : ''));
+                    }
+                }
+            } else if (is_object($state['components'])) {
+                // If it's a standard object, convert and count
+                $components_array = (array)$state['components'];
+                $components_count = count($components_array);
+                
+                // Log component IDs for debugging
+                if ($components_count > 0) {
+                    $component_ids = array_keys($components_array);
+                    GMKB_Debug_Logger::log('Components being saved (object): ' . implode(', ', array_slice($component_ids, 0, 5)) . 
+                                          ($components_count > 5 ? '... (' . $components_count . ' total)' : ''));
+                }
             }
         }
         

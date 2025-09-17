@@ -243,6 +243,15 @@ async function initialize() {
       console.log('Loading media kit from WordPress database for post:', postId);
       initialState = window.gmkbData?.savedState || window.gmkbData?.saved_state || {};
       
+      // ROOT FIX: Log what we're loading
+      if (initialState.components) {
+        const componentCount = Object.keys(initialState.components).length;
+        console.log(`Loading ${componentCount} components from WordPress`);
+        if (componentCount > 0) {
+          console.log('Component IDs:', Object.keys(initialState.components));
+        }
+      }
+      
       // Create state manager with WordPress data
       stateManager = new StateManager(initialState);
       
@@ -400,6 +409,15 @@ async function initialize() {
     
     // ROOT FIX: Initialize global commands for console access
     initializeGlobalCommands();
+    
+    // ROOT FIX: Load test script if available
+    if (window.gmkbData?.debugMode) {
+    const script = document.createElement('script');
+    script.src = window.gmkbData.pluginUrl + 'test-save-fix.js';
+    script.onload = () => console.log('✅ Save fix test functions loaded');
+    script.onerror = () => console.log('⚠️ Test script not found (optional)');
+        document.head.appendChild(script);
+        }
     
     // ROOT FIX: Add debug commands
     window.debugGMKB = {
@@ -916,88 +934,41 @@ async function saveState(isAutoSave = false) {
   try {
     const state = stateManager.getState();
     
-    // EMERGENCY FIX: Complete rebuild to remove all recursive data
+    // ROOT FIX: Ensure we're getting the actual components from state
     const cleanState = {
-      components: {},
-      layout: [],
+      components: state.components || {}, // ROOT FIX: Use state.components directly
+      layout: state.layout || [],
       sections: state.sections || [],
       theme: state.theme || 'default',
       themeSettings: state.themeSettings || [],
       globalSettings: state.globalSettings || {}
     };
     
-    // ROOT FIX: Save components from state.components map directly
-    // The components map is the source of truth
-    if (state.components && typeof state.components === 'object') {
-      Object.entries(state.components).forEach(([compId, comp]) => {
-        // Rebuild component with ONLY safe properties
-        const safeComponent = {
-          id: compId,
-          type: comp.type || 'unknown',
-          sectionId: comp.sectionId || null
-        };
-        
-        // ROOT FIX: Save component configuration properly
-        // For Pods-based components, save the data source info
-        if (comp.dataSource === 'pods' && comp.fields) {
-          safeComponent.dataSource = 'pods';
-          safeComponent.fields = comp.fields;
+    // ROOT FIX: Components are already in cleanState.components from state
+    // Just clean up any problematic properties without rebuilding
+    if (cleanState.components && typeof cleanState.components === 'object') {
+      Object.keys(cleanState.components).forEach(compId => {
+        const comp = cleanState.components[compId];
+        if (comp) {
+          // Just remove problematic Vue/internal properties
+          delete comp.__vueComponent;
+          delete comp._state;
+          delete comp.renderer;
+          
+          // Ensure component has essential properties
+          if (!comp.id) {
+            comp.id = compId;
+          }
+          if (!comp.type) {
+            comp.type = 'unknown';
+          }
         }
-        
-        // Configuration settings (layout, display options, etc.)
-        if (comp.config && typeof comp.config === 'object') {
-          safeComponent.config = { ...comp.config };
-        } else {
-          safeComponent.config = {};
-        }
-        
-        // Data source reference (tells component where to fetch data)
-        if (comp.data && typeof comp.data === 'object') {
-          // Only save metadata about data source, not actual content
-          safeComponent.data = {
-            dataSource: comp.data.dataSource || comp.dataSource || 'pods',
-            fields: comp.data.fields || comp.fields || [],
-            field: comp.data.field || null
-          };
-        } else if (comp.dataSource || comp.fields) {
-          // Handle components with dataSource/fields at root level
-          safeComponent.data = {
-            dataSource: comp.dataSource || 'pods',
-            fields: comp.fields || [],
-            field: comp.field || null
-          };
-        } else {
-          safeComponent.data = { dataSource: 'manual' };
-        }
-        
-        // Keep empty props for backward compatibility
-        safeComponent.props = comp.props || {};
-        
-        // Display settings
-        if (comp.settings && typeof comp.settings === 'object') {
-          safeComponent.settings = {
-            alignment: comp.settings.alignment,
-            visibility: comp.settings.visibility,
-            customClass: comp.settings.customClass
-          };
-        }
-        
-        // Add position if exists
-        if (typeof comp.position === 'number') {
-          safeComponent.position = comp.position;
-        }
-        
-        // Add metadata
-        if (comp.createdAt) {
-          safeComponent.createdAt = comp.createdAt;
-        }
-        if (comp.updatedAt) {
-          safeComponent.updatedAt = comp.updatedAt;
-        }
-        
-        cleanState.components[compId] = safeComponent;
       });
     }
+    
+    // Log what we're actually saving
+    console.log('Saving state with components:', Object.keys(cleanState.components || {}).length);
+    console.log('Component IDs being saved:', Object.keys(cleanState.components || {}));
 
     
     // State cleaned and ready to save

@@ -1,20 +1,9 @@
 @echo off
-echo ========================================
-echo Rebuilding Media Kit Builder Bundle
-echo ========================================
+echo Building Media Kit Builder bundle...
 echo.
-
-echo Cleaning dist folder...
-rmdir /s /q dist 2>nul
-
-echo Building with Vite...
-call npm run build
-
+echo This will rebuild the JavaScript bundle with the save fix.
 echo.
-echo ========================================
-echo Build Complete!
-echo ========================================
+npm run build
 echo.
-echo Bundle location: dist/gmkb.iife.js
-echo.
+echo Build complete! Refresh your browser to load the updated bundle.
 pause

@@ -27,7 +27,7 @@ import ACTION_TYPES, {
  * Defines the shape of our application state
  */
 const STATE_SCHEMA = {
-    components: {}, // { [componentId]: ComponentData }
+    components: {}, // { [componentId]: ComponentData } - MUST be object, not array
     layout: [], // Array of component IDs in order
     sections: [], // Array of section objects
     theme: 'default', // Current theme identifier
@@ -127,6 +127,12 @@ function mainReducer(state = STATE_SCHEMA, action) {
                 updatedAt: Date.now(),
                 ...component
             };
+            
+            // ROOT FIX: Ensure components is an object before adding
+            if (Array.isArray(newState.components)) {
+                console.warn('ROOT FIX: Converting components from array to object before adding');
+                newState.components = {};
+            }
             
             // Add to components map
             newState.components = {
@@ -398,6 +404,11 @@ function mainReducer(state = STATE_SCHEMA, action) {
                     lastModified: Date.now()
                 }
             };
+            
+            // ROOT FIX: Ensure components is an object
+            if (Array.isArray(newState.components)) {
+                newState.components = {};
+            }
             break;
         }
         
@@ -429,6 +440,11 @@ function mainReducer(state = STATE_SCHEMA, action) {
             }
             
             newState = mergedState;
+            
+            // ROOT FIX: Ensure components is an object after merge
+            if (Array.isArray(newState.components)) {
+                newState.components = {};
+            }
             break;
         }
         
@@ -629,6 +645,12 @@ export class EnhancedStateManager {
         const wpState = this.processWordPressData(initialState);
         if (wpState && Object.keys(wpState).length > 0) {
             this.state = mainReducer(this.state, createAction(STATE_ACTIONS.MERGE_STATE, wpState));
+        }
+        
+        // ROOT FIX: Ensure components is always an object, never an array
+        if (Array.isArray(this.state.components)) {
+            console.warn('ROOT FIX: Converting components from array to object');
+            this.state.components = {};
         }
         
         // Subscribers for state changes
@@ -859,7 +881,14 @@ export class EnhancedStateManager {
      */
     getState() {
         // Return a deep copy to prevent direct mutation
-        return JSON.parse(JSON.stringify(this.state));
+        const stateCopy = JSON.parse(JSON.stringify(this.state));
+        
+        // ROOT FIX: Ensure components is always an object in returned state
+        if (Array.isArray(stateCopy.components)) {
+            stateCopy.components = {};
+        }
+        
+        return stateCopy;
     }
     
     getComponent(componentId) {
@@ -1138,7 +1167,13 @@ export class EnhancedStateManager {
         
         // If it's already in the correct format, start with that
         if (data.components && typeof data.components === 'object') {
-            processedData = { ...data };
+            // ROOT FIX: Ensure components is an object, not an array
+            if (Array.isArray(data.components) && data.components.length === 0) {
+                // Convert empty array to empty object
+                processedData = { ...data, components: {} };
+            } else {
+                processedData = { ...data };
+            }
         }
         // Convert saved_components array to components object
         else if (data.saved_components && Array.isArray(data.saved_components)) {

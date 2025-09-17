@@ -62,6 +62,11 @@ require_once GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php';
 // ROOT FIX: Single source AJAX handlers - no fallbacks
 require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php';
 
+// ROOT FIX: Database state inspector for debugging persistence issues
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php';
+}
+
 // PHASE 7: Version Control System
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php';
