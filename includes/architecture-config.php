@@ -1,9 +1,14 @@
+<?php
 /**
  * ARCHITECTURE SEPARATION CONFIGURATION
  * Controls which system loads: Vue/Vite (modern) or Legacy
  */
 
-<?php
+// Exit if accessed directly
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
 // ================================================
 // MASTER SWITCH - CHANGE THIS TO CONTROL SYSTEM
 // ================================================

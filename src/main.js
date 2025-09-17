@@ -175,11 +175,25 @@ async function initialize() {
   try {
     // Create core instances
     eventBus = new EventBus();
+    
+    // ROOT FIX: Ensure AJAX URL is available from multiple sources
+    const ajaxUrl = window.gmkbData?.ajaxUrl || 
+                    window.ajaxurl || 
+                    window.mkcg_vars?.ajax_url ||
+                    '/wp-admin/admin-ajax.php';
+    
+    const nonce = window.gmkbData?.nonce || 
+                  window.mkcg_vars?.nonce || 
+                  window.mkcg_nonce || 
+                  '';
+    
     apiService = new APIService(
-      window.gmkbData?.ajaxUrl,
-      window.gmkbData?.nonce,
+      ajaxUrl,
+      nonce,
       window.gmkbData?.postId
     );
+    
+    console.log('APIService initialized with:', { ajaxUrl, nonce: nonce.substring(0, 10) + '...' });
     
     // Initialize Vue component discovery
     await VueComponentDiscovery.initialize();

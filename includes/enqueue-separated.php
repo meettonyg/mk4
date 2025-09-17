@@ -298,8 +298,10 @@ function gmkb_prepare_vue_data( $post_id ) {
     // Prepare clean data for Vue
     $data = array(
         'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+        'ajax_url' => admin_url( 'admin-ajax.php' ), // Also provide snake_case version
+        'ajaxurl' => admin_url( 'admin-ajax.php' ), // And lowercase version for compatibility
         'restUrl' => rest_url(),
-        'nonce' => wp_create_nonce( 'gmkb_vue_nonce' ),
+        'nonce' => wp_create_nonce( 'gmkb_nonce' ), // Use gmkb_nonce for consistency with AJAX handlers
         'postId' => $post_id,
         'architecture' => 'vue',
         'version' => '3.0.0',

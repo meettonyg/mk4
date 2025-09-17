@@ -4,6 +4,40 @@
  * This ensures commands are available even in optimized bundles
  */
 
+// Diagnostic function for architecture info
+window.gmkbArchInfo = function() {
+  const info = {
+    mode: 'VUE',
+    version: '3.0.0',
+    vueApp: !!window.gmkbApp,
+    stateManager: !!window.stateManager,
+    pinia: !!window.gmkbPinia,
+    components: window.GMKB?.vueDiscovery?.discoveredComponents?.size || 0,
+    sections: window.stateManager?.getState()?.sections?.length || 0,
+    scriptsLoaded: 1,
+    bundleUrl: window.gmkbData?.bundleUrl || 'dist/gmkb.iife.js',
+    ajaxUrl: window.gmkbData?.ajaxUrl || window.ajaxurl || 'Not set',
+    postId: window.gmkbData?.postId || 'Not set'
+  };
+  
+  console.log(`
+🏗️ GMKB Architecture Info
+========================
+Mode: ${info.mode}
+Version: ${info.version}
+Vue App: ${info.vueApp ? '✅' : '❌'}
+State Manager: ${info.stateManager ? '✅' : '❌'}
+Pinia Store: ${info.pinia ? '✅' : '❌'}
+Vue Components: ${info.components}
+Sections: ${info.sections}
+Scripts Loaded: ${info.scriptsLoaded} (lean bundle)
+AJAX URL: ${info.ajaxUrl}
+Post ID: ${info.postId}
+========================`);
+  
+  return info;
+};
+
 export function initializeGlobalCommands() {
   // Wait for state manager to be available
   const setupCommands = () => {
