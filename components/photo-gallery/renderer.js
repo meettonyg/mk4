@@ -25,25 +25,49 @@
         const images = Array.isArray(data.images) ? data.images : [];
         const layout = options.layout || schema.defaults.layout;
         const columns = options.columns || schema.defaults.columns;
+        const spacing = options.spacing || 'medium';
+        const imageStyle = options.imageStyle || 'standard';
+        const hoverEffect = options.hoverEffect || 'zoom';
+        const captionStyle = options.captionStyle || 'none';
         
-        let html = `<div class="gmkb-photo-gallery gmkb-photo-gallery--${layout}">
-            <h3>${escapeHtml(title)}</h3>`;
+        // ROOT FIX: Use the correct CSS classes that match the styles.css file
+        let html = `<div class="photo-gallery-component layout-${layout}">
+            <div class="photo-gallery-container">
+                <h3 class="photo-gallery-title">${escapeHtml(title)}</h3>`;
         
         if (images.length > 0) {
-            html += `<div class="gmkb-photo-gallery__grid" style="grid-template-columns: repeat(${columns}, 1fr);">`;
+            // Use the correct CSS classes for the grid
+            html += `<div class="photo-gallery-grid spacing-${spacing}" data-columns="${columns}" data-hover="${hoverEffect}" data-caption-style="${captionStyle}">`;
             images.forEach(img => {
                 const src = typeof img === 'string' ? img : img.url || img.src || '';
                 const alt = typeof img === 'object' ? img.alt || img.title || '' : '';
-                html += `<div class="gmkb-photo-gallery__item">
-                    <img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" />
-                </div>`;
+                const caption = typeof img === 'object' ? img.caption || '' : '';
+                
+                html += `<div class="photo-item image-${imageStyle}">
+                    <div class="photo-wrapper">
+                        <img class="photo-image" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" />
+                    </div>`;
+                
+                // Add caption if needed
+                if (caption && captionStyle !== 'none') {
+                    html += `<div class="photo-caption">${escapeHtml(caption)}</div>`;
+                }
+                
+                html += `</div>`;
             });
             html += '</div>';
         } else {
-            html += '<p>No images in gallery.</p>';
+            // Use placeholder classes from CSS
+            html += `<div class="photo-gallery-placeholder">
+                <div class="placeholder-content">
+                    <div class="placeholder-icon"></div>
+                    <p>No images in gallery. Click "Edit" to add photos.</p>
+                </div>
+            </div>`;
         }
         
-        html += '</div>';
+        html += `</div>
+        </div>`;
         return html;
     }
     

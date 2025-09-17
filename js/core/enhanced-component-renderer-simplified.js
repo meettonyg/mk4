@@ -281,10 +281,9 @@ class SimplifiedComponentRenderer {
             
             element.innerHTML = html;
             
-            // Attach controls if available
-            if (window.componentControlsManager && window.componentControlsManager.isInitialized) {
-                window.componentControlsManager.attachControls(element, componentId);
-            }
+            // ROOT FIX: Remove direct control attachment - let MutationObserver handle it
+            // Controls will be automatically attached by the MutationObserver in component-controls-manager.js
+            // This prevents duplicate controls from appearing
             
             // Dispatch rendered event
             document.dispatchEvent(new CustomEvent('gmkb:component-rendered', {
