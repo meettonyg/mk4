@@ -10,7 +10,14 @@ import { createPinia } from 'pinia';
 import VueComponentDiscovery from './loaders/VueComponentDiscovery.js';
 import { initializeEditPanel } from './ui/ComponentEditPanel.js';
 import { initializeUnifiedEditManager } from './ui/UnifiedEditManager.js';
+
+// Import Vue components explicitly to ensure they're bundled
 import ControlsOverlay from './vue/controls/ControlsOverlay.vue';
+import SectionControls from './vue/controls/SectionControls.vue';
+import ComponentControls from './vue/controls/ComponentControls.vue';
+
+// Log to verify imports are working
+console.log('Vue components imported:', { ControlsOverlay, SectionControls, ComponentControls });
 
 // ROOT FIX: Import global commands to ensure they're in the bundle
 import { initializeGlobalCommands } from './global-commands.js';
@@ -149,13 +156,20 @@ function initializeVue() {
     };
     
     // ROOT FIX: Mount the unified control system
+    console.log('Creating Vue controls app with ControlsOverlay component...');
     const controlsApp = createApp(ControlsOverlay);
+    console.log('ControlsOverlay component:', ControlsOverlay);
+    console.log('SectionControls component:', SectionControls);
+    console.log('ComponentControls component:', ComponentControls);
     controlsApp.use(pinia);
     const controlsInstance = controlsApp.mount(controlsMount);
     
     // Store controls app globally
     window.gmkbControlsApp = controlsApp;
     window.gmkbControlsInstance = controlsInstance;
+    
+    // Make sure components are registered globally (for tree-shaking prevention)
+    window.gmkbVueComponents = { ControlsOverlay, SectionControls, ComponentControls };
     
     console.log('✅ Unified Vue control system mounted');
     
