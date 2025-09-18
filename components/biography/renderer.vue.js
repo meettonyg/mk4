@@ -379,65 +379,7 @@ const BiographyVue = {
       'data-component-id': this.componentId,
       onClick: handleClick
     }, [
-      // Component Controls with Professional SVG Icons
-      state.isSelected && h('div', { class: 'component-controls' }, [
-        h('button', { 
-          class: 'control-btn control-btn--move-up', 
-          title: 'Move Up', 
-          onClick: (e) => { e.stopPropagation(); moveUp(); }
-        }, [
-          h('svg', { width: '16', height: '16', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-            h('line', { x1: '12', y1: '19', x2: '12', y2: '5' }),
-            h('polyline', { points: '5 12 12 5 19 12' })
-          ])
-        ]),
-        h('button', { 
-          class: 'control-btn control-btn--move-down', 
-          title: 'Move Down', 
-          onClick: (e) => { e.stopPropagation(); moveDown(); }
-        }, [
-          h('svg', { width: '16', height: '16', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-            h('line', { x1: '12', y1: '5', x2: '12', y2: '19' }),
-            h('polyline', { points: '19 12 12 19 5 12' })
-          ])
-        ]),
-        h('button', { 
-          class: 'control-btn control-btn--edit', 
-          title: 'Edit', 
-          onClick: (e) => { 
-            e.stopPropagation(); 
-            // Dispatch event for sidebar edit panel
-            document.dispatchEvent(new CustomEvent('gmkb:component-action', {
-              detail: { action: 'edit', componentId: this.componentId }
-            }));
-          }
-        }, [
-          h('svg', { width: '16', height: '16', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-            h('path', { d: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7' }),
-            h('path', { d: 'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z' })
-          ])
-        ]),
-        h('button', { 
-          class: 'control-btn control-btn--duplicate', 
-          title: 'Duplicate', 
-          onClick: (e) => { e.stopPropagation(); duplicate(); }
-        }, [
-          h('svg', { width: '16', height: '16', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-            h('rect', { x: '9', y: '9', width: '13', height: '13', rx: '2', ry: '2' }),
-            h('path', { d: 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' })
-          ])
-        ]),
-        h('button', { 
-          class: 'control-btn control-btn--delete', 
-          title: 'Delete', 
-          onClick: (e) => { e.stopPropagation(); deleteComponent(); }
-        }, [
-          h('svg', { width: '16', height: '16', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-            h('polyline', { points: '3 6 5 6 21 6' }),
-            h('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' })
-          ])
-        ])
-      ]),
+      // Controls removed - handled by unified ControlsOverlay system
       
       // Biography Content
       h('div', { 

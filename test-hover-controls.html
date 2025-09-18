@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hover Controls</title>
+    <style>
+        body {
+            padding: 50px;
+            font-family: sans-serif;
+        }
+        
+        .test-info {
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .test-info h2 {
+            margin-top: 0;
+            color: #0c4a6e;
+        }
+        
+        .test-info ol {
+            margin: 10px 0;
+        }
+        
+        .test-info li {
+            margin: 5px 0;
+        }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .status.success {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #166534;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+        }
+        
+        .test-component {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .test-component:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .test-component h3 {
+            margin-top: 0;
+        }
+        
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h2>🧪 Component Controls Hover Test</h2>
+        <p><strong>Purpose:</strong> Verify that component controls appear on hover after fixes</p>
+        
+        <h3>What was fixed:</h3>
+        <ol>
+            <li>✅ Removed inline controls from <code>biography/renderer.vue.js</code></li>
+            <li>✅ Updated <code>ControlsOverlay.vue</code> to use proper hover event listeners</li>
+            <li>✅ Changed from <code>mousemove</code> to <code>mouseenter/mouseleave</code> events</li>
+            <li>✅ Added event delegation for dynamically rendered components</li>
+        </ol>
+        
+        <h3>Expected Behavior:</h3>
+        <ol>
+            <li>Hovering over a component should show controls (Move Up/Down, Edit, Duplicate, Delete)</li>
+            <li>Controls should appear via Vue's Teleport feature (rendered in body, not inline)</li>
+            <li>Controls should stay visible while hovering over them</li>
+            <li>Clicking a component should keep controls visible (selected state)</li>
+        </ol>
+        
+        <h3>How to Test:</h3>
+        <ol>
+            <li>Open the Media Kit Builder in your browser</li>
+            <li>Run <code>npm run build</code> to rebuild the bundle with fixes</li>
+            <li>Refresh the page (Ctrl+F5 for hard refresh)</li>
+            <li>Hover over any component - controls should appear</li>
+            <li>Check browser console for "Component hover: [id]" messages</li>
+        </ol>
+    </div>
+    
+    <div class="status success" id="build-status">
+        <strong>Build Command:</strong> Run <code>npm run build</code> in the plugin directory to apply the fixes
+    </div>
+    
+    <div class="test-component" data-component-id="test-component-1">
+        <h3>Example Component</h3>
+        <p>This simulates a component with the <code>data-component-id</code> attribute.</p>
+        <p>In the actual builder, hovering here should show the component controls.</p>
+    </div>
+    
+    <div class="status" id="console-test">
+        <h4>Console Commands for Testing:</h4>
+        <pre><code>// Check if Vue controls are mounted
+document.querySelectorAll('.gmkb-component-controls').length
+
+// Check for components with data attributes
+document.querySelectorAll('[data-component-id]').length
+
+// Manually trigger hover (for testing)
+const event = new MouseEvent('mouseenter', { bubbles: true });
+document.querySelector('[data-component-id]').dispatchEvent(event);
+
+// Check if controls appeared
+document.querySelectorAll('.gmkb-component-controls:not([style*="display: none"])').length</code></pre>
+    </div>
+    
+    <div class="test-info">
+        <h3>Files Modified:</h3>
+        <ul>
+            <li><code>components/biography/renderer.vue.js</code> - Removed inline control rendering</li>
+            <li><code>src/vue/controls/ControlsOverlay.vue</code> - Improved hover detection</li>
+        </ul>
+        
+        <h3>Next Steps if Controls Still Don't Appear:</h3>
+        <ol>
+            <li>Check browser console for any JavaScript errors</li>
+            <li>Verify the build completed successfully</li>
+            <li>Check that <code>.gmkb-component-controls</code> elements exist in the DOM</li>
+            <li>Inspect z-index values (controls should be at z-index: 1002)</li>
+            <li>Verify Vue app is mounting correctly (check for <code>[data-v-app]</code> attributes)</li>
+        </ol>
+    </div>
+</body>
+</html>
