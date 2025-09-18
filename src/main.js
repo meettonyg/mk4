@@ -158,23 +158,50 @@ function initializeVue() {
       return window.stateManager?.getState() || {};
     };
     
-    // ROOT FIX: Mount the unified control system
-    console.log('Creating Vue controls app with ControlsOverlay component...');
-    const controlsApp = createApp(ControlsOverlay);
-    console.log('ControlsOverlay component:', ControlsOverlay);
-    console.log('SectionControls component:', SectionControls);
-    console.log('ComponentControls component:', ComponentControls);
-    controlsApp.use(pinia);
-    const controlsInstance = controlsApp.mount(controlsMount);
+    // ROOT FIX: Mount the unified control system AFTER state is loaded
+    // Wait for state to be populated before mounting controls
+    const mountControlsWhenReady = () => {
+      const state = stateManager?.getState();
+      const hasComponents = state?.components && Object.keys(state.components).length > 0;
+      const hasSections = state?.sections && state.sections.length > 0;
+      
+      if (hasComponents || hasSections) {
+        console.log('State ready, mounting Vue controls with:', {
+          components: Object.keys(state.components || {}).length,
+          sections: state.sections?.length || 0
+        });
+        
+        const controlsApp = createApp(ControlsOverlay);
+        console.log('ControlsOverlay component:', ControlsOverlay);
+        console.log('SectionControls component:', SectionControls);
+        console.log('ComponentControls component:', ComponentControls);
+        controlsApp.use(pinia);
+        const controlsInstance = controlsApp.mount(controlsMount);
+        
+        // Store controls app globally
+        window.gmkbControlsApp = controlsApp;
+        window.gmkbControlsInstance = controlsInstance;
+        
+        // Make sure components are registered globally (for tree-shaking prevention)
+        window.gmkbVueComponents = { ControlsOverlay, SectionControls, ComponentControls };
+        
+        console.log('✅ Unified Vue control system mounted with state ready');
+      } else {
+        // If no state yet, listen for state changes
+        console.log('Waiting for state before mounting Vue controls...');
+        const unsubscribe = stateManager.subscribe(() => {
+          const updatedState = stateManager.getState();
+          if ((updatedState.components && Object.keys(updatedState.components).length > 0) || 
+              (updatedState.sections && updatedState.sections.length > 0)) {
+            unsubscribe();
+            mountControlsWhenReady();
+          }
+        });
+      }
+    };
     
-    // Store controls app globally
-    window.gmkbControlsApp = controlsApp;
-    window.gmkbControlsInstance = controlsInstance;
-    
-    // Make sure components are registered globally (for tree-shaking prevention)
-    window.gmkbVueComponents = { ControlsOverlay, SectionControls, ComponentControls };
-    
-    console.log('✅ Unified Vue control system mounted');
+    // Start the mounting process
+    mountControlsWhenReady();
     
     // Make visible briefly to confirm integration
     mountPoint.style.display = 'block';

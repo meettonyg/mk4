@@ -234,17 +234,15 @@ export default {
     
     // Lifecycle hooks
     onMounted(() => {
-      // Initial state load with delay to ensure state manager is ready
-      setTimeout(() => {
-        updateState();
-        
-        // Subscribe to state changes
-        const sm = getStateManager();
-        if (sm && sm.subscribe) {
-          sm.subscribe(updateState);
-          console.log('Vue controls subscribed to state changes');
-        }
-      }, 100);
+      // The controls now only mount after state is ready, so we can update immediately
+      updateState();
+      
+      // Subscribe to state changes
+      const sm = getStateManager();
+      if (sm && sm.subscribe) {
+        sm.subscribe(updateState);
+        console.log('Vue controls subscribed to state changes');
+      }
       
       // Add event listeners
       document.addEventListener('mousemove', handleMouseMove);
@@ -252,6 +250,17 @@ export default {
       
       // Listen for external state updates
       document.addEventListener('gmkb:state-updated', updateState);
+      
+      // Listen for component render events
+      document.addEventListener('gmkb:component-rendered', () => {
+        setTimeout(updateState, 100);
+      });
+      
+      // Listen for all components rendered
+      document.addEventListener('gmkb:all-components-rendered', () => {
+        setTimeout(updateState, 200);
+        console.log('Vue controls: Updating after all components rendered');
+      });
     });
     
     onUnmounted(() => {
