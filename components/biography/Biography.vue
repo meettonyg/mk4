@@ -247,13 +247,6 @@ export default {
       document.body.classList.add('design-panel-open');
     };
     
-    // Listen for external open-edit-panel events
-    const handleOpenEditPanel = (e) => {
-      if (e.detail?.componentId === props.componentId) {
-        openEditPanel();
-      }
-    };
-    
     const closeDesignPanel = () => {
       showDesignPanel.value = false;
       document.body.classList.remove('design-panel-open');
@@ -320,10 +313,12 @@ export default {
       document.addEventListener('keydown', handleEscKey);
       
       // Listen for external edit panel open events
-      const element = document.querySelector(`[data-component-id="${props.componentId}"]`);
-      if (element) {
-        element.addEventListener('open-edit-panel', handleOpenEditPanel);
-      }
+      // Use document-level event for reliability
+      document.addEventListener('gmkb:open-vue-panel', (e) => {
+        if (e.detail?.componentId === props.componentId) {
+          openEditPanel();
+        }
+      });
       
       // Load from Pods data if biography is empty and data exists
       if (!localBiography.value && podsData.value?.biography) {
@@ -335,12 +330,6 @@ export default {
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleEscKey);
       document.body.classList.remove('design-panel-open');
-      
-      // Clean up edit panel listener
-      const element = document.querySelector(`[data-component-id="${props.componentId}"]`);
-      if (element) {
-        element.removeEventListener('open-edit-panel', handleOpenEditPanel);
-      }
     });
     
     return {

@@ -8,7 +8,7 @@
     >
       <button 
         class="control-btn control-btn--move-up" 
-        @click="$emit('action', { action: 'move-up', sectionId: section.section_id })"
+        @click="handleAction('move-up')"
         :disabled="isFirst"
         title="Move Section Up"
       >
@@ -20,7 +20,7 @@
       
       <button 
         class="control-btn control-btn--move-down"
-        @click="$emit('action', { action: 'move-down', sectionId: section.section_id })"
+        @click="handleAction('move-down')"
         :disabled="isLast"
         title="Move Section Down"
       >
@@ -32,7 +32,7 @@
       
       <button 
         class="control-btn control-btn--settings"
-        @click="$emit('action', { action: 'settings', sectionId: section.section_id })"
+        @click="handleAction('settings')"
         title="Section Settings"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -43,7 +43,7 @@
       
       <button 
         class="control-btn control-btn--delete"
-        @click="$emit('action', { action: 'delete', sectionId: section.section_id })"
+        @click="handleAction('delete')"
         title="Delete Section"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -74,7 +74,7 @@ export default {
   
   emits: ['action'],
   
-  setup(props) {
+  setup(props, { emit }) {
     const elementPosition = ref({ top: 0, left: 0, width: 0 });
     const shouldShow = ref(false);
     
@@ -131,6 +131,14 @@ export default {
       }
     };
     
+    // Handle control actions
+    const handleAction = (action) => {
+      emit('action', { 
+        action, 
+        sectionId: props.section.section_id 
+      });
+    };
+    
     onMounted(() => {
       window.addEventListener('scroll', handleScroll);
       window.addEventListener('resize', handleScroll);
@@ -146,7 +154,8 @@ export default {
       shouldShow,
       controlStyles,
       isFirst,
-      isLast
+      isLast,
+      handleAction
     };
   }
 };
