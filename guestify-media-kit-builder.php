@@ -1311,7 +1311,10 @@ class Guestify_Media_Kit_Builder {
             return;
         }
         
-        // ROOT FIX: Clean up orphaned components and prevent duplication
+        // ROOT FIX: DISABLED orphaned component cleanup - it was incorrectly removing components in sections
+        // The new gmkb-ajax-handlers.php handles this correctly
+        // Components in sections are NOT orphaned, they're properly assigned!
+        /*
         if (isset($state['components']) && is_array($state['components']) && 
             isset($state['layout']) && is_array($state['layout'])) {
             
@@ -1397,9 +1400,8 @@ class Guestify_Media_Kit_Builder {
                     }
                 }
             }
-            
-            $state['components'] = $deduped_components;
-        }
+        */
+        // END OF DISABLED ORPHANED CLEANUP CODE
         
         // ROOT FIX: Validate state structure
         $required_keys = array('components', 'layout', 'globalSettings');

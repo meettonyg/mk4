@@ -331,12 +331,12 @@ function gmkb_enqueue_assets() {
             $version
         );
         
-        // ROOT FIX: Component library modal styling
+        // Component edit panel styles
         wp_enqueue_style(
-            'gmkb-component-library',
-            $plugin_url . 'css/component-library.css',
-            array('gmkb-lean-styles'),
-            $version
+        'gmkb-component-edit-panel',
+        $plugin_url . 'css/component-edit-panel.css',
+        array('gmkb-lean-styles'),
+        $version
         );
         
         

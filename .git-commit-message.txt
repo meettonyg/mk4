@@ -1,0 +1,26 @@
+ROOT FIX: Components object persistence issue resolved
+
+PROBLEM:
+- Components were being lost during save operation (showing as empty array)
+- PHP's json_decode(true) was converting empty JS objects {} to PHP arrays []
+- WordPress post_meta was preserving arrays, causing type mismatch on load
+
+ROOT CAUSE:
+- The save_media_kit function was using json_decode($json, true) which converts ALL JavaScript objects to PHP arrays
+- When components was an empty object {} from JS, it became empty array [] in PHP
+- This array was saved to database and retrieved as array, not object
+
+SOLUTION:
+1. Modified save_media_kit to use json_decode without second parameter
+2. Added convert_to_array_preserve_objects helper to maintain object types
+3. Empty objects now saved as StdClass (preserves {} notation in JSON)
+4. Updated load_media_kit to handle both array and object formats
+5. Added proper conversion for legacy data compatibility
+
+TESTING:
+- Components now persist correctly through save/load cycles
+- Empty components object remains as {} not []
+- Section assignments are preserved
+- Media Kit Data Viewer shows correct component counts
+
+This is a root-level fix addressing the fundamental data type handling issue between JavaScript and PHP.

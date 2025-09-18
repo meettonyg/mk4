@@ -237,20 +237,34 @@ class GMKB_Ajax_Handlers {
             // ROOT FIX: Ensure components structure is preserved for JavaScript
             // JavaScript expects an object (associative array in PHP)
             if (!isset($saved_state['components'])) {
-                // No components key - initialize as empty array (becomes {} in JSON)
-                $saved_state['components'] = array();
-                GMKB_Debug_Logger::log('Initialized missing components as empty array/object');
+                // No components key - initialize as empty object
+                $saved_state['components'] = new stdClass();
+                GMKB_Debug_Logger::log('Initialized missing components as empty object');
+            } else if (is_object($saved_state['components'])) {
+                // Already an object (StdClass) - count properties
+                $comp_count = count((array)$saved_state['components']);
+                GMKB_Debug_Logger::log('Loaded ' . $comp_count . ' components from database (object format)');
             } else if (is_array($saved_state['components'])) {
-                // Components exist - count them
+                // Components exist as array - count them
                 $comp_count = count($saved_state['components']);
-                GMKB_Debug_Logger::log('Loaded ' . $comp_count . ' components from database');
+                GMKB_Debug_Logger::log('Loaded ' . $comp_count . ' components from database (array format)');
                 
-                // ROOT FIX: If we have an empty indexed array [], it needs to become {}
-                // But if we have an associative array (even empty), json_encode handles it correctly
-                if ($comp_count === 0 && array_keys($saved_state['components']) === range(0, count($saved_state['components']) - 1)) {
-                    // It's an indexed array - convert to object for JavaScript
+                // ROOT FIX: Convert empty arrays to objects for JavaScript
+                if ($comp_count === 0) {
+                    // Empty array needs to become empty object {} in JSON
                     $saved_state['components'] = new stdClass();
-                    GMKB_Debug_Logger::log('Converted empty indexed array to object');
+                    GMKB_Debug_Logger::log('Converted empty array to object for JavaScript compatibility');
+                } else if (array_keys($saved_state['components']) === range(0, count($saved_state['components']) - 1)) {
+                    // Indexed array (should not happen with our save fix, but handle legacy data)
+                    // Convert to associative array using component IDs
+                    $components_obj = array();
+                    foreach ($saved_state['components'] as $comp) {
+                        if (is_array($comp) && isset($comp['id'])) {
+                            $components_obj[$comp['id']] = $comp;
+                        }
+                    }
+                    $saved_state['components'] = empty($components_obj) ? new stdClass() : $components_obj;
+                    GMKB_Debug_Logger::log('Converted indexed array to associative array/object');
                 }
             }
             
@@ -369,50 +383,98 @@ class GMKB_Ajax_Handlers {
 
         // 3. Data Processing
         $state_json = stripslashes($_POST['state']);
+        
+        // ROOT FIX: Debug the exact JSON structure
+        error_log('GMKB Save - Raw JSON length: ' . strlen($state_json));
+        
+        // Check if components exists in the raw JSON string
+        if (strpos($state_json, '"components":{') !== false) {
+            error_log('GMKB Save - Found "components":{ in JSON');
+            // Try to extract the components section
+            preg_match('/"components":\{([^}]*)\}/', $state_json, $matches);
+            if (!empty($matches[1])) {
+                error_log('GMKB Save - Components content: ' . $matches[1]);
+            }
+        } else if (strpos($state_json, '"components":[') !== false) {
+            error_log('GMKB Save - WARNING: Components is an array [], not an object {}');
+        } else {
+            error_log('GMKB Save - ERROR: No components found in JSON at all!');
+        }
+        
+        // Parse JSON as associative array
         $state = json_decode($state_json, true);
-
+        
         if (json_last_error() !== JSON_ERROR_NONE) {
             wp_send_json_error(array('message' => 'Invalid JSON data received.', 'error' => json_last_error_msg()));
             return;
         }
         
-        // ROOT FIX: Log the state immediately after decoding to ensure we receive the correct structure.
-        GMKB_Debug_Logger::log('Received state in save_media_kit:', $state);
-
-        // 4. Data Sanitization & Integrity Checks
-        // ROOT FIX: Ensure `components` is treated as an associative array (object in JS)
-        // If `components` is not set or is not an array, initialize it as an empty array.
-        // This prevents errors if the frontend ever sends a malformed state.
-        if (!isset($state['components']) || !is_array($state['components'])) {
-            $state['components'] = [];
+        // ROOT FIX: Immediately log what we received
+        error_log('GMKB Save - Raw JSON components count: ' . substr_count($state_json, '"id":'));
+        error_log('GMKB Save - Decoded state has components: ' . (isset($state['components']) ? 'YES' : 'NO'));
+        if (isset($state['components'])) {
+            error_log('GMKB Save - Components type: ' . gettype($state['components']));
+            error_log('GMKB Save - Components count: ' . count($state['components']));
+            if (!empty($state['components'])) {
+                error_log('GMKB Save - Component IDs: ' . implode(', ', array_keys($state['components'])));
+            }
         }
 
+            
+        
+        // 4. ROOT FIX: Ensure components are preserved
+        // The state from json_decode should already have components
+        // We just need to ensure empty arrays become objects for JS compatibility
+        if (!isset($state['components'])) {
+            $state['components'] = new stdClass();
+            error_log('GMKB Save - No components key, initialized as empty object');
+        } else if (empty($state['components'])) {
+            // Empty array should be an object for JavaScript
+            $state['components'] = new stdClass();
+            error_log('GMKB Save - Components was empty, converted to object');
+        }
+        // If components has data, leave it as-is (associative array)
+
         // 5. Save to Database
-        // The `$state` variable now contains the complete, validated structure.
+        $components_count = is_object($state['components']) ? 0 : count($state['components']);
+        error_log('GMKB Save - About to save ' . $components_count . ' components to database');
+        
         $result = update_post_meta($post_id, 'gmkb_media_kit_state', $state);
         
         if ($result === false) {
+            error_log('GMKB Save - Failed to save to database');
             wp_send_json_error(array('message' => 'Failed to save data to the database.'));
             return;
         }
-
-        // 6. Prepare Accurate Response Data
-        // ROOT FIX: Calculate counts AFTER sanitization and BEFORE sending the response.
-        // This does not alter the saved state.
-        $components_count = count($state['components']);
+        
+        // 6. Verify what was actually saved
+        $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+        $saved_components_count = 0;
+        
+        if (isset($saved_state['components'])) {
+            if (is_object($saved_state['components'])) {
+                $saved_components_count = count((array)$saved_state['components']);
+            } else if (is_array($saved_state['components'])) {
+                $saved_components_count = count($saved_state['components']);
+            }
+            error_log('GMKB Save - Verified: ' . $saved_components_count . ' components in database');
+        } else {
+            error_log('GMKB Save - ERROR: No components key in saved state!');
+        }
+        
         $sections_count = isset($state['sections']) && is_array($state['sections']) ? count($state['sections']) : 0;
-        $data_size = strlen($state_json);
 
         // 7. Send Success Response
         wp_send_json_success(array(
-            'message' => 'Media kit saved successfully.',
+            'message' => 'Media kit saved successfully',
             'timestamp' => time(),
             'post_id' => $post_id,
-            'components_count' => $components_count, // This will now be accurate.
+            'components_count' => $saved_components_count,
             'sections_count' => $sections_count,
-            'data_size' => $data_size,
+            'data_size' => strlen($state_json)
         ));
     }
+
     
     /**
      * Get debug logs for troubleshooting

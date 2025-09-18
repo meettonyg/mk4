@@ -14,48 +14,66 @@
     box-shadow: 0 0 0 2px var(--gmkb-color-primary-alpha, rgba(59, 130, 246, 0.2));
 }
 
-/* Component controls container */
+/* Component controls container - Professional Design */
 .component-controls {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
     display: flex;
     gap: 4px;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    visibility: hidden;
+    transition: all 0.2s ease;
     z-index: 100;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.98);
     padding: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-.gmkb-component:hover .component-controls {
+.gmkb-component:hover .component-controls,
+.biography-component.is-selected .component-controls {
     opacity: 1;
+    visibility: visible;
 }
 
-/* Control button styles */
+/* Control button styles - Matches section controls */
 .component-controls .control-btn {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #ffffff;
+    background: white;
     border: 1px solid #e2e8f0;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     color: #64748b;
     padding: 0;
     font-size: 0;
     line-height: 0;
+    outline: none;
+}
+
+.component-controls .control-btn svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    stroke-width: 2;
+    pointer-events: none;
 }
 
 .component-controls .control-btn:hover {
-    background: #f8f9fa;
+    background: #f8fafc;
     border-color: #cbd5e1;
-    color: #475569;
+    color: #1e293b;
+    transform: translateY(-1px);
+}
+
+.component-controls .control-btn:active {
+    transform: translateY(0);
 }
 
 /* Hide emoji text if present */
@@ -119,30 +137,38 @@
     -webkit-mask-size: contain;
 }
 
-/* Hover states for specific buttons */
-.component-controls .control-btn.move-up:hover,
-.component-controls .control-btn.move-down:hover {
-    background: #e0f2fe;
-    border-color: #0ea5e9;
-    color: #0ea5e9;
+/* Hover states for specific buttons - Professional Colors */
+.component-controls .control-btn--move-up:hover,
+.component-controls .control-btn--move-down:hover {
+    background: #faf5ff;
+    border-color: #c4b5fd;
+    color: #7c3aed;
 }
 
-.component-controls .control-btn.edit:hover {
-    background: #f3e8ff;
-    border-color: #a855f7;
-    color: #a855f7;
+.component-controls .control-btn--edit:hover {
+    background: #f0f9ff;
+    border-color: #7dd3fc;
+    color: #0284c7;
 }
 
-.component-controls .control-btn.duplicate:hover {
-    background: #dcfce7;
-    border-color: #22c55e;
-    color: #22c55e;
+.component-controls .control-btn--duplicate:hover {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #16a34a;
 }
 
-.component-controls .control-btn.delete:hover {
-    background: #fee2e2;
-    border-color: #ef4444;
-    color: #ef4444;
+.component-controls .control-btn--delete:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+/* Disabled state for boundary components */
+.gmkb-component:first-child .control-btn--move-up,
+.gmkb-component:last-child .control-btn--move-down {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 /* Component content area */

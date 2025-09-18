@@ -168,6 +168,9 @@ function initializeVue() {
   }
 }
 
+// Global variable for edit panel
+let componentEditPanel = null;
+
 // Initialize application
 async function initialize() {
   logger.info('🚀 Initializing Media Kit Builder v3.0 with Vue.js');
@@ -328,7 +331,12 @@ async function initialize() {
     setupUIHandlers();
     
     // Initialize component edit panel
-    initializeEditPanel();
+    componentEditPanel = initializeEditPanel();
+    if (componentEditPanel) {
+      console.log('✅ Component edit panel initialized');
+    } else {
+      console.warn('⚠️ Component edit panel could not be initialized');
+    }
     
     // Set up component action handlers
     setupComponentHandlers();
@@ -831,6 +839,8 @@ function setupComponentHandlers() {
   document.addEventListener('gmkb:component-action', (e) => {
     const { action, componentId } = e.detail;
     
+    console.log('Component action received:', action, componentId);
+    
     switch (action) {
       case 'delete':
         if (confirm('Delete this component?')) {
@@ -853,6 +863,9 @@ function setupComponentHandlers() {
       case 'move-down':
         moveComponent(componentId, 1);
         break;
+        
+      default:
+        console.warn('Unknown component action:', action);
     }
   });
   
@@ -1260,13 +1273,43 @@ function moveComponent(componentId, direction) {
 }
 
 function openComponentEditor(componentId) {
-  // Simple inline editor for now
   const component = stateManager.getState().components[componentId];
-  if (!component) return;
+  if (!component) {
+    console.error('Component not found:', componentId);
+    return;
+  }
   
-  // This would open a design panel in a full implementation
-  console.log('Edit component:', component);
-  showToast('Component editor not yet implemented', 'info');
+  console.log('Opening editor for component:', componentId, component);
+  
+  // Switch to Components tab
+  const componentsTab = document.querySelector('[data-tab="components"]');
+  const componentsContent = document.getElementById('components-tab');
+  
+  if (componentsTab && componentsContent) {
+    // Activate the components tab
+    document.querySelectorAll('.sidebar__tab').forEach(t => t.classList.remove('sidebar__tab--active'));
+    componentsTab.classList.add('sidebar__tab--active');
+    
+    // Show components content
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('tab-content--active'));
+    componentsContent.classList.add('tab-content--active');
+    
+    // Open edit panel directly if available
+    if (componentEditPanel && componentEditPanel.openEditPanel) {
+      componentEditPanel.openEditPanel(componentId);
+      showToast('Component editor opened', 'success');
+    } else {
+      // Fallback: trigger event
+      console.warn('Edit panel not available, trying event dispatch');
+      // Note: ComponentEditPanel already listens for this event,
+      // but we're calling it from edit action which already triggered
+      // So we need to be careful not to create a loop
+      showToast('Opening component editor...', 'info');
+    }
+  } else {
+    console.error('Components tab not found');
+    showToast('Component editor not available', 'error');
+  }
 }
 
 function openSectionSettings(sectionId) {
