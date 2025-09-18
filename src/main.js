@@ -9,6 +9,8 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import VueComponentDiscovery from './loaders/VueComponentDiscovery.js';
 import { initializeEditPanel } from './ui/ComponentEditPanel.js';
+import { initializeUnifiedEditManager } from './ui/UnifiedEditManager.js';
+import ControlsOverlay from './vue/controls/ControlsOverlay.vue';
 
 // ROOT FIX: Import global commands to ensure they're in the bundle
 import { initializeGlobalCommands } from './global-commands.js';
@@ -70,6 +72,14 @@ function initializeVue() {
     if (!mountPoint) {
       logger.warn('Vue mount point not found, skipping Vue initialization');
       return null;
+    }
+
+    // ROOT FIX: Create controls mount point if it doesn't exist
+    let controlsMount = document.getElementById('gmkb-controls-root');
+    if (!controlsMount) {
+      controlsMount = document.createElement('div');
+      controlsMount.id = 'gmkb-controls-root';
+      document.body.appendChild(controlsMount);
     }
 
     // Create Vue app with minimal root component
@@ -137,6 +147,17 @@ function initializeVue() {
     window.getState = () => {
       return window.stateManager?.getState() || {};
     };
+    
+    // ROOT FIX: Mount the unified control system
+    const controlsApp = createApp(ControlsOverlay);
+    controlsApp.use(pinia);
+    const controlsInstance = controlsApp.mount(controlsMount);
+    
+    // Store controls app globally
+    window.gmkbControlsApp = controlsApp;
+    window.gmkbControlsInstance = controlsInstance;
+    
+    console.log('✅ Unified Vue control system mounted');
     
     // Make visible briefly to confirm integration
     mountPoint.style.display = 'block';
@@ -336,6 +357,12 @@ async function initialize() {
       console.log('✅ Component edit panel initialized');
     } else {
       console.warn('⚠️ Component edit panel could not be initialized');
+    }
+    
+    // Initialize unified edit manager
+    const unifiedEditManager = initializeUnifiedEditManager();
+    if (unifiedEditManager) {
+      console.log('✅ Unified edit manager initialized');
     }
     
     // Set up component action handlers

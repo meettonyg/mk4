@@ -302,8 +302,8 @@ export class Renderer {
     // Add inner container to section
     sectionEl.appendChild(innerContainer);
     
-    // Add section controls
-    this.addSectionControls(sectionEl, section);
+    // ROOT FIX: Section controls handled by Vue ControlsOverlay
+    // No controls added here - unified Vue system handles all controls
     
     return sectionEl;
   }
@@ -388,12 +388,8 @@ export class Renderer {
         throw new Error('Invalid renderer format');
       }
       
-      // ROOT FIX: Only add controls if NOT a Vue component
-      // Vue components have their own controls built into the template
-      const isVueComp = typeof renderer === 'object' && renderer.framework === 'vue';
-      if (!isVueComp) {
-        this.addComponentControls(wrapper, component);
-      }
+      // ROOT FIX: Controls are now handled by Vue ControlsOverlay
+      // No controls added here - unified Vue system handles all controls
       
       wrapper.appendChild(contentContainer);
       return wrapper;
@@ -414,61 +410,19 @@ export class Renderer {
         <p>Component ID: ${component.id}</p>
       </div>
     `;
-    this.addComponentControls(div, component);
+    // Controls handled by Vue ControlsOverlay
     return div;
   }
 
+  // REMOVED: Component controls now handled by Vue ControlsOverlay
   addComponentControls(element, component) {
-    // ROOT FIX: Only add controls in Vite bundle mode
-    // When using lean bundle, the component-controls-manager.js isn't loaded
-    // so we need to add controls here
-    const controls = document.createElement('div');
-    controls.className = 'component-controls';
-    controls.innerHTML = `
-      <button class="control-btn move-up" data-action="move-up" title="Move Up">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="19" x2="12" y2="5"></line>
-          <polyline points="5 12 12 5 19 12"></polyline>
-        </svg>
-      </button>
-      <button class="control-btn move-down" data-action="move-down" title="Move Down">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <polyline points="19 12 12 19 5 12"></polyline>
-        </svg>
-      </button>
-      <button class="control-btn edit" data-action="edit" title="Edit">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-      </button>
-      <button class="control-btn duplicate" data-action="duplicate" title="Duplicate">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-      </button>
-      <button class="control-btn delete" data-action="delete" title="Delete">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
-      </button>
-    `;
-    
-    // Add event listeners
-    controls.addEventListener('click', (e) => {
-      const action = e.target.dataset.action || e.target.closest('[data-action]')?.dataset.action;
-      if (action) {
-        this.handleComponentAction(action, component.id);
-      }
-    });
-    
-    element.appendChild(controls);
+    // Controls are now managed by Vue ControlsOverlay - no controls added here
   }
 
+  // REMOVED: Section controls now handled by Vue ControlsOverlay
   addSectionControls(element, section) {
+    // Controls are now managed by Vue ControlsOverlay - no controls added here
+    return; // Early return - no controls added
     const controls = document.createElement('div');
     controls.className = 'section-controls';
     controls.innerHTML = `

@@ -4,14 +4,7 @@
     :data-component-id="componentId"
     @click="handleClick"
   >
-    <!-- Component Controls -->
-    <div class="component-controls" v-if="isSelected">
-      <button @click.stop="moveUp" class="control-btn" title="Move Up">↑</button>
-      <button @click.stop="moveDown" class="control-btn" title="Move Down">↓</button>
-      <button @click.stop="openEditPanel" class="control-btn" title="Edit">✏️</button>
-      <button @click.stop="duplicate" class="control-btn" title="Duplicate">📋</button>
-      <button @click.stop="deleteComponent" class="control-btn control-btn--danger" title="Delete">🗑️</button>
-    </div>
+    <!-- Controls removed - now handled by unified Vue ControlsOverlay -->
 
     <!-- Biography Content -->
     <div class="biography__content">
@@ -254,6 +247,13 @@ export default {
       document.body.classList.add('design-panel-open');
     };
     
+    // Listen for external open-edit-panel events
+    const handleOpenEditPanel = (e) => {
+      if (e.detail?.componentId === props.componentId) {
+        openEditPanel();
+      }
+    };
+    
     const closeDesignPanel = () => {
       showDesignPanel.value = false;
       document.body.classList.remove('design-panel-open');
@@ -298,31 +298,8 @@ export default {
       }));
     };
     
-    const moveUp = () => {
-      document.dispatchEvent(new CustomEvent('gmkb:component-action', {
-        detail: { action: 'move-up', componentId: props.componentId }
-      }));
-    };
-    
-    const moveDown = () => {
-      document.dispatchEvent(new CustomEvent('gmkb:component-action', {
-        detail: { action: 'move-down', componentId: props.componentId }
-      }));
-    };
-    
-    const duplicate = () => {
-      document.dispatchEvent(new CustomEvent('gmkb:component-action', {
-        detail: { action: 'duplicate', componentId: props.componentId }
-      }));
-    };
-    
-    const deleteComponent = () => {
-      if (confirm('Delete this biography component?')) {
-        document.dispatchEvent(new CustomEvent('gmkb:component-action', {
-          detail: { action: 'delete', componentId: props.componentId }
-        }));
-      }
-    };
+    // Component action methods removed - handled by ControlsOverlay
+    // moveUp, moveDown, duplicate, deleteComponent methods removed
     
     // Handle global click to deselect
     const handleGlobalClick = (e) => {
@@ -342,6 +319,12 @@ export default {
       document.addEventListener('click', handleGlobalClick);
       document.addEventListener('keydown', handleEscKey);
       
+      // Listen for external edit panel open events
+      const element = document.querySelector(`[data-component-id="${props.componentId}"]`);
+      if (element) {
+        element.addEventListener('open-edit-panel', handleOpenEditPanel);
+      }
+      
       // Load from Pods data if biography is empty and data exists
       if (!localBiography.value && podsData.value?.biography) {
         localBiography.value = podsData.value.biography;
@@ -352,6 +335,12 @@ export default {
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleEscKey);
       document.body.classList.remove('design-panel-open');
+      
+      // Clean up edit panel listener
+      const element = document.querySelector(`[data-component-id="${props.componentId}"]`);
+      if (element) {
+        element.removeEventListener('open-edit-panel', handleOpenEditPanel);
+      }
     });
     
     return {
@@ -375,11 +364,7 @@ export default {
       closeDesignPanel,
       saveAndClose,
       loadFromPods,
-      updateComponent,
-      moveUp,
-      moveDown,
-      duplicate,
-      deleteComponent
+      updateComponent
     };
   }
 };
@@ -402,42 +387,7 @@ export default {
   opacity: 1;
 }
 
-/* Component Controls */
-.component-controls {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 10;
-}
-
-.control-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-}
-
-.control-btn:hover {
-  background: #f8f9fa;
-  border-color: #cbd5e1;
-}
-
-.control-btn--danger:hover {
-  background: #fee2e2;
-  border-color: #ef4444;
-  color: #ef4444;
-}
+/* Component Controls styles removed - handled by ControlsOverlay */
 
 /* Biography Content */
 .biography__content {

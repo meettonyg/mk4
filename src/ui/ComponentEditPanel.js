@@ -16,7 +16,20 @@ export class ComponentEditPanel {
     // Listen for edit events
     document.addEventListener('gmkb:component-action', (e) => {
       if (e.detail.action === 'edit') {
-        this.openEditPanel(e.detail.componentId);
+        // Check if component is Vue-based with its own edit panel
+        const state = window.GMKB?.getState();
+        const component = state?.components[e.detail.componentId];
+        
+        if (component?.type === 'biography') {
+          // Biography uses its own Vue-based design panel
+          // Dispatch event to open Vue panel instead
+          document.dispatchEvent(new CustomEvent('gmkb:open-vue-panel', {
+            detail: { componentId: e.detail.componentId }
+          }));
+        } else {
+          // Standard components use this edit panel
+          this.openEditPanel(e.detail.componentId);
+        }
       }
     });
   }
