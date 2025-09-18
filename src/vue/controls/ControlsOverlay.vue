@@ -87,29 +87,59 @@ export default {
       }
     };
     
+    // Debounce timer for hover detection
+    let hoverTimeout = null;
+    const hoverDelay = 100; // milliseconds
+    
+    // Store last hovered elements to prevent jitter
+    let lastHoveredSection = null;
+    let lastHoveredComponent = null;
+    
     // Handle hover detection with better element detection
     const handleMouseMove = (e) => {
-      // Find section under mouse - check multiple possible selectors
-      const sectionEl = e.target.closest('.gmkb-section, [data-section-id], .section-container');
-      if (sectionEl) {
-        const sectionId = sectionEl.getAttribute('data-section-id') || 
-                          sectionEl.dataset.sectionId || 
-                          sectionEl.id;
-        hoveredSectionId.value = sectionId;
-      } else {
-        hoveredSectionId.value = null;
+      // Clear existing timeout
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
       }
       
-      // Find component under mouse - check multiple possible selectors
-      const componentEl = e.target.closest('.gmkb-component, [data-component-id], .component-container');
-      if (componentEl && !e.target.closest('.gmkb-controls')) {
-        const componentId = componentEl.getAttribute('data-component-id') || 
-                           componentEl.dataset.componentId || 
-                           componentEl.id;
-        hoveredComponentId.value = componentId;
-      } else if (!e.target.closest('.gmkb-controls')) {
-        hoveredComponentId.value = null;
-      }
+      // Set new timeout for debounced hover
+      hoverTimeout = setTimeout(() => {
+        // Check if we're hovering over a control button itself
+        if (e.target.closest('.gmkb-component-controls, .gmkb-section-controls')) {
+          // Keep current hover state when over controls
+          return;
+        }
+        
+        // Find section under mouse - check multiple possible selectors
+        const sectionEl = e.target.closest('.gmkb-section, [data-section-id], .section-container');
+        if (sectionEl) {
+          const sectionId = sectionEl.getAttribute('data-section-id') || 
+                            sectionEl.dataset.sectionId || 
+                            sectionEl.id;
+          if (sectionId !== lastHoveredSection) {
+            hoveredSectionId.value = sectionId;
+            lastHoveredSection = sectionId;
+          }
+        } else if (!e.target.closest('.gmkb-controls')) {
+          hoveredSectionId.value = null;
+          lastHoveredSection = null;
+        }
+        
+        // Find component under mouse - check multiple possible selectors
+        const componentEl = e.target.closest('.gmkb-component, [data-component-id], .component-container');
+        if (componentEl && !e.target.closest('.gmkb-controls')) {
+          const componentId = componentEl.getAttribute('data-component-id') || 
+                             componentEl.dataset.componentId || 
+                             componentEl.id;
+          if (componentId !== lastHoveredComponent) {
+            hoveredComponentId.value = componentId;
+            lastHoveredComponent = componentId;
+          }
+        } else if (!e.target.closest('.gmkb-controls')) {
+          hoveredComponentId.value = null;
+          lastHoveredComponent = null;
+        }
+      }, hoverDelay);
     };
     
     // Handle click for selection

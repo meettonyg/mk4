@@ -151,11 +151,18 @@ export default {
       const element = document.querySelector(`[data-component-id="${props.component.id}"]`);
       if (element) {
         const rect = element.getBoundingClientRect();
-        elementPosition.value = {
+        // Only update if position actually changed (more than 5px difference)
+        const newPos = {
           top: rect.top,
           left: rect.left,
           width: rect.width
         };
+        
+        if (Math.abs(newPos.top - elementPosition.value.top) > 5 ||
+            Math.abs(newPos.left - elementPosition.value.left) > 5 ||
+            Math.abs(newPos.width - elementPosition.value.width) > 5) {
+          elementPosition.value = newPos;
+        }
       }
     };
     
