@@ -158,50 +158,56 @@ function initializeVue() {
       return window.stateManager?.getState() || {};
     };
     
-    // ROOT FIX: Mount the unified control system AFTER state is loaded
-    // Wait for state to be populated before mounting controls
-    const mountControlsWhenReady = () => {
-      const state = stateManager?.getState();
-      const hasComponents = state?.components && Object.keys(state.components).length > 0;
-      const hasSections = state?.sections && state.sections.length > 0;
+    // ROOT FIX: Mount controls ONLY after components are actually rendered in the DOM
+    // Listen for the event that signals all components have been rendered
+    const mountControlsAfterRender = () => {
+      console.log('Waiting for components to be rendered before mounting controls...');
       
-      if (hasComponents || hasSections) {
-        console.log('State ready, mounting Vue controls with:', {
-          components: Object.keys(state.components || {}).length,
-          sections: state.sections?.length || 0
-        });
+      // Don't mount controls until components are actually in the DOM
+      const waitForComponentsInDOM = () => {
+        const componentsInDOM = document.querySelectorAll('[data-component-id]');
+        const sectionsInDOM = document.querySelectorAll('[data-section-id]');
         
-        const controlsApp = createApp(ControlsOverlay);
-        console.log('ControlsOverlay component:', ControlsOverlay);
-        console.log('SectionControls component:', SectionControls);
-        console.log('ComponentControls component:', ComponentControls);
-        controlsApp.use(pinia);
-        const controlsInstance = controlsApp.mount(controlsMount);
-        
-        // Store controls app globally
-        window.gmkbControlsApp = controlsApp;
-        window.gmkbControlsInstance = controlsInstance;
-        
-        // Make sure components are registered globally (for tree-shaking prevention)
-        window.gmkbVueComponents = { ControlsOverlay, SectionControls, ComponentControls };
-        
-        console.log('✅ Unified Vue control system mounted with state ready');
-      } else {
-        // If no state yet, listen for state changes
-        console.log('Waiting for state before mounting Vue controls...');
-        const unsubscribe = stateManager.subscribe(() => {
-          const updatedState = stateManager.getState();
-          if ((updatedState.components && Object.keys(updatedState.components).length > 0) || 
-              (updatedState.sections && updatedState.sections.length > 0)) {
-            unsubscribe();
-            mountControlsWhenReady();
-          }
-        });
-      }
+        if (componentsInDOM.length > 0 || sectionsInDOM.length > 0) {
+          console.log(`Components found in DOM: ${componentsInDOM.length}, Sections: ${sectionsInDOM.length}`);
+          console.log('NOW mounting Vue controls...');
+          
+          const controlsApp = createApp(ControlsOverlay);
+          controlsApp.use(pinia);
+          const controlsInstance = controlsApp.mount(controlsMount);
+          
+          // Store controls app globally
+          window.gmkbControlsApp = controlsApp;
+          window.gmkbControlsInstance = controlsInstance;
+          window.gmkbVueComponents = { ControlsOverlay, SectionControls, ComponentControls };
+          
+          console.log('✅ Vue control system mounted with components already in DOM');
+          
+          // Dispatch event to signal controls are ready
+          document.dispatchEvent(new CustomEvent('gmkb:controls-mounted'));
+        } else {
+          // No components in DOM yet, check again soon
+          setTimeout(waitForComponentsInDOM, 100);
+        }
+      };
+      
+      // Start checking for components in DOM
+      waitForComponentsInDOM();
     };
     
-    // Start the mounting process
-    mountControlsWhenReady();
+    // Listen for the event that signals components are rendered
+    document.addEventListener('gmkb:all-components-rendered', () => {
+      console.log('All components rendered event received, mounting controls...');
+      mountControlsAfterRender();
+    });
+    
+    // Also start checking after a delay as a fallback
+    setTimeout(() => {
+      // Only mount if not already mounted
+      if (!window.gmkbControlsApp) {
+        mountControlsAfterRender();
+      }
+    }, 1000);
     
     // Make visible briefly to confirm integration
     mountPoint.style.display = 'block';

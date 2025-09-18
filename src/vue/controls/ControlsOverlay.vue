@@ -234,21 +234,8 @@ export default {
       }
     };
     
-    // Lifecycle hooks
-    onMounted(() => {
-      // The controls now only mount after state is ready, so we can update immediately
-      updateState();
-      
-      // Subscribe to state changes
-      const sm = getStateManager();
-      if (sm && sm.subscribe) {
-        sm.subscribe(updateState);
-        console.log('Vue controls subscribed to state changes');
-      }
-      
-      // Add event listeners using event delegation for better performance
-      // Set up hover detection on all components and sections
-      const setupHoverListeners = () => {
+    // Define setupHoverListeners outside onMounted so it's accessible
+    const setupHoverListeners = () => {
         // Remove any existing listeners first
         document.querySelectorAll('[data-component-id]').forEach(el => {
           el.removeEventListener('mouseenter', handleMouseEnter);
@@ -270,10 +257,25 @@ export default {
         });
         
         console.log('Hover listeners set up for', document.querySelectorAll('[data-component-id]').length, 'components');
-      };
+    };
+    
+    // Lifecycle hooks
+    onMounted(() => {
+      // The controls now only mount after state is ready, so we can update immediately
+      updateState();
       
-      // Initial setup
+      // Subscribe to state changes
+      const sm = getStateManager();
+      if (sm && sm.subscribe) {
+        sm.subscribe(updateState);
+        console.log('Vue controls subscribed to state changes');
+      }
+      
+      // ROOT FIX: Components should already be in DOM when controls mount
+      // because main.js waits for them before mounting ControlsOverlay
+      // Set up listeners immediately since components are guaranteed to exist
       setupHoverListeners();
+      console.log('Initial hover listener setup - components already in DOM');
       
       // Add click listener
       document.addEventListener('click', handleClick);
@@ -282,26 +284,35 @@ export default {
       document.addEventListener('gmkb:state-updated', updateState);
       
       // Listen for component render events and re-attach listeners
-      document.addEventListener('gmkb:component-rendered', () => {
+      const componentRenderedHandler = () => {
         setTimeout(() => {
           updateState();
           setupHoverListeners();
+          console.log('Hover listeners updated after component rendered');
         }, 100);
-      });
+      };
       
-      // Listen for all components rendered
-      document.addEventListener('gmkb:all-components-rendered', () => {
+      // Listen for all components rendered - this is the most important event
+      const allComponentsRenderedHandler = () => {
         setTimeout(() => {
           updateState();
           setupHoverListeners();
           console.log('Vue controls: Hover listeners updated after all components rendered');
-        }, 200);
-      });
+          console.log('Found components:', document.querySelectorAll('[data-component-id]').length);
+        }, 300);  // Increased delay to ensure DOM is ready
+      };
       
-      // Also listen for state changes to re-attach listeners
-      document.addEventListener('gmkb:state-updated', () => {
-        setTimeout(setupHoverListeners, 100);
-      });
+      // Listen for state changes to re-attach listeners
+      const stateUpdatedHandler = () => {
+        setTimeout(() => {
+          setupHoverListeners();
+          console.log('Hover listeners updated after state change');
+        }, 200);
+      };
+      
+      document.addEventListener('gmkb:component-rendered', componentRenderedHandler);
+      document.addEventListener('gmkb:all-components-rendered', allComponentsRenderedHandler);
+      document.addEventListener('gmkb:state-updated', stateUpdatedHandler);
     });
     
     onUnmounted(() => {
@@ -321,6 +332,9 @@ export default {
       document.removeEventListener('gmkb:all-components-rendered', updateState);
     });
     
+    // Export setupHoverListeners to window for external access
+    window.gmkbSetupHoverListeners = setupHoverListeners;
+    
     return {
       hoveredSectionId,
       hoveredComponentId,
@@ -328,7 +342,8 @@ export default {
       visibleSections,
       visibleComponents,
       handleSectionAction,
-      handleComponentAction
+      handleComponentAction,
+      setupHoverListeners
     };
   }
 };
