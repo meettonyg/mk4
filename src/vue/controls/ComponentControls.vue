@@ -95,7 +95,8 @@ export default {
     
     // Check if this is first or last component in its section
     const isFirst = computed(() => {
-      const state = window.GMKB?.stateManager?.getState();
+      const sm = window.GMKB?.stateManager || window.stateManager || window.gmkbStateManager;
+      const state = sm?.getState();
       if (!state) return true;
       
       // If component is in a section
@@ -115,7 +116,8 @@ export default {
     });
     
     const isLast = computed(() => {
-      const state = window.GMKB?.stateManager?.getState();
+      const sm = window.GMKB?.stateManager || window.stateManager || window.gmkbStateManager;
+      const state = sm?.getState();
       if (!state) return true;
       
       // If component is in a section

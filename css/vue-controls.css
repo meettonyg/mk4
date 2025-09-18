@@ -1,0 +1,180 @@
+/**
+ * Vue Controls Styles
+ * Global styles for the Vue control overlay system
+ */
+
+/* Ensure controls are above everything */
+.gmkb-controls-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 9999 !important;
+}
+
+/* Component controls container */
+.gmkb-component-controls {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  animation: fadeIn 0.2s ease;
+  pointer-events: auto !important;
+}
+
+/* Section controls container */
+.gmkb-section-controls {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  animation: fadeIn 0.2s ease;
+  pointer-events: auto !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Control buttons */
+.gmkb-controls .control-btn,
+.gmkb-component-controls .control-btn,
+.gmkb-section-controls .control-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #64748b;
+  padding: 0;
+  margin: 0;
+  pointer-events: auto !important;
+}
+
+.control-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-1px);
+}
+
+.control-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.control-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.control-btn svg {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+/* Specific button colors */
+.control-btn--move-up:hover:not(:disabled),
+.control-btn--move-down:hover:not(:disabled) {
+  background: #faf5ff;
+  border-color: #c4b5fd;
+  color: #7c3aed;
+}
+
+.control-btn--edit:hover:not(:disabled) {
+  background: #f0f9ff;
+  border-color: #7dd3fc;
+  color: #0284c7;
+}
+
+.control-btn--duplicate:hover:not(:disabled) {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #16a34a;
+}
+
+.control-btn--delete:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.control-btn--settings:hover:not(:disabled) {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #d97706;
+}
+
+/* Hide legacy controls */
+.component-controls:not(.gmkb-component-controls),
+.section-controls:not(.gmkb-section-controls) {
+  display: none !important;
+}
+
+/* Component hover state */
+.gmkb-component {
+  transition: outline 0.2s ease;
+  position: relative;
+}
+
+.gmkb-component:hover {
+  outline: 2px solid rgba(59, 130, 246, 0.2);
+  outline-offset: 2px;
+}
+
+/* Section hover state */
+.gmkb-section {
+  transition: outline 0.2s ease;
+  position: relative;
+}
+
+.gmkb-section:hover {
+  outline: 2px solid rgba(168, 85, 247, 0.2);
+  outline-offset: 2px;
+}
+
+/* Selected states */
+.gmkb-component.is-selected {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+.gmkb-section.is-selected {
+  outline: 2px solid rgba(168, 85, 247, 0.5);
+  outline-offset: 2px;
+}
+
+/* Z-index hierarchy */
+.gmkb-section-controls {
+  z-index: 1001;
+}
+
+.gmkb-component-controls {
+  z-index: 1002;
+}
+
+/* Ensure Vue teleport targets are positioned correctly */
+body > .gmkb-controls {
+  position: fixed;
+  z-index: 9999;
+}

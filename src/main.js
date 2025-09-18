@@ -4,6 +4,9 @@
  * Phase 3: Vue.js Integration Foundation
  */
 
+// Import styles for Vue controls
+import '../css/vue-controls.css';
+
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';

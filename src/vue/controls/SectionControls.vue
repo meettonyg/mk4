@@ -80,13 +80,15 @@ export default {
     
     // Check if this is first or last section
     const isFirst = computed(() => {
-      const state = window.GMKB?.stateManager?.getState();
+      const sm = window.GMKB?.stateManager || window.stateManager || window.gmkbStateManager;
+      const state = sm?.getState();
       if (!state?.sections) return true;
       return state.sections[0]?.section_id === props.section.section_id;
     });
     
     const isLast = computed(() => {
-      const state = window.GMKB?.stateManager?.getState();
+      const sm = window.GMKB?.stateManager || window.stateManager || window.gmkbStateManager;
+      const state = sm?.getState();
       if (!state?.sections) return true;
       const sections = state.sections;
       return sections[sections.length - 1]?.section_id === props.section.section_id;

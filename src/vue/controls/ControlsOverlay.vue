@@ -42,50 +42,72 @@ export default {
     const sections = ref([]);
     const components = ref({});
     
-    // Get state manager
-    const stateManager = window.GMKB?.stateManager || window.stateManager;
+    // Get state manager - try multiple sources
+    const getStateManager = () => {
+      return window.GMKB?.stateManager || 
+             window.stateManager || 
+             window.gmkbStateManager ||
+             window.enhancedStateManager;
+    };
     
     // Computed properties for visible elements
     const visibleSections = computed(() => {
       return sections.value.filter(section => {
-        const element = document.querySelector(`[data-section-id="${section.section_id}"]`);
+        // Check multiple possible selectors for sections
+        const element = document.querySelector(`[data-section-id="${section.section_id}"]`) ||
+                       document.querySelector(`#${section.section_id}`) ||
+                       document.querySelector(`.section-${section.section_id}`);
         return element && element.offsetParent !== null;
       });
     });
     
     const visibleComponents = computed(() => {
       return Object.values(components.value).filter(component => {
-        const element = document.querySelector(`[data-component-id="${component.id}"]`);
+        // Check multiple possible selectors for components
+        const element = document.querySelector(`[data-component-id="${component.id}"]`) ||
+                       document.querySelector(`#${component.id}`) ||
+                       document.querySelector(`.component-${component.id}`);
         return element && element.offsetParent !== null;
       });
     });
     
     // Update state from state manager
     const updateState = () => {
-      if (stateManager) {
-        const state = stateManager.getState();
+      const sm = getStateManager();
+      if (sm) {
+        const state = sm.getState();
         sections.value = state.sections || [];
         components.value = state.components || {};
+        console.log('Vue controls updated state:', {
+          sections: sections.value.length,
+          components: Object.keys(components.value).length
+        });
+      } else {
+        console.warn('No state manager found');
       }
     };
     
-    // Handle hover detection
+    // Handle hover detection with better element detection
     const handleMouseMove = (e) => {
-      // Find section under mouse
-      const sectionEl = e.target.closest('.gmkb-section');
+      // Find section under mouse - check multiple possible selectors
+      const sectionEl = e.target.closest('.gmkb-section, [data-section-id], .section-container');
       if (sectionEl) {
-        const sectionId = sectionEl.getAttribute('data-section-id');
+        const sectionId = sectionEl.getAttribute('data-section-id') || 
+                          sectionEl.dataset.sectionId || 
+                          sectionEl.id;
         hoveredSectionId.value = sectionId;
       } else {
         hoveredSectionId.value = null;
       }
       
-      // Find component under mouse
-      const componentEl = e.target.closest('.gmkb-component');
-      if (componentEl) {
-        const componentId = componentEl.getAttribute('data-component-id');
+      // Find component under mouse - check multiple possible selectors
+      const componentEl = e.target.closest('.gmkb-component, [data-component-id], .component-container');
+      if (componentEl && !e.target.closest('.gmkb-controls')) {
+        const componentId = componentEl.getAttribute('data-component-id') || 
+                           componentEl.dataset.componentId || 
+                           componentEl.id;
         hoveredComponentId.value = componentId;
-      } else {
+      } else if (!e.target.closest('.gmkb-controls')) {
         hoveredComponentId.value = null;
       }
     };
@@ -182,12 +204,17 @@ export default {
     
     // Lifecycle hooks
     onMounted(() => {
-      updateState();
-      
-      // Subscribe to state changes
-      if (stateManager) {
-        stateManager.subscribe(updateState);
-      }
+      // Initial state load with delay to ensure state manager is ready
+      setTimeout(() => {
+        updateState();
+        
+        // Subscribe to state changes
+        const sm = getStateManager();
+        if (sm && sm.subscribe) {
+          sm.subscribe(updateState);
+          console.log('Vue controls subscribed to state changes');
+        }
+      }, 100);
       
       // Add event listeners
       document.addEventListener('mousemove', handleMouseMove);
