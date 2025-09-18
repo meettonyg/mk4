@@ -339,6 +339,14 @@ function gmkb_enqueue_assets() {
         $version
         );
         
+        // Vue controls styles - CRITICAL for control visibility
+        wp_enqueue_style(
+        'gmkb-vue-controls',
+        $plugin_url . 'css/vue-controls.css',
+        array('gmkb-lean-styles'),
+        $version
+        );
+        
         
         // Theme CSS files can still be loaded (they don't conflict)
         wp_enqueue_style(
@@ -2157,6 +2165,57 @@ function gmkb_enqueue_assets() {
     // - template-library.js
     // - global-settings.js
     // - export.js
+    
+    // Enqueue CSS styles
+    wp_enqueue_style(
+        'gmkb-builder-styles',
+        $plugin_url . 'css/guestify-builder.css',
+        array(),
+        $version
+    );
+    
+    wp_enqueue_style(
+        'gmkb-component-controls',
+        $plugin_url . 'css/component-controls.css',
+        array('gmkb-builder-styles'),
+        $version
+    );
+    
+    wp_enqueue_style(
+        'gmkb-section-controls',
+        $plugin_url . 'css/section-controls.css',
+        array('gmkb-builder-styles'),
+        $version
+    );
+    
+    wp_enqueue_style(
+        'gmkb-component-edit-panel',
+        $plugin_url . 'css/component-edit-panel.css',
+        array('gmkb-builder-styles'),
+        $version
+    );
+    
+    // Vue controls styles - CRITICAL for control visibility
+    wp_enqueue_style(
+        'gmkb-vue-controls',
+        $plugin_url . 'css/vue-controls.css',
+        array('gmkb-builder-styles'),
+        $version
+    );
+    
+    wp_enqueue_style(
+        'gmkb-theme-variables',
+        $plugin_url . 'css/theme-variables.css',
+        array('gmkb-builder-styles'),
+        $version
+    );
+    
+    wp_enqueue_style(
+        'gmkb-theme-customizer',
+        $plugin_url . 'css/theme-customizer.css',
+        array('gmkb-theme-variables'),
+        $version
+    );
     
     // ✅ PHASE 3 OPTIMIZATION: Conditional debug script loading (only when explicitly requested)
     // ✅ ROOT CAUSE: Debug scripts were causing 66 total scripts - now load only when needed
