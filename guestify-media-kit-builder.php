@@ -135,6 +135,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php';
 }
 
+// ROOT FIX: Admin diagnostic tool for fixing component save issues
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-admin-diagnostic.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-admin-diagnostic.php';
+}
+
 // PHASE 7: Version Control System
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php';
