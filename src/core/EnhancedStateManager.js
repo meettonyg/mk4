@@ -1202,6 +1202,70 @@ export class EnhancedStateManager {
             processedData = data;
         }
         
+        // ROOT FIX: Check if we have orphaned components in sections but not in components object
+        // This happens when components are added to sections but not to the main components map
+        if (processedData.sections && processedData.sections.length > 0) {
+            // First, collect all component IDs referenced in sections
+            const componentsInSections = new Set();
+            processedData.sections.forEach(section => {
+                if (section.components && Array.isArray(section.components)) {
+                    section.components.forEach(comp => {
+                        const compId = typeof comp === 'string' ? comp : (comp.component_id || comp.id);
+                        if (compId) {
+                            componentsInSections.add(compId);
+                        }
+                    });
+                }
+            });
+            
+            // Initialize components object if it doesn't exist
+            if (!processedData.components || Array.isArray(processedData.components)) {
+                processedData.components = {};
+            }
+            
+            // Check for missing components
+            const missingComponents = Array.from(componentsInSections).filter(id => !processedData.components[id]);
+            
+            if (missingComponents.length > 0) {
+                console.warn(`Found ${missingComponents.length} components in sections but not in components object:`, missingComponents);
+                
+                // Reconstruct missing components with minimal data
+                // These will be properly populated when the component renders
+                missingComponents.forEach(id => {
+                    // Extract type from ID if possible (format: type_timestamp_random)
+                    const parts = id.split('_');
+                    const type = parts.length > 2 ? parts[0] : 'unknown';
+                    
+                    // Find which section this component belongs to
+                    let sectionId = null;
+                    processedData.sections.forEach(section => {
+                        if (section.components) {
+                            const hasComponent = section.components.some(comp => {
+                                const compId = typeof comp === 'string' ? comp : (comp.component_id || comp.id);
+                                return compId === id;
+                            });
+                            if (hasComponent) {
+                                sectionId = section.section_id || section.id;
+                            }
+                        }
+                    });
+                    
+                    processedData.components[id] = {
+                        id: id,
+                        type: type,
+                        props: {},
+                        data: {},
+                        content: {},
+                        sectionId: sectionId,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now()
+                    };
+                    
+                    console.log(`Reconstructed missing component: ${id} (type: ${type}, section: ${sectionId})`);
+                });
+            }
+        }
+        
         // ROOT FIX: Repair corrupted data structures and ensure proper section assignment
         if (processedData.components && Object.keys(processedData.components).length > 0) {
         // Fix array corruption in all components

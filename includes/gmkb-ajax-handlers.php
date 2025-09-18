@@ -214,11 +214,41 @@ class GMKB_Ajax_Handlers {
         $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
         
         if ($saved_state) {
-            // ROOT FIX: Ensure components is an object for JavaScript
-            if (isset($saved_state['components']) && is_array($saved_state['components']) && empty($saved_state['components'])) {
-                // Convert empty array to empty object for JavaScript
+            // ROOT FIX: Debug the raw loaded state
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                GMKB_Debug_Logger::log('Raw saved state type: ' . gettype($saved_state));
+                if (is_array($saved_state)) {
+                    GMKB_Debug_Logger::log('State keys: ' . implode(', ', array_keys($saved_state)));
+                    if (isset($saved_state['components'])) {
+                        GMKB_Debug_Logger::log('Components type in loaded state: ' . gettype($saved_state['components']));
+                        if (is_array($saved_state['components'])) {
+                            $comp_count = count($saved_state['components']);
+                            GMKB_Debug_Logger::log('Components count in loaded state: ' . $comp_count);
+                            if ($comp_count > 0) {
+                                $first_key = array_key_first($saved_state['components']);
+                                GMKB_Debug_Logger::log('First component key: ' . $first_key);
+                                GMKB_Debug_Logger::log('First component data: ' . json_encode($saved_state['components'][$first_key]));
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // ROOT FIX: Ensure components is properly formatted for JavaScript
+            // Empty arrays should become empty objects for JS compatibility
+            if (isset($saved_state['components'])) {
+                if (is_array($saved_state['components']) && empty($saved_state['components'])) {
+                    // Convert empty array to empty object for JavaScript
+                    $saved_state['components'] = new stdClass();
+                    GMKB_Debug_Logger::log('Converted empty components array to object');
+                } else if (is_array($saved_state['components']) && !empty($saved_state['components'])) {
+                    // Ensure associative array is preserved (should be automatic in JSON encoding)
+                    GMKB_Debug_Logger::log('Components is non-empty array with ' . count($saved_state['components']) . ' items');
+                }
+            } else {
+                // No components key - initialize as empty object
                 $saved_state['components'] = new stdClass();
-                GMKB_Debug_Logger::log('Converted empty components array to object');
+                GMKB_Debug_Logger::log('Initialized missing components as empty object');
             }
             
             // ROOT FIX: Use debug logger for detailed tracking
@@ -241,7 +271,23 @@ class GMKB_Ajax_Handlers {
                 'message' => $components_loaded > 0 ? 'Loaded ' . $components_loaded . ' components' : 'No components found'
             ));
         } else {
-            wp_send_json_success(array('state' => null, 'message' => 'No saved state found'));
+            // ROOT FIX: Initialize with empty state structure
+            $empty_state = array(
+                'components' => new stdClass(), // Empty object for JS
+                'sections' => array(),
+                'layout' => array(),
+                'theme' => 'default',
+                'themeSettings' => new stdClass(),
+                'globalSettings' => new stdClass()
+            );
+            
+            GMKB_Debug_Logger::log('No saved state found for post ' . $post_id . ', returning empty state');
+            
+            wp_send_json_success(array(
+                'state' => $empty_state, 
+                'message' => 'No saved state found - initialized with empty state',
+                'components_loaded' => 0
+            ));
         }
     }
     
@@ -309,15 +355,36 @@ class GMKB_Ajax_Handlers {
         
         // Count components in the components object (this is the main storage)
         if (isset($state['components'])) {
+            // CRITICAL FIX: JavaScript objects become associative arrays in PHP
+            // Components object from JS will be a non-empty associative array
             if (is_array($state['components'])) {
-                // Simply count the array - PHP handles both indexed and associative arrays
-                $components_count = count($state['components']);
-                
-                // Log component IDs for debugging
-                if ($components_count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
-                    $component_ids = array_keys($state['components']);
-                    GMKB_Debug_Logger::log('Components being saved: ' . implode(', ', array_slice($component_ids, 0, 5)) . 
-                                          ($components_count > 5 ? '... (' . $components_count . ' total)' : ''));
+                // Check if it's an associative array (from JS object) with actual keys
+                if (!empty($state['components'])) {
+                    // For associative arrays, count() works correctly
+                    $components_count = count($state['components']);
+                    
+                    // Log component IDs for debugging
+                    if ($components_count > 0) {
+                        $component_ids = array_keys($state['components']);
+                        GMKB_Debug_Logger::log('Components being saved: ' . implode(', ', array_slice($component_ids, 0, 5)) . 
+                                              ($components_count > 5 ? '... (' . $components_count . ' total)' : ''));
+                        
+                        // DEBUG: Log the actual structure
+                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                            GMKB_Debug_Logger::log('Components structure type: ' . gettype($state['components']));
+                            GMKB_Debug_Logger::log('First component key type: ' . (count($component_ids) > 0 ? gettype($component_ids[0]) : 'none'));
+                            
+                            // Check the first component to understand structure
+                            if (count($component_ids) > 0) {
+                                $first_key = $component_ids[0];
+                                $first_component = $state['components'][$first_key];
+                                GMKB_Debug_Logger::log('First component structure: ' . json_encode($first_component));
+                            }
+                        }
+                    }
+                } else {
+                    // Empty array
+                    GMKB_Debug_Logger::log('Components is an empty array');
                 }
             } else if (is_object($state['components'])) {
                 // If it's a standard object, convert and count
@@ -325,12 +392,16 @@ class GMKB_Ajax_Handlers {
                 $components_count = count($components_array);
                 
                 // Log component IDs for debugging
-                if ($components_count > 0 && defined('WP_DEBUG') && WP_DEBUG) {
+                if ($components_count > 0) {
                     $component_ids = array_keys($components_array);
                     GMKB_Debug_Logger::log('Components being saved (object): ' . implode(', ', array_slice($component_ids, 0, 5)) . 
                                           ($components_count > 5 ? '... (' . $components_count . ' total)' : ''));
                 }
+            } else {
+                GMKB_Debug_Logger::log('Components is neither array nor object: ' . gettype($state['components']));
             }
+        } else {
+            GMKB_Debug_Logger::log('No components key in state');
         }
         
         // Count sections and component references in sections
