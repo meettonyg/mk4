@@ -408,7 +408,7 @@ const BiographyVue = {
             e.stopPropagation(); 
             // Dispatch event for sidebar edit panel
             document.dispatchEvent(new CustomEvent('gmkb:component-action', {
-              detail: { action: 'edit', componentId: props.componentId }
+              detail: { action: 'edit', componentId: this.componentId }
             }));
           }
         }, [
