@@ -348,171 +348,69 @@ class GMKB_Ajax_Handlers {
      * Save media kit - ROOT FIX: Properly handle JavaScript object -> PHP array conversion
      */
     public function save_media_kit() {
-        // Verify nonce
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
-            wp_send_json_error('Invalid nonce');
+        // 1. Security Verification
+        check_ajax_referer('gmkb_nonce', 'nonce');
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error('Insufficient permissions');
             return;
         }
-        
+
+        // 2. Input Validation
         $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
-        
-        if (!$post_id) {
-            wp_send_json_error('No post ID provided');
+        if ($post_id <= 0) {
+            wp_send_json_error(array('message' => 'Invalid Post ID provided.'));
             return;
         }
-        
-        // Check user capabilities
-        if (!current_user_can('edit_post', $post_id)) {
-            wp_send_json_error('You do not have permission to edit this media kit');
+
+        if (!isset($_POST['state'])) {
+            wp_send_json_error(array('message' => 'No state data received.'));
             return;
         }
-        
-        // Get state from POST
-        $state_json = isset($_POST['state']) ? stripslashes($_POST['state']) : '';
-        
-        if (empty($state_json)) {
-            wp_send_json_error('No state data provided');
-            return;
-        }
-        
-        // Decode state
+
+        // 3. Data Processing
+        $state_json = stripslashes($_POST['state']);
         $state = json_decode($state_json, true);
-        
+
         if (json_last_error() !== JSON_ERROR_NONE) {
-            wp_send_json_error('Invalid JSON data: ' . json_last_error_msg());
+            wp_send_json_error(array('message' => 'Invalid JSON data received.', 'error' => json_last_error_msg()));
             return;
         }
         
-        // ROOT FIX: Debug the state structure
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            if (isset($state['components'])) {
-                GMKB_Debug_Logger::log('Components type: ' . gettype($state['components']));
-                
-                if (is_array($state['components'])) {
-                    GMKB_Debug_Logger::log('Components count: ' . count($state['components']));
-                    if (count($state['components']) > 0) {
-                        $first_key = array_key_first($state['components']);
-                        GMKB_Debug_Logger::log('First component key: ' . $first_key);
-                    }
-                }
-            } else {
-                GMKB_Debug_Logger::log('No components key in state');
-            }
+        // ROOT FIX: Log the state immediately after decoding to ensure we receive the correct structure.
+        GMKB_Debug_Logger::log('Received state in save_media_kit:', $state);
+
+        // 4. Data Sanitization & Integrity Checks
+        // ROOT FIX: Ensure `components` is treated as an associative array (object in JS)
+        // If `components` is not set or is not an array, initialize it as an empty array.
+        // This prevents errors if the frontend ever sends a malformed state.
+        if (!isset($state['components']) || !is_array($state['components'])) {
+            $state['components'] = [];
         }
+
+        // 5. Save to Database
+        // The `$state` variable now contains the complete, validated structure.
+        $result = update_post_meta($post_id, 'gmkb_media_kit_state', $state);
         
-        // ROOT FIX: Properly handle JavaScript object -> PHP associative array
-        $components_count = 0;
-        
-        // JavaScript objects become associative arrays in PHP, not indexed arrays
-        // This is the ROOT of the issue - we need to properly handle this conversion
-        if (isset($state['components'])) {
-            if (is_array($state['components'])) {
-                // JavaScript object becomes associative array in PHP
-                // This is CORRECT - don't try to "fix" it
-                $components_count = count($state['components']);
-                
-                if ($components_count > 0) {
-                    // Ensure components maintain their associative array structure
-                    // Don't convert to indexed array - this breaks the component IDs!
-                    $component_ids = array_keys($state['components']);
-                    GMKB_Debug_Logger::log('Saving ' . $components_count . ' components: ' . implode(', ', array_slice($component_ids, 0, 5)) . 
-                                          ($components_count > 5 ? '...' : ''));
-                }
-            }
+        if ($result === false) {
+            wp_send_json_error(array('message' => 'Failed to save data to the database.'));
+            return;
         }
-        
-        // ROOT FIX: Ensure components stay as associative array when empty
-        // Empty JavaScript object {} should remain an empty associative array
-        if (!isset($state['components'])) {
-            $state['components'] = array(); // This becomes {} in JSON
-        } else if (is_array($state['components']) && empty($state['components'])) {
-            // Keep as empty array - json_encode will handle properly
-            $state['components'] = array();
-        }
-        
-        // Count sections and component references in sections
-        $sections_count = 0;
-        $components_in_sections = 0;
-        if (isset($state['sections']) && is_array($state['sections'])) {
-            $sections_count = count($state['sections']);
-            
-            // Count component references in sections
-            foreach ($state['sections'] as $section) {
-                if (isset($section['components']) && is_array($section['components'])) {
-                    $components_in_sections += count($section['components']);
-                }
-            }
-        }
-        
-        // ROOT FIX: Components must be saved properly for retrieval
-        // The critical issue is ensuring the associative array structure is preserved
-        // This happens automatically with json_encode/decode and update_post_meta
-        
-        // Validate state structure before saving
-        if ($components_count === 0 && $components_in_sections > 0) {
-            GMKB_Debug_Logger::log('WARNING: ' . $components_in_sections . ' components referenced in sections but components object is empty!');
-            
-            // ROOT FIX: Reconstruct components object from section references if missing
-            // This shouldn't happen but provides recovery if it does
-            if (!isset($state['components']) || empty($state['components'])) {
-                $state['components'] = array();
-                foreach ($state['sections'] as $section) {
-                    if (isset($section['components']) && is_array($section['components'])) {
-                        foreach ($section['components'] as $comp_ref) {
-                            $comp_id = is_array($comp_ref) ? $comp_ref['component_id'] : $comp_ref;
-                            if ($comp_id && !isset($state['components'][$comp_id])) {
-                                // Create minimal component entry
-                                $state['components'][$comp_id] = array(
-                                    'id' => $comp_id,
-                                    'type' => 'unknown',
-                                    'sectionId' => $section['section_id'],
-                                    'data' => array(),
-                                    'props' => array()
-                                );
-                                GMKB_Debug_Logger::log('Reconstructed component: ' . $comp_id);
-                            }
-                        }
-                    }
-                }
-                $components_count = count($state['components']);
-                GMKB_Debug_Logger::log('Reconstructed ' . $components_count . ' components from section references');
-            }
-        }
-        
-        // ROOT FIX: Use debug logger for comprehensive logging
-        $debug_info = GMKB_Debug_Logger::log_save_operation($post_id, $state);
-        
-        // ROOT FIX: Save the complete state with proper serialization
-        // WordPress handles serialization automatically - just pass the array
-        $save_result = update_post_meta($post_id, 'gmkb_media_kit_state', $state);
-        
-        // Verify the save by immediately loading it back
-        $verify_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
-        $verify_components_count = 0;
-        if (isset($verify_state['components']) && is_array($verify_state['components'])) {
-            $verify_components_count = count($verify_state['components']);
-        }
-        
-        if ($verify_components_count != $components_count) {
-            GMKB_Debug_Logger::log('ERROR: Save verification failed! Saved ' . $components_count . ' but loaded ' . $verify_components_count);
-        } else {
-            GMKB_Debug_Logger::log('Save verified: ' . $verify_components_count . ' components persisted to database');
-        }
-        
-        // Get data size for debugging
+
+        // 6. Prepare Accurate Response Data
+        // ROOT FIX: Calculate counts AFTER sanitization and BEFORE sending the response.
+        // This does not alter the saved state.
+        $components_count = count($state['components']);
+        $sections_count = isset($state['sections']) && is_array($state['sections']) ? count($state['sections']) : 0;
         $data_size = strlen($state_json);
-        
-        // Send clean JSON response
+
+        // 7. Send Success Response
         wp_send_json_success(array(
-            'message' => 'Media kit saved successfully',
+            'message' => 'Media kit saved successfully.',
             'timestamp' => time(),
             'post_id' => $post_id,
-            'components_count' => $components_count,
+            'components_count' => $components_count, // This will now be accurate.
             'sections_count' => $sections_count,
-            'components_in_sections' => $components_in_sections,
             'data_size' => $data_size,
-            'save_method' => 'database',
-            'debug' => $debug_info
         ));
     }
     
