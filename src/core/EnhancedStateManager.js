@@ -155,6 +155,13 @@ function mainReducer(state = STATE_SCHEMA, action) {
             // If sections exist but component has no sectionId, it's orphaned
             // Don't add to layout - it won't render
             
+            // ROOT FIX: Dispatch event when component is added so controls can re-attach
+            setTimeout(() => {
+                document.dispatchEvent(new CustomEvent('gmkb:component-added', {
+                    detail: { componentId: component.id, type: component.type }
+                }));
+            }, 0);
+            
             break;
         }
         

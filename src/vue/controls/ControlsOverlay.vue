@@ -283,36 +283,55 @@ export default {
       // Listen for external state updates
       document.addEventListener('gmkb:state-updated', updateState);
       
+      // ROOT FIX: Re-attach listeners whenever DOM changes
       // Listen for component render events and re-attach listeners
       const componentRenderedHandler = () => {
         setTimeout(() => {
           updateState();
           setupHoverListeners();
-          console.log('Hover listeners updated after component rendered');
+          console.log('Re-attached hover listeners after component rendered');
         }, 100);
       };
       
-      // Listen for all components rendered - this is the most important event
+      // Listen for all components rendered
       const allComponentsRenderedHandler = () => {
         setTimeout(() => {
           updateState();
           setupHoverListeners();
-          console.log('Vue controls: Hover listeners updated after all components rendered');
+          console.log('Re-attached hover listeners after all components rendered');
           console.log('Found components:', document.querySelectorAll('[data-component-id]').length);
-        }, 300);  // Increased delay to ensure DOM is ready
+        }, 300);
       };
       
-      // Listen for state changes to re-attach listeners
+      // ROOT FIX: Critical - re-attach on state changes (includes adding components)
       const stateUpdatedHandler = () => {
-        setTimeout(() => {
-          setupHoverListeners();
-          console.log('Hover listeners updated after state change');
-        }, 200);
+        // Use requestAnimationFrame to ensure DOM has updated
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            updateState();
+            setupHoverListeners();
+            console.log('Re-attached hover listeners after state change');
+          }, 100);
+        });
+      };
+      
+      // ROOT FIX: Also listen for component add events specifically
+      const componentAddedHandler = (e) => {
+        console.log('Component added event:', e.detail);
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            updateState();
+            setupHoverListeners();
+            console.log('Re-attached hover listeners after component added');
+          }, 200);
+        });
       };
       
       document.addEventListener('gmkb:component-rendered', componentRenderedHandler);
       document.addEventListener('gmkb:all-components-rendered', allComponentsRenderedHandler);
       document.addEventListener('gmkb:state-updated', stateUpdatedHandler);
+      document.addEventListener('gmkb:component-added', componentAddedHandler);
+      document.addEventListener('state:changed', stateUpdatedHandler);  // Also listen for state:changed
     });
     
     onUnmounted(() => {
