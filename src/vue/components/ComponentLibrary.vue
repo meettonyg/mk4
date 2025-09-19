@@ -113,7 +113,7 @@ export default {
     // Get components from store or window data
     onMounted(() => {
       // ROOT FIX: Components are discovered and stored in GMKB.components Map
-      console.log('ComponentLibrary: Looking for discovered components...');
+      console.log('ComponentLibrary Vue component mounted');
       
       // Check if GMKB exists with discovered components
       if (window.GMKB && window.GMKB.components && window.GMKB.components.size > 0) {
@@ -155,6 +155,10 @@ export default {
       
       // Listen for component library open event
       document.addEventListener('gmkb:open-component-library', open);
+      
+      // Expose the open function globally
+      window.openComponentLibrary = open;
+      console.log('✅ Vue ComponentLibrary ready - window.openComponentLibrary is available');
     });
     
     // Get unique categories
@@ -225,8 +229,7 @@ export default {
       searchTerm.value = '';
     };
     
-    // Expose method globally for compatibility
-    window.openComponentLibrary = open;
+    // Expose method was moved to onMounted for better timing
     
     return {
       isOpen,
@@ -248,7 +251,40 @@ export default {
 
 <style scoped>
 /* Core styles are loaded from component-library.css and modals.css */
-/* Additional Vue-specific styles */
+/* Additional Vue-specific styles to ensure proper display */
+
+/* Ensure the library__content displays as flex */
+.library__content {
+  display: flex !important;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Ensure sidebar is visible */
+.library__sidebar {
+  width: 200px !important;
+  background: white !important;
+  border-right: 1px solid #e2e8f0 !important;
+  padding: 20px 0 !important;
+  overflow-y: auto !important;
+  display: block !important;
+  flex-shrink: 0;
+}
+
+/* Ensure main content takes remaining space */
+.library__main {
+  flex: 1 !important;
+  padding: 20px !important;
+  overflow-y: auto !important;
+  background: #f8f9fa !important;
+}
+
+/* Ensure header controls are visible */
+.library__controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
 
 .no-results {
   grid-column: 1 / -1;

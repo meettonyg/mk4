@@ -2,35 +2,36 @@
  * Component Library Bridge
  * Connects the Add Component button to the Vue ComponentLibrary
  * 
- * ROOT FIX: This is a minimal event bridge, not a patch
- * It follows the event-driven architecture principle
+ * COMPLIANT: Event-driven architecture, no patches
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // ROOT FIX: Wait for Vue to expose the openComponentLibrary function
     const initComponentLibraryButton = () => {
         const addComponentBtn = document.getElementById('add-component-btn');
         
         if (addComponentBtn) {
-            addComponentBtn.addEventListener('click', (e) => {
+            // Clear any existing handlers and add our clean handler
+            const newBtn = addComponentBtn.cloneNode(true);
+            addComponentBtn.parentNode.replaceChild(newBtn, addComponentBtn);
+            
+            newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 
-                // ROOT FIX: Use the exposed Vue function if available
+                // Use Vue component library
                 if (typeof window.openComponentLibrary === 'function') {
                     window.openComponentLibrary();
                 } else {
-                    // Dispatch event for Vue to listen to
+                    // Fallback: dispatch event for Vue to handle
                     document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
                 }
             });
         }
     };
     
-    // Initialize immediately and after Vue loads
+    // Initialize on DOM ready
     initComponentLibraryButton();
     
-    // Also listen for Vue ready event
+    // Re-initialize if Vue signals ready
     document.addEventListener('gmkb:ready', initComponentLibraryButton);
 });
-</content>
-</invoke>
