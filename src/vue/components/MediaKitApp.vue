@@ -1,5 +1,8 @@
 <template>
   <div class="media-kit-builder">
+    <!-- Theme Customizer Modal -->
+    <ThemeCustomizer />
+    
     <!-- Sections -->
     <div class="gmkb-sections-container">
       <MediaKitSection
@@ -28,6 +31,7 @@
 import { computed } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import MediaKitSection from './MediaKitSection.vue';
+import ThemeCustomizer from './ThemeCustomizer.vue';
 
 const store = useMediaKitStore();
 

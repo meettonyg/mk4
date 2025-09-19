@@ -189,7 +189,13 @@ async function initializeVue() {
         
         // Set up GMKB methods to use Pinia store directly
         if (window.GMKB) {
-          window.GMKB.addComponent = (type, data) => store.addComponent({ type, data });
+          window.GMKB.addComponent = (type, data) => {
+            if (typeof type === 'object') {
+              // Handle when type is actually the full data object
+              return store.addComponent(type);
+            }
+            return store.addComponent({ type, data });
+          };
           window.GMKB.removeComponent = (id) => store.removeComponent(id);
           window.GMKB.addSection = (type) => store.addSection(type);
           window.GMKB.removeSection = (id) => store.removeSection(id);
@@ -199,11 +205,26 @@ async function initializeVue() {
             theme: store.theme
           });
           window.GMKB.save = () => store.saveToWordPress();
+          window.GMKB.store = store; // Direct store access
         }
         
         console.log('✅ GMKB methods now use Pinia store directly');
         
-        console.log('✅ Vue Media Kit Builder fully loaded');
+        // Initialize theme store and mount ThemeCustomizer component
+        const { useThemeStore } = await import('./stores/theme.js');
+        const themeStore = useThemeStore();
+        window.themeStore = themeStore;
+        
+        // Load saved theme settings
+        if (store.theme) {
+          themeStore.initialize(store.theme, store.themeCustomizations);
+        }
+        
+        // Mount ThemeCustomizer component
+        const { default: ThemeCustomizer } = await import('./vue/components/ThemeCustomizer.vue');
+        newApp.component('ThemeCustomizer', ThemeCustomizer);
+        
+        console.log('✅ Vue Media Kit Builder with theme system fully loaded');
       } catch (error) {
         console.error('Failed to load Vue components:', error);
       }
@@ -317,13 +338,71 @@ async function initialize() {
       version: '3.0.0',
       
       // These will be overridden by Vue store methods
-      addComponent: () => console.log('Waiting for Vue to initialize...'),
-      removeComponent: () => console.log('Waiting for Vue to initialize...'),
-      addSection: () => console.log('Waiting for Vue to initialize...'),
-      removeSection: () => console.log('Waiting for Vue to initialize...'),
-      getSections: () => [],
-      save: () => console.log('Waiting for Vue to initialize...'),
-      getState: () => ({})
+      addComponent: (type, data) => {
+        console.log('Waiting for Vue to initialize...');
+        // Queue the action for when store is ready
+        setTimeout(() => {
+          const store = window.gmkbStore || window.mediaKitStore;
+          if (store && store.addComponent) {
+            if (typeof type === 'object') {
+              store.addComponent(type);
+            } else {
+              store.addComponent({ type, data });
+            }
+          }
+        }, 1000);
+      },
+      removeComponent: (id) => {
+        console.log('Waiting for Vue to initialize...');
+        setTimeout(() => {
+          const store = window.gmkbStore || window.mediaKitStore;
+          if (store && store.removeComponent) {
+            store.removeComponent(id);
+          }
+        }, 1000);
+      },
+      addSection: (type) => {
+        console.log('Waiting for Vue to initialize...');
+        setTimeout(() => {
+          const store = window.gmkbStore || window.mediaKitStore;
+          if (store && store.addSection) {
+            store.addSection(type);
+          }
+        }, 1000);
+      },
+      removeSection: (id) => {
+        console.log('Waiting for Vue to initialize...');
+        setTimeout(() => {
+          const store = window.gmkbStore || window.mediaKitStore;
+          if (store && store.removeSection) {
+            store.removeSection(id);
+          }
+        }, 1000);
+      },
+      getSections: () => {
+        const store = window.gmkbStore || window.mediaKitStore;
+        return store?.sections || [];
+      },
+      save: () => {
+        console.log('Waiting for Vue to initialize...');
+        setTimeout(() => {
+          const store = window.gmkbStore || window.mediaKitStore;
+          if (store && store.saveToWordPress) {
+            store.saveToWordPress();
+          }
+        }, 1000);
+      },
+      getState: () => {
+        const store = window.gmkbStore || window.mediaKitStore;
+        if (store) {
+          return {
+            components: store.components || {},
+            sections: store.sections || [],
+            theme: store.theme || 'default'
+          };
+        }
+        return {};
+      }
     };
     
     // Console commands will be set up after Vue is ready
@@ -391,6 +470,13 @@ async function initialize() {
       window.vueApp = vueApp; // ROOT FIX: Expose globally for bundle compatibility
     }
     
+    // ROOT FIX: Set up UI handlers after Vue is initialized
+    // This ensures the store is available
+    setTimeout(() => {
+      setupUIHandlers();
+      console.log('✅ UI handlers initialized after Vue');
+    }, 500);
+    
     logger.success('Media Kit Builder initialized successfully');
     
     // Dispatch ready event with Vue status
@@ -425,11 +511,35 @@ function setupUIHandlers() {
   
   // Setup layout panel options
   setupLayoutPanel();
-  // Save button
+  
+  // ROOT FIX: Save button - use Pinia store directly
   const saveBtn = document.getElementById('save-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
-      await saveState();
+      const store = window.gmkbStore || window.mediaKitStore;
+      if (store && store.saveToWordPress) {
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Saving...';
+        }
+        
+        try {
+          await store.saveToWordPress();
+          showToast('Saved successfully', 'success');
+        } catch (error) {
+          console.error('Save failed:', error);
+          showToast('Save failed', 'error');
+        } finally {
+          if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+          }
+        }
+      } else {
+        console.warn('Store not available yet, trying legacy save');
+        await saveState();
+      }
     });
   }
   
@@ -614,18 +724,21 @@ function setupLayoutPanel() {
       
       console.log(`Layout selected: ${layoutType}`);
       
-      // When a layout is clicked, add a new section of that type
-      if (layoutType === 'full-width') {
-        window.GMKB.addSection('full_width');
+      // ROOT FIX: Use store directly when layout is clicked
+      const store = window.gmkbStore || window.mediaKitStore;
+      const addSectionFunc = store?.addSection?.bind(store) || window.GMKB?.addSection;
+      
+      if (layoutType === 'full-width' && addSectionFunc) {
+        addSectionFunc('full_width');
         showToast('Full Width section added', 'success');
-      } else if (layoutType === 'two-column') {
-        window.GMKB.addSection('two_column');
+      } else if (layoutType === 'two-column' && addSectionFunc) {
+        addSectionFunc('two_column');
         showToast('Two Column section added', 'success');
-      } else if (layoutType === 'three-column') {
-        window.GMKB.addSection('three_column');
+      } else if (layoutType === 'three-column' && addSectionFunc) {
+        addSectionFunc('three_column');
         showToast('Three Column section added', 'success');
-      } else if (layoutType === 'sidebar' || layoutType === 'main-sidebar') {
-        window.GMKB.addSection('sidebar');
+      } else if ((layoutType === 'sidebar' || layoutType === 'main-sidebar') && addSectionFunc) {
+        addSectionFunc('sidebar');
         showToast('Main + Sidebar section added', 'success');
       }
     });
@@ -645,8 +758,15 @@ function setupLayoutPanel() {
       else if (layoutType === 'three-column') sectionType = 'three_column';
       else if (layoutType === 'sidebar' || layoutType === 'main-sidebar') sectionType = 'sidebar';
       
-      // Add the section
-      window.GMKB.addSection(sectionType);
+      // ROOT FIX: Use store directly to add the section
+      const store = window.gmkbStore || window.mediaKitStore;
+      if (store && store.addSection) {
+        store.addSection(sectionType);
+      } else if (window.GMKB && window.GMKB.addSection) {
+        window.GMKB.addSection(sectionType);
+      } else {
+        console.error('Store not available for adding section');
+      }
       showToast(`${layoutType} section added`, 'success');
     });
   }
@@ -666,7 +786,10 @@ function setupComponentHandlers() {
     switch (action) {
       case 'delete':
         if (confirm('Delete this component?')) {
-          stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
+          const store = window.gmkbStore || window.mediaKitStore;
+          if (store && store.removeComponent) {
+            store.removeComponent(componentId);
+          }
         }
         break;
         
@@ -733,7 +856,13 @@ function setupDragAndDrop() {
     // Also allow click to add
     item.addEventListener('click', () => {
       const componentType = item.dataset.component;
-      window.GMKB.addComponent(componentType);
+      // ROOT FIX: Use store directly
+      const store = window.gmkbStore || window.mediaKitStore;
+      if (store && store.addComponent) {
+        store.addComponent({ type: componentType });
+      } else if (window.GMKB && window.GMKB.addComponent) {
+        window.GMKB.addComponent(componentType);
+      }
       showToast(`Added ${componentType} component`, 'success');
     });
   });
@@ -759,7 +888,13 @@ function setupDragAndDrop() {
       
       const componentType = e.dataTransfer.getData('text/plain');
       if (componentType) {
-        window.GMKB.addComponent(componentType);
+        // ROOT FIX: Use store directly
+        const store = window.gmkbStore || window.mediaKitStore;
+        if (store && store.addComponent) {
+          store.addComponent({ type: componentType });
+        } else if (window.GMKB && window.GMKB.addComponent) {
+          window.GMKB.addComponent(componentType);
+        }
         showToast(`Added ${componentType} component`, 'success');
       }
     });
@@ -767,116 +902,37 @@ function setupDragAndDrop() {
 }
 
 function setupAutoSave() {
-  let saveTimeout;
-  
-  // Auto-save on state changes (debounced)
-  stateManager.subscribe(() => {
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(() => {
-      // ROOT FIX: Only auto-save if we have a valid nonce and post ID
-      const hasValidNonce = window.gmkbData?.nonce || window.mkcg_vars?.nonce || window.mkcg_nonce;
-      const hasPostId = apiService?.postId && apiService.postId !== 'new' && apiService.postId !== '0';
-      
-      if (!isSaving && hasValidNonce && hasPostId) { 
-        saveState(true); // true = auto-save
-      }
-    }, 30000); // 30 seconds debounce (was 5 seconds)
-  });
+  // ROOT FIX: Auto-save is now handled by the Pinia store's $subscribe
+  // We can set this up after the store is initialized
+  console.log('Auto-save will be configured when store is ready');
 }
 
 async function saveState(isAutoSave = false) {
-  // ROOT FIX: Prevent double saves
-  if (isSaving) {
-    console.log('Save already in progress, skipping duplicate save');
-    return;
-  }
+  // ROOT FIX: This is now a fallback for when the store isn't available
+  // The primary save method is through the Pinia store
+  console.log('Legacy saveState called - redirecting to store');
   
-  isSaving = true;
-  const saveBtn = document.getElementById('save-btn');
-  
-  if (!isAutoSave && saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving...';
-  }
-  
-  try {
-    const state = stateManager.getState();
-    
-    // ROOT FIX: Ensure we're getting the actual components from state
-    const cleanState = {
-      components: state.components || {}, // ROOT FIX: Use state.components directly
-      layout: state.layout || [],
-      sections: state.sections || [],
-      theme: state.theme || 'default',
-      themeSettings: state.themeSettings || [],
-      globalSettings: state.globalSettings || {}
-    };
-    
-    // ROOT FIX: Components are already in cleanState.components from state
-    // Just clean up any problematic properties without rebuilding
-    if (cleanState.components && typeof cleanState.components === 'object') {
-      Object.keys(cleanState.components).forEach(compId => {
-        const comp = cleanState.components[compId];
-        if (comp) {
-          // Just remove problematic Vue/internal properties
-          delete comp.__vueComponent;
-          delete comp._state;
-          delete comp.renderer;
-          
-          // Ensure component has essential properties
-          if (!comp.id) {
-            comp.id = compId;
-          }
-          if (!comp.type) {
-            comp.type = 'unknown';
-          }
-        }
-      });
-    }
-    
-    // Log what we're actually saving
-    console.log('Saving state with components:', Object.keys(cleanState.components || {}).length);
-    console.log('Component IDs being saved:', Object.keys(cleanState.components || {}));
-
-    
-    // State cleaned and ready to save
-    
-    const saveResult = await apiService.save(cleanState);
-    
-    // ROOT FIX: Handle silent failures (like nonce expiry) gracefully
-    if (saveResult?.silent) {
-      // Don't show error for silent failures like expired nonce on auto-save
-      return;
-    }
-    
-    // ROOT FIX: Clear localStorage after successful database save
-    // WordPress is the source of truth, localStorage was just for temporary changes
-    if (apiService.postId && apiService.postId !== 'new' && apiService.postId !== '0') {
-    const storageKey = `gmkb_state_post_${apiService.postId}`;
-    localStorage.removeItem(storageKey);
-    // Removed console.log for cleaner output
-    }
-    
-    if (!isAutoSave) {
-      showToast('Saved successfully', 'success');
-    }
-    
-    logger.success('State saved to WordPress database');
-  } catch (error) {
-    // ROOT FIX: Only log and show errors if not a silent failure
-    if (!error.message?.includes('Invalid nonce')) {
-      logger.error('Save failed:', error);
+  const store = window.gmkbStore || window.mediaKitStore;
+  if (store && store.saveToWordPress) {
+    try {
+      await store.saveToWordPress();
+      if (!isAutoSave) {
+        showToast('Saved successfully', 'success');
+      }
+    } catch (error) {
       if (!isAutoSave) {
         showToast('Save failed', 'error');
       }
     }
-  } finally {
-    isSaving = false; // ROOT FIX: Reset flag
-    if (!isAutoSave && saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save';
-    }
+    return;
   }
+  
+  // If no store available, log error
+  console.error('Store not available for saving');
+  showToast('Save functionality not ready', 'error');
+  return;
+  
+  // Old code removed - no longer needed
 }
 
 function openComponentLibrary() {
@@ -903,18 +959,21 @@ function openComponentLibrary() {
     // Close button
     modal.querySelector('.modal__close').addEventListener('click', () => {
       modal.classList.remove('modal--open');
+      modal.style.display = 'none';
     });
     
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.classList.remove('modal--open');
+        modal.style.display = 'none';
       }
     });
   }
   
-  // Show modal with proper class
+  // Show modal with both class and style
   modal.classList.add('modal--open');
+  modal.style.display = 'flex';
   
   // Render component library
   renderComponentLibrary();
@@ -970,30 +1029,53 @@ function renderComponentLibrary() {
   
   console.log('Rendering component library with', components.length, 'components');
   
-  // Create component cards
-  list.innerHTML = components.map(comp => `
-    <div class="component-card" data-component-type="${comp.type}">
-      <div class="component-card__icon">
-        ${getComponentIcon(comp.type)}
-      </div>
-      <h3 class="component-card__title">${comp.name || comp.type}</h3>
-      <p class="component-card__description">${comp.description || 'No description available'}</p>
-      <button class="btn btn-primary add-component-btn" data-type="${comp.type}">
-        Add Component
-      </button>
+  // Create component cards with improved styling
+  list.innerHTML = `
+    <div class="components-grid">
+      ${components.map(comp => `
+        <div class="component-card" data-component-type="${comp.type}">
+          <div class="component-preview">
+            <div class="preview-${comp.type}">
+              ${getComponentIcon(comp.type)}
+            </div>
+          </div>
+          <div class="component-info">
+            <h4>${comp.name || comp.type}</h4>
+            <p>${comp.description || 'Click to add'}</p>
+          </div>
+          <button class="btn btn--primary add-component-btn" data-type="${comp.type}" style="
+            width: 100%;
+            padding: 8px;
+            margin-top: 8px;
+            font-size: 13px;
+          ">
+            Add
+          </button>
+        </div>
+      `).join('')}
     </div>
-  `).join('');
+  `;
   
   // Add click handlers
   list.querySelectorAll('.add-component-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const type = btn.dataset.type;
-      window.GMKB.addComponent(type);
+      
+      // ROOT FIX: Use store directly to add component
+      const store = window.gmkbStore || window.mediaKitStore;
+      if (store && store.addComponent) {
+        store.addComponent({ type });
+      } else if (window.GMKB && window.GMKB.addComponent) {
+        window.GMKB.addComponent(type);
+      } else {
+        console.error('Store not available for adding component');
+      }
       
       // Close modal
       const modal = document.getElementById('component-library-modal');
       if (modal) {
         modal.classList.remove('modal--open');
+        modal.style.display = 'none';
       }
       
       showToast(`Added ${type} component`, 'success');
@@ -1016,86 +1098,54 @@ function getComponentIcon(type) {
 }
 
 function addSection(type = 'full_width') {
-  const sectionId = `section_${Date.now()}`;
-  const section = {
-    section_id: sectionId,
-    type,
-    components: []
-  };
-  
-  stateManager.dispatch({ type: ACTION_TYPES.ADD_SECTION, payload: section });
+  // ROOT FIX: Use store directly to add section
+  const store = window.gmkbStore || window.mediaKitStore;
+  if (store && store.addSection) {
+    store.addSection(type);
+  } else if (window.GMKB && window.GMKB.addSection) {
+    window.GMKB.addSection(type);
+  } else {
+    console.error('Store not available for adding section');
+  }
   showToast('Section added', 'success');
 }
 
 function deleteSection(sectionId) {
-  const state = stateManager.getState();
-  const sections = state.sections.filter(s => s.section_id !== sectionId);
-  
-  // Also remove components in this section
-  const section = state.sections.find(s => s.section_id === sectionId);
-  if (section && section.components && section.components.length > 0) {
-    section.components.forEach(compRef => {
-      // Handle both string IDs and object references
-      const componentId = typeof compRef === 'string' ? compRef : (compRef.component_id || compRef.id);
-      
-      // Only remove if component exists
-      if (componentId && state.components[componentId]) {
-        stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
-      }
-    });
+  // ROOT FIX: Use store directly
+  const store = window.gmkbStore || window.mediaKitStore;
+  if (store && store.removeSection) {
+    store.removeSection(sectionId);
+  } else {
+    console.error('Store not available for removing section');
   }
-  
-  stateManager.dispatch({ type: ACTION_TYPES.UPDATE_SECTIONS, payload: sections });
 }
 
 function duplicateComponent(componentId) {
-  const state = stateManager.getState();
-  const original = state.components[componentId];
-  
-  if (original) {
-    const newId = `${original.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const duplicate = {
-      ...original,
-      id: newId,
-      data: { ...original.data }
-    };
-    
-    stateManager.dispatch({ type: ACTION_TYPES.ADD_COMPONENT, payload: duplicate });
+  // ROOT FIX: Use store directly
+  const store = window.gmkbStore || window.mediaKitStore;
+  if (store && store.duplicateComponent) {
+    store.duplicateComponent(componentId);
     showToast('Component duplicated', 'success');
+  } else {
+    console.error('Store not available for duplicating component');
   }
 }
 
 function moveComponent(componentId, direction) {
-  const state = stateManager.getState();
-  const component = state.components[componentId];
-  
-  if (!component || !component.sectionId) return;
-  
-  const section = state.sections.find(s => s.section_id === component.sectionId);
-  if (!section) return;
-  
-  const index = section.components.indexOf(componentId);
-  if (index === -1) return;
-  
-  const newIndex = index + direction;
-  if (newIndex < 0 || newIndex >= section.components.length) return;
-  
-  // Swap positions
-  const components = [...section.components];
-  [components[index], components[newIndex]] = [components[newIndex], components[index]];
-  
-  // Update section
-  const updatedSections = state.sections.map(s => 
-    s.section_id === section.section_id 
-      ? { ...s, components }
-      : s
-  );
-  
-  stateManager.dispatch({ type: ACTION_TYPES.UPDATE_SECTIONS, payload: updatedSections });
+  // ROOT FIX: Use store directly
+  const store = window.gmkbStore || window.mediaKitStore;
+  if (store && store.moveComponent) {
+    const dir = direction > 0 ? 'down' : 'up';
+    store.moveComponent(componentId, dir);
+  } else {
+    console.error('Store not available for moving component');
+  }
 }
 
 function openComponentEditor(componentId) {
-  const component = stateManager.getState().components[componentId];
+  // ROOT FIX: Use store to get component
+  const store = window.gmkbStore || window.mediaKitStore;
+  const component = store?.components?.[componentId];
   if (!component) {
     console.error('Component not found:', componentId);
     return;
@@ -1146,33 +1196,32 @@ function setDevicePreview(device) {
   }
 }
 
-// Placeholder functions for toolbar actions
+// ROOT FIX: Vue-based theme customizer - no legacy systems needed
+
 function openThemeCustomizer() {
-  console.log('Opening advanced theme customizer...');
+  console.log('Opening Vue theme customizer...');
   
-  // Check if the advanced theme customizer is available
-  if (window.themeCustomizer && typeof window.themeCustomizer.open === 'function') {
-    // Use the advanced theme customizer from ThemeCustomizer.js
-    window.themeCustomizer.open();
-    console.log('Advanced theme customizer opened');
-  } else if (window.openThemeSettings && typeof window.openThemeSettings === 'function') {
-    // Alternative method if available
-    window.openThemeSettings();
-    console.log('Theme settings opened via alternative method');
-  } else {
-    // Fallback: Dispatch event to open theme customizer
-    document.dispatchEvent(new CustomEvent('gmkb:open-theme-customizer', {
-      detail: { source: 'toolbar' }
-    }));
-    console.log('Dispatched open-theme-customizer event');
-    
-    // If still no customizer, show simple fallback after a short delay
-    setTimeout(() => {
-      if (!document.getElementById('theme-customizer-modal')) {
-        openSimpleThemeModal();
-      }
-    }, 100);
+  // ROOT FIX: Use the Vue/Pinia theme store
+  const themeStore = window.themeStore;
+  if (themeStore && themeStore.openCustomizer) {
+    themeStore.openCustomizer();
+    console.log('✅ Vue theme customizer opened');
+    return;
   }
+  
+  // If store not ready, wait and try again
+  console.log('Theme store not ready, waiting...');
+  setTimeout(() => {
+    const store = window.themeStore;
+    if (store && store.openCustomizer) {
+      store.openCustomizer();
+      console.log('✅ Vue theme customizer opened (delayed)');
+    } else {
+      console.error('Theme store still not available');
+      // Use simple fallback as last resort
+      openSimpleThemeModal();
+    }
+  }, 1000);
 }
 
 // Simple fallback theme modal
