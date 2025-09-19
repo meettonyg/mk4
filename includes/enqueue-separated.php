@@ -94,6 +94,15 @@ function gmkb_enqueue_vue_assets() {
         true
     );
     
+    // ROOT FIX: Component library bridge for event-driven connection
+    wp_enqueue_script(
+        'gmkb-component-library-bridge',
+        $plugin_url . 'js/component-library-bridge.js',
+        array( 'gmkb-vue-bundle' ),
+        $version,
+        true
+    );
+    
     // Localize data for Vue
     wp_localize_script( 'gmkb-vue-bundle', 'gmkbVueData', $bundle_data );
     
@@ -186,6 +195,22 @@ function gmkb_enqueue_vue_styles() {
     wp_enqueue_style(
         'gmkb-theme-variables',
         GMKB_CSS_URL . 'theme-variables.css',
+        array(),
+        $version
+    );
+    
+    // Component library CSS
+    wp_enqueue_style(
+        'gmkb-component-library',
+        GMKB_CSS_URL . 'component-library.css',
+        array(),
+        $version
+    );
+    
+    // Modal CSS
+    wp_enqueue_style(
+        'gmkb-modals',
+        GMKB_CSS_URL . 'modules/modals.css',
         array(),
         $version
     );
@@ -381,13 +406,69 @@ function get_current_post_id_safe() {
 }
 
 function gmkb_get_component_definitions() {
-    // Your existing component discovery logic
-    return array();
+    // ROOT FIX: Use ComponentDiscovery to get components from self-contained directories
+    if ( ! class_exists( 'ComponentDiscovery' ) ) {
+        require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
+    }
+    
+    $component_discovery = new ComponentDiscovery( GUESTIFY_PLUGIN_DIR . 'components' );
+    $component_discovery->scan( false ); // Use cache if available
+    $components = $component_discovery->getComponents();
+    
+    // Transform for JavaScript consumption
+    $js_components = array();
+    foreach ( $components as $type => $component ) {
+        // Each component's data comes from its self-contained component.json
+        $js_components[] = array(
+            'type' => $type,
+            'name' => $component['name'] ?? ucfirst( str_replace( '-', ' ', $type ) ),
+            'title' => $component['title'] ?? $component['name'] ?? ucfirst( str_replace( '-', ' ', $type ) ),
+            'description' => $component['description'] ?? '',
+            'category' => $component['category'] ?? 'general',
+            'icon' => $component['icon'] ?? '',
+            'isPremium' => $component['isPremium'] ?? false,
+        );
+    }
+    
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( 'GMKB: ComponentDiscovery found ' . count( $js_components ) . ' components' );
+    }
+    
+    return $js_components;
 }
 
 function gmkb_get_theme_definitions() {
-    // Your existing theme discovery logic
-    return array();
+    // ROOT FIX: Use ThemeDiscovery to get themes from self-contained directories
+    if ( ! class_exists( 'ThemeDiscovery' ) ) {
+        if ( file_exists( GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php' ) ) {
+            require_once GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php';
+        } else {
+            // ThemeDiscovery might not exist yet
+            return array();
+        }
+    }
+    
+    $theme_discovery = new ThemeDiscovery( GUESTIFY_PLUGIN_DIR . 'themes' );
+    $themes = $theme_discovery->getThemes();
+    
+    // Transform for JavaScript consumption
+    $js_themes = array();
+    foreach ( $themes as $slug => $theme ) {
+        // Each theme's data comes from its self-contained theme.json
+        $js_themes[] = array(
+            'slug' => $slug,
+            'name' => $theme['name'] ?? ucfirst( str_replace( '-', ' ', $slug ) ),
+            'description' => $theme['description'] ?? '',
+            'colors' => $theme['colors'] ?? array(),
+            'fonts' => $theme['fonts'] ?? array(),
+        );
+    }
+    
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( 'GMKB: ThemeDiscovery found ' . count( $js_themes ) . ' themes' );
+    }
+    
+    return $js_themes;
 }
 
 function gmkb_get_saved_state( $post_id ) {
