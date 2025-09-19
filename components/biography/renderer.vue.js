@@ -320,10 +320,33 @@ const BiographyVue = {
       }
     };
     
+    // ROOT FIX: Listen for edit panel open event
+    const handleOpenEditPanel = (e) => {
+      if (e.detail?.componentId === props.componentId) {
+        console.log('Biography: Received open-edit-panel event for', props.componentId);
+        openEditPanel();
+      }
+    };
+    
     // Lifecycle
     onMounted(() => {
       document.addEventListener('click', handleGlobalClick);
       document.addEventListener('keydown', handleEscKey);
+      
+      // ROOT FIX: Self-contained edit handling
+      // Check if there's a pending edit request for this component
+      if (window.gmkbPendingEditRequests?.has(props.componentId)) {
+        openEditPanel();
+        window.gmkbPendingEditRequests.delete(props.componentId);
+      }
+      
+      // Register this instance for direct access
+      const componentEl = document.querySelector(`[data-component-id="${props.componentId}"]`);
+      if (componentEl) {
+        componentEl._biographyInstance = {
+          openEditPanel
+        };
+      }
       
       // Auto-load from props if the local state is empty
       if (!state.localBiography && props.biography) {
@@ -334,6 +357,8 @@ const BiographyVue = {
     onUnmounted(() => {
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleEscKey);
+      // ROOT FIX: Remove edit panel event listener
+      document.removeEventListener('gmkb:open-vue-panel', handleOpenEditPanel);
       closeDesignPanel();
     });
     
@@ -428,8 +453,45 @@ const BiographyVue = {
   }
 };
 
-export default {
+// ROOT FIX: Self-contained component initialization
+const BiographyRenderer = {
   name: 'biography',
+  
+  // ROOT FIX: Register edit handler immediately when renderer loads
+  // This ensures the component can handle edit requests even before Vue mounts
+  init() {
+    // Register global handler for this component type
+    if (!window.gmkbComponentHandlers) {
+      window.gmkbComponentHandlers = {};
+    }
+    
+    window.gmkbComponentHandlers.biography = {
+      openEditPanel: (componentId) => {
+        // Store request for when component mounts
+        if (!window.gmkbPendingEditRequests) {
+          window.gmkbPendingEditRequests = new Set();
+        }
+        window.gmkbPendingEditRequests.add(componentId);
+        
+        // Try to open immediately if component exists
+        const componentEl = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (componentEl && componentEl._vueApp) {
+          const event = new CustomEvent('open-edit-panel', {
+            detail: { componentId }
+          });
+          componentEl.dispatchEvent(event);
+          window.gmkbPendingEditRequests.delete(componentId);
+        }
+      }
+    };
+    
+    // Listen for edit requests at the component type level
+    document.addEventListener('gmkb:component-action', (e) => {
+      if (e.detail.action === 'edit' && e.detail.componentId?.startsWith('biography_')) {
+        window.gmkbComponentHandlers.biography.openEditPanel(e.detail.componentId);
+      }
+    });
+  },
   
   render(data = {}, container) {
     if (!container) {
@@ -502,3 +564,9 @@ export default {
   isVueRenderer: true,
   framework: 'vue'
 };
+
+// ROOT FIX: Initialize immediately when module loads
+// This ensures the component is ready to handle edit requests
+BiographyRenderer.init();
+
+export default BiographyRenderer;

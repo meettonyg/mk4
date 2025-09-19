@@ -1955,6 +1955,9 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // ROOT FIX: Biography edit is now self-contained in the component itself
+    // No external patch needed - component handles its own edit functionality
+    
     // ENHANCED TOPICS: Panel script with drag & drop functionality
     if (!wp_script_is('gmkb-topics-panel-enhanced', 'enqueued')) {
         wp_enqueue_script(

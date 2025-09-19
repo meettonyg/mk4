@@ -1,0 +1,152 @@
+/**
+ * Biography Edit Control Fix
+ * ROOT FIX: Ensures biography edit panel opens correctly
+ * 
+ * Problem: Biography Vue component's edit panel doesn't open when edit control is clicked
+ * Cause: Event listener timing issue - component might not be mounted when event fires
+ * Solution: Queue events and replay them after component mount
+ */
+
+(function() {
+    'use strict';
+    
+    // Store pending edit panel requests
+    const pendingEditRequests = new Map();
+    
+    // ROOT FIX: Intercept gmkb:open-vue-panel events
+    document.addEventListener('gmkb:open-vue-panel', function(e) {
+        const componentId = e.detail?.componentId;
+        if (!componentId) return;
+        
+        console.log('Biography Edit Fix: Intercepted open-vue-panel for', componentId);
+        
+        // Try to find the component element
+        const componentEl = document.querySelector(`[data-component-id="${componentId}"]`);
+        
+        if (componentEl) {
+            // Check if Vue component is mounted
+            const vueApp = componentEl._vueApp || componentEl.__vueApp__ || componentEl.__vue__;
+            
+            if (vueApp) {
+                console.log('Biography Edit Fix: Vue app found, opening panel directly');
+                // Vue component is mounted, trigger the panel
+                const event = new CustomEvent('open-edit-panel', {
+                    detail: { componentId }
+                });
+                componentEl.dispatchEvent(event);
+            } else {
+                console.log('Biography Edit Fix: Vue app not ready, queueing request');
+                // Queue the request
+                pendingEditRequests.set(componentId, Date.now());
+                
+                // Try again after a delay
+                setTimeout(() => {
+                    retryOpenPanel(componentId);
+                }, 100);
+            }
+        } else {
+            console.log('Biography Edit Fix: Component element not found, queueing request');
+            // Component doesn't exist yet, queue the request
+            pendingEditRequests.set(componentId, Date.now());
+            
+            // Set up observer to watch for component
+            observeForComponent(componentId);
+        }
+    });
+    
+    // Retry opening the panel
+    function retryOpenPanel(componentId) {
+        if (!pendingEditRequests.has(componentId)) return;
+        
+        const componentEl = document.querySelector(`[data-component-id="${componentId}"]`);
+        if (componentEl) {
+            const vueApp = componentEl._vueApp || componentEl.__vueApp__ || componentEl.__vue__;
+            
+            if (vueApp) {
+                console.log('Biography Edit Fix: Retry successful, opening panel');
+                const event = new CustomEvent('open-edit-panel', {
+                    detail: { componentId }
+                });
+                componentEl.dispatchEvent(event);
+                pendingEditRequests.delete(componentId);
+            } else {
+                // Try a few more times
+                const requestTime = pendingEditRequests.get(componentId);
+                if (Date.now() - requestTime < 2000) {
+                    setTimeout(() => retryOpenPanel(componentId), 200);
+                } else {
+                    console.warn('Biography Edit Fix: Timeout waiting for Vue component', componentId);
+                    pendingEditRequests.delete(componentId);
+                }
+            }
+        }
+    }
+    
+    // Watch for component to appear in DOM
+    function observeForComponent(componentId) {
+        const observer = new MutationObserver((mutations, obs) => {
+            const componentEl = document.querySelector(`[data-component-id="${componentId}"]`);
+            if (componentEl && pendingEditRequests.has(componentId)) {
+                console.log('Biography Edit Fix: Component appeared in DOM', componentId);
+                obs.disconnect();
+                
+                // Wait a bit for Vue to mount
+                setTimeout(() => {
+                    retryOpenPanel(componentId);
+                }, 100);
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Stop observing after timeout
+        setTimeout(() => {
+            observer.disconnect();
+            pendingEditRequests.delete(componentId);
+        }, 5000);
+    }
+    
+    // Also handle direct edit button clicks on biography components
+    document.addEventListener('click', function(e) {
+        // Check if this is an edit button click
+        const editBtn = e.target.closest('.control-btn--edit');
+        if (!editBtn) return;
+        
+        // Check if this is within a biography component
+        const componentEl = e.target.closest('[data-component-id]');
+        if (!componentEl) return;
+        
+        // Check if it's a biography component
+        const componentId = componentEl.dataset.componentId;
+        const isBiography = componentEl.classList.contains('biography-component') ||
+                           componentId?.startsWith('biography_');
+        
+        if (isBiography) {
+            console.log('Biography Edit Fix: Direct edit button click detected for', componentId);
+            
+            // Prevent default handling
+            e.stopPropagation();
+            
+            // Dispatch the open-vue-panel event
+            const event = new CustomEvent('gmkb:open-vue-panel', {
+                detail: { componentId }
+            });
+            document.dispatchEvent(event);
+        }
+    });
+    
+    // Clean up old pending requests periodically
+    setInterval(() => {
+        const now = Date.now();
+        for (const [id, time] of pendingEditRequests.entries()) {
+            if (now - time > 10000) {
+                pendingEditRequests.delete(id);
+            }
+        }
+    }, 5000);
+    
+    console.log('✅ Biography Edit Fix: Initialized and monitoring for edit requests');
+})();
