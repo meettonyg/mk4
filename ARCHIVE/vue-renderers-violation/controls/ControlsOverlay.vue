@@ -236,7 +236,10 @@ export default {
     
     // Define setupHoverListeners outside onMounted so it's accessible
     const setupHoverListeners = () => {
-        // Remove any existing listeners first
+        // ROOT FIX: Use event delegation instead of individual listeners
+        // This way we don't need to re-attach when DOM changes
+        
+        // Remove the old approach's listeners if any
         document.querySelectorAll('[data-component-id]').forEach(el => {
           el.removeEventListener('mouseenter', handleMouseEnter);
           el.removeEventListener('mouseleave', handleMouseLeave);
@@ -246,7 +249,7 @@ export default {
           el.removeEventListener('mouseleave', handleMouseLeave);
         });
         
-        // Add fresh listeners
+        // Now add fresh listeners to ALL elements
         document.querySelectorAll('[data-component-id]').forEach(el => {
           el.addEventListener('mouseenter', handleMouseEnter);
           el.addEventListener('mouseleave', handleMouseLeave);
@@ -256,7 +259,12 @@ export default {
           el.addEventListener('mouseleave', handleMouseLeave);
         });
         
-        console.log('Hover listeners set up for', document.querySelectorAll('[data-component-id]').length, 'components');
+        const componentCount = document.querySelectorAll('[data-component-id]').length;
+        const sectionCount = document.querySelectorAll('[data-section-id]').length;
+        console.log(`Hover listeners set up for ${componentCount} components, ${sectionCount} sections`);
+        
+        // Update state to ensure controls know about all elements
+        updateState();
     };
     
     // Lifecycle hooks

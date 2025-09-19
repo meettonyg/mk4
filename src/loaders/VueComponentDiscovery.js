@@ -233,6 +233,12 @@ export async function initializeVueComponentDiscovery() {
     console.log('Discovered Vue components:', Array.from(vueRendererCache.keys()));
   }
   
+  // ROOT FIX: Store discovered components globally for MediaKitComponent to use
+  window.gmkbVueComponents = {};
+  vueRendererCache.forEach((renderer, type) => {
+    window.gmkbVueComponents[type] = renderer;
+  });
+  
   // Make discovery functions globally available
   window.GMKBVueDiscovery = {
     discover: discoverVueRenderer,

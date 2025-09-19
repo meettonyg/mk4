@@ -1,0 +1,253 @@
+<template>
+  <div 
+    class="gmkb-section"
+    :class="`gmkb-section--${section.type}`"
+    :data-section-id="section.section_id"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
+  >
+    <!-- Section Controls (integrated, not overlay) -->
+    <div v-show="isHovered" class="gmkb-section-controls">
+      <button 
+        @click="$emit('move-up', section.section_id)"
+        class="control-btn"
+        title="Move Up"
+      >↑</button>
+      <button 
+        @click="$emit('move-down', section.section_id)"
+        class="control-btn"
+        title="Move Down"
+      >↓</button>
+      <button 
+        @click="openSettings"
+        class="control-btn"
+        title="Settings"
+      >⚙</button>
+      <button 
+        @click="$emit('remove', section.section_id)"
+        class="control-btn control-btn--delete"
+        title="Delete Section"
+      >×</button>
+    </div>
+
+    <!-- Section Content -->
+    <div class="gmkb-section__inner">
+      <!-- Full Width Layout -->
+      <div v-if="section.type === 'full_width'" class="gmkb-section__content">
+        <MediaKitComponent
+          v-for="component in components"
+          :key="component.id"
+          :component="component"
+          :section-id="section.section_id"
+        />
+        <div v-if="components.length === 0" class="drop-zone">
+          Drop components here
+        </div>
+      </div>
+
+      <!-- Two Column Layout -->
+      <div v-else-if="section.type === 'two_column'" class="gmkb-section__columns gmkb-section__columns--two">
+        <div class="gmkb-section__column">
+          <MediaKitComponent
+            v-for="component in leftColumnComponents"
+            :key="component.id"
+            :component="component"
+            :section-id="section.section_id"
+          />
+          <div v-if="leftColumnComponents.length === 0" class="drop-zone">
+            Drop to Column 1
+          </div>
+        </div>
+        <div class="gmkb-section__column">
+          <MediaKitComponent
+            v-for="component in rightColumnComponents"
+            :key="component.id"
+            :component="component"
+            :section-id="section.section_id"
+          />
+          <div v-if="rightColumnComponents.length === 0" class="drop-zone">
+            Drop to Column 2
+          </div>
+        </div>
+      </div>
+
+      <!-- Three Column Layout -->
+      <div v-else-if="section.type === 'three_column'" class="gmkb-section__columns gmkb-section__columns--three">
+        <div class="gmkb-section__column">
+          <MediaKitComponent
+            v-for="component in column1Components"
+            :key="component.id"
+            :component="component"
+            :section-id="section.section_id"
+          />
+          <div v-if="column1Components.length === 0" class="drop-zone">
+            Drop to Column 1
+          </div>
+        </div>
+        <div class="gmkb-section__column">
+          <MediaKitComponent
+            v-for="component in column2Components"
+            :key="component.id"
+            :component="component"
+            :section-id="section.section_id"
+          />
+          <div v-if="column2Components.length === 0" class="drop-zone">
+            Drop to Column 2
+          </div>
+        </div>
+        <div class="gmkb-section__column">
+          <MediaKitComponent
+            v-for="component in column3Components"
+            :key="component.id"
+            :component="component"
+            :section-id="section.section_id"
+          />
+          <div v-if="column3Components.length === 0" class="drop-zone">
+            Drop to Column 3
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue';
+import MediaKitComponent from './MediaKitComponent.vue';
+
+const props = defineProps({
+  section: {
+    type: Object,
+    required: true
+  },
+  components: {
+    type: Array,
+    default: () => []
+  }
+});
+
+const emit = defineEmits(['move-up', 'move-down', 'remove']);
+
+// State
+const isHovered = ref(false);
+
+// Computed properties for column layouts
+const leftColumnComponents = computed(() => {
+  return props.components.filter(c => !c.columnIndex || c.columnIndex === 1);
+});
+
+const rightColumnComponents = computed(() => {
+  return props.components.filter(c => c.columnIndex === 2);
+});
+
+const column1Components = computed(() => {
+  return props.components.filter(c => !c.columnIndex || c.columnIndex === 1);
+});
+
+const column2Components = computed(() => {
+  return props.components.filter(c => c.columnIndex === 2);
+});
+
+const column3Components = computed(() => {
+  return props.components.filter(c => c.columnIndex === 3);
+});
+
+// Methods
+const openSettings = () => {
+  // Emit event to open settings panel
+  document.dispatchEvent(new CustomEvent('gmkb:section-settings', {
+    detail: { sectionId: props.section.section_id }
+  }));
+};
+</script>
+
+<style scoped>
+.gmkb-section {
+  position: relative;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.gmkb-section:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Section Controls - Integrated */
+.gmkb-section-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 4px;
+  border-radius: 6px;
+  z-index: 10;
+}
+
+.control-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.control-btn--delete:hover {
+  background: rgba(239, 68, 68, 0.5);
+}
+
+/* Section Layouts */
+.gmkb-section__inner {
+  min-height: 100px;
+}
+
+.gmkb-section__content {
+  width: 100%;
+}
+
+.gmkb-section__columns {
+  display: flex;
+  gap: 20px;
+}
+
+.gmkb-section__columns--two .gmkb-section__column {
+  flex: 1;
+}
+
+.gmkb-section__columns--three .gmkb-section__column {
+  flex: 1;
+}
+
+.gmkb-section__column {
+  min-height: 100px;
+}
+
+/* Drop Zones */
+.drop-zone {
+  padding: 40px;
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  text-align: center;
+  color: #64748b;
+  transition: all 0.3s;
+}
+
+.drop-zone:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.05);
+}
+</style>

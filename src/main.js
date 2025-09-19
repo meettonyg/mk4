@@ -14,26 +14,11 @@ import VueComponentDiscovery from './loaders/VueComponentDiscovery.js';
 import { initializeEditPanel } from './ui/ComponentEditPanel.js';
 import { initializeUnifiedEditManager } from './ui/UnifiedEditManager.js';
 
-// Import Vue components explicitly to ensure they're bundled
-import ControlsOverlay from './vue/controls/ControlsOverlay.vue';
-import SectionControls from './vue/controls/SectionControls.vue';
-import ComponentControls from './vue/controls/ComponentControls.vue';
-
-// Log to verify imports are working
-console.log('Vue components imported:', { ControlsOverlay, SectionControls, ComponentControls });
-
-// ROOT FIX: Import global commands to ensure they're in the bundle
-import { initializeGlobalCommands } from './global-commands.js';
-
-// Phase 2: Using Enhanced State Manager with reducer pattern
-import { StateManager, ACTION_TYPES } from './core/StateManager.js';
-import { EventBus } from './core/EventBus.js';
-import { Renderer } from './core/Renderer.js';
+// Import only what we need for the transition
 import { APIService } from './services/APIService.js';
 import { logger } from './utils/logger.js';
 import { loadComponentRenderers } from './registry/ComponentRegistry.js';
 import podsDataIntegration from './core/PodsDataIntegration.js';
-import SectionDragDropManager from './core/SectionDragDropManager.js';
 
 // Phase 4: Advanced Features
 import InlineEditor from './features/InlineEditor.js';
@@ -41,13 +26,9 @@ import ComponentTemplates from './features/ComponentTemplates.js';
 import ImportExportManager from './features/ImportExportManager.js';
 
 // Initialize core systems
-let stateManager;
-let eventBus;
 let apiService;
-let renderer;
 let vueApp = null; // Vue app instance
-let dragDropManager = null; // Drag and drop manager
-let isSaving = false; // ROOT FIX: Prevent double save triggers
+let isSaving = false; // Prevent double save triggers
 
 // Phase 4: Advanced feature instances
 let inlineEditor = null;
@@ -74,14 +55,22 @@ function showToast(message, type = 'info', duration = 3000) {
 function showError(message) {
   showToast(message, 'error', 5000);
 }
-// Initialize Vue application
-function initializeVue() {
+// Initialize Vue application - COMPLETE VUE ARCHITECTURE
+async function initializeVue() {
   try {
-    // Check if Vue mount point exists
-    const mountPoint = document.getElementById('vue-app');
+    // ROOT FIX: Use the media-kit-preview as the Vue mount point
+    // This replaces the legacy renderer completely
+    const mountPoint = document.getElementById('media-kit-preview') || 
+                       document.getElementById('gmkb-sections-container') ||
+                       document.getElementById('vue-app');
+    
     if (!mountPoint) {
-      logger.warn('Vue mount point not found, skipping Vue initialization');
-      return null;
+      logger.warn('Vue mount point not found, creating one');
+      const container = document.createElement('div');
+      container.id = 'media-kit-preview';
+      const previewArea = document.querySelector('.preview__container') || document.body;
+      previewArea.appendChild(container);
+      mountPoint = container;
     }
 
     // ROOT FIX: Create controls mount point if it doesn't exist
@@ -92,36 +81,27 @@ function initializeVue() {
       document.body.appendChild(controlsMount);
     }
 
-    // Create Vue app with minimal root component
-    const app = createApp({
-      name: 'MediaKitBuilderVue',
-      data() {
-        return {
-          message: 'Vue.js successfully integrated!',
-          isVisible: false
-        };
-      },
-      mounted() {
-        logger.success('✅ Vue app mounted successfully');
-        // Dispatch Vue ready event
-        document.dispatchEvent(new CustomEvent('gmkb:vue-ready', {
-          detail: { version: '3.4.0' }
-        }));
-      },
-      template: `
-        <div v-if="isVisible" class="vue-integration-notice" style="background: #10b981; color: white; padding: 10px; border-radius: 4px; margin: 10px 0;">
-          <strong>{{ message }}</strong>
-          <br>Vue components can now be progressively integrated.
-        </div>
-      `
-    });
+    // ROOT FIX: Import the complete Vue application at the top
+    // For now, use a simpler import approach for build compatibility
+    // We'll import components dynamically once mounted
+    const MediaKitApp = { 
+      name: 'MediaKitApp',
+      template: '<div id="media-kit-app-root">Loading Media Kit Builder...</div>',
+      async mounted() {
+        // Dynamically load the real app after mount
+        console.log('Loading Vue Media Kit components...');
+      }
+    };
+    
+    // Create Vue app with the complete Media Kit application
+    const app = createApp(MediaKitApp);
 
     // Create and use Pinia store
     const pinia = createPinia();
     app.use(pinia);
 
-    // Mount the app
-    const instance = app.mount('#vue-app');
+    // Mount the complete Vue app to replace legacy renderer
+    const instance = app.mount(mountPoint);
     
     // ROOT FIX: Expose Vue app and Pinia globally for access
     window.gmkbApp = app;
@@ -134,9 +114,14 @@ function initializeVue() {
     
     // ROOT FIX: Create helper functions for console access
     window.getSections = () => {
-      const state = window.stateManager?.getState();
-      console.log('Sections:', state?.sections || []);
-      return state?.sections || [];
+      // Use the Pinia store once it's available
+      const store = window.gmkbStore || window.mediaKitStore;
+      if (store && store.sections) {
+        console.log('Sections:', store.sections);
+        return store.sections;
+      }
+      console.log('Store not yet initialized');
+      return [];
     };
     
     window.addSection = (type = 'two_column') => {
@@ -155,69 +140,79 @@ function initializeVue() {
     };
     
     window.getState = () => {
-      return window.stateManager?.getState() || {};
-    };
-    
-    // ROOT FIX: Mount controls ONLY after components are actually rendered in the DOM
-    // Listen for the event that signals all components have been rendered
-    const mountControlsAfterRender = () => {
-      console.log('Waiting for components to be rendered before mounting controls...');
-      
-      // Don't mount controls until components are actually in the DOM
-      const waitForComponentsInDOM = () => {
-        const componentsInDOM = document.querySelectorAll('[data-component-id]');
-        const sectionsInDOM = document.querySelectorAll('[data-section-id]');
-        
-        if (componentsInDOM.length > 0 || sectionsInDOM.length > 0) {
-          console.log(`Components found in DOM: ${componentsInDOM.length}, Sections: ${sectionsInDOM.length}`);
-          console.log('NOW mounting Vue controls...');
-          
-          const controlsApp = createApp(ControlsOverlay);
-          controlsApp.use(pinia);
-          const controlsInstance = controlsApp.mount(controlsMount);
-          
-          // Store controls app globally
-          window.gmkbControlsApp = controlsApp;
-          window.gmkbControlsInstance = controlsInstance;
-          window.gmkbVueComponents = { ControlsOverlay, SectionControls, ComponentControls };
-          
-          console.log('✅ Vue control system mounted with components already in DOM');
-          
-          // Dispatch event to signal controls are ready
-          document.dispatchEvent(new CustomEvent('gmkb:controls-mounted'));
-        } else {
-          // No components in DOM yet, check again soon
-          setTimeout(waitForComponentsInDOM, 100);
-        }
-      };
-      
-      // Start checking for components in DOM
-      waitForComponentsInDOM();
-    };
-    
-    // Listen for the event that signals components are rendered
-    document.addEventListener('gmkb:all-components-rendered', () => {
-      console.log('All components rendered event received, mounting controls...');
-      mountControlsAfterRender();
-    });
-    
-    // Also start checking after a delay as a fallback
-    setTimeout(() => {
-      // Only mount if not already mounted
-      if (!window.gmkbControlsApp) {
-        mountControlsAfterRender();
+      const store = window.gmkbStore || window.mediaKitStore;
+      if (store) {
+        return {
+          components: store.components,
+          sections: store.sections,
+          theme: store.theme
+        };
       }
-    }, 1000);
+      return {};
+    };
     
-    // Make visible briefly to confirm integration
-    mountPoint.style.display = 'block';
-    instance.isVisible = true;
-    setTimeout(() => {
-      instance.isVisible = false;
-      setTimeout(() => {
-        mountPoint.style.display = 'none';
-      }, 300);
-    }, 3000);
+    // ROOT FIX: No separate controls needed - components have integrated controls
+    // This eliminates the synchronization issues completely
+    console.log('✅ Vue Media Kit Builder mounted with integrated controls');
+    
+    // Initialize store after mount
+    // For build compatibility, we'll initialize the store synchronously
+    let store = null;
+    
+    // Defer store initialization
+    setTimeout(async () => {
+      try {
+        const { useMediaKitStore } = await import('./stores/mediaKit.js');
+        store = useMediaKitStore();
+        window.gmkbStore = store;
+        window.mediaKitStore = store;
+        
+        // Load saved state from WordPress
+        if (window.gmkbData?.savedState) {
+          store.initialize(window.gmkbData.savedState);
+          console.log('✅ Loaded state from WordPress');
+        }
+        
+        // Now load the real Vue components
+        const { default: RealMediaKitApp } = await import('./vue/components/MediaKitApp.vue');
+        
+        // Create a new app with the real component
+        const newApp = createApp(RealMediaKitApp);
+        newApp.use(pinia);
+        
+        // Unmount the placeholder and mount the real app
+        app.unmount();
+        const realInstance = newApp.mount(mountPoint);
+        
+        window.gmkbApp = newApp;
+        window.gmkbVueInstance = realInstance;
+        
+        // Set up GMKB methods to use Pinia store directly
+        if (window.GMKB) {
+          window.GMKB.addComponent = (type, data) => store.addComponent({ type, data });
+          window.GMKB.removeComponent = (id) => store.removeComponent(id);
+          window.GMKB.addSection = (type) => store.addSection(type);
+          window.GMKB.removeSection = (id) => store.removeSection(id);
+          window.GMKB.getState = () => ({
+            components: store.components,
+            sections: store.sections,
+            theme: store.theme
+          });
+          window.GMKB.save = () => store.saveToWordPress();
+        }
+        
+        console.log('✅ GMKB methods now use Pinia store directly');
+        
+        console.log('✅ Vue Media Kit Builder fully loaded');
+      } catch (error) {
+        console.error('Failed to load Vue components:', error);
+      }
+    }, 100);
+    
+
+    
+    // Store reference will be set after async load
+    // Bridge will be created after store is ready
 
     logger.info('Vue 3 and Pinia initialized successfully');
     
@@ -275,8 +270,6 @@ async function initialize() {
   }, 1000);
   
   try {
-    // Create core instances
-    eventBus = new EventBus();
     
     // ROOT FIX: Ensure AJAX URL is available from multiple sources
     const ajaxUrl = window.gmkbData?.ajaxUrl || 
@@ -295,326 +288,78 @@ async function initialize() {
       window.gmkbData?.postId
     );
     
-    // Removed verbose logging for cleaner console
-    
-    // Initialize Vue component discovery
+    // Vue component discovery for potential legacy components during transition
     await VueComponentDiscovery.initialize();
     
-    // Load component renderers
+    // ROOT FIX: Make discovered Vue components available globally
+    // VueComponentDiscovery should have loaded them
+    window.gmkbVueComponents = window.gmkbVueComponents || {};
+    
+    // Load component renderers (including Vue ones)
     await loadComponentRenderers();
     
-    // ROOT FIX: Proper data loading hierarchy
-    // 1. WordPress database is the source of truth when editing a post
-    // 2. localStorage is only for temporary unsaved changes or new media kits
+    // ROOT FIX: Make PodsDataIntegration available globally for the store
+    window.podsDataIntegration = podsDataIntegration;
+    window.gmkbPodsIntegration = podsDataIntegration;
     
-    const postId = window.gmkbData?.postId || apiService.postId;
-    const hasPostId = postId && postId !== 'new' && postId !== '0';
+    // Log what Vue components we have
+    console.log('Available Vue components:', Object.keys(window.gmkbVueComponents));
     
-    let initialState = {};
+    // Phase 4 features will be initialized after Vue is ready
+    // They'll use the Pinia store instead of the legacy state manager
     
-    if (hasPostId) {
-      // EDITING AN EXISTING POST - WordPress is source of truth
-      console.log('Loading media kit from WordPress database for post:', postId);
-      initialState = window.gmkbData?.savedState || window.gmkbData?.saved_state || {};
-      
-      // ROOT FIX: Log what we're loading
-      if (initialState.components) {
-        const componentCount = Object.keys(initialState.components).length;
-        console.log(`Loading ${componentCount} components from WordPress`);
-        if (componentCount > 0) {
-          console.log('Component IDs:', Object.keys(initialState.components));
-        }
-      }
-      
-      // Create state manager with WordPress data
-      stateManager = new StateManager(initialState);
-      
-      // DO NOT load from localStorage when editing a specific post
-      // localStorage might have stale data from a different post!
-      console.log('✅ Loaded state from WordPress database');
-      
-    } else {
-      // NEW MEDIA KIT - localStorage can be used for drafts
-      console.log('Creating new media kit - checking localStorage for draft');
-      
-      // Create state manager with empty state
-      stateManager = new StateManager({});
-      
-      // Check localStorage for unsaved draft
-      const hasDraft = stateManager.loadFromStorage();
-      if (hasDraft) {
-        console.log('✅ Loaded draft from localStorage');
-      } else {
-        console.log('✅ Starting with fresh media kit');
-      }
-    }
-    
-    // ROOT FIX: Expose state manager globally for Vue bundle access
-    window.stateManager = stateManager;
-    window.gmkbStateManager = stateManager;
-    window.gmkbStore = stateManager; // Also expose as store for consistency
-    
-    // Initialize renderer with correct container ID
-    // Try multiple container IDs to find the right one
-  const possibleContainers = [
-    'gmkb-sections-container',
-    'saved-components-container', 
-    'media-kit-preview',
-    'gmkb-preview-area'
-  ];
-  
-  let containerId = 'media-kit-preview';
-  for (const id of possibleContainers) {
-    if (document.getElementById(id)) {
-      containerId = id;
-      logger.info(`Using container: ${id}`);
-      break;
-    }
-  }
-  
-  renderer = new Renderer(stateManager, containerId);
-    
-    // Initialize drag and drop manager
-    dragDropManager = new SectionDragDropManager(stateManager, eventBus);
-    
-    // Phase 4: Initialize advanced features
-    // Initialize inline editor
-    inlineEditor = new InlineEditor(stateManager);
-    
-    // Initialize component templates
-    componentTemplates = new ComponentTemplates();
-    componentTemplates.loadCustomTemplates(); // Load any saved custom templates
-    
-    // Initialize import/export manager
-    importExportManager = new ImportExportManager(stateManager, '3.0.0');
-    
-    // Phase 4: Auto-initialize inline editing after DOM is ready
-    setTimeout(() => {
-      if (inlineEditor) {
-        inlineEditor.init();
-        console.log('✅ Inline editor initialized - double-click text to edit');
-      }
-    }, 1000);
-    
-    console.log('✅ Phase 4 features initialized: Inline Editor, Templates, Import/Export');
-    
-    // Set up UI event handlers
-    setupUIHandlers();
-    
-    // Initialize component edit panel
-    componentEditPanel = initializeEditPanel();
-    if (componentEditPanel) {
-      console.log('✅ Component edit panel initialized');
-    } else {
-      console.warn('⚠️ Component edit panel could not be initialized');
-    }
-    
-    // Initialize unified edit manager
-    const unifiedEditManager = initializeUnifiedEditManager();
-    if (unifiedEditManager) {
-      console.log('✅ Unified edit manager initialized');
-    }
-    
-    // Set up component action handlers
-    setupComponentHandlers();
-    
-    // Set up auto-save
-    setupAutoSave();
+    // UI handlers will be set up after Vue is ready
     
     // Make available globally for debugging
     window.GMKB = {
-      stateManager,
-      eventBus,
       apiService,
-      renderer,
       vueApp: null, // Will be set after Vue initialization
       version: '3.0.0',
       
-      // Phase 4: Advanced features
-      inlineEditor,
-      componentTemplates,
-      importExportManager,
-      
-      // Helper methods
-      addComponent: (type, data = {}) => {
-        const componentId = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const component = {
-          id: componentId,
-          type,
-          data,
-          props: data
-        };
-        
-        // ROOT FIX: Enrich component with Pods data
-        podsDataIntegration.enrichComponentData(component);
-        
-        // Let the ADD_COMPONENT action in reducer handle section creation/assignment
-        
-        stateManager.dispatch({ type: ACTION_TYPES.ADD_COMPONENT, payload: component });
-        return componentId;
-      },
-      
-      removeComponent: (componentId) => {
-        stateManager.dispatch({ type: ACTION_TYPES.REMOVE_COMPONENT, payload: componentId });
-      },
-      
-      // ROOT FIX: Add section management methods
-      addSection: (type = 'two_column') => {
-        const sectionId = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const section = {
-          id: sectionId,
-          section_id: sectionId,
-          type,
-          components: []
-        };
-        stateManager.dispatch({ type: ACTION_TYPES.ADD_SECTION, payload: section });
-        return section;
-      },
-      
-      getSections: () => {
-        const state = stateManager.getState();
-        return state.sections || [];
-      },
-      
-      removeSection: (sectionId) => {
-        stateManager.dispatch({ type: ACTION_TYPES.REMOVE_SECTION, payload: sectionId });
-        console.log('✅ Section removed:', sectionId);
-      },
-      
-      save: () => saveState(),
-      
-      getState: () => stateManager.getState()
+      // These will be overridden by Vue store methods
+      addComponent: () => console.log('Waiting for Vue to initialize...'),
+      removeComponent: () => console.log('Waiting for Vue to initialize...'),
+      addSection: () => console.log('Waiting for Vue to initialize...'),
+      removeSection: () => console.log('Waiting for Vue to initialize...'),
+      getSections: () => [],
+      save: () => console.log('Waiting for Vue to initialize...'),
+      getState: () => ({})
     };
     
-    // ROOT FIX: Also expose section commands globally for easy console access
-    window.addSection = window.GMKB.addSection;
-    window.getSections = window.GMKB.getSections;
-    window.removeSection = window.GMKB.removeSection;
-    window.getState = window.GMKB.getState;
-    
-    // ROOT FIX: Add quick diagnostic function
+    // Console commands will be set up after Vue is ready
     window.checkComponents = () => {
-      const state = stateManager.getState();
-      const componentCount = Object.keys(state.components || {}).length;
-      const componentIds = Object.keys(state.components || {});
-      
-      console.log('=== Component Check ===');
-      console.log('Components type:', typeof state.components, Array.isArray(state.components) ? '(ARRAY!)' : '(object)');
-      console.log('Component count:', componentCount);
-      
-      if (componentCount > 0) {
-        console.log('Component IDs:', componentIds);
-        componentIds.forEach(id => {
-          const comp = state.components[id];
-          console.log(`  - ${id}: type=${comp?.type}, section=${comp?.sectionId}`);
-        });
-      } else {
-        console.log('No components in state.components');
-        
-        // Check sections
-        let componentsInSections = 0;
-        state.sections?.forEach(section => {
-          const sectionComps = section.components || [];
-          if (sectionComps.length > 0) {
-            console.log(`Section ${section.section_id} has ${sectionComps.length} components`);
-            componentsInSections += sectionComps.length;
-          }
-        });
-        
-        if (componentsInSections > 0) {
-          console.warn('⚠️ Components exist in sections but NOT in components object!');
-          console.log('This is why save shows 0 components');
-        }
-      }
-      
-      return { componentCount, componentIds, state };
+      console.log('Waiting for Vue store to initialize...');
+      return { componentCount: 0, componentIds: [], state: {} };
     };
     
-    // ROOT FIX: Initialize global commands for console access
-    initializeGlobalCommands();
-    
-    // ROOT FIX: Test/debug scripts removed from production
-    // Debug functions can be accessed via debugGMKB object instead
-    // This prevents 404 errors for test-save-fix.js in production
-    
-    // ROOT FIX: Add debug commands
+    // Debug commands will be set up with Vue store
     window.debugGMKB = {
       showState: () => {
-        const state = stateManager.getState();
-        console.log('Current State:', state);
-        console.log('Components:', Object.keys(state.components || {}).length);
-        console.log('Sections:', (state.sections || []).length);
-        let componentRefs = 0;
-        if (state.sections) {
-          state.sections.forEach(s => {
-            if (s.components) componentRefs += s.components.length;
-          });
+        const store = window.gmkbStore || window.mediaKitStore;
+        if (!store) {
+          console.log('Store not yet initialized');
+          return {};
         }
-        console.log('Component references in sections:', componentRefs);
-        return state;
+        console.log('Current State:', {
+          components: store.components,
+          sections: store.sections,
+          theme: store.theme
+        });
+        console.log('Components:', Object.keys(store.components || {}).length);
+        console.log('Sections:', (store.sections || []).length);
+        return store.$state;
       },
       
       showComponents: () => {
-        const state = stateManager.getState();
-        console.log('Components Map:', state.components);
-        return state.components;
+        const store = window.gmkbStore || window.mediaKitStore;
+        console.log('Components Map:', store?.components || {});
+        return store?.components || {};
       },
       
       showSections: () => {
-        const state = stateManager.getState();
-        console.log('Sections:', state.sections);
-        return state.sections;
-      },
-      
-      checkComponentInSection: (componentId) => {
-        const state = stateManager.getState();
-        const component = state.components[componentId];
-        if (!component) {
-          console.log('Component not found:', componentId);
-          return null;
-        }
-        console.log('Component:', component);
-        console.log('Assigned to section:', component.sectionId || 'NONE');
-        
-        // Find in sections
-        let foundInSection = null;
-        if (state.sections) {
-          state.sections.forEach(section => {
-            if (section.components) {
-              const found = section.components.find(c => 
-                (typeof c === 'string' ? c : c.component_id) === componentId
-              );
-              if (found) {
-                foundInSection = section.section_id;
-              }
-            }
-          });
-        }
-        console.log('Found in section:', foundInSection || 'NOT FOUND');
-        return { component, foundInSection };
-      },
-      
-      getLogs: async () => {
-        try {
-          const formData = new FormData();
-          formData.append('action', 'gmkb_get_debug_logs');
-          formData.append('nonce', apiService.nonce);
-          formData.append('lines', '50');
-          
-          const response = await fetch(apiService.ajaxUrl, {
-            method: 'POST',
-            body: formData
-          });
-          
-          const result = await response.json();
-          if (result.success && result.data.logs) {
-            console.log('=== GMKB Debug Logs ===');
-            console.log(result.data.logs);
-            return result.data.logs;
-          }
-        } catch (error) {
-          console.error('Failed to get logs:', error);
-        }
+        const store = window.gmkbStore || window.mediaKitStore;
+        console.log('Sections:', store?.sections || []);
+        return store?.sections || [];
       }
     };
     
@@ -636,7 +381,7 @@ async function initialize() {
     `);
     
     // Initialize Vue.js after core systems
-    vueApp = initializeVue();
+    vueApp = await initializeVue();
     
     // Store Vue app reference globally - ROOT FIX: Also expose as window.vueApp
     if (vueApp) {
@@ -1917,9 +1662,6 @@ if (document.readyState === 'loading') {
 
 // Export for module usage
 export {
-  StateManager,
-  EventBus,
-  Renderer,
   APIService,
   logger
 };

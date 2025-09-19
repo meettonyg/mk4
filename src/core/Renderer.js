@@ -91,6 +91,26 @@ export class Renderer {
     }
     } finally {
       this._isRendering = false;
+      
+      // ROOT FIX: After rendering is complete, dispatch event to re-attach Vue control listeners
+      // Use requestAnimationFrame to ensure DOM has been painted
+      requestAnimationFrame(() => {
+        // Dispatch event that Vue controls are listening for
+        document.dispatchEvent(new CustomEvent('gmkb:all-components-rendered', {
+          detail: {
+            componentCount: Object.keys(this.stateManager.getState().components).length,
+            sectionCount: this.stateManager.getState().sections?.length || 0
+          }
+        }));
+        
+        // Also directly call the setup function if available
+        if (window.gmkbSetupHoverListeners && typeof window.gmkbSetupHoverListeners === 'function') {
+          setTimeout(() => {
+            window.gmkbSetupHoverListeners();
+            console.log('✅ Re-attached hover listeners after render');
+          }, 100);
+        }
+      });
     }
   }
 
