@@ -16,23 +16,16 @@ export class ComponentEditPanel {
     // Listen for edit events
     document.addEventListener('gmkb:component-action', (e) => {
       if (e.detail.action === 'edit') {
-        // ROOT FIX: Use component's own handler if available
+        // Check if component is Vue-based with its own edit panel
         const state = window.GMKB?.getState();
         const component = state?.components[e.detail.componentId];
         
         if (component?.type === 'biography') {
-          // ROOT FIX: Use the biography component's self-contained handler
-          if (window.gmkbComponentHandlers?.biography?.openEditPanel) {
-            window.gmkbComponentHandlers.biography.openEditPanel(e.detail.componentId);
-          } else {
-            // Fallback: Try direct instance access
-            const componentEl = document.querySelector(`[data-component-id="${e.detail.componentId}"]`);
-            if (componentEl?._biographyInstance?.openEditPanel) {
-              componentEl._biographyInstance.openEditPanel();
-            } else {
-              console.warn('Biography edit handler not available yet');
-            }
-          }
+          // Biography uses its own Vue-based design panel
+          // Dispatch event to open Vue panel
+          document.dispatchEvent(new CustomEvent('gmkb:open-vue-panel', {
+            detail: { componentId: e.detail.componentId }
+          }));
         } else {
           // Standard components use this edit panel
           this.openEditPanel(e.detail.componentId);

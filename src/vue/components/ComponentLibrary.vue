@@ -55,45 +55,41 @@
         </div>
         
         <div class="library__main">
-        <!-- ROOT FIX: Wrap in a stable container to prevent DOM issues -->
-        <div class="components-container">
-          <!-- Use template tag for conditional rendering without DOM issues -->
-          <template v-if="filteredComponents && filteredComponents.length > 0">
-            <div class="components-grid" id="component-grid">
-              <div
-                v-for="component in filteredComponents"
-                :key="`${component.type}-${component.category}`"
-                class="component-card"
-                :class="{ 'component-card--premium': component.isPremium }"
-                :data-component-type="component.type"
-                :data-category="component.category"
-              >
-                <div class="component-card__icon">
-                  <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  </svg>
-                </div>
-                <h3 class="component-card__title">{{ component.name }}</h3>
-                <p class="component-card__description">{{ component.description }}</p>
-                <button 
-                  class="add-component-btn" 
-                  @click="addComponent(component.type)"
-                >
-                  Add
-                </button>
+          <!-- ROOT FIX: Always render all components, use CSS to show/hide -->
+          <div class="components-grid" id="component-grid">
+            <div
+              v-for="component in components"
+              :key="component.type"
+              class="component-card"
+              :class="{ 
+                'component-card--premium': component.isPremium,
+                'component-card--hidden': !isComponentVisible(component)
+              }"
+              :data-component-type="component.type"
+              :data-category="component.category"
+            >
+              <div class="component-card__icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                </svg>
               </div>
+              <h3 class="component-card__title">{{ component.name }}</h3>
+              <p class="component-card__description">{{ component.description }}</p>
+              <button 
+                class="add-component-btn" 
+                @click="addComponent(component.type)"
+              >
+                Add
+              </button>
             </div>
-          </template>
+          </div>
           
-          <!-- Show empty state when no results -->
-          <template v-else>
-            <div class="no-results">
-              <p>No components found matching "{{ searchTerm || formatCategory(selectedCategory) }}"</p>
-              <button @click="clearFilters" class="btn btn--secondary">Clear Filters</button>
-            </div>
-          </template>
+          <!-- Empty state -->
+          <div v-if="filteredComponents.length === 0" class="no-results">
+            <p>No components found matching "{{ searchTerm || formatCategory(selectedCategory) }}"</p>
+            <button @click="clearFilters" class="btn btn--secondary">Clear Filters</button>
+          </div>
         </div>
-      </div>
       </div>
       
       <div class="library__footer">

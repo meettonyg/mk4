@@ -12,7 +12,7 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import VueComponentDiscovery from './loaders/VueComponentDiscovery.js';
 import { initializeEditPanel } from './ui/ComponentEditPanel.js';
-// ROOT FIX: UnifiedEditManager removed - components are self-contained
+import { initializeUnifiedEditManager } from './ui/UnifiedEditManager.js';
 
 // Import only what we need for the transition
 import { APIService } from './services/APIService.js';
@@ -488,9 +488,9 @@ async function initialize() {
     setTimeout(() => {
       setupUIHandlers();
       
-      // Initialize edit panel
+      // Initialize edit panels
       componentEditPanel = initializeEditPanel();
-      // ROOT FIX: Components handle their own edit functionality - no unified manager needed
+      unifiedEditManager = initializeUnifiedEditManager();
       
       console.log('✅ UI handlers and edit panels initialized after Vue');
     }, 500);
