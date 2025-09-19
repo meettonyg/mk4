@@ -55,36 +55,43 @@
         </div>
         
         <div class="library__main">
-        <!-- ROOT FIX: Simplified template without complex nesting -->
-        <div class="components-grid" id="component-grid">
-          <div
-            v-for="component in filteredComponents"
-            :key="`component-${component.type}`"
-            class="component-card"
-            :class="{ 'component-card--premium': component.isPremium }"
-            :data-component-type="component.type"
-            :data-category="component.category"
-          >
-            <div class="component-card__icon">
-              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              </svg>
+        <!-- ROOT FIX: Wrap in a stable container to prevent DOM issues -->
+        <div class="components-container">
+          <!-- Use template tag for conditional rendering without DOM issues -->
+          <template v-if="filteredComponents && filteredComponents.length > 0">
+            <div class="components-grid" id="component-grid">
+              <div
+                v-for="component in filteredComponents"
+                :key="`${component.type}-${component.category}`"
+                class="component-card"
+                :class="{ 'component-card--premium': component.isPremium }"
+                :data-component-type="component.type"
+                :data-category="component.category"
+              >
+                <div class="component-card__icon">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  </svg>
+                </div>
+                <h3 class="component-card__title">{{ component.name }}</h3>
+                <p class="component-card__description">{{ component.description }}</p>
+                <button 
+                  class="add-component-btn" 
+                  @click="addComponent(component.type)"
+                >
+                  Add
+                </button>
+              </div>
             </div>
-            <h3 class="component-card__title">{{ component.name }}</h3>
-            <p class="component-card__description">{{ component.description }}</p>
-            <button 
-              class="add-component-btn" 
-              @click="addComponent(component.type)"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-        
-        <!-- Show empty state separately -->
-        <div v-if="filteredComponents.length === 0" class="no-results">
-          <p>No components found matching "{{ searchTerm || formatCategory(selectedCategory) }}"</p>
-          <button @click="clearFilters" class="btn btn--secondary">Clear Filters</button>
+          </template>
+          
+          <!-- Show empty state when no results -->
+          <template v-else>
+            <div class="no-results">
+              <p>No components found matching "{{ searchTerm || formatCategory(selectedCategory) }}"</p>
+              <button @click="clearFilters" class="btn btn--secondary">Clear Filters</button>
+            </div>
+          </template>
         </div>
       </div>
       </div>
@@ -98,7 +105,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 
 export default {
@@ -136,9 +143,21 @@ export default {
         }));
         
         console.log('✅ Found', components.value.length, 'components from gmkbData/gmkbVueData');
+        
+        // ROOT FIX: Log categories if available
+        if (sourceData.categories) {
+          console.log('✅ Categories available:', sourceData.categories);
+        }
+        
         // Debug first few components to verify structure
         if (components.value.length > 0) {
           console.log('Sample components:', components.value.slice(0, 3));
+          // Show category distribution
+          const categoryCount = {};
+          components.value.forEach(comp => {
+            categoryCount[comp.category] = (categoryCount[comp.category] || 0) + 1;
+          });
+          console.log('Category distribution:', categoryCount);
         }
       }
       // Fallback: Check if GMKB exists with discovered components
@@ -203,39 +222,56 @@ export default {
     
     // ROOT FIX: Make filtering more robust and case-insensitive
     const filteredComponents = computed(() => {
-      // ROOT FIX: Always return a new array to trigger Vue reactivity
-      let filtered = [...components.value];
-      
-      // Filter by category (case-insensitive and handle hyphens)
-      if (selectedCategory.value !== 'all' && selectedCategory.value) {
-        const normalizeCategory = (cat) => {
-          if (!cat) return '';
-          // Convert to lowercase and handle both hyphens and spaces
-          return cat.toLowerCase().replace(/[-\s]+/g, '');
-        };
+      try {
+        // ROOT FIX: Ensure components.value is always an array
+        if (!Array.isArray(components.value)) {
+          console.warn('Components is not an array:', components.value);
+          return [];
+        }
         
-        const selectedNorm = normalizeCategory(selectedCategory.value);
+        // Create a shallow copy to trigger Vue reactivity
+        let filtered = components.value.slice();
         
-        filtered = filtered.filter(comp => {
-          const compCatNorm = normalizeCategory(comp.category);
-          // Check exact match after normalization
-          return compCatNorm === selectedNorm;
+        // Filter by category (case-insensitive and handle hyphens)
+        if (selectedCategory.value !== 'all' && selectedCategory.value) {
+          const normalizeCategory = (cat) => {
+            if (!cat) return '';
+            // Convert to lowercase and handle both hyphens and spaces
+            return cat.toLowerCase().replace(/[-\s]+/g, '');
+          };
+          
+          const selectedNorm = normalizeCategory(selectedCategory.value);
+          
+          filtered = filtered.filter(comp => {
+            const compCatNorm = normalizeCategory(comp.category);
+            // Check exact match after normalization
+            return compCatNorm === selectedNorm;
+          });
+        }
+        
+        // Filter by search term
+        if (searchTerm.value) {
+          const term = searchTerm.value.toLowerCase();
+          filtered = filtered.filter(comp => {
+            const name = (comp.name || '').toLowerCase();
+            const desc = (comp.description || '').toLowerCase();
+            return name.includes(term) || desc.includes(term);
+          });
+        }
+        
+        console.log(`Filtering: category='${selectedCategory.value}', search='${searchTerm.value}', results=${filtered.length}`);
+        
+        // Use nextTick to ensure DOM updates properly
+        nextTick(() => {
+          // Force Vue to update the DOM
         });
+        
+        // ROOT FIX: Always return a valid array
+        return filtered || [];
+      } catch (error) {
+        console.error('Error filtering components:', error);
+        return [];
       }
-      
-      // Filter by search term
-      if (searchTerm.value) {
-        const term = searchTerm.value.toLowerCase();
-        filtered = filtered.filter(comp => {
-          const name = (comp.name || '').toLowerCase();
-          const desc = (comp.description || '').toLowerCase();
-          return name.includes(term) || desc.includes(term);
-        });
-      }
-      
-      console.log(`Filtering: category='${selectedCategory.value}', search='${searchTerm.value}', results=${filtered.length}`);
-      // ROOT FIX: Ensure we always return a valid array
-      return filtered || [];
     });
     
     // Methods

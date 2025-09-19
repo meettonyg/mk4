@@ -68,9 +68,21 @@ class GMKB_Ajax_Handlers {
             $components_array[] = $component;
         }
         
+        // ROOT FIX: Format categories properly for JavaScript
+        $formatted_categories = array();
+        foreach ($categories as $cat_name => $cat_components) {
+            $formatted_categories[$cat_name] = array(
+                'name' => $cat_name,
+                'label' => ucwords(str_replace('-', ' ', $cat_name)),
+                'components' => $cat_components,
+                'count' => count($cat_components)
+            );
+        }
+        
         wp_send_json_success(array(
             'components' => $components_array,
-            'categories' => $categories,
+            'categories' => $formatted_categories,
+            'categoryList' => array_keys($categories), // Simple list of category names
             'total' => count($components_array)
         ));
     }

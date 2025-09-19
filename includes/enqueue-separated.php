@@ -103,14 +103,6 @@ function gmkb_enqueue_vue_assets() {
         true
     );
     
-    // ROOT FIX: Legacy modal cleanup - ensures only Vue component library is used
-    wp_enqueue_script(
-        'gmkb-legacy-modal-cleanup',
-        $plugin_url . 'js/legacy-modal-cleanup.js',
-        array( 'gmkb-vue-bundle' ),
-        $version,
-        true
-    );
     
     // Localize data for Vue
     wp_localize_script( 'gmkb-vue-bundle', 'gmkbVueData', $bundle_data );

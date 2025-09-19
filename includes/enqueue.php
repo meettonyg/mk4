@@ -243,13 +243,34 @@ function gmkb_enqueue_assets() {
             }
         }
         
-        // Get component types for discovery
+        // Get component types and categories for discovery
         $component_types = array();
+        $components_data_lean = array();
+        $categories_data_lean = array();
+        
         if (class_exists('ComponentDiscovery')) {
             $components_dir = GUESTIFY_PLUGIN_DIR . 'components';
             $component_discovery = new ComponentDiscovery($components_dir);
             $component_discovery->scan();
             $components = $component_discovery->getComponents();
+            $categories = $component_discovery->getCategories();
+            
+            // Format components for JavaScript
+            foreach ($components as $key => $component) {
+                $components_data_lean[] = array(
+                    'type' => $key,
+                    'name' => $component['name'] ?? ucfirst($key),
+                    'title' => $component['title'] ?? $component['name'] ?? ucfirst($key),
+                    'description' => $component['description'] ?? '',
+                    'category' => $component['category'] ?? 'general',
+                    'icon' => $component['icon'] ?? '',
+                    'isPremium' => $component['isPremium'] ?? false,
+                    'order' => $component['order'] ?? 999
+                );
+            }
+            
+            // Format categories for JavaScript
+            $categories_data_lean = array_keys($categories);
             $component_types = array_keys($components);
         } else {
             // Fallback list
@@ -260,6 +281,7 @@ function gmkb_enqueue_assets() {
                 'video-intro', 'podcast-player', 'booking-calendar',
                 'authority-hook'
             );
+            $categories_data_lean = array('essential', 'general');
         }
         
         // ROOT FIX: Ensure post ID is captured from mkcg_id for lean bundle
@@ -280,7 +302,8 @@ function gmkb_enqueue_assets() {
             'pluginUrl' => $plugin_url,
             'savedState' => $saved_state,
             'debugMode' => defined( 'WP_DEBUG' ) && WP_DEBUG,
-            'components' => array(), // Will be loaded dynamically by the bundle
+            'components' => $components_data_lean, // ROOT FIX: Pass actual components
+            'categories' => $categories_data_lean, // ROOT FIX: Pass categories
             'componentTypes' => $component_types, // Pass component types for discovery
             'pods_data' => $pods_data, // Add Pods data
             'pods_fields_loaded' => !empty(array_filter($pods_data))
