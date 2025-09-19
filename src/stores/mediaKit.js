@@ -21,7 +21,21 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Meta state
     lastSaved: null,
     hasUnsavedChanges: false,
-    postId: window.gmkbData?.postId || null
+    postId: (() => {
+      // ROOT FIX: Get post ID from multiple sources, prioritizing mkcg_id
+      const urlParams = new URLSearchParams(window.location.search);
+      const mkcgId = urlParams.get('mkcg_id');
+      if (mkcgId) return parseInt(mkcgId);
+      
+      if (window.gmkbData?.postId) return window.gmkbData.postId;
+      if (window.gmkbData?.post_id) return window.gmkbData.post_id;
+      if (window.gmkbData?.mkcg_id) return window.gmkbData.mkcg_id;
+      
+      const postIdFromUrl = urlParams.get('post_id');
+      if (postIdFromUrl) return parseInt(postIdFromUrl);
+      
+      return null;
+    })()
   }),
 
   getters: {
@@ -319,9 +333,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // Call WordPress AJAX endpoint
         const formData = new FormData();
-        formData.append('action', 'gmkb_save_state');
+        formData.append('action', 'gmkb_save_media_kit'); // ROOT FIX: Correct action name
         formData.append('nonce', window.gmkbData?.nonce || window.mkcg_vars?.nonce || '');
-        formData.append('post_id', this.postId || window.gmkbData?.postId || '');
+        formData.append('post_id', this.postId || window.gmkbData?.postId || window.gmkbData?.post_id || '');
         formData.append('state', JSON.stringify(state));
         
         const response = await fetch(window.gmkbData?.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php', {
