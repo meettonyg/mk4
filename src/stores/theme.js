@@ -260,6 +260,11 @@ export const useThemeStore = defineStore('theme', {
     
     // Generate CSS variables from current theme
     cssVariables: (state, getters) => {
+      // ROOT FIX: Return empty object if theme system not ready
+      if (!getters.mergedTheme) {
+        return {};
+      }
+      
       const theme = getters.mergedTheme;
       const vars = {};
       
@@ -327,13 +332,23 @@ export const useThemeStore = defineStore('theme', {
   actions: {
     // Initialize theme from saved state
     initialize(savedTheme, savedCustomizations) {
+      // ROOT FIX: Ensure store is ready before applying theme
+      if (!this.availableThemes || this.availableThemes.length === 0) {
+        console.warn('Theme store not ready for initialization');
+        return;
+      }
+      
       if (savedTheme) {
         this.activeThemeId = savedTheme;
       }
       if (savedCustomizations) {
         this.tempCustomizations = savedCustomizations;
       }
-      this.applyThemeToDOM();
+      
+      // Only apply to DOM if we have a valid theme
+      if (this.activeThemeId && this.availableThemes.find(t => t.id === this.activeThemeId)) {
+        this.applyThemeToDOM();
+      }
     },
     
     // Open theme customizer

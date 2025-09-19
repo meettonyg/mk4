@@ -211,18 +211,30 @@ async function initializeVue() {
         console.log('✅ GMKB methods now use Pinia store directly');
         
         // Initialize theme store and mount ThemeCustomizer component
-        const { useThemeStore } = await import('./stores/theme.js');
-        const themeStore = useThemeStore();
-        window.themeStore = themeStore;
-        
-        // Load saved theme settings
-        if (store.theme) {
-          themeStore.initialize(store.theme, store.themeCustomizations);
+        try {
+          const { useThemeStore } = await import('./stores/theme.js');
+          const themeStore = useThemeStore();
+          window.themeStore = themeStore;
+          
+          // Load saved theme settings with error handling
+          if (store.theme || store.themeCustomizations) {
+            // Wait a tick for store to be fully initialized
+            setTimeout(() => {
+              try {
+                themeStore.initialize(store.theme, store.themeCustomizations);
+              } catch (themeError) {
+                console.warn('Theme initialization skipped:', themeError.message);
+              }
+            }, 100);
+          }
+          
+          // Mount ThemeCustomizer component
+          const { default: ThemeCustomizer } = await import('./vue/components/ThemeCustomizer.vue');
+          newApp.component('ThemeCustomizer', ThemeCustomizer);
+        } catch (themeError) {
+          console.warn('Theme system initialization error (non-critical):', themeError);
+          // Continue without theme system - app still works
         }
-        
-        // Mount ThemeCustomizer component
-        const { default: ThemeCustomizer } = await import('./vue/components/ThemeCustomizer.vue');
-        newApp.component('ThemeCustomizer', ThemeCustomizer);
         
         console.log('✅ Vue Media Kit Builder with theme system fully loaded');
       } catch (error) {
