@@ -86,6 +86,11 @@ import SaveThemePanel from './panels/SaveThemePanel.vue';
 
 const themeStore = useThemeStore();
 
+// Ensure store is initialized with defaults if needed
+if (!themeStore.activeThemeId) {
+  themeStore.activeThemeId = 'professional';
+}
+
 const panels = [
   { id: 'themes', label: 'Themes', icon: '🎨' },
   { id: 'colors', label: 'Colors', icon: '🎨' },

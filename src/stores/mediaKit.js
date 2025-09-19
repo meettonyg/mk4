@@ -297,24 +297,43 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Save state to WordPress
     async saveToWordPress() {
       try {
+        // Clean up the state before saving
+        const cleanComponents = {};
+        Object.entries(this.components).forEach(([id, comp]) => {
+          cleanComponents[id] = {
+            id: comp.id,
+            type: comp.type,
+            data: comp.data || {},
+            props: comp.props || {},
+            settings: comp.settings || {}
+          };
+        });
+        
         const state = {
-          components: this.components,
+          components: cleanComponents,
           sections: this.sections,
           theme: this.theme,
-          themeCustomizations: this.themeCustomizations
+          themeCustomizations: this.themeCustomizations,
+          layout: this.sections.map(s => s.section_id) // Add layout for compatibility
         };
         
         // Call WordPress AJAX endpoint
         const formData = new FormData();
         formData.append('action', 'gmkb_save_state');
-        formData.append('nonce', window.gmkbData?.nonce || '');
-        formData.append('post_id', this.postId || '');
+        formData.append('nonce', window.gmkbData?.nonce || window.mkcg_vars?.nonce || '');
+        formData.append('post_id', this.postId || window.gmkbData?.postId || '');
         formData.append('state', JSON.stringify(state));
         
-        const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+        const response = await fetch(window.gmkbData?.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php', {
           method: 'POST',
           body: formData
         });
+        
+        if (!response.ok) {
+          const text = await response.text();
+          console.error('Save response:', text);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
         const result = await response.json();
         
@@ -322,11 +341,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
           this.hasUnsavedChanges = false;
           this.lastSaved = Date.now();
           console.log('✅ State saved to WordPress');
+          return result;
         } else {
-          throw new Error(result.data?.message || 'Save failed');
+          console.error('Save failed:', result);
+          throw new Error(result.data?.message || result.data || 'Save failed');
         }
       } catch (error) {
         console.error('Failed to save to WordPress:', error);
+        // Don't throw for certain errors
+        if (error.message?.includes('Invalid nonce')) {
+          console.warn('Nonce expired, user needs to refresh');
+        }
         throw error;
       }
     }

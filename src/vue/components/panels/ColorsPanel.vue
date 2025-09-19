@@ -115,6 +115,22 @@ const colorDefinitions = [
 ];
 
 const getColorValue = (key) => {
+  if (!currentTheme.value || !currentTheme.value.colors) {
+    // Return default colors if theme not ready
+    const defaults = {
+      primary: '#3b82f6',
+      secondary: '#2563eb',
+      background: '#ffffff',
+      surface: '#f8fafc',
+      text: '#1e293b',
+      textLight: '#64748b',
+      border: '#e2e8f0',
+      success: '#10b981',
+      warning: '#f59e0b',
+      error: '#ef4444'
+    };
+    return defaults[key] || '#000000';
+  }
   return currentTheme.value.colors[key] || '#000000';
 };
 

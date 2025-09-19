@@ -133,13 +133,25 @@ const successMessage = ref('');
 
 const currentTheme = computed(() => themeStore.mergedTheme);
 
-const mainColors = computed(() => ({
-  primary: currentTheme.value.colors.primary,
-  secondary: currentTheme.value.colors.secondary,
-  background: currentTheme.value.colors.background,
-  text: currentTheme.value.colors.text,
-  surface: currentTheme.value.colors.surface
-}));
+const mainColors = computed(() => {
+  const theme = currentTheme.value;
+  if (!theme || !theme.colors) {
+    return {
+      primary: '#3b82f6',
+      secondary: '#2563eb',
+      background: '#ffffff',
+      text: '#1e293b',
+      surface: '#f8fafc'
+    };
+  }
+  return {
+    primary: theme.colors.primary,
+    secondary: theme.colors.secondary,
+    background: theme.colors.background,
+    text: theme.colors.text,
+    surface: theme.colors.surface
+  };
+});
 
 const baseThemeName = computed(() => {
   const baseTheme = themeStore.availableThemes.find(t => t.id === themeStore.activeThemeId);

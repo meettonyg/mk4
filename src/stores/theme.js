@@ -207,8 +207,43 @@ export const useThemeStore = defineStore('theme', {
     },
     
     // Get merged theme with temporary customizations
-    mergedTheme: (state) => {
-      const theme = state.activeTheme;
+    mergedTheme: (state, getters) => {
+      const theme = getters.activeTheme;
+      if (!theme) {
+        // Return default theme structure if no theme is active
+        return {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#2563eb',
+            background: '#ffffff',
+            surface: '#f8fafc',
+            text: '#1e293b',
+            textLight: '#64748b',
+            border: '#e2e8f0'
+          },
+          typography: {
+            fontFamily: "'Inter', system-ui, sans-serif",
+            headingFamily: "'Inter', system-ui, sans-serif",
+            baseFontSize: 16,
+            headingScale: 1.25,
+            lineHeight: 1.6,
+            fontWeight: 400
+          },
+          spacing: {
+            baseUnit: 8,
+            componentGap: 24,
+            sectionPadding: 40,
+            containerMaxWidth: 1200
+          },
+          effects: {
+            borderRadius: '8px',
+            shadowIntensity: 'medium',
+            animationSpeed: 'normal',
+            gradients: false,
+            blurEffects: false
+          }
+        };
+      }
       return {
         ...theme,
         colors: { ...theme.colors, ...state.tempCustomizations.colors },
@@ -487,6 +522,11 @@ export const useThemeStore = defineStore('theme', {
     applyThemeToDOM() {
       const root = document.documentElement;
       const cssVars = this.cssVariables;
+      
+      if (!cssVars || Object.keys(cssVars).length === 0) {
+        console.warn('No CSS variables to apply');
+        return;
+      }
       
       Object.entries(cssVars).forEach(([key, value]) => {
         root.style.setProperty(key, value);
