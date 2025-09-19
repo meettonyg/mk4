@@ -78,12 +78,19 @@
                 Add
               </button>
             </div>
+            
+            <!-- Show empty state if no components match filter -->
+            <div v-if="filteredComponents.length === 0" class="no-results">
+              <p>No components found matching "{{ searchTerm || formatCategory(selectedCategory) }}"</p>
+              <button @click="clearFilters" class="btn btn--secondary">Clear Filters</button>
+            </div>
           </div>
         </div>
       </div>
       
       <div class="library__footer">
         <button class="btn btn--secondary" @click="close">Cancel</button>
+        <!-- Add Selected button removed - each component has its own Add button -->
       </div>
     </div>
   </div>
@@ -186,6 +193,9 @@ export default {
     const open = () => {
       isOpen.value = true;
       document.body.style.overflow = 'hidden';
+      // Reset filters when opening
+      selectedCategory.value = 'all';
+      searchTerm.value = '';
     };
     
     const close = () => {
@@ -194,8 +204,10 @@ export default {
     };
     
     const addComponent = (type) => {
+      console.log('Adding component:', type);
       store.addComponent({ type });
-      close();
+      // Don't close immediately - let user add multiple components
+      // close();
     };
     
     const formatCategory = (cat) => {
@@ -205,7 +217,12 @@ export default {
     };
     
     const filterComponents = () => {
-      // Triggered by search input
+      // Triggered by search input - filtering is reactive via computed property
+    };
+    
+    const clearFilters = () => {
+      selectedCategory.value = 'all';
+      searchTerm.value = '';
     };
     
     // Expose method globally for compatibility
@@ -222,13 +239,30 @@ export default {
       close,
       addComponent,
       formatCategory,
-      filterComponents
+      filterComponents,
+      clearFilters
     };
   }
 };
 </script>
 
 <style scoped>
-/* Styles are loaded from component-library.css and modals.css */
-/* This ensures consistency with the design system */
+/* Core styles are loaded from component-library.css and modals.css */
+/* Additional Vue-specific styles */
+
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.no-results p {
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.no-results .btn {
+  font-size: 13px;
+}
 </style>

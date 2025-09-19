@@ -3,7 +3,7 @@
   "type": "hero",
   "version": "2.0.0-phase2",
   "description": "Main hero section with profile image and introduction",
-  "category": "essential",
+  "category": "hero-sections",
   "isPremium": false,
   "icon": "fa-star",
   "dataBindings": {

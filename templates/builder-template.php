@@ -587,9 +587,10 @@ if ($post_id > 0) {
     </div>
 
     <?php 
-    // ROOT FIX: Simplified modal loading (no complex validation loops)
+    // ROOT FIX: Component Library is now handled by Vue component
+    // Removed component-library-modal.php include - using pure Vue approach
     $modal_files = [
-        'component-library-modal.php',
+        // 'component-library-modal.php', // REMOVED - Vue handles this now
         'template-library-modal.php', 
         'global-settings-modal.php',
         'export-modal.php'

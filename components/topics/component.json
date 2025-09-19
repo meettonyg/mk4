@@ -1,6 +1,6 @@
 {
   "name": "Speaking Topics",
-  "category": "essential",
+  "category": "topics-skills",
   "icon": "topics-grid.svg",
   "description": "Areas of expertise and speaking topics display",
   "isPremium": false,

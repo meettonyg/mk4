@@ -1,6 +1,6 @@
 {
   "name": "Guest Introduction",
-  "category": "essential",
+  "category": "hero-sections",
   "description": "Brief introduction section for guest appearances",
   "isPremium": false,
   "version": "2.0.0-phase2",

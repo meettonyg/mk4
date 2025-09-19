@@ -1,6 +1,6 @@
 {
   "name": "Authority Hook",
-  "category": "essential",
+  "category": "hero-sections",
   "icon": "authority-hook.svg",
   "description": "Authority positioning with WHO, WHAT, WHEN, WHERE, WHY, HOW framework",
   "isPremium": false,
