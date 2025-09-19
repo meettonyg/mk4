@@ -35,13 +35,17 @@
                 modal.remove();
             });
             
-            // Also remove by class pattern
-            const simpleModals = document.querySelectorAll('.modal__content:has(.modal__title:contains("Component Library"))');
-            simpleModals.forEach(modal => {
-                const parent = modal.closest('.modal');
-                if (parent) {
-                    console.log('Removing simple modal:', parent);
-                    parent.remove();
+            // ROOT FIX: Use valid selectors instead of :has() and :contains()
+            // Find modals by checking their content
+            const modalContents = document.querySelectorAll('.modal__content');
+            modalContents.forEach(content => {
+                const title = content.querySelector('.modal__title');
+                if (title && title.textContent && title.textContent.includes('Component Library')) {
+                    const parent = content.closest('.modal');
+                    if (parent && !parent.classList.contains('library-modal')) {
+                        console.log('Removing simple modal:', parent);
+                        parent.remove();
+                    }
                 }
             });
         };

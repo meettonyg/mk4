@@ -374,14 +374,6 @@ function gmkb_enqueue_assets() {
             );
         }
         
-        // ROOT FIX: Load components array fix
-        wp_enqueue_script(
-            'gmkb-fix-components-array',
-            $plugin_url . 'fix-components-array.js',
-            array('gmkb-lean-bundle'),
-            $version . '-fix',
-            true
-        );
         
         // ROOT FIX: When using lean bundle, ONLY load the bundle for JavaScript
         // Do NOT load additional scripts that duplicate functionality

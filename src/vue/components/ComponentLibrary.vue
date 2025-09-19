@@ -34,58 +34,59 @@
       
       <div class="library__content">
         <div class="library__sidebar">
-          <ul class="category-list">
-            <li 
-              class="category-item"
-              :class="{ 'category-item--active': selectedCategory === 'all' }"
-              @click="selectedCategory = 'all'"
-            >
-              All Components
-            </li>
-            <li 
-              v-for="cat in categories"
-              :key="cat"
-              class="category-item"
-              :class="{ 'category-item--active': selectedCategory === cat }"
-              @click="selectedCategory = cat"
-            >
-              {{ formatCategory(cat) }}
-            </li>
-          </ul>
+        <ul class="category-list">
+        <li 
+        class="category-item"
+        :class="{ 'category-item--active': selectedCategory === 'all' }"
+        @click="selectedCategory = 'all'"
+        >
+        All Components
+        </li>
+        <li 
+        v-for="cat in categories"
+        :key="cat"
+        class="category-item"
+        :class="{ 'category-item--active': selectedCategory === cat }"
+        @click="selectedCategory = cat"
+        >
+        {{ formatCategory(cat) }}
+        </li>
+        </ul>
         </div>
         
         <div class="library__main">
-          <div class="components-grid" id="component-grid">
-            <div
-              v-for="component in filteredComponents"
-              :key="component.type"
-              class="component-card"
-              :class="{ 'component-card--premium': component.isPremium }"
-              :data-component-type="component.type"
-              :data-category="component.category"
+        <!-- ROOT FIX: Simplified template without complex nesting -->
+        <div class="components-grid" id="component-grid">
+          <div
+            v-for="component in filteredComponents"
+            :key="`component-${component.type}`"
+            class="component-card"
+            :class="{ 'component-card--premium': component.isPremium }"
+            :data-component-type="component.type"
+            :data-category="component.category"
+          >
+            <div class="component-card__icon">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              </svg>
+            </div>
+            <h3 class="component-card__title">{{ component.name }}</h3>
+            <p class="component-card__description">{{ component.description }}</p>
+            <button 
+              class="add-component-btn" 
+              @click="addComponent(component.type)"
             >
-              <div class="component-card__icon">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                </svg>
-              </div>
-              <h3 class="component-card__title">{{ component.name }}</h3>
-              <p class="component-card__description">{{ component.description }}</p>
-              <button 
-                class="add-component-btn" 
-                @click="addComponent(component.type)"
-              >
-                Add
-              </button>
-            </div>
-            
-            <!-- Show empty state if no components match filter -->
-            <div v-if="filteredComponents.length === 0" class="no-results">
-              <p>No components found matching "{{ searchTerm || formatCategory(selectedCategory) }}"</p>
-              <button @click="clearFilters" class="btn btn--secondary">Clear Filters</button>
-            </div>
+              Add
+            </button>
           </div>
         </div>
+        
+        <!-- Show empty state separately -->
+        <div v-if="filteredComponents.length === 0" class="no-results">
+          <p>No components found matching "{{ searchTerm || formatCategory(selectedCategory) }}"</p>
+          <button @click="clearFilters" class="btn btn--secondary">Clear Filters</button>
+        </div>
+      </div>
       </div>
       
       <div class="library__footer">
@@ -112,11 +113,36 @@ export default {
     
     // Get components from store or window data
     onMounted(() => {
-      // ROOT FIX: Components are discovered and stored in GMKB.components Map
+      // ROOT FIX: Load components from the correct source based on console output
       console.log('ComponentLibrary Vue component mounted');
       
-      // Check if GMKB exists with discovered components
-      if (window.GMKB && window.GMKB.components && window.GMKB.components.size > 0) {
+      // ROOT FIX: Based on console output, gmkbData has 16 components
+      // Priority 1: Try gmkbData/gmkbVueData first (this is what's working)
+      if ((window.gmkbData && window.gmkbData.components) || 
+          (window.gmkbVueData && window.gmkbVueData.components)) {
+        const sourceData = window.gmkbData || window.gmkbVueData;
+        const rawComponents = Array.isArray(sourceData.components) 
+          ? sourceData.components 
+          : Object.values(sourceData.components);
+        
+        // ROOT FIX: Ensure each component has required fields
+        components.value = rawComponents.map(comp => ({
+          type: comp.type || comp.directory || 'unknown',
+          name: comp.name || comp.title || 'Unknown Component',
+          description: comp.description || '',
+          category: comp.category || 'general',
+          isPremium: comp.isPremium || comp.premium || false,
+          icon: comp.icon || ''
+        }));
+        
+        console.log('✅ Found', components.value.length, 'components from gmkbData/gmkbVueData');
+        // Debug first few components to verify structure
+        if (components.value.length > 0) {
+          console.log('Sample components:', components.value.slice(0, 3));
+        }
+      }
+      // Fallback: Check if GMKB exists with discovered components
+      else if (window.GMKB && window.GMKB.components && window.GMKB.components.size > 0) {
         // Convert Map to Array for Vue reactivity
         const componentMap = window.GMKB.components;
         const componentArray = [];
@@ -134,15 +160,6 @@ export default {
         
         components.value = componentArray;
         console.log('✅ Found', components.value.length, 'components from GMKB.components');
-      } 
-      // Fallback to gmkbData/gmkbVueData
-      else if ((window.gmkbData && window.gmkbData.components) || 
-               (window.gmkbVueData && window.gmkbVueData.components)) {
-        const sourceData = window.gmkbData || window.gmkbVueData;
-        components.value = Array.isArray(sourceData.components) 
-          ? sourceData.components 
-          : Object.values(sourceData.components);
-        console.log('✅ Found', components.value.length, 'components from gmkbData/gmkbVueData');
       } else {
         console.warn('❌ No components found in any expected location');
         console.log('Available globals:', {
@@ -161,36 +178,64 @@ export default {
       console.log('✅ Vue ComponentLibrary ready - window.openComponentLibrary is available');
     });
     
-    // Get unique categories
+    // ROOT FIX: Get unique categories and normalize them for display
     const categories = computed(() => {
       const cats = new Set();
       components.value.forEach(comp => {
         if (comp.category && comp.category !== 'all') {
+          // Store the original category value
           cats.add(comp.category);
         }
       });
-      return Array.from(cats).sort();
+      // Sort categories in a logical order
+      const sortOrder = ['biography', 'hero-sections', 'essential', 'content', 'topics-skills', 'premium'];
+      return Array.from(cats).sort((a, b) => {
+        const indexA = sortOrder.indexOf(a);
+        const indexB = sortOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.localeCompare(b);
+      });
     });
     
-    // Filter components based on category and search
+    // ROOT FIX: Make filtering more robust and case-insensitive
     const filteredComponents = computed(() => {
-      let filtered = components.value;
+      // ROOT FIX: Always return a new array to trigger Vue reactivity
+      let filtered = [...components.value];
       
-      // Filter by category
-      if (selectedCategory.value !== 'all') {
-        filtered = filtered.filter(comp => comp.category === selectedCategory.value);
+      // Filter by category (case-insensitive and handle hyphens)
+      if (selectedCategory.value !== 'all' && selectedCategory.value) {
+        const normalizeCategory = (cat) => {
+          if (!cat) return '';
+          // Convert to lowercase and handle both hyphens and spaces
+          return cat.toLowerCase().replace(/[-\s]+/g, '');
+        };
+        
+        const selectedNorm = normalizeCategory(selectedCategory.value);
+        
+        filtered = filtered.filter(comp => {
+          const compCatNorm = normalizeCategory(comp.category);
+          // Check exact match after normalization
+          return compCatNorm === selectedNorm;
+        });
       }
       
       // Filter by search term
       if (searchTerm.value) {
         const term = searchTerm.value.toLowerCase();
-        filtered = filtered.filter(comp => 
-          comp.name.toLowerCase().includes(term) ||
-          comp.description.toLowerCase().includes(term)
-        );
+        filtered = filtered.filter(comp => {
+          const name = (comp.name || '').toLowerCase();
+          const desc = (comp.description || '').toLowerCase();
+          return name.includes(term) || desc.includes(term);
+        });
       }
       
-      return filtered;
+      console.log(`Filtering: category='${selectedCategory.value}', search='${searchTerm.value}', results=${filtered.length}`);
+      // ROOT FIX: Ensure we always return a valid array
+      return filtered || [];
     });
     
     // Methods
@@ -286,11 +331,17 @@ export default {
   gap: 16px !important;
 }
 
+/* ROOT FIX: Ensure components grid handles empty state properly */
+.components-grid:empty {
+  display: none;
+}
+
 .no-results {
   grid-column: 1 / -1;
   text-align: center;
   padding: 40px 20px;
   color: #64748b;
+  width: 100%;
 }
 
 .no-results p {
@@ -300,5 +351,12 @@ export default {
 
 .no-results .btn {
   font-size: 13px;
+}
+
+/* ROOT FIX: Ensure component cards are visible */
+.component-card {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 </style>

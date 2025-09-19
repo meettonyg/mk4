@@ -1,9 +1,5 @@
 @echo off
-echo Building Media Kit Builder bundle...
-echo.
-echo This will rebuild the JavaScript bundle with the save fix.
-echo.
+echo Rebuilding Vue bundle with all fixes...
 npm run build
-echo.
-echo Build complete! Refresh your browser to load the updated bundle.
+echo Build complete!
 pause
