@@ -84,167 +84,163 @@ const BiographyVue = {
     };
     
     const openEditPanel = () => {
+      console.log('Biography: openEditPanel called - rendering in sidebar');
+      
+      // ROOT FIX: Render in the existing sidebar, not as a separate overlay
+      const componentTab = document.getElementById('components-tab');
+      if (!componentTab) {
+        console.error('Biography: components-tab not found!');
+        return;
+      }
+      
+      // Store original content to restore later
+      const originalContent = componentTab.innerHTML;
+      
+      // Set state
       state.showDesignPanel = true;
-      document.body.classList.add('design-panel-open');
       
-      // Create and append design panel to body
-      const panelContainer = document.createElement('div');
-      panelContainer.id = `design-panel-${props.componentId}`;
-      document.body.appendChild(panelContainer);
+      // Render the edit panel in the sidebar
+      componentTab.innerHTML = `
+        <div class="component-edit-panel">
+          <div class="edit-panel-header">
+            <button class="back-btn" id="bio-back-btn">← Back to Components</button>
+            <h3>Edit Biography</h3>
+          </div>
+          <div class="edit-panel-content">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="bio-show-title" ${state.localShowTitle ? 'checked' : ''}>
+                Show Title
+              </label>
+            </div>
+            
+            ${state.localShowTitle ? `
+              <div class="form-group">
+                <label>Title Text</label>
+                <input type="text" id="bio-title" value="${state.localTitle}" placeholder="Biography">
+              </div>
+            ` : ''}
+            
+            <div class="form-group">
+              <label>Biography Text</label>
+              <textarea id="bio-content" rows="10" placeholder="Enter biography text here...">${state.localBiography}</textarea>
+            </div>
+            
+            ${podsData.biography ? `
+              <button class="btn btn--secondary btn--sm" id="bio-load-pods">Load from Guest Post Data</button>
+            ` : ''}
+            
+            <div class="form-group">
+              <h4 style="margin-top: 20px; margin-bottom: 10px;">Display Options</h4>
+              
+              <label>Text Alignment</label>
+              <select id="bio-alignment" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;">
+                <option value="left" ${state.localAlignment === 'left' ? 'selected' : ''}>Left</option>
+                <option value="center" ${state.localAlignment === 'center' ? 'selected' : ''}>Center</option>
+                <option value="right" ${state.localAlignment === 'right' ? 'selected' : ''}>Right</option>
+                <option value="justify" ${state.localAlignment === 'justify' ? 'selected' : ''}>Justify</option>
+              </select>
+              
+              <label>Font Size</label>
+              <select id="bio-font-size" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px;">
+                <option value="small" ${state.localFontSize === 'small' ? 'selected' : ''}>Small</option>
+                <option value="medium" ${state.localFontSize === 'medium' ? 'selected' : ''}>Medium</option>
+                <option value="large" ${state.localFontSize === 'large' ? 'selected' : ''}>Large</option>
+              </select>
+              
+              <label>
+                <input type="checkbox" id="bio-preserve-breaks" ${state.localPreserveLineBreaks ? 'checked' : ''}>
+                Preserve Line Breaks
+              </label>
+            </div>
+            
+            <div class="edit-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+              <button class="save-btn" id="bio-save-btn" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Save Changes</button>
+              <button class="cancel-btn" id="bio-cancel-btn" style="padding: 10px 20px; background: #f0f0f0; color: #333; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+            </div>
+          </div>
+        </div>
+      `;
       
-      // Create design panel app
-      const DesignPanel = {
-        setup() {
-          return () => h('div', { 
-            class: 'design-panel',
-            onClick: (e) => {
-              if (e.target.classList.contains('design-panel')) {
-                closeDesignPanel();
-              }
-            }
-          }, [
-            h('div', { class: 'design-panel__content' }, [
-              h('div', { class: 'design-panel__header' }, [
-                h('h3', 'Edit Biography'),
-                h('button', { 
-                  class: 'design-panel__close',
-                  onClick: closeDesignPanel
-                }, '×')
-              ]),
-              h('div', { class: 'design-panel__body' }, [
-                // Title Settings
-                h('div', { class: 'design-panel__section' }, [
-                  h('label', { class: 'design-panel__label' }, [
-                    h('input', {
-                      type: 'checkbox',
-                      checked: state.localShowTitle,
-                      onChange: (e) => {
-                        state.localShowTitle = e.target.checked;
-                        updateComponent();
-                      }
-                    }),
-                    ' Show Title'
-                  ])
-                ]),
-                
-                state.localShowTitle && h('div', { class: 'design-panel__section' }, [
-                  h('label', { class: 'design-panel__label' }, 'Title Text'),
-                  h('input', {
-                    type: 'text',
-                    class: 'design-panel__input',
-                    value: state.localTitle,
-                    onInput: (e) => {
-                      state.localTitle = e.target.value;
-                      updateComponent();
-                    },
-                    placeholder: 'Biography'
-                  })
-                ]),
-                
-                // Biography Text
-                h('div', { class: 'design-panel__section' }, [
-                  h('label', { class: 'design-panel__label' }, 'Biography Text'),
-                  h('textarea', {
-                    class: 'design-panel__textarea',
-                    value: state.localBiography,
-                    onInput: (e) => {
-                      state.localBiography = e.target.value;
-                      updateComponent();
-                    },
-                    rows: 10,
-                    placeholder: 'Enter biography text here...'
-                  }),
-                  
-                  podsData.biography && h('button', {
-                    class: 'btn btn--secondary btn--sm mt-2',
-                    onClick: () => {
-                      state.localBiography = podsData.biography;
-                      updateComponent();
-                    }
-                  }, 'Load from Guest Post Data')
-                ]),
-                
-                // Display Options
-                h('div', { class: 'design-panel__section' }, [
-                  h('h4', { class: 'design-panel__subtitle' }, 'Display Options'),
-                  
-                  h('label', { class: 'design-panel__label' }, 'Text Alignment'),
-                  h('select', {
-                    class: 'design-panel__select',
-                    value: state.localAlignment,
-                    onChange: (e) => {
-                      state.localAlignment = e.target.value;
-                      updateComponent();
-                    }
-                  }, [
-                    h('option', { value: 'left' }, 'Left'),
-                    h('option', { value: 'center' }, 'Center'),
-                    h('option', { value: 'right' }, 'Right'),
-                    h('option', { value: 'justify' }, 'Justify')
-                  ]),
-                  
-                  h('label', { class: 'design-panel__label' }, 'Font Size'),
-                  h('select', {
-                    class: 'design-panel__select',
-                    value: state.localFontSize,
-                    onChange: (e) => {
-                      state.localFontSize = e.target.value;
-                      updateComponent();
-                    }
-                  }, [
-                    h('option', { value: 'small' }, 'Small'),
-                    h('option', { value: 'medium' }, 'Medium'),
-                    h('option', { value: 'large' }, 'Large')
-                  ]),
-                  
-                  h('label', { class: 'design-panel__label' }, [
-                    h('input', {
-                      type: 'checkbox',
-                      checked: state.localPreserveLineBreaks,
-                      onChange: (e) => {
-                        state.localPreserveLineBreaks = e.target.checked;
-                        updateComponent();
-                      }
-                    }),
-                    ' Preserve Line Breaks'
-                  ])
-                ])
-              ]),
-              h('div', { class: 'design-panel__footer' }, [
-                h('button', {
-                  class: 'btn btn--primary',
-                  onClick: () => {
-                    updateComponent();
-                    closeDesignPanel();
-                  }
-                }, 'Save & Close')
-              ])
-            ])
-          ]);
+      // Attach event handlers
+      setTimeout(() => {
+        // Back button
+        const backBtn = document.getElementById('bio-back-btn');
+        if (backBtn) {
+          backBtn.onclick = () => {
+            componentTab.innerHTML = originalContent;
+            state.showDesignPanel = false;
+          };
         }
-      };
+        
+        // Cancel button
+        const cancelBtn = document.getElementById('bio-cancel-btn');
+        if (cancelBtn) {
+          cancelBtn.onclick = () => {
+            componentTab.innerHTML = originalContent;
+            state.showDesignPanel = false;
+          };
+        }
+        
+        // Save button
+        const saveBtn = document.getElementById('bio-save-btn');
+        if (saveBtn) {
+          saveBtn.onclick = () => {
+            // Get values from form
+            state.localShowTitle = document.getElementById('bio-show-title')?.checked;
+            state.localTitle = document.getElementById('bio-title')?.value || 'Biography';
+            state.localBiography = document.getElementById('bio-content')?.value || '';
+            state.localAlignment = document.getElementById('bio-alignment')?.value || 'left';
+            state.localFontSize = document.getElementById('bio-font-size')?.value || 'medium';
+            state.localPreserveLineBreaks = document.getElementById('bio-preserve-breaks')?.checked;
+            
+            // Update component
+            updateComponent();
+            
+            // Restore sidebar
+            componentTab.innerHTML = originalContent;
+            state.showDesignPanel = false;
+          };
+        }
+        
+        // Load from Pods button
+        const loadPodsBtn = document.getElementById('bio-load-pods');
+        if (loadPodsBtn) {
+          loadPodsBtn.onclick = () => {
+            const textarea = document.getElementById('bio-content');
+            if (textarea && podsData.biography) {
+              textarea.value = podsData.biography;
+            }
+          };
+        }
+        
+        // Handle show/hide title
+        const showTitleCheckbox = document.getElementById('bio-show-title');
+        if (showTitleCheckbox) {
+          showTitleCheckbox.onchange = () => {
+            // Re-render to show/hide title field
+            openEditPanel();
+          };
+        }
+        
+        // Handle live updates
+        const contentTextarea = document.getElementById('bio-content');
+        if (contentTextarea) {
+          contentTextarea.oninput = () => {
+            state.localBiography = contentTextarea.value;
+          };
+        }
+      }, 0);
       
-      const panelApp = createApp(DesignPanel);
-      panelApp.mount(panelContainer);
-      
-      // Store panel app reference
-      window[`designPanel_${props.componentId}`] = panelApp;
+      console.log('Biography: Edit panel rendered in sidebar');
     };
     
     const closeDesignPanel = () => {
+      console.log('Biography: closeDesignPanel called');
       state.showDesignPanel = false;
-      document.body.classList.remove('design-panel-open');
       
-      // Clean up design panel
-      const panelContainer = document.getElementById(`design-panel-${props.componentId}`);
-      if (panelContainer) {
-        const panelApp = window[`designPanel_${props.componentId}`];
-        if (panelApp) {
-          panelApp.unmount();
-          delete window[`designPanel_${props.componentId}`];
-        }
-        panelContainer.remove();
-      }
+      // The sidebar content is restored by the edit panel handlers
+      // No need to clean up separate panels since we're using the sidebar
     };
     
     const updateComponent = () => {
@@ -322,8 +318,18 @@ const BiographyVue = {
     
     // ROOT FIX: Listen for edit panel open event
     const handleOpenEditPanel = (e) => {
+      console.log('Biography: Document received gmkb:open-vue-panel event', e.detail);
       if (e.detail?.componentId === props.componentId) {
-        console.log('Biography: Received open-edit-panel event for', props.componentId);
+        console.log('Biography: Opening edit panel for', props.componentId);
+        openEditPanel();
+      }
+    };
+    
+    // ROOT FIX: Create a stable reference for the element listener
+    const handleElementEditPanel = (e) => {
+      console.log('Biography: Element received open-edit-panel event', e.detail);
+      if (!e.detail?.componentId || e.detail.componentId === props.componentId) {
+        console.log('Biography: Opening edit panel from element event');
         openEditPanel();
       }
     };
@@ -339,7 +345,8 @@ const BiographyVue = {
       // Also listen for direct element events from UnifiedEditManager
       const componentEl = document.querySelector(`[data-component-id="${props.componentId}"]`);
       if (componentEl) {
-        componentEl.addEventListener('open-edit-panel', () => openEditPanel());
+        // ROOT FIX: Use the stable reference for proper cleanup
+        componentEl.addEventListener('open-edit-panel', handleElementEditPanel);
         
         // Register this instance for direct access
         componentEl._biographyInstance = {
@@ -359,10 +366,10 @@ const BiographyVue = {
       // ROOT FIX: Remove edit panel event listener
       document.removeEventListener('gmkb:open-vue-panel', handleOpenEditPanel);
       
-      // Also remove element listener
+      // ROOT FIX: Properly remove element listener using the stable reference
       const componentEl = document.querySelector(`[data-component-id="${props.componentId}"]`);
       if (componentEl) {
-        componentEl.removeEventListener('open-edit-panel', openEditPanel);
+        componentEl.removeEventListener('open-edit-panel', handleElementEditPanel);
       }
       
       closeDesignPanel();
