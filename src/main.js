@@ -7,6 +7,9 @@
 // Import styles for Vue controls
 import '../css/vue-controls.css';
 
+// Import component definitions and library integration
+import { initializeComponentLibrary } from './integrations/componentLibraryIntegration.js';
+
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
@@ -174,11 +177,15 @@ async function initializeVue() {
         }
         
         // Now load the real Vue components
+        const { default: ComponentLibrary } = await import('./vue/components/ComponentLibraryNew.vue');
         const { default: RealMediaKitApp } = await import('./vue/components/MediaKitApp.vue');
         
         // Create a new app with the real component
         const newApp = createApp(RealMediaKitApp);
         newApp.use(pinia);
+        
+        // Register Component Library globally
+        newApp.component('ComponentLibrary', ComponentLibrary);
         
         // Unmount the placeholder and mount the real app
         app.unmount();
@@ -561,16 +568,8 @@ function setupUIHandlers() {
     });
   }
   
-  // Add Component button - check multiple possible IDs
-  const addComponentBtn = document.getElementById('add-component-btn') || 
-                         document.getElementById('add-first-component') ||
-                         document.querySelector('[data-action="add-component"]');
-  if (addComponentBtn) {
-    addComponentBtn.addEventListener('click', () => {
-      // Use our own component library modal
-      openComponentLibrary();
-    });
-  }
+  // Component library integration is now handled by componentLibraryIntegration.js
+  initializeComponentLibrary();
   
   // Add Section button - check multiple possible IDs
   const addSectionBtn = document.getElementById('add-section-btn') || 
@@ -954,335 +953,20 @@ async function saveState(isAutoSave = false) {
 }
 
 function openComponentLibrary() {
-  // Check if PHP modal exists first (it should be in the page)
-  let modal = document.getElementById('component-library-overlay');
-  
-  if (modal) {
-    // Use the PHP-generated modal
-    modal.style.display = 'flex';
-    
-    // Populate the component grid
-    const grid = document.getElementById('component-grid');
-    if (grid) {
-      // Hide loading state
-      const loadingEl = document.getElementById('component-grid-loading');
-      if (loadingEl) {
-        loadingEl.style.display = 'none';
-      }
-      
-      // Render components in the grid
-      renderComponentsInGrid(grid);
-    }
-    
-    // Setup event handlers if not already done
-    setupLibraryEventHandlers(modal);
+  // Use Vue component library
+  if (window.openComponentLibrary && window.openComponentLibrary !== openComponentLibrary) {
+    window.openComponentLibrary();
   } else {
-    // Fallback: Create our own modal
-    modal = document.createElement('div');
-    modal.id = 'component-library-modal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-      <div class="modal__content" style="max-width: 800px; width: 90%;">
-        <div class="modal__header">
-          <h2 class="modal__title">Component Library</h2>
-          <button class="modal__close">&times;</button>
-        </div>
-        <div class="modal__body" id="component-library-list"></div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Close button
-    modal.querySelector('.modal__close').addEventListener('click', () => {
-      modal.classList.remove('modal--open');
-      modal.style.display = 'none';
-    });
-    
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.classList.remove('modal--open');
-        modal.style.display = 'none';
-      }
-    });
-    
-    // Show modal
-    modal.classList.add('modal--open');
-    modal.style.display = 'flex';
-    
-    // Render component library
-    renderComponentLibrary();
+    // Dispatch event for Vue to handle
+    document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
   }
-  
-  console.log('Component library modal opened');
+  console.log('Component library opening via Vue');
 }
 
 
-function renderComponentLibrary() {
-  const list = document.getElementById('component-library-list');
-  if (!list) return;
-  
-  // ROOT FIX: Get components from multiple sources
-  let components = [];
-  
-  // First try to get from gmkbData
-  if (window.gmkbData?.components && Array.isArray(window.gmkbData.components)) {
-    components = window.gmkbData.components;
-  }
-  
-  // If no components from gmkbData, try componentTypes
-  if (components.length === 0 && window.gmkbData?.componentTypes) {
-    // Convert component types to component objects
-    components = window.gmkbData.componentTypes.map(type => ({
-      type: type,
-      name: type.charAt(0).toUpperCase() + type.slice(1).replace(/-/g, ' '),
-      description: `Add ${type} component to your media kit`
-    }));
-  }
-  
-  // If still no components, use default fallback list
-  if (components.length === 0) {
-    components = [
-      { type: 'hero', name: 'Hero', description: 'Hero section with title and image', category: 'essential' },
-      { type: 'biography', name: 'Biography', description: 'Professional biography', category: 'essential' },
-      { type: 'topics', name: 'Topics', description: 'Speaking topics list', category: 'essential' },
-      { type: 'contact', name: 'Contact', description: 'Contact information', category: 'essential' },
-      { type: 'social', name: 'Social Media', description: 'Social media links', category: 'media' },
-      { type: 'testimonials', name: 'Testimonials', description: 'Client testimonials', category: 'media' },
-      { type: 'call-to-action', name: 'Call to Action', description: 'CTA button section', category: 'essential' },
-      { type: 'questions', name: 'Questions', description: 'FAQ section', category: 'media' },
-      { type: 'stats', name: 'Statistics', description: 'Key numbers and stats', category: 'media' },
-      { type: 'video-intro', name: 'Video Introduction', description: 'Embedded video', category: 'premium', isPremium: true },
-      { type: 'photo-gallery', name: 'Photo Gallery', description: 'Image gallery', category: 'premium', isPremium: true },
-      { type: 'podcast-player', name: 'Podcast Player', description: 'Audio player', category: 'premium', isPremium: true },
-      { type: 'booking-calendar', name: 'Booking Calendar', description: 'Schedule availability', category: 'premium', isPremium: true },
-      { type: 'authority-hook', name: 'Authority Hook', description: 'Credibility builder', category: 'essential' },
-      { type: 'guest-intro', name: 'Guest Introduction', description: 'Introduction section', category: 'essential' },
-      { type: 'logo-grid', name: 'Logo Grid', description: 'Client or partner logos', category: 'media' }
-    ];
-  }
-  
-  console.log('Rendering component library with', components.length, 'components');
-  
-  // Create component cards with proper design
-  list.innerHTML = components.map(comp => `
-    <div class="component-card${comp.isPremium ? ' component-card--premium' : ''}" data-component-type="${comp.type}">
-      <div class="component-card__icon">
-        ${getComponentIcon(comp.type)}
-      </div>
-      <h3 class="component-card__title">${comp.name || comp.type}</h3>
-      <p class="component-card__description">${comp.description || 'Add this component to your media kit'}</p>
-      <button class="add-component-btn" data-type="${comp.type}">
-        Add
-      </button>
-    </div>
-  `).join('');
-  
-  // Add click handlers
-  list.querySelectorAll('.add-component-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const type = btn.dataset.type;
-      
-      // ROOT FIX: Use store directly to add component
-      const store = window.gmkbStore || window.mediaKitStore;
-      if (store && store.addComponent) {
-        store.addComponent({ type });
-      } else if (window.GMKB && window.GMKB.addComponent) {
-        window.GMKB.addComponent(type);
-      } else {
-        console.error('Store not available for adding component');
-      }
-      
-      // Close modal
-      const modal = document.getElementById('component-library-modal');
-      if (modal) {
-        modal.classList.remove('modal--open');
-        modal.style.display = 'none';
-      }
-      
-      showToast(`Added ${type} component`, 'success');
-    });
-  });
-}
+// Removed - now handled by Vue component
 
-// Setup event handlers for the library modal
-function setupLibraryEventHandlers(modal) {
-  // Close button
-  const closeBtn = modal.querySelector('#close-library');
-  if (closeBtn && !closeBtn.hasLibraryHandler) {
-    closeBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
-    closeBtn.hasLibraryHandler = true;
-  }
-  
-  // Category filter
-  const categoryFilter = modal.querySelector('#category-filter');
-  if (categoryFilter && !categoryFilter.hasLibraryHandler) {
-    categoryFilter.addEventListener('change', (e) => {
-      filterComponentsByCategory(e.target.value);
-    });
-    categoryFilter.hasLibraryHandler = true;
-  }
-  
-  // Search input
-  const searchInput = modal.querySelector('#component-search');
-  if (searchInput && !searchInput.hasLibraryHandler) {
-    searchInput.addEventListener('input', (e) => {
-      filterComponentsBySearch(e.target.value);
-    });
-    searchInput.hasLibraryHandler = true;
-  }
-  
-  // Category sidebar items
-  modal.querySelectorAll('.category-item').forEach(item => {
-    if (!item.hasLibraryHandler) {
-      item.addEventListener('click', () => {
-        const category = item.dataset.category;
-        // Update active state
-        modal.querySelectorAll('.category-item').forEach(i => i.classList.remove('category-item--active'));
-        item.classList.add('category-item--active');
-        // Filter components
-        filterComponentsByCategory(category);
-      });
-      item.hasLibraryHandler = true;
-    }
-  });
-  
-  // Cancel button
-  const cancelBtn = modal.querySelector('#cancel-component-button');
-  if (cancelBtn && !cancelBtn.hasLibraryHandler) {
-    cancelBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
-    cancelBtn.hasLibraryHandler = true;
-  }
-}
-
-// Render components in the PHP modal grid
-function renderComponentsInGrid(grid) {
-  // Get components
-  let components = getComponentList();
-  
-  // Create component cards
-  grid.innerHTML = components.map(comp => `
-    <div class="component-card${comp.isPremium ? ' component-card--premium' : ''}" data-component-type="${comp.type}" data-category="${comp.category || 'all'}">
-      <div class="component-card__icon">
-        ${getComponentIcon(comp.type)}
-      </div>
-      <h3 class="component-card__title">${comp.name || comp.type}</h3>
-      <p class="component-card__description">${comp.description || 'Add this component to your media kit'}</p>
-      <button class="add-component-btn" data-type="${comp.type}">
-        Add
-      </button>
-    </div>
-  `).join('');
-  
-  // Add click handlers
-  grid.querySelectorAll('.add-component-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const type = btn.dataset.type;
-      
-      // Use store to add component
-      const store = window.gmkbStore || window.mediaKitStore;
-      if (store && store.addComponent) {
-        store.addComponent({ type });
-      } else if (window.GMKB && window.GMKB.addComponent) {
-        window.GMKB.addComponent(type);
-      }
-      
-      // Close modal
-      const modal = document.getElementById('component-library-overlay');
-      if (modal) {
-        modal.style.display = 'none';
-      }
-      
-      showToast(`Added ${type} component`, 'success');
-    });
-  });
-}
-
-// Filter components by category
-function filterComponentsByCategory(category) {
-  const cards = document.querySelectorAll('.component-card');
-  cards.forEach(card => {
-    if (category === 'all' || card.dataset.category === category) {
-      card.style.display = '';
-    } else {
-      card.style.display = 'none';
-    }
-  });
-}
-
-// Filter components by search term
-function filterComponentsBySearch(searchTerm) {
-  const cards = document.querySelectorAll('.component-card');
-  const term = searchTerm.toLowerCase();
-  
-  cards.forEach(card => {
-    const title = card.querySelector('.component-card__title')?.textContent.toLowerCase() || '';
-    const description = card.querySelector('.component-card__description')?.textContent.toLowerCase() || '';
-    
-    if (title.includes(term) || description.includes(term)) {
-      card.style.display = '';
-    } else {
-      card.style.display = 'none';
-    }
-  });
-}
-
-// Get component list helper
-function getComponentList() {
-  // Try to get from gmkbData first
-  if (window.gmkbData?.components && Array.isArray(window.gmkbData.components)) {
-    return window.gmkbData.components;
-  }
-  
-  // Default fallback list
-  return [
-    { type: 'hero', name: 'Hero', description: 'Hero section with title and image', category: 'hero' },
-    { type: 'biography', name: 'Biography', description: 'Professional biography', category: 'biography' },
-    { type: 'topics', name: 'Topics', description: 'Speaking topics list', category: 'topics' },
-    { type: 'contact', name: 'Contact', description: 'Contact information', category: 'contact' },
-    { type: 'social', name: 'Social Media', description: 'Social media links', category: 'social' },
-    { type: 'testimonials', name: 'Testimonials', description: 'Client testimonials', category: 'media' },
-    { type: 'call-to-action', name: 'Call to Action', description: 'CTA button section', category: 'contact' },
-    { type: 'questions', name: 'Questions', description: 'FAQ section', category: 'topics' },
-    { type: 'stats', name: 'Statistics', description: 'Key numbers and stats', category: 'stats' },
-    { type: 'video-intro', name: 'Video Introduction', description: 'Embedded video', category: 'media', isPremium: true },
-    { type: 'photo-gallery', name: 'Photo Gallery', description: 'Image gallery', category: 'media', isPremium: true },
-    { type: 'podcast-player', name: 'Podcast Player', description: 'Audio player', category: 'media', isPremium: true },
-    { type: 'booking-calendar', name: 'Booking Calendar', description: 'Schedule availability', category: 'contact', isPremium: true },
-    { type: 'authority-hook', name: 'Authority Hook', description: 'Credibility builder', category: 'hero' },
-    { type: 'guest-intro', name: 'Guest Introduction', description: 'Introduction section', category: 'hero' },
-    { type: 'logo-grid', name: 'Logo Grid', description: 'Client or partner logos', category: 'media' }
-  ];
-}
-
-// Helper function to get component icons
-function getComponentIcon(type) {
-  const icons = {
-    hero: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
-    biography: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-    topics: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
-    contact: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
-    social: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>',
-    testimonials: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
-    'call-to-action': '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
-    questions: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    stats: '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
-    'video-intro': '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>',
-    'photo-gallery': '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
-    'podcast-player': '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
-    'booking-calendar': '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
-    'authority-hook': '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-    'guest-intro': '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-    'logo-grid': '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>'
-  };
-  
-  return icons[type] || '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>';
-}
+// Removed - icon handling now in Vue components
 
 function addSection(type = 'full_width') {
   // ROOT FIX: Use store directly to add section

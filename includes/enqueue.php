@@ -2167,6 +2167,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // Component Library Bridge - Connect buttons to Vue component library
+    if (!wp_script_is('gmkb-component-library-bridge', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-component-library-bridge',
+            $plugin_url . 'src/integrations/componentLibraryIntegration.js',
+            array('gmkb-main-script'),
+            $version,
+            true
+        );
+    }
+    
     // 14b. CONSOLIDATED Modal Extras - ROOT FIX: Template, Settings, Export modals
     // PHASE 5 OPTIMIZATION: Consolidated 3 files into 1 (template-library + global-settings + export)
     if (!wp_script_is('gmkb-modal-extras', 'enqueued')) {

@@ -34,7 +34,7 @@
 import { computed } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import MediaKitSection from './MediaKitSection.vue';
-import ComponentLibrary from './ComponentLibrary.vue';
+import ComponentLibrary from './ComponentLibraryNew.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 
 const store = useMediaKitStore();
