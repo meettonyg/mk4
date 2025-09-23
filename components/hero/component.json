@@ -1,106 +1,20 @@
 {
-  "name": "Hero Section",
   "type": "hero",
-  "version": "2.0.0-phase2",
-  "description": "Main hero section with profile image and introduction",
-  "category": "hero-sections",
-  "isPremium": false,
-  "icon": "fa-star",
-  "dataBindings": {
-    "title": "full_name",
-    "subtitle": "guest_title",
-    "description": "biography_short",
-    "image": "guest_headshot"
+  "name": "Hero",
+  "description": "Hero section with headline, description and call-to-action",
+  "category": "content",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "HeroRenderer.vue"
   },
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "default": "center_aligned",
-      "options": {
-        "left_aligned": "Left Aligned",
-        "center_aligned": "Center Aligned",
-        "right_aligned": "Right Aligned"
-      },
-      "section": "layout"
-    },
-    "imageStyle": {
-      "type": "select",
-      "label": "Image Style",
-      "default": "rounded",
-      "options": {
-        "square": "Square",
-        "rounded": "Rounded",
-        "circle": "Circle"
-      },
-      "section": "appearance"
-    },
-    "showCTA": {
-      "type": "toggle",
-      "label": "Show Call-to-Action Button",
-      "default": true,
-      "section": "content"
-    },
-    "ctaText": {
-      "type": "text",
-      "label": "CTA Button Text",
-      "default": "Get in Touch",
-      "placeholder": "Enter button text",
-      "section": "content",
-      "dependsOn": {
-        "showCTA": true
-      }
-    },
-    "ctaLink": {
-      "type": "text",
-      "label": "CTA Button Link",
-      "default": "#contact",
-      "placeholder": "Enter link URL",
-      "section": "content",
-      "dependsOn": {
-        "showCTA": true
-      }
-    }
-  },
-  "sections": {
-    "layout": {
-      "title": "Layout Options",
-      "description": "Configure the component layout",
-      "order": 1
-    },
-    "appearance": {
-      "title": "Appearance",
-      "description": "Visual styling options",
-      "order": 2
-    },
-    "content": {
-      "title": "Content Settings",
-      "description": "Content and behavior options",
-      "order": 3
-    }
-  },
-  "responsiveBehavior": {
-    "mobile": "stack_vertical",
-    "tablet": "maintain_layout"
-  },
-  "presets": [
-    {
-      "name": "Classic",
-      "description": "Traditional centered layout",
-      "options": {
-        "layout": "center_aligned",
-        "imageStyle": "circle",
-        "showCTA": true
-      }
-    },
-    {
-      "name": "Modern",
-      "description": "Contemporary left-aligned layout",
-      "options": {
-        "layout": "left_aligned",
-        "imageStyle": "rounded",
-        "showCTA": false
-      }
-    }
-  ]
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": false,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
+  }
 }

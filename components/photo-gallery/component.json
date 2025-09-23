@@ -1,83 +1,20 @@
 {
+  "type": "photo-gallery",
   "name": "Photo Gallery",
-  "category": "content",
-  "description": "Display image gallery or portfolio",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 12,
-  
-  "dataBindings": {
-    "images": "gallery_images",
-    "title": "gallery_title"
+  "description": "Image gallery with lightbox",
+  "category": "media",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "PhotoGalleryRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "default": "masonry",
-      "options": {
-        "masonry": "Masonry Grid",
-        "grid": "Equal Grid",
-        "carousel": "Image Carousel"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "columnsDesktop": {
-      "type": "select",
-      "label": "Desktop Columns",
-      "default": "3",
-      "options": {
-        "2": "2 Columns",
-        "3": "3 Columns",
-        "4": "4 Columns"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "lightbox": {
-      "type": "boolean",
-      "label": "Enable Lightbox",
-      "default": true,
-      "section": "functionality"
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Gallery Content",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "order": 2,
-      "icon": "layout"
-    },
-    "functionality": {
-      "title": "Features",
-      "order": 3,
-      "icon": "settings"
-    }
-  },
-  
-  "presets": {
-    "portfolio": {
-      "name": "Portfolio Style",
-      "options": {
-        "layout": "masonry",
-        "columnsDesktop": "3",
-        "lightbox": true
-      }
-    },
-    "simple": {
-      "name": "Simple Grid",
-      "options": {
-        "layout": "grid",
-        "columnsDesktop": "2",
-        "lightbox": false
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
   }
 }

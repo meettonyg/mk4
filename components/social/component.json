@@ -1,168 +1,20 @@
 {
-  "name": "Social Media Links",
-  "category": "essential",
-  "description": "Display social media profiles and links",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 6,
-  
-  "dataBindings": {
-    "facebook": "facebook_url",
-    "twitter": "twitter_url",
-    "instagram": "instagram_url",
-    "linkedin": "linkedin_url",
-    "youtube": "youtube_url",
-    "tiktok": "tiktok_url",
-    "website": "website"
+  "type": "social",
+  "name": "Social Media",
+  "description": "Social media links and icons",
+  "category": "social",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "SocialRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "description": "Choose how social icons are displayed",
-      "default": "horizontal",
-      "options": {
-        "horizontal": "Horizontal Row",
-        "vertical": "Vertical Stack",
-        "grid": "Grid Layout",
-        "floating": "Floating Buttons"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "iconStyle": {
-      "type": "select",
-      "label": "Icon Style",
-      "description": "Choose the style for social icons",
-      "default": "filled",
-      "options": {
-        "filled": "Filled Icons",
-        "outline": "Outline Icons",
-        "minimal": "Minimal Icons",
-        "branded": "Brand Colors"
-      },
-      "section": "appearance",
-      "preview": true
-    },
-    "iconSize": {
-      "type": "select",
-      "label": "Icon Size",
-      "description": "Choose the size of social icons",
-      "default": "medium",
-      "options": {
-        "small": "Small (24px)",
-        "medium": "Medium (32px)",
-        "large": "Large (48px)",
-        "extra_large": "Extra Large (64px)"
-      },
-      "section": "appearance",
-      "preview": true
-    },
-    "showLabels": {
-      "type": "boolean",
-      "label": "Show Platform Labels",
-      "description": "Display platform names below icons",
-      "default": false,
-      "section": "content"
-    },
-    "openInNewTab": {
-      "type": "boolean",
-      "label": "Open in New Tab",
-      "description": "Open social links in new browser tab",
-      "default": true,
-      "section": "functionality"
-    },
-    "hoverEffect": {
-      "type": "select",
-      "label": "Hover Effect",
-      "description": "Choose hover animation",
-      "default": "scale",
-      "options": {
-        "none": "No Effect",
-        "scale": "Scale Up",
-        "bounce": "Bounce",
-        "rotate": "Rotate",
-        "glow": "Glow Effect"
-      },
-      "section": "appearance"
-    },
-    "alignment": {
-      "type": "select",
-      "label": "Alignment",
-      "description": "Choose icon alignment",
-      "default": "center",
-      "options": {
-        "left": "Left Aligned",
-        "center": "Center Aligned",
-        "right": "Right Aligned",
-        "justified": "Justified"
-      },
-      "section": "layout",
-      "preview": true
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Social Platforms",
-      "description": "Configure which platforms to display",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "description": "Choose how icons are arranged",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Icon Styling",
-      "description": "Customize icon appearance and effects",
-      "order": 3,
-      "icon": "palette"
-    },
-    "functionality": {
-      "title": "Link Behavior",
-      "description": "Configure how links behave",
-      "order": 4,
-      "icon": "settings"
-    }
-  },
-  
-  "presets": {
-    "professional": {
-      "name": "Professional Icons",
-      "options": {
-        "layout": "horizontal",
-        "iconStyle": "filled",
-        "iconSize": "medium",
-        "showLabels": false,
-        "hoverEffect": "scale",
-        "alignment": "center"
-      }
-    },
-    "branded": {
-      "name": "Brand Colors",
-      "options": {
-        "layout": "horizontal",
-        "iconStyle": "branded",
-        "iconSize": "large",
-        "showLabels": true,
-        "hoverEffect": "bounce",
-        "alignment": "center"
-      }
-    },
-    "minimal": {
-      "name": "Minimal Style",
-      "options": {
-        "layout": "horizontal",
-        "iconStyle": "minimal",
-        "iconSize": "small",
-        "showLabels": false,
-        "hoverEffect": "none",
-        "alignment": "left"
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
   }
 }

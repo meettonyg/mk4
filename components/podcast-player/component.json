@@ -1,77 +1,20 @@
 {
+  "type": "podcast-player",
   "name": "Podcast Player",
-  "category": "premium",
-  "description": "Embed podcast episodes or audio content",
-  "isPremium": true,
-  "version": "2.0.0-phase2",
-  "order": 13,
-  
-  "dataBindings": {
-    "episodes": "podcast_episodes",
-    "title": "podcast_title"
+  "description": "Podcast episodes player",
+  "category": "media",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "PodcastPlayerRenderer.vue"
   },
-  
-  "componentOptions": {
-    "playerStyle": {
-      "type": "select",
-      "label": "Player Style",
-      "default": "modern",
-      "options": {
-        "modern": "Modern Player",
-        "minimal": "Minimal Player",
-        "compact": "Compact Player"
-      },
-      "section": "appearance",
-      "preview": true
-    },
-    "showPlaylist": {
-      "type": "boolean",
-      "label": "Show Playlist",
-      "default": true,
-      "section": "content"
-    },
-    "autoplay": {
-      "type": "boolean",
-      "label": "Autoplay",
-      "default": false,
-      "section": "functionality"
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Podcast Content",
-      "order": 1,
-      "icon": "edit"
-    },
-    "appearance": {
-      "title": "Player Styling",
-      "order": 2,
-      "icon": "palette"
-    },
-    "functionality": {
-      "title": "Player Features",
-      "order": 3,
-      "icon": "settings"
-    }
-  },
-  
-  "presets": {
-    "professional": {
-      "name": "Professional Player",
-      "options": {
-        "playerStyle": "modern",
-        "showPlaylist": true,
-        "autoplay": false
-      }
-    },
-    "minimal": {
-      "name": "Minimal Player",
-      "options": {
-        "playerStyle": "minimal",
-        "showPlaylist": false,
-        "autoplay": false
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
   }
 }

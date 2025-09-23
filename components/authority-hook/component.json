@@ -1,130 +1,20 @@
 {
+  "type": "authority-hook",
   "name": "Authority Hook",
-  "category": "hero-sections",
-  "icon": "authority-hook.svg",
-  "description": "Authority positioning with WHO, WHAT, WHEN, WHERE, WHY, HOW framework",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 5,
-  
-  "dataBindings": {
-    "title": "authority_section_title",
-    "who": "authority_who",
-    "what": "authority_what",
-    "when": "authority_when",
-    "where": "authority_where",
-    "why": "authority_why",
-    "how": "authority_how"
+  "description": "Establish credibility and authority",
+  "category": "social-proof",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "AuthorityHookRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "description": "Choose how authority components are displayed",
-      "default": "grid",
-      "options": {
-        "grid": "Grid Layout (2x3)",
-        "list": "Vertical List",
-        "cards": "Card Layout",
-        "timeline": "Timeline Style"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "showIcons": {
-      "type": "boolean",
-      "label": "Show Component Icons",
-      "description": "Display icons for each authority component",
-      "default": true,
-      "section": "appearance",
-      "preview": true
-    },
-    "compactMode": {
-      "type": "boolean",
-      "label": "Compact Display",
-      "description": "Reduce spacing for more condensed layout",
-      "default": false,
-      "section": "appearance"
-    },
-    "emphasisOrder": {
-      "type": "select",
-      "label": "Emphasis Order",
-      "description": "Choose which components to emphasize",
-      "default": "what-who",
-      "options": {
-        "what-who": "Emphasize WHAT & WHO",
-        "why-how": "Emphasize WHY & HOW",
-        "equal": "Equal Emphasis",
-        "custom": "Custom Order"
-      },
-      "section": "appearance"
-    },
-    "colorScheme": {
-      "type": "select",
-      "label": "Color Scheme",
-      "description": "Choose the visual theme",
-      "default": "professional",
-      "options": {
-        "professional": "Professional Blue",
-        "warm": "Warm Orange",
-        "neutral": "Neutral Gray",
-        "bold": "Bold Purple"
-      },
-      "section": "appearance",
-      "preview": true
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Authority Framework",
-      "description": "Configure WHO, WHAT, WHEN, WHERE, WHY, HOW content",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "description": "Choose how components are arranged",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "description": "Customize colors and visual styling",
-      "order": 3,
-      "icon": "palette"
-    }
-  },
-  
-  "presets": {
-    "speaker": {
-      "name": "Speaker Profile",
-      "options": {
-        "layout": "cards",
-        "showIcons": true,
-        "emphasisOrder": "what-who",
-        "colorScheme": "professional"
-      }
-    },
-    "consultant": {
-      "name": "Consultant Profile",
-      "options": {
-        "layout": "timeline",
-        "showIcons": true,
-        "emphasisOrder": "why-how",
-        "colorScheme": "bold"
-      }
-    },
-    "compact": {
-      "name": "Compact Display",
-      "options": {
-        "layout": "list",
-        "showIcons": false,
-        "compactMode": true,
-        "emphasisOrder": "equal",
-        "colorScheme": "neutral"
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
   }
 }

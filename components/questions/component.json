@@ -1,74 +1,20 @@
 {
-  "name": "Questions",
-  "category": "topics-skills",
-  "description": "Frequently asked questions section",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 11,
-  
-  "dataBindings": {
-    "questions": "faq_questions",
-    "title": "faq_title"
+  "type": "questions",
+  "name": "FAQ",
+  "description": "Frequently asked questions accordion",
+  "category": "content",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "QuestionsRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "default": "accordion",
-      "options": {
-        "accordion": "Accordion",
-        "grid": "Grid Layout",
-        "list": "Simple List"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "colorScheme": {
-      "type": "select",
-      "label": "Color Scheme",
-      "default": "blue",
-      "options": {
-        "blue": "Professional Blue",
-        "neutral": "Neutral Gray"
-      },
-      "section": "appearance",
-      "preview": true
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "FAQ Content",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "order": 3,
-      "icon": "palette"
-    }
-  },
-  
-  "presets": {
-    "standard": {
-      "name": "Standard FAQ",
-      "options": {
-        "layout": "accordion",
-        "colorScheme": "blue"
-      }
-    },
-    "minimal": {
-      "name": "Minimal List",
-      "options": {
-        "layout": "list",
-        "colorScheme": "neutral"
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
   }
 }

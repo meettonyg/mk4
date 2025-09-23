@@ -1,133 +1,20 @@
 {
+  "type": "booking-calendar",
   "name": "Booking Calendar",
-  "category": "premium",
-  "icon": "calendar.svg",
-  "description": "Allow visitors to book appointments or sessions",
-  "isPremium": true,
-  "version": "2.0.0-phase2",
-  "order": 3,
-  
-  "dataBindings": {
-    "title": "booking_section_title",
-    "bookingType": "booking_type",
-    "description": "booking_description",
-    "calendarUrl": "booking_url",
-    "availabilityText": "availability_info"
+  "description": "Appointment booking calendar",
+  "category": "conversion",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "BookingCalendarRenderer.vue"
   },
-  
-  "componentOptions": {
-    "calendarStyle": {
-      "type": "select",
-      "label": "Calendar Style",
-      "description": "Choose how the calendar is displayed",
-      "default": "embedded",
-      "options": {
-        "embedded": "Embedded Calendar",
-        "popup": "Popup Modal",
-        "redirect": "External Redirect"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "buttonText": {
-      "type": "text",
-      "label": "Button Text",
-      "description": "Customize the booking button text",
-      "default": "Schedule Now",
-      "section": "content"
-    },
-    "showAvailability": {
-      "type": "boolean",
-      "label": "Show Availability Info",
-      "description": "Display availability information",
-      "default": true,
-      "section": "content"
-    },
-    "showTimezone": {
-      "type": "boolean",
-      "label": "Show Timezone",
-      "description": "Display timezone information",
-      "default": false,
-      "section": "content"
-    },
-    "colorScheme": {
-      "type": "select",
-      "label": "Color Scheme",
-      "description": "Choose the visual theme",
-      "default": "blue",
-      "options": {
-        "blue": "Professional Blue",
-        "green": "Success Green",
-        "orange": "Warm Orange",
-        "purple": "Creative Purple"
-      },
-      "section": "appearance",
-      "preview": true
-    },
-    "buttonStyle": {
-      "type": "select",
-      "label": "Button Style",
-      "description": "Choose button appearance",
-      "default": "solid",
-      "options": {
-        "solid": "Solid Button",
-        "outline": "Outline Button",
-        "minimal": "Minimal Link"
-      },
-      "section": "appearance",
-      "preview": true
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Booking Content",
-      "description": "Configure booking information and text",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Calendar Layout",
-      "description": "Choose how calendar is displayed",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "description": "Customize colors and styling",
-      "order": 3,
-      "icon": "palette"
-    }
-  },
-  
-  "presets": {
-    "professional": {
-      "name": "Professional Booking",
-      "options": {
-        "calendarStyle": "embedded",
-        "showAvailability": true,
-        "colorScheme": "blue",
-        "buttonStyle": "solid"
-      }
-    },
-    "minimal": {
-      "name": "Minimal Booking",
-      "options": {
-        "calendarStyle": "redirect",
-        "showAvailability": false,
-        "colorScheme": "blue",
-        "buttonStyle": "minimal"
-      }
-    },
-    "premium": {
-      "name": "Premium Experience",
-      "options": {
-        "calendarStyle": "popup",
-        "showAvailability": true,
-        "showTimezone": true,
-        "colorScheme": "purple",
-        "buttonStyle": "solid"
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
   }
 }

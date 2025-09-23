@@ -1,78 +1,20 @@
 {
+  "type": "video-intro",
   "name": "Video Introduction",
-  "category": "premium",
-  "description": "Embed introduction or promotional videos",
-  "isPremium": true,
-  "version": "2.0.0-phase2",
-  "order": 14,
-  
-  "dataBindings": {
-    "videoUrl": "intro_video_url",
-    "title": "video_title",
-    "description": "video_description"
+  "description": "Embedded video player",
+  "category": "media",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "VideoIntroRenderer.vue"
   },
-  
-  "componentOptions": {
-    "videoStyle": {
-      "type": "select",
-      "label": "Video Style",
-      "default": "responsive",
-      "options": {
-        "responsive": "Responsive Embed",
-        "fixed": "Fixed Dimensions",
-        "fullwidth": "Full Width"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "showControls": {
-      "type": "boolean",
-      "label": "Show Video Controls",
-      "default": true,
-      "section": "functionality"
-    },
-    "autoplay": {
-      "type": "boolean",
-      "label": "Autoplay Video",
-      "default": false,
-      "section": "functionality"
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Video Content",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Video Layout",
-      "order": 2,
-      "icon": "layout"
-    },
-    "functionality": {
-      "title": "Video Features",
-      "order": 3,
-      "icon": "settings"
-    }
-  },
-  
-  "presets": {
-    "professional": {
-      "name": "Professional Video",
-      "options": {
-        "videoStyle": "responsive",
-        "showControls": true,
-        "autoplay": false
-      }
-    },
-    "autoplay": {
-      "name": "Auto-Playing",
-      "options": {
-        "videoStyle": "fullwidth",
-        "showControls": false,
-        "autoplay": true
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
   }
 }

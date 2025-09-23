@@ -1,83 +1,20 @@
 {
+  "type": "logo-grid",
   "name": "Logo Grid",
-  "category": "content",
-  "description": "Display client logos or partner brands",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 10,
-  
-  "dataBindings": {
-    "logos": "client_logos",
-    "title": "logos_title"
+  "description": "Display client or partner logos",
+  "category": "social-proof",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "LogoGridRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "default": "grid",
-      "options": {
-        "grid": "Grid Layout",
-        "carousel": "Carousel Slider",
-        "masonry": "Masonry Layout"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "columnsDesktop": {
-      "type": "select",
-      "label": "Desktop Columns",
-      "default": "4",
-      "options": {
-        "3": "3 Columns",
-        "4": "4 Columns",
-        "5": "5 Columns",
-        "6": "6 Columns"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "grayscale": {
-      "type": "boolean",
-      "label": "Grayscale Logos",
-      "default": true,
-      "section": "appearance"
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Logo Content",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "order": 3,
-      "icon": "palette"
-    }
-  },
-  
-  "presets": {
-    "standard": {
-      "name": "Standard Grid",
-      "options": {
-        "layout": "grid",
-        "columnsDesktop": "4",
-        "grayscale": true
-      }
-    },
-    "dynamic": {
-      "name": "Dynamic Carousel",
-      "options": {
-        "layout": "carousel",
-        "grayscale": false
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
   }
 }

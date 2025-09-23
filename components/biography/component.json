@@ -1,168 +1,20 @@
 {
-  "name": "Professional Biography",
-  "category": "biography",
-  "description": "Professional biography section with flexible layouts",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 2,
-  "hasPodsData": true,
-  "requiresServerRender": true,
-  
-  "dataBindings": {
-    "bio": "biography",
-    "name": "full_name",
-    "title": "guest_title",
-    "image": "guest_headshot",
-    "shortBio": "biography_short",
-    "longBio": "biography_long"
+  "type": "biography",
+  "name": "Biography",
+  "description": "Biography section with image and text content",
+  "category": "content",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "BiographyRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "description": "Choose how biography content is arranged",
-      "default": "text_only",
-      "options": {
-        "text_only": "Text Only",
-        "with_image": "With Image",
-        "image_left": "Image Left, Text Right",
-        "image_right": "Image Right, Text Left"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "bioLength": {
-      "type": "select",
-      "label": "Biography Length",
-      "description": "Choose which biography field to use",
-      "default": "biography",
-      "options": {
-        "biography_short": "Short Bio",
-        "biography": "Standard Bio",
-        "biography_long": "Long Bio"
-      },
-      "section": "content"
-    },
-    "showTitle": {
-      "type": "boolean",
-      "label": "Show Section Title",
-      "description": "Display 'Biography' heading above content",
-      "default": true,
-      "section": "content"
-    },
-    "showJobTitle": {
-      "type": "boolean",
-      "label": "Show Job Title",
-      "description": "Display professional title/role",
-      "default": true,
-      "section": "content"
-    },
-    "maxLength": {
-      "type": "number",
-      "label": "Maximum Character Length",
-      "description": "Truncate biography after this many characters",
-      "default": 500,
-      "min": 100,
-      "max": 2000,
-      "section": "content"
-    },
-    "fontStyle": {
-      "type": "select",
-      "label": "Font Style",
-      "description": "Choose typography style for biography",
-      "default": "normal",
-      "options": {
-        "normal": "Normal",
-        "italic": "Italic",
-        "bold": "Bold",
-        "large": "Large Text"
-      },
-      "section": "appearance"
-    },
-    "textAlignment": {
-      "type": "select",
-      "label": "Text Alignment",
-      "description": "Set text alignment for biography content",
-      "default": "left",
-      "options": {
-        "left": "Left Aligned",
-        "center": "Center Aligned",
-        "justify": "Justified"
-      },
-      "section": "appearance"
-    }
-  },
-  
-  "responsiveBehavior": {
-    "mobile": {
-      "layout": "text_only",
-      "textAlignment": "left",
-      "maxLength": 300
-    },
-    "tablet": {
-      "layout": "with_image",
-      "maxLength": 400
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Content Settings",
-      "description": "Configure biography content and length",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "description": "Choose how biography and image are arranged",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Typography & Style",
-      "description": "Customize text styling and appearance",
-      "order": 3,
-      "icon": "typography"
-    }
-  },
-  
-  "presets": {
-    "executive": {
-      "name": "Executive Profile",
-      "options": {
-        "layout": "image_left",
-        "bioLength": "biography",
-        "showTitle": true,
-        "showJobTitle": true,
-        "fontStyle": "normal",
-        "textAlignment": "left",
-        "maxLength": 600
-      }
-    },
-    "speaker": {
-      "name": "Speaker Profile",
-      "options": {
-        "layout": "with_image",
-        "bioLength": "biography_long",
-        "showTitle": true,
-        "showJobTitle": true,
-        "fontStyle": "large",
-        "textAlignment": "justify",
-        "maxLength": 800
-      }
-    },
-    "minimal": {
-      "name": "Minimal Bio",
-      "options": {
-        "layout": "text_only",
-        "bioLength": "biography_short",
-        "showTitle": false,
-        "showJobTitle": false,
-        "fontStyle": "normal",
-        "textAlignment": "center",
-        "maxLength": 250
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
   }
 }

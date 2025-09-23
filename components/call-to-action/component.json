@@ -1,145 +1,20 @@
 {
+  "type": "call-to-action",
   "name": "Call to Action",
-  "category": "essential",
-  "description": "Compelling call-to-action section with customizable button",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 8,
-  
-  "dataBindings": {
-    "title": "cta_title",
-    "description": "cta_description",
-    "buttonText": "cta_button_text",
-    "buttonUrl": "cta_button_url"
+  "description": "Call to action section with buttons",
+  "category": "conversion",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "CallToActionRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "description": "Choose how CTA content is arranged",
-      "default": "center",
-      "options": {
-        "center": "Centered Layout",
-        "left": "Left Aligned",
-        "right": "Right Aligned",
-        "split": "Split Layout"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "buttonStyle": {
-      "type": "select",
-      "label": "Button Style",
-      "description": "Choose button appearance",
-      "default": "solid",
-      "options": {
-        "solid": "Solid Button",
-        "outline": "Outline Button",
-        "ghost": "Ghost Button",
-        "gradient": "Gradient Button"
-      },
-      "section": "appearance",
-      "preview": true
-    },
-    "buttonSize": {
-      "type": "select",
-      "label": "Button Size",
-      "description": "Choose button size",
-      "default": "large",
-      "options": {
-        "small": "Small",
-        "medium": "Medium",
-        "large": "Large",
-        "extra_large": "Extra Large"
-      },
-      "section": "appearance",
-      "preview": true
-    },
-    "backgroundColor": {
-      "type": "color",
-      "label": "Background Color",
-      "description": "Set the background color for the CTA section",
-      "default": "#f8f9fa",
-      "section": "appearance",
-      "preview": true
-    },
-    "buttonColor": {
-      "type": "color",
-      "label": "Button Color",
-      "description": "Set the button color",
-      "default": "#295cff",
-      "section": "appearance",
-      "preview": true
-    },
-    "showIcon": {
-      "type": "boolean",
-      "label": "Show Button Icon",
-      "description": "Display an icon in the button",
-      "default": false,
-      "section": "content"
-    },
-    "urgency": {
-      "type": "boolean",
-      "label": "Urgency Styling",
-      "description": "Apply urgency styling (animated, highlighted)",
-      "default": false,
-      "section": "appearance"
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "CTA Content",
-      "description": "Configure call-to-action text and links",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "description": "Choose how content is arranged",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "description": "Customize colors and button styling",
-      "order": 3,
-      "icon": "palette"
-    }
-  },
-  
-  "presets": {
-    "professional": {
-      "name": "Professional CTA",
-      "options": {
-        "layout": "center",
-        "buttonStyle": "solid",
-        "buttonSize": "large",
-        "backgroundColor": "#f8f9fa",
-        "buttonColor": "#295cff"
-      }
-    },
-    "urgent": {
-      "name": "Urgent Action",
-      "options": {
-        "layout": "center",
-        "buttonStyle": "gradient",
-        "buttonSize": "extra_large",
-        "backgroundColor": "#fff5f5",
-        "buttonColor": "#ef4444",
-        "urgency": true
-      }
-    },
-    "minimal": {
-      "name": "Minimal CTA",
-      "options": {
-        "layout": "left",
-        "buttonStyle": "ghost",
-        "buttonSize": "medium",
-        "backgroundColor": "#ffffff",
-        "buttonColor": "#6b7280"
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
   }
 }

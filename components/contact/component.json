@@ -1,169 +1,20 @@
 {
-  "name": "Contact Information",
-  "category": "essential",
-  "description": "Contact details and communication methods display",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 5,
-  
-  "dataBindings": {
-    "email": "email",
-    "phone": "phone",
-    "website": "website",
-    "location": "location",
-    "social": "social_links"
+  "type": "contact",
+  "name": "Contact",
+  "description": "Contact information and form",
+  "category": "contact",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "ContactRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "description": "Choose how contact information is arranged",
-      "default": "vertical",
-      "options": {
-        "vertical": "Vertical List",
-        "horizontal": "Horizontal Row",
-        "grid": "Grid Layout"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "showIcons": {
-      "type": "boolean",
-      "label": "Show Icons",
-      "description": "Display icons next to contact information",
-      "default": true,
-      "section": "appearance",
-      "preview": true
-    },
-    "showLabels": {
-      "type": "boolean",
-      "label": "Show Field Labels",
-      "description": "Display labels like 'Email:', 'Phone:' before contact info",
-      "default": true,
-      "section": "appearance"
-    },
-    "enableClickToContact": {
-      "type": "boolean",
-      "label": "Enable Click-to-Contact",
-      "description": "Make email and phone clickable (mailto: and tel: links)",
-      "default": true,
-      "section": "functionality"
-    },
-    "contactFields": {
-      "type": "multiselect",
-      "label": "Contact Fields to Show",
-      "description": "Choose which contact fields to display",
-      "default": ["email", "phone", "website"],
-      "options": {
-        "email": "Email Address",
-        "phone": "Phone Number",
-        "website": "Website URL",
-        "location": "Location",
-        "social": "Social Media"
-      },
-      "section": "content"
-    },
-    "colorScheme": {
-      "type": "select",
-      "label": "Color Scheme",
-      "description": "Choose the visual theme for contact section",
-      "default": "blue",
-      "options": {
-        "blue": "Professional Blue",
-        "green": "Success Green",
-        "neutral": "Neutral Gray",
-        "dark": "Dark Theme"
-      },
-      "section": "appearance",
-      "preview": true
-    },
-    "cardStyle": {
-      "type": "select",
-      "label": "Card Style",
-      "description": "Choose the style for contact information cards",
-      "default": "elevated",
-      "options": {
-        "flat": "Flat",
-        "elevated": "Elevated (Shadow)",
-        "bordered": "Bordered",
-        "minimal": "Minimal"
-      },
-      "section": "appearance",
-      "preview": true
-    }
-  },
-  
-  "responsiveBehavior": {
-    "mobile": {
-      "layout": "vertical",
-      "cardStyle": "minimal"
-    },
-    "tablet": {
-      "layout": "grid"
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Content Settings",
-      "description": "Configure which contact fields are displayed",
-      "order": 1,
-      "icon": "contact"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "description": "Choose how contact information is arranged",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "description": "Customize colors, icons, and card styling",
-      "order": 3,
-      "icon": "palette"
-    },
-    "functionality": {
-      "title": "Functionality",
-      "description": "Configure interactive features",
-      "order": 4,
-      "icon": "settings"
-    }
-  },
-  
-  "presets": {
-    "business": {
-      "name": "Business Card",
-      "options": {
-        "layout": "grid",
-        "showIcons": true,
-        "showLabels": true,
-        "colorScheme": "blue",
-        "cardStyle": "elevated",
-        "contactFields": ["email", "phone", "website"]
-      }
-    },
-    "minimal": {
-      "name": "Minimal Contact",
-      "options": {
-        "layout": "horizontal",
-        "showIcons": false,
-        "showLabels": false,
-        "colorScheme": "neutral",
-        "cardStyle": "minimal",
-        "contactFields": ["email", "website"]
-      }
-    },
-    "complete": {
-      "name": "Complete Contact Info",
-      "options": {
-        "layout": "vertical",
-        "showIcons": true,
-        "showLabels": true,
-        "colorScheme": "green",
-        "cardStyle": "bordered",
-        "contactFields": ["email", "phone", "website", "location", "social"]
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
   }
 }

@@ -9,6 +9,8 @@ import '../css/vue-controls.css';
 
 // Import component definitions and library integration
 import { initializeComponentLibrary } from './integrations/componentLibraryIntegration.js';
+import { initializeVueStoreBridge } from './integrations/vueStoreBridge.js';
+import vueComponentDiscovery from './vue/services/componentDiscovery.js';
 
 // Vue 3 imports
 import { createApp } from 'vue';
@@ -481,6 +483,9 @@ async function initialize() {
     
     // Initialize Vue.js after core systems
     vueApp = await initializeVue();
+    
+    // Initialize Vue Store Bridge to connect Vue components with rendering
+    initializeVueStoreBridge();
     
     // Store Vue app reference globally - ROOT FIX: Also expose as window.vueApp
     if (vueApp) {

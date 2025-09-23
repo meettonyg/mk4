@@ -1,149 +1,20 @@
 {
+  "type": "testimonials",
   "name": "Testimonials",
-  "category": "essential",
-  "description": "Display client testimonials and reviews",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 7,
-  
-  "dataBindings": {
-    "testimonials": "testimonials",
-    "title": "testimonials_title"
+  "description": "Client testimonials carousel",
+  "category": "social-proof",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "TestimonialsRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "description": "Choose how testimonials are displayed",
-      "default": "cards",
-      "options": {
-        "cards": "Card Layout",
-        "quotes": "Quote Bubbles",
-        "list": "Simple List",
-        "carousel": "Carousel Slider"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "showPhotos": {
-      "type": "boolean",
-      "label": "Show Client Photos",
-      "description": "Display client profile photos",
-      "default": true,
-      "section": "content"
-    },
-    "maxTestimonials": {
-      "type": "number",
-      "label": "Maximum Testimonials",
-      "description": "Limit number of testimonials displayed",
-      "default": 6,
-      "min": 1,
-      "max": 20,
-      "section": "content"
-    },
-    "showRatings": {
-      "type": "boolean",
-      "label": "Show Star Ratings",
-      "description": "Display star ratings with testimonials",
-      "default": false,
-      "section": "content"
-    },
-    "colorScheme": {
-      "type": "select",
-      "label": "Color Scheme",
-      "description": "Choose visual theme",
-      "default": "blue",
-      "options": {
-        "blue": "Professional Blue",
-        "green": "Success Green",
-        "gold": "Premium Gold",
-        "neutral": "Neutral Gray"
-      },
-      "section": "appearance",
-      "preview": true
-    },
-    "columnsDesktop": {
-      "type": "select",
-      "label": "Desktop Columns",
-      "description": "Number of columns on desktop",
-      "default": "3",
-      "options": {
-        "1": "1 Column",
-        "2": "2 Columns",
-        "3": "3 Columns"
-      },
-      "section": "layout",
-      "preview": true,
-      "conditional": {
-        "field": "layout",
-        "value": "cards"
-      }
-    }
-  },
-  
-  "responsiveBehavior": {
-    "mobile": {
-      "layout": "list",
-      "columnsDesktop": "1"
-    },
-    "tablet": {
-      "columnsDesktop": "2"
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Testimonial Content",
-      "description": "Configure what testimonial data to show",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Settings",
-      "description": "Choose display layout and columns",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "description": "Customize colors and styling",
-      "order": 3,
-      "icon": "palette"
-    }
-  },
-  
-  "presets": {
-    "professional": {
-      "name": "Professional Cards",
-      "options": {
-        "layout": "cards",
-        "showPhotos": true,
-        "showRatings": false,
-        "colorScheme": "blue",
-        "columnsDesktop": "3",
-        "maxTestimonials": 6
-      }
-    },
-    "premium": {
-      "name": "Premium Display",
-      "options": {
-        "layout": "quotes",
-        "showPhotos": true,
-        "showRatings": true,
-        "colorScheme": "gold",
-        "maxTestimonials": 4
-      }
-    },
-    "minimal": {
-      "name": "Minimal List",
-      "options": {
-        "layout": "list",
-        "showPhotos": false,
-        "showRatings": false,
-        "colorScheme": "neutral",
-        "maxTestimonials": 8
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": false,
+    "designPanel": true
   }
 }

@@ -1,85 +1,20 @@
 {
+  "type": "guest-intro",
   "name": "Guest Introduction",
-  "category": "hero-sections",
-  "description": "Brief introduction section for guest appearances",
-  "isPremium": false,
-  "version": "2.0.0-phase2",
-  "order": 1,
-  
-  "dataBindings": {
-    "title": "intro_title",
-    "subtitle": "guest_title",
-    "description": "guest_intro",
-    "image": "guest_headshot"
+  "description": "Guest speaker introduction",
+  "category": "content",
+  "version": "1.0.0",
+  "renderers": {
+    "php": "template.php",
+    "javascript": "renderer.js",
+    "vue": "GuestIntroRenderer.vue"
   },
-  
-  "componentOptions": {
-    "layout": {
-      "type": "select",
-      "label": "Layout Style",
-      "default": "side_by_side",
-      "options": {
-        "side_by_side": "Side by Side",
-        "stacked": "Stacked",
-        "text_only": "Text Only"
-      },
-      "section": "layout",
-      "preview": true
-    },
-    "showImage": {
-      "type": "boolean",
-      "label": "Show Guest Image",
-      "default": true,
-      "section": "content"
-    },
-    "colorScheme": {
-      "type": "select",
-      "label": "Color Scheme",
-      "default": "blue",
-      "options": {
-        "blue": "Professional Blue",
-        "green": "Friendly Green",
-        "neutral": "Neutral Gray"
-      },
-      "section": "appearance",
-      "preview": true
-    }
-  },
-  
-  "sections": {
-    "content": {
-      "title": "Introduction Content",
-      "order": 1,
-      "icon": "edit"
-    },
-    "layout": {
-      "title": "Layout Options",
-      "order": 2,
-      "icon": "layout"
-    },
-    "appearance": {
-      "title": "Appearance",
-      "order": 3,
-      "icon": "palette"
-    }
-  },
-  
-  "presets": {
-    "standard": {
-      "name": "Standard Introduction",
-      "options": {
-        "layout": "side_by_side",
-        "showImage": true,
-        "colorScheme": "blue"
-      }
-    },
-    "minimal": {
-      "name": "Minimal Introduction",
-      "options": {
-        "layout": "text_only",
-        "showImage": false,
-        "colorScheme": "neutral"
-      }
-    }
+  "styles": "styles.css",
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": true,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
   }
 }
