@@ -195,12 +195,12 @@ export default {
     
     // Check if component is first/last
     const isFirst = computed(() => {
-      const components = store.getComponentsInOrder();
+      const components = store.orderedComponents;  // Use the getter, not a method
       return components[0]?.id === props.component.id;
     });
     
     const isLast = computed(() => {
-      const components = store.getComponentsInOrder();
+      const components = store.orderedComponents;  // Use the getter, not a method
       return components[components.length - 1]?.id === props.component.id;
     });
     

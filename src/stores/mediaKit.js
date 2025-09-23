@@ -162,46 +162,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
       return false;
     },
-    
-    // Helper to get components in order - must be a proper getter
-    getComponentsInOrder: (state) => {
-      // Return the orderedComponents getter result
-      const ordered = [];
-      state.sections.forEach(section => {
-        // Handle full-width sections
-        if (section.components && Array.isArray(section.components)) {
-          section.components.forEach(compRef => {
-            const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-            const component = state.components[componentId];
-            if (component) {
-              ordered.push({
-                ...component,
-                sectionId: section.section_id
-              });
-            }
-          });
-        }
-        // Handle multi-column sections
-        if (section.columns) {
-          // Process columns in order
-          ['1', '2', '3'].forEach(col => {
-            if (section.columns[col] && Array.isArray(section.columns[col])) {
-              section.columns[col].forEach(componentId => {
-                const component = state.components[componentId];
-                if (component) {
-                  ordered.push({
-                    ...component,
-                    sectionId: section.section_id,
-                    column: parseInt(col)
-                  });
-                }
-              });
-            }
-          });
-        }
-      });
-      return ordered;
-    }
+
   },
 
   actions: {

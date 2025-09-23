@@ -174,16 +174,6 @@ async function initializeVue() {
         window.gmkbStore = store;
         window.mediaKitStore = store;
         
-        // ROOT FIX: Create a proxy to handle method calls that might come in too early
-        window.gmkbStoreProxy = new Proxy(store, {
-          get(target, prop) {
-            if (prop === 'getComponentsInOrder') {
-              // Provide a safe fallback if the getter isn't ready
-              return () => target.orderedComponents || [];
-            }
-            return target[prop];
-          }
-        });
         
         // Load saved state from WordPress
         if (window.gmkbData?.savedState) {
