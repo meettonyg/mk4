@@ -316,21 +316,72 @@ export default {
     const onDragStart = (event, componentType) => {
       console.log('Starting drag:', componentType);
       
+      // Set drag data for section drop zones
+      const dragData = {
+        type: componentType,
+        source: 'component-library',
+        isNewComponent: true
+      };
+      
       // Set multiple data formats for compatibility
       event.dataTransfer.effectAllowed = 'copy';
       event.dataTransfer.setData('text/plain', componentType);
       event.dataTransfer.setData('component-type', componentType);
-      event.dataTransfer.setData('application/json', JSON.stringify({ 
-        type: componentType,
-        source: 'component-library'
-      }));
+      event.dataTransfer.setData('application/json', JSON.stringify(dragData));
+      event.dataTransfer.setData('text/x-component-type', componentType);
       
       // Visual feedback
       event.target.classList.add('dragging');
+      
+      // Set drag image if needed
+      if (event.dataTransfer.setDragImage) {
+        const dragImage = event.target.cloneNode(true);
+        dragImage.style.opacity = '0.8';
+        dragImage.style.position = 'absolute';
+        dragImage.style.top = '-1000px';
+        document.body.appendChild(dragImage);
+        event.dataTransfer.setDragImage(dragImage, event.offsetX, event.offsetY);
+        setTimeout(() => document.body.removeChild(dragImage), 0);
+      }
     };
     
     const onDragEnd = (event) => {
       event.target.classList.remove('dragging');
+    };
+    
+    // ROOT FIX: Function to determine component visibility
+    const isComponentVisible = (component) => {
+      // If no filters, all components are visible
+      if (selectedCategory.value === 'all' && !searchTerm.value) {
+        return true;
+      }
+      
+      // Category filter
+      if (selectedCategory.value !== 'all') {
+        const normalizeCategory = (cat) => {
+          if (!cat) return '';
+          return cat.toLowerCase().replace(/[-\s]+/g, '');
+        };
+        
+        const selectedNorm = normalizeCategory(selectedCategory.value);
+        const compCatNorm = normalizeCategory(component.category);
+        
+        if (compCatNorm !== selectedNorm) {
+          return false;
+        }
+      }
+      
+      // Search filter
+      if (searchTerm.value) {
+        const term = searchTerm.value.toLowerCase();
+        const name = (component.name || '').toLowerCase();
+        const desc = (component.description || '').toLowerCase();
+        if (!name.includes(term) && !desc.includes(term)) {
+          return false;
+        }
+      }
+      
+      return true;
     };
     
     // Expose method was moved to onMounted for better timing
@@ -349,7 +400,8 @@ export default {
       filterComponents,
       clearFilters,
       onDragStart,
-      onDragEnd
+      onDragEnd,
+      isComponentVisible
     };
   }
 };

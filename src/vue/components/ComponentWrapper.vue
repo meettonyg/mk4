@@ -10,6 +10,9 @@
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
     @click="selectComponent"
+    draggable="true"
+    @dragstart="onDragStart"
+    @dragend="onDragEnd"
   >
     <!-- Component Controls -->
     <div v-if="isHovered" class="component-controls">
@@ -141,6 +144,28 @@ const deleteComponent = () => {
       }
     }));
   }
+};
+
+// Drag handlers for moving components
+const onDragStart = (event) => {
+  // Set data for moving existing component
+  const dragData = {
+    componentId: props.componentId,
+    fromSection: props.sectionId,
+    fromColumn: props.column,
+    isMove: true
+  };
+  
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('application/json', JSON.stringify(dragData));
+  event.dataTransfer.setData('text/plain', props.componentId);
+  
+  // Add dragging class
+  event.target.classList.add('dragging');
+};
+
+const onDragEnd = (event) => {
+  event.target.classList.remove('dragging');
 };
 </script>
 

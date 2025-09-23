@@ -200,7 +200,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         section_id: sectionId,
         type: layout,
         layout: layout,
-        components: [],
+        components: layout === 'full_width' ? [] : undefined,
+        columns: layout !== 'full_width' ? { 1: [], 2: [], 3: [] } : undefined,
         settings: {}
       };
 
@@ -266,7 +267,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       const section = this.sections.find(s => s.section_id === targetSectionId);
       
       if (section) {
-        if (section.type === 'full_width') {
+        if (section.type === 'full_width' || section.layout === 'full_width') {
           // For full width sections, use components array
           if (!section.components) section.components = [];
           section.components.push(componentId);

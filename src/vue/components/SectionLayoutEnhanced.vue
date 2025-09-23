@@ -80,14 +80,26 @@
                   <span class="drop-icon">📦</span>
                   <span>Drop components here</span>
                 </div>
-                <div v-for="componentId in (section.components || [])" :key="componentId">
-                  <ComponentWrapper
-                    :component-id="componentId"
-                    :component="getComponent(componentId)"
-                    :section-id="section.section_id"
-                    :column="1"
-                  />
-                </div>
+                <draggable
+                  v-else
+                  v-model="section.components"
+                  group="components"
+                  item-key="id"
+                  class="component-list"
+                  @change="onComponentOrderChange"
+                  :animation="200"
+                  ghost-class="ghost"
+                  drag-class="drag"
+                >
+                  <template #item="{element: componentId}">
+                    <ComponentWrapper
+                      :component-id="componentId"
+                      :component="getComponent(componentId)"
+                      :section-id="section.section_id"
+                      :column="1"
+                    />
+                  </template>
+                </draggable>
               </div>
             </div>
 
@@ -106,14 +118,27 @@
                     <span class="drop-icon">📦</span>
                     <span>Column 1</span>
                   </div>
-                  <div v-for="componentId in getColumnComponents(section, 1)" :key="componentId">
-                    <ComponentWrapper
-                      :component-id="componentId"
-                      :component="getComponent(componentId)"
-                      :section-id="section.section_id"
-                      :column="1"
-                    />
-                  </div>
+                  <draggable
+                    v-else
+                    :model-value="getColumnComponents(section, 1)"
+                    @update:model-value="updateColumnComponents(section, 1, $event)"
+                    group="components"
+                    item-key="id"
+                    class="component-list"
+                    @change="onComponentOrderChange"
+                    :animation="200"
+                    ghost-class="ghost"
+                    drag-class="drag"
+                  >
+                    <template #item="{element: componentId}">
+                      <ComponentWrapper
+                        :component-id="componentId"
+                        :component="getComponent(componentId)"
+                        :section-id="section.section_id"
+                        :column="1"
+                      />
+                    </template>
+                  </draggable>
                 </div>
               </div>
               <div class="gmkb-section__column" data-column="2">
@@ -129,14 +154,27 @@
                     <span class="drop-icon">📦</span>
                     <span>Column 2</span>
                   </div>
-                  <div v-for="componentId in getColumnComponents(section, 2)" :key="componentId">
-                    <ComponentWrapper
-                      :component-id="componentId"
-                      :component="getComponent(componentId)"
-                      :section-id="section.section_id"
-                      :column="2"
-                    />
-                  </div>
+                  <draggable
+                    v-else
+                    :model-value="getColumnComponents(section, 2)"
+                    @update:model-value="updateColumnComponents(section, 2, $event)"
+                    group="components"
+                    item-key="id"
+                    class="component-list"
+                    @change="onComponentOrderChange"
+                    :animation="200"
+                    ghost-class="ghost"
+                    drag-class="drag"
+                  >
+                    <template #item="{element: componentId}">
+                      <ComponentWrapper
+                        :component-id="componentId"
+                        :component="getComponent(componentId)"
+                        :section-id="section.section_id"
+                        :column="2"
+                      />
+                    </template>
+                  </draggable>
                 </div>
               </div>
             </template>
@@ -161,14 +199,27 @@
                     <span class="drop-icon">📦</span>
                     <span>Column {{ col }}</span>
                   </div>
-                  <div v-for="componentId in getColumnComponents(section, col)" :key="componentId">
-                    <ComponentWrapper
-                      :component-id="componentId"
-                      :component="getComponent(componentId)"
-                      :section-id="section.section_id"
-                      :column="col"
-                    />
-                  </div>
+                  <draggable
+                    v-else
+                    :model-value="getColumnComponents(section, col)"
+                    @update:model-value="updateColumnComponents(section, col, $event)"
+                    group="components"
+                    item-key="id"
+                    class="component-list"
+                    @change="onComponentOrderChange"
+                    :animation="200"
+                    ghost-class="ghost"
+                    drag-class="drag"
+                  >
+                    <template #item="{element: componentId}">
+                      <ComponentWrapper
+                        :component-id="componentId"
+                        :component="getComponent(componentId)"
+                        :section-id="section.section_id"
+                        :column="col"
+                      />
+                    </template>
+                  </draggable>
                 </div>
               </div>
             </template>
@@ -192,6 +243,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import ComponentWrapper from './ComponentWrapper.vue';
+import draggable from 'vuedraggable';
 
 const store = useMediaKitStore();
 
@@ -380,6 +432,21 @@ const onDrop = (e, sectionId, column) => {
   } catch (error) {
     console.error('Error handling drop:', error);
   }
+};
+
+// Update column components when dragging between columns
+const updateColumnComponents = (section, column, newComponents) => {
+  if (!section.columns) {
+    section.columns = { 1: [], 2: [], 3: [] };
+  }
+  section.columns[column] = newComponents;
+  store.hasUnsavedChanges = true;
+};
+
+// Handle component order changes
+const onComponentOrderChange = (evt) => {
+  console.log('Component order changed:', evt);
+  store.hasUnsavedChanges = true;
 };
 
 // Lifecycle
@@ -694,5 +761,29 @@ watch(() => store.hasUnsavedChanges, (hasChanges) => {
   color: #94a3b8;
   margin-bottom: 24px;
   font-size: 16px;
+}
+
+/* Draggable styles */
+.component-list {
+  min-height: 20px;
+}
+
+.ghost {
+  opacity: 0.5;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.drag {
+  opacity: 0;
+}
+
+.sortable-chosen {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.sortable-ghost {
+  opacity: 0.4;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px dashed rgba(59, 130, 246, 0.5);
 }
 </style>
