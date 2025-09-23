@@ -43,6 +43,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     orderedComponents: (state) => {
       const ordered = [];
       state.sections.forEach(section => {
+        // Handle full-width sections
         if (section.components && Array.isArray(section.components)) {
           section.components.forEach(compRef => {
             const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
@@ -55,6 +56,24 @@ export const useMediaKitStore = defineStore('mediaKit', {
             }
           });
         }
+        // Handle multi-column sections
+        if (section.columns) {
+          // Process columns in order
+          ['1', '2', '3'].forEach(col => {
+            if (section.columns[col] && Array.isArray(section.columns[col])) {
+              section.columns[col].forEach(componentId => {
+                const component = state.components[componentId];
+                if (component) {
+                  ordered.push({
+                    ...component,
+                    sectionId: section.section_id,
+                    column: parseInt(col)
+                  });
+                }
+              });
+            }
+          });
+        }
       });
       return ordered;
     },
@@ -62,23 +81,58 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Get components for a specific section
     getSectionComponents: (state) => (sectionId) => {
       const section = state.sections.find(s => s.section_id === sectionId);
-      if (!section || !section.components) return [];
+      if (!section) return [];
       
-      return section.components.map(compRef => {
-        const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-        return state.components[componentId];
-      }).filter(Boolean);
+      const components = [];
+      
+      // Handle full-width sections
+      if (section.components) {
+        section.components.forEach(compRef => {
+          const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
+          const component = state.components[componentId];
+          if (component) {
+            components.push(component);
+          }
+        });
+      }
+      
+      // Handle multi-column sections
+      if (section.columns) {
+        Object.keys(section.columns).forEach(col => {
+          if (section.columns[col]) {
+            section.columns[col].forEach(componentId => {
+              const component = state.components[componentId];
+              if (component) {
+                components.push({ ...component, column: parseInt(col) });
+              }
+            });
+          }
+        });
+      }
+      
+      return components;
     },
 
     // Check if component is first in its section
     isComponentFirst: (state) => (componentId) => {
       for (const section of state.sections) {
-        if (!section.components) continue;
-        const index = section.components.findIndex(comp => 
-          (typeof comp === 'string' ? comp : comp.component_id) === componentId
-        );
-        if (index > -1) {
-          return index === 0;
+        // Check full-width sections
+        if (section.components) {
+          const index = section.components.findIndex(comp => 
+            (typeof comp === 'string' ? comp : comp.component_id) === componentId
+          );
+          if (index > -1) {
+            return index === 0;
+          }
+        }
+        // Check multi-column sections
+        if (section.columns) {
+          for (const col of Object.keys(section.columns)) {
+            const index = section.columns[col].findIndex(id => id === componentId);
+            if (index > -1) {
+              return index === 0;
+            }
+          }
         }
       }
       return false;
@@ -87,15 +141,31 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Check if component is last in its section
     isComponentLast: (state) => (componentId) => {
       for (const section of state.sections) {
-        if (!section.components) continue;
-        const index = section.components.findIndex(comp => 
-          (typeof comp === 'string' ? comp : comp.component_id) === componentId
-        );
-        if (index > -1) {
-          return index === section.components.length - 1;
+        // Check full-width sections
+        if (section.components) {
+          const index = section.components.findIndex(comp => 
+            (typeof comp === 'string' ? comp : comp.component_id) === componentId
+          );
+          if (index > -1) {
+            return index === section.components.length - 1;
+          }
+        }
+        // Check multi-column sections
+        if (section.columns) {
+          for (const col of Object.keys(section.columns)) {
+            const index = section.columns[col].findIndex(id => id === componentId);
+            if (index > -1) {
+              return index === section.columns[col].length - 1;
+            }
+          }
         }
       }
       return false;
+    },
+    
+    // Helper to get components in order
+    getComponentsInOrder() {
+      return this.orderedComponents;
     }
   },
 
@@ -192,11 +262,24 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       // Add to first section by default, or specified section
       const targetSectionId = componentData.sectionId || this.sections[0].section_id;
+      const targetColumn = componentData.column || 1;
       const section = this.sections.find(s => s.section_id === targetSectionId);
       
       if (section) {
-        if (!section.components) section.components = [];
-        section.components.push(componentId);
+        if (section.type === 'full_width') {
+          // For full width sections, use components array
+          if (!section.components) section.components = [];
+          section.components.push(componentId);
+        } else {
+          // For multi-column sections, use columns structure
+          if (!section.columns) {
+            section.columns = { 1: [], 2: [], 3: [] };
+          }
+          if (!section.columns[targetColumn]) {
+            section.columns[targetColumn] = [];
+          }
+          section.columns[targetColumn].push(componentId);
+        }
       }
       
       this.hasUnsavedChanges = true;
@@ -242,10 +325,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       // Remove from all sections
       this.sections.forEach(section => {
+        // Check full-width sections
         if (section.components) {
           section.components = section.components.filter(comp => 
             (typeof comp === 'string' ? comp : comp.component_id) !== componentId
           );
+        }
+        // Check multi-column sections
+        if (section.columns) {
+          Object.keys(section.columns).forEach(col => {
+            section.columns[col] = section.columns[col].filter(id => id !== componentId);
+          });
         }
       });
       
@@ -266,22 +356,43 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Move component within section
     moveComponent(componentId, direction) {
       for (const section of this.sections) {
-        if (!section.components) continue;
-        
-        const index = section.components.findIndex(comp => 
-          (typeof comp === 'string' ? comp : comp.component_id) === componentId
-        );
-        
-        if (index > -1) {
-          const newIndex = direction === 'up' ? index - 1 : index + 1;
+        // Check full-width sections
+        if (section.components) {
+          const index = section.components.findIndex(comp => 
+            (typeof comp === 'string' ? comp : comp.component_id) === componentId
+          );
           
-          if (newIndex >= 0 && newIndex < section.components.length) {
-            const temp = section.components[index];
-            section.components[index] = section.components[newIndex];
-            section.components[newIndex] = temp;
-            this.hasUnsavedChanges = true;
+          if (index > -1) {
+            const newIndex = direction === 'up' ? index - 1 : index + 1;
+            
+            if (newIndex >= 0 && newIndex < section.components.length) {
+              const temp = section.components[index];
+              section.components[index] = section.components[newIndex];
+              section.components[newIndex] = temp;
+              this.hasUnsavedChanges = true;
+            }
+            return;
           }
-          break;
+        }
+        
+        // Check multi-column sections
+        if (section.columns) {
+          for (const col of Object.keys(section.columns)) {
+            const columnComponents = section.columns[col];
+            const index = columnComponents.findIndex(id => id === componentId);
+            
+            if (index > -1) {
+              const newIndex = direction === 'up' ? index - 1 : index + 1;
+              
+              if (newIndex >= 0 && newIndex < columnComponents.length) {
+                const temp = columnComponents[index];
+                columnComponents[index] = columnComponents[newIndex];
+                columnComponents[newIndex] = temp;
+                this.hasUnsavedChanges = true;
+              }
+              return;
+            }
+          }
         }
       }
     },
@@ -304,19 +415,34 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       // Find the original in sections and add duplicate after it
       for (const section of this.sections) {
-        if (!section.components) continue;
+        // Check full-width sections
+        if (section.components) {
+          const index = section.components.findIndex(comp => 
+            (typeof comp === 'string' ? comp : comp.component_id) === componentId
+          );
+          
+          if (index > -1) {
+            section.components.splice(index + 1, 0, newId);
+            this.hasUnsavedChanges = true;
+            return newId;
+          }
+        }
         
-        const index = section.components.findIndex(comp => 
-          (typeof comp === 'string' ? comp : comp.component_id) === componentId
-        );
-        
-        if (index > -1) {
-          section.components.splice(index + 1, 0, newId);
-          break;
+        // Check multi-column sections
+        if (section.columns) {
+          for (const col of Object.keys(section.columns)) {
+            const columnComponents = section.columns[col];
+            const index = columnComponents.findIndex(id => id === componentId);
+            
+            if (index > -1) {
+              columnComponents.splice(index + 1, 0, newId);
+              this.hasUnsavedChanges = true;
+              return newId;
+            }
+          }
         }
       }
       
-      this.hasUnsavedChanges = true;
       return newId;
     },
 
