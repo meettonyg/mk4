@@ -281,36 +281,26 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       this.hasUnsavedChanges = true;
       
-      // ROOT FIX: Trigger legacy system to render the component
-      // Dispatch event for legacy renderer to pick up
-      if (window.enhancedComponentManager?.addComponent) {
-        // Use legacy component manager if available
-        window.enhancedComponentManager.addComponent(component.type, component.data, targetSectionId);
-      } else if (window.GMKB?.addComponent) {
-        // Use GMKB global method
-        window.GMKB.addComponent(component.type, component.data);
-      } else {
-        // Dispatch event for any listening systems
-        document.dispatchEvent(new CustomEvent('gmkb:component-added', {
-          detail: {
-            componentId,
-            component,
-            sectionId: targetSectionId
+      // Dispatch event for any listening systems to react
+      document.dispatchEvent(new CustomEvent('gmkb:component-added', {
+        detail: {
+          componentId,
+          component,
+          sectionId: targetSectionId
+        }
+      }));
+      
+      // Also trigger state change event
+      document.dispatchEvent(new CustomEvent('gmkb:state-changed', {
+        detail: {
+          action: 'component-added',
+          componentId,
+          state: {
+            components: this.components,
+            sections: this.sections
           }
-        }));
-        
-        // Also trigger state change event
-        document.dispatchEvent(new CustomEvent('gmkb:state-changed', {
-          detail: {
-            action: 'component-added',
-            componentId,
-            state: {
-              components: this.components,
-              sections: this.sections
-            }
-          }
-        }));
-      }
+        }
+      }));
       
       return componentId;
     },
