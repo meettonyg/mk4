@@ -1,0 +1,87 @@
+/* Drag and Drop Styles */
+.component-item[draggable="true"] {
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.component-item[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.component-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+/* Drop zones */
+.component-drop-zone {
+  min-height: 100px;
+  border: 2px dashed rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.component-drop-zone.drag-over {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+.component-drop-zone:empty::after {
+  content: "Drop components here";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(148, 163, 184, 0.5);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Visual feedback for draggable sidebar items */
+.sidebar .component-item {
+  position: relative;
+  padding-left: 24px;
+}
+
+.sidebar .component-item::before {
+  content: "⋮⋮";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(148, 163, 184, 0.4);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.sidebar .component-item:hover::before {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+/* Sortable ghost for Vue draggable */
+.sortable-ghost {
+  opacity: 0.4;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px dashed rgba(59, 130, 246, 0.5);
+}
+
+.sortable-chosen {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+/* Fix cursor during drag */
+body.dragging,
+body.dragging * {
+  cursor: grabbing !important;
+}
+
+/* Ensure drop zones are visible */
+.gmkb-section__content {
+  min-height: 150px;
+}
+
+.gmkb-section__column {
+  min-height: 120px;
+}

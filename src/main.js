@@ -29,6 +29,7 @@ import podsDataIntegration from './core/PodsDataIntegration.js';
 import InlineEditor from './features/InlineEditor.js';
 import ComponentTemplates from './features/ComponentTemplates.js';
 import ImportExportManager from './features/ImportExportManager.js';
+import { initDragDrop } from './features/DragDropManager.js';
 
 // Initialize core systems
 let apiService;
@@ -351,6 +352,10 @@ async function initialize() {
     
     // Vue component discovery for potential legacy components during transition
     await VueComponentDiscovery.initialize();
+    
+    // Initialize drag and drop system
+    initDragDrop();
+    console.log('✅ Drag and drop system initialized');
     
     // ROOT FIX: Make discovered Vue components available globally
     // VueComponentDiscovery should have loaded them

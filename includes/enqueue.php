@@ -370,6 +370,14 @@ function gmkb_enqueue_assets() {
         $version
         );
         
+        // Drag and drop styles - CRITICAL for drag functionality
+        wp_enqueue_style(
+        'gmkb-drag-drop',
+        $plugin_url . 'css/drag-drop.css',
+        array('gmkb-lean-styles'),
+        $version
+        );
+        
         
         // Theme CSS files can still be loaded (they don't conflict)
         wp_enqueue_style(
