@@ -9,7 +9,7 @@ import '../css/vue-controls.css';
 
 // Import component definitions and library integration
 import { initializeComponentLibrary } from './integrations/componentLibraryIntegration.js';
-import { initializeVueStoreBridge } from './integrations/vueStoreBridge.js';
+// import { initializeVueStoreBridge } from './integrations/vueStoreBridge.js'; // REMOVED - Legacy code
 import vueComponentDiscovery from './vue/services/componentDiscovery.js';
 
 // Vue 3 imports
@@ -498,7 +498,7 @@ async function initialize() {
     vueApp = await initializeVue();
     
     // Initialize Vue Store Bridge to connect Vue components with rendering
-    initializeVueStoreBridge();
+    // initializeVueStoreBridge(); // REMOVED - This is legacy code we don't need
     
     // Store Vue app reference globally - ROOT FIX: Also expose as window.vueApp
     if (vueApp) {

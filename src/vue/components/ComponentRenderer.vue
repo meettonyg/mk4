@@ -47,23 +47,9 @@
 </template>
 
 <script>
-import { computed, ref, onMounted, defineAsyncComponent, markRaw } from 'vue';
+import { computed } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
-
-// Fallback renderer for components without Vue implementations
-import FallbackRenderer from './FallbackRenderer.vue';
-
-// Component registry - populated dynamically based on discovered components
-const componentRegistry = ref({});
-
-// Helper to get the base path for components
-const getComponentBasePath = () => {
-  // In production, this would be the plugin URL
-  // For development, we use relative imports
-  return window.gmkbData?.pluginUrl 
-    ? `${window.gmkbData.pluginUrl}/components`
-    : '../../../components';
-};
+import { getComponent } from '../services/componentRegistry';
 
 export default {
   name: 'ComponentRenderer',
@@ -86,103 +72,9 @@ export default {
   setup(props) {
     const store = useMediaKitStore();
     
-    // Initialize component registry with discovered components
-    onMounted(async () => {
-      // Get discovered components from PHP ComponentDiscovery
-      const discoveredComponents = window.gmkbData?.components || [];
-      
-      // Register each discovered component
-      for (const comp of discoveredComponents) {
-        await registerComponent(comp);
-      }
-      
-      // Listen for dynamically discovered components
-      window.addEventListener('gmkb:components-discovered', handleComponentsDiscovered);
-    });
-    
-    // Register a component based on its discovery data
-    const registerComponent = async (comp) => {
-      const { type, name, path, has_vue_renderer } = comp;
-      
-      // Check if component has Vue renderer
-      if (has_vue_renderer !== false) {
-        try {
-          // Try to load Vue renderer from component's own directory
-          // This maintains self-contained architecture
-          const modulePath = `../../../components/${type}/HeroRenderer.vue`;
-          
-          // For dynamic imports, we need to use a pattern that Vite can analyze
-          // ALL components now use self-contained directories
-          const componentMap = {
-            // Content components
-            'hero': () => import('../../../components/hero/HeroRenderer.vue'),
-            'biography': () => import('../../../components/biography/BiographyRenderer.vue'),
-            'topics': () => import('../../../components/topics/TopicsRenderer.vue'),
-            'questions': () => import('../../../components/questions/QuestionsRenderer.vue'),
-            'guest-intro': () => import('../../../components/guest-intro/GuestIntroRenderer.vue'),
-            
-            // Contact & Social
-            'contact': () => import('../../../components/contact/ContactRenderer.vue'),
-            'social': () => import('../../../components/social/SocialRenderer.vue'),
-            
-            // Social Proof
-            'testimonials': () => import('../../../components/testimonials/TestimonialsRenderer.vue'),
-            'stats': () => import('../../../components/stats/StatsRenderer.vue'),
-            'authority-hook': () => import('../../../components/authority-hook/AuthorityHookRenderer.vue'),
-            'logo-grid': () => import('../../../components/logo-grid/LogoGridRenderer.vue'),
-            
-            // Conversion
-            'call-to-action': () => import('../../../components/call-to-action/CallToActionRenderer.vue'),
-            'booking-calendar': () => import('../../../components/booking-calendar/BookingCalendarRenderer.vue'),
-            
-            // Media
-            'video-intro': () => import('../../../components/video-intro/VideoIntroRenderer.vue'),
-            'photo-gallery': () => import('../../../components/photo-gallery/PhotoGalleryRenderer.vue'),
-            'podcast-player': () => import('../../../components/podcast-player/PodcastPlayerRenderer.vue')
-          };
-          
-          if (componentMap[type]) {
-            componentRegistry.value[type] = defineAsyncComponent(componentMap[type]);
-          } else {
-            // Component doesn't have Vue renderer yet, use fallback
-            componentRegistry.value[type] = markRaw(FallbackRenderer);
-          }
-        } catch (error) {
-          console.warn(`Could not load Vue renderer for ${type}, using fallback`, error);
-          componentRegistry.value[type] = markRaw(FallbackRenderer);
-        }
-      } else {
-        // Component explicitly doesn't have Vue renderer
-        componentRegistry.value[type] = markRaw(FallbackRenderer);
-      }
-    };
-    
-    // Handle dynamically discovered components
-    const handleComponentsDiscovered = async (event) => {
-      if (event.detail?.components) {
-        for (const comp of event.detail.components) {
-          await registerComponent(comp);
-        }
-      }
-    };
-    
-    // Get the component implementation
+    // Get the component implementation from the registry
     const componentImplementation = computed(() => {
-      const type = props.component.type;
-      
-      // First check if we have a registered component
-      if (componentRegistry.value[type]) {
-        return componentRegistry.value[type];
-      }
-      
-      // Check for hyphenated version
-      const hyphenatedType = type.replace(/([A-Z])/g, '-$1').toLowerCase();
-      if (componentRegistry.value[hyphenatedType]) {
-        return componentRegistry.value[hyphenatedType];
-      }
-      
-      // Default to fallback renderer
-      return FallbackRenderer;
+      return getComponent(props.component.type);
     });
     
     // Component props to pass down
@@ -190,18 +82,21 @@ export default {
       componentId: props.component.id,
       data: props.component.data || {},
       settings: props.component.settings || {},
-      config: props.component.config || {}
+      config: {
+        type: props.component.type,
+        ...props.component.config
+      }
     }));
     
     // Check if component is first/last
     const isFirst = computed(() => {
-      const components = store.orderedComponents;  // Use the getter, not a method
-      return components[0]?.id === props.component.id;
+      const components = store.orderedComponents;
+      return components.length > 0 && components[0]?.id === props.component.id;
     });
     
     const isLast = computed(() => {
-      const components = store.orderedComponents;  // Use the getter, not a method
-      return components[components.length - 1]?.id === props.component.id;
+      const components = store.orderedComponents;
+      return components.length > 0 && components[components.length - 1]?.id === props.component.id;
     });
     
     // Component actions
