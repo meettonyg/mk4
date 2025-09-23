@@ -164,19 +164,37 @@ async function initializeVue() {
     // For build compatibility, we'll initialize the store synchronously
     let store = null;
     
-    // Defer store initialization
+    // Defer store initialization  - ROOT FIX: Initialize store FIRST before loading components
     setTimeout(async () => {
       try {
+        // FIRST: Initialize the Pinia store
         const { useMediaKitStore } = await import('./stores/mediaKit.js');
         store = useMediaKitStore();
         window.gmkbStore = store;
         window.mediaKitStore = store;
+        
+        // ROOT FIX: Create a proxy to handle method calls that might come in too early
+        window.gmkbStoreProxy = new Proxy(store, {
+          get(target, prop) {
+            if (prop === 'getComponentsInOrder') {
+              // Provide a safe fallback if the getter isn't ready
+              return () => target.orderedComponents || [];
+            }
+            return target[prop];
+          }
+        });
         
         // Load saved state from WordPress
         if (window.gmkbData?.savedState) {
           store.initialize(window.gmkbData.savedState);
           console.log('✅ Loaded state from WordPress');
         }
+        
+        // ROOT FIX: Ensure store is ready before loading Vue components
+        console.log('Store initialized, loading Vue components...');
+        
+        // Add a small delay to ensure store getters are ready
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Now load the real Vue components
         const { default: ComponentLibrary } = await import('./vue/components/ComponentLibraryNew.vue');

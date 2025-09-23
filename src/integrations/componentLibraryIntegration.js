@@ -16,6 +16,12 @@ export function initializeComponentLibrary() {
     
     // Attach event listener to each button
     buttons.forEach(button => {
+      // Check if button still has a parent node
+      if (!button.parentNode) {
+        console.warn('Button has no parent node, skipping:', button);
+        return;
+      }
+      
       // Remove any existing listeners
       const newButton = button.cloneNode(true);
       button.parentNode.replaceChild(newButton, button);
