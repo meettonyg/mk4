@@ -17,43 +17,15 @@
         @remove="removeSection"
       />
       
-      <!-- Empty state when no sections -->
+      <!-- Empty state when no sections - ROOT FIX: Removed add buttons per user request -->
       <div v-if="sections.length === 0" class="gmkb-empty-state">
         <div class="empty-icon">📄</div>
         <h3>Start Building Your Media Kit</h3>
-        <p>Add your first section to begin</p>
-        <div class="empty-actions">
-          <button @click="addSection('full_width')" class="btn btn-primary">
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" fill="none" stroke-width="2"/>
-            </svg>
-            Full Width Section
-          </button>
-          <button @click="addSection('two_column')" class="btn btn-secondary">
-            <svg viewBox="0 0 24 24" width="16" height="16">
-              <rect x="3" y="3" width="8" height="18" rx="1" stroke="currentColor" fill="none" stroke-width="2"/>
-              <rect x="13" y="3" width="8" height="18" rx="1" stroke="currentColor" fill="none" stroke-width="2"/>
-            </svg>
-            Two Columns
-          </button>
-        </div>
+        <p>Use the Layout tab in the sidebar to add sections</p>
       </div>
     </div>
     
-    <!-- Floating Action Button for adding sections -->
-    <div class="gmkb-fab" v-if="sections.length > 0">
-      <button @click="showAddMenu = !showAddMenu" class="fab-button">
-        <svg viewBox="0 0 24 24" width="24" height="24">
-          <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
-          <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
-        </svg>
-      </button>
-      <div v-if="showAddMenu" class="fab-menu">
-        <button @click="addSection('full_width'); showAddMenu = false">Full Width</button>
-        <button @click="addSection('two_column'); showAddMenu = false">Two Columns</button>
-        <button @click="addSection('three_column'); showAddMenu = false">Three Columns</button>
-      </div>
-    </div>
+    <!-- Floating Action Button REMOVED - per user request, only sidebar can add sections -->
   </div>
 </template>
 
@@ -65,7 +37,7 @@ import ComponentLibrary from './ComponentLibraryNew.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 
 const store = useMediaKitStore();
-const showAddMenu = ref(false);
+// showAddMenu removed - no floating button per user request
 
 // Computed properties
 const sections = computed(() => store.sections);
@@ -182,62 +154,5 @@ const removeSection = (sectionId) => {
 .btn-secondary:hover {
   background: #64748b;
   transform: translateY(-1px);
-}
-
-/* Floating Action Button */
-.gmkb-fab {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  z-index: 100;
-}
-
-.fab-button {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-}
-
-.fab-button:hover {
-  background: #2563eb;
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-}
-
-.fab-menu {
-  position: absolute;
-  bottom: 70px;
-  right: 0;
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 8px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.fab-menu button {
-  display: block;
-  width: 100%;
-  padding: 10px 20px;
-  background: none;
-  border: none;
-  color: #e2e8f0;
-  cursor: pointer;
-  text-align: left;
-  white-space: nowrap;
-  transition: background 0.2s;
-}
-
-.fab-menu button:hover {
-  background: #334155;
 }
 </style>

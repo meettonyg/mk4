@@ -67,6 +67,9 @@
               }"
               :data-component-type="component.type"
               :data-category="component.category"
+              draggable="true"
+              @dragstart="onDragStart($event, component.type)"
+              @dragend="onDragEnd"
             >
               <div class="component-card__icon">
                 <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
@@ -78,8 +81,11 @@
               <button 
                 class="add-component-btn" 
                 @click="addComponent(component.type)"
+                draggable="true"
+                @dragstart="onDragStart($event, component.type)"
+                @dragend="onDragEnd"
               >
-                Add
+                Add / Drag
               </button>
             </div>
           </div>
@@ -306,6 +312,27 @@ export default {
       searchTerm.value = '';
     };
     
+    // ROOT FIX: Add drag and drop support
+    const onDragStart = (event, componentType) => {
+      console.log('Starting drag:', componentType);
+      
+      // Set multiple data formats for compatibility
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.setData('text/plain', componentType);
+      event.dataTransfer.setData('component-type', componentType);
+      event.dataTransfer.setData('application/json', JSON.stringify({ 
+        type: componentType,
+        source: 'component-library'
+      }));
+      
+      // Visual feedback
+      event.target.classList.add('dragging');
+    };
+    
+    const onDragEnd = (event) => {
+      event.target.classList.remove('dragging');
+    };
+    
     // Expose method was moved to onMounted for better timing
     
     return {
@@ -320,7 +347,9 @@ export default {
       addComponent,
       formatCategory,
       filterComponents,
-      clearFilters
+      clearFilters,
+      onDragStart,
+      onDragEnd
     };
   }
 };
@@ -390,5 +419,40 @@ export default {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.2s;
+}
+
+.component-card:active {
+  cursor: grabbing;
+}
+
+.component-card.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+/* ROOT FIX: Make button draggable with proper cursor */
+.add-component-btn {
+  cursor: grab;
+  user-select: none;
+  background: #3b82f6;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.add-component-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.add-component-btn.dragging {
+  cursor: grabbing;
+  opacity: 0.5;
 }
 </style>

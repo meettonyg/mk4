@@ -1,5 +1,6 @@
 @echo off
-echo Rebuilding Vue bundle with all fixes...
-npm run build
+echo Building Media Kit Builder...
+cd /d "C:\Users\seoge\OneDrive\Desktop\CODE-Guestify\MEDIAKIT\PLUGIN\mk4"
+call npm run build
 echo Build complete!
 pause

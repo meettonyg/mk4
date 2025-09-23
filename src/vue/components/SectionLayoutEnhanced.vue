@@ -1,24 +1,6 @@
 <template>
   <div class="gmkb-section-layout">
-    <!-- Section Controls Bar -->
-    <div class="gmkb-section-toolbar">
-      <div class="section-toolbar__left">
-        <h3>Layout</h3>
-      </div>
-      <div class="section-toolbar__right">
-        <button 
-          v-for="layoutType in layoutOptions" 
-          :key="layoutType.value"
-          @click="addSection(layoutType.value)"
-          class="layout-btn"
-          :class="{ active: false }"
-          :title="layoutType.label"
-        >
-          <span class="layout-icon" v-html="layoutType.icon"></span>
-          <span class="layout-label">{{ layoutType.label }}</span>
-        </button>
-      </div>
-    </div>
+    <!-- Section Controls Bar - REMOVED per user request, only sidebar can add sections -->
 
     <!-- Sections Container -->
     <div class="gmkb-sections-wrapper">
@@ -35,15 +17,15 @@
           @mouseenter="hoveredSection = section.section_id"
           @mouseleave="hoveredSection = null"
         >
-          <!-- Section Header with Controls -->
+          <!-- Section Header with Controls - ROOT FIX: Enhanced visibility -->
           <div class="gmkb-section__header">
             <div class="section-handle">
               <span class="handle-icon">⋮⋮</span>
               <span class="section-type">{{ getSectionLabel(section.type) }}</span>
             </div>
-            <div class="section-controls">
+            <div class="section-controls" :class="{ 'force-visible': showControls }">
               <button 
-                @click="moveSection(index, -1)"
+                @click.stop="moveSection(index, -1)"
                 class="control-btn"
                 title="Move Up"
                 :disabled="index === 0"
@@ -51,7 +33,7 @@
                 <span>↑</span>
               </button>
               <button 
-                @click="moveSection(index, 1)"
+                @click.stop="moveSection(index, 1)"
                 class="control-btn"
                 title="Move Down"
                 :disabled="index === sections.length - 1"
@@ -59,21 +41,21 @@
                 <span>↓</span>
               </button>
               <button 
-                @click="duplicateSection(section.section_id)"
+                @click.stop="duplicateSection(section.section_id)"
                 class="control-btn"
                 title="Duplicate Section"
               >
                 <span>📄</span>
               </button>
               <button 
-                @click="openSectionSettings(section.section_id)"
+                @click.stop="openSectionSettings(section.section_id)"
                 class="control-btn"
                 title="Section Settings"
               >
                 <span>⚙️</span>
               </button>
               <button 
-                @click="removeSection(section.section_id)"
+                @click.stop="removeSection(section.section_id)"
                 class="control-btn control-btn--delete"
                 title="Delete Section"
               >
@@ -82,37 +64,43 @@
             </div>
           </div>
 
-          <!-- Section Content Area -->
-          <div class="gmkb-section__content" :class="`layout-${section.type}`">
+          <!-- Section Content Area - ROOT FIX: Corrected CSS class -->
+          <div class="gmkb-section__content" :class="getLayoutClass(section.type)">
             <!-- Full Width Layout -->
-            <template v-if="section.type === 'full_width'">
-              <div class="gmkb-section__column" data-column="1">
-                <div 
-                  class="component-drop-zone"
-                  :ref="el => registerDropZone(el, section.section_id, 1)"
-                >
-                  <div v-if="(!section.components || section.components.length === 0)" class="drop-placeholder">
-                    <span class="drop-icon">📦</span>
-                    <span>Drop components here</span>
-                  </div>
-                  <div v-for="componentId in (section.components || [])" :key="componentId">
-                    <ComponentWrapper
-                      :component-id="componentId"
-                      :component="getComponent(componentId)"
-                      :section-id="section.section_id"
-                      :column="1"
-                    />
-                  </div>
+            <div v-if="section.type === 'full_width'" class="gmkb-section__column" data-column="1">
+              <div 
+                class="component-drop-zone"
+                :data-section-id="section.section_id"
+                :data-column="1"
+                @dragover.prevent="onDragOver"
+                @dragleave="onDragLeave"
+                @drop.prevent="onDrop($event, section.section_id, 1)"
+              >
+                <div v-if="(!section.components || section.components.length === 0)" class="drop-placeholder">
+                  <span class="drop-icon">📦</span>
+                  <span>Drop components here</span>
+                </div>
+                <div v-for="componentId in (section.components || [])" :key="componentId">
+                  <ComponentWrapper
+                    :component-id="componentId"
+                    :component="getComponent(componentId)"
+                    :section-id="section.section_id"
+                    :column="1"
+                  />
                 </div>
               </div>
-            </template>
+            </div>
 
             <!-- Two Column Layout -->
             <template v-else-if="section.type === 'two_column'">
               <div class="gmkb-section__column" data-column="1">
                 <div 
                   class="component-drop-zone"
-                  :ref="el => registerDropZone(el, section.section_id, 1)"
+                  :data-section-id="section.section_id"
+                  :data-column="1"
+                  @dragover.prevent="onDragOver"
+                  @dragleave="onDragLeave"
+                  @drop.prevent="onDrop($event, section.section_id, 1)"
                 >
                   <div v-if="!getColumnComponents(section, 1).length" class="drop-placeholder">
                     <span class="drop-icon">📦</span>
@@ -131,7 +119,11 @@
               <div class="gmkb-section__column" data-column="2">
                 <div 
                   class="component-drop-zone"
-                  :ref="el => registerDropZone(el, section.section_id, 2)"
+                  :data-section-id="section.section_id"
+                  :data-column="2"
+                  @dragover.prevent="onDragOver"
+                  @dragleave="onDragLeave"
+                  @drop.prevent="onDrop($event, section.section_id, 2)"
                 >
                   <div v-if="!getColumnComponents(section, 2).length" class="drop-placeholder">
                     <span class="drop-icon">📦</span>
@@ -159,7 +151,11 @@
               >
                 <div 
                   class="component-drop-zone"
-                  :ref="el => registerDropZone(el, section.section_id, col)"
+                  :data-section-id="section.section_id"
+                  :data-column="col"
+                  @dragover.prevent="onDragOver"
+                  @dragleave="onDragLeave"
+                  @drop.prevent="onDrop($event, section.section_id, col)"
                 >
                   <div v-if="!getColumnComponents(section, col).length" class="drop-placeholder">
                     <span class="drop-icon">📦</span>
@@ -179,23 +175,12 @@
           </div>
         </div>
 
-        <!-- Empty State -->
+        <!-- Empty State - ROOT FIX: Removed add buttons per user request -->
         <div v-if="sections.length === 0" class="gmkb-empty-sections">
           <div class="empty-message">
             <span class="empty-icon">🎨</span>
             <h3>Start Building Your Media Kit</h3>
-            <p>Choose a layout to begin</p>
-            <div class="quick-start-layouts">
-              <button 
-                v-for="layout in layoutOptions"
-                :key="`quick-${layout.value}`"
-                @click="addSection(layout.value)"
-                class="quick-layout-btn"
-              >
-                <span v-html="layout.icon"></span>
-                <span>{{ layout.label }}</span>
-              </button>
-            </div>
+            <p>Use the Layout tab in the sidebar to add sections</p>
           </div>
         </div>
       </div>
@@ -231,10 +216,10 @@ const layoutOptions = [
 
 // Refs
 const sectionsContainer = ref(null);
-const dropZones = new Map();
 
 // Reactive state
 const hoveredSection = ref(null);
+const showControls = ref(true); // ROOT FIX: Always show controls for now
 const sections = computed({
   get: () => store.sections,
   set: (value) => {
@@ -247,6 +232,19 @@ const sections = computed({
 const getSectionLabel = (type) => {
   const option = layoutOptions.find(opt => opt.value === type);
   return option ? option.label : type;
+};
+
+// ROOT FIX: Get proper layout CSS class
+const getLayoutClass = (type) => {
+  // Map section types to CSS classes
+  const classMap = {
+    'full_width': 'layout-full-width',
+    'two_column': 'layout-two-column',
+    'three_column': 'layout-three-column',
+    'main_sidebar': 'layout-main-sidebar',
+    'sidebar': 'layout-main-sidebar'
+  };
+  return classMap[type] || `layout-${type}`;
 };
 
 const getComponent = (componentId) => {
@@ -297,7 +295,11 @@ const duplicateSection = (sectionId) => {
       ...section,
       section_id: `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       components: [...(section.components || [])],
-      columns: section.columns ? { ...section.columns } : undefined
+      columns: section.columns ? { 
+        1: [...(section.columns[1] || [])],
+        2: [...(section.columns[2] || [])],
+        3: [...(section.columns[3] || [])]
+      } : undefined
     };
     const index = store.sections.findIndex(s => s.section_id === sectionId);
     store.sections.splice(index + 1, 0, newSection);
@@ -318,54 +320,63 @@ const openSectionSettings = (sectionId) => {
   }));
 };
 
-// Register drop zones for drag and drop
-const registerDropZone = (el, sectionId, column) => {
-  if (!el) return;
-  
-  const key = `${sectionId}-${column}`;
-  dropZones.set(key, { element: el, sectionId, column });
-  
-  // Set up drag and drop handlers
-  el.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('drag-over');
-  });
-  
-  el.addEventListener('dragleave', (e) => {
-    e.currentTarget.classList.remove('drag-over');
-  });
-  
-  el.addEventListener('drop', (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
-    
-    const data = e.dataTransfer.getData('text/plain');
-    if (data) {
-      handleDrop(sectionId, column, data);
-    }
-  });
+// Drag and Drop Event Handlers
+const onDragOver = (e) => {
+  e.currentTarget.classList.add('drag-over');
 };
 
-// Handle drop event
-const handleDrop = (sectionId, column, data) => {
+const onDragLeave = (e) => {
+  e.currentTarget.classList.remove('drag-over');
+};
+
+const onDrop = (e, sectionId, column) => {
+  e.currentTarget.classList.remove('drag-over');
+  
+  // ROOT FIX: Handle multiple data transfer formats
+  const textData = e.dataTransfer.getData('text/plain');
+  const jsonData = e.dataTransfer.getData('application/json');
+  const componentType = e.dataTransfer.getData('component-type');
+  
+  // Try to get component data from various sources
+  let data = jsonData || textData || componentType;
+  if (!data) {
+    console.warn('No data in drop event');
+    return;
+  }
+  
   try {
     // Try to parse as JSON first (for complex component data)
     let componentData;
     try {
-      componentData = JSON.parse(data);
+      componentData = typeof data === 'string' ? JSON.parse(data) : data;
     } catch {
       // If not JSON, treat as component type
       componentData = { type: data };
     }
     
-    // Add the component
-    store.addComponent({
+    // Ensure we have a type
+    if (!componentData.type && typeof data === 'string') {
+      componentData.type = data;
+    }
+    
+    // Add the component to the specific section and column
+    const newComponentId = store.addComponent({
       ...componentData,
       sectionId,
       column
     });
     
-    console.log('Component dropped:', componentData.type, 'in section:', sectionId, 'column:', column);
+    console.log('✅ Component dropped:', componentData.type, 'in section:', sectionId, 'column:', column, 'id:', newComponentId);
+    
+    // Trigger legacy event for any listeners
+    document.dispatchEvent(new CustomEvent('gmkb:component-dropped', {
+      detail: {
+        componentId: newComponentId,
+        componentType: componentData.type,
+        sectionId,
+        column
+      }
+    }));
   } catch (error) {
     console.error('Error handling drop:', error);
   }
@@ -380,23 +391,15 @@ onMounted(async () => {
     addSection('full_width');
   }
   
-  // Initialize drag and drop for sections if Sortable is available
+  // Initialize sections if needed
   await nextTick();
   
-  // Try to use Sortable if available
-  if (window.Sortable || window.sortablejs) {
-    const Sortable = window.Sortable || window.sortablejs;
-    if (sectionsContainer.value) {
-      new Sortable(sectionsContainer.value, {
-        handle: '.section-handle',
-        animation: 300,
-        onEnd: () => {
-          store.hasUnsavedChanges = true;
-          document.dispatchEvent(new CustomEvent('gmkb:sections-reordered'));
-        }
-      });
+  // Initialize columns structure for existing sections
+  store.sections.forEach(section => {
+    if (section.type !== 'full_width' && !section.columns) {
+      section.columns = { 1: [], 2: [], 3: [] };
     }
-  }
+  });
 });
 
 // Watch for changes and auto-save
@@ -417,6 +420,11 @@ watch(() => store.hasUnsavedChanges, (hasChanges) => {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.force-visible {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Toolbar */
@@ -493,6 +501,13 @@ watch(() => store.hasUnsavedChanges, (hasChanges) => {
   background: rgba(59, 130, 246, 0.05);
 }
 
+/* ROOT FIX: Always show controls on hover */
+.gmkb-section:hover .section-controls,
+.gmkb-section__header:hover .section-controls {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
 /* Section Header */
 .gmkb-section__header {
   display: flex;
@@ -523,6 +538,17 @@ watch(() => store.hasUnsavedChanges, (hasChanges) => {
 .section-controls {
   display: flex;
   gap: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+
+/* ROOT FIX: Show controls on section or header hover */
+.gmkb-section:hover .section-controls,
+.section-controls:hover,
+.section-controls.force-visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .control-btn {
@@ -556,37 +582,69 @@ watch(() => store.hasUnsavedChanges, (hasChanges) => {
 /* Section Content */
 .gmkb-section__content {
   padding: 16px;
+  min-height: 200px;
 }
 
+/* ROOT FIX: Proper CSS classes for layouts */
+.layout-full-width {
+  display: block;
+}
+
+.layout-two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.layout-three-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.layout-main-sidebar {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+/* Keep old classes for backward compatibility */
 .layout-two_column {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 20px;
 }
 
 .layout-three_column {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
+  gap: 20px;
 }
 
 /* Column */
 .gmkb-section__column {
-  min-height: 100px;
+  min-height: 150px;
 }
 
 /* Drop Zone */
 .component-drop-zone {
-  min-height: 100px;
-  border: 2px dashed transparent;
+  min-height: 120px;
+  border: 2px dashed rgba(59, 130, 246, 0.3);
   border-radius: 6px;
+  padding: 12px;
   transition: all 0.3s;
-  padding: 8px;
+  background: rgba(59, 130, 246, 0.02);
+}
+
+.component-drop-zone:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.04);
 }
 
 .component-drop-zone.drag-over {
-  border-color: rgba(59, 130, 246, 0.4);
-  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
 }
 
 /* Drop Placeholder */
@@ -598,6 +656,7 @@ watch(() => store.hasUnsavedChanges, (hasChanges) => {
   padding: 32px;
   color: #64748b;
   text-align: center;
+  min-height: 80px;
 }
 
 .drop-icon {
@@ -634,45 +693,6 @@ watch(() => store.hasUnsavedChanges, (hasChanges) => {
 .empty-message p {
   color: #94a3b8;
   margin-bottom: 24px;
-}
-
-.quick-start-layouts {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.quick-layout-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.quick-layout-btn:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.4);
-  transform: translateY(-2px);
-}
-
-.quick-layout-btn svg {
-  width: 40px;
-  height: 40px;
-  color: #3b82f6;
-}
-
-/* Dragging states */
-.sortable-ghost {
-  opacity: 0.5;
-}
-
-.sortable-drag {
-  opacity: 0;
+  font-size: 16px;
 }
 </style>

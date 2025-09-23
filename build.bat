@@ -1,7 +1,24 @@
 @echo off
-echo Building Media Kit Builder...
-cd /d "C:\Users\seoge\OneDrive\Desktop\CODE-Guestify\MEDIAKIT\PLUGIN\mk4"
-npm run build
+echo ====================================
+echo Building Media Kit Builder
+echo ====================================
+
 echo.
-echo Build complete! Refresh the page to see changes.
+echo Building with Vite...
+call npm run build
+
+echo.
+echo ====================================
+if %errorlevel% == 0 (
+    echo Build Successful!
+    echo.
+    echo Section layouts should now be working:
+    echo - Drop zones visible with dashed borders
+    echo - Columns properly displayed
+    echo - Drag and drop functionality enabled
+) else (
+    echo Build Failed - Check errors above
+)
+echo ====================================
+echo.
 pause
