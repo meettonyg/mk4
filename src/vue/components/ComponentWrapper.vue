@@ -124,12 +124,18 @@ const duplicateComponent = () => {
 };
 
 const editComponent = () => {
+  // Use the store's openEditPanel method instead of openComponentEditor
   store.openEditPanel(props.componentId);
   
-  // Dispatch event for design panel
+  // Also set as selected
+  store.setSelectedComponent(props.componentId);
+  
+  // Dispatch event for design panel (legacy compatibility)
   document.dispatchEvent(new CustomEvent('gmkb:component-edit-requested', {
     detail: { componentId: props.componentId }
   }));
+  
+  console.log('Edit button clicked for:', props.componentId, props.component?.type);
 };
 
 const deleteComponent = () => {
