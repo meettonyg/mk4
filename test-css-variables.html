@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Kit Builder - CSS Variable Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .test-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .variable-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .variable-item {
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .variable-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .variable-value {
+            color: #666;
+            word-break: break-all;
+        }
+
+        .missing {
+            background: #ffe4e4;
+        }
+
+        .present {
+            background: #e4ffe4;
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #007cba;
+            padding-bottom: 10px;
+        }
+
+        .summary {
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .test-component {
+            padding: 20px;
+            margin: 20px 0;
+            background: var(--gmkb-color-surface, #f8f9fa);
+            color: var(--gmkb-color-text, #333);
+            border: 1px solid var(--gmkb-color-border, #e1e5e9);
+            border-radius: var(--gmkb-border-radius, 8px);
+            font-family: var(--gmkb-font-primary, sans-serif);
+        }
+
+        .test-component h3 {
+            font-family: var(--gmkb-font-heading, serif);
+            color: var(--gmkb-color-text, #333);
+            font-size: var(--gmkb-font-size-xl, 1.5rem);
+        }
+
+        .test-button {
+            background: var(--gmkb-color-primary, #007cba);
+            color: white;
+            border: none;
+            padding: var(--gmkb-space-3, 12px) var(--gmkb-space-6, 24px);
+            border-radius: var(--gmkb-border-radius, 8px);
+            font-weight: var(--gmkb-font-weight-semibold, 600);
+            cursor: pointer;
+            transition: background var(--gmkb-transition, 300ms) ease;
+        }
+
+        .test-button:hover {
+            background: var(--gmkb-color-primary-hover, #005a87);
+        }
+    </style>
+</head>
+<body>
+    <h1>Media Kit Builder - CSS Variable Test</h1>
+
+    <div class="summary" id="summary">
+        <h3>Test Summary</h3>
+        <p>Loading CSS variables...</p>
+    </div>
+
+    <div class="test-component">
+        <h3>Test Component</h3>
+        <p>This component uses CSS variables for theming. If the theme system is working correctly, this should have proper colors, fonts, and spacing.</p>
+        <button class="test-button">Test Button</button>
+    </div>
+
+    <div class="test-container">
+        <h2>CSS Variables Status</h2>
+        <div id="variable-list" class="variable-grid">
+            <!-- Variables will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        // Complete list of required CSS variables according to contract
+        const requiredVariables = {
+            // Typography
+            '--gmkb-font-primary': 'Primary font family',
+            '--gmkb-font-heading': 'Heading font family',
+            '--gmkb-font-mono': 'Monospace font family',
+            '--gmkb-font-scale': 'Font scale multiplier',
+            '--gmkb-line-height-tight': 'Tight line height',
+            '--gmkb-line-height-heading': 'Heading line height',
+            '--gmkb-line-height-base': 'Base line height',
+            '--gmkb-line-height-body': 'Body line height',
+            '--gmkb-line-height-relaxed': 'Relaxed line height',
+            '--gmkb-font-size-xs': 'Extra small font size',
+            '--gmkb-font-size-sm': 'Small font size',
+            '--gmkb-font-size-base': 'Base font size',
+            '--gmkb-font-size-lg': 'Large font size',
+            '--gmkb-font-size-xl': 'Extra large font size',
+            '--gmkb-font-size-2xl': '2XL font size',
+            '--gmkb-font-size-3xl': '3XL font size',
+            '--gmkb-font-size-4xl': '4XL font size',
+            '--gmkb-font-weight-light': 'Light font weight',
+            '--gmkb-font-weight-normal': 'Normal font weight',
+            '--gmkb-font-weight-medium': 'Medium font weight',
+            '--gmkb-font-weight-semibold': 'Semibold font weight',
+            '--gmkb-font-weight-bold': 'Bold font weight',
+            '--gmkb-letter-spacing-tight': 'Tight letter spacing',
+            '--gmkb-letter-spacing-normal': 'Normal letter spacing',
+            '--gmkb-letter-spacing-wide': 'Wide letter spacing',
+
+            // Colors
+            '--gmkb-color-primary': 'Primary color',
+            '--gmkb-color-primary-hover': 'Primary hover color',
+            '--gmkb-color-secondary': 'Secondary color',
+            '--gmkb-color-secondary-hover': 'Secondary hover color',
+            '--gmkb-color-accent': 'Accent color',
+            '--gmkb-color-text': 'Text color',
+            '--gmkb-color-text-light': 'Light text color',
+            '--gmkb-color-text-dark': 'Dark text color',
+            '--gmkb-color-background': 'Background color',
+            '--gmkb-color-surface': 'Surface color',
+            '--gmkb-color-surface-hover': 'Surface hover color',
+            '--gmkb-color-border': 'Border color',
+            '--gmkb-color-border-light': 'Light border color',
+            '--gmkb-color-success': 'Success color',
+            '--gmkb-color-error': 'Error color',
+            '--gmkb-color-warning': 'Warning color',
+            '--gmkb-color-info': 'Info color',
+
+            // Spacing
+            '--gmkb-spacing-component-gap': 'Component gap',
+            '--gmkb-spacing-section-gap': 'Section gap',
+            '--gmkb-spacing-base-unit': 'Base spacing unit',
+            '--gmkb-space-0': 'Space 0',
+            '--gmkb-space-1': 'Space 1',
+            '--gmkb-space-2': 'Space 2',
+            '--gmkb-space-3': 'Space 3',
+            '--gmkb-space-4': 'Space 4',
+            '--gmkb-space-5': 'Space 5',
+            '--gmkb-space-6': 'Space 6',
+            '--gmkb-space-8': 'Space 8',
+            '--gmkb-space-10': 'Space 10',
+            '--gmkb-space-12': 'Space 12',
+            '--gmkb-space-16': 'Space 16',
+            '--gmkb-space-20': 'Space 20',
+
+            // Effects
+            '--gmkb-border-radius-none': 'No border radius',
+            '--gmkb-border-radius-sm': 'Small border radius',
+            '--gmkb-border-radius': 'Default border radius',
+            '--gmkb-border-radius-lg': 'Large border radius',
+            '--gmkb-border-radius-xl': 'XL border radius',
+            '--gmkb-border-radius-full': 'Full border radius',
+            '--gmkb-shadow-none': 'No shadow',
+            '--gmkb-shadow-sm': 'Small shadow',
+            '--gmkb-shadow': 'Default shadow',
+            '--gmkb-shadow-md': 'Medium shadow',
+            '--gmkb-shadow-lg': 'Large shadow',
+            '--gmkb-shadow-xl': 'XL shadow',
+            '--gmkb-transition-fast': 'Fast transition',
+            '--gmkb-transition': 'Default transition',
+            '--gmkb-transition-slow': 'Slow transition',
+            '--gmkb-transition-timing': 'Transition timing',
+            '--gmkb-transitions': 'All transitions',
+            '--gmkb-opacity-disabled': 'Disabled opacity',
+            '--gmkb-opacity-hover': 'Hover opacity',
+
+            // Layout
+            '--gmkb-container-xs': 'XS container',
+            '--gmkb-container-sm': 'Small container',
+            '--gmkb-container-md': 'Medium container',
+            '--gmkb-container-lg': 'Large container',
+            '--gmkb-container-xl': 'XL container',
+            '--gmkb-container-full': 'Full container',
+            '--gmkb-breakpoint-xs': 'XS breakpoint',
+            '--gmkb-breakpoint-sm': 'Small breakpoint',
+            '--gmkb-breakpoint-md': 'Medium breakpoint',
+            '--gmkb-breakpoint-lg': 'Large breakpoint',
+            '--gmkb-breakpoint-xl': 'XL breakpoint'
+        };
+
+        function checkVariables() {
+            const rootStyles = getComputedStyle(document.documentElement);
+            const container = document.getElementById('variable-list');
+            const summary = document.getElementById('summary');
+            
+            let html = '';
+            let presentCount = 0;
+            let missingCount = 0;
+            const missingVars = [];
+
+            Object.entries(requiredVariables).forEach(([variable, description]) => {
+                const value = rootStyles.getPropertyValue(variable).trim();
+                const isPresent = value !== '';
+                
+                if (isPresent) {
+                    presentCount++;
+                } else {
+                    missingCount++;
+                    missingVars.push(variable);
+                }
+
+                html += `
+                    <div class="variable-item ${isPresent ? 'present' : 'missing'}">
+                        <div class="variable-name">${variable}</div>
+                        <div class="variable-value">${value || 'NOT SET'}</div>
+                        <small>${description}</small>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Update summary
+            const total = Object.keys(requiredVariables).length;
+            const percentage = Math.round((presentCount / total) * 100);
+            
+            summary.innerHTML = `
+                <h3>Test Summary</h3>
+                <p><strong>Total Variables:</strong> ${total}</p>
+                <p><strong>Present:</strong> ${presentCount} (${percentage}%)</p>
+                <p><strong>Missing:</strong> ${missingCount}</p>
+                ${missingCount > 0 ? `
+                    <p><strong>Missing Variables:</strong></p>
+                    <ul style="columns: 2; font-size: 12px; font-family: monospace;">
+                        ${missingVars.map(v => `<li>${v}</li>`).join('')}
+                    </ul>
+                ` : '<p style="color: green;"><strong>✅ All CSS variables are present!</strong></p>'}
+            `;
+        }
+
+        // Check variables on page load
+        window.addEventListener('load', checkVariables);
+
+        // Also check after a delay in case themes load asynchronously
+        setTimeout(checkVariables, 2000);
+    </script>
+</body>
+</html>

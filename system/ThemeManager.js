@@ -5,7 +5,7 @@
  * ROOT CAUSE FIX: Centralized theme management with CSS custom properties
  * Event-driven theme switching without polling or global object dependencies
  * 
- * @version 4.0.0-phase4
+ * @version 4.1.0-phase4
  * @package GMKB/System
  */
 
@@ -38,6 +38,7 @@ class ThemeManager {
             },
             colors: {
                 primary: '#295cff',
+                primary_hover: '#1c4ed8',
                 secondary: '#1c0d5a',
                 accent: '#295cff',
                 text: '#333333',
@@ -53,7 +54,11 @@ class ThemeManager {
             },
             effects: {
                 border_radius: '8px',
+                border_radius_sm: '4px',
+                border_radius_lg: '12px',
                 shadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                shadow_sm: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                shadow_lg: '0 10px 25px rgba(0, 0, 0, 0.1)',
                 transitions: 'all 0.3s ease'
             }
         };
@@ -181,6 +186,7 @@ class ThemeManager {
             },
             colors: {
                 primary: '#2563eb',
+                primary_hover: '#1d4ed8',
                 secondary: '#1e40af',
                 accent: '#3b82f6',
                 text: '#1f2937',
@@ -196,7 +202,11 @@ class ThemeManager {
             },
             effects: {
                 border_radius: '12px',
+                border_radius_sm: '8px',
+                border_radius_lg: '16px',
                 shadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                shadow_sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                shadow_lg: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
                 transitions: 'all 0.2s ease'
             }
         });
@@ -223,6 +233,7 @@ class ThemeManager {
             },
             colors: {
                 primary: '#f97316',
+                primary_hover: '#ea580c',
                 secondary: '#dc2626',
                 accent: '#fbbf24',
                 text: '#111827',
@@ -238,7 +249,11 @@ class ThemeManager {
             },
             effects: {
                 border_radius: '24px',
+                border_radius_sm: '12px',
+                border_radius_lg: '32px',
                 shadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15)',
+                shadow_sm: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                shadow_lg: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                 transitions: 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
             }
         });
@@ -265,6 +280,7 @@ class ThemeManager {
             },
             colors: {
                 primary: '#000000',
+                primary_hover: '#333333',
                 secondary: '#333333',
                 accent: '#666666',
                 text: '#000000',
@@ -280,7 +296,11 @@ class ThemeManager {
             },
             effects: {
                 border_radius: '0px',
+                border_radius_sm: '0px',
+                border_radius_lg: '0px',
                 shadow: 'none',
+                shadow_sm: 'none',
+                shadow_lg: 'none',
                 transitions: 'opacity 0.3s ease'
             }
         });
@@ -307,6 +327,7 @@ class ThemeManager {
             },
             colors: {
                 primary: '#60a5fa',
+                primary_hover: '#3b82f6',
                 secondary: '#818cf8',
                 accent: '#34d399',
                 text: '#f3f4f6',
@@ -322,7 +343,11 @@ class ThemeManager {
             },
             effects: {
                 border_radius: '16px',
+                border_radius_sm: '8px',
+                border_radius_lg: '24px',
                 shadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                shadow_sm: '0 4px 6px rgba(0, 0, 0, 0.3)',
+                shadow_lg: '0 20px 60px rgba(0, 0, 0, 0.7)',
                 transitions: 'all 0.3s ease'
             }
         });
@@ -370,6 +395,7 @@ class ThemeManager {
     
     /**
      * Generate CSS from theme configuration
+     * ROOT FIX: Generate ALL required CSS variables according to contract
      * Following checklist: Simplicity First, No Redundant Logic
      */
     generateThemeCSS(theme) {
@@ -378,54 +404,144 @@ class ThemeManager {
         // Typography variables
         if (theme.typography) {
             const typo = theme.typography;
+            
+            // Font families
             cssVars.push(`--gmkb-font-primary: ${typo.primary_font.family}`);
             cssVars.push(`--gmkb-font-heading: ${typo.heading_font.family}`);
+            cssVars.push(`--gmkb-font-mono: 'Courier New', monospace`);
+            
+            // Font scale
             cssVars.push(`--gmkb-font-scale: ${typo.font_scale}`);
-            cssVars.push(`--gmkb-line-height-body: ${typo.line_height.body}`);
+            
+            // Line heights
+            cssVars.push(`--gmkb-line-height-tight: 1.2`);
             cssVars.push(`--gmkb-line-height-heading: ${typo.line_height.heading}`);
+            cssVars.push(`--gmkb-line-height-base: ${typo.line_height.body}`);
+            cssVars.push(`--gmkb-line-height-body: ${typo.line_height.body}`);
+            cssVars.push(`--gmkb-line-height-relaxed: 1.8`);
             
             // Font sizes based on scale
             const baseSize = 16;
-            const scale = typo.font_scale;
+            const scale = typo.font_scale || 1.2;
             cssVars.push(`--gmkb-font-size-xs: ${Math.round(baseSize * 0.75)}px`);
             cssVars.push(`--gmkb-font-size-sm: ${Math.round(baseSize * 0.875)}px`);
             cssVars.push(`--gmkb-font-size-base: ${baseSize}px`);
-            cssVars.push(`--gmkb-font-size-lg: ${Math.round(baseSize * scale)}px`);
-            cssVars.push(`--gmkb-font-size-xl: ${Math.round(baseSize * scale * 1.25)}px`);
-            cssVars.push(`--gmkb-font-size-2xl: ${Math.round(baseSize * scale * 1.5)}px`);
-            cssVars.push(`--gmkb-font-size-3xl: ${Math.round(baseSize * scale * 1.875)}px`);
-            cssVars.push(`--gmkb-font-size-4xl: ${Math.round(baseSize * scale * 2.25)}px`);
-        }
-        
-        // Color variables
-        if (theme.colors) {
-            Object.entries(theme.colors).forEach(([key, value]) => {
-                const varName = key.replace(/_/g, '-');
-                cssVars.push(`--gmkb-color-${varName}: ${value}`);
-            });
-        }
-        
-        // Spacing variables
-        if (theme.spacing) {
-            Object.entries(theme.spacing).forEach(([key, value]) => {
-                const varName = key.replace(/_/g, '-');
-                cssVars.push(`--gmkb-spacing-${varName}: ${value}`);
-            });
+            cssVars.push(`--gmkb-font-size-lg: ${Math.round(baseSize * 1.125)}px`);
+            cssVars.push(`--gmkb-font-size-xl: ${Math.round(baseSize * 1.5)}px`);
+            cssVars.push(`--gmkb-font-size-2xl: ${Math.round(baseSize * 2)}px`);
+            cssVars.push(`--gmkb-font-size-3xl: ${Math.round(baseSize * 2.5)}px`);
+            cssVars.push(`--gmkb-font-size-4xl: ${Math.round(baseSize * 3)}px`);
             
-            // Generate spacing scale
-            const baseUnit = parseInt(theme.spacing.base_unit) || 8;
-            for (let i = 1; i <= 12; i++) {
-                cssVars.push(`--gmkb-space-${i}: ${baseUnit * i}px`);
-            }
+            // Font weights
+            cssVars.push(`--gmkb-font-weight-light: 300`);
+            cssVars.push(`--gmkb-font-weight-normal: 400`);
+            cssVars.push(`--gmkb-font-weight-medium: 500`);
+            cssVars.push(`--gmkb-font-weight-semibold: 600`);
+            cssVars.push(`--gmkb-font-weight-bold: 700`);
+            
+            // Letter spacing
+            cssVars.push(`--gmkb-letter-spacing-tight: -0.02em`);
+            cssVars.push(`--gmkb-letter-spacing-normal: 0`);
+            cssVars.push(`--gmkb-letter-spacing-wide: 0.02em`);
         }
         
-        // Effects variables
-        if (theme.effects) {
-            Object.entries(theme.effects).forEach(([key, value]) => {
-                const varName = key.replace(/_/g, '-');
-                cssVars.push(`--gmkb-${varName}: ${value}`);
-            });
+        // Color variables - comprehensive set
+        if (theme.colors) {
+            // Primary colors
+            cssVars.push(`--gmkb-color-primary: ${theme.colors.primary}`);
+            cssVars.push(`--gmkb-color-primary-hover: ${theme.colors.primary_hover || theme.colors.primary}`);
+            cssVars.push(`--gmkb-color-secondary: ${theme.colors.secondary}`);
+            cssVars.push(`--gmkb-color-secondary-hover: ${theme.colors.secondary_hover || theme.colors.secondary}`);
+            cssVars.push(`--gmkb-color-accent: ${theme.colors.accent || theme.colors.primary}`);
+            
+            // Text colors
+            cssVars.push(`--gmkb-color-text: ${theme.colors.text}`);
+            cssVars.push(`--gmkb-color-text-light: ${theme.colors.text_light || theme.colors.text_muted || theme.colors.text}`);
+            cssVars.push(`--gmkb-color-text-dark: ${theme.colors.text_dark || theme.colors.text}`);
+            
+            // Background colors
+            cssVars.push(`--gmkb-color-background: ${theme.colors.background}`);
+            cssVars.push(`--gmkb-color-surface: ${theme.colors.surface}`);
+            cssVars.push(`--gmkb-color-surface-hover: ${theme.colors.surface_hover || theme.colors.surface}`);
+            
+            // Border colors
+            cssVars.push(`--gmkb-color-border: ${theme.colors.border}`);
+            cssVars.push(`--gmkb-color-border-light: ${theme.colors.border_light || theme.colors.border}`);
+            
+            // Status colors
+            cssVars.push(`--gmkb-color-success: ${theme.colors.success || '#10b981'}`);
+            cssVars.push(`--gmkb-color-error: ${theme.colors.error || '#ef4444'}`);
+            cssVars.push(`--gmkb-color-warning: ${theme.colors.warning || '#f59e0b'}`);
+            cssVars.push(`--gmkb-color-info: ${theme.colors.info || '#3b82f6'}`);
         }
+        
+        // Spacing variables - comprehensive scale
+        if (theme.spacing) {
+            // Named spacing variables
+            cssVars.push(`--gmkb-spacing-component-gap: ${theme.spacing.component_gap}`);
+            cssVars.push(`--gmkb-spacing-section-gap: ${theme.spacing.section_gap}`);
+            cssVars.push(`--gmkb-spacing-base-unit: ${theme.spacing.base_unit}`);
+            
+            // Generate complete spacing scale
+            const baseUnit = parseInt(theme.spacing.base_unit) || 8;
+            cssVars.push(`--gmkb-space-0: 0`);
+            cssVars.push(`--gmkb-space-1: ${baseUnit * 0.5}px`);
+            cssVars.push(`--gmkb-space-2: ${baseUnit}px`);
+            cssVars.push(`--gmkb-space-3: ${baseUnit * 1.5}px`);
+            cssVars.push(`--gmkb-space-4: ${baseUnit * 2}px`);
+            cssVars.push(`--gmkb-space-5: ${baseUnit * 2.5}px`);
+            cssVars.push(`--gmkb-space-6: ${baseUnit * 3}px`);
+            cssVars.push(`--gmkb-space-8: ${baseUnit * 4}px`);
+            cssVars.push(`--gmkb-space-10: ${baseUnit * 5}px`);
+            cssVars.push(`--gmkb-space-12: ${baseUnit * 6}px`);
+            cssVars.push(`--gmkb-space-16: ${baseUnit * 8}px`);
+            cssVars.push(`--gmkb-space-20: ${baseUnit * 10}px`);
+        }
+        
+        // Effects variables - complete set
+        if (theme.effects) {
+            // Border radius
+            cssVars.push(`--gmkb-border-radius-none: 0`);
+            cssVars.push(`--gmkb-border-radius-sm: ${theme.effects.border_radius_sm || '4px'}`);
+            cssVars.push(`--gmkb-border-radius: ${theme.effects.border_radius}`);
+            cssVars.push(`--gmkb-border-radius-lg: ${theme.effects.border_radius_lg || '12px'}`);
+            cssVars.push(`--gmkb-border-radius-xl: ${theme.effects.border_radius_xl || '16px'}`);
+            cssVars.push(`--gmkb-border-radius-full: 9999px`);
+            
+            // Box shadows
+            cssVars.push(`--gmkb-shadow-none: none`);
+            cssVars.push(`--gmkb-shadow-sm: ${theme.effects.shadow_sm || '0 1px 2px rgba(0, 0, 0, 0.05)'}`);
+            cssVars.push(`--gmkb-shadow: ${theme.effects.shadow}`);
+            cssVars.push(`--gmkb-shadow-md: ${theme.effects.shadow_md || theme.effects.shadow}`);
+            cssVars.push(`--gmkb-shadow-lg: ${theme.effects.shadow_lg || '0 10px 25px rgba(0, 0, 0, 0.1)'}`);
+            cssVars.push(`--gmkb-shadow-xl: ${theme.effects.shadow_xl || '0 20px 40px rgba(0, 0, 0, 0.15)'}`);
+            
+            // Transitions
+            cssVars.push(`--gmkb-transition-fast: 150ms`);
+            cssVars.push(`--gmkb-transition: 300ms`);
+            cssVars.push(`--gmkb-transition-slow: 500ms`);
+            cssVars.push(`--gmkb-transition-timing: ease`);
+            cssVars.push(`--gmkb-transitions: ${theme.effects.transitions || 'all 0.3s ease'}`);
+            
+            // Opacity
+            cssVars.push(`--gmkb-opacity-disabled: 0.5`);
+            cssVars.push(`--gmkb-opacity-hover: 0.8`);
+        }
+        
+        // Layout variables
+        cssVars.push(`--gmkb-container-xs: 480px`);
+        cssVars.push(`--gmkb-container-sm: 640px`);
+        cssVars.push(`--gmkb-container-md: 768px`);
+        cssVars.push(`--gmkb-container-lg: 1024px`);
+        cssVars.push(`--gmkb-container-xl: 1280px`);
+        cssVars.push(`--gmkb-container-full: 100%`);
+        
+        // Breakpoints for reference
+        cssVars.push(`--gmkb-breakpoint-xs: 480px`);
+        cssVars.push(`--gmkb-breakpoint-sm: 640px`);
+        cssVars.push(`--gmkb-breakpoint-md: 768px`);
+        cssVars.push(`--gmkb-breakpoint-lg: 1024px`);
+        cssVars.push(`--gmkb-breakpoint-xl: 1280px`);
         
         return `:root {\n  ${cssVars.join(';\n  ')};\n}`;
     }
