@@ -33,40 +33,58 @@
     <!-- Section Content -->
     <div class="gmkb-section__inner">
       <!-- Full Width Layout -->
-      <div v-if="section.type === 'full_width'" class="gmkb-section__content">
+      <div v-if="section.type === 'full_width'" class="gmkb-section__content gmkb-section__content--droppable" :data-section-id="section.section_id" data-column="1">
         <MediaKitComponent
           v-for="component in components"
           :key="component.id"
           :component="component"
           :section-id="section.section_id"
         />
-        <div v-if="components.length === 0" class="drop-zone">
-          Drop components here
+        <!-- Always show drop zone at the end, even with components -->
+        <div 
+          class="drop-zone component-drop-zone"
+          :class="{ 'drop-zone--empty': components.length === 0 }"
+          :data-section-id="section.section_id"
+          data-column="1"
+        >
+          {{ components.length === 0 ? 'Drop components here' : '+' }}
         </div>
       </div>
 
       <!-- Two Column Layout -->
       <div v-else-if="section.type === 'two_column'" class="gmkb-section__columns gmkb-section__columns--two">
-        <div class="gmkb-section__column">
+        <div class="gmkb-section__column gmkb-section__content--droppable" :data-section-id="section.section_id" data-column="1">
           <MediaKitComponent
             v-for="component in leftColumnComponents"
             :key="component.id"
             :component="component"
             :section-id="section.section_id"
           />
-          <div v-if="leftColumnComponents.length === 0" class="drop-zone">
-            Drop to Column 1
+          <!-- Always show drop zone -->
+          <div 
+            class="drop-zone component-drop-zone"
+            :class="{ 'drop-zone--empty': leftColumnComponents.length === 0 }"
+            :data-section-id="section.section_id"
+            data-column="1"
+          >
+            {{ leftColumnComponents.length === 0 ? 'Drop to Column 1' : '+' }}
           </div>
         </div>
-        <div class="gmkb-section__column">
+        <div class="gmkb-section__column gmkb-section__content--droppable" :data-section-id="section.section_id" data-column="2">
           <MediaKitComponent
             v-for="component in rightColumnComponents"
             :key="component.id"
             :component="component"
             :section-id="section.section_id"
           />
-          <div v-if="rightColumnComponents.length === 0" class="drop-zone">
-            Drop to Column 2
+          <!-- Always show drop zone -->
+          <div 
+            class="drop-zone component-drop-zone"
+            :class="{ 'drop-zone--empty': rightColumnComponents.length === 0 }"
+            :data-section-id="section.section_id"
+            data-column="2"
+          >
+            {{ rightColumnComponents.length === 0 ? 'Drop to Column 2' : '+' }}
           </div>
         </div>
       </div>
@@ -80,7 +98,12 @@
             :component="component"
             :section-id="section.section_id"
           />
-          <div v-if="column1Components.length === 0" class="drop-zone">
+          <div 
+            v-if="column1Components.length === 0" 
+            class="drop-zone component-drop-zone"
+            :data-section-id="section.section_id"
+            data-column="1"
+          >
             Drop to Column 1
           </div>
         </div>
@@ -91,7 +114,12 @@
             :component="component"
             :section-id="section.section_id"
           />
-          <div v-if="column2Components.length === 0" class="drop-zone">
+          <div 
+            v-if="column2Components.length === 0" 
+            class="drop-zone component-drop-zone"
+            :data-section-id="section.section_id"
+            data-column="2"
+          >
             Drop to Column 2
           </div>
         </div>
@@ -102,7 +130,12 @@
             :component="component"
             :section-id="section.section_id"
           />
-          <div v-if="column3Components.length === 0" class="drop-zone">
+          <div 
+            v-if="column3Components.length === 0" 
+            class="drop-zone component-drop-zone"
+            :data-section-id="section.section_id"
+            data-column="3"
+          >
             Drop to Column 3
           </div>
         </div>
@@ -238,16 +271,48 @@ const openSettings = () => {
 
 /* Drop Zones */
 .drop-zone {
-  padding: 40px;
+  padding: 20px;
   border: 2px dashed rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   text-align: center;
   color: #64748b;
   transition: all 0.3s;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.drop-zone:hover {
+.drop-zone--empty {
+  padding: 40px;
+}
+
+.drop-zone:not(.drop-zone--empty) {
+  margin-top: 10px;
+  font-size: 24px;
+  opacity: 0.3;
+}
+
+.drop-zone:not(.drop-zone--empty):hover {
+  opacity: 1;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
   border-color: rgba(59, 130, 246, 0.5);
   background: rgba(59, 130, 246, 0.05);
+}
+
+/* Content droppable areas */
+.gmkb-section__content--droppable {
+  min-height: 100px;
+}
+
+.gmkb-section__content--droppable.drag-over,
+.gmkb-section__column.drag-over {
+  background: rgba(59, 130, 246, 0.05);
+  border: 2px dashed rgba(59, 130, 246, 0.5);
+  border-radius: 8px;
 }
 </style>

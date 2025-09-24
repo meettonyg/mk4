@@ -35,8 +35,8 @@ class DragDropManager {
 
     // Add visual feedback
     document.addEventListener('dragover', (e) => {
-      // Allow drop on drop zones
-      const dropZone = e.target.closest('.component-drop-zone, .gmkb-section__content');
+      // Allow drop on drop zones and section content areas
+      const dropZone = e.target.closest('.component-drop-zone, .gmkb-section__content, .gmkb-section__content--droppable, .gmkb-section__column');
       if (dropZone) {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'copy';
@@ -47,11 +47,15 @@ class DragDropManager {
   handleComponentDragStart(e, componentItem) {
     const componentType = componentItem.dataset.component;
     
-    // Store drag data
+    console.log('[DragDropManager] Starting drag for component type:', componentType);
+    console.log('[DragDropManager] Component item:', componentItem);
+    
+    // Store drag data - ROOT FIX: Use actual component type, not 'new-component'
     this.isDragging = true;
     this.dragData = {
-      type: 'new-component',
-      componentType: componentType
+      type: componentType,  // ROOT FIX: This should be the actual component type
+      componentType: componentType,
+      source: 'sidebar'
     };
     this.dragSource = componentItem;
     
@@ -107,60 +111,96 @@ class DragDropManager {
   setupDropHandlers() {
     // Handle drops on Vue drop zones
     document.addEventListener('drop', (e) => {
-      const dropZone = e.target.closest('.component-drop-zone');
-      if (!dropZone) return;
+      // ROOT FIX: Allow dropping on any droppable area, not just explicit drop zones
+      const dropTarget = e.target.closest('.component-drop-zone, .gmkb-section__content--droppable, .gmkb-section__column');
+      if (!dropTarget) return;
       
       // Prevent default to allow drop
       e.preventDefault();
       
-      // Get drop target info
-      const sectionId = dropZone.dataset.sectionId;
-      const column = dropZone.dataset.column || 1;
+      // Get drop target info - check multiple sources
+      const sectionId = dropTarget.dataset.sectionId || 
+                       dropTarget.closest('[data-section-id]')?.dataset.sectionId;
+      const column = dropTarget.dataset.column || 1;
       
       // Get component type from various sources
-      const componentType = e.dataTransfer.getData('component-type') || 
-                           e.dataTransfer.getData('text/plain') ||
-                           e.dataTransfer.getData('text');
+      let componentType = e.dataTransfer.getData('component-type') || 
+                         e.dataTransfer.getData('text/plain') ||
+                         e.dataTransfer.getData('text');
       
-      if (componentType && sectionId) {
-        // Use store to add component to specific section and column
-        const store = window.gmkbStore || window.mediaKitStore;
+      console.log('[DragDropManager] Drop received, initial componentType:', componentType);
+      
+      // Also try to get from JSON data if available
+      try {
+        const jsonData = e.dataTransfer.getData('application/json');
+        if (jsonData) {
+          console.log('[DragDropManager] JSON data received:', jsonData);
+          const parsedData = JSON.parse(jsonData);
+          console.log('[DragDropManager] Parsed data:', parsedData);
+          // ROOT FIX: Use type directly, not 'new-component'
+          componentType = parsedData.type || parsedData.componentType || componentType;
+        }
+      } catch (err) {
+        console.log('[DragDropManager] JSON parse failed, using text fallback');
+      }
+      
+      console.log('[DragDropManager] Final componentType to use:', componentType);
+      
+      if (componentType && sectionId && componentType !== 'new-component') {
+        console.log(`🎯 Attempting to add component: ${componentType} to section ${sectionId}, column ${column}`);
+        
+        // ROOT FIX: Try multiple store locations
+        const store = window.gmkbStore || window.mediaKitStore || window.stateManager;
+        
         if (store && store.addComponent) {
-          const componentId = store.addComponent({
-            type: componentType,
+          console.log('Using store.addComponent directly');
+          try {
+            const componentId = store.addComponent({
+              type: componentType,
+              sectionId: sectionId,
+              column: parseInt(column)
+            });
+            
+            console.log(`✅ Component dropped: ${componentType} in section ${sectionId}, column ${column}`);
+            
+            // Show feedback
+            if (window.showToast) {
+              window.showToast(`Added ${componentType} to column ${column}`, 'success');
+            }
+          } catch (error) {
+            console.error('Error adding component:', error);
+          }
+        } else if (window.GMKB && window.GMKB.addComponent) {
+          console.log('Using GMKB.addComponent fallback');
+          window.GMKB.addComponent(componentType, {
             sectionId: sectionId,
             column: parseInt(column)
           });
-          
-          console.log(`✅ Component dropped: ${componentType} in section ${sectionId}, column ${column}`);
-          
-          // Show feedback
-          if (window.showToast) {
-            window.showToast(`Added ${componentType} to column ${column}`, 'success');
-          }
+        } else {
+          console.error('No store or GMKB available to add component');
         }
       }
       
       // Clean up visual feedback
-      dropZone.classList.remove('drag-over');
+      dropTarget.classList.remove('drag-over');
     });
     
     // Visual feedback for drag over
     document.addEventListener('dragenter', (e) => {
-      const dropZone = e.target.closest('.component-drop-zone');
-      if (dropZone) {
-        dropZone.classList.add('drag-over');
+      const dropTarget = e.target.closest('.component-drop-zone, .gmkb-section__content--droppable, .gmkb-section__column');
+      if (dropTarget) {
+        dropTarget.classList.add('drag-over');
       }
     });
     
     document.addEventListener('dragleave', (e) => {
-      const dropZone = e.target.closest('.component-drop-zone');
-      if (dropZone) {
+      const dropTarget = e.target.closest('.component-drop-zone, .gmkb-section__content--droppable, .gmkb-section__column');
+      if (dropTarget) {
         // Check if we're actually leaving the drop zone
-        const rect = dropZone.getBoundingClientRect();
+        const rect = dropTarget.getBoundingClientRect();
         if (e.clientX < rect.left || e.clientX > rect.right ||
             e.clientY < rect.top || e.clientY > rect.bottom) {
-          dropZone.classList.remove('drag-over');
+          dropTarget.classList.remove('drag-over');
         }
       }
     });
