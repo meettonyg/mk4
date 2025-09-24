@@ -141,7 +141,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted, h } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
-import { componentDefinitions, componentCategories } from '../../data/componentDefinitions';
+import UnifiedComponentRegistry from '../../services/UnifiedComponentRegistry';
 
 // Simple icon components as render functions
 const icons = {
@@ -187,9 +187,12 @@ export default {
     const selectedCategory = ref('all');
     const hasPremiumAccess = ref(window.gmkbData?.hasPremiumAccess || false);
     
-    // Use imported component definitions
-    const components = ref(componentDefinitions);
-    const categories = ref(componentCategories);
+    // Get components and categories from unified registry
+    const components = ref(UnifiedComponentRegistry.getAll());
+    const categories = ref(UnifiedComponentRegistry.getCategories().reduce((acc, cat) => {
+      acc[cat.slug] = cat.name;
+      return acc;
+    }, {}));
     
     // Computed
     const filteredComponents = computed(() => {

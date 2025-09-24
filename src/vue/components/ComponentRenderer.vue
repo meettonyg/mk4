@@ -52,7 +52,7 @@
 <script>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
-import vueComponentLoader from '../../loaders/VueComponentLoader';
+import UnifiedComponentRegistry from '../../services/UnifiedComponentRegistry';
 import FallbackRenderer from './FallbackRenderer.vue';
 
 export default {
@@ -85,20 +85,14 @@ export default {
       loadError.value = null;
       
       try {
-        // Get component info from registry
-        if (window.gmkbComponentRegistry && window.gmkbComponentRegistry.hasComponent(props.component.type)) {
-          // Try to load Vue component
-          const vueComponent = await vueComponentLoader.loadVueComponent(props.component.type);
-          
-          if (vueComponent) {
-            componentImplementation.value = vueComponent;
-          } else {
-            // Fallback to basic renderer
-            console.warn(`[ComponentRenderer] Using fallback for '${props.component.type}'`);
-            componentImplementation.value = FallbackRenderer;
-          }
+        // Get Vue component from unified registry
+        const vueComponent = UnifiedComponentRegistry.getVueComponent(props.component.type);
+        
+        if (vueComponent) {
+          componentImplementation.value = vueComponent;
         } else {
-          console.error(`[ComponentRenderer] Component type '${props.component.type}' not in registry`);
+          // Fallback to basic renderer
+          console.warn(`[ComponentRenderer] Using fallback for '${props.component.type}'`);
           componentImplementation.value = FallbackRenderer;
         }
       } catch (error) {

@@ -3,6 +3,7 @@
  * This replaces the legacy StateManager completely
  */
 import { defineStore } from 'pinia';
+import UnifiedComponentRegistry from '../services/UnifiedComponentRegistry';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -238,18 +239,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
         this.addSection('full_width');
       }
       
-      // Get default props from component registry
+      // Get default props from unified component registry
       let defaultProps = {};
       let componentSchema = null;
       
-      if (window.gmkbComponentRegistry) {
-        const registryComponent = window.gmkbComponentRegistry.getComponent(componentData.type);
-        if (registryComponent) {
-          defaultProps = window.gmkbComponentRegistry.getDefaultProps(componentData.type) || {};
-          componentSchema = registryComponent.schema;
-        } else {
-          console.warn(`[MediaKitStore] Component type '${componentData.type}' not found in registry`);
-        }
+      // Use the unified registry directly - no adapters needed
+      const registryComponent = UnifiedComponentRegistry.get(componentData.type);
+      if (registryComponent) {
+        defaultProps = UnifiedComponentRegistry.getDefaultProps(componentData.type);
+        componentSchema = registryComponent.schema || null;
       }
       
       // Create component with proper structure

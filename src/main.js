@@ -7,10 +7,9 @@
 // Import styles for Vue controls
 import '../css/vue-controls.css';
 
-// Import component definitions and library integration
+// Import the unified component registry - ONE source of truth
+import UnifiedComponentRegistry from './services/UnifiedComponentRegistry.js';
 import { initializeComponentLibrary } from './integrations/componentLibraryIntegration.js';
-import componentRegistryBridge from './integrations/componentRegistryBridge.js';
-import vueComponentDiscovery from './vue/services/componentDiscovery.js';
 
 // Vue 3 imports
 import { createApp } from 'vue';
@@ -22,7 +21,7 @@ import { initializeUnifiedEditManager } from './ui/UnifiedEditManager.js';
 // Import only what we need for the transition
 import { APIService } from './services/APIService.js';
 import { logger } from './utils/logger.js';
-import { loadComponentRenderers } from './registry/ComponentRegistry.js';
+// Component renderers now handled by UnifiedComponentRegistry
 import podsDataIntegration from './core/PodsDataIntegration.js';
 
 // Phase 4: Advanced Features
@@ -343,13 +342,9 @@ async function initialize() {
     // Vue component discovery for potential legacy components during transition
     await VueComponentDiscovery.initialize();
     
-    // ROOT FIX: Initialize component registry bridge FIRST
-    await componentRegistryBridge.initialize();
-    console.log('✅ Component registry bridge initialized');
-    
-    // ROOT FIX: Initialize component registry bridge FIRST
-    await componentRegistryBridge.initialize();
-    console.log('✅ Component registry bridge initialized');
+    // ROOT FIX: Initialize unified component registry - ONE source of truth
+    UnifiedComponentRegistry.initialize();
+    console.log('✅ UnifiedComponentRegistry: Initialized with single API');
     
     // Initialize drag and drop system
     initDragDrop();
@@ -359,8 +354,7 @@ async function initialize() {
     // VueComponentDiscovery should have loaded them
     window.gmkbVueComponents = window.gmkbVueComponents || {};
     
-    // Load component renderers (including Vue ones)
-    await loadComponentRenderers();
+    // Component renderers already loaded by UnifiedComponentRegistry
     
     // ROOT FIX: Make PodsDataIntegration available globally for the store
     window.podsDataIntegration = podsDataIntegration;
