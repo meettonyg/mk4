@@ -7,7 +7,8 @@
   "renderers": {
     "php": "template.php",
     "javascript": "renderer.js",
-    "vue": "ContactRenderer.vue"
+    "vue": "ContactRenderer.vue",
+    "editor": "ContactEditor.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",

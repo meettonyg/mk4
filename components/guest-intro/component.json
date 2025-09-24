@@ -7,7 +7,8 @@
   "renderers": {
     "php": "template.php",
     "javascript": "renderer.js",
-    "vue": "GuestIntroRenderer.vue"
+    "vue": "GuestIntroRenderer.vue",
+    "editor": "GuestIntroEditor.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",

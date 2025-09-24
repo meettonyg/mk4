@@ -7,7 +7,8 @@
   "renderers": {
     "php": "template.php",
     "javascript": "renderer.js",
-    "vue": "BookingCalendarRenderer.vue"
+    "vue": "BookingCalendarRenderer.vue",
+    "editor": "BookingCalendarEditor.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",

@@ -7,7 +7,8 @@
   "renderers": {
     "php": "template.php",
     "javascript": "renderer.js",
-    "vue": "BiographyRenderer.vue"
+    "vue": "BiographyRenderer.vue",
+    "editor": "BiographyEditor.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",

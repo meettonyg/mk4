@@ -124,6 +124,7 @@ class ComponentDiscovery {
             'icon' => $this->find_icon($directory),
             'directory' => $directory,
             'renderers' => $manifest['renderers'] ?? [],
+            'editor' => $manifest['renderers']['editor'] ?? null,
             'supports' => $manifest['supports'] ?? [],
             'schema_path' => $manifest['schema'] ?? 'schema.json',
             'styles' => $manifest['styles'] ?? 'styles.css'
@@ -181,6 +182,7 @@ class ComponentDiscovery {
             'icon' => $this->find_icon($directory),
             'directory' => $directory,
             'renderers' => $this->detect_renderers($directory),
+            'editor' => $this->detect_editor($directory),
             'supports' => [
                 'serverRender' => file_exists($this->components_dir . $directory . '/template.php'),
                 'vueRender' => $this->has_vue_renderer($directory),
@@ -239,6 +241,32 @@ class ComponentDiscovery {
         }
         
         return $renderers;
+    }
+    
+    /**
+     * Detect editor file for a component
+     * 
+     * @param string $directory Component directory name
+     * @return string|null Editor filename or null if not found
+     */
+    private function detect_editor($directory) {
+        $base_path = $this->components_dir . $directory . '/';
+        
+        // Check for Vue editor variants
+        $editor_files = [
+            ucfirst($directory) . 'Editor.vue',
+            ucfirst($directory) . '-editor.vue',
+            'editor.vue',
+            'Editor.vue'
+        ];
+        
+        foreach ($editor_files as $editor_file) {
+            if (file_exists($base_path . $editor_file)) {
+                return $editor_file;
+            }
+        }
+        
+        return null;
     }
     
     /**

@@ -125,10 +125,55 @@ const generateCSSVariables = (theme) => {
 
 // Apply theme to DOM
 const applyThemeToDOM = () => {
+  // ROOT FIX: Handle store not being ready
+  if (!themeStore || !themeStore.$state) {
+    console.warn('[ThemeProvider] Theme store not ready yet');
+    setTimeout(applyThemeToDOM, 100);
+    return;
+  }
+  
   const theme = themeStore.mergedTheme;
   
-  if (!theme) {
-    console.warn('[ThemeProvider] No merged theme available');
+  if (!theme || Object.keys(theme).length === 0) {
+    console.warn('[ThemeProvider] No merged theme available, using defaults');
+    // Apply default theme
+    const defaultTheme = {
+      colors: {
+        primary: '#3b82f6',
+        secondary: '#2563eb',
+        background: '#ffffff',
+        surface: '#f8fafc',
+        text: '#1e293b',
+        textLight: '#64748b',
+        border: '#e2e8f0'
+      },
+      typography: {
+        fontFamily: "'Inter', system-ui, sans-serif",
+        headingFamily: "'Inter', system-ui, sans-serif",
+        baseFontSize: 16,
+        lineHeight: 1.6,
+        fontWeight: 400
+      },
+      spacing: {
+        baseUnit: 8,
+        componentGap: 24,
+        sectionPadding: 40
+      },
+      effects: {
+        borderRadius: '8px',
+        shadowIntensity: 'medium',
+        animationSpeed: 'normal'
+      }
+    };
+    
+    const cssVars = generateCSSVariables(defaultTheme);
+    let styleEl = document.getElementById('gmkb-theme-styles');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'gmkb-theme-styles';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = `:root {\n${cssVars}\n}`;
     return;
   }
   

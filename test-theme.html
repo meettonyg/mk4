@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Theme System Test</title>
+    <style>
+        /* Test CSS variables */
+        body {
+            background: var(--gmkb-color-background, #fff);
+            color: var(--gmkb-color-text, #333);
+            font-family: var(--gmkb-font-primary, sans-serif);
+            padding: var(--gmkb-spacing-xl, 2rem);
+        }
+        
+        .test-card {
+            background: var(--gmkb-color-surface, #f8f8f8);
+            padding: var(--gmkb-spacing-lg, 1.5rem);
+            border-radius: var(--gmkb-border-radius, 8px);
+            box-shadow: var(--gmkb-shadow, 0 4px 6px rgba(0,0,0,0.1));
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .test-card h1 {
+            color: var(--gmkb-color-primary, #3b82f6);
+            font-family: var(--gmkb-font-heading, serif);
+            font-size: var(--gmkb-font-size-2xl, 2rem);
+            margin-bottom: var(--gmkb-spacing-md, 1rem);
+        }
+        
+        .test-card p {
+            color: var(--gmkb-color-text-light, #666);
+            line-height: var(--gmkb-line-height-base, 1.6);
+            font-size: var(--gmkb-font-size-base, 1rem);
+        }
+        
+        .test-button {
+            background: var(--gmkb-color-primary, #3b82f6);
+            color: white;
+            padding: var(--gmkb-spacing-sm, 0.5rem) var(--gmkb-spacing-lg, 1.5rem);
+            border: none;
+            border-radius: var(--gmkb-border-radius, 8px);
+            font-size: var(--gmkb-font-size-base, 1rem);
+            cursor: pointer;
+            transition: var(--gmkb-transition, all 0.3s ease);
+            margin: 0.5rem;
+        }
+        
+        .test-button:hover {
+            background: var(--gmkb-color-primary-hover, #2563eb);
+            transform: translateY(-2px);
+        }
+        
+        .variable-display {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 2rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .variable-display div {
+            margin: 0.25rem 0;
+        }
+        
+        .var-name {
+            color: #60a5fa;
+        }
+        
+        .var-value {
+            color: #86efac;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>Theme System Test</h1>
+        <p>This page tests if CSS variables are being applied correctly by the theme system.</p>
+        
+        <div style="margin: 2rem 0;">
+            <button class="test-button" onclick="testTheme('professional')">Professional Theme</button>
+            <button class="test-button" onclick="testTheme('creative')">Creative Theme</button>
+            <button class="test-button" onclick="testTheme('minimal')">Minimal Theme</button>
+            <button class="test-button" onclick="testTheme('dark')">Dark Theme</button>
+        </div>
+        
+        <p>Current Theme: <strong id="current-theme">None</strong></p>
+        
+        <div class="variable-display" id="variables">
+            <div>CSS Variables will appear here...</div>
+        </div>
+    </div>
+    
+    <script>
+        // Function to get all CSS variables
+        function getAllCSSVariables() {
+            const styles = getComputedStyle(document.documentElement);
+            const variables = {};
+            
+            // Get all CSS properties
+            for (let i = 0; i < styles.length; i++) {
+                const prop = styles[i];
+                if (prop.startsWith('--gmkb-')) {
+                    variables[prop] = styles.getPropertyValue(prop).trim();
+                }
+            }
+            
+            return variables;
+        }
+        
+        // Function to display variables
+        function displayVariables() {
+            const vars = getAllCSSVariables();
+            const display = document.getElementById('variables');
+            
+            if (Object.keys(vars).length === 0) {
+                display.innerHTML = '<div style="color: #ef4444;">No CSS variables found! Theme system may not be loaded.</div>';
+                return;
+            }
+            
+            let html = '';
+            for (const [name, value] of Object.entries(vars)) {
+                html += `<div><span class="var-name">${name}:</span> <span class="var-value">${value}</span></div>`;
+            }
+            display.innerHTML = html;
+        }
+        
+        // Function to test theme switching
+        function testTheme(themeId) {
+            // Check if theme system is available
+            if (window.parent && window.parent.switchTheme) {
+                window.parent.switchTheme(themeId);
+                document.getElementById('current-theme').textContent = themeId;
+                setTimeout(displayVariables, 100);
+            } else if (window.switchTheme) {
+                window.switchTheme(themeId);
+                document.getElementById('current-theme').textContent = themeId;
+                setTimeout(displayVariables, 100);
+            } else {
+                alert('Theme system not available. Make sure the Media Kit Builder is loaded.');
+            }
+        }
+        
+        // Display initial variables
+        setTimeout(displayVariables, 500);
+        
+        // Check for theme attribute
+        const themeAttr = document.documentElement.getAttribute('data-gmkb-theme');
+        if (themeAttr) {
+            document.getElementById('current-theme').textContent = themeAttr;
+        }
+    </script>
+</body>
+</html>

@@ -7,7 +7,8 @@
   "renderers": {
     "php": "template.php",
     "javascript": "renderer.js",
-    "vue": "TestimonialsRenderer.vue"
+    "vue": "TestimonialsRenderer.vue",
+    "editor": "TestimonialsEditor.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",

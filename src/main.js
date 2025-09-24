@@ -15,14 +15,18 @@ import { initializeComponentLibrary } from './integrations/componentLibraryInteg
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import VueComponentDiscovery from './loaders/VueComponentDiscovery.js';
-import { initializeEditPanel } from './ui/ComponentEditPanel.js';
-import { initializeUnifiedEditManager } from './ui/UnifiedEditManager.js';
+// Legacy edit panels removed - components now have self-contained editors
+// import { initializeEditPanel } from './ui/ComponentEditPanel.js';
+// import { initializeUnifiedEditManager } from './ui/UnifiedEditManager.js';
 
 // Import only what we need for the transition
 import { APIService } from './services/APIService.js';
 import { logger } from './utils/logger.js';
 // Component renderers now handled by UnifiedComponentRegistry
 import podsDataIntegration from './core/PodsDataIntegration.js';
+
+// ROOT FIX: Import debug script for testing component controls
+import './debug/test-component-controls.js';
 
 // Phase 4: Advanced Features
 import InlineEditor from './features/InlineEditor.js';
@@ -262,7 +266,25 @@ async function initializeVue() {
           // Continue without theme system - app still works
         }
         
-        console.log('✅ Vue Media Kit Builder with theme system fully loaded');
+        // ROOT FIX: Add global theme switching helper
+          window.switchTheme = (themeId) => {
+            if (!window.themeStore) {
+              console.error('Theme store not available');
+              return;
+            }
+            
+            const validThemes = ['professional', 'creative', 'minimal', 'dark'];
+            if (!validThemes.includes(themeId)) {
+              console.error(`Invalid theme ID. Valid themes are: ${validThemes.join(', ')}`);
+              return;
+            }
+            
+            window.themeStore.selectTheme(themeId);
+            console.log(`✅ Switched to ${themeId} theme`);
+          };
+          
+          console.log('✅ Vue Media Kit Builder with theme system fully loaded');
+          console.log('💡 To switch themes, use: switchTheme("dark") or switchTheme("creative")');
       } catch (error) {
         console.error('Failed to load Vue components:', error);
       }
@@ -282,6 +304,8 @@ async function initializeVue() {
 - addSection('two_column') - Add a section
 - removeSection(sectionId) - Remove a section  
 - getState() - View complete state
+- switchTheme('dark') - Switch to dark theme
+- window.themeStore.openCustomizer() - Open theme UI
 - window.stateManager - Direct state access
 - window.gmkbStore - Store reference
     `);
@@ -293,9 +317,9 @@ async function initializeVue() {
   }
 }
 
-// Global variable for edit panel and unified manager
-let componentEditPanel = null;
-let unifiedEditManager = null;
+// Legacy edit panels removed - using self-contained component editors
+// let componentEditPanel = null;
+// let unifiedEditManager = null;
 
 // Initialize application
 async function initialize() {
@@ -496,6 +520,8 @@ async function initialize() {
 - removeSection(sectionId) - Remove a section
 - getState() - View complete state
 - GMKB.addComponent(type) - Add a component
+- switchTheme('dark') - Switch themes (dark, creative, minimal, professional)
+- window.themeStore.openCustomizer() - Open theme customizer UI
 
 📊 Debug Commands:
 - debugGMKB.showState() - Show full state with counts
@@ -523,13 +549,47 @@ async function initialize() {
     // This ensures the store is available
     setTimeout(() => {
       setupUIHandlers();
+      setupComponentHandlers(); // ROOT FIX: This was missing!
       
-      // Initialize edit panels
-      componentEditPanel = initializeEditPanel();
-      unifiedEditManager = initializeUnifiedEditManager();
-      
-      console.log('✅ UI handlers and edit panels initialized after Vue');
+      // Edit panels are now self-contained in components
+      // No need for legacy edit panel initialization
+      console.log('✅ UI handlers initialized after Vue');
     }, 500);
+    
+    // ROOT FIX: Set up event bridge for Vue component actions
+    // These bridge the events from Vue components to legacy edit panel system
+    document.addEventListener('gmkb:component-edit-requested', (e) => {
+      const { componentId } = e.detail;
+      document.dispatchEvent(new CustomEvent('gmkb:component-action', {
+        detail: { action: 'edit', componentId }
+      }));
+    });
+    
+    document.addEventListener('gmkb:component-move-up-requested', (e) => {
+      const { componentId } = e.detail;
+      document.dispatchEvent(new CustomEvent('gmkb:component-action', {
+        detail: { action: 'move-up', componentId }
+      }));
+    });
+    
+    document.addEventListener('gmkb:component-move-down-requested', (e) => {
+      const { componentId } = e.detail;
+      document.dispatchEvent(new CustomEvent('gmkb:component-action', {
+        detail: { action: 'move-down', componentId }
+      }));
+    });
+    
+    // Store already handles duplication via the Vue component
+    document.addEventListener('gmkb:component-duplicated', (e) => {
+      // Store already handles duplication, just show feedback
+      showToast('Component duplicated', 'success');
+    });
+    
+    // Store already handles deletion via the confirm dialog in Vue
+    document.addEventListener('gmkb:component-delete-requested', (e) => {
+      // Store already handles deletion via the confirm dialog
+      // No need to duplicate here
+    });
     
     logger.success('Media Kit Builder initialized successfully');
     
@@ -1026,8 +1086,11 @@ function duplicateComponent(componentId) {
   // ROOT FIX: Use store directly
   const store = window.gmkbStore || window.mediaKitStore;
   if (store && store.duplicateComponent) {
-    store.duplicateComponent(componentId);
-    showToast('Component duplicated', 'success');
+    const newId = store.duplicateComponent(componentId);
+    if (newId) {
+      showToast('Component duplicated', 'success');
+      console.log('Component duplicated:', componentId, '->', newId);
+    }
   } else {
     console.error('Store not available for duplicating component');
   }
@@ -1045,45 +1108,26 @@ function moveComponent(componentId, direction) {
 }
 
 function openComponentEditor(componentId) {
-  // ROOT FIX: Use store to get component
+  // ROOT FIX: Use Pinia store to open edit panel
   const store = window.gmkbStore || window.mediaKitStore;
-  const component = store?.components?.[componentId];
+  if (!store) {
+    console.error('Store not available');
+    return;
+  }
+  
+  const component = store.components?.[componentId];
   if (!component) {
     console.error('Component not found:', componentId);
     return;
   }
   
-  console.log('Opening editor for component:', componentId, component);
+  console.log('Opening self-contained editor for component:', componentId, component.type);
   
-  // Switch to Components tab
-  const componentsTab = document.querySelector('[data-tab="components"]');
-  const componentsContent = document.getElementById('components-tab');
+  // Use Pinia store action to open the edit panel
+  // The EditorPanel Vue component will handle rendering the correct editor
+  store.openEditPanel(componentId);
   
-  if (componentsTab && componentsContent) {
-    // Activate the components tab
-    document.querySelectorAll('.sidebar__tab').forEach(t => t.classList.remove('sidebar__tab--active'));
-    componentsTab.classList.add('sidebar__tab--active');
-    
-    // Show components content
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('tab-content--active'));
-    componentsContent.classList.add('tab-content--active');
-    
-    // Open edit panel directly if available
-    if (componentEditPanel && componentEditPanel.openEditPanel) {
-      componentEditPanel.openEditPanel(componentId);
-      showToast('Component editor opened', 'success');
-    } else {
-      // Fallback: trigger event
-      console.warn('Edit panel not available, trying event dispatch');
-      // Note: ComponentEditPanel already listens for this event,
-      // but we're calling it from edit action which already triggered
-      // So we need to be careful not to create a loop
-      showToast('Opening component editor...', 'info');
-    }
-  } else {
-    console.error('Components tab not found');
-    showToast('Component editor not available', 'error');
-  }
+  showToast('Opening component editor...', 'info');
 }
 
 function openSectionSettings(sectionId) {

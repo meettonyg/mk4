@@ -11,6 +11,9 @@
     
     <!-- Enhanced Section Layout with Drag & Drop -->
     <SectionLayoutEnhanced />
+    
+    <!-- Editor Panel - Self-contained component editors -->
+    <EditorPanel />
   </div>
 </template>
 
@@ -19,6 +22,7 @@ import ThemeProvider from './ThemeProvider.vue';
 import ComponentLibrary from './ComponentLibraryNew.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import SectionLayoutEnhanced from './SectionLayoutEnhanced.vue';
+import EditorPanel from './EditorPanel.vue';
 </script>
 
 <style scoped>

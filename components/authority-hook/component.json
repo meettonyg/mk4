@@ -7,7 +7,8 @@
   "renderers": {
     "php": "template.php",
     "javascript": "renderer.js",
-    "vue": "AuthorityHookRenderer.vue"
+    "vue": "AuthorityHookRenderer.vue",
+    "editor": "AuthorityHookEditor.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",

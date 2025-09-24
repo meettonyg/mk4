@@ -207,11 +207,28 @@ export const useThemeStore = defineStore('theme', {
     },
     
     // Get merged theme with temporary customizations
-    mergedTheme: (state, getters) => {
-      const theme = getters.activeTheme;
+    mergedTheme: (state) => {
+      // ROOT FIX: Don't use getters.activeTheme to avoid circular dependency
+      // Instead, find the theme directly
+      let theme = null;
+      
+      // First check custom themes
+      if (state.customThemes && state.customThemes.length > 0) {
+        theme = state.customThemes.find(t => t.id === state.activeThemeId);
+      }
+      
+      // Then check available themes
+      if (!theme && state.availableThemes && state.availableThemes.length > 0) {
+        theme = state.availableThemes.find(t => t.id === state.activeThemeId);
+      }
+      
+      // If still no theme, use the first available theme or return default
       if (!theme) {
-        // Return default theme structure if no theme is active
-        return {
+        if (state.availableThemes && state.availableThemes.length > 0) {
+          theme = state.availableThemes[0];
+        } else {
+          // Return default theme structure if no themes available
+          return {
           colors: {
             primary: '#3b82f6',
             secondary: '#2563eb',
@@ -243,13 +260,16 @@ export const useThemeStore = defineStore('theme', {
             blurEffects: false
           }
         };
+        }
       }
+      
+      // ROOT FIX: Safely merge with null checks
       return {
         ...theme,
-        colors: { ...theme.colors, ...state.tempCustomizations.colors },
-        typography: { ...theme.typography, ...state.tempCustomizations.typography },
-        spacing: { ...theme.spacing, ...state.tempCustomizations.spacing },
-        effects: { ...theme.effects, ...state.tempCustomizations.effects }
+        colors: { ...(theme.colors || {}), ...(state.tempCustomizations.colors || {}) },
+        typography: { ...(theme.typography || {}), ...(state.tempCustomizations.typography || {}) },
+        spacing: { ...(theme.spacing || {}), ...(state.tempCustomizations.spacing || {}) },
+        effects: { ...(theme.effects || {}), ...(state.tempCustomizations.effects || {}) }
       };
     },
     
@@ -259,13 +279,40 @@ export const useThemeStore = defineStore('theme', {
     },
     
     // Generate CSS variables from current theme
-    cssVariables: (state, getters) => {
-      // ROOT FIX: Return empty object if theme system not ready
-      if (!getters.mergedTheme) {
+    cssVariables: (state) => {
+      // ROOT FIX: Use mergedTheme getter result directly without dependency
+      const mergedTheme = state.mergedTheme || {};
+      
+      // Get the merged theme using the same logic as mergedTheme getter
+      let theme = null;
+      
+      // First check custom themes
+      if (state.customThemes && state.customThemes.length > 0) {
+        theme = state.customThemes.find(t => t.id === state.activeThemeId);
+      }
+      
+      // Then check available themes
+      if (!theme && state.availableThemes && state.availableThemes.length > 0) {
+        theme = state.availableThemes.find(t => t.id === state.activeThemeId);
+      }
+      
+      // If still no theme, use the first available theme
+      if (!theme && state.availableThemes && state.availableThemes.length > 0) {
+        theme = state.availableThemes[0];
+      }
+      
+      if (!theme) {
         return {};
       }
       
-      const theme = getters.mergedTheme;
+      // Apply customizations
+      theme = {
+        ...theme,
+        colors: { ...(theme.colors || {}), ...(state.tempCustomizations.colors || {}) },
+        typography: { ...(theme.typography || {}), ...(state.tempCustomizations.typography || {}) },
+        spacing: { ...(theme.spacing || {}), ...(state.tempCustomizations.spacing || {}) },
+        effects: { ...(theme.effects || {}), ...(state.tempCustomizations.effects || {}) }
+      };
       const vars = {};
       
       // Color variables

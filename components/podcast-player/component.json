@@ -7,7 +7,8 @@
   "renderers": {
     "php": "template.php",
     "javascript": "renderer.js",
-    "vue": "PodcastPlayerRenderer.vue"
+    "vue": "PodcastPlayerRenderer.vue",
+    "editor": "PodcastPlayerEditor.vue"
   },
   "styles": "styles.css",
   "schema": "schema.json",

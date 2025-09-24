@@ -287,18 +287,28 @@ export class ComponentEditPanel {
         newData.content = document.getElementById('edit-content')?.value || '';
     }
     
-    // Update component in state
-    if (window.GMKB?.stateManager) {
+    // Update component in state using Pinia store
+    const store = window.gmkbStore || window.mediaKitStore;
+    if (store && store.updateComponent) {
+      // Use Pinia store method
+      store.updateComponent(component.id, {
+        data: newData,
+        props: newData // Update both data and props
+      });
+      
+      console.log('Component updated:', component.id, newData);
+    } else if (window.GMKB?.stateManager) {
+      // Fallback to legacy state manager
       window.GMKB.stateManager.dispatch({
         type: 'UPDATE_COMPONENT',
         payload: {
           id: component.id,
           data: newData,
-          props: newData // Update both data and props
+          props: newData
         }
       });
       
-      console.log('Component updated:', component.id, newData);
+      console.log('Component updated (legacy):', component.id, newData);
     }
     
     // Close panel

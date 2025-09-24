@@ -1,0 +1,18 @@
+{
+  "type": "topics-questions",
+  "name": "Topics & Questions",
+  "description": "Combined topics and Q&A section",
+  "category": "content",
+  "version": "1.0.0",
+  "renderers": {
+    "vue": "TopicsQuestions.vue",
+    "editor": "TopicsQuestionsEditor.vue"
+  },
+  "schema": "schema.json",
+  "supports": {
+    "serverRender": false,
+    "vueRender": true,
+    "inlineEdit": true,
+    "designPanel": true
+  }
+}
