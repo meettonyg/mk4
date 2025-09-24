@@ -233,16 +233,25 @@ async function initializeVue() {
           const themeStore = useThemeStore();
           window.themeStore = themeStore;
           
+          // Initialize theme provider component first
+          const { default: ThemeProvider } = await import('./vue/components/ThemeProvider.vue');
+          newApp.component('ThemeProvider', ThemeProvider);
+          
           // Load saved theme settings with error handling
           if (store.theme || store.themeCustomizations) {
             // Wait a tick for store to be fully initialized
             setTimeout(() => {
               try {
                 themeStore.initialize(store.theme, store.themeCustomizations);
+                console.log('✅ Theme initialized:', store.theme);
               } catch (themeError) {
                 console.warn('Theme initialization skipped:', themeError.message);
               }
             }, 100);
+          } else {
+            // Apply default theme immediately
+            themeStore.applyThemeToDOM();
+            console.log('✅ Default theme applied');
           }
           
           // Mount ThemeCustomizer component

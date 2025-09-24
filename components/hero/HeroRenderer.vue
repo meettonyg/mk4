@@ -1,6 +1,6 @@
 <template>
   <div class="gmkb-hero-component" :data-component-id="componentId">
-    <div class="hero-container" :style="containerStyle">
+    <div class="hero-container">
       <div class="hero-content">
         <h1 v-if="title" class="hero-title">{{ title }}</h1>
         <h2 v-if="subtitle" class="hero-subtitle">{{ subtitle }}</h2>
@@ -77,14 +77,8 @@ export default {
       return this.buttons.length > 0
     },
     containerStyle() {
-      const styles = {}
-      if (this.data.backgroundColor) {
-        styles.backgroundColor = this.data.backgroundColor
-      }
-      if (this.data.textColor) {
-        styles.color = this.data.textColor
-      }
-      return styles
+      // ROOT FIX: Remove inline styles, rely on CSS variables from theme
+      return {}
     }
   },
   methods: {
@@ -104,19 +98,20 @@ export default {
 
 <style scoped>
 .gmkb-hero-component {
-  padding: 4rem 2rem;
-  background: var(--gmkb-color-background, #f8f9fa);
+  padding: var(--gmkb-spacing-3xl, 4rem) var(--gmkb-spacing-xl, 2rem);
+  background: var(--gmkb-color-surface, #ffffff);
   min-height: 400px;
   display: flex;
   align-items: center;
+  color: var(--gmkb-color-text, #1e293b);
 }
 
 .hero-container {
-  max-width: 1200px;
+  max-width: var(--gmkb-container-max-width, 1200px);
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 3rem;
+  gap: var(--gmkb-spacing-2xl, 3rem);
   width: 100%;
 }
 
@@ -125,40 +120,46 @@ export default {
 }
 
 .hero-title {
-  font-size: var(--gmkb-font-size-2xl, 3rem);
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-3xl, 3rem);
   color: var(--gmkb-color-text, #1e293b);
-  margin-bottom: 1rem;
-  font-weight: 700;
-  line-height: 1.2;
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
+  font-weight: var(--gmkb-font-weight-bold, 700);
+  line-height: var(--gmkb-line-height-heading, 1.2);
 }
 
 .hero-subtitle {
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-xl, 1.5rem);
   color: var(--gmkb-color-text-light, #64748b);
-  margin-bottom: 1rem;
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
+  font-weight: var(--gmkb-font-weight-medium, 500);
+  line-height: var(--gmkb-line-height-heading, 1.2);
 }
 
 .hero-description {
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-lg, 1.125rem);
   color: var(--gmkb-color-text-light, #64748b);
-  margin-bottom: 2rem;
-  line-height: 1.6;
+  margin-bottom: var(--gmkb-spacing-xl, 2rem);
+  line-height: var(--gmkb-line-height-base, 1.6);
 }
 
 .hero-buttons {
   display: flex;
-  gap: 1rem;
+  gap: var(--gmkb-spacing-md, 1rem);
   flex-wrap: wrap;
 }
 
 .hero-button {
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: var(--gmkb-spacing-sm, 0.75rem) var(--gmkb-spacing-xl, 2rem);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  font-weight: var(--gmkb-font-weight-medium, 600);
   border: none;
   border-radius: var(--gmkb-border-radius, 0.375rem);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--gmkb-transition, all 0.3s ease);
 }
 
 .hero-button.primary {
@@ -169,6 +170,7 @@ export default {
 .hero-button.primary:hover {
   background: var(--gmkb-color-primary-hover, #2563eb);
   transform: translateY(-2px);
+  box-shadow: var(--gmkb-shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
 }
 
 .hero-button.secondary {

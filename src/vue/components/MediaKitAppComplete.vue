@@ -1,5 +1,8 @@
 <template>
   <div class="media-kit-builder">
+    <!-- Theme Provider - Renderless component that manages CSS variables -->
+    <ThemeProvider />
+    
     <!-- Component Library Modal -->
     <ComponentLibrary />
     
@@ -32,6 +35,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
+import ThemeProvider from './ThemeProvider.vue';
 import SectionRenderer from './SectionRenderer.vue';
 import ComponentLibrary from './ComponentLibraryNew.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';

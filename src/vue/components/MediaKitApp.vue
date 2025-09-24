@@ -1,5 +1,8 @@
 <template>
   <div class="media-kit-builder">
+    <!-- Theme Provider - Renderless component that manages CSS variables -->
+    <ThemeProvider />
+    
     <!-- Component Library Modal -->
     <ComponentLibrary />
     
@@ -12,6 +15,7 @@
 </template>
 
 <script setup>
+import ThemeProvider from './ThemeProvider.vue';
 import ComponentLibrary from './ComponentLibraryNew.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import SectionLayoutEnhanced from './SectionLayoutEnhanced.vue';

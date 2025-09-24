@@ -68,14 +68,15 @@ export default {
 
 <style scoped>
 .gmkb-biography-component {
-  padding: 2rem;
-  background: var(--gmkb-color-surface, #fff);
+  padding: var(--gmkb-spacing-xl, 2rem);
+  background: var(--gmkb-color-surface, #ffffff);
+  border-radius: var(--gmkb-border-radius, 8px);
 }
 
 .biography-container {
   display: flex;
-  gap: 2rem;
-  max-width: 1200px;
+  gap: var(--gmkb-spacing-xl, 2rem);
+  max-width: var(--gmkb-container-max-width, 1200px);
   margin: 0 auto;
 }
 
@@ -88,6 +89,12 @@ export default {
   width: 100%;
   border-radius: var(--gmkb-border-radius, 8px);
   box-shadow: var(--gmkb-shadow-md, 0 4px 6px rgba(0,0,0,0.1));
+  transition: var(--gmkb-transition, all 0.3s ease);
+}
+
+.biography-image img:hover {
+  transform: scale(1.02);
+  box-shadow: var(--gmkb-shadow-lg, 0 10px 15px rgba(0,0,0,0.1));
 }
 
 .biography-content {
@@ -95,34 +102,56 @@ export default {
 }
 
 .biography-name {
-  color: var(--gmkb-color-text, #333);
-  font-size: var(--gmkb-font-size-xl, 2rem);
-  margin-bottom: 0.5rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  color: var(--gmkb-color-text, #1e293b);
+  font-size: var(--gmkb-font-size-2xl, 2rem);
+  font-weight: var(--gmkb-font-weight-bold, 700);
+  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin-bottom: var(--gmkb-spacing-sm, 0.5rem);
 }
 
 .biography-title {
-  color: var(--gmkb-color-text-light, #666);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  color: var(--gmkb-color-text-light, #64748b);
   font-size: var(--gmkb-font-size-lg, 1.25rem);
-  margin-bottom: 1rem;
+  font-weight: var(--gmkb-font-weight-medium, 500);
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
 }
 
 .biography-text {
-  color: var(--gmkb-color-text, #333);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  color: var(--gmkb-color-text, #1e293b);
+  font-size: var(--gmkb-font-size-base, 1rem);
   line-height: var(--gmkb-line-height-base, 1.6);
 }
 
+.biography-text >>> p {
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
+}
+
 .biography-achievements {
-  margin-top: 1.5rem;
+  margin-top: var(--gmkb-spacing-lg, 1.5rem);
+  padding-top: var(--gmkb-spacing-lg, 1.5rem);
+  border-top: 1px solid var(--gmkb-color-border, #e2e8f0);
 }
 
 .biography-achievements h4 {
-  color: var(--gmkb-color-primary, #007cba);
-  margin-bottom: 0.5rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  color: var(--gmkb-color-primary, #3b82f6);
+  font-size: var(--gmkb-font-size-lg, 1.125rem);
+  font-weight: var(--gmkb-font-weight-bold, 600);
+  margin-bottom: var(--gmkb-spacing-sm, 0.5rem);
 }
 
 .biography-achievements ul {
   list-style: disc;
-  margin-left: 1.5rem;
+  margin-left: var(--gmkb-spacing-lg, 1.5rem);
+  color: var(--gmkb-color-text, #1e293b);
+}
+
+.biography-achievements li {
+  margin-bottom: var(--gmkb-spacing-xs, 0.25rem);
+  line-height: var(--gmkb-line-height-base, 1.6);
 }
 
 @media (max-width: 768px) {
