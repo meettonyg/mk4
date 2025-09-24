@@ -1,0 +1,19 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "biography": ["biography", "guest_biography", "bio"],
+    "name": {
+      "type": "composite",
+      "fields": ["first_name", "last_name"],
+      "format": "{first_name} {last_name}"
+    },
+    "title": ["guest_title", "professional_title", "title"],
+    "image": ["guest_photo", "profile_image", "photo"]
+  },
+  "defaults": {
+    "biography": "No biography available.",
+    "name": "Guest Name",
+    "title": "Professional Title",
+    "image": null
+  }
+}

@@ -138,6 +138,16 @@ class ComponentDiscovery {
             }
         }
         
+        // ROOT FIX: Check for pods-config.json (self-contained data configuration)
+        $pods_config_path = $this->components_dir . $directory . '/pods-config.json';
+        if (file_exists($pods_config_path)) {
+            $pods_content = file_get_contents($pods_config_path);
+            if ($pods_content) {
+                $component['pods_config'] = json_decode($pods_content, true);
+                $component['supports']['podsData'] = true;
+            }
+        }
+        
         return $component;
     }
     
@@ -181,6 +191,16 @@ class ComponentDiscovery {
             'schema_path' => 'schema.json',
             'styles' => file_exists($this->components_dir . $directory . '/styles.css') ? 'styles.css' : null
         ];
+        
+        // ROOT FIX: Check for pods-config.json in legacy components too
+        $pods_config_path = $this->components_dir . $directory . '/pods-config.json';
+        if (file_exists($pods_config_path)) {
+            $pods_content = file_get_contents($pods_config_path);
+            if ($pods_content) {
+                $component['pods_config'] = json_decode($pods_content, true);
+                $component['supports']['podsData'] = true;
+            }
+        }
         
         return $component;
     }

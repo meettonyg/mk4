@@ -1,0 +1,13 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "topics": {
+      "type": "array",
+      "fields": ["topic_1", "topic_2", "topic_3", "topic_4", "topic_5"],
+      "filter": "non-empty"
+    }
+  },
+  "defaults": {
+    "topics": []
+  }
+}

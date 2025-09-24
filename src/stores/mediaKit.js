@@ -265,6 +265,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (window.podsDataIntegration || window.gmkbPodsIntegration) {
         const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
         podsIntegration.enrichComponentData(component);
+        console.log('[Store] Component after Pods enrichment:', component);
+      } else {
+        console.warn('[Store] PodsDataIntegration not available');
       }
       
       // Add to components map

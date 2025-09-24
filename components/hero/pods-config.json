@@ -1,0 +1,17 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "title": {
+      "type": "composite",
+      "fields": ["first_name", "last_name"],
+      "format": "{first_name} {last_name}"
+    },
+    "subtitle": ["guest_title", "tagline", "professional_title"],
+    "description": ["tagline", "introduction", "bio_short"]
+  },
+  "defaults": {
+    "title": "Guest Name",
+    "subtitle": "Professional Title",
+    "description": "Welcome to my media kit"
+  }
+}
