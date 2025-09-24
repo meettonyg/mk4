@@ -15,13 +15,22 @@ export const useMediaKitStore = defineStore('mediaKit', {
     
     // UI state
     selectedComponentId: null,
+    selectedComponentIds: [], // For multi-select support
     hoveredComponentId: null,
     editingComponentId: null,
+    editPanelOpen: false,
     isDragging: false,
+    draggedComponentId: null,
+    dropTargetId: null,
     
     // Meta state
     lastSaved: null,
     hasUnsavedChanges: false,
+    isSaving: false,
+    
+    // History (for undo/redo)
+    history: [],
+    historyIndex: -1,
     postId: (() => {
       // ROOT FIX: Get post ID from multiple sources, prioritizing mkcg_id
       const urlParams = new URLSearchParams(window.location.search);
@@ -164,73 +173,77 @@ export const useMediaKitStore = defineStore('mediaKit', {
       return false;
     },
 
-  },
-
-  actions: {
-    // Initialize store with saved data from WordPress
-    initialize(savedState) {
-      if (savedState) {
-        // Safely merge saved state
-        if (savedState.sections) this.sections = savedState.sections;
-        if (savedState.components) {
-          // Ensure components is an object, not array
-          if (Array.isArray(savedState.components)) {
-            this.components = {};
-          } else {
-            this.components = savedState.components;
-          }
-        }
-        if (savedState.theme) this.theme = savedState.theme;
-        if (savedState.themeCustomizations) this.themeCustomizations = savedState.themeCustomizations;
+    // Get component being edited
+    editingComponent: (state) => {
+      if (state.editingComponentId && state.components[state.editingComponentId]) {
+        return state.components[state.editingComponentId];
       }
-      
-      // Ensure at least one section exists
-      if (this.sections.length === 0) {
-        this.addSection('full_width');
-      }
+      return null;
     },
 
-    // Add a new section
-    addSection(layout = 'full_width', position = null) {
-      const sectionId = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const newSection = {
-        section_id: sectionId,
-        type: layout,
-        layout: layout,
-        components: layout === 'full_width' ? [] : undefined,
-        columns: layout !== 'full_width' ? { 1: [], 2: [], 3: [] } : undefined,
-        settings: {}
-      };
-
-      if (position !== null && position >= 0 && position <= this.sections.length) {
-        this.sections.splice(position, 0, newSection);
-      } else {
-        this.sections.push(newSection);
-      }
-
-      this.hasUnsavedChanges = true;
-      return sectionId;
+    // Get selected components
+    selectedComponents: (state) => {
+      return state.selectedComponentIds.map(id => state.components[id]).filter(Boolean);
     },
 
-    // Remove a section
-    removeSection(sectionId) {
-      const index = this.sections.findIndex(s => s.section_id === sectionId);
-      if (index > -1) {
-        // Remove components in this section
-        const section = this.sections[index];
+    // Get components by section and column
+    componentsBySection: (state) => {
+      const result = {};
+      state.sections.forEach(section => {
+        result[section.section_id] = {
+          layout: section.layout || section.type,
+          components: []
+        };
+        
         if (section.components) {
           section.components.forEach(compRef => {
             const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-            delete this.components[componentId];
+            if (state.components[componentId]) {
+              result[section.section_id].components.push({
+                ...state.components[componentId],
+                column: null
+              });
+            }
           });
         }
         
-        this.sections.splice(index, 1);
-        this.hasUnsavedChanges = true;
-      }
+        if (section.columns) {
+          Object.keys(section.columns).forEach(col => {
+            section.columns[col].forEach(componentId => {
+              if (state.components[componentId]) {
+                result[section.section_id].components.push({
+                  ...state.components[componentId],
+                  column: parseInt(col)
+                });
+              }
+            });
+          });
+        }
+      });
+      return result;
     },
 
-    // Add a component
+    // Check if can undo/redo
+    canUndo: (state) => state.history && state.historyIndex > 0,
+    canRedo: (state) => state.history && state.historyIndex < state.history.length - 1,
+
+    // Get save status
+    saveStatus: (state) => {
+      if (state.isSaving) return 'saving';
+      if (state.hasUnsavedChanges) return 'unsaved';
+      return 'saved';
+    },
+
+    // Get component count
+    componentCount: (state) => Object.keys(state.components).length,
+
+    // Get section count
+    sectionCount: (state) => state.sections.length,
+
+  },
+
+  actions: {
+    // Component CRUD Operations
     addComponent(componentData) {
       const componentId = componentData.id || `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
@@ -261,7 +274,6 @@ export const useMediaKitStore = defineStore('mediaKit', {
       };
       
       // ROOT FIX: Enrich component with Pods data configuration
-      // Import and use PodsDataIntegration to configure component
       if (window.podsDataIntegration || window.gmkbPodsIntegration) {
         const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
         podsIntegration.enrichComponentData(component);
@@ -320,6 +332,306 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       return componentId;
     },
+
+    updateComponent(componentId, updates) {
+      if (this.components[componentId]) {
+        this.components[componentId] = {
+          ...this.components[componentId],
+          ...updates
+        };
+        this.hasUnsavedChanges = true;
+        
+        // Dispatch update event
+        document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
+          detail: { componentId, updates }
+        }));
+      }
+    },
+
+    // Initialize store with saved data from WordPress
+    initialize(savedState) {
+      if (savedState) {
+        // Safely merge saved state
+        if (savedState.sections) this.sections = savedState.sections;
+        if (savedState.components) {
+          // Ensure components is an object, not array
+          if (Array.isArray(savedState.components)) {
+            this.components = {};
+          } else {
+            this.components = savedState.components;
+          }
+        }
+        if (savedState.theme) this.theme = savedState.theme;
+        if (savedState.themeCustomizations) this.themeCustomizations = savedState.themeCustomizations;
+      }
+      
+      // Ensure at least one section exists
+      if (this.sections.length === 0) {
+        this.addSection('full_width');
+      }
+    },
+
+    // Add a new section
+    addSection(layout = 'full_width', position = null) {
+      const sectionId = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const newSection = {
+        section_id: sectionId,
+        type: layout,
+        layout: layout,
+        components: layout === 'full_width' ? [] : undefined,
+        columns: layout !== 'full_width' ? { 1: [], 2: [], 3: [] } : undefined,
+        settings: {}
+      };
+
+      if (position !== null && position >= 0 && position <= this.sections.length) {
+        this.sections.splice(position, 0, newSection);
+      } else {
+        this.sections.push(newSection);
+      }
+
+      this.hasUnsavedChanges = true;
+      return sectionId;
+    },
+
+    // Remove a section and all its components
+    removeSection(sectionId) {
+      const index = this.sections.findIndex(s => s.section_id === sectionId);
+      if (index > -1) {
+        // Remove components in this section
+        const section = this.sections[index];
+        if (section.components) {
+          section.components.forEach(compRef => {
+            const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
+            delete this.components[componentId];
+          });
+        }
+        
+        this.sections.splice(index, 1);
+        this.hasUnsavedChanges = true;
+      }
+    },
+
+    // Component Movement
+    moveComponentToIndex(componentId, newIndex) {
+      // Find component in sections
+      for (const section of this.sections) {
+        if (section.components) {
+          const idx = section.components.findIndex(comp => 
+            (typeof comp === 'string' ? comp : comp.component_id) === componentId
+          );
+          if (idx > -1) {
+            const component = section.components.splice(idx, 1)[0];
+            section.components.splice(newIndex, 0, component);
+            this.hasUnsavedChanges = true;
+            return;
+          }
+        }
+        if (section.columns) {
+          for (const col of Object.keys(section.columns)) {
+            const idx = section.columns[col].findIndex(id => id === componentId);
+            if (idx > -1) {
+              const component = section.columns[col].splice(idx, 1)[0];
+              section.columns[col].splice(newIndex, 0, component);
+              this.hasUnsavedChanges = true;
+              return;
+            }
+          }
+        }
+      }
+    },
+
+    moveComponentToSection(componentId, sectionId, columnIndex = 1) {
+      // First, remove component from current location
+      let component = null;
+      for (const section of this.sections) {
+        if (section.components) {
+          const idx = section.components.findIndex(comp => 
+            (typeof comp === 'string' ? comp : comp.component_id) === componentId
+          );
+          if (idx > -1) {
+            component = section.components.splice(idx, 1)[0];
+            break;
+          }
+        }
+        if (section.columns) {
+          for (const col of Object.keys(section.columns)) {
+            const idx = section.columns[col].findIndex(id => id === componentId);
+            if (idx > -1) {
+              component = section.columns[col].splice(idx, 1)[0];
+              break;
+            }
+          }
+        }
+      }
+      
+      // Add to target section
+      if (component !== null) {
+        const targetSection = this.sections.find(s => s.section_id === sectionId);
+        if (targetSection) {
+          if (targetSection.type === 'full_width' || targetSection.layout === 'full_width') {
+            if (!targetSection.components) targetSection.components = [];
+            targetSection.components.push(componentId);
+          } else {
+            if (!targetSection.columns) {
+              targetSection.columns = { 1: [], 2: [], 3: [] };
+            }
+            if (!targetSection.columns[columnIndex]) {
+              targetSection.columns[columnIndex] = [];
+            }
+            targetSection.columns[columnIndex].push(componentId);
+          }
+          this.hasUnsavedChanges = true;
+        }
+      }
+    },
+
+    // Bulk Operations
+    clearAllComponents() {
+      this.components = {};
+      this.sections.forEach(section => {
+        if (section.components) section.components = [];
+        if (section.columns) {
+          section.columns = { 1: [], 2: [], 3: [] };
+        }
+      });
+      this.hasUnsavedChanges = true;
+    },
+
+    importComponents(componentsArray) {
+      componentsArray.forEach(comp => {
+        this.addComponent(comp);
+      });
+      this.hasUnsavedChanges = true;
+    },
+
+    reorderComponents(orderedIds) {
+      // Reorder within current section structure
+      // This is a simplified implementation
+      this.hasUnsavedChanges = true;
+    },
+
+    // Editor Management
+    openComponentEditor(componentId) {
+      this.editingComponentId = componentId;
+      this.editPanelOpen = true;
+      
+      // Dispatch event for editor system
+      document.dispatchEvent(new CustomEvent('gmkb:open-editor', {
+        detail: { componentId }
+      }));
+    },
+
+    closeComponentEditor() {
+      this.editPanelOpen = false;
+      this.editingComponentId = null;
+    },
+
+    saveComponentEdits(componentId, data) {
+      if (this.components[componentId]) {
+        this.components[componentId].data = {
+          ...this.components[componentId].data,
+          ...data
+        };
+        this.hasUnsavedChanges = true;
+      }
+    },
+
+    // Selection Management
+    selectComponent(componentId) {
+      this.selectedComponentIds = [componentId];
+      
+      // Dispatch selection event
+      document.dispatchEvent(new CustomEvent('gmkb:component-selected', {
+        detail: { componentId }
+      }));
+    },
+
+    deselectComponent(componentId) {
+      this.selectedComponentIds = this.selectedComponentIds.filter(id => id !== componentId);
+    },
+
+    clearSelection() {
+      this.selectedComponentIds = [];
+    },
+
+    // Persistence
+    async loadFromWordPress() {
+      try {
+        const formData = new FormData();
+        formData.append('action', 'gmkb_load_media_kit');
+        formData.append('nonce', window.gmkbData?.nonce || '');
+        formData.append('post_id', this.postId || '');
+        
+        const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const result = await response.json();
+        if (result.success && result.data) {
+          this.initialize(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to load from WordPress:', error);
+      }
+    },
+
+    autoSave() {
+      // Debounced auto-save
+      if (this._autoSaveTimer) {
+        clearTimeout(this._autoSaveTimer);
+      }
+      
+      this._autoSaveTimer = setTimeout(() => {
+        if (this.hasUnsavedChanges) {
+          this.saveToWordPress();
+        }
+      }, 2000); // 2 second debounce
+    },
+
+    // History Management (for undo/redo)
+    _saveToHistory() {
+      if (!this.history) this.history = [];
+      if (this.historyIndex === undefined) this.historyIndex = -1;
+      
+      // Remove any forward history when adding new state
+      this.history = this.history.slice(0, this.historyIndex + 1);
+      
+      // Add current state to history
+      this.history.push({
+        components: JSON.parse(JSON.stringify(this.components)),
+        sections: JSON.parse(JSON.stringify(this.sections))
+      });
+      
+      // Limit history to 50 entries
+      if (this.history.length > 50) {
+        this.history.shift();
+      } else {
+        this.historyIndex++;
+      }
+    },
+
+    undo() {
+      if (this.history && this.historyIndex > 0) {
+        this.historyIndex--;
+        const state = this.history[this.historyIndex];
+        this.components = JSON.parse(JSON.stringify(state.components));
+        this.sections = JSON.parse(JSON.stringify(state.sections));
+      }
+    },
+
+    redo() {
+      if (this.history && this.historyIndex < this.history.length - 1) {
+        this.historyIndex++;
+        const state = this.history[this.historyIndex];
+        this.components = JSON.parse(JSON.stringify(state.components));
+        this.sections = JSON.parse(JSON.stringify(state.sections));
+      }
+    },
+
+    // DUPLICATE REMOVED - addComponent is already defined above
 
     // Remove a component
     removeComponent(componentId) {

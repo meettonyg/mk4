@@ -15,9 +15,7 @@ import { initializeComponentLibrary } from './integrations/componentLibraryInteg
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import VueComponentDiscovery from './loaders/VueComponentDiscovery.js';
-// Legacy edit panels removed - components now have self-contained editors
-// import { initializeEditPanel } from './ui/ComponentEditPanel.js';
-// import { initializeUnifiedEditManager } from './ui/UnifiedEditManager.js';
+// Legacy edit panels completely removed - using Vue ComponentEditPanel component
 
 // Import only what we need for the transition
 import { APIService } from './services/APIService.js';
@@ -317,9 +315,7 @@ async function initializeVue() {
   }
 }
 
-// Legacy edit panels removed - using self-contained component editors
-// let componentEditPanel = null;
-// let unifiedEditManager = null;
+// All UI management now handled by Vue components
 
 // Initialize application
 async function initialize() {

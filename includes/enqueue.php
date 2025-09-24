@@ -51,7 +51,7 @@ add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Consistent 
  * Set to true to use the new Vite-built lean bundle instead of 60+ individual files
  * The bundle must be rebuilt with: npm run build
  */
-define( 'GMKB_USE_LEAN_BUNDLE', true ); // ENABLE LEAN BUNDLE WITH PHASE 4 FEATURES
+define( 'GMKB_USE_LEAN_BUNDLE', true ); // VUE MIGRATION - Using lean bundle for Vue.js integration
 
 /**
  * Enqueues all necessary scripts and styles for the Media Kit Builder.
@@ -401,6 +401,15 @@ function gmkb_enqueue_assets() {
                 $plugin_url . 'debug/lean-bundle-diagnostic.js',
                 array('gmkb-lean-bundle'),
                 $version . '-diagnostic',
+                true
+            );
+            
+            // VUE MIGRATION TEST SCRIPT
+            wp_enqueue_script(
+                'gmkb-vue-migration-test',
+                $plugin_url . 'test-vue-migration.js',
+                array('gmkb-lean-bundle'),
+                $version . '-vue-test',
                 true
             );
         }
