@@ -1,0 +1,34 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "testimonials": {
+      "type": "array",
+      "fields": [
+        "testimonial_1", "testimonial_2", "testimonial_3", 
+        "testimonial_4", "testimonial_5"
+      ],
+      "filter": "non-empty"
+    },
+    "testimonial_authors": {
+      "type": "array",
+      "fields": [
+        "testimonial_author_1", "testimonial_author_2", "testimonial_author_3",
+        "testimonial_author_4", "testimonial_author_5"
+      ],
+      "filter": "non-empty"
+    },
+    "testimonial_roles": {
+      "type": "array",
+      "fields": [
+        "testimonial_role_1", "testimonial_role_2", "testimonial_role_3",
+        "testimonial_role_4", "testimonial_role_5"
+      ],
+      "filter": "non-empty"
+    }
+  },
+  "defaults": {
+    "testimonials": [],
+    "testimonial_authors": [],
+    "testimonial_roles": []
+  }
+}

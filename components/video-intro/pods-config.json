@@ -1,0 +1,19 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "video_url": ["video_url", "intro_video", "youtube_video"],
+    "video_title": ["video_title", "intro_video_title"],
+    "video_description": ["video_description", "intro_video_description"],
+    "video_thumbnail": ["video_thumbnail", "video_poster"],
+    "youtube_channel": ["youtube_channel", "youtube_url"],
+    "vimeo_url": ["vimeo_url", "vimeo_video"]
+  },
+  "defaults": {
+    "video_url": "",
+    "video_title": "Introduction Video",
+    "video_description": "",
+    "video_thumbnail": "",
+    "youtube_channel": "",
+    "vimeo_url": ""
+  }
+}

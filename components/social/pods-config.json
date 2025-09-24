@@ -1,0 +1,27 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "linkedin": ["linkedin", "linkedin_url", "linkedin_profile"],
+    "twitter": ["twitter", "twitter_handle", "twitter_url", "x_handle"],
+    "facebook": ["facebook", "facebook_url", "facebook_page"],
+    "instagram": ["instagram", "instagram_handle", "instagram_url"],
+    "youtube": ["youtube", "youtube_channel", "youtube_url"],
+    "tiktok": ["tiktok", "tiktok_handle", "tiktok_url"],
+    "website": ["website", "web_url", "personal_website"],
+    "email": ["email", "contact_email"],
+    "github": ["github", "github_url", "github_handle"],
+    "medium": ["medium", "medium_url", "medium_profile"]
+  },
+  "defaults": {
+    "linkedin": "",
+    "twitter": "",
+    "facebook": "",
+    "instagram": "",
+    "youtube": "",
+    "tiktok": "",
+    "website": "",
+    "email": "",
+    "github": "",
+    "medium": ""
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "calendar_url": ["calendar_url", "booking_url", "calendly_url", "schedule_link"],
+    "calendar_embed_code": ["calendar_embed", "booking_embed", "calendly_embed"],
+    "availability_text": ["availability_text", "booking_instructions"],
+    "timezone": ["timezone", "time_zone"],
+    "meeting_duration": ["meeting_duration", "session_length", "appointment_length"],
+    "booking_email": ["booking_email", "appointment_email", "email"]
+  },
+  "defaults": {
+    "calendar_url": "",
+    "calendar_embed_code": "",
+    "availability_text": "Book a time that works for you",
+    "timezone": "UTC",
+    "meeting_duration": "30 minutes",
+    "booking_email": ""
+  }
+}

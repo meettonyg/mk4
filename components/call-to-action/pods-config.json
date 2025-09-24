@@ -1,0 +1,21 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "cta_title": ["cta_title", "call_to_action_title", "action_title"],
+    "cta_text": ["cta_text", "call_to_action_text", "action_text"],
+    "cta_button_text": ["cta_button_text", "button_text", "action_button"],
+    "cta_button_url": ["cta_button_url", "button_link", "action_link"],
+    "booking_url": ["booking_url", "calendar_link", "schedule_link"],
+    "contact_email": ["email", "contact_email"],
+    "phone": ["phone", "contact_phone"]
+  },
+  "defaults": {
+    "cta_title": "Ready to Get Started?",
+    "cta_text": "Let's work together",
+    "cta_button_text": "Contact Me",
+    "cta_button_url": "#contact",
+    "booking_url": "",
+    "contact_email": "",
+    "phone": ""
+  }
+}

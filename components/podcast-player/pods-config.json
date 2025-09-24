@@ -1,0 +1,29 @@
+{
+  "dataSource": "pods",
+  "fields": {
+    "podcast_url": ["podcast_url", "podcast_link"],
+    "podcast_name": ["podcast_name", "podcast_title"],
+    "podcast_description": ["podcast_description", "podcast_about"],
+    "spotify_url": ["spotify_url", "spotify_podcast"],
+    "apple_podcasts_url": ["apple_podcasts_url", "apple_podcast"],
+    "google_podcasts_url": ["google_podcasts_url", "google_podcast"],
+    "latest_episode_url": ["latest_episode_url", "recent_episode"],
+    "episode_count": ["episode_count", "total_episodes"],
+    "podcast_host": {
+      "type": "composite",
+      "fields": ["first_name", "last_name"],
+      "format": "{first_name} {last_name}"
+    }
+  },
+  "defaults": {
+    "podcast_url": "",
+    "podcast_name": "My Podcast",
+    "podcast_description": "",
+    "spotify_url": "",
+    "apple_podcasts_url": "",
+    "google_podcasts_url": "",
+    "latest_episode_url": "",
+    "episode_count": "0",
+    "podcast_host": ""
+  }
+}
