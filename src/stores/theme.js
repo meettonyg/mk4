@@ -229,37 +229,37 @@ export const useThemeStore = defineStore('theme', {
         } else {
           // Return default theme structure if no themes available
           return {
-          colors: {
-            primary: '#3b82f6',
-            secondary: '#2563eb',
-            background: '#ffffff',
-            surface: '#f8fafc',
-            text: '#1e293b',
-            textLight: '#64748b',
-            border: '#e2e8f0'
-          },
-          typography: {
-            fontFamily: "'Inter', system-ui, sans-serif",
-            headingFamily: "'Inter', system-ui, sans-serif",
-            baseFontSize: 16,
-            headingScale: 1.25,
-            lineHeight: 1.6,
-            fontWeight: 400
-          },
-          spacing: {
-            baseUnit: 8,
-            componentGap: 24,
-            sectionPadding: 40,
-            containerMaxWidth: 1200
-          },
-          effects: {
-            borderRadius: '8px',
-            shadowIntensity: 'medium',
-            animationSpeed: 'normal',
-            gradients: false,
-            blurEffects: false
-          }
-        };
+            colors: {
+              primary: '#3b82f6',
+              secondary: '#2563eb',
+              background: '#ffffff',
+              surface: '#f8fafc',
+              text: '#1e293b',
+              textLight: '#64748b',
+              border: '#e2e8f0'
+            },
+            typography: {
+              fontFamily: "'Inter', system-ui, sans-serif",
+              headingFamily: "'Inter', system-ui, sans-serif",
+              baseFontSize: 16,
+              headingScale: 1.25,
+              lineHeight: 1.6,
+              fontWeight: 400
+            },
+            spacing: {
+              baseUnit: 8,
+              componentGap: 24,
+              sectionPadding: 40,
+              containerMaxWidth: 1200
+            },
+            effects: {
+              borderRadius: '8px',
+              shadowIntensity: 'medium',
+              animationSpeed: 'normal',
+              gradients: false,
+              blurEffects: false
+            }
+          };
         }
       }
       

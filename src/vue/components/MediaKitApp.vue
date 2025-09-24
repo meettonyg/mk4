@@ -18,11 +18,22 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
+import { useTheme } from '../composables/useTheme';
 import ThemeProvider from './ThemeProvider.vue';
 import ComponentLibrary from './ComponentLibraryNew.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import SectionLayoutEnhanced from './SectionLayoutEnhanced.vue';
 import EditorPanel from './EditorPanel.vue';
+
+// Initialize theme system
+const { applyTheme } = useTheme();
+
+// Apply theme on mount
+onMounted(() => {
+  applyTheme();
+  console.log('✅ MediaKitApp: Theme system initialized');
+});
 </script>
 
 <style scoped>
