@@ -92,7 +92,7 @@
                   drag-class="drag"
                 >
                   <template #item="{element: componentId}">
-                    <ComponentWrapper
+                    <ComponentRenderer
                       :component-id="componentId"
                       :component="getComponent(componentId)"
                       :section-id="section.section_id"
@@ -131,7 +131,7 @@
                     drag-class="drag"
                   >
                     <template #item="{element: componentId}">
-                      <ComponentWrapper
+                      <ComponentRenderer
                         :component-id="componentId"
                         :component="getComponent(componentId)"
                         :section-id="section.section_id"
@@ -167,7 +167,7 @@
                     drag-class="drag"
                   >
                     <template #item="{element: componentId}">
-                      <ComponentWrapper
+                      <ComponentRenderer
                         :component-id="componentId"
                         :component="getComponent(componentId)"
                         :section-id="section.section_id"
@@ -212,7 +212,7 @@
                     drag-class="drag"
                   >
                     <template #item="{element: componentId}">
-                      <ComponentWrapper
+                      <ComponentRenderer
                         :component-id="componentId"
                         :component="getComponent(componentId)"
                         :section-id="section.section_id"
@@ -242,7 +242,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
-import ComponentWrapper from './ComponentWrapper.vue';
+import ComponentRenderer from './ComponentRenderer.vue';
 import draggable from 'vuedraggable';
 
 const store = useMediaKitStore();

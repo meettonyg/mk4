@@ -125,7 +125,7 @@ export default {
   line-height: var(--gmkb-line-height-base, 1.6);
 }
 
-.biography-text >>> p {
+.biography-text :deep(p) {
   margin-bottom: var(--gmkb-spacing-md, 1rem);
 }
 

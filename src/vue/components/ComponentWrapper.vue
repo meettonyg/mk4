@@ -54,6 +54,7 @@
         v-if="component"
         :component="component"
         :component-id="componentId"
+        :show-controls="false"
       />
       <div v-else class="component-placeholder">
         <span class="placeholder-icon">⚠️</span>

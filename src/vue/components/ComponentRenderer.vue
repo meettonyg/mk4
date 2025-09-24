@@ -1,34 +1,25 @@
 <template>
-  <div class="gmkb-component-wrapper" :data-component-id="component.id">
+  <div 
+    class="gmkb-component-wrapper" 
+    :data-component-id="componentId"
+    :class="{
+      'gmkb-component--selected': isSelected,
+      'gmkb-component--hovered': isHovered
+    }"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
+    @click="selectComponent"
+  >
     <!-- Component Controls -->
-    <div class="gmkb-component-controls" v-if="showControls">
-      <button @click="moveUp" :disabled="isFirst" title="Move Up">
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path d="M7 14l5-5 5 5" stroke="currentColor" fill="none" stroke-width="2"/>
-        </svg>
-      </button>
-      <button @click="moveDown" :disabled="isLast" title="Move Down">
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path d="M7 10l5 5 5-5" stroke="currentColor" fill="none" stroke-width="2"/>
-        </svg>
-      </button>
-      <button @click="edit" title="Edit">
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" fill="none" stroke-width="2"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" fill="none" stroke-width="2"/>
-        </svg>
-      </button>
-      <button @click="duplicate" title="Duplicate">
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" fill="none" stroke-width="2"/>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" fill="none" stroke-width="2"/>
-        </svg>
-      </button>
-      <button @click="remove" title="Delete">
-        <svg viewBox="0 0 24 24" width="16" height="16">
-          <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6" stroke="currentColor" fill="none" stroke-width="2"/>
-        </svg>
-      </button>
+    <div class="gmkb-component-controls" v-if="isHovered || isSelected">
+      <span class="component-type-badge">{{ component?.type }}</span>
+      <div class="control-buttons">
+        <button @click.stop="moveUp" :disabled="isFirst" title="Move Up" class="control-btn">↑</button>
+        <button @click.stop="moveDown" :disabled="isLast" title="Move Down" class="control-btn">↓</button>
+        <button @click.stop="edit" title="Edit" class="control-btn">✏️</button>
+        <button @click.stop="duplicate" title="Duplicate" class="control-btn">📄</button>
+        <button @click.stop="remove" title="Delete" class="control-btn control-btn--delete">🗑️</button>
+      </div>
     </div>
 
     <!-- Component Content -->
@@ -59,6 +50,10 @@ export default {
   name: 'ComponentRenderer',
   
   props: {
+    componentId: {
+      type: String,
+      required: true
+    },
     component: {
       type: Object,
       required: true
@@ -67,9 +62,9 @@ export default {
       type: String,
       default: null
     },
-    showControls: {
-      type: Boolean,
-      default: true
+    column: {
+      type: Number,
+      default: 1
     }
   },
   
@@ -78,6 +73,8 @@ export default {
     const componentImplementation = ref(null);
     const isLoading = ref(true);
     const loadError = ref(null);
+    const isHovered = ref(false);
+    const isSelected = computed(() => store.selectedComponentId === props.componentId);
     
     // Load component dynamically
     const loadComponent = async () => {
@@ -116,7 +113,7 @@ export default {
     
     // Component props to pass down
     const componentProps = computed(() => ({
-      componentId: props.component.id,
+      componentId: props.componentId,
       data: props.component.data || {},
       settings: props.component.settings || {},
       config: {
@@ -125,46 +122,43 @@ export default {
       }
     }));
     
-    // Check if component is first/last
-    const isFirst = computed(() => {
-      const components = store.orderedComponents;
-      return components.length > 0 && components[0]?.id === props.component.id;
-    });
+    // Select this component
+    const selectComponent = () => {
+      store.setSelectedComponent(props.componentId);
+    };
     
-    const isLast = computed(() => {
-      const components = store.orderedComponents;
-      return components.length > 0 && components[components.length - 1]?.id === props.component.id;
-    });
+    // Check if component is first/last using store getters
+    const isFirst = computed(() => store.isComponentFirst(props.componentId));
+    const isLast = computed(() => store.isComponentLast(props.componentId));
     
     // Component actions
     const moveUp = () => {
-      store.moveComponent(props.component.id, 'up');
+      store.moveComponent(props.componentId, 'up');
     };
     
     const moveDown = () => {
-      store.moveComponent(props.component.id, 'down');
+      store.moveComponent(props.componentId, 'down');
     };
     
     const edit = () => {
-      store.setSelectedComponent(props.component.id);
-      // Emit event for design panel
-      window.dispatchEvent(new CustomEvent('gmkb:open-design-panel', {
-        detail: { componentId: props.component.id }
-      }));
+      // ROOT FIX: Directly open edit panel
+      store.openEditPanel(props.componentId);
+      store.setSelectedComponent(props.componentId);
+      console.log('[ComponentRenderer] Edit clicked for:', props.componentId, props.component?.type);
     };
     
     const duplicate = () => {
-      store.duplicateComponent(props.component.id);
+      store.duplicateComponent(props.componentId);
     };
     
     const remove = () => {
       if (confirm('Delete this component?')) {
-        store.removeComponent(props.component.id);
+        store.removeComponent(props.componentId);
       }
     };
     
     const handleUpdate = (updates) => {
-      store.updateComponent(props.component.id, updates);
+      store.updateComponent(props.componentId, updates);
     };
     
     return {
@@ -174,6 +168,9 @@ export default {
       loadError,
       isFirst,
       isLast,
+      isHovered,
+      isSelected,
+      selectComponent,
       moveUp,
       moveDown,
       edit,
@@ -188,52 +185,81 @@ export default {
 <style scoped>
 .gmkb-component-wrapper {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  transition: all 0.3s;
+  cursor: move;
 }
 
+.gmkb-component-wrapper:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.gmkb-component--selected {
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Component Controls */
 .gmkb-component-controls {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: -1px;
+  left: -1px;
+  right: -1px;
   display: flex;
-  gap: 5px;
-  opacity: 0;
-  transition: opacity 0.2s;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 6px 6px 0 0;
   z-index: 10;
-  background: rgba(30, 41, 59, 0.95);
-  padding: 4px;
-  border-radius: 6px;
-  backdrop-filter: blur(4px);
 }
 
-.gmkb-component-wrapper:hover .gmkb-component-controls {
-  opacity: 1;
+.component-type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #3b82f6;
 }
 
-.gmkb-component-controls button {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 4px;
-  color: #94a3b8;
-  padding: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
+.control-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.control-btn {
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.gmkb-component-controls button:hover:not(:disabled) {
-  background: #334155;
-  color: #f1f5f9;
-  border-color: #475569;
+.control-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
-.gmkb-component-controls button:disabled {
-  opacity: 0.5;
+.control-btn:disabled {
+  opacity: 0.3;
   cursor: not-allowed;
+}
+
+.control-btn--delete:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 .gmkb-component-content {
