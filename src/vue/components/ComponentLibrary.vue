@@ -122,73 +122,53 @@ export default {
     
     // Get components from store or window data
     onMounted(() => {
-      // ROOT FIX: Load components from the correct source based on console output
-      console.log('ComponentLibrary Vue component mounted');
+      console.log('[ComponentLibrary] Vue component mounted');
       
-      // ROOT FIX: Based on console output, gmkbData has 16 components
-      // Priority 1: Try gmkbData/gmkbVueData first (this is what's working)
-      if ((window.gmkbData && window.gmkbData.components) || 
-          (window.gmkbVueData && window.gmkbVueData.components)) {
-        const sourceData = window.gmkbData || window.gmkbVueData;
-        const rawComponents = Array.isArray(sourceData.components) 
-          ? sourceData.components 
-          : Object.values(sourceData.components);
+      // Use the new ComponentRegistry
+      if (window.gmkbComponentRegistry) {
+        // Wait for registry to be ready if needed
+        if (!window.gmkbComponentRegistry.isInitialized()) {
+          window.addEventListener('gmkb:component-registry-ready', () => {
+            loadComponentsFromRegistry();
+          });
+        } else {
+          loadComponentsFromRegistry();
+        }
+      } 
+      // Fallback to gmkbData
+      else if (window.gmkbData && window.gmkbData.components) {
+        const rawComponents = Array.isArray(window.gmkbData.components) 
+          ? window.gmkbData.components 
+          : Object.values(window.gmkbData.components);
         
-        // ROOT FIX: Ensure each component has required fields
         components.value = rawComponents.map(comp => ({
-          type: comp.type || comp.directory || 'unknown',
+          type: comp.type || comp.id || 'unknown',
           name: comp.name || comp.title || 'Unknown Component',
           description: comp.description || '',
           category: comp.category || 'general',
-          isPremium: comp.isPremium || comp.premium || false,
+          isPremium: comp.isPremium || false,
           icon: comp.icon || ''
         }));
         
-        console.log('✅ Found', components.value.length, 'components from gmkbData/gmkbVueData');
-        
-        // ROOT FIX: Log categories if available
-        if (sourceData.categories) {
-          console.log('✅ Categories available:', sourceData.categories);
-        }
-        
-        // Debug first few components to verify structure
-        if (components.value.length > 0) {
-          console.log('Sample components:', components.value.slice(0, 3));
-          // Show category distribution
-          const categoryCount = {};
-          components.value.forEach(comp => {
-            categoryCount[comp.category] = (categoryCount[comp.category] || 0) + 1;
-          });
-          console.log('Category distribution:', categoryCount);
-        }
-      }
-      // Fallback: Check if GMKB exists with discovered components
-      else if (window.GMKB && window.GMKB.components && window.GMKB.components.size > 0) {
-        // Convert Map to Array for Vue reactivity
-        const componentMap = window.GMKB.components;
-        const componentArray = [];
-        
-        componentMap.forEach((component, type) => {
-          componentArray.push({
-            type: type,
-            name: component.name || type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-            description: component.description || '',
-            category: component.category || 'general',
-            isPremium: component.isPremium || false,
-            icon: component.icon || ''
-          });
-        });
-        
-        components.value = componentArray;
-        console.log('✅ Found', components.value.length, 'components from GMKB.components');
+        console.log('[ComponentLibrary] Loaded', components.value.length, 'components from gmkbData');
       } else {
-        console.warn('❌ No components found in any expected location');
-        console.log('Available globals:', {
-          'window.GMKB': !!window.GMKB,
-          'window.GMKB.components': window.GMKB ? !!window.GMKB.components : false,
-          'window.gmkbData': !!window.gmkbData,
-          'window.gmkbVueData': !!window.gmkbVueData
-        });
+        console.error('[ComponentLibrary] No component source available');
+      }
+      
+      // Helper function to load components from registry
+      function loadComponentsFromRegistry() {
+        const allComponents = window.gmkbComponentRegistry.getAllComponents();
+        
+        components.value = allComponents.map(comp => ({
+          type: comp.type,
+          name: comp.name || comp.title,
+          description: comp.description || '',
+          category: comp.category || 'general',
+          isPremium: comp.isPremium || false,
+          icon: comp.icon || ''
+        }));
+        
+        console.log('[ComponentLibrary] Loaded', components.value.length, 'components from registry');
       }
       
       // Listen for component library open event

@@ -238,13 +238,28 @@ export const useMediaKitStore = defineStore('mediaKit', {
         this.addSection('full_width');
       }
       
+      // Get default props from component registry
+      let defaultProps = {};
+      let componentSchema = null;
+      
+      if (window.gmkbComponentRegistry) {
+        const registryComponent = window.gmkbComponentRegistry.getComponent(componentData.type);
+        if (registryComponent) {
+          defaultProps = window.gmkbComponentRegistry.getDefaultProps(componentData.type) || {};
+          componentSchema = registryComponent.schema;
+        } else {
+          console.warn(`[MediaKitStore] Component type '${componentData.type}' not found in registry`);
+        }
+      }
+      
       // Create component with proper structure
       const component = {
         id: componentId,
         type: componentData.type,
-        data: componentData.data || {},
-        props: componentData.props || {},
-        settings: componentData.settings || {}
+        data: { ...defaultProps, ...(componentData.data || {}) },
+        props: { ...defaultProps, ...(componentData.props || {}) },
+        settings: componentData.settings || {},
+        schema: componentSchema
       };
       
       // ROOT FIX: Enrich component with Pods data configuration

@@ -1,260 +1,359 @@
 <?php
 /**
- * Component Discovery System for Media Kit Builder
+ * Component Discovery Service
  * 
- * This class automatically discovers and registers components
- * from the components directory, maintaining the self-contained
- * component architecture.
+ * Automatically discovers and registers all components in the /components/ directory
+ * This is the single source of truth for available components
+ * 
+ * @package GMKB
+ * @since 2.0.0
  */
 
+namespace GMKB;
+
 class ComponentDiscovery {
-    private $components_dir;
-    private $components = [];
-    private $component_cache = [];
     
-    public function __construct($components_dir = null) {
-        $this->components_dir = $components_dir ?: plugin_dir_path(__FILE__) . '../components/';
-        $this->discover_components();
+    /**
+     * @var array Discovered components cache
+     */
+    private static $components_cache = null;
+    
+    /**
+     * @var string Components directory path
+     */
+    private $components_dir;
+    
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->components_dir = GMKB_PLUGIN_DIR . 'components/';
     }
     
     /**
-     * Discover all components in the components directory
+     * Discover all available components
+     * 
+     * @return array Array of component definitions
      */
     public function discover_components() {
-        // Check cache first
-        $cache_key = 'gmkb_discovered_components_v2';
-        $cached = get_transient($cache_key);
+        // Return cached components if available
+        if (self::$components_cache !== null) {
+            return self::$components_cache;
+        }
         
-        if ($cached !== false && !defined('WP_DEBUG')) {
-            $this->components = $cached;
-            return $cached;
+        $components = [];
+        
+        // Check if components directory exists
+        if (!is_dir($this->components_dir)) {
+            error_log('[GMKB] Components directory not found: ' . $this->components_dir);
+            return $components;
         }
         
         // Scan components directory
-        if (!is_dir($this->components_dir)) {
-            return [];
-        }
-        
-        $directories = glob($this->components_dir . '*', GLOB_ONLYDIR);
+        $directories = scandir($this->components_dir);
         
         foreach ($directories as $dir) {
-            $component_type = basename($dir);
-            
-            // Check for component.json first (new standard)
-            $manifest_file = $dir . '/component.json';
-            if (file_exists($manifest_file)) {
-                $manifest = json_decode(file_get_contents($manifest_file), true);
-                if ($manifest) {
-                    $this->register_component_from_manifest($component_type, $dir, $manifest);
-                    continue;
-                }
+            // Skip special directories and files
+            if ($dir === '.' || $dir === '..' || !is_dir($this->components_dir . $dir)) {
+                continue;
             }
             
-            // Fallback: Check for legacy component files
-            $this->discover_legacy_component($component_type, $dir);
+            // Skip documentation files
+            if (in_array($dir, ['DATA-INTEGRATION-PATTERN.md', 'README.md', 'TEMPLATE-FALLBACK-PATTERN.md'])) {
+                continue;
+            }
+            
+            // Look for component.json
+            $component_json_path = $this->components_dir . $dir . '/component.json';
+            
+            if (file_exists($component_json_path)) {
+                $component_data = $this->load_component_manifest($component_json_path, $dir);
+                if ($component_data) {
+                    $components[] = $component_data;
+                }
+            } else {
+                // Fallback: Try to load from schema.json for legacy components
+                $schema_json_path = $this->components_dir . $dir . '/schema.json';
+                if (file_exists($schema_json_path)) {
+                    $component_data = $this->load_legacy_component($schema_json_path, $dir);
+                    if ($component_data) {
+                        $components[] = $component_data;
+                    }
+                }
+            }
         }
         
-        // Cache for 1 hour
-        set_transient($cache_key, $this->components, HOUR_IN_SECONDS);
+        // Cache the discovered components
+        self::$components_cache = $components;
         
-        return $this->components;
+        // Log discovered components for debugging
+        error_log('[GMKB] Discovered ' . count($components) . ' components');
+        
+        return $components;
     }
     
     /**
-     * Register a component from its manifest file
+     * Load component manifest from component.json
+     * 
+     * @param string $json_path Path to component.json file
+     * @param string $directory Component directory name
+     * @return array|false Component data or false on failure
      */
-    private function register_component_from_manifest($type, $dir, $manifest) {
+    private function load_component_manifest($json_path, $directory) {
+        $json_content = file_get_contents($json_path);
+        if (!$json_content) {
+            error_log('[GMKB] Failed to read component.json: ' . $json_path);
+            return false;
+        }
+        
+        $manifest = json_decode($json_content, true);
+        if (!$manifest) {
+            error_log('[GMKB] Invalid JSON in component.json: ' . $json_path);
+            return false;
+        }
+        
+        // Build component data structure
         $component = [
-            'type' => $type,
-            'name' => $manifest['name'] ?? ucfirst(str_replace('-', ' ', $type)),
+            'id' => $directory,
+            'type' => $manifest['type'] ?? $directory,
+            'name' => $manifest['name'] ?? $this->format_name($directory),
+            'title' => $manifest['name'] ?? $this->format_name($directory),
             'description' => $manifest['description'] ?? '',
             'category' => $manifest['category'] ?? 'general',
             'version' => $manifest['version'] ?? '1.0.0',
-            'path' => $dir,
-            'has_vue_renderer' => false,
-            'has_php_template' => false,
-            'has_js_renderer' => false,
-            'has_schema' => false,
-            'has_styles' => false,
-            'supports' => $manifest['supports'] ?? []
+            'icon' => $this->find_icon($directory),
+            'directory' => $directory,
+            'renderers' => $manifest['renderers'] ?? [],
+            'supports' => $manifest['supports'] ?? [],
+            'schema_path' => $manifest['schema'] ?? 'schema.json',
+            'styles' => $manifest['styles'] ?? 'styles.css'
         ];
         
-        // Check for renderers
-        if (isset($manifest['renderers'])) {
-            if (!empty($manifest['renderers']['vue'])) {
-                $vue_file = $dir . '/' . $manifest['renderers']['vue'];
-                $component['has_vue_renderer'] = file_exists($vue_file);
-                $component['vue_renderer_path'] = $manifest['renderers']['vue'];
-            }
-            
-            if (!empty($manifest['renderers']['php'])) {
-                $php_file = $dir . '/' . $manifest['renderers']['php'];
-                $component['has_php_template'] = file_exists($php_file);
-                $component['php_template_path'] = $manifest['renderers']['php'];
-            }
-            
-            if (!empty($manifest['renderers']['javascript'])) {
-                $js_file = $dir . '/' . $manifest['renderers']['javascript'];
-                $component['has_js_renderer'] = file_exists($js_file);
-                $component['js_renderer_path'] = $manifest['renderers']['javascript'];
+        // Load schema if available
+        $schema_path = $this->components_dir . $directory . '/' . $component['schema_path'];
+        if (file_exists($schema_path)) {
+            $schema_content = file_get_contents($schema_path);
+            if ($schema_content) {
+                $component['schema'] = json_decode($schema_content, true);
             }
         }
         
-        // Check for other files
-        if (!empty($manifest['schema'])) {
-            $schema_file = $dir . '/' . $manifest['schema'];
-            $component['has_schema'] = file_exists($schema_file);
-            if ($component['has_schema']) {
-                $component['schema'] = json_decode(file_get_contents($schema_file), true);
-            }
-        }
-        
-        if (!empty($manifest['styles'])) {
-            $styles_file = $dir . '/' . $manifest['styles'];
-            $component['has_styles'] = file_exists($styles_file);
-            $component['styles_path'] = $manifest['styles'];
-        }
-        
-        $this->components[$type] = $component;
+        return $component;
     }
     
     /**
-     * Discover legacy components without manifest files
+     * Load legacy component without component.json
+     * 
+     * @param string $schema_path Path to schema.json file
+     * @param string $directory Component directory name
+     * @return array|false Component data or false on failure
      */
-    private function discover_legacy_component($type, $dir) {
+    private function load_legacy_component($schema_path, $directory) {
+        $schema_content = file_get_contents($schema_path);
+        if (!$schema_content) {
+            return false;
+        }
+        
+        $schema = json_decode($schema_content, true);
+        if (!$schema) {
+            return false;
+        }
+        
+        // Build component data from schema
         $component = [
-            'type' => $type,
-            'name' => ucfirst(str_replace('-', ' ', $type)),
-            'path' => $dir,
-            'has_vue_renderer' => false,
-            'has_php_template' => false,
-            'has_js_renderer' => false,
-            'has_schema' => false,
-            'has_styles' => false,
-            'supports' => []
+            'id' => $directory,
+            'type' => $schema['type'] ?? $directory,
+            'name' => $schema['name'] ?? $this->format_name($directory),
+            'title' => $schema['title'] ?? $schema['name'] ?? $this->format_name($directory),
+            'description' => $schema['description'] ?? '',
+            'category' => $schema['category'] ?? 'general',
+            'version' => '1.0.0',
+            'icon' => $this->find_icon($directory),
+            'directory' => $directory,
+            'renderers' => $this->detect_renderers($directory),
+            'supports' => [
+                'serverRender' => file_exists($this->components_dir . $directory . '/template.php'),
+                'vueRender' => $this->has_vue_renderer($directory),
+                'inlineEdit' => true,
+                'designPanel' => true
+            ],
+            'schema' => $schema,
+            'schema_path' => 'schema.json',
+            'styles' => file_exists($this->components_dir . $directory . '/styles.css') ? 'styles.css' : null
         ];
         
-        // Check for Vue renderer (multiple possible names)
+        return $component;
+    }
+    
+    /**
+     * Detect available renderers for a component
+     * 
+     * @param string $directory Component directory name
+     * @return array Renderers configuration
+     */
+    private function detect_renderers($directory) {
+        $renderers = [];
+        $base_path = $this->components_dir . $directory . '/';
+        
+        if (file_exists($base_path . 'template.php')) {
+            $renderers['php'] = 'template.php';
+        }
+        
+        if (file_exists($base_path . 'renderer.js')) {
+            $renderers['javascript'] = 'renderer.js';
+        }
+        
+        // Check for Vue renderer variants
         $vue_files = [
-            $type . 'Renderer.vue',
-            ucfirst(str_replace('-', '', $type)) . 'Renderer.vue',
+            ucfirst($directory) . 'Renderer.vue',
+            ucfirst($directory) . '.vue',
             'renderer.vue',
-            'component.vue'
+            'Renderer.vue'
         ];
         
         foreach ($vue_files as $vue_file) {
-            if (file_exists($dir . '/' . $vue_file)) {
-                $component['has_vue_renderer'] = true;
-                $component['vue_renderer_path'] = $vue_file;
+            if (file_exists($base_path . $vue_file)) {
+                $renderers['vue'] = $vue_file;
                 break;
             }
         }
         
-        // Check for PHP template
-        if (file_exists($dir . '/template.php')) {
-            $component['has_php_template'] = true;
-            $component['php_template_path'] = 'template.php';
-        }
+        return $renderers;
+    }
+    
+    /**
+     * Check if component has Vue renderer
+     * 
+     * @param string $directory Component directory name
+     * @return bool
+     */
+    private function has_vue_renderer($directory) {
+        $base_path = $this->components_dir . $directory . '/';
         
-        // Check for JavaScript renderer
-        if (file_exists($dir . '/renderer.js')) {
-            $component['has_js_renderer'] = true;
-            $component['js_renderer_path'] = 'renderer.js';
-        }
-        
-        // Check for schema
-        if (file_exists($dir . '/schema.json')) {
-            $component['has_schema'] = true;
-            $schema_content = file_get_contents($dir . '/schema.json');
-            $component['schema'] = json_decode($schema_content, true);
-        }
-        
-        // Check for styles
-        if (file_exists($dir . '/styles.css')) {
-            $component['has_styles'] = true;
-            $component['styles_path'] = 'styles.css';
-        }
-        
-        // Auto-detect support based on files
-        $component['supports'] = [
-            'serverRender' => $component['has_php_template'],
-            'vueRender' => $component['has_vue_renderer'],
-            'jsRender' => $component['has_js_renderer'],
-            'designPanel' => $component['has_schema']
+        $vue_files = [
+            ucfirst($directory) . 'Renderer.vue',
+            ucfirst($directory) . '.vue',
+            'renderer.vue',
+            'Renderer.vue'
         ];
         
-        $this->components[$type] = $component;
+        foreach ($vue_files as $vue_file) {
+            if (file_exists($base_path . $vue_file)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**
-     * Get all discovered components
+     * Find icon file for component
+     * 
+     * @param string $directory Component directory name
+     * @return string|null Icon filename or null if not found
      */
-    public function get_components() {
-        return $this->components;
+    private function find_icon($directory) {
+        $base_path = $this->components_dir . $directory . '/';
+        
+        // Check for various icon file patterns
+        $icon_patterns = [
+            $directory . '.svg',
+            $directory . '-icon.svg',
+            'icon.svg',
+            $directory . '.png',
+            'icon.png'
+        ];
+        
+        foreach ($icon_patterns as $pattern) {
+            if (file_exists($base_path . $pattern)) {
+                return $pattern;
+            }
+        }
+        
+        // Check for any SVG file
+        $files = scandir($base_path);
+        foreach ($files as $file) {
+            if (pathinfo($file, PATHINFO_EXTENSION) === 'svg') {
+                return $file;
+            }
+        }
+        
+        return null;
     }
     
     /**
-     * Get a specific component by type
+     * Format directory name to readable name
+     * 
+     * @param string $directory Directory name
+     * @return string Formatted name
+     */
+    private function format_name($directory) {
+        // Convert hyphenated names to Title Case
+        $name = str_replace('-', ' ', $directory);
+        $name = ucwords($name);
+        return $name;
+    }
+    
+    /**
+     * Get a single component by type/id
+     * 
+     * @param string $type Component type/id
+     * @return array|null Component data or null if not found
      */
     public function get_component($type) {
-        return $this->components[$type] ?? null;
-    }
-    
-    /**
-     * Check if a component has a Vue renderer
-     */
-    public function has_vue_renderer($type) {
-        return $this->components[$type]['has_vue_renderer'] ?? false;
+        $components = $this->discover_components();
+        
+        foreach ($components as $component) {
+            if ($component['type'] === $type || $component['id'] === $type) {
+                return $component;
+            }
+        }
+        
+        return null;
     }
     
     /**
      * Get components by category
+     * 
+     * @param string $category Category name
+     * @return array Components in the category
      */
     public function get_components_by_category($category) {
-        return array_filter($this->components, function($component) use ($category) {
-            return ($component['category'] ?? 'general') === $category;
-        });
-    }
-    
-    /**
-     * Get components that support a specific feature
-     */
-    public function get_components_with_support($feature) {
-        return array_filter($this->components, function($component) use ($feature) {
-            return !empty($component['supports'][$feature]);
-        });
-    }
-    
-    /**
-     * Clear the component cache
-     */
-    public function clear_cache() {
-        delete_transient('gmkb_discovered_components_v2');
-        $this->discover_components();
-    }
-    
-    /**
-     * Export component data for JavaScript
-     */
-    public function export_for_js() {
-        $export = [];
+        $components = $this->discover_components();
+        $filtered = [];
         
-        foreach ($this->components as $type => $component) {
-            // Include only necessary data for frontend
-            $export[] = [
-                'type' => $type,
-                'name' => $component['name'],
-                'description' => $component['description'] ?? '',
-                'category' => $component['category'] ?? 'general',
-                'has_vue_renderer' => $component['has_vue_renderer'],
-                'supports' => $component['supports'] ?? [],
-                'config' => [
-                    'schema' => $component['schema'] ?? null,
-                    'requiresServerRender' => !empty($component['supports']['serverRender']) && empty($component['supports']['vueRender'])
-                ]
-            ];
+        foreach ($components as $component) {
+            if ($component['category'] === $category) {
+                $filtered[] = $component;
+            }
         }
         
-        return $export;
+        return $filtered;
+    }
+    
+    /**
+     * Get all component categories
+     * 
+     * @return array List of categories
+     */
+    public function get_categories() {
+        $components = $this->discover_components();
+        $categories = [];
+        
+        foreach ($components as $component) {
+            $category = $component['category'];
+            if (!in_array($category, $categories)) {
+                $categories[] = $category;
+            }
+        }
+        
+        return $categories;
+    }
+    
+    /**
+     * Clear components cache
+     */
+    public function clear_cache() {
+        self::$components_cache = null;
     }
 }

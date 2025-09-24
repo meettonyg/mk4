@@ -1,18 +1,28 @@
 <template>
-  <div class="gmkb-fallback-component" :data-component-id="componentId">
-    <div class="fallback-container">
-      <div class="fallback-message">
-        <h3>{{ componentType }} Component</h3>
-        <p>Vue renderer not yet implemented</p>
-        <pre v-if="showData">{{ JSON.stringify(data, null, 2) }}</pre>
-      </div>
+  <div class="fallback-renderer">
+    <div class="fallback-header">
+      <h3>{{ componentType }}</h3>
+      <span class="fallback-id">{{ componentId }}</span>
+    </div>
+    <div class="fallback-content">
+      <p class="fallback-message">
+        Component renderer not available. 
+        This component will be rendered on the frontend.
+      </p>
+      <details v-if="hasData" class="fallback-data">
+        <summary>Component Data</summary>
+        <pre>{{ JSON.stringify(data, null, 2) }}</pre>
+      </details>
     </div>
   </div>
 </template>
 
 <script>
+import { computed } from 'vue';
+
 export default {
   name: 'FallbackRenderer',
+  
   props: {
     componentId: {
       type: String,
@@ -31,47 +41,91 @@ export default {
       default: () => ({})
     }
   },
-  computed: {
-    componentType() {
-      return this.config?.type || 'Unknown'
-    },
-    showData() {
-      return process.env.NODE_ENV === 'development'
-    }
+  
+  setup(props) {
+    const componentType = computed(() => {
+      return props.config?.type || 'Unknown Component';
+    });
+    
+    const hasData = computed(() => {
+      return Object.keys(props.data).length > 0;
+    });
+    
+    return {
+      componentType,
+      hasData
+    };
   }
-}
+};
 </script>
 
 <style scoped>
-.gmkb-fallback-component {
-  padding: 2rem;
-  background: var(--gmkb-color-surface, #f8f9fa);
-  border: 2px dashed var(--gmkb-color-border, #dee2e6);
-  border-radius: var(--gmkb-border-radius, 8px);
+.fallback-renderer {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 150px;
 }
 
-.fallback-container {
-  max-width: 800px;
-  margin: 0 auto;
+.fallback-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fallback-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+.fallback-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.fallback-content {
+  color: #475569;
 }
 
 .fallback-message {
-  text-align: center;
-  color: var(--gmkb-color-text-light, #6c757d);
+  margin: 0 0 15px 0;
+  font-size: 14px;
 }
 
-.fallback-message h3 {
-  color: var(--gmkb-color-text, #495057);
-  margin-bottom: 0.5rem;
-}
-
-.fallback-message pre {
-  text-align: left;
-  background: var(--gmkb-color-background, #ffffff);
-  padding: 1rem;
+.fallback-data {
+  margin-top: 15px;
+  background: white;
+  border: 1px solid #e2e8f0;
   border-radius: 4px;
-  margin-top: 1rem;
-  font-size: 0.875rem;
+  padding: 10px;
+}
+
+.fallback-data summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: #334155;
+  font-size: 13px;
+  user-select: none;
+  margin-bottom: 10px;
+}
+
+.fallback-data pre {
+  margin: 10px 0 0 0;
+  font-size: 12px;
+  color: #475569;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 4px;
   overflow-x: auto;
 }
 </style>

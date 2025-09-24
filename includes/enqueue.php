@@ -417,159 +417,117 @@ function gmkb_enqueue_assets() {
         return; // EXIT HERE - bundle handles all JavaScript
     }
     
-    // ROOT CAUSE FIX: Direct component discovery with immediate error detection
+    // ROOT CAUSE FIX: Enhanced component discovery with proper WordPress data integration
     $components_data = array();
     $categories_data = array();
     
-    // Try to get component data directly with comprehensive error handling
-    try {
-        // CRITICAL FIX: Force require the ComponentDiscovery class
-        $component_discovery_file = GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
-        if (!file_exists($component_discovery_file)) {
-            throw new Exception('ComponentDiscovery.php not found at: ' . $component_discovery_file);
+    // Create ComponentDiscovery instance
+    if (file_exists(GMKB_PLUGIN_DIR . 'includes/ComponentDiscovery.php')) {
+        require_once GMKB_PLUGIN_DIR . 'includes/ComponentDiscovery.php';
+        $component_discovery = new \GMKB\ComponentDiscovery();
+        $components_raw = $component_discovery->discover_components();
+    } else {
+        // Fallback: Use existing ComponentDiscovery if available
+        if (class_exists('ComponentDiscovery')) {
+            $components_dir = GMKB_PLUGIN_DIR . 'components';
+            $component_discovery = new ComponentDiscovery($components_dir);
+            $component_discovery->scan();
+            $components_raw = $component_discovery->getComponents();
+        } else {
+            $components_raw = array();
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( '⚠️ ComponentDiscovery class not found' );
+            }
         }
+    }
+    
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( '✅ ROOT CAUSE FIX: ComponentDiscovery found ' . count($components_raw) . ' components' );
+        $component_types = array_column($components_raw, 'type');
+        error_log( '🔍 Component types found: ' . implode(', ', $component_types) );
+    }
         
-        if (!class_exists('ComponentDiscovery')) {
-            require_once $component_discovery_file;
+    // Convert to JavaScript format with enhanced data for Vue components
+    foreach ($components_raw as $component) {
+        $components_data[] = array(
+            'type' => $component['type'],
+            'id' => $component['id'],
+            'name' => $component['name'],
+            'title' => $component['title'],
+            'description' => $component['description'],
+            'category' => $component['category'],
+            'version' => $component['version'],
+            'icon' => $component['icon'] ?? 'fa-puzzle-piece',
+            'directory' => $component['directory'],
+            'order' => 999,
+            // Vue support detection from discovery
+            'hasVueRenderer' => !empty($component['renderers']['vue']),
+            'vueRendererPath' => $component['renderers']['vue'] ?? null,
+            'hasSchema' => !empty($component['schema']),
+            'schema' => $component['schema'] ?? null,
+            'supports' => $component['supports'],
+            // Configuration for component registry
+            'config' => array(
+                'requiresServerRender' => !empty($component['supports']['serverRender']) && empty($component['supports']['vueRender']),
+                'hasVueComponent' => !empty($component['supports']['vueRender']),
+                'componentPath' => '/components/' . $component['directory'] . '/'
+            )
+        );
+    }
+        
+        // Create categories from discovered components
+        $categories = array();
+        foreach ($components_data as $component) {
+            $category = $component['category'];
+            if (!isset($categories[$category])) {
+                $categories[$category] = array(
+                    'slug' => $category,
+                    'name' => ucfirst($category),
+                    'description' => ucfirst($category) . ' components',
+                    'count' => 0
+                );
+            }
+            $categories[$category]['count']++;
         }
-        
-        // CRITICAL FIX: Instantiate ComponentDiscovery directly
-        $components_dir = GUESTIFY_PLUGIN_DIR . 'components';
-        if (!is_dir($components_dir)) {
-            throw new Exception('Components directory not found at: ' . $components_dir);
-        }
-        
-        $component_discovery = new ComponentDiscovery($components_dir);
-        
-        // CRITICAL FIX: Force immediate fresh scan
-        $categories_raw = $component_discovery->scan(true);
-        $components_raw = $component_discovery->getComponents();
-        
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '🔍 ROOT CAUSE FIX: Direct component discovery - found ' . count($components_raw) . ' components' );
-            error_log( '🔍 ROOT CAUSE FIX: Component keys: ' . implode(', ', array_keys($components_raw)) );
-        }
-        
-        // CRITICAL FIX: Convert to JavaScript-compatible format with required fields
-        foreach ($components_raw as $key => $component) {
-            $components_data[] = array(
-                'type' => $key, // Use directory name as type
-                'name' => $component['name'] ?? ucfirst($key),
-                'title' => $component['title'] ?? $component['name'] ?? ucfirst($key),
-                'description' => $component['description'] ?? 'No description available',
-                'category' => $component['category'] ?? 'general',
-                'premium' => $component['isPremium'] ?? false,
-                'icon' => $component['icon'] ?? 'fa-puzzle-piece',
-                'directory' => $key,
-                'order' => $component['order'] ?? 999,
-                // MIGRATION FIX: Force all components to client-side rendering
-                // Old: 'requiresServerRender' => $component['requiresServerRender'] ?? false
-                'requiresServerRender' => false  // Always false - we use client-side rendering only
-            );
-        }
-        
-        // CRITICAL FIX: Convert categories with proper structure
-        foreach ($categories_raw as $cat_name => $cat_components) {
-            $categories_data[] = array(
-                'slug' => $cat_name,
-                'name' => ucfirst($cat_name),
-                'description' => ucfirst($cat_name) . ' components',
-                'count' => count($cat_components)
-            );
-        }
-        
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '✅ ROOT CAUSE FIX: Successfully processed ' . count($components_data) . ' components into ' . count($categories_data) . ' categories' );
-        }
-        
-    } catch (Exception $e) {
-        // CRITICAL ERROR LOGGING
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '❌ CRITICAL ERROR in component discovery: ' . $e->getMessage() );
-            error_log( '❌ CRITICAL ERROR stack trace: ' . $e->getTraceAsString() );
-        }
-        
-        // Use reliable fallback components that always work
+        $categories_data = array_values($categories);
+    
+    // CRITICAL FIX: Ensure we always have components for JavaScript
+    if (empty($components_data)) {
+        // Emergency fallback with enhanced Vue support data
         $components_data = array(
             array(
                 'type' => 'hero',
                 'name' => 'Hero Section',
                 'title' => 'Hero Section',
-                'description' => 'A prominent header section with title and subtitle',
+                'description' => 'Main header section with title and description',
                 'category' => 'essential',
-                'premium' => false,
-                'icon' => 'fa-star',
-                'directory' => 'hero',
-                'order' => 1,
-                'requiresServerRender' => false  // Client-side only
+                'hasVueRenderer' => true, // Assume Vue available for hero
+                'supports' => array(
+                    'vueRender' => true,
+                    'designPanel' => true
+                ),
+                'config' => array(
+                    'requiresServerRender' => false,
+                    'hasVueComponent' => true,
+                    'componentPath' => '/components/hero/'
+                )
             ),
             array(
                 'type' => 'biography',
                 'name' => 'Biography',
-                'title' => 'Professional Biography',
+                'title' => 'Biography',
                 'description' => 'Professional biography section',
                 'category' => 'essential',
-                'premium' => false,
-                'icon' => 'fa-user',
-                'directory' => 'biography',
-                'order' => 2,
-                'requiresServerRender' => false  // Client-side only
-            ),
-            array(
-                'type' => 'topics',
-                'name' => 'Topics',
-                'title' => 'Speaking Topics',
-                'description' => 'Areas of expertise and speaking topics',
-                'category' => 'essential',
-                'premium' => false,
-                'icon' => 'fa-lightbulb',
-                'directory' => 'topics',
-                'order' => 3,
-                'requiresServerRender' => false  // Client-side only
-            ),
-            array(
-                'type' => 'contact',
-                'name' => 'Contact',
-                'title' => 'Contact Information',
-                'description' => 'Contact details and social links',
-                'category' => 'essential',
-                'premium' => false,
-                'icon' => 'fa-envelope',
-                'directory' => 'contact',
-                'order' => 4,
-                'requiresServerRender' => false  // Client-side only
-            )
-        );
-        
-        $categories_data = array(
-            array(
-                'slug' => 'essential',
-                'name' => 'Essential',
-                'description' => 'Core components for every media kit',
-                'count' => count($components_data)
-            )
-        );
-        
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '🛡️ ROOT CAUSE FIX: Using guaranteed fallback components (' . count($components_data) . ' components)' );
-        }
-    }
-    
-    // CRITICAL FIX: Ensure we always have components for JavaScript
-    if (empty($components_data)) {
-        // This should never happen, but as an absolute last resort
-        $components_data = array(
-            array(
-                'type' => 'hero',
-                'name' => 'Hero Section',
-                'title' => 'Hero Section',
-                'description' => 'Default component',
-                'category' => 'essential',
-                'premium' => false,
-                'icon' => 'fa-star',
-                'directory' => 'hero',
-                'order' => 1,
-                'requiresServerRender' => false  // Client-side only
+                'hasVueRenderer' => false,
+                'supports' => array(
+                    'vueRender' => false,
+                    'serverRender' => true
+                ),
+                'config' => array(
+                    'requiresServerRender' => true,
+                    'hasVueComponent' => false,
+                    'componentPath' => '/components/biography/'
+                )
             )
         );
         
@@ -578,12 +536,12 @@ function gmkb_enqueue_assets() {
                 'slug' => 'essential',
                 'name' => 'Essential',
                 'description' => 'Essential components',
-                'count' => 1
+                'count' => count($components_data)
             )
         );
         
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '🚨 EMERGENCY FALLBACK: Using minimal single component' );
+            error_log( '🚨 EMERGENCY FALLBACK: Using enhanced fallback components with Vue support data' );
         }
     }
     
@@ -865,14 +823,36 @@ function gmkb_enqueue_assets() {
         'scriptsLoaded' => 'simplified-fixed',
         'moduleSupport' => false,
         'es6Converted'  => true,
-        // ROOT CAUSE FIX: Include validated component data with debugging info
+        // ROOT CAUSE FIX: Enhanced component data for Vue integration
         'components'    => $components_data,
         'categories'    => $categories_data,
         'totalComponents' => count($components_data),
-        'componentsSource' => 'direct_discovery',
+        'componentsSource' => 'enhanced_discovery',
         'rootCauseFixActive' => true,
         'componentKeys' => array_column($components_data, 'type'),
-        'componentTypes' => array_column($components_data, 'type'), // For discovery system
+        'componentTypes' => array_column($components_data, 'type'),
+        // ROOT FIX: Component registry data for Vue
+        'componentRegistry' => array_reduce($components_data, function($carry, $comp) {
+            $carry[$comp['type']] = $comp;
+            return $carry;
+        }, array()),
+        'vueComponentsAvailable' => array_filter($components_data, function($comp) {
+            return !empty($comp['hasVueRenderer']);
+        }),
+        'vueComponentCount' => count(array_filter($components_data, function($comp) {
+            return !empty($comp['hasVueRenderer']);
+        }))
+    );
+    
+    // ROOT FIX: Update wp_data with component registry information
+    $wp_data['componentRegistry'] = array_reduce($components_data, function($carry, $comp) {
+        $carry[$comp['type']] = $comp;
+        return $carry;
+    }, array());
+    $wp_data['vueComponentsAvailable'] = array_filter($components_data, function($comp) {
+        return !empty($comp['hasVueRenderer']);
+    });
+    $wp_data['componentDiscoveryComplete'] = true;
         // ROOT FIX: Include saved state data for auto-save functionality
         'saved_components' => $saved_components,
         'saved_state' => $saved_state,

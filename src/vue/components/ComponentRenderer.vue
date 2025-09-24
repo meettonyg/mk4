@@ -34,22 +34,26 @@
     <!-- Component Content -->
     <div class="gmkb-component-content">
       <component 
-        v-if="componentImplementation"
+        v-if="componentImplementation && !isLoading"
         :is="componentImplementation" 
         v-bind="componentProps"
         @update="handleUpdate"
       />
-      <div v-else class="component-loading">
+      <div v-else-if="isLoading" class="component-loading">
         Loading {{ component.type }} component...
+      </div>
+      <div v-else-if="loadError" class="component-error">
+        Error loading {{ component.type }}: {{ loadError }}
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
-import { getComponent } from '../services/componentRegistry';
+import vueComponentLoader from '../../loaders/VueComponentLoader';
+import FallbackRenderer from './FallbackRenderer.vue';
 
 export default {
   name: 'ComponentRenderer',
@@ -71,10 +75,49 @@ export default {
   
   setup(props) {
     const store = useMediaKitStore();
+    const componentImplementation = ref(null);
+    const isLoading = ref(true);
+    const loadError = ref(null);
     
-    // Get the component implementation from the registry
-    const componentImplementation = computed(() => {
-      return getComponent(props.component.type);
+    // Load component dynamically
+    const loadComponent = async () => {
+      isLoading.value = true;
+      loadError.value = null;
+      
+      try {
+        // Get component info from registry
+        if (window.gmkbComponentRegistry && window.gmkbComponentRegistry.hasComponent(props.component.type)) {
+          // Try to load Vue component
+          const vueComponent = await vueComponentLoader.loadVueComponent(props.component.type);
+          
+          if (vueComponent) {
+            componentImplementation.value = vueComponent;
+          } else {
+            // Fallback to basic renderer
+            console.warn(`[ComponentRenderer] Using fallback for '${props.component.type}'`);
+            componentImplementation.value = FallbackRenderer;
+          }
+        } else {
+          console.error(`[ComponentRenderer] Component type '${props.component.type}' not in registry`);
+          componentImplementation.value = FallbackRenderer;
+        }
+      } catch (error) {
+        console.error(`[ComponentRenderer] Failed to load component '${props.component.type}':`, error);
+        loadError.value = error.message;
+        componentImplementation.value = FallbackRenderer;
+      } finally {
+        isLoading.value = false;
+      }
+    };
+    
+    // Load on mount
+    onMounted(() => {
+      loadComponent();
+    });
+    
+    // Reload if component type changes
+    watch(() => props.component.type, () => {
+      loadComponent();
     });
     
     // Component props to pass down
@@ -133,6 +176,8 @@ export default {
     return {
       componentImplementation,
       componentProps,
+      isLoading,
+      loadError,
       isFirst,
       isLast,
       moveUp,

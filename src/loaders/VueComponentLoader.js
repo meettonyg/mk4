@@ -1,204 +1,239 @@
-// Component Loader for Vue Components
-// Maintains self-contained architecture while enabling bundling
+/**
+ * Vue Component Loader Service
+ * 
+ * Dynamically loads Vue component files on demand
+ * Uses Vite's import.meta.glob for efficient component discovery
+ * 
+ * @package GMKB
+ * @since 2.0.0
+ */
 
-import { createApp, computed } from 'vue';
+// Import all Vue component renderers using Vite's glob import
+const vueComponents = import.meta.glob('/components/*/[A-Z]*Renderer.vue', { eager: false });
 
-// Registry for Vue component definitions
-const vueComponents = new Map();
-
-// Register Biography Vue component
-export async function registerBiographyVue() {
-  try {
-    // Import the Vue component from its self-contained directory
-    const module = await import('../../components/biography/Biography.vue');
-    vueComponents.set('biography', module.default || module);
-    console.log('✅ Biography Vue component registered for bundling');
-    return true;
-  } catch (error) {
-    console.log('Biography Vue component not found, using inline definition');
-    
-    // Inline fallback for Biography component
-    const BiographyVue = {
-      name: 'BiographyComponent',
-      template: `
-        <div class="biography-component gmkb-component" :data-component-id="componentId">
-          <div class="biography__content">
-            <h2 class="biography__title" v-if="showTitle">{{ title }}</h2>
-            <div class="biography__text" v-html="formattedBiography"></div>
-            <div v-if="!localBiography" class="biography__empty">
-              <p>No biography available.</p>
-              <button @click="loadFromPods" class="btn btn--primary btn--sm" v-if="podsData.biography">
-                Load from Guest Post Data
-              </button>
-            </div>
-          </div>
-        </div>
-      `,
-      props: {
-        biography: { type: String, default: '' },
-        title: { type: String, default: 'Biography' },
-        showTitle: { type: Boolean, default: true },
-        componentId: { type: String, required: true }
-      },
-      setup(props) {
-        const podsData = window.gmkbData?.pods_data || {};
+class VueComponentLoader {
+    constructor() {
+        this.componentCache = new Map();
+        this.loadingPromises = new Map();
         
-        // Auto-load from Pods if empty
-        const localBiography = props.biography || podsData.biography || '';
+        // Log discovered components in development
+        if (import.meta.env.DEV) {
+            console.log('[VueComponentLoader] Discovered Vue components:', Object.keys(vueComponents));
+        }
+    }
+
+    /**
+     * Load a Vue component by name
+     * 
+     * @param {string} componentName Component type/name
+     * @return {Promise<Object>} Vue component module
+     */
+    async loadVueComponent(componentName) {
+        // Check cache first
+        if (this.componentCache.has(componentName)) {
+            return this.componentCache.get(componentName);
+        }
+
+        // Check if already loading
+        if (this.loadingPromises.has(componentName)) {
+            return this.loadingPromises.get(componentName);
+        }
+
+        // Find matching component path
+        const componentPath = this.findComponentPath(componentName);
         
-        const formattedBiography = computed(() => {
-          if (!localBiography) return '';
-          let formatted = localBiography;
-          formatted = formatted.replace(/\n\n/g, '</p><p>');
-          formatted = formatted.replace(/\n/g, '<br>');
-          return `<p>${formatted}</p>`;
+        if (!componentPath) {
+            console.error(`[VueComponentLoader] Component '${componentName}' not found`);
+            return null;
+        }
+
+        // Create loading promise
+        const loadPromise = this.loadComponent(componentPath, componentName);
+        this.loadingPromises.set(componentName, loadPromise);
+
+        try {
+            const component = await loadPromise;
+            this.componentCache.set(componentName, component);
+            this.loadingPromises.delete(componentName);
+            return component;
+        } catch (error) {
+            console.error(`[VueComponentLoader] Failed to load component '${componentName}':`, error);
+            this.loadingPromises.delete(componentName);
+            return null;
+        }
+    }
+
+    /**
+     * Find the path for a component
+     * 
+     * @param {string} componentName Component name
+     * @return {string|null} Component path or null
+     */
+    findComponentPath(componentName) {
+        // Direct match first
+        let path = `/components/${componentName}/${this.formatComponentFileName(componentName)}Renderer.vue`;
+        if (vueComponents[path]) {
+            return path;
+        }
+
+        // Try with different naming conventions
+        const variations = [
+            `/components/${componentName}/${componentName}Renderer.vue`,
+            `/components/${componentName}/${this.toPascalCase(componentName)}Renderer.vue`,
+            `/components/${componentName.toLowerCase()}/${this.formatComponentFileName(componentName)}Renderer.vue`,
+            `/components/${componentName.replace(/-/g, '_')}/${this.formatComponentFileName(componentName)}Renderer.vue`
+        ];
+
+        for (const variation of variations) {
+            if (vueComponents[variation]) {
+                return variation;
+            }
+        }
+
+        // Search all paths for partial match
+        const allPaths = Object.keys(vueComponents);
+        const matchingPath = allPaths.find(path => {
+            const normalizedPath = path.toLowerCase();
+            const normalizedName = componentName.toLowerCase().replace(/-/g, '');
+            return normalizedPath.includes(normalizedName);
+        });
+
+        return matchingPath || null;
+    }
+
+    /**
+     * Load a component from path
+     * 
+     * @param {string} path Component path
+     * @param {string} componentName Component name for logging
+     * @return {Promise<Object>} Component module
+     */
+    async loadComponent(path, componentName) {
+        const importFn = vueComponents[path];
+        
+        if (!importFn) {
+            throw new Error(`No import function for path: ${path}`);
+        }
+
+        console.log(`[VueComponentLoader] Loading component '${componentName}' from ${path}`);
+        
+        const module = await importFn();
+        
+        // Return the default export or the module itself
+        return module.default || module;
+    }
+
+    /**
+     * Format component name to file name
+     * 
+     * @param {string} name Component name
+     * @return {string} Formatted name
+     */
+    formatComponentFileName(name) {
+        // Convert kebab-case to PascalCase
+        return name.split('-')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join('');
+    }
+
+    /**
+     * Convert string to PascalCase
+     * 
+     * @param {string} str String to convert
+     * @return {string} PascalCase string
+     */
+    toPascalCase(str) {
+        return str.replace(/(?:^|[-_])(\w)/g, (_, c) => c ? c.toUpperCase() : '');
+    }
+
+    /**
+     * Check if a component is available
+     * 
+     * @param {string} componentName Component name
+     * @return {boolean} True if component exists
+     */
+    hasComponent(componentName) {
+        return this.findComponentPath(componentName) !== null;
+    }
+
+    /**
+     * Get all available component names
+     * 
+     * @return {Array<string>} Component names
+     */
+    getAvailableComponents() {
+        const components = new Set();
+        
+        Object.keys(vueComponents).forEach(path => {
+            // Extract component name from path
+            const match = path.match(/\/components\/([^/]+)\//);
+            if (match) {
+                components.add(match[1]);
+            }
         });
         
-        const loadFromPods = () => {
-          if (window.GMKB?.stateManager && props.componentId && podsData.biography) {
-            window.GMKB.stateManager.updateComponent(props.componentId, {
-              data: { biography: podsData.biography },
-              props: { biography: podsData.biography }
-            });
-          }
+        return Array.from(components);
+    }
+
+    /**
+     * Preload a component
+     * 
+     * @param {string} componentName Component to preload
+     */
+    preloadComponent(componentName) {
+        this.loadVueComponent(componentName).catch(err => {
+            console.warn(`[VueComponentLoader] Failed to preload '${componentName}':`, err);
+        });
+    }
+
+    /**
+     * Preload multiple components
+     * 
+     * @param {Array<string>} componentNames Components to preload
+     */
+    preloadComponents(componentNames) {
+        componentNames.forEach(name => this.preloadComponent(name));
+    }
+
+    /**
+     * Clear the component cache
+     */
+    clearCache() {
+        this.componentCache.clear();
+        console.log('[VueComponentLoader] Cache cleared');
+    }
+
+    /**
+     * Get cache statistics
+     * 
+     * @return {Object} Cache stats
+     */
+    getCacheStats() {
+        return {
+            cached: this.componentCache.size,
+            loading: this.loadingPromises.size,
+            available: Object.keys(vueComponents).length
         };
-        
-        return { localBiography, formattedBiography, podsData, loadFromPods };
-      }
-    };
-    
-    vueComponents.set('biography', BiographyVue);
-    return true;
-  }
-}
-
-// Register Hero Vue component
-export async function registerHeroVue() {
-  try {
-    const module = await import('../../components/hero/Hero.vue');
-    vueComponents.set('hero', module.default || module);
-    console.log('✅ Hero Vue component registered for bundling');
-    return true;
-  } catch (error) {
-    console.log('Hero Vue component not found, using inline definition');
-    
-    // Inline fallback for Hero component
-    const HeroVue = {
-      name: 'HeroComponent',
-      template: `
-        <div class="hero-component gmkb-component" :data-component-id="componentId">
-          <div class="hero__content">
-            <h1 class="hero__title" v-if="displayTitle">{{ displayTitle }}</h1>
-            <p class="hero__subtitle" v-if="displaySubtitle">{{ displaySubtitle }}</p>
-            <div class="hero__actions" v-if="ctaText">
-              <a :href="ctaUrl" class="hero__cta btn btn--primary">{{ ctaText }}</a>
-            </div>
-          </div>
-        </div>
-      `,
-      props: {
-        title: { type: String, default: '' },
-        subtitle: { type: String, default: '' },
-        ctaText: { type: String, default: '' },
-        ctaUrl: { type: String, default: '#' },
-        componentId: { type: String, required: true }
-      },
-      setup(props) {
-        const podsData = window.gmkbData?.pods_data || {};
-        
-        // Use Pods data as defaults
-        const displayTitle = computed(() => 
-          props.title || `${podsData.first_name || ''} ${podsData.last_name || ''}`.trim() || 'Welcome'
-        );
-        const displaySubtitle = computed(() => 
-          props.subtitle || podsData.tagline || ''
-        );
-        
-        return { displayTitle, displaySubtitle };
-      }
-    };
-    
-    vueComponents.set('hero', HeroVue);
-    return true;
-  }
-}
-
-// Render a Vue component
-export function renderVueComponent(type, container, props = {}) {
-  const VueComponent = vueComponents.get(type);
-  
-  if (!VueComponent) {
-    console.warn(`Vue component ${type} not registered`);
-    return null;
-  }
-  
-  // Ensure container is a proper DOM element
-  if (typeof container === 'string') {
-    container = document.querySelector(container);
-  }
-  
-  if (!container || !container.nodeType) {
-    console.error('Invalid container for Vue component');
-    return null;
-  }
-  
-  // Add Pods data to props if not already provided
-  const podsData = window.gmkbData?.pods_data || {};
-  if (type === 'biography' && !props.biography && podsData.biography) {
-    props.biography = podsData.biography;
-    console.log('Biography: Auto-loaded from Pods data');
-  } else if (type === 'hero') {
-    if (!props.title && (podsData.first_name || podsData.last_name)) {
-      props.title = `${podsData.first_name || ''} ${podsData.last_name || ''}`.trim();
     }
-    if (!props.subtitle && podsData.tagline) {
-      props.subtitle = podsData.tagline;
-    }
-  }
-  
-  try {
-    // Create and mount Vue app
-    const app = createApp(VueComponent, props);
-    const instance = app.mount(container);
-    
-    // Store app reference for cleanup
-    container._vueApp = app;
-    
-    console.log(`✅ ${type} Vue component rendered with props:`, props);
-    
-    return instance;
-  } catch (error) {
-    console.error(`Failed to mount Vue component ${type}:`, error);
-    // Fallback: render as HTML
-    if (type === 'biography' && props.biography) {
-      container.innerHTML = `
-        <div class="biography-component">
-          <h2>${props.title || 'Biography'}</h2>
-          <div class="biography__text">${props.biography}</div>
-        </div>
-      `;
-    }
-    return null;
-  }
 }
 
-// Note: New Vue components are now registered via VueComponentDiscovery.js
-// This avoids build-time import issues with renderer.vue.js files
-// Components are discovered and imported directly as .vue files
+// Create and export singleton instance
+const vueComponentLoader = new VueComponentLoader();
 
-// Initialize Vue components
-export async function initializeVueComponents() {
-  await registerBiographyVue();
-  await registerHeroVue();
-  
-  // New Vue components are discovered via VueComponentDiscovery.js
-  
-  // Make render function globally available
-  window.GMKBVueRenderer = {
-    render: renderVueComponent,
-    hasComponent: (type) => vueComponents.has(type)
-  };
-  
-  console.log('✅ Vue component system initialized with', vueComponents.size, 'components');
-  return true;
+// Make globally available
+if (typeof window !== 'undefined') {
+    window.VueComponentLoader = vueComponentLoader;
+    
+    // Attach to GMKB namespace when ready
+    if (window.GMKB) {
+        window.GMKB.vueComponentLoader = vueComponentLoader;
+    } else {
+        window.addEventListener('gmkb:ready', () => {
+            if (window.GMKB) {
+                window.GMKB.vueComponentLoader = vueComponentLoader;
+            }
+        });
+    }
 }
+
+export default vueComponentLoader;

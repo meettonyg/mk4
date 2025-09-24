@@ -9,7 +9,7 @@ import '../css/vue-controls.css';
 
 // Import component definitions and library integration
 import { initializeComponentLibrary } from './integrations/componentLibraryIntegration.js';
-// import { initializeVueStoreBridge } from './integrations/vueStoreBridge.js'; // REMOVED - Legacy code
+import componentRegistryBridge from './integrations/componentRegistryBridge.js';
 import vueComponentDiscovery from './vue/services/componentDiscovery.js';
 
 // Vue 3 imports
@@ -342,6 +342,14 @@ async function initialize() {
     
     // Vue component discovery for potential legacy components during transition
     await VueComponentDiscovery.initialize();
+    
+    // ROOT FIX: Initialize component registry bridge FIRST
+    await componentRegistryBridge.initialize();
+    console.log('✅ Component registry bridge initialized');
+    
+    // ROOT FIX: Initialize component registry bridge FIRST
+    await componentRegistryBridge.initialize();
+    console.log('✅ Component registry bridge initialized');
     
     // Initialize drag and drop system
     initDragDrop();
@@ -878,8 +886,10 @@ function setupDragAndDrop() {
       e.dataTransfer.effectAllowed = 'copy';
       e.dataTransfer.setData('text/plain', componentType);
       e.dataTransfer.setData('application/json', JSON.stringify({
-        type: 'new-component',
-        componentType: componentType
+        type: componentType,
+        componentType: componentType,
+        source: 'sidebar',
+        isNewComponent: true
       }));
       item.classList.add('dragging');
     });
