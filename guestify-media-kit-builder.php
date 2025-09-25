@@ -557,7 +557,14 @@ class Guestify_Media_Kit_Builder {
     public function media_kit_shortcode( $atts ) {
         ob_start();
         
-        $template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template.php';
+        // PHASE 2 FIX: Use simplified template for pure Vue mode
+        $use_simple_template = defined('GMKB_USE_LEAN_BUNDLE') && GMKB_USE_LEAN_BUNDLE;
+        
+        if ($use_simple_template) {
+            $template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template-simple.php';
+        } else {
+            $template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template.php';
+        }
         
         if (file_exists($template)) {
             include $template;

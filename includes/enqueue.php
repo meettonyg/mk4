@@ -173,13 +173,13 @@ function gmkb_enqueue_assets() {
     
     // ROOT FIX: No patches - registry loads properly through dependency chain
     
-    // ARCHITECTURE COMPLIANT: Check if we should use the lean bundle
+    // PHASE 1 FIX: Clean separation - Vue-only mode when lean bundle enabled
     if ( GMKB_USE_LEAN_BUNDLE && file_exists( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ) ) {
-        // Use the new lean bundle - single file instead of 60+ files
+        // PURE VUE MODE - ONLY load Vue bundle, nothing else
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( '🚀 GMKB: Using LEAN BUNDLE architecture - single optimized file' );
-            error_log( 'GMKB: Lean bundle path: ' . GUESTIFY_PLUGIN_URL . 'dist/gmkb.iife.js' );
-            error_log( 'GMKB: This should be the ONLY JavaScript file loaded for the builder' );
+            error_log( '🚀 GMKB: PURE VUE MODE - Only Vue bundle will load' );
+            error_log( 'GMKB: Disabling ALL legacy scripts' );
+            error_log( 'GMKB: Vue bundle path: ' . GUESTIFY_PLUGIN_URL . 'dist/gmkb.iife.js' );
         }
         
         // Load saved state for lean bundle
@@ -309,35 +309,23 @@ function gmkb_enqueue_assets() {
             'pods_fields_loaded' => !empty(array_filter($pods_data))
         );
         
-        // ROOT FIX: Load Pure Vue Mode to disable legacy rendering
-        wp_enqueue_script(
-            'gmkb-pure-vue-mode',
-            $plugin_url . 'js/pure-vue-mode.js',
-            array(), // No dependencies - must run first
-            $version,
-            false // Load in HEAD for early execution
-        );
+        // PHASE 1 FIX: REMOVED pure-vue-mode script - not needed with clean separation
+        // When lean bundle is enabled, NO legacy scripts load at all
         
-        // ROOT FIX: Load Component Registry in HEAD so it's available for lean bundle
-        wp_enqueue_script(
-            'gmkb-component-registry-lean',
-            $plugin_url . 'js/core/component-registry.js',
-            array(), // No dependencies
-            $version,
-            false // Load in HEAD, not footer - MUST be available before bundle
-        );
+        // PHASE 1 FIX: Component registry handled internally by Vue bundle
+        // No need to load separately - reduces script count
         
-        // Pass WordPress data to the lean bundle
-        wp_localize_script( 'gmkb-component-registry-lean', 'gmkbData', $lean_wp_data );
-        
-        // Enqueue the lean bundle with dependencies
+        // PHASE 1 FIX: Enqueue ONLY the Vue bundle with NO dependencies
         wp_enqueue_script(
             'gmkb-lean-bundle',
             $plugin_url . 'dist/gmkb.iife.js',
-            array('gmkb-component-registry-lean'), // Depends on Component Registry
+            array(), // NO DEPENDENCIES - Vue bundle is self-sufficient
             filemtime( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ), // Use file modified time for cache busting
             true
         );
+        
+        // Pass WordPress data to the lean bundle (must be AFTER wp_enqueue_script)
+        wp_localize_script( 'gmkb-lean-bundle', 'gmkbData', $lean_wp_data );
         
         // Enqueue minimal CSS
         wp_enqueue_style(
@@ -424,15 +412,13 @@ function gmkb_enqueue_assets() {
         }
         
         
-        // ROOT FIX: When using lean bundle, ONLY load the bundle for JavaScript
-        // Do NOT load additional scripts that duplicate functionality
-        // The bundle already contains ALL necessary JavaScript including:
-        // - Component rendering
-        // - State management 
-        // - Theme system
-        // - Controls management
-        // Skip ALL additional JavaScript loading when using lean bundle
-        return; // EXIT HERE - bundle handles all JavaScript
+        // PHASE 1 FIX: EARLY RETURN - No other scripts when using Vue bundle
+        // This prevents ALL legacy scripts from loading
+        // The Vue bundle is completely self-sufficient
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( '✅ GMKB: Early return after Vue bundle - no legacy scripts will load' );
+        }
+        return; // CRITICAL: EXIT HERE - Vue handles everything
     }
     
     // ROOT CAUSE FIX: Enhanced component discovery with proper WordPress data integration

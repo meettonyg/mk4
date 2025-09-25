@@ -1,160 +1,130 @@
 /**
- * Vue Migration Test Script
- * Tests the complete Vue component system
+ * Test Vue Migration - Verify dual rendering is fixed
+ * Run this in the browser console to check the migration status
  */
 
-(function() {
-  console.log('🧪 Vue Migration Test Starting...');
-  
-  // Wait for Vue to be ready
-  const checkVueReady = () => {
-    const tests = [];
+window.testVueMigration = function() {
+    console.log('🔍 Testing Vue Migration Status...\n');
     
-    // Test 1: Check if Vue app exists
-    tests.push({
-      name: 'Vue App Initialized',
-      pass: !!window.gmkbApp,
-      details: window.gmkbApp ? 'Vue app mounted' : 'Vue app not found'
+    const results = {
+        vueMode: false,
+        legacyDisabled: false,
+        componentCount: { store: 0, dom: 0 },
+        duplicates: false,
+        errors: []
+    };
+    
+    // Check if Vue mode is active
+    results.vueMode = window.GMKB_PURE_VUE_MODE === true;
+    console.log(`✅ Vue Mode Active: ${results.vueMode}`);
+    
+    // Check if legacy systems are disabled
+    const legacyChecks = [
+        { name: 'enhancedComponentManager', obj: window.enhancedComponentManager },
+        { name: 'ComponentRenderer', obj: window.ComponentRenderer },
+        { name: 'stateManager', obj: window.stateManager },
+        { name: 'Renderer', obj: window.Renderer }
+    ];
+    
+    let disabledCount = 0;
+    legacyChecks.forEach(check => {
+        if (check.obj && check.obj._legacyDisabled) {
+            disabledCount++;
+            console.log(`✅ ${check.name}: Disabled`);
+        } else if (!check.obj) {
+            disabledCount++;
+            console.log(`✅ ${check.name}: Not loaded`);
+        } else {
+            console.log(`❌ ${check.name}: Still active!`);
+            results.errors.push(`${check.name} is still active`);
+        }
     });
     
-    // Test 2: Check Pinia store
-    tests.push({
-      name: 'Pinia Store Available',
-      pass: !!(window.gmkbStore || window.mediaKitStore),
-      details: window.gmkbStore ? 'Store accessible' : 'Store not found'
-    });
+    results.legacyDisabled = disabledCount === legacyChecks.length;
     
-    // Test 3: Check store methods
-    const store = window.gmkbStore || window.mediaKitStore;
-    if (store) {
-      tests.push({
-        name: 'Store Actions Available',
-        pass: typeof store.addComponent === 'function',
-        details: 'Component management actions ready'
-      });
-      
-      tests.push({
-        name: 'Store Getters Working',
-        pass: typeof store.componentCount !== 'undefined',
-        details: `${store.componentCount || 0} components loaded`
-      });
-      
-      // Test 4: Try adding a test component
-      try {
-        const testId = store.addComponent({
-          type: 'hero',
-          data: { title: 'Vue Migration Test' }
-        });
-        
-        tests.push({
-          name: 'Component Creation',
-          pass: !!testId,
-          details: `Created test component: ${testId}`
-        });
-        
-        // Test 5: Check if component was added
-        tests.push({
-          name: 'Component Storage',
-          pass: !!store.components[testId],
-          details: 'Component stored correctly'
-        });
-        
-        // Test 6: Test undo/redo
-        store._saveToHistory();
-        const canUndo = store.canUndo;
-        tests.push({
-          name: 'History Management',
-          pass: true,
-          details: `Undo available: ${canUndo}`
-        });
-        
-        // Test 7: Test selection
-        store.selectComponent(testId);
-        tests.push({
-          name: 'Component Selection',
-          pass: store.selectedComponentIds.includes(testId),
-          details: 'Selection system working'
-        });
-        
-        // Clean up test component
-        store.removeComponent(testId);
-      } catch (error) {
-        tests.push({
-          name: 'Component Operations',
-          pass: false,
-          details: error.message
-        });
-      }
+    // Check component counts
+    if (window.gmkbStore) {
+        results.componentCount.store = window.gmkbStore.components?.length || 0;
+        console.log(`\n📊 Store Components: ${results.componentCount.store}`);
     }
     
-    // Test 8: Check Vue components
-    tests.push({
-      name: 'Component Wrapper',
-      pass: !!document.querySelector('.component-wrapper'),
-      details: document.querySelector('.component-wrapper') ? 'Component wrapper rendered' : 'No components rendered yet'
-    });
+    // Count DOM components
+    const domComponents = document.querySelectorAll('.gmkb-component, .vue-component, [data-component-id]');
+    results.componentCount.dom = domComponents.length;
+    console.log(`📊 DOM Components: ${results.componentCount.dom}`);
     
-    // Test 9: Check sections
-    tests.push({
-      name: 'Section Layout',
-      pass: !!document.querySelector('.gmkb-section-layout'),
-      details: document.querySelector('.gmkb-section-layout') ? 'Section layout active' : 'Section layout not found'
-    });
-    
-    // Print results
-    console.log('\n📊 Vue Migration Test Results:');
-    console.log('================================');
-    
-    let passed = 0;
-    let failed = 0;
-    
-    tests.forEach(test => {
-      const status = test.pass ? '✅' : '❌';
-      const color = test.pass ? 'color: green' : 'color: red';
-      console.log(`%c${status} ${test.name}`, color);
-      console.log(`   ${test.details}`);
-      
-      if (test.pass) passed++;
-      else failed++;
-    });
-    
-    console.log('================================');
-    console.log(`Total: ${passed} passed, ${failed} failed`);
-    
-    // Provide helper commands
-    if (passed > failed) {
-      console.log('\n🎉 Vue migration is working!');
-      console.log('\n📝 Try these commands:');
-      console.log('  store.addComponent({ type: "biography" })');
-      console.log('  store.addSection("two_column")');
-      console.log('  store.openEditPanel(componentId)');
-      console.log('  store.saveToWordPress()');
-      console.log('  store.undo()');
-      console.log('  store.redo()');
+    // Check for duplicates
+    results.duplicates = results.componentCount.dom > results.componentCount.store && results.componentCount.store > 0;
+    if (results.duplicates) {
+        console.log(`\n⚠️ DUPLICATES DETECTED! DOM has ${results.componentCount.dom - results.componentCount.store} extra components`);
+        results.errors.push('Duplicate components detected');
     } else {
-      console.log('\n⚠️ Vue migration needs attention');
-      console.log('Check the console for errors');
+        console.log(`\n✅ No duplicates - counts match!`);
     }
-  };
-  
-  // Check if Vue is ready, otherwise wait
-  if (window.gmkbApp || window.mediaKitStore) {
-    setTimeout(checkVueReady, 1000); // Give components time to render
-  } else {
-    console.log('⏳ Waiting for Vue to initialize...');
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (window.gmkbApp || window.mediaKitStore) {
-        clearInterval(interval);
-        checkVueReady();
-      } else if (attempts > 20) {
-        clearInterval(interval);
-        console.error('❌ Vue failed to initialize after 10 seconds');
-      }
-    }, 500);
-  }
-  
-  // Add global test function
-  window.testVueMigration = checkVueReady;
-})();
+    
+    // Check for Vue app
+    const vueApp = window.gmkbApp || window.vueApp;
+    if (vueApp) {
+        console.log('\n✅ Vue App Found');
+        console.log('   Version:', vueApp.version);
+    } else {
+        console.log('\n❌ Vue App Not Found');
+        results.errors.push('Vue app not initialized');
+    }
+    
+    // Check mount point
+    const mountPoint = document.getElementById('gmkb-vue-app') || 
+                       document.getElementById('vue-media-kit-app');
+    if (mountPoint) {
+        console.log('✅ Vue Mount Point Found:', mountPoint.id);
+    } else {
+        console.log('❌ Vue Mount Point Missing');
+        results.errors.push('Vue mount point not found');
+    }
+    
+    // Final summary
+    console.log('\n' + '='.repeat(50));
+    console.log('MIGRATION STATUS SUMMARY:');
+    console.log('='.repeat(50));
+    
+    const success = results.vueMode && 
+                   results.legacyDisabled && 
+                   !results.duplicates && 
+                   results.errors.length === 0;
+    
+    if (success) {
+        console.log('✅ ✅ ✅ MIGRATION SUCCESSFUL! ✅ ✅ ✅');
+        console.log('Vue is handling all rendering');
+        console.log('No duplicates detected');
+        console.log('Legacy systems disabled');
+    } else {
+        console.log('❌ MIGRATION INCOMPLETE');
+        if (results.errors.length > 0) {
+            console.log('\nIssues found:');
+            results.errors.forEach(err => console.log(`  - ${err}`));
+        }
+        console.log('\nTroubleshooting:');
+        console.log('1. Ensure GMKB_USE_LEAN_BUNDLE is true in enqueue.php');
+        console.log('2. Clear browser cache and reload');
+        console.log('3. Check browser console for errors');
+    }
+    
+    return results;
+};
+
+// Auto-run on load
+if (document.readyState === 'complete') {
+    setTimeout(() => {
+        console.log('Running Vue Migration Test...');
+        window.testVueMigration();
+    }, 1000);
+} else {
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            console.log('Running Vue Migration Test...');
+            window.testVueMigration();
+        }, 1000);
+    });
+}
+
+console.log('Vue Migration Test loaded. Run testVueMigration() to check status.');
