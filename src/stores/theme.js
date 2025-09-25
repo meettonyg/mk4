@@ -643,16 +643,17 @@ export const useThemeStore = defineStore('theme', {
       
       const formData = new FormData();
       formData.append('action', 'gmkb_load_custom_themes'); // ROOT FIX: Use correct action name
-      formData.append('nonce', window.gmkbData.nonce || '');
+      formData.append('nonce', window.gmkbData.nonce || window.gmkbData?.mkcg_nonce || ''); // ROOT FIX: Try multiple nonce sources
       
       try {
         const response = await fetch(window.gmkbData.ajaxUrl, {
           method: 'POST',
-          body: formData
+          body: formData,
+          credentials: 'same-origin' // ROOT FIX: Ensure cookies are sent
         });
         
-        // ROOT FIX: Handle 403/404 gracefully - custom themes might not be enabled
-        if (response.status === 403 || response.status === 404) {
+        // ROOT FIX: Handle 403/404/401 gracefully - custom themes might not be enabled
+        if (response.status === 403 || response.status === 404 || response.status === 401) {
           console.log('Custom themes endpoint not available, using built-in themes only');
           return;
         }

@@ -65,30 +65,30 @@ class UnifiedComponentRegistry {
   registerVueComponents() {
     const componentMap = {
       // Content components
-      'hero': () => import('../../components/hero/HeroRenderer.vue'),
-      'biography': () => import('../../components/biography/BiographyRenderer.vue'),
-      'topics': () => import('../../components/topics/TopicsRenderer.vue'),
-      'questions': () => import('../../components/questions/QuestionsRenderer.vue'),
-      'guest-intro': () => import('../../components/guest-intro/GuestIntroRenderer.vue'),
+      'hero': () => import('@components/hero/HeroRenderer.vue'),
+      'biography': () => import('@components/biography/BiographyRenderer.vue'),
+      'topics': () => import('@components/topics/TopicsRenderer.vue'),
+      'questions': () => import('@components/questions/QuestionsRenderer.vue'),
+      'guest-intro': () => import('@components/guest-intro/GuestIntroRenderer.vue'),
       
       // Contact & Social
-      'contact': () => import('../../components/contact/ContactRenderer.vue'),
-      'social': () => import('../../components/social/SocialRenderer.vue'),
+      'contact': () => import('@components/contact/ContactRenderer.vue'),
+      'social': () => import('@components/social/SocialRenderer.vue'),
       
       // Social Proof
-      'testimonials': () => import('../../components/testimonials/TestimonialsRenderer.vue'),
-      'stats': () => import('../../components/stats/StatsRenderer.vue'),
-      'authority-hook': () => import('../../components/authority-hook/AuthorityHookRenderer.vue'),
-      'logo-grid': () => import('../../components/logo-grid/LogoGridRenderer.vue'),
+      'testimonials': () => import('@components/testimonials/TestimonialsRenderer.vue'),
+      'stats': () => import('@components/stats/StatsRenderer.vue'),
+      'authority-hook': () => import('@components/authority-hook/AuthorityHookRenderer.vue'),
+      'logo-grid': () => import('@components/logo-grid/LogoGridRenderer.vue'),
       
       // Conversion
-      'call-to-action': () => import('../../components/call-to-action/CallToActionRenderer.vue'),
-      'booking-calendar': () => import('../../components/booking-calendar/BookingCalendarRenderer.vue'),
+      'call-to-action': () => import('@components/call-to-action/CallToActionRenderer.vue'),
+      'booking-calendar': () => import('@components/booking-calendar/BookingCalendarRenderer.vue'),
       
       // Media
-      'video-intro': () => import('../../components/video-intro/VideoIntroRenderer.vue'),
-      'photo-gallery': () => import('../../components/photo-gallery/PhotoGalleryRenderer.vue'),
-      'podcast-player': () => import('../../components/podcast-player/PodcastPlayerRenderer.vue')
+      'video-intro': () => import('@components/video-intro/VideoIntroRenderer.vue'),
+      'photo-gallery': () => import('@components/photo-gallery/PhotoGalleryRenderer.vue'),
+      'podcast-player': () => import('@components/podcast-player/PodcastPlayerRenderer.vue')
     };
     
     // Register each component as async
@@ -268,6 +268,15 @@ class UnifiedComponentRegistry {
    */
   getVueComponent(type) {
     if (!this.initialized) this.initialize();
+    
+    // ROOT FIX: Add validation to prevent 'unknown_type' error
+    if (!type || typeof type !== 'string' || type === 'unknown_type' || type === 'Unknown Component') {
+      // Don't log warning for initialization placeholder types
+      if (type !== 'unknown_type') {
+        console.warn(`[UnifiedComponentRegistry] Invalid component type provided: ${type}. Using fallback.`);
+      }
+      return markRaw(FallbackRenderer);
+    }
     
     const component = this.vueComponents[type];
     if (!component) {
