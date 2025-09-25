@@ -579,16 +579,134 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     autoSave() {
-      // Debounced auto-save
+      // Debounced auto-save with enhanced error handling
       if (this._autoSaveTimer) {
         clearTimeout(this._autoSaveTimer);
       }
       
-      this._autoSaveTimer = setTimeout(() => {
-        if (this.hasUnsavedChanges) {
-          this.saveToWordPress();
+      this._autoSaveTimer = setTimeout(async () => {
+        if (this.hasUnsavedChanges && !this.isSaving) {
+          try {
+            this.isSaving = true;
+            await this.saveToWordPress();
+            console.log('✅ Auto-save successful');
+          } catch (error) {
+            console.warn('⚠️ Auto-save failed:', error.message);
+            // Retry once after 10 seconds
+            setTimeout(() => {
+              if (this.hasUnsavedChanges && !this.isSaving) {
+                this.saveToWordPress().catch(e => 
+                  console.error('❌ Auto-save retry failed:', e.message)
+                );
+              }
+            }, 10000);
+          } finally {
+            this.isSaving = false;
+          }
         }
       }, 2000); // 2 second debounce
+    },
+
+    // Enhanced save with conflict detection
+    async saveToWordPressWithConflictCheck() {
+      try {
+        // First check if someone else has modified the post
+        const currentState = await this.loadFromWordPressQuiet();
+        
+        if (currentState && currentState.lastSaved > this.lastSaved) {
+          // Conflict detected
+          const shouldOverwrite = confirm(
+            'Another user has modified this media kit. Do you want to overwrite their changes?'
+          );
+          
+          if (!shouldOverwrite) {
+            // Reload their changes
+            this.initialize(currentState);
+            return { cancelled: true, reason: 'User chose to reload changes' };
+          }
+        }
+        
+        // No conflict or user chose to overwrite
+        return await this.saveToWordPress();
+        
+      } catch (error) {
+        console.error('Conflict check failed:', error);
+        // Fallback to normal save
+        return await this.saveToWordPress();
+      }
+    },
+
+    // Quiet load that doesn't modify state
+    async loadFromWordPressQuiet() {
+      try {
+        const formData = new FormData();
+        formData.append('action', 'gmkb_load_media_kit');
+        formData.append('nonce', window.gmkbData?.nonce || '');
+        formData.append('post_id', this.postId || '');
+        
+        const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const result = await response.json();
+        return result.success ? result.data : null;
+        
+      } catch (error) {
+        console.warn('Quiet load failed:', error);
+        return null;
+      }
+    },
+
+    // Offline handling with local storage backup
+    backupToLocalStorage() {
+      try {
+        const backup = {
+          components: this.components,
+          sections: this.sections,
+          theme: this.theme,
+          timestamp: Date.now(),
+          postId: this.postId
+        };
+        
+        localStorage.setItem(`gmkb_backup_${this.postId}`, JSON.stringify(backup));
+        console.log('📦 Local backup created');
+      } catch (error) {
+        console.warn('Local backup failed:', error);
+      }
+    },
+
+    // Restore from local storage
+    restoreFromLocalStorage() {
+      try {
+        const backup = localStorage.getItem(`gmkb_backup_${this.postId}`);
+        if (backup) {
+          const data = JSON.parse(backup);
+          const age = Date.now() - data.timestamp;
+          
+          // Only restore if backup is less than 1 hour old
+          if (age < 3600000) {
+            this.initialize(data);
+            console.log('♻️ Restored from local backup');
+            return true;
+          }
+        }
+        return false;
+      } catch (error) {
+        console.warn('Local restore failed:', error);
+        return false;
+      }
+    },
+
+    // Clear local backup after successful save
+    clearLocalBackup() {
+      try {
+        localStorage.removeItem(`gmkb_backup_${this.postId}`);
+      } catch (error) {
+        console.warn('Clear backup failed:', error);
+      }
     },
 
     // History Management (for undo/redo)
@@ -766,9 +884,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.hoveredComponentId = componentId;
     },
 
-    // Set selected component
+    // Set selected component with auto-save trigger
     setSelectedComponent(componentId) {
       this.selectedComponentId = componentId;
+      
+      // Trigger auto-save when selection changes (indicates user activity)
+      if (this.hasUnsavedChanges) {
+        this.autoSave();
+      }
     },
 
     // Open edit panel for component
@@ -781,9 +904,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.editingComponentId = null;
     },
 
-    // Save state to WordPress
+    // Enhanced save state to WordPress with backup and retry logic
     async saveToWordPress() {
       try {
+        this.isSaving = true;
+        
+        // Create local backup before saving
+        this.backupToLocalStorage();
+        
         // Clean up the state before saving
         const cleanComponents = {};
         Object.entries(this.components).forEach(([id, comp]) => {
@@ -801,7 +929,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
           sections: this.sections,
           theme: this.theme,
           themeCustomizations: this.themeCustomizations,
-          layout: this.sections.map(s => s.section_id) // Add layout for compatibility
+          layout: this.sections.map(s => s.section_id), // Add layout for compatibility
+          lastSaved: Date.now(), // Add timestamp for conflict detection
+          version: '2.0' // Version for future compatibility
         };
         
         // Call WordPress AJAX endpoint
@@ -813,13 +943,19 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         const response = await fetch(window.gmkbData?.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php', {
           method: 'POST',
-          body: formData
+          body: formData,
+          signal: AbortSignal.timeout(30000) // 30 second timeout
         });
         
         if (!response.ok) {
           const text = await response.text();
           console.error('Save response:', text);
-          throw new Error(`HTTP error! status: ${response.status}`);
+          
+          if (response.status >= 500) {
+            throw new Error(`Server error (${response.status}). Please try again.`);
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
         }
         
         const result = await response.json();
@@ -827,19 +963,43 @@ export const useMediaKitStore = defineStore('mediaKit', {
         if (result.success) {
           this.hasUnsavedChanges = false;
           this.lastSaved = Date.now();
+          this.clearLocalBackup(); // Clear backup after successful save
+          
+          // Dispatch save success event
+          document.dispatchEvent(new CustomEvent('gmkb:save-success', {
+            detail: { result, timestamp: this.lastSaved }
+          }));
+          
           console.log('✅ State saved to WordPress');
           return result;
         } else {
           console.error('Save failed:', result);
-          throw new Error(result.data?.message || result.data || 'Save failed');
+          const errorMessage = result.data?.message || result.data || 'Save failed';
+          
+          // Dispatch save error event
+          document.dispatchEvent(new CustomEvent('gmkb:save-error', {
+            detail: { error: errorMessage, result }
+          }));
+          
+          throw new Error(errorMessage);
         }
+        
       } catch (error) {
         console.error('Failed to save to WordPress:', error);
-        // Don't throw for certain errors
-        if (error.message?.includes('Invalid nonce')) {
-          console.warn('Nonce expired, user needs to refresh');
+        
+        // Handle specific error types
+        if (error.name === 'AbortError') {
+          throw new Error('Save timeout - please check your connection');
+        } else if (error.message?.includes('Invalid nonce')) {
+          throw new Error('Session expired - please refresh the page');
+        } else if (error.message?.includes('Insufficient permissions')) {
+          throw new Error('You don\'t have permission to save - please check your login');
         }
+        
         throw error;
+        
+      } finally {
+        this.isSaving = false;
       }
     }
   }

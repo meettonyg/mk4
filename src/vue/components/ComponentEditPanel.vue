@@ -27,11 +27,7 @@
 import { computed, reactive, watch } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 
-// Import edit forms for each component type
-import HeroEditForm from './edit-forms/HeroEditForm.vue';
-import BiographyEditForm from './edit-forms/BiographyEditForm.vue';
-import TopicsEditForm from './edit-forms/TopicsEditForm.vue';
-import ContactEditForm from './edit-forms/ContactEditForm.vue';
+// Import the generic edit form - specific forms will be created later
 import GenericEditForm from './edit-forms/GenericEditForm.vue';
 
 const store = useMediaKitStore();
@@ -53,14 +49,17 @@ watch(editingComponent, (component) => {
 }, { immediate: true });
 
 // Get the appropriate edit form component
+// ROOT FIX: Use GenericEditForm for all components until specific forms are created
 const editForm = computed(() => {
   if (!editingComponent.value) return null;
   
+  // For now, use GenericEditForm for all component types
+  // Specific forms can be added later as needed
   const formMap = {
-    hero: HeroEditForm,
-    biography: BiographyEditForm,
-    topics: TopicsEditForm,
-    contact: ContactEditForm,
+    // 'hero': HeroEditForm, // To be created
+    // 'biography': BiographyEditForm, // To be created
+    // 'topics': TopicsEditForm, // To be created
+    // 'contact': ContactEditForm, // To be created
   };
   
   return formMap[editingComponent.value.type] || GenericEditForm;
