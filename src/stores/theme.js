@@ -635,7 +635,9 @@ export const useThemeStore = defineStore('theme', {
     
     // Load custom themes from database
     async loadCustomThemes() {
+      // ROOT FIX: Gracefully handle when custom themes aren't available
       if (!window.gmkbData?.ajaxUrl) {
+        console.log('Custom themes: AJAX not available, using built-in themes only');
         return;
       }
       
@@ -649,12 +651,25 @@ export const useThemeStore = defineStore('theme', {
           body: formData
         });
         
+        // ROOT FIX: Handle 403/404 gracefully - custom themes might not be enabled
+        if (response.status === 403 || response.status === 404) {
+          console.log('Custom themes endpoint not available, using built-in themes only');
+          return;
+        }
+        
+        if (!response.ok) {
+          console.log(`Custom themes: HTTP ${response.status}, using built-in themes only`);
+          return;
+        }
+        
         const result = await response.json();
         if (result.success && result.data?.themes) {
           this.customThemes = result.data.themes;
+          console.log(`Loaded ${result.data.themes.length} custom themes`);
         }
       } catch (error) {
-        console.error('Failed to load custom themes:', error);
+        // Silently handle - custom themes are optional
+        console.log('Custom themes not available, using built-in themes');
       }
     }
   }

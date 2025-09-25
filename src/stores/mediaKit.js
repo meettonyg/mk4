@@ -245,6 +245,21 @@ export const useMediaKitStore = defineStore('mediaKit', {
   actions: {
     // Component CRUD Operations
     addComponent(componentData) {
+      // ROOT FIX: Validate component type to prevent unknown_type
+      const validTypes = [
+        'hero', 'biography', 'topics', 'contact', 'testimonials',
+        'guest-intro', 'topics-questions', 'photo-gallery', 'logo-grid',
+        'call-to-action', 'social', 'stats', 'questions',
+        'video-intro', 'podcast-player', 'booking-calendar',
+        'authority-hook'
+      ];
+      
+      // Prevent invalid component types
+      if (!componentData.type || componentData.type === 'unknown_type' || !validTypes.includes(componentData.type)) {
+        console.warn(`Invalid component type prevented: ${componentData.type}`);
+        return null;
+      }
+      
       const componentId = componentData.id || `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       // Ensure we have at least one section
