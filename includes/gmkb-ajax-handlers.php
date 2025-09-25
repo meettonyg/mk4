@@ -352,12 +352,12 @@ class GMKB_Ajax_Handlers {
         } else {
             // ROOT FIX: Initialize with empty state structure
             $empty_state = array(
-                'components' => new stdClass(), // Empty object for JS
-                'sections' => array(),
-                'layout' => array(),
-                'theme' => 'default',
-                'themeSettings' => new stdClass(),
-                'globalSettings' => new stdClass()
+            'components' => new stdClass(), // Empty object for JS
+            'sections' => array(),
+            'layout' => array(),
+            'theme' => 'professional_clean', // Use correct default theme name
+            'themeSettings' => new stdClass(),
+            'globalSettings' => new stdClass()
             );
             
             GMKB_Debug_Logger::log('No saved state found for post ' . $post_id . ', returning empty state');

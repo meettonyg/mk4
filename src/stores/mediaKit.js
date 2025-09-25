@@ -10,7 +10,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Core state
     sections: [],
     components: {},
-    theme: 'professional', // ROOT FIX: Use 'professional' as default theme, not 'default'
+    theme: 'professional_clean', // ROOT FIX: Use 'professional_clean' as default theme with underscore
     themeCustomizations: {},
     
     // UI state
