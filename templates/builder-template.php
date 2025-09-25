@@ -421,48 +421,9 @@ if ($post_id > 0) {
                 <!-- ROOT FIX: Always render both containers, JavaScript controls visibility -->
                 <!-- This ensures containers always exist, preventing JavaScript errors -->
                 
-                <!-- PHASE 3: Section-Aware Saved Components Container -->
-                <!-- Always rendered, visibility controlled by JavaScript based on state -->
-                <div class="saved-components-container" id="saved-components-container" style="display: <?php echo $template_instructions['show_saved_components'] ? 'block' : 'none'; ?>; min-height: 400px;">
-                    <!-- Direct component rendering area - fallback for when sections are not used -->
-                    <div class="components-direct-container" id="components-direct-container">
-                        <!-- Components will be rendered here directly by EnhancedComponentRenderer -->
-                    </div>
-                    
-                    <!-- Sections will be rendered here by SectionLayoutManager -->
-                    <div class="gmkb-sections-container" id="gmkb-sections-container">
-                        <?php 
-                        // CLIENT-ONLY RENDERING: PHP provides containers only, no component rendering
-                        // JavaScript is the ONLY system that renders components
-                        // This prevents duplicate rendering
-                        
-                    // Do NOT render any components here
-                    // Do NOT iterate through saved_components
-                    // Do NOT call any render functions
-                    
-                    // The sections container is empty - JavaScript will populate it
-                    ?>
-                    <!-- Components render here via JavaScript only -->
-                    </div>
-                    
-                    <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
-                        <!-- Debug info for saved components -->
-                        <div class="debug-saved-components" style="position: absolute; top: 5px; right: 5px; background: rgba(0,255,0,0.1); padding: 5px; font-size: 10px; border-radius: 3px; z-index: 1000;">
-                            ✅ PHASE 3: Section-based rendering - <?php 
-                                // ROOT FIX: Properly handle components that might be object or array
-                                $component_debug_count = 0;
-                                if (isset($saved_state['components'])) {
-                                    if (is_array($saved_state['components'])) {
-                                        $component_debug_count = count($saved_state['components']);
-                                    } elseif (is_object($saved_state['components'])) {
-                                        $component_debug_count = count((array)$saved_state['components']);
-                                    }
-                                }
-                                echo $component_debug_count;
-                            ?> components
-                        </div>
-                    <?php endif; ?>
-                </div>
+                <!-- Vue Component Container -->
+                <!-- ROOT FIX: Removed legacy containers that were duplicating components -->
+                <!-- Vue now has full control of component rendering -->
                 
                 <!-- ROOT FIX: Empty State - Always Rendered -->
                 <!-- Always rendered, visibility controlled by JavaScript based on state -->
@@ -571,17 +532,9 @@ if ($post_id > 0) {
                 </div>
                 <!-- END: Empty State -->
                 
-                <!-- Vue.js Mount Point for Progressive Enhancement -->
-                <div id="vue-app" style="display: none;">
-                    <!-- Vue components will be mounted here progressively -->
-                </div>
-                
-                <!-- ROOT FIX: Minimal drop zone (no complex bridge elements) -->
-                <div class="drop-zone drop-zone--empty" data-zone="0" style="display: none;">
-                    <div class="drop-zone__content">
-                        <span>Drop component here</span>
-                    </div>
-                </div>
+                <!-- ROOT FIX: Vue.js takes full control when initialized -->
+                <!-- The Vue app will replace all content in media-kit-preview -->
+                <!-- Empty state above serves as fallback until Vue mounts -->
             </div>
         </div>
     </div>

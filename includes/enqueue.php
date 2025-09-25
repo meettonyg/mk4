@@ -1632,18 +1632,26 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 3: Section Layout Manager - FIXED PATH
+    // PHASE 3: Section Layout Manager - DISABLED FOR VUE
+    // ROOT FIX: Vue handles all section rendering now
+    // Legacy SectionLayoutManager was causing duplicate rendering
+    /*
     if (!wp_script_is('gmkb-section-layout-manager', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-layout-manager',
             $plugin_url . 'system/SectionLayoutManager.js',
-            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'), // REMOVED circular dependency on coordinator
+            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
             $version,
             true
         );
     }
+    */
     
-    // PHASE 3: Section Renderer - ROOT FIX: Load IMMEDIATELY after section-layout-manager
+    // PHASE 3: Legacy Section Scripts - DISABLED FOR VUE
+    // ROOT FIX: Vue's SectionLayoutEnhanced.vue handles all section rendering
+    // These legacy scripts were causing duplicate rendering
+    /*
+    // Section Renderer - Replaced by Vue
     if (!wp_script_is('gmkb-section-renderer', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-renderer',
@@ -1654,7 +1662,7 @@ function gmkb_enqueue_assets() {
         );
     }
 
-    // PHASE 3: Sidebar Section Integration - ROOT FIX: Load after section-renderer
+    // Sidebar Section Integration - Replaced by Vue
     if (!wp_script_is('gmkb-sidebar-section-integration', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-sidebar-section-integration',
@@ -1664,8 +1672,10 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
 
-    // PHASE 3: Section Controls UI
+    // PHASE 3: Section Controls UI - DISABLED FOR VUE
+    /*
     if (!wp_script_is('gmkb-section-controls-ui', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-controls-ui',
@@ -1675,9 +1685,13 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
 
     
-    // PHASE 3: Section Edit Panel - UI for editing section properties
+    // PHASE 3: Legacy Section Scripts - ALL DISABLED FOR VUE
+    // Vue now handles all section functionality through SectionLayoutEnhanced.vue
+    /*
+    // Section Edit Panel - Replaced by Vue
     if (!wp_script_is('gmkb-section-edit-panel', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-edit-panel',
@@ -1688,7 +1702,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // PHASE 3: Section Style Manager - Comprehensive styling options
+    // Section Style Manager - Replaced by Vue
     if (!wp_script_is('gmkb-section-style-manager', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-style-manager',
@@ -1699,7 +1713,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // PHASE 3: Section Templates - Pre-designed section templates
+    // Section Templates - Replaced by Vue
     if (!wp_script_is('gmkb-section-templates', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-templates',
@@ -1709,8 +1723,12 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
     
-    // PHASE 3: Template Button Integration - Connects UI button to template system
+    // PHASE 3: All Section-Related Scripts - DISABLED FOR VUE
+    // Vue's SectionLayoutEnhanced.vue now handles ALL section functionality
+    /*
+    // Template Button Integration - Replaced by Vue
     if (!wp_script_is('gmkb-template-button-integration', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-template-button-integration',
@@ -1721,7 +1739,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ✅ ROOT CAUSE FIX: Simplified drag-drop system without complex DOM traversal
+    // Section Component Integration - Replaced by Vue drag & drop
     if (!wp_script_is('gmkb-section-component-integration', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-component-integration',
@@ -1732,7 +1750,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // PHASE 3: Section State Persistence
+    // Section State Persistence - Replaced by Vue store
     if (!wp_script_is('gmkb-section-state-persistence', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-state-persistence',
@@ -1743,7 +1761,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // COMPLIANT: Section Component Loader - Event-driven component rendering for sections
+    // Section Component Loader - Replaced by Vue
     if (!wp_script_is('gmkb-section-component-loader', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-section-component-loader',
@@ -1751,7 +1769,6 @@ function gmkb_enqueue_assets() {
             array(
                 'gmkb-structured-logger',
                 'gmkb-enhanced-state-manager',
-                // 'gmkb-enhanced-component-renderer-simplified', // REMOVED: Circular dependency
                 'gmkb-section-renderer'
             ),
             $version,
@@ -1759,7 +1776,7 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // ROOT FIX: Initial State Loader - Loads components and sections from saved state
+    // Initial State Loader - Replaced by Vue store initialization
     if (!wp_script_is('gmkb-initial-state-loader', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-initial-state-loader',
@@ -1776,6 +1793,7 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
 
     // PHASE 4 Theme scripts already loaded earlier before toolbar to fix race condition
     
@@ -2122,20 +2140,19 @@ function gmkb_enqueue_assets() {
                 'gmkb-component-selection-manager',
                 'gmkb-topics-editor', // ROOT FIX: Ensure Topics editor loads
                 'gmkb-topics-script', // Topics component sync functionality
-                // PHASE 3: Section layer systems
-                'gmkb-section-layout-manager',
-                'gmkb-section-controls-ui',
-                'gmkb-sidebar-section-integration',
-                'gmkb-section-edit-panel', // Section edit UI
-                'gmkb-section-style-manager', // Section styling options
-                'gmkb-section-templates', // Section template library
-                'gmkb-template-button-integration', // Template button handler
-                'gmkb-section-component-integration',
-                'gmkb-section-state-persistence',
-                'gmkb-section-renderer',
-                'gmkb-sidebar-section-integration',
-                'gmkb-section-component-loader', // COMPLIANT: Event-driven component loading for sections
-                'gmkb-initial-state-loader', // ROOT FIX: Load saved state on page load
+                // PHASE 3: Section layer systems - MOSTLY DISABLED FOR VUE
+                // 'gmkb-section-layout-manager', // DISABLED - Vue handles sections
+                // 'gmkb-section-renderer', // DISABLED - Vue handles rendering
+                // 'gmkb-sidebar-section-integration', // DISABLED - Vue handles sidebar
+                // 'gmkb-section-controls-ui', // Keep if not causing issues
+                // 'gmkb-section-edit-panel', // Keep if not causing issues  
+                // 'gmkb-section-style-manager', // Keep if not causing issues
+                // 'gmkb-section-templates', // Keep if not causing issues
+                // 'gmkb-template-button-integration', // Keep if not causing issues
+                // 'gmkb-section-component-integration', // Keep if not causing issues
+                // 'gmkb-section-state-persistence', // Keep if not causing issues
+                // 'gmkb-section-component-loader', // Keep if not causing issues
+                // 'gmkb-initial-state-loader', // Keep if not causing issues
                 // PHASE 4: Theme layer systems (already loaded earlier)
                 // 'gmkb-theme-manager', // Already loaded before toolbar
                 // 'gmkb-theme-customizer', // Already loaded before toolbar
