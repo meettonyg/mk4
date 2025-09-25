@@ -246,7 +246,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Component CRUD Operations
     addComponent(componentData) {
       // ROOT FIX: Validate component type to prevent unknown_type
-      const validTypes = [
+      // Get valid types from the registry if available
+      let validTypes = [
         'hero', 'biography', 'topics', 'contact', 'testimonials',
         'guest-intro', 'topics-questions', 'photo-gallery', 'logo-grid',
         'call-to-action', 'social', 'stats', 'questions',
@@ -254,9 +255,23 @@ export const useMediaKitStore = defineStore('mediaKit', {
         'authority-hook'
       ];
       
+      // If registry is available, use it as source of truth
+      if (window.UnifiedComponentRegistry?.getAvailableTypes) {
+        const registeredTypes = window.UnifiedComponentRegistry.getAvailableTypes();
+        if (registeredTypes && registeredTypes.length > 0) {
+          validTypes = registeredTypes;
+        }
+      }
+      
       // Prevent invalid component types
       if (!componentData.type || componentData.type === 'unknown_type' || !validTypes.includes(componentData.type)) {
-        console.warn(`Invalid component type prevented: ${componentData.type}`);
+        console.warn(`[Store] Invalid component type prevented: "${componentData.type}". Valid types:`, validTypes);
+        
+        // Log stack trace to find where this is coming from
+        if (console.trace) {
+          console.trace('Invalid component add attempt');
+        }
+        
         return null;
       }
       

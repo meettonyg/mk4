@@ -139,10 +139,37 @@ add_action('wp_ajax_gmkb_load_custom_themes', 'gmkb_load_custom_themes_handler')
 add_action('wp_ajax_nopriv_gmkb_load_custom_themes', 'gmkb_load_custom_themes_handler');
 
 function gmkb_load_custom_themes_handler() {
-    // Security check - accept both nonces for compatibility
+    // ROOT FIX: Enhanced security check with detailed debugging
     $nonce = $_POST['nonce'] ?? $_REQUEST['nonce'] ?? '';
-    if (!$nonce || (!wp_verify_nonce($nonce, 'gmkb_nonce') && !wp_verify_nonce($nonce, 'mkcg_nonce'))) {
-        wp_send_json_error(array('message' => 'Security check failed'), 400);
+    
+    // Log nonce debugging info if in debug mode
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[GMKB Custom Themes] Nonce received: ' . substr($nonce, 0, 10) . '...');
+        error_log('[GMKB Custom Themes] User logged in: ' . (is_user_logged_in() ? 'Yes' : 'No'));
+        error_log('[GMKB Custom Themes] User ID: ' . get_current_user_id());
+    }
+    
+    // Try multiple nonce names for compatibility
+    $valid_nonce = false;
+    $nonce_names = ['gmkb_nonce', 'mkcg_nonce', 'wp_rest'];
+    
+    foreach ($nonce_names as $nonce_name) {
+        if (wp_verify_nonce($nonce, $nonce_name)) {
+            $valid_nonce = true;
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[GMKB Custom Themes] Nonce verified with: ' . $nonce_name);
+            }
+            break;
+        }
+    }
+    
+    if (!$valid_nonce) {
+        // For public endpoints, we might allow access without nonce
+        // But for now, maintain security
+        wp_send_json_error(array(
+            'message' => 'Security check failed',
+            'debug' => defined('WP_DEBUG') && WP_DEBUG ? 'Nonce verification failed for all known nonce names' : null
+        ), 403);
         return;
     }
     
