@@ -361,7 +361,22 @@ export const useMediaKitStore = defineStore('mediaKit', {
             this.components = savedState.components;
           }
         }
-        if (savedState.theme) this.theme = savedState.theme;
+        
+        // ROOT FIX: Validate theme before applying
+        const validThemes = ['professional_clean', 'creative_bold', 'minimal_elegant', 'modern_dark'];
+        if (savedState.theme) {
+          // If theme is 'default' or 'professional', map to 'professional_clean'
+          if (savedState.theme === 'default' || savedState.theme === 'professional') {
+            this.theme = 'professional_clean';
+            console.log('📝 Migrated theme from "' + savedState.theme + '" to "professional_clean"');
+          } else if (validThemes.includes(savedState.theme)) {
+            this.theme = savedState.theme;
+          } else {
+            console.warn('⚠️ Invalid theme "' + savedState.theme + '", using professional_clean');
+            this.theme = 'professional_clean';
+          }
+        }
+        
         if (savedState.themeCustomizations) this.themeCustomizations = savedState.themeCustomizations;
       }
       
