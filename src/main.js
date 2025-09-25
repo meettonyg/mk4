@@ -49,19 +49,34 @@ function showToast(message, type = 'info', duration = 3000) {
  */
 async function initializeVue() {
   try {
-    // Find or create mount point
-    let mountPoint = document.getElementById('media-kit-preview') || 
-                     document.getElementById('gmkb-sections-container') ||
-                     document.getElementById('vue-app');
+    // ROOT FIX: Mount Vue to replace the entire preview content
+    // This ensures Vue takes full control without coexisting with legacy DOM
+    const previewContainer = document.getElementById('media-kit-preview');
     
-    if (!mountPoint) {
-      logger.warn('Vue mount point not found, creating one');
-      const container = document.createElement('div');
-      container.id = 'media-kit-preview';
-      const previewArea = document.querySelector('.preview__container') || document.body;
-      previewArea.appendChild(container);
-      mountPoint = container;
+    if (!previewContainer) {
+      logger.error('No preview container found');
+      throw new Error('Preview container not found');
     }
+    
+    // Clear ALL existing content - Vue will handle everything
+    previewContainer.innerHTML = '';
+    
+    // Create a new mount point for Vue
+    const mountPoint = document.createElement('div');
+    mountPoint.id = 'vue-media-kit-app';
+    mountPoint.className = 'vue-media-kit-app';
+    previewContainer.appendChild(mountPoint);
+    
+    logger.info('Created fresh Vue mount point');
+    
+    // Hide legacy containers that are outside the preview area
+    const legacyContainers = ['#empty-state', '#saved-components-container'];
+    legacyContainers.forEach(selector => {
+      const el = document.querySelector(selector);
+      if (el && !el.closest('#media-kit-preview')) {
+        el.remove(); // Remove instead of hiding - cleaner
+      }
+    });
 
     // Create Pinia store
     const pinia = createPinia();
@@ -98,6 +113,9 @@ async function initializeVue() {
       mediaKitStore.initialize(window.gmkbData.savedState);
       logger.info('✅ Loaded state from WordPress');
     }
+    
+    // ROOT FIX: Vue handles all DOM - no need to manage legacy containers
+    // The entire preview area is now controlled by Vue
     
     // Initialize theme
     if (mediaKitStore.theme || mediaKitStore.themeCustomizations) {
@@ -193,6 +211,60 @@ Debug:
 }
 
 /**
+ * Setup empty state button handlers - ROOT FIX: Let Vue handle DOM updates
+ */
+function setupEmptyStateHandlers() {
+  // Use event delegation for dynamic buttons
+  document.addEventListener('click', async (event) => {
+    const target = event.target.closest('[data-action]');
+    if (!target) return;
+    
+    const action = target.dataset.action;
+    const store = window.gmkbStore;
+    if (!store) return;
+    
+    switch (action) {
+      case 'add-component':
+        event.preventDefault();
+        store.addComponent({ type: 'hero' });
+        showToast('Hero component added', 'success');
+        break;
+        
+      case 'add-section':
+        event.preventDefault();
+        store.addSection('full_width');
+        showToast('Section added', 'success');
+        break;
+        
+      case 'auto-generate-all':
+        event.preventDefault();
+        target.disabled = true;
+        const originalText = target.textContent;
+        target.textContent = 'Generating...';
+        
+        try {
+          // Add typical MKCG components
+          const componentsToAdd = ['hero', 'biography', 'topics', 'authority-hook', 'contact'];
+          componentsToAdd.forEach(type => {
+            store.addComponent({ type });
+          });
+          
+          showToast('Media kit components generated!', 'success');
+          await store.saveToWordPress();
+          
+        } catch (error) {
+          console.error('Auto-generate failed:', error);
+          showToast('Generation failed', 'error');
+        } finally {
+          target.disabled = false;
+          target.textContent = originalText;
+        }
+        break;
+    }
+  });
+}
+
+/**
  * Setup UI handlers for non-Vue elements (if any remain)
  */
 function setupMinimalUIHandlers() {
@@ -259,6 +331,9 @@ async function initialize() {
     
     // Setup minimal UI handlers
     setupMinimalUIHandlers();
+    
+    // Setup empty state button handlers  
+    setupEmptyStateHandlers();
     
     // Dispatch ready event
     document.dispatchEvent(new CustomEvent('gmkb:ready', {

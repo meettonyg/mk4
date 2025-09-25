@@ -2243,6 +2243,14 @@ function gmkb_enqueue_assets() {
         $version
     );
     
+    // Vue overrides for proper section rendering
+    wp_enqueue_style(
+        'gmkb-vue-overrides',
+        $plugin_url . 'css/vue-overrides/sections.css',
+        array('gmkb-builder-styles'),
+        $version
+    );
+    
     // ✅ PHASE 3 OPTIMIZATION: Conditional debug script loading (only when explicitly requested)
     // ✅ ROOT CAUSE: Debug scripts were causing 66 total scripts - now load only when needed
     if (defined('WP_DEBUG') && WP_DEBUG && isset($_GET['debug_mode']) && $_GET['debug_mode'] === 'full') {

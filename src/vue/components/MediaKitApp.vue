@@ -1,19 +1,22 @@
 <template>
-  <div class="media-kit-builder">
+  <div class="media-kit-builder-vue">
     <!-- Theme Provider - Renderless component that manages CSS variables -->
     <ThemeProvider />
     
-    <!-- Component Library Modal -->
-    <ComponentLibrary />
-    
-    <!-- Theme Customizer Modal -->
-    <ThemeCustomizer />
-    
-    <!-- Enhanced Section Layout with Drag & Drop -->
+    <!-- Main builder content - handles both empty and populated states -->
     <SectionLayoutEnhanced />
     
-    <!-- Editor Panel - Self-contained component editors -->
-    <EditorPanel />
+    <!-- Modals are rendered outside the main content area -->
+    <Teleport to="body">
+      <!-- Component Library Modal -->
+      <ComponentLibrary />
+      
+      <!-- Theme Customizer Modal -->
+      <ThemeCustomizer />
+      
+      <!-- Editor Panel - Self-contained component editors -->
+      <EditorPanel />
+    </Teleport>
   </div>
 </template>
 
@@ -37,10 +40,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.media-kit-builder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
+/* No custom styles needed - using existing template structure */
 </style>
