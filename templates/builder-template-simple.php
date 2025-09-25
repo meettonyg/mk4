@@ -27,33 +27,101 @@ if ($post_id > 0) {
 }
 ?>
 
-<div class="wrap gmkb-builder-page">
-    <h1><?php echo esc_html($page_title); ?></h1>
-    
-    <!-- PHASE 2 FIX: Single Vue mount point - clean and simple -->
-    <div id="gmkb-vue-app" class="gmkb-builder-container">
-        <!-- Vue will handle everything here -->
-        <div class="gmkb-loading">
-            <div class="loading-spinner"></div>
-            <p>Loading Media Kit Builder...</p>
+<div class="builder gmkb-builder-container" id="gmkb-builder-container">
+    <!-- Simplified toolbar -->
+    <div class="toolbar gmkb-toolbar" id="gmkb-toolbar">
+        <div class="toolbar__section toolbar__section--left">
+            <div class="toolbar__logo">Guestify</div>
+            <div class="toolbar__guest-name">Editing: <?php echo esc_html($page_title); ?></div>
+        </div>
+        
+        <div class="toolbar__section toolbar__section--right">
+            <button class="toolbar__btn toolbar__btn--primary" id="save-btn" title="Save Media Kit">
+                <span>Save</span>
+            </button>
         </div>
     </div>
-    
-    <!-- Hidden data for Vue app (if needed) -->
-    <?php if ($post_id > 0): ?>
-    <script type="application/json" id="gmkb-initial-data">
-    <?php 
-        $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
-        echo wp_json_encode([
-            'postId' => $post_id,
-            'savedState' => $saved_state ?: null,
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('gmkb_nonce')
-        ]);
-    ?>
-    </script>
-    <?php endif; ?>
+
+    <!-- Simplified sidebar -->
+    <div class="sidebar gmkb-sidebar" id="gmkb-sidebar">
+        <!-- Vue will populate this -->
+    </div>
+
+    <!-- Preview area with the expected container ID -->
+    <div class="preview">
+        <div class="preview__container gmkb-preview" id="gmkb-preview-area">
+            <!-- CRITICAL: Vue expects this exact ID -->
+            <div class="media-kit" id="media-kit-preview">
+                <!-- Vue will mount here and replace this content -->
+                <div class="gmkb-loading" style="padding: 50px; text-align: center;">
+                    <div class="loading-spinner" style="
+                        border: 3px solid #f3f3f3;
+                        border-top: 3px solid #3498db;
+                        border-radius: 50%;
+                        width: 40px;
+                        height: 40px;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto 20px;
+                    "></div>
+                    <p>Loading Media Kit Builder...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- All styles handled via enqueued CSS files -->
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Minimal required styles */
+.gmkb-builder-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+}
+
+.toolbar__section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 60px;
+    width: 300px;
+    height: calc(100vh - 60px);
+    background: #f8f8f8;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+}
+
+.preview {
+    margin-left: 300px;
+    padding: 20px;
+    background: #f5f5f5;
+    min-height: calc(100vh - 60px);
+}
+
+.media-kit {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 500px;
+}
+</style>
+
+<!-- All other styles handled via enqueued CSS files -->
 <!-- All scripts handled via Vue bundle -->
