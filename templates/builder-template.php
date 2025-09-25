@@ -422,12 +422,11 @@ if ($post_id > 0) {
                 <!-- This ensures containers always exist, preventing JavaScript errors -->
                 
                 <!-- Vue Component Container -->
-                <!-- ROOT FIX: Removed legacy containers that were duplicating components -->
-                <!-- Vue now has full control of component rendering -->
+                <!-- ROOT FIX: Vue now has full control of component rendering -->
+                <!-- All legacy containers removed - Vue app will mount here -->
                 
-                <!-- ROOT FIX: Empty State - Always Rendered -->
-                <!-- Always rendered, visibility controlled by JavaScript based on state -->
-                <div class="empty-state-optimized" id="empty-state" data-allow-js-control="true" style="display: <?php echo $template_instructions['show_empty_state'] ? 'block' : 'none'; ?>;">
+                <!-- Temporary placeholder - Vue will replace this entirely -->
+                <div id="vue-app-placeholder" style="display: <?php echo $template_instructions['show_empty_state'] ? 'block' : 'none'; ?>;">
                     <?php if ($dashboard_data): ?>
                         <!-- MKCG Data Auto-Loading State -->
                         <div class="empty-state-icon auto-loading">⚙️</div>
@@ -530,11 +529,11 @@ if ($post_id > 0) {
                         </div>
                     <?php endif; ?>
                 </div>
-                <!-- END: Empty State -->
+                <!-- END: Placeholder -->
                 
                 <!-- ROOT FIX: Vue.js takes full control when initialized -->
-                <!-- The Vue app will replace all content in media-kit-preview -->
-                <!-- Empty state above serves as fallback until Vue mounts -->
+                <!-- The Vue app will replace ALL content in media-kit-preview -->
+                <!-- The placeholder above is temporary and will be completely replaced -->
             </div>
         </div>
     </div>

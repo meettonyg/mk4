@@ -309,6 +309,15 @@ function gmkb_enqueue_assets() {
             'pods_fields_loaded' => !empty(array_filter($pods_data))
         );
         
+        // ROOT FIX: Load Pure Vue Mode to disable legacy rendering
+        wp_enqueue_script(
+            'gmkb-pure-vue-mode',
+            $plugin_url . 'js/pure-vue-mode.js',
+            array(), // No dependencies - must run first
+            $version,
+            false // Load in HEAD for early execution
+        );
+        
         // ROOT FIX: Load Component Registry in HEAD so it's available for lean bundle
         wp_enqueue_script(
             'gmkb-component-registry-lean',
@@ -1108,19 +1117,20 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // 5. Enhanced component manager (manages component add/remove) - ROOT FIX: Added duplicate prevention
+    // 5. Enhanced component manager - DISABLED FOR VUE
+    // Vue store handles all component management now
+    /*
     if (!wp_script_is('gmkb-enhanced-component-manager', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-enhanced-component-manager',
             $plugin_url . 'js/core/enhanced-component-manager.js',
-            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger', 'gmkb-id-generator'), // Added ID generator dependency
+            array('gmkb-enhanced-state-manager', 'gmkb-structured-logger', 'gmkb-id-generator'),
             $version,
             true
         );
-        
-        // ROOT FIX: Provide WordPress data to component manager for AJAX calls
         wp_localize_script( 'gmkb-enhanced-component-manager', 'gmkbData', $wp_data );
     }
+    */
     
     // CRITICAL FIX: Force initialization when managers fail to load
     if (!wp_script_is('gmkb-force-init', 'enqueued')) {
@@ -1635,17 +1645,7 @@ function gmkb_enqueue_assets() {
     // PHASE 3: Section Layout Manager - DISABLED FOR VUE
     // ROOT FIX: Vue handles all section rendering now
     // Legacy SectionLayoutManager was causing duplicate rendering
-    /*
-    if (!wp_script_is('gmkb-section-layout-manager', 'enqueued')) {
-        wp_enqueue_script(
-            'gmkb-section-layout-manager',
-            $plugin_url . 'system/SectionLayoutManager.js',
-            array('gmkb-structured-logger', 'gmkb-enhanced-state-manager'),
-            $version,
-            true
-        );
-    }
-    */
+    // ALL SECTION SCRIPTS DISABLED - Vue handles everything
     
     // PHASE 3: Legacy Section Scripts - DISABLED FOR VUE
     // ROOT FIX: Vue's SectionLayoutEnhanced.vue handles all section rendering
@@ -1785,7 +1785,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-enhanced-state-manager',
                 'gmkb-section-layout-manager',
                 'gmkb-section-renderer',
-                'gmkb-enhanced-component-manager',
+                // 'gmkb-enhanced-component-manager', // DISABLED - Vue store manages components
                 'gmkb-enhanced-component-renderer-simplified',
                 'gmkb-structured-logger'
             ),
@@ -2041,8 +2041,10 @@ function gmkb_enqueue_assets() {
     // Component Container Manager - REMOVED to eliminate conflicts with enhanced-component-renderer-simplified.js
     
     
-    // ✅ PHASE 4 FIX: SIMPLIFIED COMPONENT RENDERER - Single source of truth for component rendering
-    // ✅ ROOT CAUSE FIX: Simplified component renderer without service orchestration
+    // ✅ PHASE 4 FIX: DISABLED - Vue handles all rendering now
+    // Legacy component renderer was causing duplicate rendering
+    // Vue components handle their own rendering
+    /*
     if (!wp_script_is('gmkb-enhanced-component-renderer-simplified', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-enhanced-component-renderer-simplified',
@@ -2050,12 +2052,13 @@ function gmkb_enqueue_assets() {
             array(
                 'gmkb-enhanced-state-manager',
                 'gmkb-structured-logger',
-                'gmkb-component-registry' // Add registry dependency
+                'gmkb-component-registry'
             ),
             $version,
             true
         );
     }
+    */
     
 
     // REMOVED: component-library-simple.js - now consolidated into modal-system.js
@@ -2129,7 +2132,7 @@ function gmkb_enqueue_assets() {
                 'gmkb-performance-monitor',
                 'gmkb-dynamic-component-loader',
                 'gmkb-component-controls-manager',
-                'gmkb-enhanced-component-renderer-simplified', // ✅ PHASE 5 FIX: Use simplified renderer only
+                // 'gmkb-enhanced-component-renderer-simplified', // DISABLED - Vue handles rendering
                 'gmkb-empty-state-handlers',
                 'gmkb-modal-system', // CONSOLIDATED: Includes modal-base + component-library
                 'gmkb-modal-extras', // CONSOLIDATED: Includes template, settings, export modals

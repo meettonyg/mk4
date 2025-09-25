@@ -69,14 +69,47 @@ async function initializeVue() {
     
     logger.info('Created fresh Vue mount point');
     
-    // Hide legacy containers that are outside the preview area
-    const legacyContainers = ['#empty-state', '#saved-components-container'];
-    legacyContainers.forEach(selector => {
-      const el = document.querySelector(selector);
-      if (el && !el.closest('#media-kit-preview')) {
-        el.remove(); // Remove instead of hiding - cleaner
-      }
+    // ROOT FIX: Aggressive cleanup of ALL legacy elements
+    // Remove all legacy containers and components
+    const legacySelectors = [
+      '#empty-state',
+      '#saved-components-container',
+      '.gmkb-component-wrapper',
+      '.gmkb-hero-component',
+      '.gmkb-sections-container:not(.vue-sections)',
+      '.saved-components',
+      '.empty-state-optimized'
+    ];
+    
+    legacySelectors.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(el => {
+        // Don't remove if it's inside our Vue app
+        if (!el.closest('#vue-media-kit-app')) {
+          el.remove();
+        }
+      });
     });
+    
+    // ROOT FIX: Disable any legacy rendering systems
+    // Override global functions that might be called by legacy code
+    if (window.enhancedComponentManager) {
+      window.enhancedComponentManager.renderComponent = () => {
+        console.log('Legacy rendering disabled - Vue handles all rendering');
+      };
+    }
+    
+    if (window.ComponentRenderer) {
+      window.ComponentRenderer = {
+        render: () => console.log('Legacy ComponentRenderer disabled')
+      };
+    }
+    
+    // Disable legacy state managers if they exist
+    if (window.stateManager && window.stateManager !== window.gmkbStore) {
+      window.stateManager.render = () => {};
+      window.stateManager.renderComponents = () => {};
+    }
 
     // Create Pinia store
     const pinia = createPinia();

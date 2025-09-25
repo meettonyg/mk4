@@ -139,8 +139,9 @@ add_action('wp_ajax_gmkb_load_custom_themes', 'gmkb_load_custom_themes_handler')
 add_action('wp_ajax_nopriv_gmkb_load_custom_themes', 'gmkb_load_custom_themes_handler');
 
 function gmkb_load_custom_themes_handler() {
-    // Security check
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'mkcg_nonce')) {
+    // Security check - accept both nonces for compatibility
+    $nonce = $_POST['nonce'] ?? $_REQUEST['nonce'] ?? '';
+    if (!$nonce || (!wp_verify_nonce($nonce, 'gmkb_nonce') && !wp_verify_nonce($nonce, 'mkcg_nonce'))) {
         wp_send_json_error(array('message' => 'Security check failed'), 400);
         return;
     }
@@ -165,6 +166,63 @@ function gmkb_load_custom_themes_handler() {
         'count' => count($custom_themes),
         'message' => 'Custom themes loaded successfully'
     ));
+}
+
+// ROOT FIX: Add missing save custom theme handler
+add_action('wp_ajax_gmkb_save_custom_theme', 'gmkb_save_custom_theme_handler');
+add_action('wp_ajax_nopriv_gmkb_save_custom_theme', 'gmkb_save_custom_theme_handler');
+
+function gmkb_save_custom_theme_handler() {
+    // Security check
+    $nonce = $_POST['nonce'] ?? $_REQUEST['nonce'] ?? '';
+    if (!$nonce || !wp_verify_nonce($nonce, 'gmkb_nonce')) {
+        wp_send_json_error(array('message' => 'Security check failed'), 403);
+        return;
+    }
+    
+    // Capability check
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(array('message' => 'Insufficient permissions'), 403);
+        return;
+    }
+    
+    // Get theme data
+    $theme_json = isset($_POST['theme']) ? stripslashes($_POST['theme']) : '';
+    if (empty($theme_json)) {
+        wp_send_json_error(array('message' => 'No theme data provided'), 400);
+        return;
+    }
+    
+    // Parse and validate theme
+    $theme = json_decode($theme_json, true);
+    if (!$theme || !isset($theme['id']) || !isset($theme['colors'])) {
+        wp_send_json_error(array('message' => 'Invalid theme data'), 400);
+        return;
+    }
+    
+    // Save to database
+    $custom_themes = get_option('gmkb_custom_themes', array());
+    if (!is_array($custom_themes)) {
+        $custom_themes = array();
+    }
+    
+    // Add or update theme
+    $custom_themes[$theme['id']] = $theme;
+    update_option('gmkb_custom_themes', $custom_themes);
+    
+    wp_send_json_success(array(
+        'message' => 'Theme saved successfully',
+        'theme' => $theme
+    ));
+}
+
+// ROOT FIX: Add get custom themes handler with correct action name
+add_action('wp_ajax_gmkb_get_custom_themes', 'gmkb_get_custom_themes_handler');
+add_action('wp_ajax_nopriv_gmkb_get_custom_themes', 'gmkb_get_custom_themes_handler');
+
+function gmkb_get_custom_themes_handler() {
+    // This is an alias for gmkb_load_custom_themes_handler
+    gmkb_load_custom_themes_handler();
 }
 
 // Example: Export all custom themes

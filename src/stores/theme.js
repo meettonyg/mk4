@@ -640,7 +640,7 @@ export const useThemeStore = defineStore('theme', {
       }
       
       const formData = new FormData();
-      formData.append('action', 'gmkb_get_custom_themes');
+      formData.append('action', 'gmkb_load_custom_themes'); // ROOT FIX: Use correct action name
       formData.append('nonce', window.gmkbData.nonce || '');
       
       try {
