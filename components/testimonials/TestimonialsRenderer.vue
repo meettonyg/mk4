@@ -51,7 +51,14 @@ export default {
     },
     data: {
       type: Object,
-      default: () => ({})
+      default: () => ({
+        title: 'What People Say',
+        testimonials: [],
+        testimonial_authors: [],
+        testimonial_roles: [],
+        autoplay: true,
+        autoplayInterval: 5000
+      })
     }
   },
   data() {
@@ -61,30 +68,83 @@ export default {
   },
   computed: {
     title() {
-      return this.data.title || 'What People Say'
+      return this.data?.title || 'What People Say'
     },
     description() {
-      return this.data.description || ''
+      return this.data?.description || ''
     },
     testimonials() {
-      if (Array.isArray(this.data.testimonials)) {
+      // Handle various data formats safely
+      if (!this.data) {
+        return this.getDefaultTestimonials()
+      }
+      
+      // Handle array format
+      if (Array.isArray(this.data.testimonials) && this.data.testimonials.length > 0) {
         return this.data.testimonials
+      }
+      
+      // Handle object format
+      if (this.data.testimonials && typeof this.data.testimonials === 'object' && !Array.isArray(this.data.testimonials)) {
+        const testimonialArray = Object.values(this.data.testimonials).filter(Boolean)
+        if (testimonialArray.length > 0) {
+          return testimonialArray
+        }
+      }
+      
+      // Handle legacy format with separate arrays
+      if (this.data.testimonial_text && Array.isArray(this.data.testimonial_text)) {
+        return this.data.testimonial_text.map((text, index) => ({
+          text: text || '',
+          author: this.data.testimonial_authors?.[index] || `Author ${index + 1}`,
+          title: this.data.testimonial_roles?.[index] || '',
+          image: this.data.testimonial_images?.[index] || ''
+        }))
       }
       
       return this.getDefaultTestimonials()
     },
     currentTestimonial() {
-      return this.testimonials[this.currentIndex]
+      // Ensure safe access with bounds checking
+      if (!this.testimonials || this.testimonials.length === 0) {
+        return this.getDefaultTestimonials()[0]
+      }
+      
+      // Ensure currentIndex is within bounds
+      const safeIndex = Math.max(0, Math.min(this.currentIndex, this.testimonials.length - 1))
+      const testimonial = this.testimonials[safeIndex]
+      
+      // Handle both string and object formats
+      if (typeof testimonial === 'string') {
+        return {
+          text: testimonial,
+          author: this.data?.testimonial_authors?.[safeIndex] || 'Guest Speaker',
+          title: this.data?.testimonial_roles?.[safeIndex] || '',
+          image: ''
+        }
+      }
+      
+      // Ensure all properties exist
+      return {
+        text: testimonial?.text || '',
+        author: testimonial?.author || 'Guest Speaker',
+        title: testimonial?.title || testimonial?.role || '',
+        image: testimonial?.image || ''
+      }
     }
   },
   methods: {
     nextSlide() {
-      this.currentIndex = (this.currentIndex + 1) % this.testimonials.length
+      if (this.testimonials.length > 1) {
+        this.currentIndex = (this.currentIndex + 1) % this.testimonials.length
+      }
     },
     previousSlide() {
-      this.currentIndex = this.currentIndex === 0 
-        ? this.testimonials.length - 1 
-        : this.currentIndex - 1
+      if (this.testimonials.length > 1) {
+        this.currentIndex = this.currentIndex === 0 
+          ? this.testimonials.length - 1 
+          : this.currentIndex - 1
+      }
     },
     getDefaultTestimonials() {
       return [
@@ -104,13 +164,18 @@ export default {
     }
   },
   mounted() {
-    // Auto-advance carousel
-    this.interval = setInterval(() => {
-      this.nextSlide()
-    }, 5000)
+    // Auto-advance carousel if enabled and has testimonials
+    if (this.data?.autoplay !== false && this.testimonials.length > 1) {
+      const interval = this.data?.autoplayInterval || 5000
+      this.interval = setInterval(() => {
+        this.nextSlide()
+      }, interval)
+    }
   },
   beforeUnmount() {
-    clearInterval(this.interval)
+    if (this.interval) {
+      clearInterval(this.interval)
+    }
   }
 }
 </script>

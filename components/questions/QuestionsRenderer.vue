@@ -41,7 +41,12 @@ export default {
     },
     data: {
       type: Object,
-      default: () => ({})
+      default: () => ({
+        title: 'Frequently Asked Questions',
+        questions: [],
+        answers: [],
+        description: ''
+      })
     }
   },
   data() {
@@ -57,23 +62,41 @@ export default {
       return this.data.description || ''
     },
     questions() {
-      // Handle array format
-      if (Array.isArray(this.data.questions)) {
-        return this.data.questions
+      // Ensure we always have data
+      if (!this.data) {
+        return this.getDefaultQuestions()
       }
       
-      // Build from individual question fields
+      // Handle array format (new structure)
+      if (Array.isArray(this.data.questions) && this.data.questions.length > 0) {
+        // If questions is an array of objects with question and answer
+        if (typeof this.data.questions[0] === 'object') {
+          return this.data.questions.filter(q => q && q.question)
+        }
+        // If questions is an array of strings paired with answers array
+        if (Array.isArray(this.data.answers)) {
+          return this.data.questions.map((question, index) => ({
+            question: question || `Question ${index + 1}`,
+            answer: this.data.answers[index] || ''
+          })).filter(q => q.question && q.answer)
+        }
+      }
+      
+      // Build from individual question fields (legacy format)
       const questionsList = []
       for (let i = 1; i <= 10; i++) {
-        if (this.data[`question_${i}`] && this.data[`answer_${i}`]) {
+        const question = this.data[`question_${i}`] || this.data[`question${i}`]
+        const answer = this.data[`answer_${i}`] || this.data[`answer${i}`]
+        
+        if (question && answer) {
           questionsList.push({
-            question: this.data[`question_${i}`],
-            answer: this.data[`answer_${i}`]
+            question: String(question),
+            answer: String(answer)
           })
         }
       }
       
-      return questionsList.length ? questionsList : this.getDefaultQuestions()
+      return questionsList.length > 0 ? questionsList : this.getDefaultQuestions()
     }
   },
   methods: {

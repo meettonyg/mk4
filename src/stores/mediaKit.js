@@ -10,7 +10,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Core state
     sections: [],
     components: {},
-    theme: 'default',
+    theme: 'professional', // ROOT FIX: Use 'professional' as default theme, not 'default'
     themeCustomizations: {},
     
     // UI state
@@ -487,14 +487,51 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     // Bulk Operations
     clearAllComponents() {
-      this.components = {};
-      this.sections.forEach(section => {
-        if (section.components) section.components = [];
-        if (section.columns) {
-          section.columns = { 1: [], 2: [], 3: [] };
+      try {
+        // Store component count before clearing
+        const componentCount = Object.keys(this.components).length;
+        
+        // Clear components object safely
+        this.components = {};
+        
+        // Clear section references safely
+        if (this.sections && Array.isArray(this.sections)) {
+          this.sections.forEach(section => {
+            if (section && typeof section === 'object') {
+              if (section.components) section.components = [];
+              if (section.columns) {
+                section.columns = { 1: [], 2: [], 3: [] };
+              }
+            }
+          });
         }
-      });
-      this.hasUnsavedChanges = true;
+        
+        // Reset editing state
+        this.editingComponentId = null;
+        this.editPanelOpen = false;
+        this.selectedComponentIds = [];
+        this.selectedComponentId = null;
+        this.hoveredComponentId = null;
+        
+        // Mark as having unsaved changes
+        this.hasUnsavedChanges = true;
+        
+        // Dispatch event for any listening systems
+        document.dispatchEvent(new CustomEvent('gmkb:components-cleared', {
+          detail: { count: componentCount }
+        }));
+        
+        console.log(`✅ Cleared ${componentCount} components successfully`);
+      } catch (error) {
+        console.error('Error during clearAllComponents:', error);
+        // Force reset to clean state even if error occurs
+        this.components = {};
+        this.editingComponentId = null;
+        this.editPanelOpen = false;
+        this.selectedComponentIds = [];
+        this.selectedComponentId = null;
+        this.hoveredComponentId = null;
+      }
     },
 
     importComponents(componentsArray) {

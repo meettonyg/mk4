@@ -134,6 +134,39 @@ function gmkb_ajax_load_theme() {
     ));
 }
 
+// ROOT FIX: Add missing custom themes loader
+add_action('wp_ajax_gmkb_load_custom_themes', 'gmkb_load_custom_themes_handler');
+add_action('wp_ajax_nopriv_gmkb_load_custom_themes', 'gmkb_load_custom_themes_handler');
+
+function gmkb_load_custom_themes_handler() {
+    // Security check
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'mkcg_nonce')) {
+        wp_send_json_error(array('message' => 'Security check failed'), 400);
+        return;
+    }
+    
+    // Capability check (optional - allow all logged-in users to view themes)
+    if (!is_user_logged_in()) {
+        wp_send_json_error(array('message' => 'User not logged in'), 403);
+        return;
+    }
+    
+    // Get custom themes from database
+    $custom_themes = get_option('gmkb_custom_themes', array());
+    
+    // Ensure it's an array
+    if (!is_array($custom_themes)) {
+        $custom_themes = array();
+    }
+    
+    // Return success with themes
+    wp_send_json_success(array(
+        'themes' => array_values($custom_themes), // Ensure indexed array
+        'count' => count($custom_themes),
+        'message' => 'Custom themes loaded successfully'
+    ));
+}
+
 // Example: Export all custom themes
 add_action('wp_ajax_gmkb_export_all_themes', 'gmkb_ajax_export_all_themes');
 function gmkb_ajax_export_all_themes() {
