@@ -14,6 +14,7 @@ import { createPinia } from 'pinia';
 import { APIService } from './services/APIService.js';
 import { logger } from './utils/logger.js';
 import UnifiedComponentRegistry from './services/UnifiedComponentRegistry.js';
+import podsDataIntegration from './core/PodsDataIntegration.js';
 
 // Only essential features for Vue
 import ImportExportManager from './features/ImportExportManager.js';
@@ -145,6 +146,18 @@ async function initializeVue() {
     
     logger.success('Vue Media Kit Builder initialized successfully');
     
+    // Debug Pods data availability
+    setTimeout(() => {
+      console.log('📊 Pods Data Check:');
+      const podsData = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
+      const fieldCount = Object.keys(podsData).length;
+      console.log(`  Fields loaded: ${fieldCount}`);
+      if (fieldCount > 0) {
+        console.log('  Available fields:', Object.keys(podsData).slice(0, 5));
+      }
+      console.log('  PodsDataIntegration:', window.podsDataIntegration ? '✅ Available' : '❌ Missing');
+    }, 1000);
+    
     console.log(`
 🎯 Media Kit Builder v4.0 - Pure Vue Implementation
 ================================================
@@ -167,6 +180,7 @@ Debug:
 - gmkbStore.$state - View store state
 - gmkbStore.componentCount - Component count
 - themeStore.mergedTheme - Current theme
+- window.gmkbData.pods_data - View Pods data
     `);
     
     return app;
@@ -226,6 +240,11 @@ async function initialize() {
     // Initialize component registry
     UnifiedComponentRegistry.initialize();
     logger.info('✅ Component registry initialized');
+    
+    // Make PodsDataIntegration available globally for the store
+    window.podsDataIntegration = podsDataIntegration;
+    window.gmkbPodsIntegration = podsDataIntegration;
+    logger.info('✅ Pods data integration initialized');
     
     // Initialize drag and drop
     initDragDrop();
