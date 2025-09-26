@@ -31,10 +31,10 @@
         @update="handleUpdate"
       />
       <div v-else-if="isLoading" class="component-loading">
-        Loading {{ component.type }} component...
+        Loading {{ component?.type || 'component' }}...
       </div>
       <div v-else-if="loadError" class="component-error">
-        Error loading {{ component.type }}: {{ loadError }}
+        Error loading {{ component?.type || 'component' }}: {{ loadError }}
       </div>
     </div>
   </div>
@@ -56,7 +56,7 @@ export default {
     },
     component: {
       type: Object,
-      required: true
+      default: () => ({})
     },
     sectionId: {
       type: String,
@@ -78,6 +78,15 @@ export default {
     
     // Load component dynamically
     const loadComponent = async () => {
+      // ROOT FIX: Add null check for component
+      if (!props.component || !props.component.type) {
+        console.warn(`[ComponentRenderer] Invalid component:`, props.component);
+        loadError.value = 'Invalid component data';
+        componentImplementation.value = FallbackRenderer;
+        isLoading.value = false;
+        return;
+      }
+      
       isLoading.value = true;
       loadError.value = null;
       
@@ -107,8 +116,10 @@ export default {
     });
     
     // Reload if component type changes
-    watch(() => props.component.type, () => {
-      loadComponent();
+    watch(() => props.component?.type, () => {
+      if (props.component?.type) {
+        loadComponent();
+      }
     });
     
     // Component props to pass down

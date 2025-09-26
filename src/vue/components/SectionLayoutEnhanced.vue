@@ -99,6 +99,7 @@
                 >
                   <template #item="{element: componentId}">
                     <ComponentRenderer
+                      v-if="getComponent(componentId)"
                       :component-id="componentId"
                       :component="getComponent(componentId)"
                       :section-id="section.section_id"
@@ -138,6 +139,7 @@
                   >
                     <template #item="{element: componentId}">
                       <ComponentRenderer
+                        v-if="getComponent(componentId)"
                         :component-id="componentId"
                         :component="getComponent(componentId)"
                         :section-id="section.section_id"
@@ -174,6 +176,7 @@
                   >
                     <template #item="{element: componentId}">
                       <ComponentRenderer
+                        v-if="getComponent(componentId)"
                         :component-id="componentId"
                         :component="getComponent(componentId)"
                         :section-id="section.section_id"
@@ -219,6 +222,7 @@
                   >
                     <template #item="{element: componentId}">
                       <ComponentRenderer
+                        v-if="getComponent(componentId)"
                         :component-id="componentId"
                         :component="getComponent(componentId)"
                         :section-id="section.section_id"
