@@ -236,11 +236,11 @@ onMounted(() => {
   if (window.gmkbData?.themes) {
     // Override default themes with server-provided themes
     themeStore.availableThemes = window.gmkbData.themes.map(theme => ({
-      id: theme.id,
+      id: theme.slug,  // ROOT FIX: WordPress uses 'slug' as the identifier
       name: theme.name,
       description: theme.description || '',
       colors: theme.colors || {},
-      typography: theme.typography || {},
+      typography: theme.typography || theme.fonts || {},
       spacing: theme.spacing || {},
       effects: theme.effects || {}
     }));

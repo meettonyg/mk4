@@ -158,23 +158,9 @@ async function initializeVue() {
     
     // Initialize theme with proper timing
     setTimeout(() => {
-      if (mediaKitStore.theme || mediaKitStore.themeCustomizations) {
-        // Map old theme IDs to new ones if needed
-        let themeId = mediaKitStore.theme;
-        const themeMapping = {
-          'professional': 'professional_clean',
-          'creative': 'creative_bold',
-          'minimal': 'minimal_elegant',
-          'dark': 'modern_dark'
-        };
-        
-        // Use mapped ID if it exists, otherwise use as-is
-        if (themeMapping[themeId]) {
-          themeId = themeMapping[themeId];
-        }
-        
-        themeStore.initialize(themeId, mediaKitStore.themeCustomizations);
-        logger.info('✅ Theme initialized:', themeId);
+      if (mediaKitStore.theme) {
+        themeStore.initialize(mediaKitStore.theme, mediaKitStore.themeCustomizations);
+        logger.info('✅ Theme initialized:', mediaKitStore.theme);
       } else {
         // Apply default theme
         themeStore.selectTheme('professional_clean');
@@ -209,15 +195,8 @@ async function initializeVue() {
     
     // Console helpers
     window.switchTheme = (themeId) => {
-      const availableThemes = themeStore.availableThemes || [];
-      const validThemes = availableThemes.map(t => t.id);
-      if (!validThemes.includes(themeId)) {
-        console.error(`Invalid theme. Valid themes: ${validThemes.join(', ')}`);
-        return;
-      }
       themeStore.selectTheme(themeId);
-      const selectedTheme = availableThemes.find(t => t.id === themeId);
-      console.log(`✅ Switched to ${selectedTheme?.name || themeId} theme`);
+      console.log(`✅ Switched to ${themeId} theme`);
     };
     
     logger.success('Vue Media Kit Builder initialized successfully');
