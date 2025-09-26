@@ -409,6 +409,18 @@ function gmkb_enqueue_assets() {
                 $version . '-vue-test',
                 true
             );
+            
+            // ROOT FIX: Load comprehensive test suite for 100% compliance
+            // This provides the testVueMigrationComplete() function
+            if ( file_exists( GUESTIFY_PLUGIN_DIR . 'test-vue-migration-phase-7.js' ) ) {
+                wp_enqueue_script(
+                    'gmkb-test-vue-complete',
+                    $plugin_url . 'test-vue-migration-phase-7.js',
+                    array('gmkb-lean-bundle'),
+                    $version . '-test-complete',
+                    true
+                );
+            }
         }
         
         

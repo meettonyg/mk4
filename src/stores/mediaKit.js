@@ -582,6 +582,34 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
+    // ROOT FIX: Add missing clearAllSections method
+    clearAllSections() {
+      try {
+        // Store section count before clearing
+        const sectionCount = this.sections.length;
+        
+        // Clear all sections
+        this.sections = [];
+        
+        // Note: We don't clear components here as they might be used elsewhere
+        // If you want to clear components too, call clearAllComponents() separately
+        
+        // Mark as having unsaved changes
+        this.hasUnsavedChanges = true;
+        
+        // Dispatch event for any listening systems
+        document.dispatchEvent(new CustomEvent('gmkb:sections-cleared', {
+          detail: { count: sectionCount }
+        }));
+        
+        console.log(`✅ Cleared ${sectionCount} sections successfully`);
+      } catch (error) {
+        console.error('Error during clearAllSections:', error);
+        // Force reset to clean state even if error occurs
+        this.sections = [];
+      }
+    },
+
     importComponents(componentsArray) {
       componentsArray.forEach(comp => {
         this.addComponent(comp);
