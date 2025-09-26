@@ -18,14 +18,32 @@
     <div class="sidebar-content">
       <!-- Components Tab -->
       <div v-show="activeTab === 'components'" class="tab-panel">
-        <ComponentList />
-        
-        <!-- Add Component Button -->
-        <div class="sidebar-actions">
-          <button @click="openComponentLibrary" class="primary-action-btn">
-            <span>➕</span> Add Component
-          </button>
+        <!-- Component Library for Adding New Components -->
+        <div class="component-library-sidebar">
+          <div class="library-header">
+            <h3>Add Components</h3>
+          </div>
+          <div class="library-components">
+            <div
+              v-for="compType in componentTypes"
+              :key="compType.type"
+              class="library-component"
+              :draggable="true"
+              @dragstart="onDragStart($event, compType.type)"
+              @dragend="onDragEnd"
+            >
+              <span class="component-icon">{{ compType.icon }}</span>
+              <span class="component-name">{{ compType.name }}</span>
+              <button @click="addComponent(compType.type)" class="add-btn" title="Add">+</button>
+            </div>
+          </div>
         </div>
+        
+        <!-- Divider -->
+        <div class="sidebar-divider"></div>
+        
+        <!-- Existing Components List -->
+        <ComponentList />
       </div>
       
       <!-- Layout Tab -->
@@ -122,6 +140,26 @@ export default {
     
     const activeTab = ref('components');
     
+    // Component types for library
+    const componentTypes = [
+      { type: 'hero', name: 'Hero', icon: '🌟' },
+      { type: 'biography', name: 'Biography', icon: '👤' },
+      { type: 'topics', name: 'Topics', icon: '📚' },
+      { type: 'authority-hook', name: 'Authority', icon: '🎯' },
+      { type: 'guest-intro', name: 'Guest Intro', icon: '🎤' },
+      { type: 'questions', name: 'Q&A', icon: '❓' },
+      { type: 'testimonials', name: 'Testimonials', icon: '💬' },
+      { type: 'call-to-action', name: 'CTA', icon: '📢' },
+      { type: 'social', name: 'Social Links', icon: '🔗' },
+      { type: 'contact', name: 'Contact', icon: '📧' },
+      { type: 'stats', name: 'Statistics', icon: '📊' },
+      { type: 'photo-gallery', name: 'Gallery', icon: '🖼️' },
+      { type: 'video-intro', name: 'Video', icon: '🎥' },
+      { type: 'podcast-player', name: 'Podcast', icon: '🎙️' },
+      { type: 'booking-calendar', name: 'Booking', icon: '📅' },
+      { type: 'logo-grid', name: 'Logos', icon: '🏢' }
+    ];
+    
     // Layout options
     const layouts = [
       { 
@@ -181,6 +219,41 @@ export default {
       }));
     };
     
+    // Drag handlers for component library
+    const onDragStart = (event, componentType) => {
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.setData('text/plain', componentType);
+      event.dataTransfer.setData('component-type', componentType);
+      event.dataTransfer.setData('application/json', JSON.stringify({ type: componentType }));
+      
+      // Add visual feedback
+      event.target.classList.add('dragging');
+      
+      console.log('Started dragging component type:', componentType);
+    };
+    
+    const onDragEnd = (event) => {
+      event.target.classList.remove('dragging');
+      console.log('Ended dragging');
+    };
+    
+    // Add component directly (non-drag method)
+    const addComponent = (type) => {
+      // Ensure we have at least one section
+      if (store.sections.length === 0) {
+        store.addSection('full_width');
+      }
+      
+      // Add component to first section
+      const firstSection = store.sections[0];
+      store.addComponent({
+        type: type,
+        sectionId: firstSection.section_id
+      });
+      
+      console.log('Added component:', type);
+    };
+    
     return {
       tabs,
       activeTab,
@@ -189,11 +262,15 @@ export default {
       sectionCount,
       selectedTheme,
       autoSave,
+      componentTypes,
       openComponentLibrary,
       addSection,
       removeSection,
       getSectionLabel,
-      updateTheme
+      updateTheme,
+      onDragStart,
+      onDragEnd,
+      addComponent
     };
   }
 };
@@ -263,32 +340,89 @@ export default {
   flex-direction: column;
 }
 
-/* Sidebar Actions */
-.sidebar-actions {
+/* Component Library Sidebar */
+.component-library-sidebar {
   padding: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  margin: 12px;
 }
 
-.primary-action-btn {
-  width: 100%;
+.library-header h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.library-components {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.library-component {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  cursor: move;
+  transition: all 0.2s;
+}
+
+.library-component:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.library-component.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+.component-icon {
+  font-size: 18px;
+}
+
+.component-name {
+  flex: 1;
+  font-size: 13px;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.add-btn {
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 4px;
+  color: #3b82f6;
+  font-size: 18px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
-.primary-action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+.add-btn:hover {
+  background: rgba(59, 130, 246, 0.3);
+  transform: scale(1.1);
+}
+
+/* Sidebar Divider */
+.sidebar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 12px;
 }
 
 /* Layout Panel */
@@ -470,5 +604,23 @@ export default {
 .setting-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Scrollbar styling */
+.library-components::-webkit-scrollbar {
+  width: 4px;
+}
+
+.library-components::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.library-components::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.library-components::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 </style>
