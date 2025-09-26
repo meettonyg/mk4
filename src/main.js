@@ -159,11 +159,25 @@ async function initializeVue() {
     // Initialize theme with proper timing
     setTimeout(() => {
       if (mediaKitStore.theme || mediaKitStore.themeCustomizations) {
-        themeStore.initialize(mediaKitStore.theme, mediaKitStore.themeCustomizations);
-        logger.info('✅ Theme initialized:', mediaKitStore.theme);
+        // Map old theme IDs to new ones if needed
+        let themeId = mediaKitStore.theme;
+        const themeMapping = {
+          'professional': 'professional_clean',
+          'creative': 'creative_bold',
+          'minimal': 'minimal_elegant',
+          'dark': 'modern_dark'
+        };
+        
+        // Use mapped ID if it exists, otherwise use as-is
+        if (themeMapping[themeId]) {
+          themeId = themeMapping[themeId];
+        }
+        
+        themeStore.initialize(themeId, mediaKitStore.themeCustomizations);
+        logger.info('✅ Theme initialized:', themeId);
       } else {
         // Apply default theme
-        themeStore.selectTheme('professional');
+        themeStore.selectTheme('professional_clean');
         logger.info('✅ Default theme applied');
       }
     }, 100); // Small delay to ensure DOM is ready
@@ -195,13 +209,15 @@ async function initializeVue() {
     
     // Console helpers
     window.switchTheme = (themeId) => {
-      const validThemes = ['professional', 'creative', 'minimal', 'dark'];
+      const availableThemes = themeStore.availableThemes || [];
+      const validThemes = availableThemes.map(t => t.id);
       if (!validThemes.includes(themeId)) {
         console.error(`Invalid theme. Valid themes: ${validThemes.join(', ')}`);
         return;
       }
       themeStore.selectTheme(themeId);
-      console.log(`✅ Switched to ${themeId} theme`);
+      const selectedTheme = availableThemes.find(t => t.id === themeId);
+      console.log(`✅ Switched to ${selectedTheme?.name || themeId} theme`);
     };
     
     logger.success('Vue Media Kit Builder initialized successfully');

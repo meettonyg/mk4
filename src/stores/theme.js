@@ -10,7 +10,7 @@ export const useThemeStore = defineStore('theme', {
     // Available themes
     availableThemes: [
       {
-        id: 'professional',
+        id: 'professional_clean',
         name: 'Professional Clean',
         description: 'Clean and professional design',
         colors: {
@@ -48,7 +48,7 @@ export const useThemeStore = defineStore('theme', {
         }
       },
       {
-        id: 'creative',
+        id: 'creative_bold',
         name: 'Creative Bold',
         description: 'Bold and creative design',
         colors: {
@@ -86,7 +86,7 @@ export const useThemeStore = defineStore('theme', {
         }
       },
       {
-        id: 'minimal',
+        id: 'minimal_elegant',
         name: 'Minimal Elegant',
         description: 'Minimal and elegant design',
         colors: {
@@ -124,7 +124,7 @@ export const useThemeStore = defineStore('theme', {
         }
       },
       {
-        id: 'dark',
+        id: 'modern_dark',
         name: 'Modern Dark',
         description: 'Modern dark theme',
         colors: {
@@ -167,7 +167,7 @@ export const useThemeStore = defineStore('theme', {
     customThemes: [],
     
     // Current active theme
-    activeThemeId: 'professional',
+    activeThemeId: 'professional_clean',
     
     // Temporary customizations (before saving)
     tempCustomizations: {
@@ -539,7 +539,7 @@ export const useThemeStore = defineStore('theme', {
       if (index > -1) {
         this.customThemes.splice(index, 1);
         if (this.activeThemeId === themeId) {
-          this.activeThemeId = 'professional';
+          this.activeThemeId = 'professional_clean';
         }
       }
     },

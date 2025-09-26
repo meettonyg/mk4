@@ -82,7 +82,19 @@ function testCSSVariables() {
 function testThemeSwitching() {
   console.log('\n🧪 Test 3: Theme Switching');
   
-  const themes = ['professional', 'creative', 'minimal', 'dark'];
+  // Get actual theme IDs from the store or use defaults
+  let themes = [];
+  
+  if (window.themeStore && window.themeStore.availableThemes && window.themeStore.availableThemes.length > 0) {
+    themes = window.themeStore.availableThemes.map(t => t.id).filter(id => id); // Filter out undefined
+  }
+  
+  // Fallback to default theme IDs if none found or all undefined
+  if (themes.length === 0) {
+    themes = ['professional_clean', 'creative_bold', 'minimal_elegant', 'modern_dark'];
+    console.log('  Using default theme IDs for testing');
+  }
+  
   const results = [];
   
   themes.forEach(themeId => {
@@ -137,12 +149,12 @@ function testComponentStyles() {
 async function testThemePersistence() {
   console.log('\n🧪 Test 5: Theme Persistence');
   
-  // Set a theme
-  window.themeStore.selectTheme('dark');
+  // Set a theme (use the correct ID)
+  window.themeStore.selectTheme('modern_dark');
   
   // Save to WordPress
   if (window.gmkbStore) {
-    window.gmkbStore.theme = 'dark';
+    window.gmkbStore.theme = 'modern_dark';
     console.log('  ⏳ Saving theme to WordPress...');
     
     try {
@@ -151,9 +163,9 @@ async function testThemePersistence() {
       
       // Check if it's in the state
       const savedTheme = window.gmkbStore.theme;
-      console.log(`  ${savedTheme === 'dark' ? '✅' : '❌'} Theme in store: ${savedTheme}`);
+      console.log(`  ${savedTheme === 'modern_dark' ? '✅' : '❌'} Theme in store: ${savedTheme}`);
       
-      return savedTheme === 'dark';
+      return savedTheme === 'modern_dark';
     } catch (error) {
       console.log('  ❌ Failed to save theme:', error);
       return false;
