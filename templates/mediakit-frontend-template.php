@@ -248,7 +248,7 @@ if (class_exists('GMKB_Frontend_Display')) {
                                         $component = $components_map[$component_id];
                                         $component['id'] = $component_id;
                                         render_component($component, $post_id);
-                                    else if ($component_id):
+                                    elseif ($component_id):
                                         // ROOT FIX: Try to find orphaned component by checking all components
                                         if (defined('WP_DEBUG') && WP_DEBUG) {
                                             error_log('Component ' . $component_id . ' not found in map, checking orphaned components...');
