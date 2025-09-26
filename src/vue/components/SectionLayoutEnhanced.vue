@@ -14,6 +14,8 @@
             { 'gmkb-section--active': hoveredSection === section.section_id }
           ]"
           :data-section-id="section.section_id"
+          :id="section.settings?.customId || undefined"
+          :style="getSectionStyles(section)"
           @mouseenter="hoveredSection = section.section_id"
           @mouseleave="hoveredSection = null"
         >
@@ -65,7 +67,11 @@
           </div>
 
           <!-- Section Content Area - ROOT FIX: Corrected CSS class -->
-          <div class="gmkb-section__content" :class="getLayoutClass(section.type)">
+          <div 
+            class="gmkb-section__content" 
+            :class="getLayoutClass(section.type)"
+            :style="getColumnStyles(section)"
+          >
             <!-- Full Width Layout -->
             <div v-if="section.type === 'full_width'" class="gmkb-section__column" data-column="1">
               <div 
@@ -268,6 +274,8 @@ const layoutOptions = [
 
 // Refs
 const sectionsContainer = ref(null);
+const sectionSettingsModal = ref(null);
+const editingSectionId = ref(null);
 
 // Reactive state
 const hoveredSection = ref(null);
@@ -366,8 +374,13 @@ const removeSection = (sectionId) => {
 };
 
 const openSectionSettings = (sectionId) => {
+  editingSectionId.value = sectionId;
   // Dispatch event for settings panel
   document.dispatchEvent(new CustomEvent('gmkb:section-settings', {
+    detail: { sectionId }
+  }));
+  // Also dispatch open-section-settings event
+  document.dispatchEvent(new CustomEvent('gmkb:open-section-settings', {
     detail: { sectionId }
   }));
 };
@@ -449,6 +462,31 @@ const onComponentOrderChange = (evt) => {
   store.hasUnsavedChanges = true;
 };
 
+// Get section styles from settings
+const getSectionStyles = (section) => {
+  const styles = {};
+  
+  if (section.settings?.backgroundColor) {
+    styles.backgroundColor = section.settings.backgroundColor;
+  }
+  
+  if (section.settings?.padding) {
+    styles.padding = `${section.settings.padding}px`;
+  }
+  
+  return styles;
+};
+
+// Get column gap styles
+const getColumnStyles = (section) => {
+  if (section.settings?.columnGap) {
+    return {
+      gap: `${section.settings.columnGap}px`
+    };
+  }
+  return {};
+};
+
 // Lifecycle
 onMounted(async () => {
   console.log('✅ Section Layout Enhanced initialized');
@@ -468,6 +506,8 @@ onMounted(async () => {
     }
   });
 });
+
+// Listen for section settings modal events
 
 // Watch for changes and auto-save
 watch(() => store.hasUnsavedChanges, (hasChanges) => {

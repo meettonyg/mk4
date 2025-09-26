@@ -125,8 +125,8 @@ const duplicateComponent = () => {
 };
 
 const editComponent = () => {
-  // Use the store's openEditPanel method instead of openComponentEditor
-  store.openEditPanel(props.componentId);
+  // Open the enhanced Design Panel
+  store.openDesignPanel(props.componentId);
   
   // Also set as selected
   store.setSelectedComponent(props.componentId);
@@ -136,7 +136,7 @@ const editComponent = () => {
     detail: { componentId: props.componentId }
   }));
   
-  console.log('Edit button clicked for:', props.componentId, props.component?.type);
+  console.log('Opening Design Panel for:', props.componentId, props.component?.type);
 };
 
 const deleteComponent = () => {

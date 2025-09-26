@@ -249,6 +249,18 @@ Debug:
 function setupEmptyStateHandlers() {
   // Use event delegation for dynamic buttons
   document.addEventListener('click', async (event) => {
+    // Handle Add Component button specifically
+    if (event.target.id === 'add-component-btn' || 
+        event.target.closest('#add-component-btn')) {
+      event.preventDefault();
+      if (window.openComponentLibrary) {
+        window.openComponentLibrary();
+      } else {
+        document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
+      }
+      return;
+    }
+    
     const target = event.target.closest('[data-action]');
     if (!target) return;
     
@@ -259,8 +271,13 @@ function setupEmptyStateHandlers() {
     switch (action) {
       case 'add-component':
         event.preventDefault();
-        store.addComponent({ type: 'hero' });
-        showToast('Hero component added', 'success');
+        // Open the component library modal instead of directly adding
+        if (window.openComponentLibrary) {
+          window.openComponentLibrary();
+        } else {
+          // Fallback: dispatch event to open library
+          document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
+        }
         break;
         
       case 'add-section':

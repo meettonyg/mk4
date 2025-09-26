@@ -1,17 +1,18 @@
-/**
- * Pinia Store - Single Source of Truth for Media Kit Builder
- * This replaces the legacy StateManager completely
- */
 import { defineStore } from 'pinia';
-import UnifiedComponentRegistry from '../services/UnifiedComponentRegistry';
+import UnifiedComponentRegistry from '../vue/services/UnifiedComponentRegistry';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
-    // Core state
-    sections: [],
+    // Core data
     components: {},
-    theme: 'professional_clean', // ROOT FIX: Use 'professional_clean' as default theme with underscore
-    themeCustomizations: {},
+    sections: [],
+    theme: 'professional_clean',
+    themeCustomizations: {
+      colors: {},
+      typography: {},
+      spacing: {},
+      effects: {}
+    },
     
     // UI state
     selectedComponentId: null,
@@ -22,6 +23,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
     isDragging: false,
     draggedComponentId: null,
     dropTargetId: null,
+    componentLibraryOpen: false,  // Added for component library modal
+    designPanelOpen: false,  // Added for design panel
     
     // Meta state
     lastSaved: null,
@@ -868,7 +871,27 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
-    // Move component within section
+    // UI Management - Added methods
+    setComponentLibraryOpen(isOpen) {
+      this.componentLibraryOpen = isOpen;
+    },
+    
+    openDesignPanel(componentId) {
+      this.editingComponentId = componentId;
+      this.designPanelOpen = true;
+      
+      // Dispatch event for design panel
+      document.dispatchEvent(new CustomEvent('gmkb:design-panel-open', {
+        detail: { componentId }
+      }));
+    },
+    
+    closeDesignPanel() {
+      this.designPanelOpen = false;
+      this.editingComponentId = null;
+    },
+
+    // Move component within its section or to another position
     moveComponent(componentId, direction) {
       for (const section of this.sections) {
         // Check full-width sections
@@ -1082,6 +1105,37 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
       } finally {
         this.isSaving = false;
+      }
+    },
+
+    // NEW: Section settings management
+    updateSection(sectionId, updates) {
+      const section = this.sections.find(s => s.section_id === sectionId);
+      if (section) {
+        Object.assign(section, updates);
+        this.hasUnsavedChanges = true;
+        
+        // Dispatch update event
+        document.dispatchEvent(new CustomEvent('gmkb:section-updated', {
+          detail: { sectionId, updates }
+        }));
+      }
+    },
+
+    // NEW: Update section settings
+    updateSectionSettings(sectionId, settings) {
+      const section = this.sections.find(s => s.section_id === sectionId);
+      if (section) {
+        if (!section.settings) {
+          section.settings = {};
+        }
+        Object.assign(section.settings, settings);
+        this.hasUnsavedChanges = true;
+        
+        // Dispatch settings update event
+        document.dispatchEvent(new CustomEvent('gmkb:section-settings-updated', {
+          detail: { sectionId, settings }
+        }));
       }
     }
   }

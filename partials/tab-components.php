@@ -1,4 +1,12 @@
 <div id="components-tab" class="tab-content tab-content--active">
+    <!-- Vue Component List - Shows existing components in the media kit -->
+    <div id="vue-component-list" class="sidebar__section">
+        <!-- Vue will mount ComponentList here -->
+    </div>
+    
+    <!-- Divider between existing components and available components -->
+    <div class="sidebar__divider"></div>
+    
     <div class="sidebar__section">
         <div class="sidebar__section-title">Essential Components</div>
         <div class="component-grid">

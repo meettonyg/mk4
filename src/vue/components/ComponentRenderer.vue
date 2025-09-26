@@ -141,10 +141,10 @@ export default {
     };
     
     const edit = () => {
-      // ROOT FIX: Directly open edit panel
-      store.openEditPanel(props.componentId);
+      // ROOT FIX: Open the enhanced Design Panel
+      store.openDesignPanel(props.componentId);
       store.setSelectedComponent(props.componentId);
-      console.log('[ComponentRenderer] Edit clicked for:', props.componentId, props.component?.type);
+      console.log('[ComponentRenderer] Opening Design Panel for:', props.componentId, props.component?.type);
     };
     
     const duplicate = () => {

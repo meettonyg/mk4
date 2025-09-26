@@ -88,18 +88,37 @@
                   <h3 class="gmkb-component-name">{{ component.name }}</h3>
                   <p class="gmkb-component-description">{{ component.description }}</p>
                   
-                  <button 
-                    class="gmkb-add-button"
-                    :class="{ 'gmkb-add-button--premium': component.isPremium }"
-                    @click="addComponent(component)"
-                    :disabled="component.isPremium && !hasPremiumAccess"
-                  >
-                    <svg class="gmkb-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Add Component
-                  </button>
+                  <div class="gmkb-component-actions">
+                    <button 
+                      class="gmkb-add-button"
+                      :class="{ 'gmkb-add-button--premium': component.isPremium }"
+                      @click="addComponent(component)"
+                      :disabled="component.isPremium && !hasPremiumAccess"
+                    >
+                      <svg class="gmkb-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      Add Component
+                    </button>
+                    <button
+                      class="gmkb-drag-button"
+                      :draggable="true"
+                      @dragstart="onDragStart($event, component)"
+                      @dragend="onDragEnd"
+                      :title="`Drag ${component.name} to canvas`"
+                    >
+                      <svg class="gmkb-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="5 9 2 12 5 15"></polyline>
+                        <polyline points="9 5 12 2 15 5"></polyline>
+                        <polyline points="15 19 12 22 9 19"></polyline>
+                        <polyline points="19 9 22 12 19 15"></polyline>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <line x1="12" y1="2" x2="12" y2="22"></line>
+                      </svg>
+                      Drag
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -139,7 +158,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted, h } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, h } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import UnifiedComponentRegistry from '../../services/UnifiedComponentRegistry';
 
@@ -226,6 +245,7 @@ export default {
       isOpen.value = false;
       document.body.style.overflow = '';
       resetFilters();
+      store.setComponentLibraryOpen(false);
     };
     
     const addComponent = (component) => {
@@ -263,35 +283,112 @@ export default {
     };
     
     const showToast = (message, type = 'info') => {
-      // Use existing toast system if available
+      // Create a simple toast notification
+      const toast = document.createElement('div');
+      toast.className = `gmkb-toast gmkb-toast--${type}`;
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        color: white;
+        border-radius: 6px;
+        z-index: 10001;
+        animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.7s;
+      `;
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+      
+      // Also log to console for debugging
+      console.log(`[${type}] ${message}`);
+      
+      // If window.showToast exists, also call it
       if (window.showToast) {
         window.showToast(message, type);
-      } else {
-        console.log(`[${type}] ${message}`);
       }
     };
     
-    // Keyboard handler
+    // Drag and Drop handlers
+    const onDragStart = (event, component) => {
+      // Set drag data with component information
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.dropEffect = 'copy';
+      
+      // Set multiple data formats for compatibility
+      event.dataTransfer.setData('text/plain', component.type);
+      event.dataTransfer.setData('component-type', component.type);
+      event.dataTransfer.setData('application/json', JSON.stringify({
+        type: component.type,
+        name: component.name,
+        defaultData: component.defaultData || {}
+      }));
+      
+      // Set dragging state in store
+      store.isDragging = true;
+      store.draggedComponentId = null; // This is a new component, not existing
+      
+      // Add visual feedback
+      event.target.classList.add('dragging');
+      
+      console.log('🎯 Started dragging component:', component.type);
+    };
+    
+    const onDragEnd = (event) => {
+      // Clear dragging state
+      store.isDragging = false;
+      store.draggedComponentId = null;
+      
+      // Remove visual feedback
+      event.target.classList.remove('dragging');
+      
+      console.log('✅ Drag ended');
+    };
+    
+    // Event handlers
     const handleKeydown = (e) => {
       if (e.key === 'Escape' && isOpen.value) {
         close();
       }
     };
     
+    const handleOpenEvent = () => {
+      open();
+    };
+    
+    // Watch for store changes
+    watch(() => store.componentLibraryOpen, (newValue) => {
+      if (newValue) {
+        open();
+      } else {
+        close();
+      }
+    });
+    
     // Lifecycle
     onMounted(() => {
       // Register global open function
       window.openComponentLibrary = open;
       
-      // Listen for open events
-      document.addEventListener('gmkb:open-component-library', open);
+      document.addEventListener('gmkb:open-component-library', handleOpenEvent);
       document.addEventListener('keydown', handleKeydown);
+      
+      // Also listen to store state
+      if (store.componentLibraryOpen) {
+        open();
+      }
       
       console.log('✅ Vue Component Library ready');
     });
     
     onUnmounted(() => {
-      document.removeEventListener('gmkb:open-component-library', open);
+      document.removeEventListener('gmkb:open-component-library', handleOpenEvent);
       document.removeEventListener('keydown', handleKeydown);
       delete window.openComponentLibrary;
     });
@@ -309,7 +406,9 @@ export default {
       addComponent,
       filterComponents,
       resetFilters,
-      getIcon
+      getIcon,
+      onDragStart,
+      onDragEnd
     };
   }
 };
@@ -526,8 +625,14 @@ export default {
   flex: 1;
 }
 
-.gmkb-add-button {
-  width: 100%;
+.gmkb-component-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.gmkb-add-button,
+.gmkb-drag-button {
+  flex: 1;
   padding: 10px;
   background: #3b82f6;
   color: white;
@@ -540,7 +645,22 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.gmkb-drag-button {
+  background: #10b981;
+  cursor: move;
+}
+
+.gmkb-drag-button:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.gmkb-drag-button.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
 }
 
 .gmkb-add-button:hover:not(:disabled) {
@@ -670,6 +790,27 @@ export default {
   
   .gmkb-library-controls {
     flex-direction: column;
+  }
+}
+
+/* Toast animations */
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 </style>

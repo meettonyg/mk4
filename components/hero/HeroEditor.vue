@@ -1,109 +1,133 @@
 <template>
   <div class="hero-editor">
     <div class="editor-header">
-      <h3>Edit Hero Section</h3>
-      <button @click="closeEditor" class="close-btn">×</button>
+      <h3>Hero Component</h3>
+      <button @click="$emit('close')" class="close-btn">×</button>
     </div>
     
-    <div class="editor-fields">
-      <!-- Title Field -->
-      <div class="field-group">
-        <label for="hero-title">Title</label>
-        <input 
-          id="hero-title"
-          v-model="localData.title" 
-          @input="updateComponent"
-          placeholder="Enter hero title..."
-        >
-      </div>
-      
-      <!-- Subtitle Field -->
-      <div class="field-group">
-        <label for="hero-subtitle">Subtitle</label>
-        <input 
-          id="hero-subtitle"
-          v-model="localData.subtitle" 
-          @input="updateComponent"
-          placeholder="Enter subtitle..."
-        >
-      </div>
-      
-      <!-- Description Field -->
-      <div class="field-group">
-        <label for="hero-description">Description</label>
-        <textarea 
-          id="hero-description"
-          v-model="localData.description" 
-          @input="updateComponent"
-          rows="4"
-          placeholder="Enter description..."
-        />
-      </div>
-      
-      <!-- Image URL Field -->
-      <div class="field-group">
-        <label for="hero-image">Image URL</label>
-        <input 
-          id="hero-image"
-          v-model="localData.imageUrl" 
-          @input="updateComponent"
-          placeholder="https://example.com/image.jpg"
-        >
-        <button @click="openMediaLibrary" class="media-btn">
-          Choose from Media Library
-        </button>
-      </div>
-      
-      <!-- Buttons Section -->
-      <div class="field-group">
-        <label>Buttons</label>
+    <div class="editor-sections">
+      <!-- Main Content -->
+      <section class="editor-section">
+        <h4>Content</h4>
         
-        <!-- Primary Button -->
-        <div class="button-group">
-          <h4>Primary Button</h4>
-          <input 
-            v-model="localData.primaryButtonText" 
-            @input="updateComponent"
-            placeholder="Button text..."
-            class="small-input"
-          >
-          <input 
-            v-model="localData.primaryButtonUrl" 
-            @input="updateComponent"
-            placeholder="Button URL..."
-            class="small-input"
-          >
-        </div>
-        
-        <!-- Secondary Button -->
-        <div class="button-group">
-          <h4>Secondary Button (Optional)</h4>
-          <input 
-            v-model="localData.secondaryButtonText" 
-            @input="updateComponent"
-            placeholder="Button text..."
-            class="small-input"
-          >
-          <input 
-            v-model="localData.secondaryButtonUrl" 
-            @input="updateComponent"
-            placeholder="Button URL..."
-            class="small-input"
-          >
-        </div>
-      </div>
-      
-      <!-- Advanced Options -->
-      <details class="advanced-section">
-        <summary>Advanced Options</summary>
-        
-        <!-- Text Alignment -->
         <div class="field-group">
-          <label for="text-align">Text Alignment</label>
+          <label for="hero-title">Main Title</label>
+          <input 
+            id="hero-title"
+            v-model="localData.title" 
+            @input="updateField('title')"
+            type="text"
+            placeholder="Enter hero title..."
+          />
+        </div>
+        
+        <div class="field-group">
+          <label for="hero-subtitle">Subtitle</label>
+          <input 
+            id="hero-subtitle"
+            v-model="localData.subtitle" 
+            @input="updateField('subtitle')"
+            type="text"
+            placeholder="Enter subtitle..."
+          />
+        </div>
+        
+        <div class="field-group">
+          <label for="hero-description">Description</label>
+          <textarea 
+            id="hero-description"
+            v-model="localData.description" 
+            @input="updateField('description')"
+            rows="4"
+            placeholder="Enter description..."
+          />
+        </div>
+      </section>
+
+      <!-- Call to Action -->
+      <section class="editor-section">
+        <h4>Call to Action</h4>
+        
+        <div class="field-group">
+          <label for="hero-cta-text">Button Text</label>
+          <input 
+            id="hero-cta-text"
+            v-model="localData.ctaText" 
+            @input="updateField('ctaText')"
+            type="text"
+            placeholder="e.g., Get Started"
+          />
+        </div>
+        
+        <div class="field-group">
+          <label for="hero-cta-url">Button Link</label>
+          <input 
+            id="hero-cta-url"
+            v-model="localData.ctaUrl" 
+            @input="updateField('ctaUrl')"
+            type="url"
+            placeholder="https://"
+          />
+        </div>
+      </section>
+
+      <!-- Background -->
+      <section class="editor-section">
+        <h4>Background</h4>
+        
+        <div class="field-group">
+          <label for="hero-bg-type">Background Type</label>
           <select 
-            id="text-align"
+            id="hero-bg-type"
+            v-model="localData.backgroundType" 
+            @change="updateField('backgroundType')"
+          >
+            <option value="color">Solid Color</option>
+            <option value="gradient">Gradient</option>
+            <option value="image">Image</option>
+          </select>
+        </div>
+        
+        <div v-if="localData.backgroundType === 'color'" class="field-group">
+          <label for="hero-bg-color">Background Color</label>
+          <div class="color-input">
+            <input 
+              id="hero-bg-color"
+              v-model="localData.backgroundColor" 
+              @input="updateField('backgroundColor')"
+              type="color"
+            />
+            <input 
+              v-model="localData.backgroundColor" 
+              @input="updateField('backgroundColor')"
+              type="text"
+              placeholder="#000000"
+            />
+          </div>
+        </div>
+        
+        <div v-if="localData.backgroundType === 'image'" class="field-group">
+          <label for="hero-bg-image">Background Image URL</label>
+          <input 
+            id="hero-bg-image"
+            v-model="localData.backgroundImage" 
+            @input="updateField('backgroundImage')"
+            type="url"
+            placeholder="https://example.com/image.jpg"
+          />
+        </div>
+      </section>
+
+      <!-- Layout Options -->
+      <section class="editor-section">
+        <h4>Layout</h4>
+        
+        <div class="field-group">
+          <label for="hero-alignment">Text Alignment</label>
+          <select 
+            id="hero-alignment"
             v-model="localData.textAlign" 
-            @change="updateComponent"
+            @change="updateField('textAlign')"
           >
             <option value="left">Left</option>
             <option value="center">Center</option>
@@ -111,185 +135,91 @@
           </select>
         </div>
         
-        <!-- Background Style -->
         <div class="field-group">
-          <label for="bg-style">Background Style</label>
+          <label for="hero-height">Section Height</label>
           <select 
-            id="bg-style"
-            v-model="localData.backgroundStyle" 
-            @change="updateComponent"
+            id="hero-height"
+            v-model="localData.height" 
+            @change="updateField('height')"
           >
-            <option value="default">Default</option>
-            <option value="gradient">Gradient</option>
-            <option value="image">Image</option>
-            <option value="solid">Solid Color</option>
+            <option value="auto">Auto</option>
+            <option value="small">Small (300px)</option>
+            <option value="medium">Medium (500px)</option>
+            <option value="large">Large (700px)</option>
+            <option value="fullscreen">Fullscreen</option>
           </select>
         </div>
-      </details>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useMediaKitStore } from '../../src/stores/mediaKit';
 
 const props = defineProps({
   componentId: {
     type: String,
     required: true
+  },
+  componentData: {
+    type: Object,
+    default: () => ({})
   }
 });
 
+const emit = defineEmits(['update', 'close']);
 const store = useMediaKitStore();
+
+// Local data copy
 const localData = ref({
   title: '',
   subtitle: '',
   description: '',
-  imageUrl: '',
-  primaryButtonText: '',
-  primaryButtonUrl: '',
-  secondaryButtonText: '',
-  secondaryButtonUrl: '',
-  textAlign: 'left',
-  backgroundStyle: 'default'
+  ctaText: '',
+  ctaUrl: '',
+  backgroundType: 'color',
+  backgroundColor: '#1e293b',
+  backgroundImage: '',
+  textAlign: 'center',
+  height: 'medium',
+  ...props.componentData
 });
 
-// Initialize local data from store
-const loadComponentData = () => {
-  const component = store.components[props.componentId];
-  if (component && component.data) {
-    // Merge existing data with defaults
-    localData.value = {
-      title: component.data.title || component.data.headline || '',
-      subtitle: component.data.subtitle || component.data.subheadline || '',
-      description: component.data.description || component.data.content || '',
-      imageUrl: component.data.imageUrl || component.data.backgroundImage || '',
-      primaryButtonText: component.data.primaryButtonText || '',
-      primaryButtonUrl: component.data.primaryButtonUrl || '',
-      secondaryButtonText: component.data.secondaryButtonText || '',
-      secondaryButtonUrl: component.data.secondaryButtonUrl || '',
-      textAlign: component.data.textAlign || 'left',
-      backgroundStyle: component.data.backgroundStyle || 'default'
-    };
-    
-    // Handle button arrays if they exist
-    if (Array.isArray(component.data.buttons) && component.data.buttons.length > 0) {
-      const [primary, secondary] = component.data.buttons;
-      if (primary) {
-        localData.value.primaryButtonText = primary.text || '';
-        localData.value.primaryButtonUrl = primary.url || '';
-      }
-      if (secondary) {
-        localData.value.secondaryButtonText = secondary.text || '';
-        localData.value.secondaryButtonUrl = secondary.url || '';
-      }
-    }
-  }
-};
+// Watch for external data changes
+watch(() => props.componentData, (newData) => {
+  localData.value = { ...localData.value, ...newData };
+}, { deep: true });
 
-// Watch for component changes
-watch(() => props.componentId, () => {
-  loadComponentData();
-}, { immediate: true });
-
-// Update component in store with debouncing
+// Update field with debouncing
 let updateTimeout = null;
-const updateComponent = () => {
-  // Clear existing timeout
-  if (updateTimeout) {
-    clearTimeout(updateTimeout);
-  }
+const updateField = (field) => {
+  if (updateTimeout) clearTimeout(updateTimeout);
   
-  // Debounce updates to prevent too many saves
   updateTimeout = setTimeout(() => {
-    // Prepare buttons array for compatibility
-    const buttons = [];
-    if (localData.value.primaryButtonText) {
-      buttons.push({
-        text: localData.value.primaryButtonText,
-        url: localData.value.primaryButtonUrl || '#',
-        style: 'primary'
-      });
-    }
-    if (localData.value.secondaryButtonText) {
-      buttons.push({
-        text: localData.value.secondaryButtonText,
-        url: localData.value.secondaryButtonUrl || '#',
-        style: 'secondary'
-      });
-    }
-    
-    // Update store with all data formats for compatibility
+    // Update store directly
     store.updateComponent(props.componentId, {
-      data: {
-        // New format
-        title: localData.value.title,
-        subtitle: localData.value.subtitle,
-        description: localData.value.description,
-        imageUrl: localData.value.imageUrl,
-        // Legacy format compatibility
-        headline: localData.value.title,
-        subheadline: localData.value.subtitle,
-        content: localData.value.description,
-        backgroundImage: localData.value.imageUrl,
-        // Button formats
-        primaryButtonText: localData.value.primaryButtonText,
-        primaryButtonUrl: localData.value.primaryButtonUrl,
-        secondaryButtonText: localData.value.secondaryButtonText,
-        secondaryButtonUrl: localData.value.secondaryButtonUrl,
-        buttons: buttons,
-        // Advanced options
-        textAlign: localData.value.textAlign,
-        backgroundStyle: localData.value.backgroundStyle
-      }
+      data: { ...localData.value }
+    });
+    
+    // Emit update event
+    emit('update', {
+      data: { ...localData.value }
     });
     
     // Mark as having unsaved changes
     store.hasUnsavedChanges = true;
-  }, 300); // 300ms debounce delay
+  }, 300);
 };
-
-// Close editor
-const closeEditor = () => {
-  store.closeEditPanel();
-};
-
-// Open WordPress Media Library
-const openMediaLibrary = () => {
-  if (window.wp && window.wp.media) {
-    const frame = window.wp.media({
-      title: 'Select Hero Image',
-      button: {
-        text: 'Use this image'
-      },
-      multiple: false
-    });
-    
-    frame.on('select', () => {
-      const attachment = frame.state().get('selection').first().toJSON();
-      localData.value.imageUrl = attachment.url;
-      updateComponent();
-    });
-    
-    frame.open();
-  } else {
-    alert('WordPress Media Library not available. Please enter an image URL manually.');
-  }
-};
-
-// Load data on mount
-onMounted(() => {
-  loadComponentData();
-});
 </script>
 
 <style scoped>
 .hero-editor {
-  background: white;
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: white;
 }
 
 .editor-header {
@@ -298,28 +228,29 @@ onMounted(() => {
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(to bottom, #ffffff, #f9fafb);
 }
 
 .editor-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #1e293b;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #64748b;
   width: 32px;
   height: 32px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 24px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
 }
 
 .close-btn:hover {
@@ -327,41 +258,63 @@ onMounted(() => {
   color: #1e293b;
 }
 
-.editor-fields {
+.editor-sections {
   flex: 1;
-  padding: 20px;
   overflow-y: auto;
+  padding: 20px;
+  background: #f9fafb;
 }
 
-.field-group {
-  margin-bottom: 20px;
+.editor-section {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
 }
 
-.field-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  font-size: 13px;
+.editor-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
   color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.field-group input,
-.field-group textarea,
-.field-group select {
+.field-group {
+  margin-bottom: 16px;
+}
+
+.field-group:last-child {
+  margin-bottom: 0;
+}
+
+.field-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.field-group input[type="text"],
+.field-group input[type="url"],
+.field-group input[type="color"],
+.field-group select,
+.field-group textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;
-  transition: all 0.2s;
   background: white;
+  transition: all 0.2s;
 }
 
 .field-group input:focus,
-.field-group textarea:focus,
-.field-group select:focus {
+.field-group select:focus,
+.field-group textarea:focus {
   outline: none;
   border-color: var(--gmkb-color-primary, #3b82f6);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -369,89 +322,41 @@ onMounted(() => {
 
 .field-group textarea {
   resize: vertical;
-  min-height: 80px;
   font-family: inherit;
 }
 
-.media-btn {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  font-size: 13px;
+/* Color input wrapper */
+.color-input {
+  display: flex;
+  gap: 8px;
+}
+
+.color-input input[type="color"] {
+  width: 48px;
+  height: 36px;
+  padding: 4px;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #475569;
 }
 
-.media-btn:hover {
-  background: var(--gmkb-color-primary, #3b82f6);
-  color: white;
-  border-color: var(--gmkb-color-primary, #3b82f6);
-}
-
-.button-group {
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 12px;
-}
-
-.button-group h4 {
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: #64748b;
-}
-
-.button-group .small-input {
-  margin-bottom: 8px;
-}
-
-.button-group .small-input:last-child {
-  margin-bottom: 0;
-}
-
-.advanced-section {
-  margin-top: 24px;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.advanced-section summary {
-  cursor: pointer;
-  font-weight: 500;
-  color: #475569;
-  font-size: 14px;
-  margin-bottom: 12px;
-  user-select: none;
-}
-
-.advanced-section[open] summary {
-  margin-bottom: 16px;
-}
-
-.advanced-section .field-group:first-of-type {
-  margin-top: 8px;
+.color-input input[type="text"] {
+  flex: 1;
 }
 
 /* Scrollbar styling */
-.editor-fields::-webkit-scrollbar {
+.editor-sections::-webkit-scrollbar {
   width: 6px;
 }
 
-.editor-fields::-webkit-scrollbar-track {
+.editor-sections::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
 
-.editor-fields::-webkit-scrollbar-thumb {
+.editor-sections::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
 
-.editor-fields::-webkit-scrollbar-thumb:hover {
+.editor-sections::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 </style>
