@@ -2,23 +2,25 @@
  * Video Intro Component Styles
  */
 .video-intro-component {
-    padding: 2rem;
-    background-color: var(--background-color, #f5f5f5);
-    border-radius: 0.5rem;
-    margin-bottom: 2rem;
+    padding: var(--gmkb-space-8, 2rem);
+    background-color: var(--gmkb-color-surface, #f5f5f5);
+    border-radius: var(--gmkb-border-radius, 0.5rem);
+    margin-bottom: var(--gmkb-space-8, 2rem);
 }
 
 .video-intro-title {
-    font-size: 1.75rem;
+    font-size: var(--gmkb-font-size-xl, 1.75rem);
+    font-family: var(--gmkb-font-primary, inherit);
     margin-bottom: 0.75rem;
-    color: var(--primary-text-color, #333);
+    color: var(--gmkb-color-text, #333);
     text-align: center;
 }
 
 .video-intro-description {
-    font-size: 1rem;
-    margin-bottom: 2rem;
-    color: var(--secondary-text-color, #666);
+    font-size: var(--gmkb-font-size-base, 1rem);
+    font-family: var(--gmkb-font-primary, inherit);
+    margin-bottom: var(--gmkb-space-8, 2rem);
+    color: var(--gmkb-color-text-light, #666);
     text-align: center;
     max-width: 800px;
     margin-left: auto;
@@ -35,7 +37,7 @@
     padding-bottom: 56.25%; /* 16:9 aspect ratio */
     height: 0;
     overflow: hidden;
-    border-radius: 0.5rem;
+    border-radius: var(--gmkb-border-radius, 0.5rem);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
@@ -45,12 +47,12 @@
     left: 0;
     width: 100%;
     height: 100%;
-    border-radius: 0.5rem;
+    border-radius: var(--gmkb-border-radius, 0.5rem);
 }
 
 .video-player {
     position: relative;
-    border-radius: 0.5rem;
+    border-radius: var(--gmkb-border-radius, 0.5rem);
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
@@ -58,15 +60,15 @@
 .video-player video {
     width: 100%;
     display: block;
-    border-radius: 0.5rem;
+    border-radius: var(--gmkb-border-radius, 0.5rem);
 }
 
 .video-placeholder {
     position: relative;
     padding-bottom: 56.25%; /* 16:9 aspect ratio */
     height: 0;
-    background-color: var(--component-bg-color, #fff);
-    border-radius: 0.5rem;
+    background-color: var(--gmkb-color-surface, #fff);
+    border-radius: var(--gmkb-border-radius, 0.5rem);
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -82,18 +84,18 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 2rem;
+    padding: var(--gmkb-space-8, 2rem);
 }
 
 .video-placeholder-icon {
     width: 5rem;
     height: 5rem;
-    background-color: var(--light-primary-color, rgba(74, 122, 255, 0.1));
+    background-color: var(--gmkb-color-primary, rgba(74, 122, 255, 0.1));
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--gmkb-space-6, 1.5rem);
 }
 
 .video-placeholder-icon:before {
@@ -108,14 +110,15 @@
 
 .add-video-btn,
 .edit-video-btn {
-    background-color: var(--primary-color, #4a7aff);
+    background-color: var(--gmkb-color-primary, #4a7aff);
     color: white;
     border: none;
-    border-radius: 0.25rem;
-    padding: 0.75rem 1.5rem;
-    font-size: 0.875rem;
+    border-radius: var(--gmkb-border-radius-sm, 0.25rem);
+    padding: var(--gmkb-space-3, 0.75rem) 1.5rem;
+    font-size: var(--gmkb-font-size-sm, 0.875rem);
+    font-family: var(--gmkb-font-primary, inherit);
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color var(--gmkb-transition, 0.3s) var(--gmkb-transition-timing, ease);
     margin-top: 1.5rem;
 }
 
@@ -126,23 +129,24 @@
 
 .add-video-btn:hover,
 .edit-video-btn:hover {
-    background-color: var(--primary-hover-color, #3a67e0);
+    background-color: var(--gmkb-color-primary-hover, #3a67e0);
 }
 
 /* Mock modal styles for the JS mock editor */
 .mock-modal {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     max-width: 500px;
-    padding: 1.5rem;
+    padding: var(--gmkb-space-6, 1.5rem);
     background-color: white;
-    border-radius: 0.5rem;
+    border-radius: var(--gmkb-border-radius, 0.5rem);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
 .mock-modal h3 {
     margin-top: 0;
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
+    margin-bottom: var(--gmkb-space-6, 1.5rem);
+    font-size: var(--gmkb-font-size-xl, 1.5rem);
+    font-family: var(--gmkb-font-primary, inherit);
 }
 
 .form-group {
@@ -151,16 +155,16 @@
 
 .form-group label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
+    margin-bottom: var(--gmkb-space-2, 0.5rem);
+    font-weight: var(--gmkb-font-weight-medium, 500);
 }
 
 .form-group input,
 .form-group textarea {
     width: 100%;
-    padding: 0.75rem;
+    padding: var(--gmkb-space-3, 0.75rem);
     border: 1px solid #ddd;
-    border-radius: 0.25rem;
+    border-radius: var(--gmkb-border-radius-sm, 0.25rem);
 }
 
 .form-actions {
@@ -174,8 +178,8 @@
     background-color: #f0f0f0;
     color: #333;
     border: none;
-    border-radius: 0.25rem;
-    padding: 0.5rem 1rem;
+    border-radius: var(--gmkb-border-radius-sm, 0.25rem);
+    padding: var(--gmkb-space-2, 0.5rem) 1rem;
     cursor: pointer;
 }
 
@@ -183,7 +187,7 @@
     background-color: #4a7aff;
     color: white;
     border: none;
-    border-radius: 0.25rem;
-    padding: 0.5rem 1rem;
+    border-radius: var(--gmkb-border-radius-sm, 0.25rem);
+    padding: var(--gmkb-space-2, 0.5rem) 1rem;
     cursor: pointer;
 }

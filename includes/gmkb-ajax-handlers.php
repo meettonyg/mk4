@@ -249,36 +249,61 @@ class GMKB_Ajax_Handlers {
             // ROOT FIX: Ensure components structure is preserved for JavaScript
             // JavaScript expects an object (associative array in PHP)
             if (!isset($saved_state['components'])) {
-                // No components key - initialize as empty object
-                $saved_state['components'] = new stdClass();
-                GMKB_Debug_Logger::log('Initialized missing components as empty object');
+            // No components key - initialize as empty object
+            $saved_state['components'] = new stdClass();
+            GMKB_Debug_Logger::log('Initialized missing components as empty object');
             } else if (is_object($saved_state['components'])) {
-                // Already an object (StdClass) - count properties
-                $comp_count = count((array)$saved_state['components']);
-                GMKB_Debug_Logger::log('Loaded ' . $comp_count . ' components from database (object format)');
+            // Already an object (StdClass) - count properties
+            $comp_count = count((array)$saved_state['components']);
+            GMKB_Debug_Logger::log('Loaded ' . $comp_count . ' components from database (object format)');
             } else if (is_array($saved_state['components'])) {
-                // Components exist as array - count them
-                $comp_count = count($saved_state['components']);
-                GMKB_Debug_Logger::log('Loaded ' . $comp_count . ' components from database (array format)');
-                
-                // ROOT FIX: Convert empty arrays to objects for JavaScript
-                if ($comp_count === 0) {
-                    // Empty array needs to become empty object {} in JSON
-                    $saved_state['components'] = new stdClass();
-                    GMKB_Debug_Logger::log('Converted empty array to object for JavaScript compatibility');
-                } else if (array_keys($saved_state['components']) === range(0, count($saved_state['components']) - 1)) {
-                    // Indexed array (should not happen with our save fix, but handle legacy data)
-                    // Convert to associative array using component IDs
-                    $components_obj = array();
-                    foreach ($saved_state['components'] as $comp) {
-                        if (is_array($comp) && isset($comp['id'])) {
-                            $components_obj[$comp['id']] = $comp;
+            // Components exist as array - count them
+            $comp_count = count($saved_state['components']);
+            GMKB_Debug_Logger::log('Loaded ' . $comp_count . ' components from database (array format)');
+            
+            // ROOT FIX: Convert empty arrays to objects for JavaScript
+            if ($comp_count === 0) {
+            // Empty array needs to become empty object {} in JSON
+            $saved_state['components'] = new stdClass();
+            GMKB_Debug_Logger::log('Converted empty array to object for JavaScript compatibility');
+            } else if (array_keys($saved_state['components']) === range(0, count($saved_state['components']) - 1)) {
+            // Indexed array (should not happen with our save fix, but handle legacy data)
+            // Convert to associative array using component IDs
+            $components_obj = array();
+            foreach ($saved_state['components'] as $comp) {
+            if (is_array($comp) && isset($comp['id'])) {
+            $components_obj[$comp['id']] = $comp;
+            }
+            }
+            $saved_state['components'] = empty($components_obj) ? new stdClass() : $components_obj;
+            GMKB_Debug_Logger::log('Converted indexed array to associative array/object');
+            }
+            }
+        
+        // ROOT FIX: Ensure sections reference actual components
+        // If we have sections with component references, verify those components exist
+        if (isset($saved_state['sections']) && is_array($saved_state['sections'])) {
+            foreach ($saved_state['sections'] as &$section) {
+                if (isset($section['components']) && is_array($section['components'])) {
+                    $valid_components = array();
+                    foreach ($section['components'] as $comp_ref) {
+                        $comp_id = is_array($comp_ref) && isset($comp_ref['component_id']) ? $comp_ref['component_id'] : $comp_ref;
+                        
+                        // Check if component exists
+                        if (is_array($saved_state['components']) && isset($saved_state['components'][$comp_id])) {
+                            // Keep the reference, component exists
+                            $valid_components[] = array('component_id' => $comp_id);
+                        } else if (is_object($saved_state['components']) && property_exists($saved_state['components'], $comp_id)) {
+                            // Keep the reference, component exists
+                            $valid_components[] = array('component_id' => $comp_id);
+                        } else {
+                            GMKB_Debug_Logger::log('Warning: Section references missing component: ' . $comp_id);
                         }
                     }
-                    $saved_state['components'] = empty($components_obj) ? new stdClass() : $components_obj;
-                    GMKB_Debug_Logger::log('Converted indexed array to associative array/object');
+                    $section['components'] = $valid_components;
                 }
             }
+        }
             
             // ROOT FIX: Reconstruct missing components from sections if needed
             // This handles the case where components are in sections but not in the components object

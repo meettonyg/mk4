@@ -9,6 +9,7 @@ import '../css/vue-controls.css';
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+import { createUndoRedoPlugin } from './plugins/undoRedo.js';
 
 // Core services
 import { APIService } from './services/APIService.js';
@@ -113,6 +114,9 @@ async function initializeVue() {
 
     // Create Pinia store
     const pinia = createPinia();
+    
+    // Register undo/redo plugin
+    pinia.use(createUndoRedoPlugin());
     
     // Load Vue app components
     const { default: MediaKitApp } = await import('./vue/components/MediaKitApp.vue');

@@ -59,11 +59,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // Handle full-width sections
         if (section.components && Array.isArray(section.components)) {
           section.components.forEach(compRef => {
-            const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-            const component = state.components[componentId];
-            if (component) {
+            // ROOT FIX: Consistent handling of component references
+            const componentId = typeof compRef === 'object' && compRef.component_id 
+              ? compRef.component_id 
+              : (typeof compRef === 'string' ? compRef : null);
+            
+            if (componentId && state.components[componentId]) {
               ordered.push({
-                ...component,
+                ...state.components[componentId],
                 sectionId: section.section_id
               });
             }
@@ -101,10 +104,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // Handle full-width sections
       if (section.components) {
         section.components.forEach(compRef => {
-          const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-          const component = state.components[componentId];
-          if (component) {
-            components.push(component);
+          // ROOT FIX: Consistent handling of component references
+          const componentId = typeof compRef === 'object' && compRef.component_id 
+            ? compRef.component_id 
+            : (typeof compRef === 'string' ? compRef : null);
+          
+          if (componentId && state.components[componentId]) {
+            components.push(state.components[componentId]);
           }
         });
       }
@@ -327,7 +333,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         if (section.type === 'full_width' || section.layout === 'full_width') {
           // For full width sections, use components array
           if (!section.components) section.components = [];
-          section.components.push(componentId);
+          // ROOT FIX: Push as object with component_id for consistent structure
+          section.components.push({ component_id: componentId });
         } else {
           // For multi-column sections, use columns structure
           if (!section.columns) {
@@ -518,7 +525,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         if (targetSection) {
           if (targetSection.type === 'full_width' || targetSection.layout === 'full_width') {
             if (!targetSection.components) targetSection.components = [];
-            targetSection.components.push(componentId);
+            // ROOT FIX: Maintain consistent structure
+            targetSection.components.push({ component_id: componentId });
           } else {
             if (!targetSection.columns) {
               targetSection.columns = { 1: [], 2: [], 3: [] };
@@ -988,7 +996,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
           );
           
           if (index > -1) {
-            section.components.splice(index + 1, 0, newId);
+            // ROOT FIX: Maintain consistent structure
+            section.components.splice(index + 1, 0, { component_id: newId });
             this.hasUnsavedChanges = true;
             return newId;
           }

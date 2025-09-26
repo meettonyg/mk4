@@ -1456,6 +1456,17 @@ function gmkb_enqueue_assets() {
         );
     }
     
+    // PHASE 7.1: Vue-Undo Bridge - Connects Vue/Pinia store to UndoRedoManager
+    if (!wp_script_is('gmkb-vue-undo-bridge', 'enqueued')) {
+        wp_enqueue_script(
+            'gmkb-vue-undo-bridge',
+            $plugin_url . 'system/VueUndoRedoBridge.js',
+            array('gmkb-undo-redo-manager'),
+            $version,
+            true
+        );
+    }
+    
     // PHASE 7: Version History UI - Visual interface for version management
     if (!wp_script_is('gmkb-version-history-ui', 'enqueued')) {
         wp_enqueue_script(

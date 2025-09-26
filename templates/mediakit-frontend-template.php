@@ -239,12 +239,16 @@ if (class_exists('GMKB_Frontend_Display')) {
                                 }
                                 
                                 foreach ($section_components as $comp_ref):
-                                    $component_id = $comp_ref['component_id'];
-                                    if (isset($components_map[$component_id])):
+                                    // ROOT FIX: Handle both array references and direct string IDs
+                                    $component_id = is_array($comp_ref) && isset($comp_ref['component_id']) 
+                                        ? $comp_ref['component_id'] 
+                                        : (is_string($comp_ref) ? $comp_ref : null);
+                                    
+                                    if ($component_id && isset($components_map[$component_id])):
                                         $component = $components_map[$component_id];
                                         $component['id'] = $component_id;
                                         render_component($component, $post_id);
-                                    else:
+                                    else if ($component_id):
                                         // ROOT FIX: Try to find orphaned component by checking all components
                                         if (defined('WP_DEBUG') && WP_DEBUG) {
                                             error_log('Component ' . $component_id . ' not found in map, checking orphaned components...');
