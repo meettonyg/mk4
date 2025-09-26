@@ -182,7 +182,7 @@ export default {
 
 <style scoped>
 .gmkb-testimonials-component {
-  padding: 2rem;
+  padding: var(--gmkb-spacing-xl, 2rem);
   background: var(--gmkb-color-background, #f8f9fa);
 }
 
@@ -194,21 +194,27 @@ export default {
 .testimonials-title {
   text-align: center;
   color: var(--gmkb-color-text, #333);
-  font-size: var(--gmkb-font-size-xl, 2rem);
-  margin-bottom: 1rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-2xl, 2rem);
+  font-weight: var(--gmkb-font-weight-bold, 700);
+  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
 }
 
 .testimonials-description {
   text-align: center;
   color: var(--gmkb-color-text-light, #666);
-  margin-bottom: 2rem;
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  line-height: var(--gmkb-line-height-base, 1.6);
+  margin-bottom: var(--gmkb-spacing-xl, 2rem);
 }
 
 .testimonials-carousel {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--gmkb-spacing-md, 1rem);
 }
 
 .carousel-control {
@@ -216,11 +222,12 @@ export default {
   border: none;
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  font-size: 1.5rem;
+  border-radius: var(--gmkb-border-radius-full, 50%);
+  font-size: var(--gmkb-font-size-xl, 1.5rem);
   cursor: pointer;
   box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
-  transition: all 0.3s ease;
+  transition: var(--gmkb-transition, all 0.3s ease);
+  color: var(--gmkb-color-text, #333);
 }
 
 .carousel-control:hover {
@@ -231,64 +238,72 @@ export default {
 .testimonial-slide {
   flex: 1;
   background: var(--gmkb-color-surface, #fff);
-  padding: 2rem;
+  padding: var(--gmkb-spacing-xl, 2rem);
   border-radius: var(--gmkb-border-radius, 8px);
   box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
 }
 
 .quote-mark {
-  font-size: 3rem;
+  font-size: var(--gmkb-font-size-3xl, 3rem);
   color: var(--gmkb-color-primary, #007cba);
   line-height: 1;
-  margin-bottom: -0.5rem;
+  margin-bottom: calc(var(--gmkb-space-2, 0.5rem) * -1);
+  font-family: Georgia, serif;
 }
 
 .testimonial-text {
   color: var(--gmkb-color-text, #333);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-lg, 1.125rem);
   line-height: var(--gmkb-line-height-base, 1.6);
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--gmkb-spacing-lg, 1.5rem);
   font-style: italic;
 }
 
 .testimonial-author {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--gmkb-spacing-md, 1rem);
 }
 
 .author-image {
   width: 50px;
   height: 50px;
-  border-radius: 50%;
+  border-radius: var(--gmkb-border-radius-full, 50%);
   object-fit: cover;
+  border: 2px solid var(--gmkb-color-border, #e2e8f0);
 }
 
 .author-name {
   color: var(--gmkb-color-text, #333);
-  margin-bottom: 0.25rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  font-weight: var(--gmkb-font-weight-bold, 600);
+  margin-bottom: var(--gmkb-space-1, 0.25rem);
 }
 
 .author-title {
   color: var(--gmkb-color-text-light, #666);
-  font-size: 0.9rem;
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-sm, 0.9rem);
+  line-height: var(--gmkb-line-height-base, 1.4);
 }
 
 .carousel-indicators {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
+  gap: var(--gmkb-space-2, 0.5rem);
+  margin-top: var(--gmkb-spacing-lg, 1.5rem);
 }
 
 .indicator {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--gmkb-border-radius-full, 50%);
   border: none;
   background: var(--gmkb-color-border, #ddd);
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: var(--gmkb-transition-fast, background 0.15s ease);
 }
 
 .indicator.active {

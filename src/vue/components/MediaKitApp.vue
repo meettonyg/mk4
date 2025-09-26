@@ -3,6 +3,9 @@
     <!-- Theme Provider - Renderless component that manages CSS variables -->
     <ThemeProvider />
     
+    <!-- Theme Switcher - Integrated with toolbar -->
+    <ThemeSwitcher />
+    
     <!-- Sidebar Integration - Teleports component list to sidebar -->
     <SidebarIntegration />
     
@@ -30,6 +33,7 @@
 import { onMounted } from 'vue';
 import { useTheme } from '../composables/useTheme';
 import ThemeProvider from './ThemeProvider.vue';
+import ThemeSwitcher from './ThemeSwitcher.vue';
 import ComponentLibrary from './ComponentLibraryNew.vue';  // Using the new enhanced version
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import SectionLayoutEnhanced from './SectionLayoutEnhanced.vue';

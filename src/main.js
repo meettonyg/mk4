@@ -150,14 +150,23 @@ async function initializeVue() {
     // ROOT FIX: Vue handles all DOM - no need to manage legacy containers
     // The entire preview area is now controlled by Vue
     
-    // Initialize theme
-    if (mediaKitStore.theme || mediaKitStore.themeCustomizations) {
-      themeStore.initialize(mediaKitStore.theme, mediaKitStore.themeCustomizations);
-      logger.info('✅ Theme initialized:', mediaKitStore.theme);
-    } else {
-      themeStore.applyThemeToDOM();
-      logger.info('✅ Default theme applied');
-    }
+    // ROOT FIX: Initialize theme after store is ready
+    // Load custom themes first (non-blocking)
+    themeStore.loadCustomThemes().catch(() => {
+      logger.info('Custom themes not available, using built-in themes');
+    });
+    
+    // Initialize theme with proper timing
+    setTimeout(() => {
+      if (mediaKitStore.theme || mediaKitStore.themeCustomizations) {
+        themeStore.initialize(mediaKitStore.theme, mediaKitStore.themeCustomizations);
+        logger.info('✅ Theme initialized:', mediaKitStore.theme);
+      } else {
+        // Apply default theme
+        themeStore.selectTheme('professional');
+        logger.info('✅ Default theme applied');
+      }
+    }, 100); // Small delay to ensure DOM is ready
     
     // Setup global methods for console access
     window.GMKB = {

@@ -99,7 +99,7 @@ export default {
 
 <style scoped>
 .gmkb-social-component {
-  padding: 2rem;
+  padding: var(--gmkb-spacing-xl, 2rem);
   background: var(--gmkb-color-background, #f8f9fa);
 }
 
@@ -111,33 +111,42 @@ export default {
 
 .social-title {
   color: var(--gmkb-color-text, #333);
-  font-size: var(--gmkb-font-size-xl, 2rem);
-  margin-bottom: 1rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-2xl, 2rem);
+  font-weight: var(--gmkb-font-weight-bold, 700);
+  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
 }
 
 .social-description {
   color: var(--gmkb-color-text-light, #666);
-  margin-bottom: 2rem;
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  line-height: var(--gmkb-line-height-base, 1.6);
+  margin-bottom: var(--gmkb-spacing-xl, 2rem);
 }
 
 .social-links {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--gmkb-spacing-md, 1rem);
 }
 
 .social-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  gap: var(--gmkb-space-2, 0.5rem);
+  padding: var(--gmkb-spacing-sm, 0.75rem) var(--gmkb-spacing-lg, 1.5rem);
   background: var(--gmkb-color-surface, #fff);
   color: var(--gmkb-color-text, #333);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  font-weight: var(--gmkb-font-weight-medium, 500);
   text-decoration: none;
-  border-radius: var(--gmkb-border-radius, 50px);
+  border-radius: var(--gmkb-border-radius-full, 50px);
   box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
-  transition: all 0.3s ease;
+  transition: var(--gmkb-transition, all 0.3s ease);
 }
 
 .social-link:hover {
@@ -148,7 +157,7 @@ export default {
 }
 
 .social-link i {
-  font-size: 1.25rem;
+  font-size: var(--gmkb-font-size-lg, 1.25rem);
 }
 
 @media (max-width: 768px) {

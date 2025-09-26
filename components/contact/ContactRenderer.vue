@@ -145,49 +145,58 @@ export default {
 
 <style scoped>
 .gmkb-contact-component {
-  padding: 2rem;
+  padding: var(--gmkb-spacing-xl, 2rem);
   background: var(--gmkb-color-surface, #fff);
 }
 
 .contact-container {
-  max-width: 1200px;
+  max-width: var(--gmkb-container-max-width, 1200px);
   margin: 0 auto;
 }
 
 .contact-title {
   text-align: center;
   color: var(--gmkb-color-text, #333);
-  font-size: var(--gmkb-font-size-xl, 2rem);
-  margin-bottom: 1rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-2xl, 2rem);
+  font-weight: var(--gmkb-font-weight-bold, 700);
+  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
 }
 
 .contact-description {
   text-align: center;
   color: var(--gmkb-color-text-light, #666);
-  margin-bottom: 2rem;
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  line-height: var(--gmkb-line-height-base, 1.6);
+  margin-bottom: var(--gmkb-spacing-xl, 2rem);
 }
 
 .contact-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  margin-bottom: 3rem;
+  gap: var(--gmkb-spacing-xl, 2rem);
+  margin-bottom: var(--gmkb-spacing-2xl, 3rem);
 }
 
 .contact-item {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: var(--gmkb-spacing-md, 1rem);
 }
 
 .contact-icon {
-  font-size: 1.5rem;
-  margin-top: 0.25rem;
+  font-size: var(--gmkb-font-size-xl, 1.5rem);
+  margin-top: var(--gmkb-space-1, 0.25rem);
 }
 
 .contact-item h4 {
   color: var(--gmkb-color-text, #333);
-  margin-bottom: 0.25rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  font-weight: var(--gmkb-font-weight-bold, 600);
+  margin-bottom: var(--gmkb-space-1, 0.25rem);
 }
 
 .contact-item a {
@@ -201,7 +210,7 @@ export default {
 
 .contact-form {
   background: var(--gmkb-color-background, #f8f9fa);
-  padding: 2rem;
+  padding: var(--gmkb-spacing-xl, 2rem);
   border-radius: var(--gmkb-border-radius, 8px);
   max-width: 600px;
   margin: 0 auto;
@@ -209,31 +218,37 @@ export default {
 
 .contact-form h3 {
   color: var(--gmkb-color-text, #333);
-  margin-bottom: 1.5rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-lg, 1.25rem);
+  font-weight: var(--gmkb-font-weight-bold, 600);
+  margin-bottom: var(--gmkb-spacing-lg, 1.5rem);
 }
 
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
 }
 
 .form-group input,
 .form-group textarea {
   width: 100%;
-  padding: 0.75rem;
+  padding: var(--gmkb-spacing-sm, 0.75rem);
   border: 1px solid var(--gmkb-color-border, #ddd);
-  border-radius: var(--gmkb-border-radius, 4px);
-  font-size: 1rem;
+  border-radius: var(--gmkb-border-radius-sm, 4px);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
 }
 
 .submit-button {
   background: var(--gmkb-color-primary, #007cba);
   color: white;
   border: none;
-  padding: 0.75rem 2rem;
-  border-radius: var(--gmkb-border-radius, 4px);
-  font-size: 1rem;
+  padding: var(--gmkb-spacing-sm, 0.75rem) var(--gmkb-spacing-xl, 2rem);
+  border-radius: var(--gmkb-border-radius-sm, 4px);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  font-weight: var(--gmkb-font-weight-medium, 500);
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: var(--gmkb-transition, all 0.3s ease);
 }
 
 .submit-button:hover {

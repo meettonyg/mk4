@@ -125,10 +125,10 @@ const generateCSSVariables = (theme) => {
 
 // Apply theme to DOM
 const applyThemeToDOM = () => {
-  // ROOT FIX: Handle store not being ready
+  // ROOT FIX: Handle store not being ready gracefully
   if (!themeStore || !themeStore.$state) {
-    console.warn('[ThemeProvider] Theme store not ready yet');
-    setTimeout(applyThemeToDOM, 100);
+    // Don't warn on initial mount - this is expected
+    requestAnimationFrame(applyThemeToDOM);
     return;
   }
   

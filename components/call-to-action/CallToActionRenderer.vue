@@ -102,7 +102,7 @@ export default {
 
 <style scoped>
 .gmkb-cta-component {
-  padding: 3rem 2rem;
+  padding: var(--gmkb-spacing-2xl, 3rem) var(--gmkb-spacing-xl, 2rem);
   background: var(--gmkb-color-primary, #007cba);
   color: white;
 }
@@ -112,35 +112,44 @@ export default {
   margin: 0 auto;
   text-align: center;
   position: relative;
-  padding: 2rem;
+  padding: var(--gmkb-spacing-xl, 2rem);
 }
 
 .cta-title {
-  font-size: var(--gmkb-font-size-xl, 2.5rem);
-  margin-bottom: 1rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-3xl, 2.5rem);
+  font-weight: var(--gmkb-font-weight-bold, 700);
+  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
+  color: white;
 }
 
 .cta-description {
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-lg, 1.25rem);
-  margin-bottom: 2rem;
+  line-height: var(--gmkb-line-height-base, 1.6);
+  margin-bottom: var(--gmkb-spacing-xl, 2rem);
   opacity: 0.95;
+  color: white;
 }
 
 .cta-buttons {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--gmkb-spacing-md, 1rem);
 }
 
 .cta-button {
   display: inline-block;
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
+  padding: var(--gmkb-spacing-md, 1rem) var(--gmkb-spacing-xl, 2rem);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-lg, 1.1rem);
+  font-weight: var(--gmkb-font-weight-bold, 600);
   text-decoration: none;
   border-radius: var(--gmkb-border-radius, 4px);
-  transition: all 0.3s ease;
-  font-weight: 600;
+  transition: var(--gmkb-transition, all 0.3s ease);
+  cursor: pointer;
 }
 
 .cta-button.primary {
@@ -149,8 +158,9 @@ export default {
 }
 
 .cta-button.primary:hover {
-  background: #f0f0f0;
+  background: var(--gmkb-color-surface, #f0f0f0);
   transform: translateY(-2px);
+  box-shadow: var(--gmkb-shadow-md, 0 4px 6px rgba(0,0,0,0.1));
 }
 
 .cta-button.secondary {
@@ -166,7 +176,7 @@ export default {
 
 @media (max-width: 768px) {
   .cta-title {
-    font-size: 2rem;
+    font-size: var(--gmkb-font-size-2xl, 2rem);
   }
   
   .cta-buttons {

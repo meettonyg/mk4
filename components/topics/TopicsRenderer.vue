@@ -70,40 +70,46 @@ export default {
 
 <style scoped>
 .gmkb-topics-component {
-  padding: 2rem;
+  padding: var(--gmkb-spacing-xl, 2rem);
   background: var(--gmkb-color-background, #f8f9fa);
 }
 
 .topics-container {
-  max-width: 1200px;
+  max-width: var(--gmkb-container-max-width, 1200px);
   margin: 0 auto;
 }
 
 .topics-title {
   text-align: center;
   color: var(--gmkb-color-text, #333);
-  font-size: var(--gmkb-font-size-xl, 2rem);
-  margin-bottom: 1rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-2xl, 2rem);
+  font-weight: var(--gmkb-font-weight-bold, 700);
+  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
 }
 
 .topics-description {
   text-align: center;
   color: var(--gmkb-color-text-light, #666);
-  margin-bottom: 2rem;
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  line-height: var(--gmkb-line-height-base, 1.6);
+  margin-bottom: var(--gmkb-spacing-xl, 2rem);
 }
 
 .topics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  gap: var(--gmkb-spacing-lg, 1.5rem);
 }
 
 .topic-card {
   background: var(--gmkb-color-surface, #fff);
-  padding: 1.5rem;
+  padding: var(--gmkb-spacing-lg, 1.5rem);
   border-radius: var(--gmkb-border-radius, 8px);
   box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
-  transition: transform 0.3s ease;
+  transition: var(--gmkb-transition, all 0.3s ease);
 }
 
 .topic-card:hover {
@@ -113,18 +119,23 @@ export default {
 
 .topic-icon {
   color: var(--gmkb-color-primary, #007cba);
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+  font-size: var(--gmkb-font-size-2xl, 2rem);
+  margin-bottom: var(--gmkb-space-2, 0.5rem);
 }
 
 .topic-name {
   color: var(--gmkb-color-text, #333);
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-lg, 1.25rem);
-  margin-bottom: 0.5rem;
+  font-weight: var(--gmkb-font-weight-bold, 600);
+  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin-bottom: var(--gmkb-space-2, 0.5rem);
 }
 
 .topic-description {
   color: var(--gmkb-color-text-light, #666);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
   line-height: var(--gmkb-line-height-base, 1.6);
 }
 </style>
