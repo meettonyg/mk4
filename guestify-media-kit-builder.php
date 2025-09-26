@@ -96,6 +96,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php')) {
     }
 }
 
+// ROOT FIX: Include enhanced AJAX handlers for Vue bridge
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/ajax-handlers-enhanced.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/ajax-handlers-enhanced.php';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: Enhanced AJAX handlers loaded for Vue bridge');
+    }
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('⚠️ GMKB: ajax-handlers-enhanced.php not found');
+    }
+}
+
 // Pure Vue Mode: Database operations handled by Vue stores
 // Diagnostics handled by Vue devtools and browser console
 

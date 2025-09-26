@@ -1,1179 +1,384 @@
+/**
+ * Media Kit Store - Pinia
+ * Architecture-compliant: Single source of truth for Vue application
+ * Event-driven communication with WordPress backend via bridge
+ */
+
 import { defineStore } from 'pinia';
-import UnifiedComponentRegistry from '../vue/services/UnifiedComponentRegistry';
+import { ref, computed } from 'vue';
 
-export const useMediaKitStore = defineStore('mediaKit', {
-  state: () => ({
-    // Core data
-    components: {},
-    sections: [],
-    theme: 'professional_clean',
-    themeCustomizations: {
-      colors: {},
-      typography: {},
-      spacing: {},
-      effects: {}
-    },
+export const useMediaKitStore = defineStore('mediaKit', () => {
+  // ==========================================
+  // STATE
+  // ==========================================
+  
+  // Loading & Error States
+  const isLoading = ref(true);
+  const hasError = ref(false);
+  const errorMessage = ref('');
+  
+  // Core Data
+  const savedState = ref(null);
+  const components = ref([]);
+  const themes = ref([]);
+  const podsData = ref({});
+  
+  // Current Working State
+  const currentComponents = ref({});
+  const currentSections = ref([]);
+  const currentLayout = ref([]);
+  const globalSettings = ref({
+    theme: 'modern',
+    customTheme: null
+  });
+  
+  // Metadata
+  const postId = ref(0);
+  const lastSaved = ref(null);
+  const isDirty = ref(false);
+  
+  // ==========================================
+  // GETTERS
+  // ==========================================
+  
+  const hasContent = computed(() => {
+    return Object.keys(currentComponents.value).length > 0 || 
+           currentSections.value.length > 0;
+  });
+  
+  const shouldShowEmptyState = computed(() => {
+    return !isLoading.value && !hasError.value && !hasContent.value;
+  });
+  
+  const componentCount = computed(() => {
+    return Object.keys(currentComponents.value).length;
+  });
+  
+  const availableComponents = computed(() => {
+    // Transform component definitions for UI
+    return components.value.map(comp => ({
+      ...comp,
+      id: comp.type,
+      label: comp.title || comp.name,
+      category: comp.category || 'general',
+      icon: comp.icon || 'component'
+    }));
+  });
+  
+  const activeTheme = computed(() => {
+    return themes.value.find(t => t.slug === globalSettings.value.theme) || themes.value[0];
+  });
+  
+  // ==========================================
+  // ACTIONS
+  // ==========================================
+  
+  /**
+   * Initialize store by loading data from WordPress
+   */
+  async function initialize() {
+    console.log('🚀 MediaKit Store: Initializing...');
+    isLoading.value = true;
+    hasError.value = false;
+    errorMessage.value = '';
     
-    // UI state
-    selectedComponentId: null,
-    selectedComponentIds: [], // For multi-select support
-    hoveredComponentId: null,
-    editingComponentId: null,
-    editPanelOpen: false,
-    isDragging: false,
-    draggedComponentId: null,
-    dropTargetId: null,
-    componentLibraryOpen: false,  // Added for component library modal
-    designPanelOpen: false,  // Added for design panel
-    
-    // Meta state
-    lastSaved: null,
-    hasUnsavedChanges: false,
-    isSaving: false,
-    
-    // History (for undo/redo)
-    history: [],
-    historyIndex: -1,
-    postId: (() => {
-      // ROOT FIX: Get post ID from multiple sources, prioritizing mkcg_id
-      const urlParams = new URLSearchParams(window.location.search);
-      const mkcgId = urlParams.get('mkcg_id');
-      if (mkcgId) return parseInt(mkcgId);
+    try {
+      // Wait for bridge to be ready
+      await waitForBridge();
       
-      if (window.gmkbData?.postId) return window.gmkbData.postId;
-      if (window.gmkbData?.post_id) return window.gmkbData.post_id;
-      if (window.gmkbData?.mkcg_id) return window.gmkbData.mkcg_id;
+      // Load initial state from WordPress
+      const data = await window.gmkbBridge.getInitialState();
       
-      const postIdFromUrl = urlParams.get('post_id');
-      if (postIdFromUrl) return parseInt(postIdFromUrl);
+      console.log('📦 MediaKit Store: Received data from WordPress', data);
       
-      return null;
-    })()
-  }),
-
-  getters: {
-    // Get all components in render order
-    orderedComponents: (state) => {
-      const ordered = [];
-      state.sections.forEach(section => {
-        // Handle full-width sections
-        if (section.components && Array.isArray(section.components)) {
-          section.components.forEach(compRef => {
-            // ROOT FIX: Consistent handling of component references
-            const componentId = typeof compRef === 'object' && compRef.component_id 
-              ? compRef.component_id 
-              : (typeof compRef === 'string' ? compRef : null);
-            
-            if (componentId && state.components[componentId]) {
-              ordered.push({
-                ...state.components[componentId],
-                sectionId: section.section_id
-              });
-            }
-          });
-        }
-        // Handle multi-column sections
-        if (section.columns) {
-          // Process columns in order
-          ['1', '2', '3'].forEach(col => {
-            if (section.columns[col] && Array.isArray(section.columns[col])) {
-              section.columns[col].forEach(componentId => {
-                const component = state.components[componentId];
-                if (component) {
-                  ordered.push({
-                    ...component,
-                    sectionId: section.section_id,
-                    column: parseInt(col)
-                  });
-                }
-              });
-            }
-          });
-        }
-      });
-      return ordered;
-    },
-
-    // Get components for a specific section
-    getSectionComponents: (state) => (sectionId) => {
-      const section = state.sections.find(s => s.section_id === sectionId);
-      if (!section) return [];
+      // Set post ID
+      postId.value = data.postId || window.gmkbData?.postId || 0;
       
-      const components = [];
-      
-      // Handle full-width sections
-      if (section.components) {
-        section.components.forEach(compRef => {
-          // ROOT FIX: Consistent handling of component references
-          const componentId = typeof compRef === 'object' && compRef.component_id 
-            ? compRef.component_id 
-            : (typeof compRef === 'string' ? compRef : null);
-          
-          if (componentId && state.components[componentId]) {
-            components.push(state.components[componentId]);
-          }
-        });
-      }
-      
-      // Handle multi-column sections
-      if (section.columns) {
-        Object.keys(section.columns).forEach(col => {
-          if (section.columns[col]) {
-            section.columns[col].forEach(componentId => {
-              const component = state.components[componentId];
-              if (component) {
-                components.push({ ...component, column: parseInt(col) });
-              }
-            });
-          }
-        });
-      }
-      
-      return components;
-    },
-
-    // Check if component is first in its section
-    isComponentFirst: (state) => (componentId) => {
-      for (const section of state.sections) {
-        // Check full-width sections
-        if (section.components) {
-          const index = section.components.findIndex(comp => 
-            (typeof comp === 'string' ? comp : comp.component_id) === componentId
-          );
-          if (index > -1) {
-            return index === 0;
-          }
-        }
-        // Check multi-column sections
-        if (section.columns) {
-          for (const col of Object.keys(section.columns)) {
-            const index = section.columns[col].findIndex(id => id === componentId);
-            if (index > -1) {
-              return index === 0;
-            }
-          }
-        }
-      }
-      return false;
-    },
-
-    // Check if component is last in its section
-    isComponentLast: (state) => (componentId) => {
-      for (const section of state.sections) {
-        // Check full-width sections
-        if (section.components) {
-          const index = section.components.findIndex(comp => 
-            (typeof comp === 'string' ? comp : comp.component_id) === componentId
-          );
-          if (index > -1) {
-            return index === section.components.length - 1;
-          }
-        }
-        // Check multi-column sections
-        if (section.columns) {
-          for (const col of Object.keys(section.columns)) {
-            const index = section.columns[col].findIndex(id => id === componentId);
-            if (index > -1) {
-              return index === section.columns[col].length - 1;
-            }
-          }
-        }
-      }
-      return false;
-    },
-
-    // Get component being edited
-    editingComponent: (state) => {
-      if (state.editingComponentId && state.components[state.editingComponentId]) {
-        return state.components[state.editingComponentId];
-      }
-      return null;
-    },
-
-    // Get selected components
-    selectedComponents: (state) => {
-      return state.selectedComponentIds.map(id => state.components[id]).filter(Boolean);
-    },
-
-    // Get components by section and column
-    componentsBySection: (state) => {
-      const result = {};
-      state.sections.forEach(section => {
-        result[section.section_id] = {
-          layout: section.layout || section.type,
-          components: []
-        };
+      // Set saved state or defaults
+      if (data.savedState && typeof data.savedState === 'object') {
+        savedState.value = data.savedState;
         
-        if (section.components) {
-          section.components.forEach(compRef => {
-            const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-            if (state.components[componentId]) {
-              result[section.section_id].components.push({
-                ...state.components[componentId],
-                column: null
-              });
-            }
-          });
-        }
+        // Apply saved state to current working state
+        currentComponents.value = data.savedState.components || {};
+        currentSections.value = data.savedState.sections || [];
+        currentLayout.value = data.savedState.layout || [];
+        globalSettings.value = data.savedState.globalSettings || globalSettings.value;
         
-        if (section.columns) {
-          Object.keys(section.columns).forEach(col => {
-            section.columns[col].forEach(componentId => {
-              if (state.components[componentId]) {
-                result[section.section_id].components.push({
-                  ...state.components[componentId],
-                  column: parseInt(col)
-                });
-              }
-            });
-          });
-        }
-      });
-      return result;
-    },
-
-    // Check if can undo/redo
-    canUndo: (state) => state.history && state.historyIndex > 0,
-    canRedo: (state) => state.history && state.historyIndex < state.history.length - 1,
-
-    // Get save status
-    saveStatus: (state) => {
-      if (state.isSaving) return 'saving';
-      if (state.hasUnsavedChanges) return 'unsaved';
-      return 'saved';
-    },
-
-    // Get component count
-    componentCount: (state) => Object.keys(state.components).length,
-
-    // Get section count
-    sectionCount: (state) => state.sections.length,
-
-  },
-
-  actions: {
-    // Component CRUD Operations
-    addComponent(componentData) {
-      // ROOT FIX: Validate component type to prevent unknown_type
-      // Get valid types from the registry if available
-      let validTypes = [
-        'hero', 'biography', 'topics', 'contact', 'testimonials',
-        'guest-intro', 'topics-questions', 'photo-gallery', 'logo-grid',
-        'call-to-action', 'social', 'stats', 'questions',
-        'video-intro', 'podcast-player', 'booking-calendar',
-        'authority-hook'
-      ];
-      
-      // If registry is available, use it as source of truth
-      if (window.UnifiedComponentRegistry?.getAvailableTypes) {
-        const registeredTypes = window.UnifiedComponentRegistry.getAvailableTypes();
-        if (registeredTypes && registeredTypes.length > 0) {
-          validTypes = registeredTypes;
-        }
-      }
-      
-      // Prevent invalid component types
-      if (!componentData.type || componentData.type === 'unknown_type' || !validTypes.includes(componentData.type)) {
-        console.warn(`[Store] Invalid component type prevented: "${componentData.type}". Valid types:`, validTypes);
-        
-        // Log stack trace to find where this is coming from
-        if (console.trace) {
-          console.trace('Invalid component add attempt');
-        }
-        
-        return null;
-      }
-      
-      const componentId = componentData.id || `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Ensure we have at least one section
-      if (this.sections.length === 0) {
-        this.addSection('full_width');
-      }
-      
-      // Get default props from unified component registry
-      let defaultProps = {};
-      let componentSchema = null;
-      
-      // Use the unified registry directly - no adapters needed
-      const registryComponent = UnifiedComponentRegistry.get(componentData.type);
-      if (registryComponent) {
-        defaultProps = UnifiedComponentRegistry.getDefaultProps(componentData.type);
-        componentSchema = registryComponent.schema || null;
-      }
-      
-      // Create component with proper structure
-      const component = {
-        id: componentId,
-        type: componentData.type,
-        data: { ...defaultProps, ...(componentData.data || {}) },
-        props: { ...defaultProps, ...(componentData.props || {}) },
-        settings: componentData.settings || {},
-        schema: componentSchema
-      };
-      
-      // ROOT FIX: Enrich component with Pods data configuration
-      if (window.podsDataIntegration || window.gmkbPodsIntegration) {
-        const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
-        podsIntegration.enrichComponentData(component);
-        console.log('[Store] Component after Pods enrichment:', component);
+        console.log('✅ MediaKit Store: Loaded saved state with', Object.keys(currentComponents.value).length, 'components');
       } else {
-        console.warn('[Store] PodsDataIntegration not available');
+        // Initialize with empty state
+        savedState.value = getDefaultState();
+        currentComponents.value = {};
+        currentSections.value = [];
+        currentLayout.value = [];
+        
+        console.log('📝 MediaKit Store: Initialized with empty state');
       }
       
-      // Add to components map
-      this.components[componentId] = component;
+      // Set component definitions
+      components.value = data.components || [];
       
-      // Add to first section by default, or specified section
-      const targetSectionId = componentData.sectionId || this.sections[0].section_id;
-      const targetColumn = componentData.column || 1;
-      const section = this.sections.find(s => s.section_id === targetSectionId);
+      // Set themes
+      themes.value = data.themes || [];
       
-      if (section) {
-        if (section.type === 'full_width' || section.layout === 'full_width') {
-          // For full width sections, use components array
-          if (!section.components) section.components = [];
-          // ROOT FIX: Push as object with component_id for consistent structure
-          section.components.push({ component_id: componentId });
-        } else {
-          // For multi-column sections, use columns structure
-          if (!section.columns) {
-            section.columns = { 1: [], 2: [], 3: [] };
-          }
-          if (!section.columns[targetColumn]) {
-            section.columns[targetColumn] = [];
-          }
-          section.columns[targetColumn].push(componentId);
-        }
-      }
+      // Set Pods data
+      podsData.value = data.podsData || {};
       
-      this.hasUnsavedChanges = true;
+      // Set last saved time
+      lastSaved.value = data.timestamp || null;
       
-      // Dispatch event for any listening systems to react
-      document.dispatchEvent(new CustomEvent('gmkb:component-added', {
-        detail: {
-          componentId,
-          component,
-          sectionId: targetSectionId
-        }
-      }));
+      // Reset dirty flag
+      isDirty.value = false;
       
-      // Also trigger state change event
-      document.dispatchEvent(new CustomEvent('gmkb:state-changed', {
-        detail: {
-          action: 'component-added',
-          componentId,
-          state: {
-            components: this.components,
-            sections: this.sections
-          }
-        }
-      }));
+      console.log('✅ MediaKit Store: Initialization complete');
       
-      return componentId;
-    },
-
-    updateComponent(componentId, updates) {
-      if (this.components[componentId]) {
-        this.components[componentId] = {
-          ...this.components[componentId],
-          ...updates
-        };
-        this.hasUnsavedChanges = true;
-        
-        // Dispatch update event
-        document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
-          detail: { componentId, updates }
-        }));
-      }
-    },
-
-    // Initialize store with saved data from WordPress
-    initialize(savedState) {
-      if (savedState) {
-        // Safely merge saved state
-        if (savedState.sections) this.sections = savedState.sections;
-        if (savedState.components) {
-          // Ensure components is an object, not array
-          if (Array.isArray(savedState.components)) {
-            this.components = {};
-          } else {
-            this.components = savedState.components;
-          }
-        }
-        
-        // ROOT FIX: Validate theme before applying
-        const validThemes = ['professional_clean', 'creative_bold', 'minimal_elegant', 'modern_dark'];
-        if (savedState.theme) {
-          // If theme is 'default' or 'professional', map to 'professional_clean'
-          if (savedState.theme === 'default' || savedState.theme === 'professional') {
-            this.theme = 'professional_clean';
-            console.log('📝 Migrated theme from "' + savedState.theme + '" to "professional_clean"');
-          } else if (validThemes.includes(savedState.theme)) {
-            this.theme = savedState.theme;
-          } else {
-            console.warn('⚠️ Invalid theme "' + savedState.theme + '", using professional_clean');
-            this.theme = 'professional_clean';
-          }
-        }
-        
-        if (savedState.themeCustomizations) this.themeCustomizations = savedState.themeCustomizations;
-      }
+    } catch (error) {
+      console.error('❌ MediaKit Store: Initialization failed', error);
+      hasError.value = true;
+      errorMessage.value = error.message || 'Failed to load media kit data';
       
-      // Ensure at least one section exists
-      if (this.sections.length === 0) {
-        this.addSection('full_width');
-      }
-    },
-
-    // Add a new section
-    addSection(layout = 'full_width', position = null) {
-      const sectionId = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const newSection = {
-        section_id: sectionId,
-        type: layout,
-        layout: layout,
-        components: layout === 'full_width' ? [] : undefined,
-        columns: layout !== 'full_width' ? { 1: [], 2: [], 3: [] } : undefined,
-        settings: {}
-      };
-
-      if (position !== null && position >= 0 && position <= this.sections.length) {
-        this.sections.splice(position, 0, newSection);
-      } else {
-        this.sections.push(newSection);
-      }
-
-      this.hasUnsavedChanges = true;
-      return sectionId;
-    },
-
-    // Remove a section and all its components
-    removeSection(sectionId) {
-      const index = this.sections.findIndex(s => s.section_id === sectionId);
-      if (index > -1) {
-        // Remove components in this section
-        const section = this.sections[index];
-        if (section.components) {
-          section.components.forEach(compRef => {
-            const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-            delete this.components[componentId];
-          });
-        }
-        
-        this.sections.splice(index, 1);
-        this.hasUnsavedChanges = true;
-      }
-    },
-
-    // Component Movement
-    moveComponentToIndex(componentId, newIndex) {
-      // Find component in sections
-      for (const section of this.sections) {
-        if (section.components) {
-          const idx = section.components.findIndex(comp => 
-            (typeof comp === 'string' ? comp : comp.component_id) === componentId
-          );
-          if (idx > -1) {
-            const component = section.components.splice(idx, 1)[0];
-            section.components.splice(newIndex, 0, component);
-            this.hasUnsavedChanges = true;
-            return;
-          }
-        }
-        if (section.columns) {
-          for (const col of Object.keys(section.columns)) {
-            const idx = section.columns[col].findIndex(id => id === componentId);
-            if (idx > -1) {
-              const component = section.columns[col].splice(idx, 1)[0];
-              section.columns[col].splice(newIndex, 0, component);
-              this.hasUnsavedChanges = true;
-              return;
-            }
-          }
-        }
-      }
-    },
-
-    moveComponentToSection(componentId, sectionId, columnIndex = 1) {
-      // First, remove component from current location
-      let component = null;
-      for (const section of this.sections) {
-        if (section.components) {
-          const idx = section.components.findIndex(comp => 
-            (typeof comp === 'string' ? comp : comp.component_id) === componentId
-          );
-          if (idx > -1) {
-            component = section.components.splice(idx, 1)[0];
-            break;
-          }
-        }
-        if (section.columns) {
-          for (const col of Object.keys(section.columns)) {
-            const idx = section.columns[col].findIndex(id => id === componentId);
-            if (idx > -1) {
-              component = section.columns[col].splice(idx, 1)[0];
-              break;
-            }
-          }
-        }
-      }
+      // Set default state on error
+      savedState.value = getDefaultState();
+      currentComponents.value = {};
+      currentSections.value = [];
+      currentLayout.value = [];
       
-      // Add to target section
-      if (component !== null) {
-        const targetSection = this.sections.find(s => s.section_id === sectionId);
-        if (targetSection) {
-          if (targetSection.type === 'full_width' || targetSection.layout === 'full_width') {
-            if (!targetSection.components) targetSection.components = [];
-            // ROOT FIX: Maintain consistent structure
-            targetSection.components.push({ component_id: componentId });
-          } else {
-            if (!targetSection.columns) {
-              targetSection.columns = { 1: [], 2: [], 3: [] };
-            }
-            if (!targetSection.columns[columnIndex]) {
-              targetSection.columns[columnIndex] = [];
-            }
-            targetSection.columns[columnIndex].push(componentId);
-          }
-          this.hasUnsavedChanges = true;
-        }
-      }
-    },
-
-    // Bulk Operations
-    clearAllComponents() {
-      try {
-        // Store component count before clearing
-        const componentCount = Object.keys(this.components).length;
-        
-        // Clear components object safely
-        this.components = {};
-        
-        // Clear section references safely
-        if (this.sections && Array.isArray(this.sections)) {
-          this.sections.forEach(section => {
-            if (section && typeof section === 'object') {
-              if (section.components) section.components = [];
-              if (section.columns) {
-                section.columns = { 1: [], 2: [], 3: [] };
-              }
-            }
-          });
-        }
-        
-        // Reset editing state
-        this.editingComponentId = null;
-        this.editPanelOpen = false;
-        this.selectedComponentIds = [];
-        this.selectedComponentId = null;
-        this.hoveredComponentId = null;
-        
-        // Mark as having unsaved changes
-        this.hasUnsavedChanges = true;
-        
-        // Dispatch event for any listening systems
-        document.dispatchEvent(new CustomEvent('gmkb:components-cleared', {
-          detail: { count: componentCount }
-        }));
-        
-        console.log(`✅ Cleared ${componentCount} components successfully`);
-      } catch (error) {
-        console.error('Error during clearAllComponents:', error);
-        // Force reset to clean state even if error occurs
-        this.components = {};
-        this.editingComponentId = null;
-        this.editPanelOpen = false;
-        this.selectedComponentIds = [];
-        this.selectedComponentId = null;
-        this.hoveredComponentId = null;
-      }
-    },
-
-    // ROOT FIX: Add missing clearAllSections method
-    clearAllSections() {
-      try {
-        // Store section count before clearing
-        const sectionCount = this.sections.length;
-        
-        // Clear all sections
-        this.sections = [];
-        
-        // Note: We don't clear components here as they might be used elsewhere
-        // If you want to clear components too, call clearAllComponents() separately
-        
-        // Mark as having unsaved changes
-        this.hasUnsavedChanges = true;
-        
-        // Dispatch event for any listening systems
-        document.dispatchEvent(new CustomEvent('gmkb:sections-cleared', {
-          detail: { count: sectionCount }
-        }));
-        
-        console.log(`✅ Cleared ${sectionCount} sections successfully`);
-      } catch (error) {
-        console.error('Error during clearAllSections:', error);
-        // Force reset to clean state even if error occurs
-        this.sections = [];
-      }
-    },
-
-    importComponents(componentsArray) {
-      componentsArray.forEach(comp => {
-        this.addComponent(comp);
-      });
-      this.hasUnsavedChanges = true;
-    },
-
-    reorderComponents(orderedIds) {
-      // Reorder within current section structure
-      // This is a simplified implementation
-      this.hasUnsavedChanges = true;
-    },
-
-    // Editor Management
-    openComponentEditor(componentId) {
-      this.editingComponentId = componentId;
-      this.editPanelOpen = true;
-      
-      // Dispatch event for editor system
-      document.dispatchEvent(new CustomEvent('gmkb:open-editor', {
-        detail: { componentId }
-      }));
-    },
-
-    closeComponentEditor() {
-      this.editPanelOpen = false;
-      this.editingComponentId = null;
-    },
-
-    saveComponentEdits(componentId, data) {
-      if (this.components[componentId]) {
-        this.components[componentId].data = {
-          ...this.components[componentId].data,
-          ...data
-        };
-        this.hasUnsavedChanges = true;
-      }
-    },
-
-    // Selection Management
-    selectComponent(componentId) {
-      this.selectedComponentIds = [componentId];
-      
-      // Dispatch selection event
-      document.dispatchEvent(new CustomEvent('gmkb:component-selected', {
-        detail: { componentId }
-      }));
-    },
-
-    deselectComponent(componentId) {
-      this.selectedComponentIds = this.selectedComponentIds.filter(id => id !== componentId);
-    },
-
-    clearSelection() {
-      this.selectedComponentIds = [];
-    },
-
-    // Persistence
-    async loadFromWordPress() {
-      try {
-        const formData = new FormData();
-        formData.append('action', 'gmkb_load_media_kit');
-        formData.append('nonce', window.gmkbData?.nonce || '');
-        formData.append('post_id', this.postId || '');
-        
-        const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const result = await response.json();
-        if (result.success && result.data) {
-          this.initialize(result.data);
-        }
-      } catch (error) {
-        console.error('Failed to load from WordPress:', error);
-      }
-    },
-
-    autoSave() {
-      // Debounced auto-save with enhanced error handling
-      if (this._autoSaveTimer) {
-        clearTimeout(this._autoSaveTimer);
-      }
-      
-      this._autoSaveTimer = setTimeout(async () => {
-        if (this.hasUnsavedChanges && !this.isSaving) {
-          try {
-            this.isSaving = true;
-            await this.saveToWordPress();
-            console.log('✅ Auto-save successful');
-          } catch (error) {
-            console.warn('⚠️ Auto-save failed:', error.message);
-            // Retry once after 10 seconds
-            setTimeout(() => {
-              if (this.hasUnsavedChanges && !this.isSaving) {
-                this.saveToWordPress().catch(e => 
-                  console.error('❌ Auto-save retry failed:', e.message)
-                );
-              }
-            }, 10000);
-          } finally {
-            this.isSaving = false;
-          }
-        }
-      }, 2000); // 2 second debounce
-    },
-
-    // Enhanced save with conflict detection
-    async saveToWordPressWithConflictCheck() {
-      try {
-        // First check if someone else has modified the post
-        const currentState = await this.loadFromWordPressQuiet();
-        
-        if (currentState && currentState.lastSaved > this.lastSaved) {
-          // Conflict detected
-          const shouldOverwrite = confirm(
-            'Another user has modified this media kit. Do you want to overwrite their changes?'
-          );
-          
-          if (!shouldOverwrite) {
-            // Reload their changes
-            this.initialize(currentState);
-            return { cancelled: true, reason: 'User chose to reload changes' };
-          }
-        }
-        
-        // No conflict or user chose to overwrite
-        return await this.saveToWordPress();
-        
-      } catch (error) {
-        console.error('Conflict check failed:', error);
-        // Fallback to normal save
-        return await this.saveToWordPress();
-      }
-    },
-
-    // Quiet load that doesn't modify state
-    async loadFromWordPressQuiet() {
-      try {
-        const formData = new FormData();
-        formData.append('action', 'gmkb_load_media_kit');
-        formData.append('nonce', window.gmkbData?.nonce || '');
-        formData.append('post_id', this.postId || '');
-        
-        const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const result = await response.json();
-        return result.success ? result.data : null;
-        
-      } catch (error) {
-        console.warn('Quiet load failed:', error);
-        return null;
-      }
-    },
-
-    // Offline handling with local storage backup
-    backupToLocalStorage() {
-      try {
-        const backup = {
-          components: this.components,
-          sections: this.sections,
-          theme: this.theme,
-          timestamp: Date.now(),
-          postId: this.postId
-        };
-        
-        localStorage.setItem(`gmkb_backup_${this.postId}`, JSON.stringify(backup));
-        console.log('📦 Local backup created');
-      } catch (error) {
-        console.warn('Local backup failed:', error);
-      }
-    },
-
-    // Restore from local storage
-    restoreFromLocalStorage() {
-      try {
-        const backup = localStorage.getItem(`gmkb_backup_${this.postId}`);
-        if (backup) {
-          const data = JSON.parse(backup);
-          const age = Date.now() - data.timestamp;
-          
-          // Only restore if backup is less than 1 hour old
-          if (age < 3600000) {
-            this.initialize(data);
-            console.log('♻️ Restored from local backup');
-            return true;
-          }
-        }
-        return false;
-      } catch (error) {
-        console.warn('Local restore failed:', error);
-        return false;
-      }
-    },
-
-    // Clear local backup after successful save
-    clearLocalBackup() {
-      try {
-        localStorage.removeItem(`gmkb_backup_${this.postId}`);
-      } catch (error) {
-        console.warn('Clear backup failed:', error);
-      }
-    },
-
-    // History Management (for undo/redo)
-    _saveToHistory() {
-      if (!this.history) this.history = [];
-      if (this.historyIndex === undefined) this.historyIndex = -1;
-      
-      // Remove any forward history when adding new state
-      this.history = this.history.slice(0, this.historyIndex + 1);
-      
-      // Add current state to history
-      this.history.push({
-        components: JSON.parse(JSON.stringify(this.components)),
-        sections: JSON.parse(JSON.stringify(this.sections))
-      });
-      
-      // Limit history to 50 entries
-      if (this.history.length > 50) {
-        this.history.shift();
-      } else {
-        this.historyIndex++;
-      }
-    },
-
-    undo() {
-      if (this.history && this.historyIndex > 0) {
-        this.historyIndex--;
-        const state = this.history[this.historyIndex];
-        this.components = JSON.parse(JSON.stringify(state.components));
-        this.sections = JSON.parse(JSON.stringify(state.sections));
-      }
-    },
-
-    redo() {
-      if (this.history && this.historyIndex < this.history.length - 1) {
-        this.historyIndex++;
-        const state = this.history[this.historyIndex];
-        this.components = JSON.parse(JSON.stringify(state.components));
-        this.sections = JSON.parse(JSON.stringify(state.sections));
-      }
-    },
-
-    // DUPLICATE REMOVED - addComponent is already defined above
-
-    // Remove a component
-    removeComponent(componentId) {
-      // Remove from components map
-      delete this.components[componentId];
-      
-      // Remove from all sections
-      this.sections.forEach(section => {
-        // Check full-width sections
-        if (section.components) {
-          section.components = section.components.filter(comp => 
-            (typeof comp === 'string' ? comp : comp.component_id) !== componentId
-          );
-        }
-        // Check multi-column sections
-        if (section.columns) {
-          Object.keys(section.columns).forEach(col => {
-            section.columns[col] = section.columns[col].filter(id => id !== componentId);
-          });
-        }
-      });
-      
-      this.hasUnsavedChanges = true;
-    },
-
-    // Update component data
-    updateComponent(componentId, updates) {
-      if (this.components[componentId]) {
-        this.components[componentId] = {
-          ...this.components[componentId],
-          ...updates
-        };
-        this.hasUnsavedChanges = true;
-      }
-    },
-
-    // UI Management - Added methods
-    setComponentLibraryOpen(isOpen) {
-      this.componentLibraryOpen = isOpen;
-    },
-    
-    openDesignPanel(componentId) {
-      this.editingComponentId = componentId;
-      this.designPanelOpen = true;
-      
-      // Dispatch event for design panel
-      document.dispatchEvent(new CustomEvent('gmkb:design-panel-open', {
-        detail: { componentId }
-      }));
-    },
-    
-    closeDesignPanel() {
-      this.designPanelOpen = false;
-      this.editingComponentId = null;
-    },
-
-    // Move component within its section or to another position
-    moveComponent(componentId, direction) {
-      for (const section of this.sections) {
-        // Check full-width sections
-        if (section.components) {
-          const index = section.components.findIndex(comp => 
-            (typeof comp === 'string' ? comp : comp.component_id) === componentId
-          );
-          
-          if (index > -1) {
-            const newIndex = direction === 'up' ? index - 1 : index + 1;
-            
-            if (newIndex >= 0 && newIndex < section.components.length) {
-              const temp = section.components[index];
-              section.components[index] = section.components[newIndex];
-              section.components[newIndex] = temp;
-              this.hasUnsavedChanges = true;
-            }
-            return;
-          }
-        }
-        
-        // Check multi-column sections
-        if (section.columns) {
-          for (const col of Object.keys(section.columns)) {
-            const columnComponents = section.columns[col];
-            const index = columnComponents.findIndex(id => id === componentId);
-            
-            if (index > -1) {
-              const newIndex = direction === 'up' ? index - 1 : index + 1;
-              
-              if (newIndex >= 0 && newIndex < columnComponents.length) {
-                const temp = columnComponents[index];
-                columnComponents[index] = columnComponents[newIndex];
-                columnComponents[newIndex] = temp;
-                this.hasUnsavedChanges = true;
-              }
-              return;
-            }
-          }
-        }
-      }
-    },
-
-    // Duplicate a component
-    duplicateComponent(componentId) {
-      const original = this.components[componentId];
-      if (!original) return;
-      
-      const newId = `${original.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Clone the component
-      this.components[newId] = {
-        ...original,
-        id: newId,
-        data: { ...original.data },
-        props: { ...original.props },
-        settings: { ...original.settings }
-      };
-      
-      // Find the original in sections and add duplicate after it
-      for (const section of this.sections) {
-        // Check full-width sections
-        if (section.components) {
-          const index = section.components.findIndex(comp => 
-            (typeof comp === 'string' ? comp : comp.component_id) === componentId
-          );
-          
-          if (index > -1) {
-            // ROOT FIX: Maintain consistent structure
-            section.components.splice(index + 1, 0, { component_id: newId });
-            this.hasUnsavedChanges = true;
-            return newId;
-          }
-        }
-        
-        // Check multi-column sections
-        if (section.columns) {
-          for (const col of Object.keys(section.columns)) {
-            const columnComponents = section.columns[col];
-            const index = columnComponents.findIndex(id => id === componentId);
-            
-            if (index > -1) {
-              columnComponents.splice(index + 1, 0, newId);
-              this.hasUnsavedChanges = true;
-              return newId;
-            }
-          }
-        }
-      }
-      
-      return newId;
-    },
-
-    // Set hovered component
-    setHoveredComponent(componentId) {
-      this.hoveredComponentId = componentId;
-    },
-
-    // Set selected component with auto-save trigger
-    setSelectedComponent(componentId) {
-      this.selectedComponentId = componentId;
-      
-      // Trigger auto-save when selection changes (indicates user activity)
-      if (this.hasUnsavedChanges) {
-        this.autoSave();
-      }
-    },
-
-    // Open edit panel for component
-    openEditPanel(componentId) {
-      this.editingComponentId = componentId;
-    },
-
-    // Close edit panel
-    closeEditPanel() {
-      this.editingComponentId = null;
-    },
-
-    // Enhanced save state to WordPress with backup and retry logic
-    async saveToWordPress() {
-      try {
-        this.isSaving = true;
-        
-        // Create local backup before saving
-        this.backupToLocalStorage();
-        
-        // Clean up the state before saving
-        const cleanComponents = {};
-        Object.entries(this.components).forEach(([id, comp]) => {
-          cleanComponents[id] = {
-            id: comp.id,
-            type: comp.type,
-            data: comp.data || {},
-            props: comp.props || {},
-            settings: comp.settings || {}
-          };
-        });
-        
-        const state = {
-          components: cleanComponents,
-          sections: this.sections,
-          theme: this.theme,
-          themeCustomizations: this.themeCustomizations,
-          layout: this.sections.map(s => s.section_id), // Add layout for compatibility
-          lastSaved: Date.now(), // Add timestamp for conflict detection
-          version: '2.0' // Version for future compatibility
-        };
-        
-        // Call WordPress AJAX endpoint
-        const formData = new FormData();
-        formData.append('action', 'gmkb_save_media_kit'); // ROOT FIX: Correct action name
-        formData.append('nonce', window.gmkbData?.nonce || window.mkcg_vars?.nonce || '');
-        formData.append('post_id', this.postId || window.gmkbData?.postId || window.gmkbData?.post_id || '');
-        formData.append('state', JSON.stringify(state));
-        
-        const response = await fetch(window.gmkbData?.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php', {
-          method: 'POST',
-          body: formData,
-          signal: AbortSignal.timeout(30000) // 30 second timeout
-        });
-        
-        if (!response.ok) {
-          const text = await response.text();
-          console.error('Save response:', text);
-          
-          if (response.status >= 500) {
-            throw new Error(`Server error (${response.status}). Please try again.`);
-          } else {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          this.hasUnsavedChanges = false;
-          this.lastSaved = Date.now();
-          this.clearLocalBackup(); // Clear backup after successful save
-          
-          // Dispatch save success event
-          document.dispatchEvent(new CustomEvent('gmkb:save-success', {
-            detail: { result, timestamp: this.lastSaved }
-          }));
-          
-          console.log('✅ State saved to WordPress');
-          return result;
-        } else {
-          console.error('Save failed:', result);
-          const errorMessage = result.data?.message || result.data || 'Save failed';
-          
-          // Dispatch save error event
-          document.dispatchEvent(new CustomEvent('gmkb:save-error', {
-            detail: { error: errorMessage, result }
-          }));
-          
-          throw new Error(errorMessage);
-        }
-        
-      } catch (error) {
-        console.error('Failed to save to WordPress:', error);
-        
-        // Handle specific error types
-        if (error.name === 'AbortError') {
-          throw new Error('Save timeout - please check your connection');
-        } else if (error.message?.includes('Invalid nonce')) {
-          throw new Error('Session expired - please refresh the page');
-        } else if (error.message?.includes('Insufficient permissions')) {
-          throw new Error('You don\'t have permission to save - please check your login');
-        }
-        
-        throw error;
-        
-      } finally {
-        this.isSaving = false;
-      }
-    },
-
-    // NEW: Section settings management
-    updateSection(sectionId, updates) {
-      const section = this.sections.find(s => s.section_id === sectionId);
-      if (section) {
-        Object.assign(section, updates);
-        this.hasUnsavedChanges = true;
-        
-        // Dispatch update event
-        document.dispatchEvent(new CustomEvent('gmkb:section-updated', {
-          detail: { sectionId, updates }
-        }));
-      }
-    },
-
-    // NEW: Update section settings
-    updateSectionSettings(sectionId, settings) {
-      const section = this.sections.find(s => s.section_id === sectionId);
-      if (section) {
-        if (!section.settings) {
-          section.settings = {};
-        }
-        Object.assign(section.settings, settings);
-        this.hasUnsavedChanges = true;
-        
-        // Dispatch settings update event
-        document.dispatchEvent(new CustomEvent('gmkb:section-settings-updated', {
-          detail: { sectionId, settings }
-        }));
-      }
+    } finally {
+      isLoading.value = false;
     }
   }
+  
+  /**
+   * Save current state to WordPress
+   */
+  async function save() {
+    console.log('💾 MediaKit Store: Saving...');
+    
+    try {
+      const stateToSave = {
+        components: currentComponents.value,
+        sections: currentSections.value,
+        layout: currentLayout.value,
+        globalSettings: globalSettings.value,
+        version: '2.0.0'
+      };
+      
+      const result = await window.gmkbBridge.saveMediaKit(stateToSave);
+      
+      console.log('✅ MediaKit Store: Save successful', result);
+      
+      // Update saved state
+      savedState.value = stateToSave;
+      lastSaved.value = new Date();
+      isDirty.value = false;
+      
+      return result;
+      
+    } catch (error) {
+      console.error('❌ MediaKit Store: Save failed', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Add a new component
+   */
+  function addComponent(componentType, props = {}) {
+    const componentId = `${componentType}_${Date.now()}`;
+    
+    const newComponent = {
+      id: componentId,
+      type: componentType,
+      props: props,
+      ...getComponentDefaults(componentType)
+    };
+    
+    currentComponents.value[componentId] = newComponent;
+    currentLayout.value.push(componentId);
+    isDirty.value = true;
+    
+    console.log('➕ MediaKit Store: Added component', componentId);
+    
+    return componentId;
+  }
+  
+  /**
+   * Update component props
+   */
+  function updateComponent(componentId, updates) {
+    if (currentComponents.value[componentId]) {
+      currentComponents.value[componentId] = {
+        ...currentComponents.value[componentId],
+        ...updates
+      };
+      isDirty.value = true;
+      
+      console.log('📝 MediaKit Store: Updated component', componentId);
+    }
+  }
+  
+  /**
+   * Remove a component
+   */
+  function removeComponent(componentId) {
+    if (currentComponents.value[componentId]) {
+      delete currentComponents.value[componentId];
+      
+      // Remove from layout
+      const layoutIndex = currentLayout.value.indexOf(componentId);
+      if (layoutIndex > -1) {
+        currentLayout.value.splice(layoutIndex, 1);
+      }
+      
+      // Remove from sections
+      currentSections.value.forEach(section => {
+        if (section.components) {
+          const sectionIndex = section.components.indexOf(componentId);
+          if (sectionIndex > -1) {
+            section.components.splice(sectionIndex, 1);
+          }
+        }
+      });
+      
+      isDirty.value = true;
+      
+      console.log('🗑️ MediaKit Store: Removed component', componentId);
+    }
+  }
+  
+  /**
+   * Add a new section
+   */
+  function addSection(type = 'full', components = []) {
+    const newSection = {
+      id: `section_${Date.now()}`,
+      type: type,
+      layout: type,
+      components: components
+    };
+    
+    currentSections.value.push(newSection);
+    isDirty.value = true;
+    
+    console.log('➕ MediaKit Store: Added section', newSection.id);
+    
+    return newSection.id;
+  }
+  
+  /**
+   * Update theme
+   */
+  function updateTheme(themeName) {
+    globalSettings.value.theme = themeName;
+    isDirty.value = true;
+    
+    console.log('🎨 MediaKit Store: Changed theme to', themeName);
+  }
+  
+  /**
+   * Reset to saved state
+   */
+  function resetToSaved() {
+    if (savedState.value) {
+      currentComponents.value = { ...savedState.value.components };
+      currentSections.value = [...savedState.value.sections];
+      currentLayout.value = [...savedState.value.layout];
+      globalSettings.value = { ...savedState.value.globalSettings };
+      isDirty.value = false;
+      
+      console.log('🔄 MediaKit Store: Reset to saved state');
+    }
+  }
+  
+  // ==========================================
+  // HELPER FUNCTIONS
+  // ==========================================
+  
+  function getDefaultState() {
+    return {
+      components: {},
+      sections: [],
+      layout: [],
+      globalSettings: {
+        theme: 'modern',
+        customTheme: null
+      },
+      version: '2.0.0'
+    };
+  }
+  
+  function getComponentDefaults(type) {
+    const componentDef = components.value.find(c => c.type === type);
+    return {
+      name: componentDef?.name || type,
+      title: componentDef?.title || type,
+      category: componentDef?.category || 'general'
+    };
+  }
+  
+  async function waitForBridge() {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Bridge initialization timeout'));
+      }, 10000);
+      
+      // Check if bridge already exists
+      if (window.gmkbBridge && window.gmkbBridge.initialize) {
+        clearTimeout(timeout);
+        resolve();
+        return;
+      }
+      
+      // Wait for bridge ready event
+      document.addEventListener('gmkb:bridge:ready', () => {
+        clearTimeout(timeout);
+        resolve();
+      }, { once: true });
+      
+      // Wait for bridge failed event
+      document.addEventListener('gmkb:bridge:failed', (event) => {
+        clearTimeout(timeout);
+        reject(new Error(event.detail?.reason || 'Bridge initialization failed'));
+      }, { once: true });
+    });
+  }
+  
+  // ==========================================
+  // RETURN PUBLIC API
+  // ==========================================
+  
+  return {
+    // State
+    isLoading,
+    hasError,
+    errorMessage,
+    savedState,
+    components,
+    themes,
+    podsData,
+    currentComponents,
+    currentSections,
+    currentLayout,
+    globalSettings,
+    postId,
+    lastSaved,
+    isDirty,
+    
+    // Getters
+    hasContent,
+    shouldShowEmptyState,
+    componentCount,
+    availableComponents,
+    activeTheme,
+    
+    // Actions
+    initialize,
+    save,
+    addComponent,
+    updateComponent,
+    removeComponent,
+    addSection,
+    updateTheme,
+    resetToSaved
+  };
 });

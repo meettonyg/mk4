@@ -95,10 +95,13 @@ function gmkb_enqueue_vue_assets() {
     );
     
     // ROOT FIX: Component library bridge for event-driven connection
+    // Load jQuery first for AJAX support
+    wp_enqueue_script( 'jquery' );
+    
     wp_enqueue_script(
         'gmkb-component-library-bridge',
         $plugin_url . 'js/component-library-bridge.js',
-        array( 'gmkb-vue-bundle' ),
+        array( 'jquery', 'gmkb-vue-bundle' ),
         $version,
         true
     );
@@ -334,7 +337,7 @@ function gmkb_prepare_vue_data( $post_id ) {
         'ajax_url' => admin_url( 'admin-ajax.php' ), // Also provide snake_case version
         'ajaxurl' => admin_url( 'admin-ajax.php' ), // And lowercase version for compatibility
         'restUrl' => rest_url(),
-        'nonce' => wp_create_nonce( 'gmkb_nonce' ), // Use gmkb_nonce for consistency with AJAX handlers
+        'nonce' => wp_create_nonce( 'gmkb_builder_nonce' ), // Match AJAX handler nonce verification
         'postId' => $post_id,
         'post_id' => $post_id, // Also provide snake_case version
         'architecture' => 'vue',
@@ -353,7 +356,7 @@ function gmkb_prepare_legacy_data( $post_id ) {
     // Prepare data for legacy system
     $data = array(
         'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-        'nonce' => wp_create_nonce( 'gmkb_legacy_nonce' ),
+        'nonce' => wp_create_nonce( 'gmkb_builder_nonce' ), // Use same nonce for both
         'postId' => $post_id,
         'post_id' => $post_id, // Legacy uses snake_case
         'architecture' => 'legacy',
