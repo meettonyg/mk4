@@ -327,15 +327,6 @@ function gmkb_enqueue_assets() {
         // Pass WordPress data to the lean bundle (must be AFTER wp_enqueue_script)
         wp_localize_script( 'gmkb-lean-bundle', 'gmkbData', $lean_wp_data );
         
-        // Component Library Bridge - Load before Vue bundle for proper initialization
-        wp_enqueue_script(
-            'gmkb-component-library-bridge-vue',
-            $plugin_url . 'js/bridges/component-library-bridge.js',
-            array(), // No dependencies
-            filemtime( GUESTIFY_PLUGIN_DIR . 'js/bridges/component-library-bridge.js' ),
-            true
-        );
-        
         // Enqueue minimal CSS
         wp_enqueue_style(
             'gmkb-lean-styles',
@@ -2203,12 +2194,11 @@ function gmkb_enqueue_assets() {
     }
     
     // Component Library Bridge - Connect buttons to Vue component library
-    // Load the regular JS bridge first (non-module)
     if (!wp_script_is('gmkb-component-library-bridge', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-component-library-bridge',
-            $plugin_url . 'js/bridges/component-library-bridge.js',
-            array(), // No dependencies, loads early
+            $plugin_url . 'src/integrations/componentLibraryIntegration.js',
+            array('gmkb-main-script'),
             $version,
             true
         );
