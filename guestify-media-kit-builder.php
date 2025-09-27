@@ -145,6 +145,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php
     require_once GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php';
 }
 
+// PHASE 1 IMPLEMENTATION: Pure Vue REST API
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.php';
+}
+
+// PHASE 2 IMPLEMENTATION: Version History System
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/version-history-handler.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/version-history-handler.php';
+}
+
 // Component schemas are self-contained - each component has its own schema.json
 // ComponentDiscovery will load schemas when discovering components
 

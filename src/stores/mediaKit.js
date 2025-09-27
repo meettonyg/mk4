@@ -13,6 +13,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
       spacing: {},
       effects: {}
     },
+    globalSettings: {},
+    podsData: {}, // Added for Pods data storage
     
     // UI state
     selectedComponentId: null,
@@ -30,6 +32,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
     lastSaved: null,
     hasUnsavedChanges: false,
     isSaving: false,
+    isLoading: false, // Added for loading state
+    postTitle: '', // Added for post title
     
     // History (for undo/redo)
     history: [],
@@ -382,40 +386,138 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     // Initialize store with saved data from WordPress
-    initialize(savedState) {
+    async initialize(savedState) {
+      // If savedState is provided directly, use it
       if (savedState) {
-        // Safely merge saved state
-        if (savedState.sections) this.sections = savedState.sections;
-        if (savedState.components) {
-          // Ensure components is an object, not array
-          if (Array.isArray(savedState.components)) {
-            this.components = {};
-          } else {
-            this.components = savedState.components;
-          }
-        }
-        
-        // ROOT FIX: Validate theme before applying
-        const validThemes = ['professional_clean', 'creative_bold', 'minimal_elegant', 'modern_dark'];
-        if (savedState.theme) {
-          // If theme is 'default' or 'professional', map to 'professional_clean'
-          if (savedState.theme === 'default' || savedState.theme === 'professional') {
-            this.theme = 'professional_clean';
-            console.log('📝 Migrated theme from "' + savedState.theme + '" to "professional_clean"');
-          } else if (validThemes.includes(savedState.theme)) {
-            this.theme = savedState.theme;
-          } else {
-            console.warn('⚠️ Invalid theme "' + savedState.theme + '", using professional_clean');
-            this.theme = 'professional_clean';
-          }
-        }
-        
-        if (savedState.themeCustomizations) this.themeCustomizations = savedState.themeCustomizations;
+        this.applyState(savedState);
+      } else if (this.postId) {
+        // Otherwise load from API
+        await this.loadFromAPI();
       }
       
       // Ensure at least one section exists
       if (this.sections.length === 0) {
         this.addSection('full_width');
+      }
+    },
+
+    // Apply state data to store
+    applyState(savedState) {
+      // Safely merge saved state
+      if (savedState.sections) this.sections = savedState.sections;
+      if (savedState.components) {
+        // Ensure components is an object, not array
+        if (Array.isArray(savedState.components)) {
+          this.components = {};
+        } else {
+          this.components = savedState.components;
+        }
+      }
+      
+      // ROOT FIX: Validate theme before applying
+      const validThemes = ['professional_clean', 'creative_bold', 'minimal_elegant', 'modern_dark'];
+      if (savedState.theme) {
+        // If theme is 'default' or 'professional', map to 'professional_clean'
+        if (savedState.theme === 'default' || savedState.theme === 'professional') {
+          this.theme = 'professional_clean';
+          console.log('📝 Migrated theme from "' + savedState.theme + '" to "professional_clean"');
+        } else if (validThemes.includes(savedState.theme)) {
+          this.theme = savedState.theme;
+        } else {
+          console.warn('⚠️ Invalid theme "' + savedState.theme + '", using professional_clean');
+          this.theme = 'professional_clean';
+        }
+      }
+      
+      if (savedState.themeCustomizations) this.themeCustomizations = savedState.themeCustomizations;
+      if (savedState.podsData) this.podsData = savedState.podsData;
+      if (savedState.globalSettings) this.globalSettings = savedState.globalSettings;
+    },
+
+    // Load from new REST API
+    async loadFromAPI() {
+      if (!this.postId) return;
+      
+      try {
+        const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
+        const response = await fetch(`${apiUrl}gmkb/v1/mediakit/${this.postId}`, {
+          method: 'GET',
+          headers: {
+            'X-WP-Nonce': window.gmkbData?.nonce || '',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        
+        // Apply loaded state
+        this.applyState(data);
+        
+        // Store pods data separately
+        if (data.podsData) {
+          this.podsData = data.podsData;
+        }
+        
+        console.log('✅ Loaded from REST API');
+        return data;
+        
+      } catch (error) {
+        console.error('Failed to load from API:', error);
+        throw error;
+      }
+    },
+
+    // Save to new REST API
+    async saveToAPI() {
+      if (!this.postId) return;
+      
+      try {
+        this.isSaving = true;
+        
+        const state = {
+          components: this.components,
+          sections: this.sections,
+          theme: this.theme,
+          themeCustomizations: this.themeCustomizations,
+          globalSettings: this.globalSettings
+        };
+        
+        const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
+        const response = await fetch(`${apiUrl}gmkb/v1/mediakit/${this.postId}`, {
+          method: 'POST',
+          headers: {
+            'X-WP-Nonce': window.gmkbData?.nonce || '',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(state)
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          this.hasUnsavedChanges = false;
+          this.lastSaved = Date.now();
+          
+          // Dispatch save success event
+          document.dispatchEvent(new CustomEvent('gmkb:save-success', {
+            detail: { result, timestamp: this.lastSaved }
+          }));
+          
+          console.log('✅ Saved to REST API');
+          return result;
+        } else {
+          throw new Error(result.message || 'Save failed');
+        }
+        
+      } catch (error) {
+        console.error('Failed to save to API:', error);
+        throw error;
+      } finally {
+        this.isSaving = false;
       }
     },
 
@@ -1165,6 +1267,98 @@ export const useMediaKitStore = defineStore('mediaKit', {
           detail: { sectionId, settings }
         }));
       }
+    },
+
+    // PHASE 1: Import/Export Integration Methods
+    
+    /**
+     * Replace entire state (for import)
+     */
+    async replaceState(newState) {
+      // Save current state to history before replacing
+      this._saveToHistory();
+      
+      // Apply new state
+      this.applyState(newState);
+      
+      // Mark as having changes
+      this.hasUnsavedChanges = true;
+      
+      // Auto-save
+      await this.autoSave();
+    },
+
+    /**
+     * Apply template (structure only)
+     */
+    async applyTemplate(template) {
+      // Save current state to history
+      this._saveToHistory();
+      
+      // Clear current structure
+      this.sections = template.sections || [];
+      this.theme = template.theme || this.theme;
+      this.themeCustomizations = template.themeCustomizations || this.themeCustomizations;
+      
+      // Keep existing components but clear references
+      // This allows user to re-add components manually
+      
+      this.hasUnsavedChanges = true;
+      await this.autoSave();
+    },
+
+    /**
+     * Merge components (for component import)
+     */
+    async mergeComponents(newComponents) {
+      // Save current state to history
+      this._saveToHistory();
+      
+      // Merge new components
+      Object.assign(this.components, newComponents);
+      
+      // Add to first section if not already referenced
+      if (this.sections.length > 0) {
+        const firstSection = this.sections[0];
+        Object.keys(newComponents).forEach(componentId => {
+          // Check if component is already in a section
+          let found = false;
+          this.sections.forEach(section => {
+            if (section.components?.includes(componentId)) found = true;
+            if (section.columns) {
+              Object.values(section.columns).forEach(col => {
+                if (col.includes(componentId)) found = true;
+              });
+            }
+          });
+          
+          // If not found, add to first section
+          if (!found) {
+            if (firstSection.components) {
+              firstSection.components.push(componentId);
+            } else if (firstSection.columns?.['1']) {
+              firstSection.columns['1'].push(componentId);
+            }
+          }
+        });
+      }
+      
+      this.hasUnsavedChanges = true;
+      await this.autoSave();
+    },
+
+    /**
+     * Show notification (for user feedback)
+     */
+    showNotification(message, type = 'info') {
+      // Dispatch notification event for UI to handle
+      document.dispatchEvent(new CustomEvent('gmkb:notification', {
+        detail: { message, type }
+      }));
+      
+      // Also log to console
+      const emoji = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+      console.log(`${emoji} ${message}`);
     }
   }
 });
