@@ -32,7 +32,6 @@
 <script setup>
 import { onMounted } from 'vue';
 import { useTheme } from '../composables/useTheme';
-import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts';
 import ThemeProvider from './ThemeProvider.vue';
 import ThemeSwitcher from './ThemeSwitcher.vue';
 import ComponentLibrary from './ComponentLibraryNew.vue';  // Using the new enhanced version
@@ -45,14 +44,10 @@ import DesignPanel from './panels/DesignPanel.vue';
 // Initialize theme system
 const { applyTheme } = useTheme();
 
-// Initialize keyboard shortcuts for undo/redo
-useKeyboardShortcuts();
-
 // Apply theme on mount
 onMounted(() => {
   applyTheme();
   console.log('✅ MediaKitApp: Theme system initialized');
-  console.log('✅ MediaKitApp: Keyboard shortcuts initialized (Ctrl+Z/Y for undo/redo)');
 });
 </script>
 

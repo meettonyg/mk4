@@ -15,13 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * System Architecture Modes:
- * 'vue'    - Pure Vue 3 + Pinia (PRODUCTION READY)
- * 
- * Legacy and hybrid modes have been removed in v4.0.0
- * This ensures a clean, maintainable codebase
+ * 'vue'    - Use Vue 3 + Vite lean bundle (RECOMMENDED)
+ * 'legacy' - Use legacy JavaScript files (DEPRECATED)
+ * 'hybrid' - Danger zone! Both systems (DEBUGGING ONLY)
  */
 define( 'GMKB_ARCHITECTURE_MODE', 'vue' );
-define( 'GMKB_FORCE_PURE_VUE', true );
 
 // ================================================
 // FEATURE FLAGS FOR EACH ARCHITECTURE

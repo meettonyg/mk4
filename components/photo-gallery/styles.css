@@ -3,26 +3,24 @@
  * Enhanced with schema-driven class support
  */
 .photo-gallery-component {
-    padding: var(--gmkb-space-8, 2rem);
-    background-color: var(--gmkb-color-surface, #f5f5f5);
-    border-radius: var(--gmkb-border-radius, 0.5rem);
-    margin-bottom: var(--gmkb-space-8, 2rem);
-    transition: background-color var(--gmkb-transition, 0.3s) var(--gmkb-transition-timing, ease);
+    padding: 2rem;
+    background-color: var(--background-color, #f5f5f5);
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    transition: background-color 0.3s ease;
 }
 
 .photo-gallery-title {
-    font-size: var(--gmkb-font-size-xl, 1.75rem);
-    font-family: var(--gmkb-font-primary, inherit);
+    font-size: 1.75rem;
     margin-bottom: 0.75rem;
-    color: var(--gmkb-color-text, #333);
+    color: var(--primary-text-color, #333);
     text-align: center;
 }
 
 .photo-gallery-description {
-    font-size: var(--gmkb-font-size-base, 1rem);
-    font-family: var(--gmkb-font-primary, inherit);
-    margin-bottom: var(--gmkb-space-8, 2rem);
-    color: var(--gmkb-color-text-light, #666);
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    color: var(--secondary-text-color, #666);
     text-align: center;
     max-width: 800px;
     margin-left: auto;
@@ -39,18 +37,18 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
-    margin-bottom: var(--gmkb-space-8, 2rem);
+    margin-bottom: 2rem;
 }
 
 .layout-masonry .photo-gallery-grid {
     column-count: 3;
     column-gap: 1.5rem;
-    margin-bottom: var(--gmkb-space-8, 2rem);
+    margin-bottom: 2rem;
 }
 
 .layout-masonry .photo-item {
     break-inside: avoid;
-    margin-bottom: var(--gmkb-space-6, 1.5rem);
+    margin-bottom: 1.5rem;
 }
 
 .layout-carousel .photo-gallery-grid {
@@ -59,7 +57,7 @@
     scroll-snap-type: x mandatory;
     gap: 1.5rem;
     padding-bottom: 1rem;
-    margin-bottom: var(--gmkb-space-8, 2rem);
+    margin-bottom: 2rem;
 }
 
 .layout-carousel .photo-item {
@@ -71,7 +69,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    margin-bottom: var(--gmkb-space-8, 2rem);
+    margin-bottom: 2rem;
 }
 
 .layout-fullwidth .photo-item {
@@ -141,7 +139,7 @@
 }
 
 .layout-masonry .photo-gallery-grid.spacing-medium .photo-item {
-    margin-bottom: var(--gmkb-space-6, 1.5rem);
+    margin-bottom: 1.5rem;
 }
 
 .layout-masonry .photo-gallery-grid.spacing-large .photo-item {
@@ -151,7 +149,7 @@
 /* Photo Item Styles */
 .photo-item {
     position: relative;
-    border-radius: var(--gmkb-border-radius, 0.5rem);
+    border-radius: 0.5rem;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     cursor: pointer;
@@ -165,11 +163,11 @@
 
 /* Image style variations */
 .photo-item.image-standard {
-    border-radius: var(--gmkb-border-radius, 0.5rem);
+    border-radius: 0.5rem;
 }
 
 .photo-item.image-rounded {
-    border-radius: var(--gmkb-border-radius-lg, 1rem);
+    border-radius: 1rem;
 }
 
 .photo-item.image-circle {
@@ -231,20 +229,18 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: var(--gmkb-space-3, 0.75rem);
+    padding: 0.75rem;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
     color: white;
-    font-size: var(--gmkb-font-size-sm, 0.875rem);
-    font-family: var(--gmkb-font-primary, inherit);
+    font-size: 0.875rem;
 }
 
 .photo-gallery-grid[data-caption-style="below"] .photo-caption {
     position: relative;
-    padding: var(--gmkb-space-3, 0.75rem);
+    padding: 0.75rem;
     background-color: white;
     color: #333;
-    font-size: var(--gmkb-font-size-sm, 0.875rem);
-    font-family: var(--gmkb-font-primary, inherit);
+    font-size: 0.875rem;
     text-align: center;
 }
 
@@ -253,13 +249,12 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: var(--gmkb-space-3, 0.75rem);
+    padding: 0.75rem;
     background: rgba(0, 0, 0, 0.7);
     color: white;
-    font-size: var(--gmkb-font-size-sm, 0.875rem);
-    font-family: var(--gmkb-font-primary, inherit);
+    font-size: 0.875rem;
     opacity: 0;
-    transition: opacity var(--gmkb-transition, 0.3s) var(--gmkb-transition-timing, ease);
+    transition: opacity 0.3s ease;
 }
 
 .photo-gallery-grid[data-caption-style="hover"] .photo-item:hover .photo-caption {
@@ -275,10 +270,10 @@
     padding-bottom: 56.25%; /* 16:9 aspect ratio */
     height: 0;
     position: relative;
-    background-color: var(--gmkb-color-surface, #fff);
-    border-radius: var(--gmkb-border-radius, 0.5rem);
-    border: 2px dashed var(--gmkb-color-accent, #ccc);
-    margin-bottom: var(--gmkb-space-8, 2rem);
+    background-color: var(--component-bg-color, #fff);
+    border-radius: 0.5rem;
+    border: 2px dashed var(--accent-color, #ccc);
+    margin-bottom: 2rem;
 }
 
 .placeholder-content {
@@ -292,18 +287,18 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: var(--gmkb-space-8, 2rem);
+    padding: 2rem;
 }
 
 .placeholder-icon {
     width: 5rem;
     height: 5rem;
-    background-color: var(--gmkb-color-primary, rgba(74, 122, 255, 0.1));
+    background-color: var(--light-primary-color, rgba(74, 122, 255, 0.1));
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: var(--gmkb-space-6, 1.5rem);
+    margin-bottom: 1.5rem;
 }
 
 .placeholder-icon:before {
@@ -321,16 +316,16 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    margin-bottom: var(--gmkb-space-4, 1rem);
+    margin-bottom: 1rem;
 }
 
 .photo-editor-item {
     display: flex;
     align-items: flex-start;
     gap: 1rem;
-    padding: var(--gmkb-space-4, 1rem);
+    padding: 1rem;
     background-color: #f5f5f5;
-    border-radius: var(--gmkb-border-radius, 0.5rem);
+    border-radius: 0.5rem;
     position: relative;
 }
 
@@ -338,7 +333,7 @@
     width: 80px;
     height: 80px;
     overflow: hidden;
-    border-radius: var(--gmkb-border-radius-sm, 0.25rem);
+    border-radius: 0.25rem;
     flex-shrink: 0;
 }
 
@@ -369,8 +364,7 @@
     right: 0.5rem;
     background: transparent;
     border: none;
-    font-size: var(--gmkb-font-size-lg, 1.25rem);
-    font-family: var(--gmkb-font-primary, inherit);
+    font-size: 1.25rem;
     cursor: pointer;
     color: #666;
     width: 24px;
@@ -387,33 +381,31 @@
 }
 
 .add-photo-btn {
-    background-color: var(--gmkb-color-primary, #4a7aff);
+    background-color: var(--primary-color, #4a7aff);
     color: white;
     border: none;
-    border-radius: var(--gmkb-border-radius-sm, 0.25rem);
-    padding: var(--gmkb-space-3, 0.75rem) 1.5rem;
-    font-size: var(--gmkb-font-size-sm, 0.875rem);
-    font-family: var(--gmkb-font-primary, inherit);
+    border-radius: 0.25rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
     cursor: pointer;
-    transition: background-color var(--gmkb-transition, 0.3s) var(--gmkb-transition-timing, ease);
+    transition: background-color 0.3s ease;
     margin: 0 auto;
     display: block;
 }
 
 .add-photo-btn:hover {
-    background-color: var(--gmkb-color-primary-hover, #3a67e0);
+    background-color: var(--primary-hover-color, #3a67e0);
 }
 
 .change-photo-btn {
-    background-color: var(--gmkb-color-secondary, #e0e0e0);
-    color: var(--gmkb-color-text-light, #333);
+    background-color: var(--secondary-color, #e0e0e0);
+    color: var(--secondary-text-color, #333);
     border: none;
-    border-radius: var(--gmkb-border-radius-sm, 0.25rem);
-    padding: var(--gmkb-space-2, 0.5rem);
-    font-size: var(--gmkb-font-size-xs, 0.75rem);
-    font-family: var(--gmkb-font-primary, inherit);
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    font-size: 0.75rem;
     cursor: pointer;
-    transition: background-color var(--gmkb-transition, 0.3s) var(--gmkb-transition-timing, ease);
+    transition: background-color 0.3s ease;
 }
 
 .change-photo-btn:hover {
@@ -448,7 +440,6 @@
     }
     
     .photo-gallery-title {
-        font-size: var(--gmkb-font-size-xl, 1.5rem);
-    font-family: var(--gmkb-font-primary, inherit);
+        font-size: 1.5rem;
     }
 }

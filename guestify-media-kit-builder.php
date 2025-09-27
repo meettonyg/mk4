@@ -16,14 +16,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // DEFINE CONSTANTS AT THE TOP LEVEL
-define( 'GUESTIFY_VERSION', '4.0.0-pure-vue' );
+define( 'GUESTIFY_VERSION', '2.1.0-vanilla-js-final' );
 define( 'GUESTIFY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GUESTIFY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'GMKB_VERSION', '4.0.0-pure-vue' );
+define( 'GMKB_VERSION', '2.1.0-vanilla-js-final' );
 define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'GMKB_WORDPRESS_COMPATIBLE', true );
-define( 'GMKB_PURE_VUE_MODE', true );
 
 // Include primary files
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue-separated.php';
@@ -41,8 +40,23 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php'))
 }
 // Component schemas are now self-contained in each component directory (schema.json)
 
-// Pure Vue Mode: Pods data is handled by Vue stores and composables
-// Field sync is handled by Vue reactivity system
+// PHASE 1 FIX: Include Pods data enrichment system
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: component-pods-enrichment.php not found, skipping include');
+    }
+}
+
+// ROOT FIX: Include bi-directional field sync system
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: component-field-sync.php not found, skipping include');
+    }
+}
 
 // PHASE 4: Theme Generator for dynamic CSS generation
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php')) {
@@ -69,7 +83,23 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php')) {
     }
 }
 
-// Pure Vue Mode: Component marketplace will be handled by Vue when implemented
+// PHASE 5: Component Marketplace Ready
+if (is_admin()) {
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageManager.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageManager.php';
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ComponentPackageManager.php not found, skipping include');
+        }
+    }
+    if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageValidator.php')) {
+        require_once GUESTIFY_PLUGIN_DIR . 'includes/marketplace/ComponentPackageValidator.php';
+    } else {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: ComponentPackageValidator.php not found, skipping include');
+        }
+    }
+}
 
 // PHASE 6: Import/Export System
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/export/ExportManager.php')) {
@@ -87,17 +117,28 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php')) {
     }
 }
 
-// Pure Vue Mode: AJAX handlers are the only PHP backend needed
+// ROOT FIX: Removed ajax-output-protection.php patch
+// Fixed at root: disabled polling-detector-injector.php that was corrupting AJAX responses
+// Debug scripts should never inject into production AJAX responses
+
+// ROOT FIX: Single source AJAX handlers - no fallbacks
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php';
 } else {
     if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB CRITICAL: gmkb-ajax-handlers.php not found - required for Vue mode');
+        error_log('GMKB: gmkb-ajax-handlers.php not found, skipping include');
     }
 }
 
-// Pure Vue Mode: Database operations handled by Vue stores
-// Diagnostics handled by Vue devtools and browser console
+// ROOT FIX: Database state inspector for debugging persistence issues
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php';
+}
+
+// ROOT FIX: Admin diagnostic tool for fixing component save issues
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-admin-diagnostic.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-admin-diagnostic.php';
+}
 
 // PHASE 7: Version Control System
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php')) {
@@ -132,12 +173,21 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php')) {
 
 // Theme AJAX handlers are loaded with the theme generator
 
-// Pure Vue Mode: Components are self-contained Vue components
-// ComponentDiscovery manages PHP-side component registration
+// ARCHITECTURE CLEANUP: Component-level code should be handled by ComponentDiscovery
+// ROOT FIX: Remove component-specific includes from main plugin file
+// Components will auto-register via the ComponentDiscovery system
 
 if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('PURE VUE: All component logic handled by Vue components and stores');
-    error_log('PURE VUE: PHP only provides AJAX endpoints and data persistence');
+    error_log('ARCHITECTURE FIX: Component handlers now managed by ComponentDiscovery system');
+    error_log('ARCHITECTURE FIX: No more hard-coded component includes in main plugin');
+}
+
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: enhanced-ajax.php not found, skipping include');
+    }
 }
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
@@ -195,16 +245,16 @@ class Guestify_Media_Kit_Builder {
     }
 
     private function __construct() {
-        // Pure Vue Mode: Prevent double initialization
+        // ROOT CAUSE FIX: Prevent double initialization
         if (self::$initialized) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB Pure Vue: Preventing double initialization');
+                error_log('GMKB: Preventing double initialization - already initialized');
             }
             return;
         }
         self::$initialized = true;
         
-        // Pure Vue Mode: Minimal PHP backend for Vue.js frontend
+        // SIMPLIFIED: Constructor only handles WordPress hooks - NO file includes or constants
         
         // Initialize component system
         $this->component_discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components');

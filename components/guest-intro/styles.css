@@ -22,7 +22,7 @@
 .intro-label {
     display: inline-block;
     font-size: 14px;
-    font-weight: var(--gmkb-font-weight-semibold, 600);
+    font-weight: 600;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -31,10 +31,10 @@
 
 .guest-name {
     font-size: 32px;
-    font-weight: var(--gmkb-font-weight-bold, 700);
+    font-weight: 700;
     color: #1e293b;
     margin: 10px 0;
-    line-height: var(--gmkb-line-height-heading, 1.2);
+    line-height: 1.2;
 }
 
 .guest-credentials {
@@ -44,8 +44,7 @@
 
 .guest-title {
     font-size: 20px;
-    font-family: var(--gmkb-font-heading, inherit);
-    font-weight: var(--gmkb-font-weight-semibold, 600);
+    font-weight: 600;
     color: #334155;
     margin: 0 0 8px 0;
 }
@@ -78,7 +77,7 @@
 
 .topics-label {
     font-size: 18px;
-    font-weight: var(--gmkb-font-weight-semibold, 600);
+    font-weight: 600;
     color: #1e293b;
     margin-bottom: 15px;
 }
@@ -95,7 +94,7 @@
     margin-bottom: 12px;
     font-size: 15px;
     color: #475569;
-    line-height: var(--gmkb-line-height-base, 1.6);
+    line-height: 1.6;
 }
 
 .topics-list li::before {
@@ -103,7 +102,7 @@
     position: absolute;
     left: 10px;
     color: #0ea5e9;
-    font-weight: var(--gmkb-font-weight-bold, 700);
+    font-weight: 700;
 }
 
 .guest-links {
@@ -125,9 +124,9 @@
     color: white;
     text-decoration: none;
     border-radius: 6px;
-    font-weight: var(--gmkb-font-weight-medium, 500);
+    font-weight: 500;
     font-size: 14px;
-    transition: all var(--gmkb-transition-fast, 0.2s) var(--gmkb-transition-timing, ease);
+    transition: all 0.2s ease;
 }
 
 .guest-website:hover,
@@ -191,7 +190,6 @@
     
     .guest-title {
         font-size: 18px;
-    font-family: var(--gmkb-font-heading, inherit);
     }
     
     .guest-tagline {
