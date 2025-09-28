@@ -73,33 +73,21 @@ class MediaKitAPI {
     
     /**
      * Check if user has permission to access the endpoint
-     * ROOT FIX: Proper nonce verification and capability checks
+     * ROOT FIX: Properly handle WP_REST_Request object
      */
-    public function check_permissions($request) {
-        // First verify the nonce - this is critical for REST API authentication
-        $nonce = $request->get_header('X-WP-Nonce');
-        
-        // If no nonce provided, check if this is a public read request
-        if (!$nonce) {
-            // For GET requests on published posts, allow public access
-            if ($request->get_method() === 'GET') {
-                $post_id = $request->get_param('id');
-                $post = get_post($post_id);
-                if ($post && $post->post_status === 'publish') {
-                    return true;
-                }
-            }
-            // No nonce and not a public read - deny
-            return new \WP_Error('rest_missing_nonce', 'No nonce provided', array('status' => 403));
-        }
-        
-        // Verify the nonce
-        if (!wp_verify_nonce($nonce, 'wp_rest')) {
-            return new \WP_Error('rest_nonce_invalid', 'Invalid nonce', array('status' => 403));
-        }
-        
-        // Nonce is valid, now check capabilities based on request method
+    public function check_permissions(\WP_REST_Request $request) {
+        // Get the post ID from the request parameters
         $post_id = $request->get_param('id');
+        
+        // For routes without post_id (like themes), check general capability
+        if (!$post_id) {
+            // For theme endpoints, just check if user can edit posts
+            if ($request->get_route() && strpos($request->get_route(), '/themes/') !== false) {
+                return current_user_can('edit_posts');
+            }
+            // For other endpoints without ID, deny by default
+            return new \WP_Error('rest_invalid_param', 'No post ID provided', array('status' => 400));
+        }
         
         // Check if post exists
         $post = get_post($post_id);
@@ -107,18 +95,32 @@ class MediaKitAPI {
             return new \WP_Error('rest_post_invalid', 'Post not found', array('status' => 404));
         }
         
-        // For viewing (GET), check if user can read the post
-        if ($request->get_method() === 'GET') {
-            // If post is published, allow read
-            if ($post->post_status === 'publish') {
-                return true;
-            }
-            // Otherwise check if user can read private posts or edit this post
-            return current_user_can('read_private_posts') || current_user_can('edit_post', $post_id);
+        // Get the nonce from the request header
+        $nonce = $request->get_header('X-WP-Nonce');
+        
+        // For GET requests on published posts, allow public access (no nonce required)
+        if ($request->get_method() === 'GET' && $post->post_status === 'publish') {
+            return true;
         }
         
-        // For editing (POST/PUT/DELETE), check edit capability
-        return current_user_can('edit_post', $post_id);
+        // For all other requests, require valid nonce
+        if (!$nonce) {
+            return new \WP_Error('rest_missing_nonce', 'No authentication provided', array('status' => 403));
+        }
+        
+        // Verify the nonce
+        if (!wp_verify_nonce($nonce, 'wp_rest')) {
+            return new \WP_Error('rest_nonce_invalid', 'Invalid authentication', array('status' => 403));
+        }
+        
+        // Check capabilities based on request method
+        if ($request->get_method() === 'GET') {
+            // For authenticated GET requests, check read capability
+            return current_user_can('read_private_posts') || current_user_can('edit_post', $post_id);
+        } else {
+            // For POST/PUT/DELETE, check edit capability
+            return current_user_can('edit_post', $post_id);
+        }
     }
     
     /**
@@ -328,23 +330,24 @@ class MediaKitAPI {
     
     /**
      * Check permissions for theme endpoints
-     * ROOT FIX: Proper nonce verification for theme endpoints
+     * ROOT FIX: Properly handle WP_REST_Request object
      */
-    public function check_themes_permission($request) {
-        // For GET requests, allow public access
+    public function check_themes_permission(\WP_REST_Request $request) {
+        // For GET requests, allow public access to themes
         if ($request->get_method() === 'GET') {
-            return true; // Themes are public
+            return true;
         }
         
-        // For POST requests, verify nonce and capability
+        // For POST requests, require authentication
         $nonce = $request->get_header('X-WP-Nonce');
         
         if (!$nonce) {
-            return new \WP_Error('rest_missing_nonce', 'No nonce provided', array('status' => 403));
+            return new \WP_Error('rest_missing_nonce', 'No authentication provided', array('status' => 403));
         }
         
+        // Verify the nonce
         if (!wp_verify_nonce($nonce, 'wp_rest')) {
-            return new \WP_Error('rest_nonce_invalid', 'Invalid nonce', array('status' => 403));
+            return new \WP_Error('rest_nonce_invalid', 'Invalid authentication', array('status' => 403));
         }
         
         // Check if user can edit posts

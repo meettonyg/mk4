@@ -440,10 +440,21 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       try {
         // ROOT FIX: Get the correct API URL and nonce
-        const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+        let apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
         const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
         
-        const response = await fetch(`${apiUrl}gmkb/v1/mediakit/${this.postId}`, {
+        // FIX: Check if apiUrl already contains gmkb/v1 and handle accordingly
+        let endpoint;
+        if (apiUrl.includes('gmkb/v1')) {
+          // API URL already includes the namespace, just add the endpoint
+          endpoint = `${apiUrl}mediakit/${this.postId}`;
+        } else {
+          // API URL is just the base REST URL, add namespace and endpoint
+          if (!apiUrl.endsWith('/')) apiUrl += '/';
+          endpoint = `${apiUrl}gmkb/v1/mediakit/${this.postId}`;
+        }
+        
+        const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
             'X-WP-Nonce': nonce, // ROOT FIX: Use the nonce for authentication
@@ -489,10 +500,21 @@ export const useMediaKitStore = defineStore('mediaKit', {
         };
         
         // ROOT FIX: Get the correct API URL and nonce
-        const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+        let apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
         const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
         
-        const response = await fetch(`${apiUrl}gmkb/v1/mediakit/${this.postId}/save`, {
+        // FIX: Check if apiUrl already contains gmkb/v1 and handle accordingly
+        let endpoint;
+        if (apiUrl.includes('gmkb/v1')) {
+          // API URL already includes the namespace, just add the endpoint
+          endpoint = `${apiUrl}mediakit/${this.postId}/save`;
+        } else {
+          // API URL is just the base REST URL, add namespace and endpoint
+          if (!apiUrl.endsWith('/')) apiUrl += '/';
+          endpoint = `${apiUrl}gmkb/v1/mediakit/${this.postId}/save`;
+        }
+        
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'X-WP-Nonce': nonce, // ROOT FIX: Use the nonce for authentication

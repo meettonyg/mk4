@@ -94,23 +94,13 @@ function gmkb_enqueue_vue_assets() {
         true
     );
     
-    // ROOT FIX: Component library bridge for event-driven connection
-    wp_enqueue_script(
-        'gmkb-component-library-bridge',
-        $plugin_url . 'js/component-library-bridge.js',
-        array( 'gmkb-vue-bundle' ),
-        $version,
-        true
-    );
+    // Localize data for Vue - using gmkbData as expected by Vue bundle
+    wp_localize_script( 'gmkb-vue-bundle', 'gmkbData', $bundle_data );
     
-    
-    // Localize data for Vue
-    wp_localize_script( 'gmkb-vue-bundle', 'gmkbVueData', $bundle_data );
-    
-    // ROOT FIX: Also make data available as gmkbData for component compatibility
+    // ROOT FIX: Also make data available as gmkbVueData for compatibility
     wp_add_inline_script( 
         'gmkb-vue-bundle', 
-        'window.gmkbData = window.gmkbVueData;', 
+        'window.gmkbVueData = window.gmkbData;', 
         'before' 
     );
     
@@ -330,20 +320,34 @@ function gmkb_enqueue_conflict_resolver() {
 function gmkb_prepare_vue_data( $post_id ) {
     // Prepare clean data for Vue
     $data = array(
-        'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-        'ajax_url' => admin_url( 'admin-ajax.php' ), // Also provide snake_case version
-        'ajaxurl' => admin_url( 'admin-ajax.php' ), // And lowercase version for compatibility
+        // API Configuration - CRITICAL FIX: Add REST API nonce
+        'api' => rest_url('gmkb/v1/'), // Vue expects this field
         'restUrl' => rest_url(),
-        'nonce' => wp_create_nonce( 'gmkb_nonce' ), // Use gmkb_nonce for consistency with AJAX handlers
+        'nonce' => wp_create_nonce( 'wp_rest' ), // CRITICAL: Must use 'wp_rest' for REST API
+        'restNonce' => wp_create_nonce( 'wp_rest' ), // Also provide as restNonce
+        
+        // Legacy AJAX configuration (for fallback)
+        'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+        'ajax_url' => admin_url( 'admin-ajax.php' ),
+        'ajaxurl' => admin_url( 'admin-ajax.php' ),
+        'ajaxNonce' => wp_create_nonce( 'gmkb_nonce' ), // Separate nonce for AJAX
+        
+        // Post data
         'postId' => $post_id,
-        'post_id' => $post_id, // Also provide snake_case version
+        'post_id' => $post_id,
+        
+        // Architecture info
         'architecture' => 'vue',
         'version' => '3.0.0',
+        
+        // Component and theme data
         'components' => gmkb_get_component_definitions(),
         'themes' => gmkb_get_theme_definitions(),
+        
+        // State and Pods data
         'savedState' => gmkb_get_saved_state( $post_id ),
         'podsData' => gmkb_get_pods_data( $post_id ),
-        'pods_data' => gmkb_get_pods_data( $post_id ), // Also provide snake_case version
+        'pods_data' => gmkb_get_pods_data( $post_id ),
     );
     
     return apply_filters( 'gmkb_vue_data', $data );
