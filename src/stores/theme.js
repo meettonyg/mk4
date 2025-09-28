@@ -617,25 +617,33 @@ export const useThemeStore = defineStore('theme', {
     
     // Save custom theme to database
     async saveCustomThemeToDatabase(theme) {
-      if (!window.gmkbData?.ajaxUrl) {
-        console.error('AJAX URL not available');
+      // ROOT FIX: Use REST API instead of admin-ajax (Phase 1 compliant)
+      const restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+      const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+      
+      if (!restUrl) {
+        console.error('REST API URL not available');
         return;
       }
       
-      const formData = new FormData();
-      formData.append('action', 'gmkb_save_custom_theme');
-      formData.append('nonce', window.gmkbData.nonce || '');
-      formData.append('theme', JSON.stringify(theme));
-      
       try {
-        const response = await fetch(window.gmkbData.ajaxUrl, {
+        const response = await fetch(`${restUrl}gmkb/v1/themes/custom`, {
           method: 'POST',
-          body: formData
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': nonce
+          },
+          body: JSON.stringify(theme),
+          credentials: 'same-origin'
         });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
         
         const result = await response.json();
         if (!result.success) {
-          throw new Error(result.data?.message || 'Failed to save theme');
+          throw new Error(result.message || 'Failed to save theme');
         }
       } catch (error) {
         console.error('Failed to save custom theme:', error);
@@ -645,41 +653,43 @@ export const useThemeStore = defineStore('theme', {
     
     // Load custom themes from database
     async loadCustomThemes() {
-      // ROOT FIX: Gracefully handle when custom themes aren't available
-      if (!window.gmkbData?.ajaxUrl) {
-        console.log('Custom themes: AJAX not available, using built-in themes only');
+      // ROOT FIX: Use REST API instead of admin-ajax (Phase 1 compliant)
+      const restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+      const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+      
+      if (!restUrl) {
+        console.log('Custom themes: REST API not configured, using built-in themes only');
         return;
       }
       
-      const formData = new FormData();
-      formData.append('action', 'gmkb_load_custom_themes'); // ROOT FIX: Use correct action name
-      formData.append('nonce', window.gmkbData.nonce || window.gmkbData?.mkcg_nonce || ''); // ROOT FIX: Try multiple nonce sources
-      
       try {
-        const response = await fetch(window.gmkbData.ajaxUrl, {
-          method: 'POST',
-          body: formData,
-          credentials: 'same-origin' // ROOT FIX: Ensure cookies are sent
+        const response = await fetch(`${restUrl}gmkb/v1/themes/custom`, {
+          method: 'GET',
+          headers: {
+            'X-WP-Nonce': nonce
+          },
+          credentials: 'same-origin'
         });
         
-        // ROOT FIX: Handle 403/404/401 gracefully - custom themes might not be enabled
-        if (response.status === 403 || response.status === 404 || response.status === 401) {
-          console.log('Custom themes endpoint not available, using built-in themes only');
-          return;
-        }
-        
+        // Handle various error states gracefully
         if (!response.ok) {
-          console.log(`Custom themes: HTTP ${response.status}, using built-in themes only`);
+          if (response.status === 401 || response.status === 403) {
+            console.log('Custom themes: Authentication required, using built-in themes only');
+          } else {
+            console.log(`Custom themes: HTTP ${response.status}, using built-in themes only`);
+          }
           return;
         }
         
         const result = await response.json();
-        if (result.success && result.data?.themes) {
-          this.customThemes = result.data.themes;
-          console.log(`Loaded ${result.data.themes.length} custom themes`);
+        if (result.themes && Array.isArray(result.themes)) {
+          this.customThemes = result.themes;
+          if (result.themes.length > 0) {
+            console.log(`Loaded ${result.themes.length} custom themes`);
+          }
         }
       } catch (error) {
-        // Silently handle - custom themes are optional
+        // Silently handle - custom themes are optional feature
         console.log('Custom themes not available, using built-in themes');
       }
     }

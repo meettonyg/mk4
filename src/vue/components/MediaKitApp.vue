@@ -37,7 +37,7 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue';
-import { useMediaKitStore } from '../stores/mediaKit';
+import { useMediaKitStore } from '../../stores/mediaKit';
 import { useTheme } from '../composables/useTheme';
 import LoadingScreen from './LoadingScreen.vue';
 import ThemeProvider from './ThemeProvider.vue';

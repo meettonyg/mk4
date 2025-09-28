@@ -2202,7 +2202,11 @@ function gmkb_enqueue_assets() {
         );
     }
     
-    // Component Library Bridge - Connect buttons to Vue component library
+    // PHASE 1 FIX: Component Library Bridge - REMOVED
+    // This was trying to load a non-existent file and violates Phase 1 architecture
+    // Vue handles all component library functionality internally
+    // The integration is handled by the Vue bundle itself
+    /*
     if (!wp_script_is('gmkb-component-library-bridge', 'enqueued')) {
         wp_enqueue_script(
             'gmkb-component-library-bridge',
@@ -2212,6 +2216,7 @@ function gmkb_enqueue_assets() {
             true
         );
     }
+    */
     
     // 14b. CONSOLIDATED Modal Extras - ROOT FIX: Template, Settings, Export modals
     // PHASE 5 OPTIMIZATION: Consolidated 3 files into 1 (template-library + global-settings + export)

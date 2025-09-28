@@ -55,6 +55,22 @@ class MediaKitAPI {
                 )
             )
         ));
+        
+        // GET /themes/custom - Get custom themes
+        register_rest_route($namespace, '/themes/custom', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_custom_themes'),
+            'permission_callback' => '__return_true' // Public endpoint for logged-in users
+        ));
+        
+        // POST /themes/custom - Save custom theme
+        register_rest_route($namespace, '/themes/custom', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'save_custom_theme'),
+            'permission_callback' => function() {
+                return current_user_can('edit_posts');
+            }
+        ));
     }
     
     /**
@@ -215,6 +231,66 @@ class MediaKitAPI {
         }
         
         return $data;
+    }
+    
+    /**
+     * Get custom themes from database
+     * Phase 1 compliant - REST API instead of AJAX
+     */
+    public function get_custom_themes($request) {
+        // Check if user is logged in for custom themes
+        if (!is_user_logged_in()) {
+            // Return empty for non-logged in users
+            return rest_ensure_response(array(
+                'themes' => array(),
+                'count' => 0,
+                'message' => 'Login required for custom themes'
+            ));
+        }
+        
+        // Get custom themes from database
+        $custom_themes = get_option('gmkb_custom_themes', array());
+        
+        // Ensure it's an array
+        if (!is_array($custom_themes)) {
+            $custom_themes = array();
+        }
+        
+        return rest_ensure_response(array(
+            'themes' => array_values($custom_themes), // Ensure indexed array
+            'count' => count($custom_themes),
+            'message' => 'Custom themes loaded successfully'
+        ));
+    }
+    
+    /**
+     * Save custom theme to database
+     * Phase 1 compliant - REST API instead of AJAX
+     */
+    public function save_custom_theme($request) {
+        // Get theme data from request
+        $theme = $request->get_json_params();
+        
+        // Validate theme data
+        if (!$theme || !isset($theme['id']) || !isset($theme['colors'])) {
+            return new \WP_Error('invalid_theme', 'Invalid theme data', array('status' => 400));
+        }
+        
+        // Get existing custom themes
+        $custom_themes = get_option('gmkb_custom_themes', array());
+        if (!is_array($custom_themes)) {
+            $custom_themes = array();
+        }
+        
+        // Add or update theme
+        $custom_themes[$theme['id']] = $theme;
+        update_option('gmkb_custom_themes', $custom_themes);
+        
+        return rest_ensure_response(array(
+            'success' => true,
+            'message' => 'Theme saved successfully',
+            'theme' => $theme
+        ));
     }
 }
 
