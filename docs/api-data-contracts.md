@@ -18,6 +18,7 @@ Retrieves complete media kit data with all Pods fields in a single request.
       "id": "comp_hero_1",
       "type": "hero",
       "data": {
+        "title": "Custom Title",
         "subtitle": "Custom Subtitle"
       },
       "settings": {
