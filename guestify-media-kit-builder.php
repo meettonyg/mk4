@@ -153,6 +153,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.p
 // PHASE 1 MIGRATION: New optimized MediaKit API with single-query data fetching
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php';
+    // ROOT FIX: Initialize API immediately to ensure REST routes are registered
+    add_action('init', function() {
+        if (class_exists('\GMKB\MediaKitAPI')) {
+            new \GMKB\MediaKitAPI();
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB Phase 1: MediaKitAPI instantiated and REST routes registered');
+            }
+        }
+    }, 5); // Early priority to ensure routes are available
+    
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('✅ GMKB Phase 1: MediaKitAPI.php loaded successfully');
     }

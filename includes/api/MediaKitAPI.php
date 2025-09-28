@@ -75,16 +75,28 @@ class MediaKitAPI {
     
     /**
      * Check if user has permission to access the endpoint
+     * ROOT FIX: More flexible permission check for viewing (not just editing)
      */
     public function check_permissions($request) {
         $post_id = $request->get_param('id');
         
         // Check if post exists
-        if (!get_post($post_id)) {
+        $post = get_post($post_id);
+        if (!$post) {
             return false;
         }
         
-        // Check if user can edit this post
+        // For viewing, check if user can read the post
+        if ($request->get_method() === 'GET') {
+            // Allow if post is published
+            if ($post->post_status === 'publish') {
+                return true;
+            }
+            // Otherwise check if user can read private posts
+            return current_user_can('read_private_posts') || current_user_can('edit_post', $post_id);
+        }
+        
+        // For editing (POST/PUT/DELETE), check edit capability
         return current_user_can('edit_post', $post_id);
     }
     
