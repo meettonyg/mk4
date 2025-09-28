@@ -618,7 +618,7 @@ export const useThemeStore = defineStore('theme', {
     // Save custom theme to database
     async saveCustomThemeToDatabase(theme) {
       // ROOT FIX: Use REST API instead of admin-ajax (Phase 1 compliant)
-      const restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+      let restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
       const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
       
       if (!restUrl) {
@@ -626,8 +626,19 @@ export const useThemeStore = defineStore('theme', {
         return;
       }
       
+      // FIX: Check if restUrl already contains gmkb/v1 and handle accordingly
+      let endpoint;
+      if (restUrl.includes('gmkb/v1')) {
+        // API URL already includes the namespace, just add the endpoint
+        endpoint = `${restUrl}themes/custom`;
+      } else {
+        // API URL is just the base REST URL, add namespace and endpoint
+        if (!restUrl.endsWith('/')) restUrl += '/';
+        endpoint = `${restUrl}gmkb/v1/themes/custom`;
+      }
+      
       try {
-        const response = await fetch(`${restUrl}gmkb/v1/themes/custom`, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -654,7 +665,7 @@ export const useThemeStore = defineStore('theme', {
     // Load custom themes from database
     async loadCustomThemes() {
       // ROOT FIX: Use REST API instead of admin-ajax (Phase 1 compliant)
-      const restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+      let restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
       const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
       
       if (!restUrl) {
@@ -662,8 +673,19 @@ export const useThemeStore = defineStore('theme', {
         return;
       }
       
+      // FIX: Check if restUrl already contains gmkb/v1 and handle accordingly
+      let endpoint;
+      if (restUrl.includes('gmkb/v1')) {
+        // API URL already includes the namespace, just add the endpoint
+        endpoint = `${restUrl}themes/custom`;
+      } else {
+        // API URL is just the base REST URL, add namespace and endpoint
+        if (!restUrl.endsWith('/')) restUrl += '/';
+        endpoint = `${restUrl}gmkb/v1/themes/custom`;
+      }
+      
       try {
-        const response = await fetch(`${restUrl}gmkb/v1/themes/custom`, {
+        const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
             'X-WP-Nonce': nonce
