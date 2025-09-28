@@ -150,6 +150,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.p
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.php';
 }
 
+// PHASE 1 MIGRATION: New optimized MediaKit API with single-query data fetching
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB Phase 1: MediaKitAPI.php loaded successfully');
+    }
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('❌ GMKB Phase 1: MediaKitAPI.php not found at: ' . GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php');
+    }
+}
+
 // PHASE 2 IMPLEMENTATION: Version History System
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/version-history-handler.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/version-history-handler.php';

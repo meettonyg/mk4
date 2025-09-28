@@ -47,11 +47,11 @@ add_action( 'wp_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Later priority
 add_action( 'admin_enqueue_scripts', 'gmkb_enqueue_assets', 20 ); // Consistent priority
 
 /**
- * LEAN ARCHITECTURE: Feature flag for new lean bundle
- * Set to true to use the new Vite-built lean bundle instead of 60+ individual files
- * The bundle must be rebuilt with: npm run build
+ * PURE VUE MODE: Feature flag for Vue-only bundle
+ * When enabled, ONLY the Vue bundle loads - no legacy scripts
+ * This implements Phase 1 of the Vue Migration Plan
  */
-define( 'GMKB_USE_LEAN_BUNDLE', true ); // VUE MIGRATION - Using lean bundle for Vue.js integration
+define( 'GMKB_PURE_VUE_MODE', true ); // PHASE 1 - Clean separation, Vue-only mode
 
 /**
  * Enqueues all necessary scripts and styles for the Media Kit Builder.
@@ -173,8 +173,8 @@ function gmkb_enqueue_assets() {
     
     // ROOT FIX: No patches - registry loads properly through dependency chain
     
-    // PHASE 1 FIX: Clean separation - Vue-only mode when lean bundle enabled
-    if ( GMKB_USE_LEAN_BUNDLE && file_exists( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ) ) {
+    // PHASE 1: Pure Vue Mode - ONLY Vue bundle, no legacy scripts
+    if ( GMKB_PURE_VUE_MODE && file_exists( GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js' ) ) {
         // PURE VUE MODE - ONLY load Vue bundle, nothing else
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
             error_log( '🚀 GMKB: PURE VUE MODE - Only Vue bundle will load' );
@@ -292,21 +292,40 @@ function gmkb_enqueue_assets() {
             }
         }
         
-        // Prepare minimal WordPress data for lean bundle
-        $lean_wp_data = array(
-            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-            'nonce' => wp_create_nonce( 'gmkb_nonce' ),
+        // PHASE 1: Minimal data for Vue app with API configuration
+        $vue_config = array(
+            // API Configuration - FIX: Add 'api' field for Vue bundle
+            'api' => rest_url('gmkb/v1/'), // Vue bundle expects this field
+            'restUrl' => rest_url(), // Also provide restUrl for compatibility
+            'nonce' => wp_create_nonce('wp_rest'),
+            'ajaxUrl' => admin_url('admin-ajax.php'), // Fallback for legacy AJAX
+            'ajaxNonce' => wp_create_nonce('gmkb_nonce'),
+            
+            // Post Data
             'postId' => $post_id,
-            'post_id' => $post_id, // Also include snake_case version
-            'mkcg_id' => $post_id, // Include as mkcg_id for compatibility
+            'postType' => get_post_type($post_id),
+            
+            // Plugin Configuration
             'pluginUrl' => $plugin_url,
+            'version' => defined('GMKB_VERSION') ? GMKB_VERSION : '1.0.0',
+            'debugMode' => defined('WP_DEBUG') && WP_DEBUG,
+            
+            // Component Discovery
+            'components' => $components_data_lean,
+            'categories' => $categories_data_lean,
+            'componentTypes' => $component_types,
+            
+            // Initial State (for offline capability)
             'savedState' => $saved_state,
-            'debugMode' => defined( 'WP_DEBUG' ) && WP_DEBUG,
-            'components' => $components_data_lean, // ROOT FIX: Pass actual components
-            'categories' => $categories_data_lean, // ROOT FIX: Pass categories
-            'componentTypes' => $component_types, // Pass component types for discovery
-            'pods_data' => $pods_data, // Add Pods data
-            'pods_fields_loaded' => !empty(array_filter($pods_data))
+            'podsData' => $pods_data, // Pre-loaded for performance
+            
+            // Feature Flags
+            'features' => array(
+                'pureVueMode' => true,
+                'apiVersion' => '1.0',
+                'autoSave' => true,
+                'autoSaveInterval' => 30000 // 30 seconds
+            )
         );
         
         // PHASE 1 FIX: REMOVED pure-vue-mode script - not needed with clean separation
@@ -324,8 +343,8 @@ function gmkb_enqueue_assets() {
             true
         );
         
-        // Pass WordPress data to the lean bundle (must be AFTER wp_enqueue_script)
-        wp_localize_script( 'gmkb-lean-bundle', 'gmkbData', $lean_wp_data );
+        // PHASE 1: Pass configuration to Vue app - use gmkbData as expected by Vue bundle
+        wp_localize_script( 'gmkb-lean-bundle', 'gmkbData', $vue_config );
         
         // Enqueue minimal CSS
         wp_enqueue_style(
@@ -393,9 +412,10 @@ function gmkb_enqueue_assets() {
         
         // DIAGNOSTIC: Load lean bundle diagnostic in debug mode
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            // Phase 1 diagnostic script
             wp_enqueue_script(
-                'gmkb-lean-bundle-diagnostic',
-                $plugin_url . 'debug/lean-bundle-diagnostic.js',
+                'gmkb-phase1-diagnostic',
+                $plugin_url . 'js/phase1-diagnostic.js',
                 array('gmkb-lean-bundle'),
                 $version . '-diagnostic',
                 true
