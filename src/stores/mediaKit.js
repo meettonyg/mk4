@@ -439,13 +439,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (!this.postId) return;
       
       try {
-        const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
+        // ROOT FIX: Get the correct API URL and nonce
+        const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+        const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+        
         const response = await fetch(`${apiUrl}gmkb/v1/mediakit/${this.postId}`, {
           method: 'GET',
           headers: {
-            'X-WP-Nonce': window.gmkbData?.nonce || '',
+            'X-WP-Nonce': nonce, // ROOT FIX: Use the nonce for authentication
             'Content-Type': 'application/json'
-          }
+          },
+          credentials: 'same-origin' // ROOT FIX: Include cookies for authentication
         });
         
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -484,14 +488,18 @@ export const useMediaKitStore = defineStore('mediaKit', {
           globalSettings: this.globalSettings
         };
         
-        const apiUrl = window.gmkbData?.apiUrl || '/wp-json/';
-        const response = await fetch(`${apiUrl}gmkb/v1/mediakit/${this.postId}`, {
+        // ROOT FIX: Get the correct API URL and nonce
+        const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+        const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+        
+        const response = await fetch(`${apiUrl}gmkb/v1/mediakit/${this.postId}/save`, {
           method: 'POST',
           headers: {
-            'X-WP-Nonce': window.gmkbData?.nonce || '',
+            'X-WP-Nonce': nonce, // ROOT FIX: Use the nonce for authentication
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(state)
+          body: JSON.stringify(state),
+          credentials: 'same-origin' // ROOT FIX: Include cookies for authentication
         });
         
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

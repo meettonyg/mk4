@@ -60,39 +60,60 @@ class MediaKitAPI {
         register_rest_route($namespace, '/themes/custom', array(
             'methods' => 'GET',
             'callback' => array($this, 'get_custom_themes'),
-            'permission_callback' => '__return_true' // Public endpoint for logged-in users
+            'permission_callback' => array($this, 'check_themes_permission')
         ));
         
         // POST /themes/custom - Save custom theme
         register_rest_route($namespace, '/themes/custom', array(
             'methods' => 'POST',
             'callback' => array($this, 'save_custom_theme'),
-            'permission_callback' => function() {
-                return current_user_can('edit_posts');
-            }
+            'permission_callback' => array($this, 'check_themes_permission')
         ));
     }
     
     /**
      * Check if user has permission to access the endpoint
-     * ROOT FIX: More flexible permission check for viewing (not just editing)
+     * ROOT FIX: Proper nonce verification and capability checks
      */
     public function check_permissions($request) {
+        // First verify the nonce - this is critical for REST API authentication
+        $nonce = $request->get_header('X-WP-Nonce');
+        
+        // If no nonce provided, check if this is a public read request
+        if (!$nonce) {
+            // For GET requests on published posts, allow public access
+            if ($request->get_method() === 'GET') {
+                $post_id = $request->get_param('id');
+                $post = get_post($post_id);
+                if ($post && $post->post_status === 'publish') {
+                    return true;
+                }
+            }
+            // No nonce and not a public read - deny
+            return new \WP_Error('rest_missing_nonce', 'No nonce provided', array('status' => 403));
+        }
+        
+        // Verify the nonce
+        if (!wp_verify_nonce($nonce, 'wp_rest')) {
+            return new \WP_Error('rest_nonce_invalid', 'Invalid nonce', array('status' => 403));
+        }
+        
+        // Nonce is valid, now check capabilities based on request method
         $post_id = $request->get_param('id');
         
         // Check if post exists
         $post = get_post($post_id);
         if (!$post) {
-            return false;
+            return new \WP_Error('rest_post_invalid', 'Post not found', array('status' => 404));
         }
         
-        // For viewing, check if user can read the post
+        // For viewing (GET), check if user can read the post
         if ($request->get_method() === 'GET') {
-            // Allow if post is published
+            // If post is published, allow read
             if ($post->post_status === 'publish') {
                 return true;
             }
-            // Otherwise check if user can read private posts
+            // Otherwise check if user can read private posts or edit this post
             return current_user_can('read_private_posts') || current_user_can('edit_post', $post_id);
         }
         
@@ -303,6 +324,31 @@ class MediaKitAPI {
             'message' => 'Theme saved successfully',
             'theme' => $theme
         ));
+    }
+    
+    /**
+     * Check permissions for theme endpoints
+     * ROOT FIX: Proper nonce verification for theme endpoints
+     */
+    public function check_themes_permission($request) {
+        // For GET requests, allow public access
+        if ($request->get_method() === 'GET') {
+            return true; // Themes are public
+        }
+        
+        // For POST requests, verify nonce and capability
+        $nonce = $request->get_header('X-WP-Nonce');
+        
+        if (!$nonce) {
+            return new \WP_Error('rest_missing_nonce', 'No nonce provided', array('status' => 403));
+        }
+        
+        if (!wp_verify_nonce($nonce, 'wp_rest')) {
+            return new \WP_Error('rest_nonce_invalid', 'Invalid nonce', array('status' => 403));
+        }
+        
+        // Check if user can edit posts
+        return current_user_can('edit_posts');
     }
 }
 
