@@ -294,12 +294,13 @@ function gmkb_enqueue_assets() {
         
         // PHASE 1: Minimal data for Vue app with API configuration
         $vue_config = array(
-            // API Configuration - FIX: Add 'api' field for Vue bundle
+            // API Configuration - ROOT FIX: Consistent nonce naming
             'api' => rest_url('gmkb/v1/'), // Vue bundle expects this field
             'restUrl' => rest_url(), // Also provide restUrl for compatibility
-            'nonce' => wp_create_nonce('wp_rest'),
-            'ajaxUrl' => admin_url('admin-ajax.php'), // Fallback for legacy AJAX
-            'ajaxNonce' => wp_create_nonce('gmkb_nonce'),
+            'nonce' => wp_create_nonce('gmkb-builder-nonce'), // PRIMARY nonce for AJAX
+            'restNonce' => wp_create_nonce('wp_rest'), // REST API nonce
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'ajaxNonce' => wp_create_nonce('gmkb-builder-nonce'), // Use same nonce for consistency
             
             // Post Data
             'postId' => $post_id,

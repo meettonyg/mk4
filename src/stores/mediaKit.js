@@ -1359,71 +1359,29 @@ export const useMediaKitStore = defineStore('mediaKit', {
           version: '2.0' // Version for future compatibility
         };
         
-        // ROOT FIX: Get fresh nonce from NonceManager if available
-        let currentNonce = window.gmkbData?.nonce || window.mkcg_vars?.nonce || '';
-        
-        // If NonceManager is available, use its nonce
-        if (window.gmkbNonceManager) {
-          // Check if nonce is likely expired and refresh if needed
-          if (window.gmkbNonceManager.isLikelyExpired && window.gmkbNonceManager.isLikelyExpired()) {
-            try {
-              await window.gmkbNonceManager.refreshNonce();
-            } catch (e) {
-              console.warn('Nonce refresh failed, using existing nonce');
-            }
-          }
-          currentNonce = window.gmkbNonceManager.getNonce() || currentNonce;
-        }
-        
-        // Call WordPress AJAX endpoint
-        const formData = new FormData();
-        formData.append('action', 'gmkb_save_media_kit'); // ROOT FIX: Correct action name
-        formData.append('nonce', currentNonce);
-        formData.append('post_id', this.postId || window.gmkbData?.postId || window.gmkbData?.post_id || '');
-        formData.append('state', JSON.stringify(state));
-        
-        const response = await fetch(window.gmkbData?.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php', {
-          method: 'POST',
-          body: formData,
-          signal: AbortSignal.timeout(30000) // 30 second timeout
+        // ROOT FIX: Use NonceManager for automatic refresh
+        const result = await window.gmkbNonceManager.ajaxRequest('gmkb_save_media_kit', {
+          post_id: this.postId || window.gmkbData?.postId || window.gmkbData?.post_id || '',
+          state: state
         });
         
-        if (!response.ok) {
-          const text = await response.text();
-          console.error('Save response:', text);
-          
-          if (response.status >= 500) {
-            throw new Error(`Server error (${response.status}). Please try again.`);
-          } else {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          this.isDirty = false;
-          this.lastSaved = Date.now();
-          this.clearLocalBackup(); // Clear backup after successful save
-          
-          // Dispatch save success event
-          document.dispatchEvent(new CustomEvent('gmkb:save-success', {
-            detail: { result, timestamp: this.lastSaved }
-          }));
-          
-          console.log('✅ State saved to WordPress');
-          return result;
-        } else {
+        // Check response
+        if (!result.success) {
           console.error('Save failed:', result);
-          const errorMessage = result.data?.message || result.data || 'Save failed';
-          
-          // Dispatch save error event
-          document.dispatchEvent(new CustomEvent('gmkb:save-error', {
-            detail: { error: errorMessage, result }
-          }));
-          
-          throw new Error(errorMessage);
+          throw new Error(result.data?.message || result.data || 'Save failed');
         }
+        
+        console.log('✅ Saved successfully');
+        this.isDirty = false;
+        this.isSaving = false;
+        this.lastSavedAt = Date.now();
+        
+        // Show success message
+        if (typeof window.showToast === 'function') {
+          window.showToast('Media kit saved successfully', 'success');
+        }
+        
+        return true;
         
       } catch (error) {
         console.error('Failed to save to WordPress:', error);

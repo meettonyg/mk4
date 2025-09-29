@@ -378,8 +378,12 @@ class GMKB_Ajax_Handlers {
      * Save media kit - ROOT FIX: Properly handle JavaScript object -> PHP array conversion
      */
     public function save_media_kit() {
-        // 1. Security Verification
-        check_ajax_referer('gmkb_nonce', 'nonce');
+        // 1. Security Verification - ROOT FIX: Use the correct nonce name
+        $nonce = isset($_POST['nonce']) ? $_POST['nonce'] : '';
+        if (!wp_verify_nonce($nonce, 'gmkb-builder-nonce') && !wp_verify_nonce($nonce, 'gmkb_nonce')) {
+            wp_send_json_error(array('message' => 'Invalid nonce', 'nonce_provided' => $nonce));
+            return;
+        }
         if (!current_user_can('edit_posts')) {
             wp_send_json_error('Insufficient permissions');
             return;
