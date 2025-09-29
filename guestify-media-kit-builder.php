@@ -172,9 +172,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php')) {
     }
 }
 
-// PHASE 2 IMPLEMENTATION: Version History System
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/version-history-handler.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/version-history-handler.php';
+// PHASE 3: Component Discovery API for scalable component architecture
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/ComponentDiscoveryAPI.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/ComponentDiscoveryAPI.php';
+    // Initialize Component Discovery API
+    add_action('init', function() {
+        if (class_exists('\GMKB\ComponentDiscoveryAPI')) {
+            new \GMKB\ComponentDiscoveryAPI();
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB Phase 3: ComponentDiscoveryAPI instantiated');
+            }
+        }
+    }, 5);
 }
 
 // Component schemas are self-contained - each component has its own schema.json

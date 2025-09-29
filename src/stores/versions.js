@@ -305,7 +305,7 @@ export const useVersionStore = defineStore('versions', {
           const mediaKitStore = useMediaKitStore();
           
           // Only auto-save if there are changes
-          if (mediaKitStore.hasUnsavedChanges) {
+          if (mediaKitStore.isDirty || mediaKitStore.hasUnsavedChanges) {
             try {
               await this.saveVersion('Auto-save', 'auto');
             } catch (error) {

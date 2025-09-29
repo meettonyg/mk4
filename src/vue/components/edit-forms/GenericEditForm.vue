@@ -381,5 +381,3 @@ const openMediaLibrary = (key) => {
   margin-bottom: 12px;
 }
 </style>
-</parameter>
-</invoke>

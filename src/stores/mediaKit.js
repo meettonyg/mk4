@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import UnifiedComponentRegistry from '../vue/services/UnifiedComponentRegistry';
+import { debounce } from '../utils/debounce';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -14,7 +15,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
       effects: {}
     },
     globalSettings: {},
-    podsData: {}, // Added for Pods data storage
+    
+    // CRITICAL: Pods data stored here, fetched ONCE on initialize
+    podsData: {},
+    
+    // Meta state for error tracking and status
+    isDirty: false,
+    loadError: null,
+    maxHistorySize: 50,
     
     // UI state
     selectedComponentId: null,
@@ -233,11 +241,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Check if can undo/redo
     canUndo: (state) => state.history && state.historyIndex > 0,
     canRedo: (state) => state.history && state.historyIndex < state.history.length - 1,
+    
+    // Check if there are unsaved changes
+    hasUnsavedChanges: (state) => state.isDirty,
 
     // Get save status
     saveStatus: (state) => {
       if (state.isSaving) return 'saving';
-      if (state.hasUnsavedChanges) return 'unsaved';
+      if (state.isDirty) return 'unsaved';
       return 'saved';
     },
 
@@ -250,6 +261,130 @@ export const useMediaKitStore = defineStore('mediaKit', {
   },
 
   actions: {
+    /**
+     * PHASE 3 ENHANCEMENT: Single API call initialization
+     * Fetches ALL data including Pods in one request
+     */
+    async initialize(savedState) {
+      this.isLoading = true;
+      this.loadError = null;
+
+      try {
+        let data;
+        
+        // If savedState is provided directly, use it
+        if (savedState) {
+          data = savedState;
+          this.applyState(savedState);
+        } else if (this.postId) {
+          // SINGLE API CALL for ALL data
+          const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+          const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+          
+          // Build correct endpoint
+          let endpoint;
+          if (apiUrl.includes('gmkb/v1')) {
+            endpoint = `${apiUrl}mediakit/${this.postId}`;
+          } else {
+            endpoint = apiUrl.endsWith('/') ? 
+              `${apiUrl}gmkb/v1/mediakit/${this.postId}` : 
+              `${apiUrl}/gmkb/v1/mediakit/${this.postId}`;
+          }
+
+          const response = await fetch(endpoint, {
+            headers: { 'X-WP-Nonce': nonce }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to load: ${response.status}`);
+          }
+
+          data = await response.json();
+
+          // Update state in one batch
+          this.$patch({
+            components: data.components || {},
+            sections: data.sections || [],
+            theme: data.theme || 'professional_clean',
+            themeCustomizations: data.themeCustomizations || {},
+            podsData: data.podsData || {}, // CRITICAL: Store Pods data
+            lastSaved: Date.now(),
+            isDirty: false
+          });
+        }
+        
+        // Ensure at least one section exists
+        if (this.sections.length === 0) {
+          this.addSection('full_width');
+        }
+
+        // Initialize history
+        this._saveToHistory();
+        
+        console.log('✅ State initialized with single API call');
+        return data;
+
+      } catch (error) {
+        console.error('Failed to initialize:', error);
+        this.loadError = error.message;
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * PHASE 3: Enhanced save with auto-save
+     */
+    async save() {
+      if (!this.isDirty) return;
+
+      const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+      const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+      
+      // Build correct endpoint
+      let endpoint;
+      if (apiUrl.includes('gmkb/v1')) {
+        endpoint = `${apiUrl}mediakit/${this.postId}/save`;
+      } else {
+        endpoint = apiUrl.endsWith('/') ? 
+          `${apiUrl}gmkb/v1/mediakit/${this.postId}/save` : 
+          `${apiUrl}/gmkb/v1/mediakit/${this.postId}/save`;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WP-Nonce': nonce
+        },
+        body: JSON.stringify({
+          components: this.components,
+          sections: this.sections,
+          theme: this.theme,
+          themeCustomizations: this.themeCustomizations
+          // Note: Don't save podsData - it comes from WordPress
+        })
+      });
+
+      if (response.ok) {
+        this.isDirty = false;
+        this.lastSaved = Date.now();
+        console.log('✅ Saved successfully');
+      } else {
+        throw new Error('Save failed');
+      }
+    },
+
+    /**
+     * PHASE 3: Track changes and trigger auto-save
+     */
+    _trackChange() {
+      this.isDirty = true;
+      this._saveToHistory();
+      this.autoSave(); // Debounced auto-save
+    },
+
     // Component CRUD Operations
     addComponent(componentData) {
       // ROOT FIX: Validate component type to prevent unknown_type
@@ -344,7 +479,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       }
       
-      this.hasUnsavedChanges = true;
+      this.isDirty = true;
+      this._trackChange();
       
       // Dispatch event for any listening systems to react
       document.dispatchEvent(new CustomEvent('gmkb:component-added', {
@@ -376,7 +512,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
           ...this.components[componentId],
           ...updates
         };
-        this.hasUnsavedChanges = true;
+        this.isDirty = true;
+        this._trackChange();
         
         // Dispatch update event
         document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
@@ -385,21 +522,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
-    // Initialize store with saved data from WordPress
-    async initialize(savedState) {
-      // If savedState is provided directly, use it
-      if (savedState) {
-        this.applyState(savedState);
-      } else if (this.postId) {
-        // Otherwise load from API
-        await this.loadFromAPI();
-      }
-      
-      // Ensure at least one section exists
-      if (this.sections.length === 0) {
-        this.addSection('full_width');
-      }
-    },
+
 
     // Apply state data to store
     applyState(savedState) {
@@ -529,7 +652,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         const result = await response.json();
         
         if (result.success) {
-          this.hasUnsavedChanges = false;
+          this.isDirty = false;
           this.lastSaved = Date.now();
           
           // Dispatch save success event
@@ -569,7 +692,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         this.sections.push(newSection);
       }
 
-      this.hasUnsavedChanges = true;
+      this.isDirty = true;
+      this._trackChange();
       return sectionId;
     },
 
@@ -587,7 +711,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
         
         this.sections.splice(index, 1);
-        this.hasUnsavedChanges = true;
+        this.isDirty = true;
+        this._trackChange();
       }
     },
 
@@ -602,7 +727,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
           if (idx > -1) {
             const component = section.components.splice(idx, 1)[0];
             section.components.splice(newIndex, 0, component);
-            this.hasUnsavedChanges = true;
+            this.isDirty = true;
+            this._trackChange();
             return;
           }
         }
@@ -612,7 +738,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
             if (idx > -1) {
               const component = section.columns[col].splice(idx, 1)[0];
               section.columns[col].splice(newIndex, 0, component);
-              this.hasUnsavedChanges = true;
+              this.isDirty = true;
+              this._trackChange();
               return;
             }
           }
@@ -660,7 +787,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
             }
             targetSection.columns[columnIndex].push(componentId);
           }
-          this.hasUnsavedChanges = true;
+          this.isDirty = true;
+          this._trackChange();
         }
       }
     },
@@ -694,7 +822,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         this.hoveredComponentId = null;
         
         // Mark as having unsaved changes
-        this.hasUnsavedChanges = true;
+        this.isDirty = true;
+        this._trackChange();
         
         // Dispatch event for any listening systems
         document.dispatchEvent(new CustomEvent('gmkb:components-cleared', {
@@ -727,7 +856,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // If you want to clear components too, call clearAllComponents() separately
         
         // Mark as having unsaved changes
-        this.hasUnsavedChanges = true;
+        this.isDirty = true;
+        this._trackChange();
         
         // Dispatch event for any listening systems
         document.dispatchEvent(new CustomEvent('gmkb:sections-cleared', {
@@ -746,13 +876,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
       componentsArray.forEach(comp => {
         this.addComponent(comp);
       });
-      this.hasUnsavedChanges = true;
+      this.isDirty = true;
+      this._trackChange();
     },
 
     reorderComponents(orderedIds) {
       // Reorder within current section structure
       // This is a simplified implementation
-      this.hasUnsavedChanges = true;
+      this.isDirty = true;
+      this._trackChange();
     },
 
     // Editor Management
@@ -777,7 +909,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
           ...this.components[componentId].data,
           ...data
         };
-        this.hasUnsavedChanges = true;
+        this.isDirty = true;
+        this._trackChange();
       }
     },
 
@@ -823,34 +956,27 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
-    autoSave() {
-      // Debounced auto-save with enhanced error handling
-      if (this._autoSaveTimer) {
-        clearTimeout(this._autoSaveTimer);
-      }
-      
-      this._autoSaveTimer = setTimeout(async () => {
-        if (this.hasUnsavedChanges && !this.isSaving) {
-          try {
-            this.isSaving = true;
-            await this.saveToWordPress();
-            console.log('✅ Auto-save successful');
-          } catch (error) {
-            console.warn('⚠️ Auto-save failed:', error.message);
-            // Retry once after 10 seconds
-            setTimeout(() => {
-              if (this.hasUnsavedChanges && !this.isSaving) {
-                this.saveToWordPress().catch(e => 
-                  console.error('❌ Auto-save retry failed:', e.message)
-                );
-              }
-            }, 10000);
-          } finally {
-            this.isSaving = false;
-          }
+    // PHASE 3: Debounced auto-save implementation
+    autoSave: debounce(async function() {
+      if (this.isDirty && !this.isSaving) {
+        try {
+          // Use the new save method that uses REST API
+          await this.save();
+          console.log('✅ Auto-saved');
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+          
+          // Retry once after 10 seconds
+          setTimeout(() => {
+            if (this.isDirty && !this.isSaving) {
+              this.save().catch(e => 
+                console.error('❌ Auto-save retry failed:', e)
+              );
+            }
+          }, 10000);
         }
-      }, 2000); // 2 second debounce
-    },
+      }
+    }, 2000), // 2 second debounce
 
     // Enhanced save with conflict detection
     async saveToWordPressWithConflictCheck() {
@@ -954,7 +1080,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
-    // History Management (for undo/redo)
+    // PHASE 3: Enhanced history management with size limits
     _saveToHistory() {
       if (!this.history) this.history = [];
       if (this.historyIndex === undefined) this.historyIndex = -1;
@@ -968,8 +1094,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         sections: JSON.parse(JSON.stringify(this.sections))
       });
       
-      // Limit history to 50 entries
-      if (this.history.length > 50) {
+      // Limit history size
+      if (this.history.length > this.maxHistorySize) {
         this.history.shift();
       } else {
         this.historyIndex++;
@@ -977,20 +1103,26 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     undo() {
-      if (this.history && this.historyIndex > 0) {
+      if (this.canUndo) {
         this.historyIndex--;
         const state = this.history[this.historyIndex];
-        this.components = JSON.parse(JSON.stringify(state.components));
-        this.sections = JSON.parse(JSON.stringify(state.sections));
+        this.$patch({
+          components: JSON.parse(JSON.stringify(state.components)),
+          sections: JSON.parse(JSON.stringify(state.sections))
+        });
+        this._trackChange();
       }
     },
 
     redo() {
-      if (this.history && this.historyIndex < this.history.length - 1) {
+      if (this.canRedo) {
         this.historyIndex++;
         const state = this.history[this.historyIndex];
-        this.components = JSON.parse(JSON.stringify(state.components));
-        this.sections = JSON.parse(JSON.stringify(state.sections));
+        this.$patch({
+          components: JSON.parse(JSON.stringify(state.components)),
+          sections: JSON.parse(JSON.stringify(state.sections))
+        });
+        this._trackChange();
       }
     },
 
@@ -1017,7 +1149,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       });
       
-      this.hasUnsavedChanges = true;
+      this.isDirty = true;
+      this._trackChange();
     },
 
     // Update component data
@@ -1067,7 +1200,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
               const temp = section.components[index];
               section.components[index] = section.components[newIndex];
               section.components[newIndex] = temp;
-              this.hasUnsavedChanges = true;
+              this.isDirty = true;
+              this._trackChange();
             }
             return;
           }
@@ -1086,7 +1220,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
                 const temp = columnComponents[index];
                 columnComponents[index] = columnComponents[newIndex];
                 columnComponents[newIndex] = temp;
-                this.hasUnsavedChanges = true;
+                this.isDirty = true;
+                this._trackChange();
               }
               return;
             }
@@ -1121,7 +1256,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
           
           if (index > -1) {
             section.components.splice(index + 1, 0, newId);
-            this.hasUnsavedChanges = true;
+            this.isDirty = true;
+            this._trackChange();
             return newId;
           }
         }
@@ -1134,7 +1270,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
             
             if (index > -1) {
               columnComponents.splice(index + 1, 0, newId);
-              this.hasUnsavedChanges = true;
+              this.isDirty = true;
+              this._trackChange();
               return newId;
             }
           }
@@ -1154,7 +1291,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.selectedComponentId = componentId;
       
       // Trigger auto-save when selection changes (indicates user activity)
-      if (this.hasUnsavedChanges) {
+      if (this.isDirty) {
         this.autoSave();
       }
     },
@@ -1226,7 +1363,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         const result = await response.json();
         
         if (result.success) {
-          this.hasUnsavedChanges = false;
+          this.isDirty = false;
           this.lastSaved = Date.now();
           this.clearLocalBackup(); // Clear backup after successful save
           
@@ -1273,7 +1410,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
       const section = this.sections.find(s => s.section_id === sectionId);
       if (section) {
         Object.assign(section, updates);
-        this.hasUnsavedChanges = true;
+        this.isDirty = true;
+        this._trackChange();
         
         // Dispatch update event
         document.dispatchEvent(new CustomEvent('gmkb:section-updated', {
@@ -1290,7 +1428,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
           section.settings = {};
         }
         Object.assign(section.settings, settings);
-        this.hasUnsavedChanges = true;
+        this.isDirty = true;
+        this._trackChange();
         
         // Dispatch settings update event
         document.dispatchEvent(new CustomEvent('gmkb:section-settings-updated', {
@@ -1312,7 +1451,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.applyState(newState);
       
       // Mark as having changes
-      this.hasUnsavedChanges = true;
+      this.isDirty = true;
+      this._trackChange();
       
       // Auto-save
       await this.autoSave();
@@ -1333,7 +1473,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // Keep existing components but clear references
       // This allows user to re-add components manually
       
-      this.hasUnsavedChanges = true;
+      this.isDirty = true;
+      this._trackChange();
       await this.autoSave();
     },
 
@@ -1373,7 +1514,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         });
       }
       
-      this.hasUnsavedChanges = true;
+      this.isDirty = true;
+      this._trackChange();
       await this.autoSave();
     },
 

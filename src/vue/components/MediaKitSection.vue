@@ -34,7 +34,7 @@
     <div class="gmkb-section__inner">
       <!-- Full Width Layout -->
       <div v-if="section.type === 'full_width'" class="gmkb-section__content gmkb-section__content--droppable" :data-section-id="section.section_id" data-column="1">
-        <MediaKitComponent
+        <ComponentRenderer
           v-for="component in components"
           :key="component.id"
           :component="component"
@@ -54,7 +54,7 @@
       <!-- Two Column Layout -->
       <div v-else-if="section.type === 'two_column'" class="gmkb-section__columns gmkb-section__columns--two">
         <div class="gmkb-section__column gmkb-section__content--droppable" :data-section-id="section.section_id" data-column="1">
-          <MediaKitComponent
+          <ComponentRenderer
             v-for="component in leftColumnComponents"
             :key="component.id"
             :component="component"
@@ -71,7 +71,7 @@
           </div>
         </div>
         <div class="gmkb-section__column gmkb-section__content--droppable" :data-section-id="section.section_id" data-column="2">
-          <MediaKitComponent
+          <ComponentRenderer
             v-for="component in rightColumnComponents"
             :key="component.id"
             :component="component"
@@ -92,7 +92,7 @@
       <!-- Three Column Layout -->
       <div v-else-if="section.type === 'three_column'" class="gmkb-section__columns gmkb-section__columns--three">
         <div class="gmkb-section__column">
-          <MediaKitComponent
+          <ComponentRenderer
             v-for="component in column1Components"
             :key="component.id"
             :component="component"
@@ -108,7 +108,7 @@
           </div>
         </div>
         <div class="gmkb-section__column">
-          <MediaKitComponent
+          <ComponentRenderer
             v-for="component in column2Components"
             :key="component.id"
             :component="component"
@@ -124,7 +124,7 @@
           </div>
         </div>
         <div class="gmkb-section__column">
-          <MediaKitComponent
+          <ComponentRenderer
             v-for="component in column3Components"
             :key="component.id"
             :component="component"
@@ -146,7 +146,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import MediaKitComponent from './MediaKitComponent.vue';
+import ComponentRenderer from './ComponentRenderer.vue';
 
 const props = defineProps({
   section: {
