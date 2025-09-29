@@ -2,12 +2,15 @@
  * Unified Component Registry
  * Single source of truth for all components with ONE consistent API
  * 
- * ROOT FIX: This replaces all the different registry implementations
- * with a single, clean system that works everywhere
+ * ROOT FIX: Uses import.meta.glob for proper dynamic component loading
  */
 
 import { defineAsyncComponent, markRaw } from 'vue';
 import FallbackRenderer from '../vue/components/FallbackRenderer.vue';
+
+// ROOT FIX: Use import.meta.glob to get all component renderers at build time
+// This allows Vite to properly resolve and bundle all components
+const componentModules = import.meta.glob('/components/*/*Renderer.vue');
 
 class UnifiedComponentRegistry {
   constructor() {
@@ -63,48 +66,34 @@ class UnifiedComponentRegistry {
    * Register all Vue component implementations
    */
   registerVueComponents() {
-    // ROOT FIX: Components are bundled, not loaded from external files
-    // These are stub implementations that return the FallbackRenderer
-    // The actual components should be loaded from the build system
-    const componentMap = {
-      // Content components
-      'hero': () => Promise.resolve({ default: FallbackRenderer }),
-      'biography': () => Promise.resolve({ default: FallbackRenderer }),
-      'topics': () => Promise.resolve({ default: FallbackRenderer }),
-      'questions': () => Promise.resolve({ default: FallbackRenderer }),
-      'guest-intro': () => Promise.resolve({ default: FallbackRenderer }),
-      
-      // Contact & Social
-      'contact': () => Promise.resolve({ default: FallbackRenderer }),
-      'social': () => Promise.resolve({ default: FallbackRenderer }),
-      
-      // Social Proof
-      'testimonials': () => Promise.resolve({ default: FallbackRenderer }),
-      'stats': () => Promise.resolve({ default: FallbackRenderer }),
-      'authority-hook': () => Promise.resolve({ default: FallbackRenderer }),
-      'logo-grid': () => Promise.resolve({ default: FallbackRenderer }),
-      
-      // Conversion
-      'call-to-action': () => Promise.resolve({ default: FallbackRenderer }),
-      'booking-calendar': () => Promise.resolve({ default: FallbackRenderer }),
-      
-      // Media
-      'video-intro': () => Promise.resolve({ default: FallbackRenderer }),
-      'photo-gallery': () => Promise.resolve({ default: FallbackRenderer }),
-      'podcast-player': () => Promise.resolve({ default: FallbackRenderer })
-    };
+    // ROOT FIX: Use import.meta.glob for statically analyzable dynamic imports
+    const componentTypes = [
+      'hero', 'biography', 'topics', 'questions', 'guest-intro',
+      'contact', 'social', 'testimonials', 'stats', 'authority-hook',
+      'logo-grid', 'call-to-action', 'booking-calendar', 'video-intro',
+      'photo-gallery', 'podcast-player'
+    ];
     
-    // Register each component as async
-    Object.entries(componentMap).forEach(([type, loader]) => {
-      this.vueComponents[type] = defineAsyncComponent({
-        loader,
-        errorComponent: markRaw(FallbackRenderer),
-        delay: 0,
-        timeout: 30000,
-        onError: (error) => {
-          console.error(`Failed to load Vue component ${type}:`, error);
-        }
-      });
+    componentTypes.forEach(type => {
+      // Construct the path that matches the glob pattern
+      const componentName = this.pascalCase(type);
+      const path = `/components/${type}/${componentName}Renderer.vue`;
+      
+      if (componentModules[path]) {
+        // Create async component that loads from the glob modules
+        this.vueComponents[type] = defineAsyncComponent({
+          loader: () => componentModules[path]().then(module => module.default || module),
+          errorComponent: markRaw(FallbackRenderer),
+          delay: 0,
+          timeout: 30000,
+          onError: (error) => {
+            console.error(`Failed to load Vue component ${type}:`, error);
+          }
+        });
+      } else {
+        console.warn(`Component module not found for ${type} at ${path}`);
+        this.vueComponents[type] = markRaw(FallbackRenderer);
+      }
       
       // Ensure we have a definition for this component
       if (!this.definitions[type]) {
@@ -113,6 +102,17 @@ class UnifiedComponentRegistry {
     });
     
     console.log('✅ Registered', Object.keys(this.vueComponents).length, 'Vue components');
+    console.log('Available component paths:', Object.keys(componentModules));
+  }
+  
+  /**
+   * Convert kebab-case to PascalCase
+   */
+  pascalCase(str) {
+    return str
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
   }
   
   /**

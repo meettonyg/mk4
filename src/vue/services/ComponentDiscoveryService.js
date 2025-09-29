@@ -6,6 +6,10 @@
 
 import { defineAsyncComponent, markRaw } from 'vue';
 
+// ROOT FIX: Use import.meta.glob for proper module resolution
+const componentModules = import.meta.glob('/components/*/*Renderer.vue');
+const editorModules = import.meta.glob('/components/*/*Editor.vue');
+
 class ComponentDiscoveryService {
   constructor() {
     this.componentCache = new Map();
@@ -87,8 +91,17 @@ class ComponentDiscoveryService {
    * This is the preferred method for scalable components
    */
   async loadFromSelfContained(type) {
-    // Skip trying to load from filesystem in production
-    // Components should be bundled or use edit-forms
+    // ROOT FIX: Use import.meta.glob for proper component loading
+    const componentName = this.pascalCase(type);
+    const path = `/components/${type}/${componentName}Renderer.vue`;
+    
+    if (componentModules[path]) {
+      return defineAsyncComponent(() => 
+        componentModules[path]().then(module => module.default || module)
+      );
+    }
+    
+    console.debug(`Component ${type} not found at ${path}`);
     return null;
   }
 
