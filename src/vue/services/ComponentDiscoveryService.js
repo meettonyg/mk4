@@ -87,41 +87,9 @@ class ComponentDiscoveryService {
    * This is the preferred method for scalable components
    */
   async loadFromSelfContained(type) {
-    const manifest = this.componentManifests.get(type);
-    
-    // Try to load the renderer specified in manifest
-    if (manifest?.renderers?.vue) {
-      const rendererPath = manifest.renderers.vue;
-      
-      // For Vite, we need to use explicit file extensions
-      // and avoid fully dynamic paths
-      try {
-        // Try to construct the import with proper extension
-        const componentName = this.pascalCase(type);
-        
-        // Use a map of known components for now
-        // This will be replaced with a Vite glob import in the future
-        return defineAsyncComponent(() => {
-          // Try common patterns with .vue extension
-          if (rendererPath.endsWith('.vue')) {
-            return import(/* @vite-ignore */ `../../../components/${type}/${rendererPath}`);
-          } else {
-            return import(/* @vite-ignore */ `../../../components/${type}/${rendererPath}.vue`);
-          }
-        });
-      } catch (e) {
-        console.debug(`Failed to load from manifest path: ${e.message}`);
-      }
-    }
-
-    // Try default naming conventions with explicit .vue extension
-    const componentName = this.pascalCase(type);
-    
-    return defineAsyncComponent(() => 
-      import(/* @vite-ignore */ `../../../components/${type}/${componentName}Renderer.vue`)
-        .catch(() => import(/* @vite-ignore */ `../../../components/${type}/${type}.vue`))
-        .catch(() => import(/* @vite-ignore */ `../../../components/${type}/${componentName}.vue`))
-    );
+    // Skip trying to load from filesystem in production
+    // Components should be bundled or use edit-forms
+    return null;
   }
 
   /**

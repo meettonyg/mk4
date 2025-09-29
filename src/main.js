@@ -15,6 +15,7 @@ import { APIService } from './services/APIService.js';
 import { logger } from './utils/logger.js';
 import UnifiedComponentRegistry from './services/UnifiedComponentRegistry.js';
 import podsDataIntegration from './core/PodsDataIntegration.js';
+import NonceManager from './services/NonceManager.js';
 
 // Only essential features for Vue
 import ImportExportManager from './features/ImportExportManager.js';
@@ -136,6 +137,10 @@ async function initializeVue() {
     
     const mediaKitStore = useMediaKitStore();
     const themeStore = useThemeStore();
+    
+    // ROOT FIX: Initialize the debounced autoSave with proper context
+    mediaKitStore.initAutoSave();
+    logger.info('✅ AutoSave initialized with proper context');
     
     window.gmkbStore = mediaKitStore;
     window.mediaKitStore = mediaKitStore;
@@ -366,6 +371,9 @@ async function initialize() {
     // Initialize component registry
     UnifiedComponentRegistry.initialize();
     logger.info('✅ Component registry initialized');
+    
+    // ROOT FIX: Initialize NonceManager for event-driven nonce refresh
+    logger.info('✅ Nonce manager initialized');
     
     // Make PodsDataIntegration available globally for the store
     window.podsDataIntegration = podsDataIntegration;

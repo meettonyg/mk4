@@ -33,6 +33,10 @@ class GMKB_Ajax_Handlers {
         
         // Debug endpoint
         add_action('wp_ajax_gmkb_get_debug_logs', array($this, 'get_debug_logs'));
+        
+        // ROOT FIX: Add nonce refresh handler
+        add_action('wp_ajax_gmkb_refresh_nonce', array($this, 'refresh_nonce'));
+        add_action('wp_ajax_nopriv_gmkb_refresh_nonce', array($this, 'refresh_nonce_nopriv'));
     }
     
     /**
@@ -510,6 +514,42 @@ class GMKB_Ajax_Handlers {
         wp_send_json_success(array(
             'logs' => $logs,
             'lines' => $lines
+        ));
+    }
+    
+    /**
+     * ROOT FIX: Refresh WordPress nonce for authenticated users
+     */
+    public function refresh_nonce() {
+        // User must be logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array(
+                'message' => 'Not logged in',
+                'code' => 'not_authenticated'
+            ));
+            return;
+        }
+        
+        // Generate new nonce
+        $new_nonce = wp_create_nonce('gmkb_nonce');
+        $rest_nonce = wp_create_nonce('wp_rest');
+        
+        wp_send_json_success(array(
+            'nonce' => $new_nonce,
+            'rest_nonce' => $rest_nonce,
+            'timestamp' => time(),
+            'message' => 'Nonce refreshed successfully'
+        ));
+    }
+    
+    /**
+     * Handle nonce refresh for non-authenticated users
+     */
+    public function refresh_nonce_nopriv() {
+        // Non-logged in users cannot refresh nonces
+        wp_send_json_error(array(
+            'message' => 'Authentication required',
+            'code' => 'login_required'
         ));
     }
 }

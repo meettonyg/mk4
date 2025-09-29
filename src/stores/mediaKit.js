@@ -957,7 +957,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     // PHASE 3: Debounced auto-save implementation
-    autoSave: debounce(async function() {
+    // ROOT FIX: Initialize debounced function in the store setup
+    autoSave() {
+      // This will be properly initialized after store creation
+      console.warn('autoSave called before initialization');
+    },
+    
+    // Actual auto-save implementation
+    _performAutoSave: async function() {
       if (this.isDirty && !this.isSaving) {
         try {
           // Use the new save method that uses REST API
@@ -967,16 +974,25 @@ export const useMediaKitStore = defineStore('mediaKit', {
           console.error('Auto-save failed:', error);
           
           // Retry once after 10 seconds
-          setTimeout(() => {
+          const retryTimeout = setTimeout(() => {
             if (this.isDirty && !this.isSaving) {
               this.save().catch(e => 
                 console.error('❌ Auto-save retry failed:', e)
               );
             }
           }, 10000);
+          
+          // Store timeout for cleanup if needed
+          this._retryTimeout = retryTimeout;
         }
       }
-    }, 2000), // 2 second debounce
+    },
+    
+    // Initialize the debounced autoSave after store creation
+    initAutoSave() {
+      // ROOT FIX: Bind context properly using arrow function
+      this.autoSave = debounce(() => this._performAutoSave(), 2000);
+    },
 
     // Enhanced save with conflict detection
     async saveToWordPressWithConflictCheck() {
