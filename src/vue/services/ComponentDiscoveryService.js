@@ -94,40 +94,30 @@ class ComponentDiscoveryService {
 
   /**
    * Load from edit forms directory
+   * ROOT FIX: Return null instead of trying to import non-existent files
    */
   async loadFromEditForms(type) {
-    const componentName = this.getComponentFileName(type);
-    
-    return defineAsyncComponent(() => 
-      import(`../edit-forms/${componentName}.vue`)
-        .catch(() => import(`../edit-forms/${this.pascalCase(type)}Component.vue`))
-        .catch(() => import(`../edit-forms/${this.pascalCase(type)}.vue`))
-    );
+    // These edit forms don't exist yet, so return null
+    // When they're created, this can be re-enabled
+    return null;
   }
 
   /**
    * Load from vue/components directory
+   * ROOT FIX: Return null instead of trying non-existent imports
    */
   async loadFromVueComponents(type) {
-    const componentName = this.getComponentFileName(type);
-    
-    return defineAsyncComponent(() => 
-      import(`../${componentName}.vue`)
-        .catch(() => import(`../${this.pascalCase(type)}Component.vue`))
-        .catch(() => import(`../${this.pascalCase(type)}.vue`))
-    );
+    // These components don't exist in this location
+    return null;
   }
 
   /**
    * Load from legacy locations (backward compatibility)
+   * ROOT FIX: Return null since we don't have legacy components
    */
   async loadFromLegacyLocation(type) {
-    const componentName = this.getComponentFileName(type);
-    
-    return defineAsyncComponent(() => 
-      import(`../../components/${componentName}.vue`)
-        .catch(() => import(`../../vue/components/${componentName}.vue`))
-    );
+    // No legacy components to load
+    return null;
   }
 
   /**
