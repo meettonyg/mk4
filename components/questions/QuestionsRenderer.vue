@@ -6,7 +6,7 @@
       
       <div class="questions-list">
         <div
-          v-for="(qa, index) in questions"
+          v-for="(qa, index) in displayQuestions"
           :key="index"
           class="question-item"
         >
@@ -14,7 +14,7 @@
             @click="toggleQuestion(index)"
             class="question-header"
           >
-            <span class="question-text">{{ qa.question }}</span>
+            <span class="question-text">{{ qa.question || qa.text }}</span>
             <span class="question-toggle" :class="{ open: openQuestions.includes(index) }">
               {{ openQuestions.includes(index) ? '−' : '+' }}
             </span>
@@ -22,7 +22,7 @@
           
           <transition name="answer">
             <div v-if="openQuestions.includes(index)" class="question-answer">
-              <p>{{ qa.answer }}</p>
+              <p>{{ qa.answer || 'Please contact me for more information about this topic.' }}</p>
             </div>
           </transition>
         </div>
@@ -32,6 +32,10 @@
 </template>
 
 <script>
+import { ref, computed, onMounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'QuestionsRenderer',
   props: {
@@ -41,92 +45,115 @@ export default {
     },
     data: {
       type: Object,
-      default: () => ({
-        title: 'Frequently Asked Questions',
-        questions: [],
-        answers: [],
-        description: ''
-      })
+      default: () => ({})
     }
   },
-  data() {
-    return {
-      openQuestions: []
-    }
-  },
-  computed: {
-    title() {
-      return this.data.title || 'Frequently Asked Questions'
-    },
-    description() {
-      return this.data.description || ''
-    },
-    questions() {
-      // Ensure we always have data
-      if (!this.data) {
-        return this.getDefaultQuestions()
-      }
-      
+  setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { questions: podsQuestions } = usePodsData();
+    
+    // Local state
+    const openQuestions = ref([]);
+    
+    // Computed properties
+    const title = computed(() => {
+      return props.data.title || 'Frequently Asked Questions';
+    });
+    
+    const description = computed(() => {
+      return props.data.description || '';
+    });
+    
+    const displayQuestions = computed(() => {
       // Handle array format (new structure)
-      if (Array.isArray(this.data.questions) && this.data.questions.length > 0) {
+      if (Array.isArray(props.data.questions) && props.data.questions.length > 0) {
         // If questions is an array of objects with question and answer
-        if (typeof this.data.questions[0] === 'object') {
-          return this.data.questions.filter(q => q && q.question)
+        if (typeof props.data.questions[0] === 'object') {
+          return props.data.questions.filter(q => q && q.question);
         }
         // If questions is an array of strings paired with answers array
-        if (Array.isArray(this.data.answers)) {
-          return this.data.questions.map((question, index) => ({
+        if (Array.isArray(props.data.answers)) {
+          return props.data.questions.map((question, index) => ({
             question: question || `Question ${index + 1}`,
-            answer: this.data.answers[index] || ''
-          })).filter(q => q.question && q.answer)
+            answer: props.data.answers[index] || ''
+          })).filter(q => q.question && q.answer);
         }
       }
       
       // Build from individual question fields (legacy format)
-      const questionsList = []
+      const questionsList = [];
       for (let i = 1; i <= 10; i++) {
-        const question = this.data[`question_${i}`] || this.data[`question${i}`]
-        const answer = this.data[`answer_${i}`] || this.data[`answer${i}`]
+        const question = props.data[`question_${i}`] || props.data[`question${i}`];
+        const answer = props.data[`answer_${i}`] || props.data[`answer${i}`];
         
-        if (question && answer) {
+        if (question) {
           questionsList.push({
             question: String(question),
-            answer: String(answer)
-          })
+            answer: answer ? String(answer) : ''
+          });
         }
       }
       
-      return questionsList.length > 0 ? questionsList : this.getDefaultQuestions()
-    }
-  },
-  methods: {
-    toggleQuestion(index) {
-      const idx = this.openQuestions.indexOf(index)
-      if (idx > -1) {
-        this.openQuestions.splice(idx, 1)
-      } else {
-        this.openQuestions.push(index)
+      // ROOT FIX: Use Pods questions as fallback if no component data
+      if (questionsList.length === 0 && podsQuestions.value && podsQuestions.value.length > 0) {
+        // Convert Pods questions to display format
+        return podsQuestions.value.map(q => ({
+          question: q.text,
+          answer: '' // Pods questions typically don't have pre-defined answers
+        }));
       }
-    },
-    getDefaultQuestions() {
-      return [
-        {
-          question: "What topics do you speak about?",
-          answer: "I specialize in leadership, innovation, and digital transformation topics."
-        },
-        {
-          question: "What are your speaking fees?",
-          answer: "Fees vary depending on the event type, location, and requirements. Please contact me for a custom quote."
-        }
-      ]
-    }
+      
+      return questionsList;
+    });
+    
+    // Methods
+    const toggleQuestion = (index) => {
+      const idx = openQuestions.value.indexOf(index);
+      if (idx > -1) {
+        openQuestions.value.splice(idx, 1);
+      } else {
+        openQuestions.value.push(index);
+      }
+    };
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('Questions component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = podsQuestions.value && podsQuestions.value.length > 0 && 
+          displayQuestions.value.some(q => 
+            podsQuestions.value.some(podQ => podQ.text === (q.question || q.text))
+          );
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'questions',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
+      }
+    });
+    
+    return {
+      title,
+      description,
+      displayQuestions,
+      openQuestions,
+      toggleQuestion
+    };
   }
-}
+};
 </script>
 
 <style scoped>
 .gmkb-questions-component {
-  padding: 2rem;
+  padding: var(--gmkb-spacing-xl, 2rem);
   background: var(--gmkb-color-surface, #fff);
 }
 
@@ -138,31 +165,42 @@ export default {
 .questions-title {
   text-align: center;
   color: var(--gmkb-color-text, #333);
-  font-size: var(--gmkb-font-size-xl, 2rem);
-  margin-bottom: 1rem;
+  font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-2xl, 2rem);
+  font-weight: var(--gmkb-font-weight-bold, 700);
+  line-height: var(--gmkb-line-height-heading, 1.2);
+  margin-bottom: var(--gmkb-spacing-md, 1rem);
 }
 
 .questions-description {
   text-align: center;
   color: var(--gmkb-color-text-light, #666);
-  margin-bottom: 2rem;
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
+  line-height: var(--gmkb-line-height-base, 1.6);
+  margin-bottom: var(--gmkb-spacing-xl, 2rem);
 }
 
 .questions-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--gmkb-spacing-md, 1rem);
 }
 
 .question-item {
   background: var(--gmkb-color-background, #f8f9fa);
   border-radius: var(--gmkb-border-radius, 8px);
   overflow: hidden;
+  transition: var(--gmkb-transition, all 0.3s ease);
+}
+
+.question-item:hover {
+  box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0,0,0,0.05));
 }
 
 .question-header {
   width: 100%;
-  padding: 1.25rem;
+  padding: var(--gmkb-spacing-lg, 1.25rem);
   background: none;
   border: none;
   display: flex;
@@ -170,7 +208,7 @@ export default {
   align-items: center;
   cursor: pointer;
   text-align: left;
-  transition: background 0.3s ease;
+  transition: var(--gmkb-transition, background 0.3s ease);
 }
 
 .question-header:hover {
@@ -179,16 +217,22 @@ export default {
 
 .question-text {
   color: var(--gmkb-color-text, #333);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-lg, 1.125rem);
-  font-weight: 600;
+  font-weight: var(--gmkb-font-weight-semibold, 600);
   flex: 1;
 }
 
 .question-toggle {
   color: var(--gmkb-color-primary, #007cba);
-  font-size: 1.5rem;
-  font-weight: 300;
-  transition: transform 0.3s ease;
+  font-size: var(--gmkb-font-size-xl, 1.5rem);
+  font-weight: var(--gmkb-font-weight-light, 300);
+  transition: var(--gmkb-transition, transform 0.3s ease);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .question-toggle.open {
@@ -196,11 +240,13 @@ export default {
 }
 
 .question-answer {
-  padding: 0 1.25rem 1.25rem;
+  padding: 0 var(--gmkb-spacing-lg, 1.25rem) var(--gmkb-spacing-lg, 1.25rem);
 }
 
 .question-answer p {
   color: var(--gmkb-color-text-light, #666);
+  font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
+  font-size: var(--gmkb-font-size-base, 1rem);
   line-height: var(--gmkb-line-height-base, 1.6);
 }
 
@@ -212,5 +258,11 @@ export default {
 .answer-enter-from, .answer-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+@media (max-width: 768px) {
+  .question-text {
+    font-size: var(--gmkb-font-size-base, 1rem);
+  }
 }
 </style>

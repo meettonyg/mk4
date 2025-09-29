@@ -33,6 +33,10 @@
 </template>
 
 <script>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'PhotoGalleryRenderer',
   props: {
@@ -45,68 +49,137 @@ export default {
       default: () => ({})
     }
   },
-  data() {
-    return {
-      lightboxOpen: false,
-      currentPhotoIndex: 0
-    }
-  },
-  computed: {
-    title() {
-      return this.data.title || 'Photo Gallery'
-    },
-    description() {
-      return this.data.description || ''
-    },
-    photos() {
+  setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { headshotUrl, rawPodsData } = usePodsData();
+    
+    // Local state
+    const lightboxOpen = ref(false);
+    const currentPhotoIndex = ref(0);
+    
+    // Computed properties
+    const title = computed(() => {
+      return props.data.title || 'Photo Gallery';
+    });
+    
+    const description = computed(() => {
+      return props.data.description || '';
+    });
+    
+    const photos = computed(() => {
       // Handle array format
-      if (Array.isArray(this.data.photos)) {
-        return this.data.photos
+      if (Array.isArray(props.data.photos)) {
+        return props.data.photos;
       }
       
       // Build from individual photo fields
-      const photosList = []
+      const photosList = [];
       for (let i = 1; i <= 12; i++) {
-        if (this.data[`photo_${i}_url`]) {
+        if (props.data[`photo_${i}_url`]) {
           photosList.push({
-            url: this.data[`photo_${i}_url`],
-            thumbnail: this.data[`photo_${i}_thumbnail`] || this.data[`photo_${i}_url`],
-            caption: this.data[`photo_${i}_caption`] || ''
-          })
+            url: props.data[`photo_${i}_url`],
+            thumbnail: props.data[`photo_${i}_thumbnail`] || props.data[`photo_${i}_url`],
+            caption: props.data[`photo_${i}_caption`] || ''
+          });
         }
       }
       
-      return photosList.length ? photosList : this.getDefaultPhotos()
-    }
-  },
-  methods: {
-    openLightbox(index) {
-      this.currentPhotoIndex = index
-      this.lightboxOpen = true
-      document.body.style.overflow = 'hidden'
-    },
-    closeLightbox() {
-      this.lightboxOpen = false
-      document.body.style.overflow = ''
-    },
-    nextPhoto() {
-      this.currentPhotoIndex = (this.currentPhotoIndex + 1) % this.photos.length
-    },
-    previousPhoto() {
-      this.currentPhotoIndex = this.currentPhotoIndex === 0 
-        ? this.photos.length - 1 
-        : this.currentPhotoIndex - 1
-    },
-    getDefaultPhotos() {
-      return [
-        { url: 'https://via.placeholder.com/400x300', caption: 'Event Photo 1' },
-        { url: 'https://via.placeholder.com/400x300', caption: 'Event Photo 2' },
-        { url: 'https://via.placeholder.com/400x300', caption: 'Event Photo 3' },
-        { url: 'https://via.placeholder.com/400x300', caption: 'Event Photo 4' }
-      ]
-    }
+      // ROOT FIX: Use Pods gallery images if available
+      if (photosList.length === 0) {
+        // Check for gallery fields in Pods
+        for (let i = 1; i <= 12; i++) {
+          const galleryImage = rawPodsData.value?.[`gallery_image_${i}`];
+          if (galleryImage) {
+            photosList.push({
+              url: galleryImage,
+              thumbnail: galleryImage,
+              caption: rawPodsData.value?.[`gallery_caption_${i}`] || ''
+            });
+          }
+        }
+        
+        // Add headshot if no other photos
+        if (photosList.length === 0 && headshotUrl.value) {
+          photosList.push({
+            url: headshotUrl.value,
+            thumbnail: headshotUrl.value,
+            caption: 'Profile Photo'
+          });
+        }
+      }
+      
+      // Return empty array instead of placeholder photos
+      return photosList;
+    });
+    
+    // Methods
+    const openLightbox = (index) => {
+      currentPhotoIndex.value = index;
+      lightboxOpen.value = true;
+      document.body.style.overflow = 'hidden';
+    };
+    
+    const closeLightbox = () => {
+      lightboxOpen.value = false;
+      document.body.style.overflow = '';
+    };
+    
+    const nextPhoto = () => {
+      if (photos.value.length > 0) {
+        currentPhotoIndex.value = (currentPhotoIndex.value + 1) % photos.value.length;
+      }
+    };
+    
+    const previousPhoto = () => {
+      if (photos.value.length > 0) {
+        currentPhotoIndex.value = currentPhotoIndex.value === 0 
+          ? photos.value.length - 1 
+          : currentPhotoIndex.value - 1;
+      }
+    };
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('PhotoGallery component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = photos.value.some(photo => 
+          photo.url === headshotUrl.value || 
+          (rawPodsData.value && Object.values(rawPodsData.value).includes(photo.url))
+        );
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'photo-gallery',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
+      }
+    });
+    
+    onUnmounted(() => {
+      // Clean up body style
+      document.body.style.overflow = '';
+    });
+    
+    return {
+      lightboxOpen,
+      currentPhotoIndex,
+      title,
+      description,
+      photos,
+      openLightbox,
+      closeLightbox,
+      nextPhoto,
+      previousPhoto
+    };
   }
-}
+};
 </script>
 
 <style scoped>

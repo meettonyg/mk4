@@ -23,6 +23,10 @@
 </template>
 
 <script>
+import { computed, onMounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'SocialRenderer',
   props: {
@@ -35,66 +39,132 @@ export default {
       default: () => ({})
     }
   },
-  computed: {
-    title() {
-      return this.data.title || 'Connect With Me'
-    },
-    description() {
-      return this.data.description || ''
-    },
-    showLabels() {
-      return this.data.show_labels !== false
-    },
-    socialLinks() {
+  setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { 
+      twitter: podsTwitter, 
+      linkedin: podsLinkedin, 
+      facebook: podsFacebook,
+      instagram: podsInstagram,
+      youtube: podsYoutube 
+    } = usePodsData();
+    
+    // Computed properties
+    const title = computed(() => {
+      return props.data.title || 'Connect With Me';
+    });
+    
+    const description = computed(() => {
+      return props.data.description || '';
+    });
+    
+    const showLabels = computed(() => {
+      return props.data.show_labels !== false;
+    });
+    
+    const socialLinks = computed(() => {
       // Handle array format
-      if (Array.isArray(this.data.links)) {
-        return this.data.links
+      if (Array.isArray(props.data.links)) {
+        return props.data.links;
       }
       
-      // Build from individual fields
-      const links = []
+      // Build from individual fields with Pods data fallback
+      const links = [];
       
-      // Common social platforms
-      const platforms = [
-        'facebook', 'twitter', 'linkedin', 'instagram', 
-        'youtube', 'github', 'pinterest', 'tiktok'
-      ]
+      // ROOT FIX: Use Pods data as fallback, no global object checking
+      const socialData = {
+        facebook: props.data.facebook || podsFacebook.value,
+        twitter: props.data.twitter || podsTwitter.value,
+        linkedin: props.data.linkedin || podsLinkedin.value,
+        instagram: props.data.instagram || podsInstagram.value,
+        youtube: props.data.youtube || podsYoutube.value,
+        github: props.data.github,
+        pinterest: props.data.pinterest,
+        tiktok: props.data.tiktok
+      };
       
-      platforms.forEach(platform => {
-        if (this.data[platform]) {
+      Object.entries(socialData).forEach(([platform, url]) => {
+        if (url) {
+          // Ensure URL has protocol
+          let finalUrl = url;
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            if (platform === 'twitter') {
+              finalUrl = `https://twitter.com/${url.replace('@', '')}`;
+            } else if (platform === 'linkedin') {
+              finalUrl = url.includes('linkedin.com') ? `https://${url}` : `https://linkedin.com/in/${url}`;
+            } else if (platform === 'instagram') {
+              finalUrl = `https://instagram.com/${url.replace('@', '')}`;
+            } else if (platform === 'facebook') {
+              finalUrl = url.includes('facebook.com') ? `https://${url}` : `https://facebook.com/${url}`;
+            } else if (platform === 'youtube') {
+              finalUrl = url.includes('youtube.com') ? `https://${url}` : `https://youtube.com/@${url}`;
+            } else {
+              finalUrl = `https://${url}`;
+            }
+          }
+          
           links.push({
             platform: platform.charAt(0).toUpperCase() + platform.slice(1),
-            url: this.data[platform]
-          })
+            url: finalUrl
+          });
         }
-      })
+      });
       
-      return links.length ? links : this.getDefaultLinks()
-    }
-  },
-  methods: {
-    getSocialIcon(platform) {
+      return links.length ? links : getDefaultLinks();
+    });
+    
+    // Methods
+    const getSocialIcon = (platform) => {
       const icons = {
         'Facebook': 'fab fa-facebook-f',
         'Twitter': 'fab fa-twitter',
         'LinkedIn': 'fab fa-linkedin-in',
         'Instagram': 'fab fa-instagram',
-        'YouTube': 'fab fa-youtube',
+        'Youtube': 'fab fa-youtube',
         'GitHub': 'fab fa-github',
         'Pinterest': 'fab fa-pinterest',
-        'TikTok': 'fab fa-tiktok'
+        'Tiktok': 'fab fa-tiktok'
+      };
+      return icons[platform] || 'fas fa-link';
+    };
+    
+    const getDefaultLinks = () => {
+      // Show empty state instead of dummy links
+      return [];
+    };
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('Social component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = !props.data.facebook && podsFacebook.value || 
+                             !props.data.twitter && podsTwitter.value ||
+                             !props.data.linkedin && podsLinkedin.value;
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'social',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
       }
-      return icons[platform] || 'fas fa-link'
-    },
-    getDefaultLinks() {
-      return [
-        { platform: 'Facebook', url: '#' },
-        { platform: 'Twitter', url: '#' },
-        { platform: 'LinkedIn', url: '#' }
-      ]
-    }
+    });
+    
+    return {
+      title,
+      description,
+      showLabels,
+      socialLinks,
+      getSocialIcon
+    };
   }
-}
+};
 </script>
 
 <style scoped>

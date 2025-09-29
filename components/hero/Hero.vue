@@ -7,8 +7,8 @@
   >
     <div class="hero__overlay"></div>
     <div class="hero__content">
-      <h1 class="hero__title" v-if="title">{{ title }}</h1>
-      <p class="hero__subtitle" v-if="subtitle">{{ subtitle }}</p>
+      <h1 class="hero__title" v-if="displayTitle">{{ displayTitle }}</h1>
+      <p class="hero__subtitle" v-if="displaySubtitle">{{ displaySubtitle }}</p>
       <div class="hero__actions" v-if="ctaText">
         <a 
           :href="ctaUrl" 
@@ -46,6 +46,8 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'HeroComponent',
@@ -86,11 +88,26 @@ export default {
   
   setup(props, { emit }) {
     const isSelected = ref(false);
+    const store = useMediaKitStore();
+    const { fullName, tagline, headshotUrl } = usePodsData();
+    
+    // Use Pods data as fallbacks if component props are empty
+    const displayTitle = computed(() => {
+      return props.title || fullName.value || 'Welcome to Your Media Kit';
+    });
+    
+    const displaySubtitle = computed(() => {
+      return props.subtitle || tagline.value || '';
+    });
+    
+    const displayBackgroundImage = computed(() => {
+      return props.backgroundImage || headshotUrl.value || '';
+    });
     
     const heroStyle = computed(() => {
       const style = {};
-      if (props.backgroundImage) {
-        style.backgroundImage = `url(${props.backgroundImage})`;
+      if (displayBackgroundImage.value) {
+        style.backgroundImage = `url(${displayBackgroundImage.value})`;
       }
       return style;
     });
@@ -114,17 +131,21 @@ export default {
       // Listen for selection events
       document.addEventListener('click', handleSelection);
       
-      // Notify that a Vue component has mounted
-      console.log('Hero Vue component mounted:', props.componentId);
-      
-      // Dispatch custom event for integration
-      document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
-        detail: {
-          type: 'hero',
-          id: props.componentId,
-          props: props
-        }
-      }));
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      // Notify store that component has mounted
+      if (store.components[props.componentId]) {
+        console.log('Hero Vue component mounted:', props.componentId);
+        
+        // Dispatch custom event for integration
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'hero',
+            id: props.componentId,
+            props: props,
+            podsDataUsed: !props.title && fullName.value
+          }
+        }));
+      }
     });
     
     onUnmounted(() => {
@@ -134,7 +155,10 @@ export default {
     return {
       isSelected,
       heroStyle,
-      handleCtaClick
+      handleCtaClick,
+      displayTitle,
+      displaySubtitle,
+      displayBackgroundImage
     };
   }
 };

@@ -31,7 +31,7 @@
       <!-- Dots indicator -->
       <div class="carousel-indicators">
         <button
-          v-for="(testimonial, index) in testimonials"
+          v-for="(testimonial, index) in displayTestimonials"
           :key="index"
           @click="currentIndex = index"
           :class="['indicator', { active: currentIndex === index }]"
@@ -42,6 +42,10 @@
 </template>
 
 <script>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'TestimonialsRenderer',
   props: {
@@ -51,133 +55,171 @@ export default {
     },
     data: {
       type: Object,
-      default: () => ({
-        title: 'What People Say',
-        testimonials: [],
-        testimonial_authors: [],
-        testimonial_roles: [],
-        autoplay: true,
-        autoplayInterval: 5000
-      })
+      default: () => ({})
     }
   },
-  data() {
-    return {
-      currentIndex: 0
-    }
-  },
-  computed: {
-    title() {
-      return this.data?.title || 'What People Say'
-    },
-    description() {
-      return this.data?.description || ''
-    },
-    testimonials() {
+  setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { rawPodsData } = usePodsData();
+    
+    // Local state
+    const currentIndex = ref(0);
+    let interval = null;
+    
+    // Computed properties
+    const title = computed(() => {
+      return props.data?.title || 'What People Say';
+    });
+    
+    const description = computed(() => {
+      return props.data?.description || '';
+    });
+    
+    const displayTestimonials = computed(() => {
       // Handle various data formats safely
-      if (!this.data) {
-        return this.getDefaultTestimonials()
+      if (!props.data) {
+        return [];
       }
       
       // Handle array format
-      if (Array.isArray(this.data.testimonials) && this.data.testimonials.length > 0) {
-        return this.data.testimonials
+      if (Array.isArray(props.data.testimonials) && props.data.testimonials.length > 0) {
+        return props.data.testimonials;
       }
       
       // Handle object format
-      if (this.data.testimonials && typeof this.data.testimonials === 'object' && !Array.isArray(this.data.testimonials)) {
-        const testimonialArray = Object.values(this.data.testimonials).filter(Boolean)
+      if (props.data.testimonials && typeof props.data.testimonials === 'object' && !Array.isArray(props.data.testimonials)) {
+        const testimonialArray = Object.values(props.data.testimonials).filter(Boolean);
         if (testimonialArray.length > 0) {
-          return testimonialArray
+          return testimonialArray;
         }
       }
       
       // Handle legacy format with separate arrays
-      if (this.data.testimonial_text && Array.isArray(this.data.testimonial_text)) {
-        return this.data.testimonial_text.map((text, index) => ({
+      if (props.data.testimonial_text && Array.isArray(props.data.testimonial_text)) {
+        return props.data.testimonial_text.map((text, index) => ({
           text: text || '',
-          author: this.data.testimonial_authors?.[index] || `Author ${index + 1}`,
-          title: this.data.testimonial_roles?.[index] || '',
-          image: this.data.testimonial_images?.[index] || ''
-        }))
+          author: props.data.testimonial_authors?.[index] || `Author ${index + 1}`,
+          title: props.data.testimonial_roles?.[index] || '',
+          image: props.data.testimonial_images?.[index] || ''
+        }));
       }
       
-      return this.getDefaultTestimonials()
-    },
-    currentTestimonial() {
+      // ROOT FIX: Check for testimonials in Pods data
+      const podsTestimonials = [];
+      for (let i = 1; i <= 5; i++) {
+        const testimonialText = rawPodsData.value?.[`testimonial_${i}_text`];
+        const testimonialAuthor = rawPodsData.value?.[`testimonial_${i}_author`];
+        
+        if (testimonialText) {
+          podsTestimonials.push({
+            text: testimonialText,
+            author: testimonialAuthor || `Client ${i}`,
+            title: rawPodsData.value?.[`testimonial_${i}_title`] || '',
+            image: rawPodsData.value?.[`testimonial_${i}_image`] || ''
+          });
+        }
+      }
+      
+      return podsTestimonials.length > 0 ? podsTestimonials : [];
+    });
+    
+    const currentTestimonial = computed(() => {
       // Ensure safe access with bounds checking
-      if (!this.testimonials || this.testimonials.length === 0) {
-        return this.getDefaultTestimonials()[0]
+      if (!displayTestimonials.value || displayTestimonials.value.length === 0) {
+        return {
+          text: '',
+          author: '',
+          title: '',
+          image: ''
+        };
       }
       
       // Ensure currentIndex is within bounds
-      const safeIndex = Math.max(0, Math.min(this.currentIndex, this.testimonials.length - 1))
-      const testimonial = this.testimonials[safeIndex]
+      const safeIndex = Math.max(0, Math.min(currentIndex.value, displayTestimonials.value.length - 1));
+      const testimonial = displayTestimonials.value[safeIndex];
       
       // Handle both string and object formats
       if (typeof testimonial === 'string') {
         return {
           text: testimonial,
-          author: this.data?.testimonial_authors?.[safeIndex] || 'Guest Speaker',
-          title: this.data?.testimonial_roles?.[safeIndex] || '',
+          author: 'Client',
+          title: '',
           image: ''
-        }
+        };
       }
       
       // Ensure all properties exist
       return {
         text: testimonial?.text || '',
-        author: testimonial?.author || 'Guest Speaker',
+        author: testimonial?.author || 'Client',
         title: testimonial?.title || testimonial?.role || '',
         image: testimonial?.image || ''
+      };
+    });
+    
+    // Methods
+    const nextSlide = () => {
+      if (displayTestimonials.value.length > 1) {
+        currentIndex.value = (currentIndex.value + 1) % displayTestimonials.value.length;
       }
-    }
-  },
-  methods: {
-    nextSlide() {
-      if (this.testimonials.length > 1) {
-        this.currentIndex = (this.currentIndex + 1) % this.testimonials.length
+    };
+    
+    const previousSlide = () => {
+      if (displayTestimonials.value.length > 1) {
+        currentIndex.value = currentIndex.value === 0 
+          ? displayTestimonials.value.length - 1 
+          : currentIndex.value - 1;
       }
-    },
-    previousSlide() {
-      if (this.testimonials.length > 1) {
-        this.currentIndex = this.currentIndex === 0 
-          ? this.testimonials.length - 1 
-          : this.currentIndex - 1
+    };
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('Testimonials component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = displayTestimonials.value.some(testimonial => 
+          rawPodsData.value && Object.values(rawPodsData.value).includes(testimonial.text)
+        );
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'testimonials',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
       }
-    },
-    getDefaultTestimonials() {
-      return [
-        {
-          text: "An exceptional speaker who truly connects with the audience.",
-          author: "Jane Doe",
-          title: "Event Organizer",
-          image: ""
-        },
-        {
-          text: "Insightful, engaging, and transformational content.",
-          author: "John Smith",
-          title: "Conference Director",
-          image: ""
-        }
-      ]
-    }
-  },
-  mounted() {
-    // Auto-advance carousel if enabled and has testimonials
-    if (this.data?.autoplay !== false && this.testimonials.length > 1) {
-      const interval = this.data?.autoplayInterval || 5000
-      this.interval = setInterval(() => {
-        this.nextSlide()
-      }, interval)
-    }
-  },
-  beforeUnmount() {
-    if (this.interval) {
-      clearInterval(this.interval)
-    }
+      
+      // Auto-advance carousel if enabled and has testimonials
+      if (props.data?.autoplay !== false && displayTestimonials.value.length > 1) {
+        const autoplayInterval = props.data?.autoplayInterval || 5000;
+        interval = setInterval(() => {
+          nextSlide();
+        }, autoplayInterval);
+      }
+    });
+    
+    onUnmounted(() => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    });
+    
+    return {
+      title,
+      description,
+      displayTestimonials,
+      currentTestimonial,
+      currentIndex,
+      nextSlide,
+      previousSlide
+    };
   }
-}
+};
 </script>
 
 <style scoped>
@@ -228,11 +270,15 @@ export default {
   box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
   transition: var(--gmkb-transition, all 0.3s ease);
   color: var(--gmkb-color-text, #333);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .carousel-control:hover {
   background: var(--gmkb-color-primary, #007cba);
   color: white;
+  transform: scale(1.1);
 }
 
 .testimonial-slide {
@@ -240,7 +286,7 @@ export default {
   background: var(--gmkb-color-surface, #fff);
   padding: var(--gmkb-spacing-xl, 2rem);
   border-radius: var(--gmkb-border-radius, 8px);
-  box-shadow: var(--gmkb-shadow-sm, 0 2px 4px rgba(0,0,0,0.1));
+  box-shadow: var(--gmkb-shadow-md, 0 4px 6px rgba(0,0,0,0.1));
 }
 
 .quote-mark {
@@ -255,9 +301,10 @@ export default {
   color: var(--gmkb-color-text, #333);
   font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-lg, 1.125rem);
-  line-height: var(--gmkb-line-height-base, 1.6);
+  line-height: var(--gmkb-line-height-relaxed, 1.7);
   margin-bottom: var(--gmkb-spacing-lg, 1.5rem);
   font-style: italic;
+  min-height: 80px;
 }
 
 .testimonial-author {
@@ -279,7 +326,7 @@ export default {
   font-family: var(--gmkb-font-heading, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-base, 1rem);
   font-weight: var(--gmkb-font-weight-bold, 600);
-  margin-bottom: var(--gmkb-space-1, 0.25rem);
+  margin: 0 0 var(--gmkb-space-1, 0.25rem);
 }
 
 .author-title {
@@ -287,6 +334,7 @@ export default {
   font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-sm, 0.9rem);
   line-height: var(--gmkb-line-height-base, 1.4);
+  margin: 0;
 }
 
 .carousel-indicators {
@@ -303,10 +351,30 @@ export default {
   border: none;
   background: var(--gmkb-color-border, #ddd);
   cursor: pointer;
-  transition: var(--gmkb-transition-fast, background 0.15s ease);
+  transition: var(--gmkb-transition-fast, all 0.15s ease);
+  padding: 0;
+}
+
+.indicator:hover {
+  background: var(--gmkb-color-primary-light, #4a9fd8);
 }
 
 .indicator.active {
   background: var(--gmkb-color-primary, #007cba);
+  transform: scale(1.2);
+}
+
+@media (max-width: 768px) {
+  .testimonials-carousel {
+    flex-direction: column;
+  }
+  
+  .carousel-control {
+    display: none;
+  }
+  
+  .testimonial-slide {
+    padding: var(--gmkb-spacing-lg, 1.5rem);
+  }
 }
 </style>

@@ -64,6 +64,10 @@
 </template>
 
 <script>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'BookingCalendarRenderer',
   props: {
@@ -76,61 +80,149 @@ export default {
       default: () => ({})
     }
   },
-  data() {
-    return {
-      bookingForm: {
-        date: '',
-        time: '',
-        name: '',
-        email: '',
-        message: ''
+  setup(props, { emit }) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { email: podsEmail, fullName, rawPodsData } = usePodsData();
+    
+    // Local state
+    const bookingForm = ref({
+      date: '',
+      time: '',
+      name: '',
+      email: '',
+      message: ''
+    });
+    
+    // Computed properties
+    const title = computed(() => {
+      if (props.data.title) return props.data.title;
+      // ROOT FIX: Use Pods data as fallback
+      if (fullName.value) return `Book Time with ${fullName.value}`;
+      return 'Book a Meeting';
+    });
+    
+    const description = computed(() => {
+      return props.data.description || '';
+    });
+    
+    const calendarService = computed(() => {
+      return props.data.calendar_service || '';
+    });
+    
+    const calendarUrl = computed(() => {
+      // Check component data first
+      if (props.data.calendar_url || props.data.calendly_url) {
+        return props.data.calendar_url || props.data.calendly_url;
       }
-    }
-  },
-  computed: {
-    title() {
-      return this.data.title || 'Book a Meeting'
-    },
-    description() {
-      return this.data.description || ''
-    },
-    calendarService() {
-      return this.data.calendar_service || ''
-    },
-    calendarUrl() {
-      return this.data.calendar_url || this.data.calendly_url || ''
-    },
-    availableTimes() {
-      return this.data.available_times || [
+      // ROOT FIX: Check Pods data for booking URLs
+      return rawPodsData.value?.calendly_url || 
+             rawPodsData.value?.booking_url || 
+             rawPodsData.value?.calendar_link || '';
+    });
+    
+    const availableTimes = computed(() => {
+      if (Array.isArray(props.data.available_times)) {
+        return props.data.available_times;
+      }
+      
+      // ROOT FIX: Check Pods data for availability
+      if (rawPodsData.value?.available_times) {
+        // If it's a string, try to parse as comma-separated
+        const times = rawPodsData.value.available_times;
+        if (typeof times === 'string') {
+          return times.split(',').map(t => t.trim());
+        }
+        if (Array.isArray(times)) {
+          return times;
+        }
+      }
+      
+      return [
         '9:00 AM', '10:00 AM', '11:00 AM', 
         '2:00 PM', '3:00 PM', '4:00 PM'
-      ]
-    }
-  },
-  methods: {
-    handleBookingSubmit() {
-      this.$emit('booking-submit', this.bookingForm)
+      ];
+    });
+    
+    // Methods
+    const handleBookingSubmit = () => {
+      // ROOT FIX: Include recipient email from Pods if available
+      const submissionData = {
+        ...bookingForm.value,
+        recipientEmail: podsEmail.value || '',
+        componentId: props.componentId
+      };
+      
+      // Emit event
+      emit('booking-submit', submissionData);
+      
+      // Dispatch global event
+      document.dispatchEvent(new CustomEvent('gmkb:booking-submit', {
+        detail: submissionData
+      }));
+      
       // Reset form
-      this.bookingForm = {
+      bookingForm.value = {
         date: '',
         time: '',
         name: '',
         email: '',
         message: ''
+      };
+      
+      // Show notification via store
+      store.showNotification('Booking request sent!', 'success');
+    };
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('BookingCalendar component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = !props.data.calendar_url && 
+          (rawPodsData.value?.calendly_url || rawPodsData.value?.booking_url);
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'booking-calendar',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
       }
-      alert('Booking request sent!')
-    }
-  },
-  mounted() {
-    // Load Calendly script if needed
-    if (this.calendarService === 'calendly' && !window.Calendly) {
-      const script = document.createElement('script')
-      script.src = 'https://assets.calendly.com/assets/external/widget.js'
-      script.async = true
-      document.body.appendChild(script)
-    }
+      
+      // Load Calendly script if needed
+      if (calendarService.value === 'calendly' && !window.Calendly) {
+        const script = document.createElement('script');
+        script.src = 'https://assets.calendly.com/assets/external/widget.js';
+        script.async = true;
+        script.id = 'calendly-widget-script';
+        document.body.appendChild(script);
+      }
+    });
+    
+    onUnmounted(() => {
+      // Clean up Calendly script if added
+      const script = document.getElementById('calendly-widget-script');
+      if (script) {
+        script.remove();
+      }
+    });
+    
+    return {
+      bookingForm,
+      title,
+      description,
+      calendarService,
+      calendarUrl,
+      availableTimes,
+      handleBookingSubmit
+    };
   }
-}
+};
 </script>
 
 <style scoped>

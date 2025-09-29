@@ -6,14 +6,14 @@
       
       <div class="topics-grid">
         <div 
-          v-for="(topic, index) in topics" 
+          v-for="(topic, index) in displayTopics" 
           :key="index"
           class="topic-card"
         >
           <div v-if="topic.icon" class="topic-icon">
             <i :class="topic.icon"></i>
           </div>
-          <h3 class="topic-name">{{ topic.name || topic }}</h3>
+          <h3 class="topic-name">{{ topic.name || topic.text || topic }}</h3>
           <p v-if="topic.description" class="topic-description">
             {{ topic.description }}
           </p>
@@ -24,6 +24,10 @@
 </template>
 
 <script>
+import { computed, onMounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'TopicsRenderer',
   props: {
@@ -36,36 +40,103 @@ export default {
       default: () => ({})
     }
   },
-  computed: {
-    title() {
-      return this.data.title || 'Speaking Topics'
-    },
-    description() {
-      return this.data.description || ''
-    },
-    topics() {
+  setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { topics: podsTopics } = usePodsData();
+    
+    // Computed properties
+    const title = computed(() => {
+      return props.data.title || 'Speaking Topics';
+    });
+    
+    const description = computed(() => {
+      return props.data.description || '';
+    });
+    
+    const displayTopics = computed(() => {
       // Handle various data formats
-      if (Array.isArray(this.data.topics)) {
-        return this.data.topics
+      if (Array.isArray(props.data.topics) && props.data.topics.length > 0) {
+        return props.data.topics;
       }
       
-      // Handle individual topic fields (topic_1, topic_2, etc.)
-      const topicsList = []
-      for (let i = 1; i <= 5; i++) {
-        if (this.data[`topic_${i}`]) {
-          topicsList.push(this.data[`topic_${i}`])
+      // Handle individual topic fields from component data
+      const topicsList = [];
+      for (let i = 1; i <= 10; i++) {
+        if (props.data[`topic_${i}`]) {
+          const topicValue = props.data[`topic_${i}`];
+          if (typeof topicValue === 'object') {
+            topicsList.push(topicValue);
+          } else {
+            topicsList.push({
+              name: topicValue,
+              description: props.data[`topic_${i}_description`] || '',
+              icon: props.data[`topic_${i}_icon`] || ''
+            });
+          }
         }
       }
       
-      // Fallback to default topics
-      return topicsList.length ? topicsList : [
-        'Leadership & Innovation',
-        'Digital Transformation',
-        'Business Strategy'
-      ]
-    }
+      // ROOT FIX: Use Pods topics as fallback if no component data
+      if (topicsList.length === 0 && podsTopics.value && podsTopics.value.length > 0) {
+        // Convert Pods topics to display format
+        return podsTopics.value.map((topic, index) => ({
+          name: topic.text,
+          description: '',
+          icon: getTopicIcon(index)
+        }));
+      }
+      
+      return topicsList;
+    });
+    
+    // Helper function to assign default icons
+    const getTopicIcon = (index) => {
+      const icons = [
+        'fas fa-rocket',
+        'fas fa-lightbulb',
+        'fas fa-chart-line',
+        'fas fa-users',
+        'fas fa-brain',
+        'fas fa-globe',
+        'fas fa-award',
+        'fas fa-book',
+        'fas fa-heart',
+        'fas fa-star'
+      ];
+      return icons[index % icons.length];
+    };
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('Topics component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = podsTopics.value && podsTopics.value.length > 0 && 
+          displayTopics.value.some(topic => 
+            podsTopics.value.some(podTopic => podTopic.text === (topic.name || topic.text || topic))
+          );
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'topics',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
+      }
+    });
+    
+    return {
+      title,
+      description,
+      displayTopics
+    };
   }
-}
+};
 </script>
 
 <style scoped>
@@ -137,5 +208,11 @@ export default {
   font-family: var(--gmkb-font-primary, 'Inter', system-ui, sans-serif);
   font-size: var(--gmkb-font-size-base, 1rem);
   line-height: var(--gmkb-line-height-base, 1.6);
+}
+
+@media (max-width: 768px) {
+  .topics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

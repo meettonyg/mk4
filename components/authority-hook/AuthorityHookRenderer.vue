@@ -27,6 +27,10 @@
 </template>
 
 <script>
+import { computed, onMounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'AuthorityHookRenderer',
   props: {
@@ -39,40 +43,95 @@ export default {
       default: () => ({})
     }
   },
-  computed: {
-    headline() {
-      return this.data.headline || this.data.authority_headline || 'Trusted Expert in the Industry'
-    },
-    subheadline() {
-      return this.data.subheadline || this.data.authority_subheadline || ''
-    },
-    authorityPoints() {
-      if (Array.isArray(this.data.authority_points)) {
-        return this.data.authority_points
+  setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { position, company, stats, fullName } = usePodsData();
+    
+    // Computed properties
+    const headline = computed(() => {
+      if (props.data.headline || props.data.authority_headline) {
+        return props.data.headline || props.data.authority_headline;
+      }
+      // ROOT FIX: Use Pods data as fallback
+      if (fullName.value && position.value) {
+        return `${fullName.value}: Trusted ${position.value}`;
+      }
+      return 'Trusted Expert in the Industry';
+    });
+    
+    const subheadline = computed(() => {
+      if (props.data.subheadline || props.data.authority_subheadline) {
+        return props.data.subheadline || props.data.authority_subheadline;
+      }
+      // ROOT FIX: Use Pods data as fallback
+      if (company.value) {
+        return `Leading innovation at ${company.value}`;
+      }
+      return '';
+    });
+    
+    const authorityPoints = computed(() => {
+      if (Array.isArray(props.data.authority_points)) {
+        return props.data.authority_points;
       }
       
-      const points = []
+      const points = [];
       for (let i = 1; i <= 5; i++) {
-        if (this.data[`authority_point_${i}`]) {
-          points.push(this.data[`authority_point_${i}`])
+        if (props.data[`authority_point_${i}`]) {
+          points.push(props.data[`authority_point_${i}`]);
         }
       }
       
-      return points.length ? points : [
-        '15+ years of experience',
-        'Published author of 3 bestselling books',
-        'International speaker in 30+ countries',
-        'Featured in Forbes, Inc., and WSJ'
-      ]
-    },
-    credentials() {
-      return this.data.credentials || this.data.authority_credentials || ''
-    },
-    socialProof() {
-      return this.data.social_proof || ''
-    }
+      // ROOT FIX: Generate from Pods stats if available
+      if (points.length === 0 && stats.value) {
+        if (stats.value.downloads) points.push(`${stats.value.downloads}+ podcast downloads`);
+        if (stats.value.episodes) points.push(`${stats.value.episodes}+ episodes recorded`);
+        if (stats.value.followers) points.push(`${stats.value.followers}+ social media followers`);
+        if (stats.value.subscribers) points.push(`${stats.value.subscribers}+ email subscribers`);
+      }
+      
+      return points.length ? points : [];
+    });
+    
+    const credentials = computed(() => {
+      return props.data.credentials || props.data.authority_credentials || '';
+    });
+    
+    const socialProof = computed(() => {
+      return props.data.social_proof || '';
+    });
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('AuthorityHook component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = (!props.data.headline && fullName.value) ||
+                            (!props.data.authority_points && stats.value);
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'authority-hook',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
+      }
+    });
+    
+    return {
+      headline,
+      subheadline,
+      authorityPoints,
+      credentials,
+      socialProof
+    };
   }
-}
+};
 </script>
 
 <style scoped>

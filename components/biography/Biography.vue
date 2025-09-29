@@ -123,6 +123,8 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
 
 export default {
   name: 'BiographyComponent',
@@ -165,11 +167,15 @@ export default {
   },
   
   setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { biography: podsBiography, hasPodsData } = usePodsData();
+    
     // Local state
     const isSelected = ref(false);
     const isEditing = ref(false);
     const showDesignPanel = ref(false);
-    const localBiography = ref(props.biography);
+    const localBiography = ref(props.biography || podsBiography.value);
     const bioTextarea = ref(null);
     
     // Local copies of props for editing
@@ -179,8 +185,10 @@ export default {
     const fontSize = ref(props.fontSize);
     const preserveLineBreaks = ref(props.preserveLineBreaks);
     
-    // Get Pods data from WordPress
-    const podsData = computed(() => window.gmkbData?.pods_data || {});
+    // ROOT FIX: Use computed ref from composable, not direct window access
+    const podsData = computed(() => ({
+      biography: podsBiography.value
+    }));
     
     // Watch for prop changes
     watch(() => props.biography, (newVal) => {
@@ -258,14 +266,14 @@ export default {
     };
     
     const loadFromPods = () => {
-      if (podsData.value?.biography) {
-        localBiography.value = podsData.value.biography;
+      if (podsBiography.value) {
+        localBiography.value = podsBiography.value;
         updateComponent();
       }
     };
     
     const updateComponent = () => {
-      // Dispatch update event to state manager
+      // ROOT FIX: Use Pinia store directly, no global object checking
       const updates = {
         biography: localBiography.value,
         title: title.value,
@@ -275,14 +283,13 @@ export default {
         preserveLineBreaks: preserveLineBreaks.value
       };
       
-      if (window.GMKB?.stateManager) {
-        window.GMKB.stateManager.updateComponent(props.componentId, {
-          data: updates,
-          props: updates
-        });
-      }
+      // Update via Pinia store
+      store.updateComponent(props.componentId, {
+        data: updates,
+        props: updates
+      });
       
-      // Emit update event
+      // Also emit event for other systems
       document.dispatchEvent(new CustomEvent('gmkb:component-updated', {
         detail: {
           componentId: props.componentId,
@@ -320,9 +327,9 @@ export default {
         }
       });
       
-      // Load from Pods data if biography is empty and data exists
-      if (!localBiography.value && podsData.value?.biography) {
-        localBiography.value = podsData.value.biography;
+      // ROOT FIX: Load from Pods data using composable, no direct access
+      if (!localBiography.value && podsBiography.value) {
+        localBiography.value = podsBiography.value;
       }
     });
     

@@ -45,6 +45,10 @@
 </template>
 
 <script>
+import { computed, onMounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'PodcastPlayerRenderer',
   props: {
@@ -57,51 +61,96 @@ export default {
       default: () => ({})
     }
   },
-  computed: {
-    title() {
-      return this.data.title || 'Podcast Episodes'
-    },
-    description() {
-      return this.data.description || ''
-    },
-    episodes() {
+  setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { rawPodsData, stats } = usePodsData();
+    
+    // Computed properties
+    const title = computed(() => {
+      return props.data.title || 'Podcast Episodes';
+    });
+    
+    const description = computed(() => {
+      if (props.data.description) return props.data.description;
+      // ROOT FIX: Use Pods data as fallback
+      if (stats.value?.episodes) {
+        return `Featured episodes from my ${stats.value.episodes}+ podcast episodes`;
+      }
+      return '';
+    });
+    
+    const episodes = computed(() => {
       // Handle array format
-      if (Array.isArray(this.data.episodes)) {
-        return this.data.episodes
+      if (Array.isArray(props.data.episodes)) {
+        return props.data.episodes;
       }
       
       // Build from individual episode fields
-      const episodesList = []
+      const episodesList = [];
       for (let i = 1; i <= 5; i++) {
-        if (this.data[`episode_${i}_title`]) {
+        if (props.data[`episode_${i}_title`]) {
           episodesList.push({
-            title: this.data[`episode_${i}_title`],
-            description: this.data[`episode_${i}_description`] || '',
-            audio_url: this.data[`episode_${i}_audio_url`] || '',
-            spotify_url: this.data[`episode_${i}_spotify_url`] || '',
-            apple_url: this.data[`episode_${i}_apple_url`] || '',
-            duration: this.data[`episode_${i}_duration`] || ''
-          })
+            title: props.data[`episode_${i}_title`],
+            description: props.data[`episode_${i}_description`] || '',
+            audio_url: props.data[`episode_${i}_audio_url`] || '',
+            spotify_url: props.data[`episode_${i}_spotify_url`] || '',
+            apple_url: props.data[`episode_${i}_apple_url`] || '',
+            duration: props.data[`episode_${i}_duration`] || ''
+          });
         }
       }
       
-      return episodesList.length ? episodesList : this.getDefaultEpisodes()
-    }
-  },
-  methods: {
-    getDefaultEpisodes() {
-      return [
-        {
-          title: "Episode 1: Introduction to Leadership",
-          description: "In this episode, we explore the fundamentals of effective leadership.",
-          audio_url: "",
-          spotify_url: "#",
-          apple_url: "#"
+      // ROOT FIX: Check for podcast episodes in Pods data
+      if (episodesList.length === 0) {
+        for (let i = 1; i <= 5; i++) {
+          const episodeTitle = rawPodsData.value?.[`podcast_episode_${i}_title`];
+          if (episodeTitle) {
+            episodesList.push({
+              title: episodeTitle,
+              description: rawPodsData.value?.[`podcast_episode_${i}_description`] || '',
+              audio_url: rawPodsData.value?.[`podcast_episode_${i}_audio`] || '',
+              spotify_url: rawPodsData.value?.[`podcast_spotify_url`] || '',
+              apple_url: rawPodsData.value?.[`podcast_apple_url`] || '',
+              duration: rawPodsData.value?.[`podcast_episode_${i}_duration`] || ''
+            });
+          }
         }
-      ]
-    }
+      }
+      
+      // Return empty array instead of default episodes
+      return episodesList;
+    });
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('PodcastPlayer component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = episodes.value.some(episode => 
+          rawPodsData.value && Object.values(rawPodsData.value).includes(episode.title)
+        );
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'podcast-player',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
+      }
+    });
+    
+    return {
+      title,
+      description,
+      episodes
+    };
   }
-}
+};
 </script>
 
 <style scoped>

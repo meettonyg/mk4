@@ -41,6 +41,10 @@
 </template>
 
 <script>
+import { computed, onMounted } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'VideoIntroRenderer',
   props: {
@@ -53,45 +57,106 @@ export default {
       default: () => ({})
     }
   },
-  computed: {
-    title() {
-      return this.data.title || 'Watch My Introduction'
-    },
-    description() {
-      return this.data.description || ''
-    },
-    videoUrl() {
-      return this.data.video_url || this.data.url || ''
-    },
-    thumbnailUrl() {
-      return this.data.thumbnail || this.data.poster || ''
-    },
-    isYouTube() {
-      return this.videoUrl.includes('youtube.com') || this.videoUrl.includes('youtu.be')
-    },
-    isVimeo() {
-      return this.videoUrl.includes('vimeo.com')
-    },
-    youtubeEmbedUrl() {
-      if (!this.isYouTube) return ''
+  setup(props) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { rawPodsData, fullName } = usePodsData();
+    
+    // Computed properties
+    const title = computed(() => {
+      if (props.data.title) return props.data.title;
+      // ROOT FIX: Use Pods data as fallback
+      if (fullName.value) return `Meet ${fullName.value}`;
+      return 'Watch My Introduction';
+    });
+    
+    const description = computed(() => {
+      return props.data.description || '';
+    });
+    
+    const videoUrl = computed(() => {
+      // Check component data first
+      if (props.data.video_url || props.data.url) {
+        return props.data.video_url || props.data.url;
+      }
+      // ROOT FIX: Check Pods data for video fields
+      return rawPodsData.value?.intro_video_url || 
+             rawPodsData.value?.video_url || 
+             rawPodsData.value?.youtube_url || '';
+    });
+    
+    const thumbnailUrl = computed(() => {
+      // Check component data first
+      if (props.data.thumbnail || props.data.poster) {
+        return props.data.thumbnail || props.data.poster;
+      }
+      // ROOT FIX: Check Pods data for thumbnail
+      return rawPodsData.value?.video_thumbnail || '';
+    });
+    
+    const isYouTube = computed(() => {
+      return videoUrl.value.includes('youtube.com') || videoUrl.value.includes('youtu.be');
+    });
+    
+    const isVimeo = computed(() => {
+      return videoUrl.value.includes('vimeo.com');
+    });
+    
+    const youtubeEmbedUrl = computed(() => {
+      if (!isYouTube.value) return '';
       
-      let videoId = ''
-      if (this.videoUrl.includes('youtube.com/watch?v=')) {
-        videoId = this.videoUrl.split('watch?v=')[1].split('&')[0]
-      } else if (this.videoUrl.includes('youtu.be/')) {
-        videoId = this.videoUrl.split('youtu.be/')[1].split('?')[0]
+      let videoId = '';
+      if (videoUrl.value.includes('youtube.com/watch?v=')) {
+        videoId = videoUrl.value.split('watch?v=')[1].split('&')[0];
+      } else if (videoUrl.value.includes('youtu.be/')) {
+        videoId = videoUrl.value.split('youtu.be/')[1].split('?')[0];
+      } else if (videoUrl.value.includes('youtube.com/embed/')) {
+        videoId = videoUrl.value.split('youtube.com/embed/')[1].split('?')[0];
       }
       
-      return `https://www.youtube.com/embed/${videoId}`
-    },
-    vimeoEmbedUrl() {
-      if (!this.isVimeo) return ''
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+    });
+    
+    const vimeoEmbedUrl = computed(() => {
+      if (!isVimeo.value) return '';
       
-      const videoId = this.videoUrl.split('vimeo.com/')[1].split('?')[0]
-      return `https://player.vimeo.com/video/${videoId}`
-    }
+      const matches = videoUrl.value.match(/vimeo\.com\/(\d+)/);
+      const videoId = matches ? matches[1] : '';
+      return videoId ? `https://player.vimeo.com/video/${videoId}` : '';
+    });
+    
+    // Lifecycle
+    onMounted(() => {
+      // ROOT FIX: No polling or global checking - use event-driven approach
+      if (store.components[props.componentId]) {
+        console.log('VideoIntro component mounted:', props.componentId);
+        
+        // Check if using Pods data
+        const usingPodsData = !props.data.video_url && rawPodsData.value?.intro_video_url;
+        
+        // Dispatch mount event
+        document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {
+          detail: {
+            type: 'video-intro',
+            id: props.componentId,
+            podsDataUsed: usingPodsData
+          }
+        }));
+      }
+    });
+    
+    return {
+      title,
+      description,
+      videoUrl,
+      thumbnailUrl,
+      isYouTube,
+      isVimeo,
+      youtubeEmbedUrl,
+      vimeoEmbedUrl
+    };
   }
-}
+};
 </script>
 
 <style scoped>

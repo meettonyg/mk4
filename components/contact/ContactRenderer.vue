@@ -80,6 +80,10 @@
 </template>
 
 <script>
+import { ref, computed } from 'vue';
+import { useMediaKitStore } from '../../src/stores/mediaKit';
+import { usePodsData } from '../../src/composables/usePodsData';
+
 export default {
   name: 'ContactRenderer',
   props: {
@@ -92,55 +96,94 @@ export default {
       default: () => ({})
     }
   },
-  data() {
-    return {
-      formData: {
-        name: '',
-        email: '',
-        message: ''
-      }
-    }
-  },
-  computed: {
-    title() {
-      return this.data.title || 'Get In Touch'
-    },
-    description() {
-      return this.data.description || ''
-    },
-    email() {
-      return this.data.email || this.data.contact_email || ''
-    },
-    phone() {
-      return this.data.phone || this.data.contact_phone || ''
-    },
-    website() {
-      return this.data.website || this.data.contact_website || ''
-    },
-    address() {
-      return this.data.address || this.data.contact_address || ''
-    },
-    showForm() {
-      return this.data.show_form !== false
-    },
-    displayWebsite() {
-      return this.website.replace(/^https?:\/\//, '')
-    }
-  },
-  methods: {
-    handleSubmit() {
+  setup(props, { emit }) {
+    // Store and composables
+    const store = useMediaKitStore();
+    const { email: podsEmail, phone: podsPhone, website: podsWebsite, location: podsLocation } = usePodsData();
+    
+    // Form data
+    const formData = ref({
+      name: '',
+      email: '',
+      message: ''
+    });
+    
+    // Computed properties with Pods data fallbacks
+    const title = computed(() => {
+      return props.data.title || 'Get In Touch';
+    });
+    
+    const description = computed(() => {
+      return props.data.description || '';
+    });
+    
+    const email = computed(() => {
+      // ROOT FIX: Use Pods data as fallback, no global object checking
+      return props.data.email || props.data.contact_email || podsEmail.value || '';
+    });
+    
+    const phone = computed(() => {
+      return props.data.phone || props.data.contact_phone || podsPhone.value || '';
+    });
+    
+    const website = computed(() => {
+      return props.data.website || props.data.contact_website || podsWebsite.value || '';
+    });
+    
+    const address = computed(() => {
+      return props.data.address || props.data.contact_address || podsLocation.value || '';
+    });
+    
+    const showForm = computed(() => {
+      return props.data.show_form !== false;
+    });
+    
+    const displayWebsite = computed(() => {
+      return website.value.replace(/^https?:\/\//, '');
+    });
+    
+    // Methods
+    const handleSubmit = () => {
+      // ROOT FIX: Use store to handle submission if needed
+      const submissionData = {
+        ...formData.value,
+        componentId: props.componentId,
+        recipientEmail: email.value
+      };
+      
       // Emit event for parent to handle
-      this.$emit('contact-submit', this.formData)
+      emit('contact-submit', submissionData);
+      
+      // Dispatch event for other systems
+      document.dispatchEvent(new CustomEvent('gmkb:contact-form-submit', {
+        detail: submissionData
+      }));
+      
       // Reset form
-      this.formData = {
+      formData.value = {
         name: '',
         email: '',
         message: ''
-      }
-      alert('Message sent successfully!')
-    }
+      };
+      
+      // Show notification via store
+      store.showNotification('Message sent successfully!', 'success');
+    };
+    
+    return {
+      formData,
+      title,
+      description,
+      email,
+      phone,
+      website,
+      address,
+      showForm,
+      displayWebsite,
+      handleSubmit
+    };
   }
-}
+};
 </script>
 
 <style scoped>
