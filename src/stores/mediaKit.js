@@ -340,7 +340,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (!this.isDirty) return;
 
       const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
-      const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+      
+      // ROOT FIX: Get fresh nonce from NonceManager for REST API
+      let restNonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+      
+      if (window.gmkbNonceManager) {
+        // For REST API, we need the wp_rest nonce, not the regular one
+        restNonce = window.gmkbNonceManager.getNonce() || restNonce;
+      }
       
       // Build correct endpoint
       let endpoint;
@@ -356,7 +363,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': nonce
+          'X-WP-Nonce': restNonce
         },
         body: JSON.stringify({
           components: this.components,
@@ -1352,10 +1359,26 @@ export const useMediaKitStore = defineStore('mediaKit', {
           version: '2.0' // Version for future compatibility
         };
         
+        // ROOT FIX: Get fresh nonce from NonceManager if available
+        let currentNonce = window.gmkbData?.nonce || window.mkcg_vars?.nonce || '';
+        
+        // If NonceManager is available, use its nonce
+        if (window.gmkbNonceManager) {
+          // Check if nonce is likely expired and refresh if needed
+          if (window.gmkbNonceManager.isLikelyExpired && window.gmkbNonceManager.isLikelyExpired()) {
+            try {
+              await window.gmkbNonceManager.refreshNonce();
+            } catch (e) {
+              console.warn('Nonce refresh failed, using existing nonce');
+            }
+          }
+          currentNonce = window.gmkbNonceManager.getNonce() || currentNonce;
+        }
+        
         // Call WordPress AJAX endpoint
         const formData = new FormData();
         formData.append('action', 'gmkb_save_media_kit'); // ROOT FIX: Correct action name
-        formData.append('nonce', window.gmkbData?.nonce || window.mkcg_vars?.nonce || '');
+        formData.append('nonce', currentNonce);
         formData.append('post_id', this.postId || window.gmkbData?.postId || window.gmkbData?.post_id || '');
         formData.append('state', JSON.stringify(state));
         

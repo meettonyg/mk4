@@ -17,11 +17,14 @@
     <div class="gmkb-section-content">
       <!-- Full Width Layout -->
       <div v-if="section.layout === 'full_width'" class="section-full">
-        <ComponentRenderer
-          v-for="component in components"
+        <ComponentWrapper
+          v-for="(component, index) in components"
           :key="component.id"
           :component="component"
           :section-id="section.section_id"
+          :index="index"
+          :total-components="components.length"
+          :show-controls="showControls"
         />
         <div v-if="components.length === 0" class="section-placeholder">
           Drop components here or click to add
@@ -31,22 +34,28 @@
       <!-- Two Column Layout -->
       <div v-else-if="section.layout === 'two_column'" class="section-columns section-columns--two">
         <div class="section-column" data-column="1">
-          <ComponentRenderer
-            v-for="component in leftComponents"
+          <ComponentWrapper
+            v-for="(component, index) in leftComponents"
             :key="component.id"
             :component="component"
             :section-id="section.section_id"
+            :index="index * 2"
+            :total-components="components.length"
+            :show-controls="showControls"
           />
           <div v-if="leftComponents.length === 0" class="section-placeholder">
             Left column
           </div>
         </div>
         <div class="section-column" data-column="2">
-          <ComponentRenderer
-            v-for="component in rightComponents"
+          <ComponentWrapper
+            v-for="(component, index) in rightComponents"
             :key="component.id"
             :component="component"
             :section-id="section.section_id"
+            :index="index * 2 + 1"
+            :total-components="components.length"
+            :show-controls="showControls"
           />
           <div v-if="rightComponents.length === 0" class="section-placeholder">
             Right column
@@ -62,11 +71,14 @@
           class="section-column" 
           :data-column="col"
         >
-          <ComponentRenderer
-            v-for="component in getColumnComponents(col)"
+          <ComponentWrapper
+            v-for="(component, index) in getColumnComponents(col)"
             :key="component.id"
             :component="component"
             :section-id="section.section_id"
+            :index="getComponentIndex(col, index)"
+            :total-components="components.length"
+            :show-controls="showControls"
           />
           <div v-if="getColumnComponents(col).length === 0" class="section-placeholder">
             Column {{ col }}
@@ -79,13 +91,13 @@
 
 <script>
 import { computed } from 'vue';
-import ComponentRenderer from './ComponentRenderer.vue';
+import ComponentWrapper from './builder/ComponentWrapper.vue';
 
 export default {
   name: 'SectionRenderer',
   
   components: {
-    ComponentRenderer
+    ComponentWrapper
   },
   
   props: {
@@ -120,10 +132,16 @@ export default {
       return props.components.filter((_, index) => (index % 3) === (column - 1));
     };
     
+    // Get the actual index of the component in the main array
+    const getComponentIndex = (column, localIndex) => {
+      return (localIndex * 3) + (column - 1);
+    };
+    
     return {
       leftComponents,
       rightComponents,
-      getColumnComponents
+      getColumnComponents,
+      getComponentIndex
     };
   }
 };
