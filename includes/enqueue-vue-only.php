@@ -155,14 +155,13 @@ function gmkb_get_theme_data() {
                 
                 // Convert to flat array with proper structure
                 foreach ($themes as $theme_id => $theme_data) {
-                    // Ensure theme has required ID field
-                    if (!isset($theme_data['id'])) {
-                        $theme_data['id'] = $theme_id;
-                    }
+                    // ROOT FIX: Ensure ID is set from array key if not present
+                    // The array key IS the theme ID
+                    $id = $theme_data['id'] ?? $theme_id;
                     
                     // Ensure theme has required fields for Vue
                     $themes_array[] = array(
-                        'id' => $theme_data['id'],
+                        'id' => $id,  // Use the validated ID
                         'name' => $theme_data['name'] ?? ucfirst(str_replace('_', ' ', $theme_id)),
                         'description' => $theme_data['description'] ?? '',
                         'colors' => $theme_data['colors'] ?? array(),

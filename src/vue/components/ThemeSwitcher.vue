@@ -64,7 +64,17 @@ const buttonRect = ref(null);
 // Computed properties
 const currentTheme = computed(() => themeStore.activeTheme || { name: 'Default', id: 'professional' });
 const activeThemeId = computed(() => themeStore.activeThemeId);
-const availableThemes = computed(() => themeStore.availableThemes);
+const availableThemes = computed(() => {
+  const themes = themeStore.availableThemes;
+  
+  // DEBUG: Log themes to see structure
+  if (themes && themes.length > 0) {
+    console.log('[ThemeSwitcher] Available themes:', themes);
+    console.log('[ThemeSwitcher] First theme:', themes[0]);
+  }
+  
+  return themes;
+});
 const colorPresets = computed(() => themeStore.colorPresets);
 
 // Methods
@@ -80,14 +90,19 @@ const toggleDropdown = () => {
 };
 
 const selectTheme = (themeId) => {
+  // ROOT FIX: Validate themeId before calling store
+  if (!themeId) {
+    console.error('[ThemeSwitcher] Cannot select theme: themeId is undefined');
+    return;
+  }
+  
+  console.log('[ThemeSwitcher] Selecting theme:', themeId);
   themeStore.selectTheme(themeId);
   dropdownOpen.value = false;
   
   // Show toast notification
-  showToast(`Theme changed to ${themeStore.activeTheme.name}`);
-  
-  // Save to WordPress
-  saveThemeSelection();
+  const themeName = themeStore.activeTheme?.name || themeId;
+  showToast(`Theme changed to ${themeName}`);
 };
 
 const applyPreset = (presetName) => {
@@ -105,15 +120,6 @@ const getPreviewStyle = (theme) => {
     background: `linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary})`,
     borderColor: theme.colors.border
   };
-};
-
-const saveThemeSelection = async () => {
-  // Save theme selection to WordPress
-  if (window.gmkbStore) {
-    window.gmkbStore.theme = themeStore.activeThemeId;
-    window.gmkbStore.themeCustomizations = themeStore.tempCustomizations;
-    await window.gmkbStore.saveToWordPress();
-  }
 };
 
 const showToast = (message) => {
