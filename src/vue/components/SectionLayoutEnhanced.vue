@@ -246,13 +246,23 @@
         </div>
       </div>
     </div>
+
+    <!-- Section Settings Modal -->
+    <SectionSettings 
+      v-if="editingSectionId"
+      :section-id="editingSectionId"
+      :section="getSectionById(editingSectionId)"
+      @close="editingSectionId = null"
+      @update="updateSectionFromSettings"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
-import ComponentWrapper from './builder/ComponentWrapper.vue';
+import ComponentWrapper from './ComponentWrapper.vue';
+import SectionSettings from './sections/SectionSettings.vue';
 import draggable from 'vuedraggable';
 
 const store = useMediaKitStore();
@@ -379,14 +389,37 @@ const removeSection = (sectionId) => {
 
 const openSectionSettings = (sectionId) => {
   editingSectionId.value = sectionId;
-  // Dispatch event for settings panel
-  document.dispatchEvent(new CustomEvent('gmkb:section-settings', {
-    detail: { sectionId }
-  }));
-  // Also dispatch open-section-settings event
-  document.dispatchEvent(new CustomEvent('gmkb:open-section-settings', {
-    detail: { sectionId }
-  }));
+  console.log('Opening section settings for:', sectionId);
+};
+
+// Get section by ID
+const getSectionById = (sectionId) => {
+  return store.sections.find(s => s.section_id === sectionId);
+};
+
+// Update section from settings modal
+const updateSectionFromSettings = (updates) => {
+  if (!editingSectionId.value) return;
+  
+  const section = getSectionById(editingSectionId.value);
+  if (!section) return;
+  
+  // Update layout/type
+  if (updates.layout || updates.type) {
+    section.type = updates.layout || updates.type;
+    section.layout = updates.layout || updates.type;
+  }
+  
+  // Update settings
+  if (updates.settings) {
+    if (!section.settings) {
+      section.settings = {};
+    }
+    Object.assign(section.settings, updates.settings);
+  }
+  
+  store.hasUnsavedChanges = true;
+  editingSectionId.value = null;
 };
 
 // Drag and Drop Event Handlers
