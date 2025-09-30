@@ -38,23 +38,17 @@ class GMKB_REST_Theme_Controller {
             'permission_callback' => '__return_true'
         ));
         
-        // Get custom themes - GEMINI FIX: Proper permission callbacks
+        // Get custom themes - GEMINI FIX: Require auth for all theme operations
         register_rest_route(self::NAMESPACE, '/themes/custom', array(
             array(
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => array($this, 'get_custom_themes'),
-                'permission_callback' => function () {
-                    // Allow logged-in users with edit_posts capability
-                    return current_user_can('edit_posts');
-                }
+                'permission_callback' => array($this, 'write_permission_check') // Require auth for read
             ),
             array(
                 'methods' => WP_REST_Server::CREATABLE,
                 'callback' => array($this, 'save_custom_theme'),
-                'permission_callback' => function () {
-                    // Require edit_posts capability to create
-                    return current_user_can('edit_posts');
-                }
+                'permission_callback' => array($this, 'write_permission_check') // Require auth for write
             )
         ));
         

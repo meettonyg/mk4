@@ -485,6 +485,13 @@ export const useThemeStore = defineStore('theme', {
         };
         this.hasUnsavedChanges = true;
         this.applyThemeToDOM();
+        
+        // FIX: Update media kit store immediately so theme persists
+        const mediaKitStore = useMediaKitStore();
+        mediaKitStore.theme = themeId;
+        mediaKitStore._trackChange();  // Mark for save and trigger auto-save
+        
+        console.log('[Theme Store] Theme selected and saved to media kit store:', themeId);
       }
     },
     
@@ -547,9 +554,11 @@ export const useThemeStore = defineStore('theme', {
       const mediaKitStore = useMediaKitStore();
       mediaKitStore.theme = this.activeThemeId;
       mediaKitStore.themeCustomizations = { ...this.tempCustomizations };
-      mediaKitStore.hasUnsavedChanges = true;
+      mediaKitStore._trackChange();  // Use _trackChange instead of direct flag
       
       this.hasUnsavedChanges = false;
+      
+      console.log('[Theme Store] Customizations applied and saved to media kit store');
     },
     
     // Save as custom theme
@@ -699,13 +708,20 @@ export const useThemeStore = defineStore('theme', {
     
     // Load custom themes from database
     async loadCustomThemes() {
-      // GEMINI FIX: Gracefully handle authentication errors (403/401)
+      // GEMINI FIX: Properly authenticated custom themes loading
       let restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
-      const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+      const nonce = window.gmkbData?.restNonce || window.gmkbData?.nonce || '';
       
       if (!restUrl) {
         if (window.gmkbData?.isDevelopment) {
           console.log('[Theme Store] REST API not configured, custom themes unavailable');
+        }
+        return;
+      }
+      
+      if (!nonce) {
+        if (window.gmkbData?.isDevelopment) {
+          console.warn('[Theme Store] No REST nonce available, cannot load custom themes');
         }
         return;
       }
@@ -723,7 +739,8 @@ export const useThemeStore = defineStore('theme', {
         const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
-            'X-WP-Nonce': nonce
+            'X-WP-Nonce': nonce,
+            'Content-Type': 'application/json'
           },
           credentials: 'same-origin'
         });
@@ -731,13 +748,13 @@ export const useThemeStore = defineStore('theme', {
         // GEMINI FIX: Handle auth errors gracefully without blocking initialization
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
-            // Silently handle - user not authenticated for custom themes
+            // Auth required but failed - user may not have permission
             if (window.gmkbData?.isDevelopment) {
-              console.log('[Theme Store] Custom themes require authentication, using built-in only');
+              console.log('[Theme Store] Custom themes require edit_posts capability');
             }
           } else {
             if (window.gmkbData?.isDevelopment) {
-              console.log(`[Theme Store] Custom themes HTTP ${response.status}, using built-in only`);
+              console.log(`[Theme Store] Custom themes HTTP ${response.status}`);
             }
           }
           return; // Don't block app initialization

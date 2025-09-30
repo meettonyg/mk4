@@ -1,49 +1,50 @@
 @echo off
-echo ====================================
-echo Force Clean Rebuild - Component Controls Fix
-echo ====================================
+echo ============================================
+echo FORCE REBUILD - Media Kit Builder
+echo ============================================
 echo.
 
-cd /d C:\Users\seoge\OneDrive\Desktop\CODE-Guestify\MEDIAKIT\PLUGIN\mk4
+echo [1/4] Cleaning dist directory...
+if exist dist\*.* del /Q dist\*.*
+if exist dist rmdir /S /Q dist
+echo      Dist directory cleaned
+echo.
 
-echo Step 1: Cleaning dist folder...
-if exist dist (
-    rmdir /s /q dist
-    mkdir dist
+echo [2/4] Clearing npm cache...
+npm cache clean --force
+echo      Cache cleared
+echo.
+
+echo [3/4] Building Vue bundle (this may take a minute)...
+npm run build
+echo      Build complete
+echo.
+
+echo [4/4] Verifying build output...
+if exist dist\gmkb.iife.js (
+    echo      ✅ gmkb.iife.js created successfully
+    for %%A in (dist\gmkb.iife.js) do echo      File size: %%~zA bytes
 ) else (
-    mkdir dist
+    echo      ❌ Build failed - gmkb.iife.js not found
+    pause
+    exit /b 1
 )
 
-echo.
-echo Step 2: Clearing Vite cache...
-if exist node_modules\.vite (
-    rmdir /s /q node_modules\.vite
-)
-
-echo.
-echo Step 3: Building fresh Vue bundle...
-call npm run build
-
-echo.
-echo ====================================
-if %errorlevel% == 0 (
-    echo Build Successful!
-    echo.
-    echo Component Controls Fix Applied:
-    echo ----------------------------------------
-    echo 1. ComponentWrapper.vue: Changed v-if to v-show
-    echo 2. ComponentWrapper.vue: Combined visibility logic
-    echo 3. ComponentControls.vue: Removed v-show from root
-    echo 4. ComponentControls.vue: Removed isVisible prop
-    echo ----------------------------------------
-    echo.
-    echo IMPORTANT: 
-    echo 1. Clear browser cache (Ctrl+Shift+Delete)
-    echo 2. Hard refresh (Ctrl+Shift+R)
-    echo 3. Component controls should now appear on hover!
+if exist dist\style.css (
+    echo      ✅ style.css created successfully
+    for %%A in (dist\style.css) do echo      File size: %%~zA bytes
 ) else (
-    echo Build Failed - Check errors above
+    echo      ⚠️  Warning - style.css not found
 )
-echo ====================================
+
+echo.
+echo ============================================
+echo BUILD COMPLETE!
+echo ============================================
+echo.
+echo Next steps:
+echo 1. Hard refresh your browser (Ctrl+Shift+R)
+echo 2. Check console for: [Theme Store] messages
+echo 3. Verify no more 403 errors in console
 echo.
 pause
