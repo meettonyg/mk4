@@ -389,23 +389,58 @@ export const useThemeStore = defineStore('theme', {
   actions: {
     // Initialize theme from saved state
     initialize(savedTheme, savedCustomizations) {
+      // GEMINI FIX: Validate gmkbData exists and has themes
+      if (!window.gmkbData) {
+        console.warn('[Theme Store] gmkbData not available, using built-in themes only');
+      } else if (!window.gmkbData.themes || !Array.isArray(window.gmkbData.themes)) {
+        console.warn('[Theme Store] No themes data in gmkbData, using built-in themes only');
+      } else {
+        // Merge server themes with available themes
+        const serverThemes = window.gmkbData.themes;
+        if (serverThemes.length > 0) {
+          console.log(`[Theme Store] Loading ${serverThemes.length} themes from server`);
+          
+          // Replace availableThemes with server themes (they include built-ins)
+          this.availableThemes = serverThemes.map(theme => ({
+            ...theme,
+            // Ensure all required fields exist
+            colors: theme.colors || {},
+            typography: theme.typography || {},
+            spacing: theme.spacing || {},
+            effects: theme.effects || {}
+          }));
+        }
+      }
+      
       // ROOT FIX: Ensure store is ready before applying theme
       if (!this.availableThemes || this.availableThemes.length === 0) {
-        console.warn('Theme store not ready for initialization');
+        console.error('[Theme Store] No themes available after initialization!');
         return;
       }
       
+      console.log(`[Theme Store] Initialized with ${this.availableThemes.length} themes`);
+      
       if (savedTheme) {
-        this.activeThemeId = savedTheme;
+        // Validate theme exists before setting
+        if (this.availableThemes.find(t => t.id === savedTheme)) {
+          this.activeThemeId = savedTheme;
+          console.log(`[Theme Store] Set active theme: ${savedTheme}`);
+        } else {
+          console.warn(`[Theme Store] Saved theme "${savedTheme}" not found, using default`);
+          this.activeThemeId = this.availableThemes[0].id;
+        }
+      } else {
+        // Set first theme as default
+        this.activeThemeId = this.availableThemes[0].id;
+        console.log(`[Theme Store] Using default theme: ${this.activeThemeId}`);
       }
+      
       if (savedCustomizations) {
         this.tempCustomizations = savedCustomizations;
       }
       
-      // Only apply to DOM if we have a valid theme
-      if (this.activeThemeId && this.availableThemes.find(t => t.id === this.activeThemeId)) {
-        this.applyThemeToDOM();
-      }
+      // Apply theme to DOM
+      this.applyThemeToDOM();
     },
     
     // Open theme customizer
@@ -664,22 +699,22 @@ export const useThemeStore = defineStore('theme', {
     
     // Load custom themes from database
     async loadCustomThemes() {
-      // ROOT FIX: Use REST API instead of admin-ajax (Phase 1 compliant)
+      // GEMINI FIX: Gracefully handle authentication errors (403/401)
       let restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
       const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
       
       if (!restUrl) {
-        console.log('Custom themes: REST API not configured, using built-in themes only');
+        if (window.gmkbData?.isDevelopment) {
+          console.log('[Theme Store] REST API not configured, custom themes unavailable');
+        }
         return;
       }
       
       // FIX: Check if restUrl already contains gmkb/v1 and handle accordingly
       let endpoint;
       if (restUrl.includes('gmkb/v1')) {
-        // API URL already includes the namespace, just add the endpoint
         endpoint = `${restUrl}themes/custom`;
       } else {
-        // API URL is just the base REST URL, add namespace and endpoint
         if (!restUrl.endsWith('/')) restUrl += '/';
         endpoint = `${restUrl}gmkb/v1/themes/custom`;
       }
@@ -693,26 +728,39 @@ export const useThemeStore = defineStore('theme', {
           credentials: 'same-origin'
         });
         
-        // Handle various error states gracefully
+        // GEMINI FIX: Handle auth errors gracefully without blocking initialization
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
-            console.log('Custom themes: Authentication required, using built-in themes only');
+            // Silently handle - user not authenticated for custom themes
+            if (window.gmkbData?.isDevelopment) {
+              console.log('[Theme Store] Custom themes require authentication, using built-in only');
+            }
           } else {
-            console.log(`Custom themes: HTTP ${response.status}, using built-in themes only`);
+            if (window.gmkbData?.isDevelopment) {
+              console.log(`[Theme Store] Custom themes HTTP ${response.status}, using built-in only`);
+            }
           }
-          return;
+          return; // Don't block app initialization
         }
         
         const result = await response.json();
         if (result.themes && Array.isArray(result.themes)) {
           this.customThemes = result.themes;
           if (result.themes.length > 0) {
-            console.log(`Loaded ${result.themes.length} custom themes`);
+            console.log(`[Theme Store] Loaded ${result.themes.length} custom themes`);
+            // Add custom themes to available themes
+            result.themes.forEach(customTheme => {
+              if (!this.availableThemes.find(t => t.id === customTheme.id)) {
+                this.availableThemes.push(customTheme);
+              }
+            });
           }
         }
       } catch (error) {
-        // Silently handle - custom themes are optional feature
-        console.log('Custom themes not available, using built-in themes');
+        // GEMINI FIX: Silent fallback - custom themes are optional
+        if (window.gmkbData?.isDevelopment) {
+          console.log('[Theme Store] Custom themes not available:', error.message);
+        }
       }
     }
   }

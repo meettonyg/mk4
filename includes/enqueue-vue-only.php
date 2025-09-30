@@ -87,7 +87,7 @@ function gmkb_inject_data_object_script() {
         'restUrl'           => esc_url_raw(rest_url()),
         'restNonce'         => wp_create_nonce('wp_rest'),
         'componentRegistry' => gmkb_get_component_registry_data(),
-        'themeData'         => gmkb_get_theme_data(),
+        'themes'            => gmkb_get_theme_data(), // ROOT FIX: Changed from 'themeData' to 'themes' for Vue compatibility
     );
 
     echo '<script type="text/javascript">';
@@ -136,56 +136,138 @@ function gmkb_get_component_registry_data() {
 }
 
 function gmkb_get_theme_data() {
-    // ROOT FIX: Always provide built-in themes, custom themes are optional
-    $theme_data = array(
-        'builtIn' => array(
-            array(
-                'id' => 'professional_clean',
-                'name' => 'Professional Clean',
-                'description' => 'Clean and professional design'
-            ),
-            array(
-                'id' => 'creative_bold',
-                'name' => 'Creative Bold',
-                'description' => 'Bold and creative design'
-            ),
-            array(
-                'id' => 'minimal_elegant',
-                'name' => 'Minimal Elegant',
-                'description' => 'Minimal and elegant design'
-            ),
-            array(
-                'id' => 'modern_dark',
-                'name' => 'Modern Dark',
-                'description' => 'Modern dark theme'
-            )
-        ),
-        'custom' => array()
-    );
+    // ROOT FIX: Load themes using ThemeDiscovery and return flat array for Vue
+    // Gemini feedback: Vue expects direct array, not nested structure
     
-    // Try to load custom themes if ThemeDiscovery exists
-    if (class_exists('\GMKB\ThemeDiscovery')) {
-        try {
-            $theme_discovery = new \GMKB\ThemeDiscovery(GUESTIFY_PLUGIN_DIR . 'themes/');
-            $discovered = $theme_discovery->discover();
-            if (!empty($discovered)) {
-                $theme_data['builtIn'] = array_values($discovered);
-            }
-        } catch (Exception $e) {
-            // Silently fail - built-in themes already defined above
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB: ThemeDiscovery failed, using built-in themes: ' . $e->getMessage());
+    $themes_array = array();
+    
+    // Strategy 1: Try ThemeDiscovery for filesystem themes
+    $theme_discovery_file = GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php';
+    if (file_exists($theme_discovery_file)) {
+        require_once $theme_discovery_file;
+        
+        if (class_exists('ThemeDiscovery')) {
+            try {
+                $theme_dir = GUESTIFY_PLUGIN_DIR . 'themes/';
+                $theme_discovery = new ThemeDiscovery($theme_dir);
+                $theme_discovery->scan();
+                $themes = $theme_discovery->getThemes();
+                
+                // Convert to flat array with proper structure
+                foreach ($themes as $theme_id => $theme_data) {
+                    // Ensure theme has required ID field
+                    if (!isset($theme_data['id'])) {
+                        $theme_data['id'] = $theme_id;
+                    }
+                    
+                    // Ensure theme has required fields for Vue
+                    $themes_array[] = array(
+                        'id' => $theme_data['id'],
+                        'name' => $theme_data['name'] ?? ucfirst(str_replace('_', ' ', $theme_id)),
+                        'description' => $theme_data['description'] ?? '',
+                        'colors' => $theme_data['colors'] ?? array(),
+                        'typography' => $theme_data['typography'] ?? array(),
+                        'spacing' => $theme_data['spacing'] ?? array(),
+                        'effects' => $theme_data['effects'] ?? array(),
+                        'isCustom' => false,
+                        'isBuiltIn' => true
+                    );
+                }
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB: Loaded ' . count($themes_array) . ' themes via ThemeDiscovery');
+                }
+            } catch (Exception $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('⚠️ GMKB: ThemeDiscovery failed: ' . $e->getMessage());
+                }
             }
         }
     }
     
-    // Try to load custom themes from database
-    $custom_themes = get_option('gmkb_custom_themes', array());
-    if (is_array($custom_themes) && !empty($custom_themes)) {
-        $theme_data['custom'] = array_values($custom_themes);
+    // Strategy 2: Fallback to hardcoded themes if discovery failed
+    if (empty($themes_array)) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ GMKB: ThemeDiscovery not available, using fallback themes');
+        }
+        
+        $themes_array = array(
+            array(
+                'id' => 'professional_clean',
+                'name' => 'Professional Clean',
+                'description' => 'Clean and professional design',
+                'colors' => array(
+                    'primary' => '#3b82f6',
+                    'secondary' => '#2563eb',
+                    'background' => '#ffffff',
+                    'surface' => '#f8fafc',
+                    'text' => '#1e293b'
+                ),
+                'isCustom' => false,
+                'isBuiltIn' => true
+            ),
+            array(
+                'id' => 'creative_bold',
+                'name' => 'Creative Bold',
+                'description' => 'Bold and creative design',
+                'colors' => array(
+                    'primary' => '#f97316',
+                    'secondary' => '#ea580c'
+                ),
+                'isCustom' => false,
+                'isBuiltIn' => true
+            ),
+            array(
+                'id' => 'minimal_elegant',
+                'name' => 'Minimal Elegant',
+                'description' => 'Minimal and elegant design',
+                'colors' => array(
+                    'primary' => '#18181b',
+                    'secondary' => '#27272a'
+                ),
+                'isCustom' => false,
+                'isBuiltIn' => true
+            ),
+            array(
+                'id' => 'modern_dark',
+                'name' => 'Modern Dark',
+                'description' => 'Modern dark theme',
+                'colors' => array(
+                    'primary' => '#8b5cf6',
+                    'secondary' => '#7c3aed'
+                ),
+                'isCustom' => false,
+                'isBuiltIn' => true
+            )
+        );
     }
     
-    return $theme_data;
+    // Strategy 3: Add custom themes from database
+    $custom_themes = get_option('gmkb_custom_themes', array());
+    if (is_array($custom_themes) && !empty($custom_themes)) {
+        foreach ($custom_themes as $theme_id => $theme_data) {
+            // Ensure custom theme has ID
+            if (!isset($theme_data['id'])) {
+                $theme_data['id'] = $theme_id;
+            }
+            $theme_data['isCustom'] = true;
+            $theme_data['isBuiltIn'] = false;
+            $themes_array[] = $theme_data;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Added ' . count($custom_themes) . ' custom themes from database');
+        }
+    }
+    
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: Total themes available: ' . count($themes_array));
+        $theme_ids = array_column($themes_array, 'id');
+        error_log('✅ GMKB: Theme IDs: ' . implode(', ', $theme_ids));
+    }
+    
+    // ROOT FIX: Return flat array, not nested structure (Vue compatibility)
+    return $themes_array;
 }
 
 function gmkb_display_build_error_notice() {
