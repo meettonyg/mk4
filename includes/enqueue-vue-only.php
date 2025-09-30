@@ -50,7 +50,7 @@ function gmkb_enqueue_vue_only_assets() {
     $bundle_css_path = GUESTIFY_PLUGIN_DIR . 'dist/style.css';
     
     // --- SCRIPT ENQUEUEING ---
-    $script_version = filemtime($bundle_js_path);
+    $script_version = time(); // AGGRESSIVE cache bust - use current timestamp
     $script_url = GUESTIFY_PLUGIN_URL . 'dist/gmkb.iife.js';
 
     wp_enqueue_script('gmkb-vue-app', $script_url, array(), $script_version, true);

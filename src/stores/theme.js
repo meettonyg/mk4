@@ -402,12 +402,16 @@ export const useThemeStore = defineStore('theme', {
           
           // Replace availableThemes with server themes (they include built-ins)
           this.availableThemes = serverThemes.map(theme => ({
-            ...theme,
+            id: theme.id, // ROOT FIX: Explicitly preserve ID
+            name: theme.name,
+            description: theme.description,
             // Ensure all required fields exist
             colors: theme.colors || {},
             typography: theme.typography || {},
             spacing: theme.spacing || {},
-            effects: theme.effects || {}
+            effects: theme.effects || {},
+            isCustom: theme.isCustom || false,
+            isBuiltIn: theme.isBuiltIn || false
           }));
         }
       }
