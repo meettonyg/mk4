@@ -263,7 +263,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
   actions: {
     /**
      * PHASE 3 ENHANCEMENT: Single API call initialization
-     * Fetches ALL data including Pods in one request
+     * Fetches ALL data including Pods in one request via APIService
      */
     async initialize(savedState) {
       this.isLoading = true;
@@ -277,37 +277,20 @@ export const useMediaKitStore = defineStore('mediaKit', {
           data = savedState;
           this.applyState(savedState);
         } else if (this.postId) {
-          // SINGLE API CALL for ALL data
-          let apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
-          const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
-          
-          // FIX: Handle API URL that might be an object
-          if (typeof apiUrl === 'object' && apiUrl.root) {
-            apiUrl = apiUrl.root;
-          }
-          
-          // Ensure apiUrl is a string
-          apiUrl = String(apiUrl);
-          
-          // Build correct endpoint
-          let endpoint;
-          if (apiUrl.includes('gmkb/v1')) {
-            endpoint = `${apiUrl}mediakit/${this.postId}`;
-          } else {
-            endpoint = apiUrl.endsWith('/') ? 
-              `${apiUrl}gmkb/v1/mediakit/${this.postId}` : 
-              `${apiUrl}/gmkb/v1/mediakit/${this.postId}`;
-          }
+          // ROOT FIX: Use APIService which uses admin-ajax.php
+          // Get APIService from window or create new instance
+          const apiService = window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
+            window.gmkbData?.ajaxUrl,
+            window.gmkbData?.nonce,
+            this.postId
+          );
 
-          const response = await fetch(endpoint, {
-            headers: { 'X-WP-Nonce': nonce }
-          });
+          // Load data via APIService (uses admin-ajax, not REST)
+          data = await apiService.load();
 
-          if (!response.ok) {
-            throw new Error(`Failed to load: ${response.status}`);
+          if (!data) {
+            throw new Error('No data returned from API');
           }
-
-          data = await response.json();
 
           // Update state in one batch
           this.$patch({
@@ -329,7 +312,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // Initialize history
         this._saveToHistory();
         
-        console.log('✅ State initialized with single API call');
+        console.log('✅ State initialized via APIService (admin-ajax)');
         return data;
 
       } catch (error) {
@@ -342,65 +325,40 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     /**
-     * PHASE 3: Enhanced save with auto-save
+     * PHASE 3: Enhanced save with auto-save via APIService
      */
     async save() {
       if (!this.isDirty) return;
       
       try {
-        // First try the new REST API
-        const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
-        
-        // ROOT FIX: Get fresh nonce from NonceManager for REST API
-        let restNonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
-        
-        if (window.gmkbNonceManager) {
-          // For REST API, we need the wp_rest nonce, not the regular one
-          restNonce = window.gmkbNonceManager.getNonce() || restNonce;
-        }
-        
-        // Build correct endpoint
-        let endpoint;
-        if (apiUrl.includes('gmkb/v1')) {
-          endpoint = `${apiUrl}mediakit/${this.postId}/save`;
-        } else {
-          endpoint = apiUrl.endsWith('/') ? 
-            `${apiUrl}gmkb/v1/mediakit/${this.postId}/save` : 
-            `${apiUrl}/gmkb/v1/mediakit/${this.postId}/save`;
-        }
+        // ROOT FIX: Use APIService which uses admin-ajax.php
+        const apiService = window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
+          window.gmkbData?.ajaxUrl,
+          window.gmkbData?.nonce,
+          this.postId
+        );
 
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-WP-Nonce': restNonce
-          },
-          credentials: 'same-origin', // Include cookies
-          body: JSON.stringify({
-            components: this.components,
-            sections: this.sections,
-            theme: this.theme,
-            themeCustomizations: this.themeCustomizations
-            // Note: Don't save podsData - it comes from WordPress
-          })
-        });
+        const state = {
+          components: this.components,
+          sections: this.sections,
+          theme: this.theme,
+          themeCustomizations: this.themeCustomizations
+        };
 
-        if (response.ok) {
+        // Save via APIService (uses admin-ajax, not REST)
+        const result = await apiService.save(state);
+
+        if (result && result.silent !== true) {
           this.isDirty = false;
           this.lastSaved = Date.now();
-          console.log('✅ Saved successfully via REST API');
+          console.log('✅ Saved successfully via APIService (admin-ajax)');
           return true;
-        } else if (response.status === 403) {
-          // 403 suggests permission/nonce issue - fallback to AJAX
-          console.log('REST API failed with 403, trying AJAX fallback');
-          return await this.saveToWordPress();
-        } else {
-          throw new Error(`Save failed: ${response.status}`);
         }
+        
+        return false;
       } catch (error) {
-        console.error('REST save failed, trying AJAX:', error);
-        // Fallback to traditional AJAX save
-        return await this.saveToWordPress();
+        console.error('Save failed:', error);
+        throw error;
       }
     },
 
@@ -596,46 +554,18 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (savedState.globalSettings) this.globalSettings = savedState.globalSettings;
     },
 
-    // Load from new REST API
+    // Load from API via APIService (uses admin-ajax)
     async loadFromAPI() {
       if (!this.postId) return;
       
       try {
-        // ROOT FIX: Get the correct API URL and nonce
-        let apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
-        const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
-        
-        // FIX: Handle API URL that might be an object
-        if (typeof apiUrl === 'object' && apiUrl.root) {
-          apiUrl = apiUrl.root;
-        }
-        
-        // Ensure apiUrl is a string
-        apiUrl = String(apiUrl);
-        
-        // Check if apiUrl already contains gmkb/v1 and handle accordingly
-        let endpoint;
-        if (apiUrl.includes('gmkb/v1')) {
-          // API URL already includes the namespace, just add the endpoint
-          endpoint = `${apiUrl}mediakit/${this.postId}`;
-        } else {
-          // API URL is just the base REST URL, add namespace and endpoint
-          if (!apiUrl.endsWith('/')) apiUrl += '/';
-          endpoint = `${apiUrl}gmkb/v1/mediakit/${this.postId}`;
-        }
-        
-        const response = await fetch(endpoint, {
-          method: 'GET',
-          headers: {
-            'X-WP-Nonce': nonce, // ROOT FIX: Use the nonce for authentication
-            'Content-Type': 'application/json'
-          },
-          credentials: 'same-origin' // ROOT FIX: Include cookies for authentication
-        });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const data = await response.json();
+        const apiService = window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
+          window.gmkbData?.ajaxUrl,
+          window.gmkbData?.nonce,
+          this.postId
+        );
+
+        const data = await apiService.load();
         
         // Apply loaded state
         this.applyState(data);
@@ -645,7 +575,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           this.podsData = data.podsData;
         }
         
-        console.log('✅ Loaded from REST API');
+        console.log('✅ Loaded via APIService (admin-ajax)');
         return data;
         
       } catch (error) {
@@ -654,7 +584,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
-    // Save to new REST API
+    // Save via APIService (uses admin-ajax)
     async saveToAPI() {
       if (!this.postId) return;
       
@@ -669,44 +599,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
           globalSettings: this.globalSettings
         };
         
-        // ROOT FIX: Get the correct API URL and nonce
-        let apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
-        const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+        const apiService = window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
+          window.gmkbData?.ajaxUrl,
+          window.gmkbData?.nonce,
+          this.postId
+        );
+
+        const result = await apiService.save(state);
         
-        // FIX: Handle API URL that might be an object
-        if (typeof apiUrl === 'object' && apiUrl.root) {
-          apiUrl = apiUrl.root;
-        }
-        
-        // Ensure apiUrl is a string
-        apiUrl = String(apiUrl);
-        
-        // Check if apiUrl already contains gmkb/v1 and handle accordingly
-        let endpoint;
-        if (apiUrl.includes('gmkb/v1')) {
-          // API URL already includes the namespace, just add the endpoint
-          endpoint = `${apiUrl}mediakit/${this.postId}/save`;
-        } else {
-          // API URL is just the base REST URL, add namespace and endpoint
-          if (!apiUrl.endsWith('/')) apiUrl += '/';
-          endpoint = `${apiUrl}gmkb/v1/mediakit/${this.postId}/save`;
-        }
-        
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'X-WP-Nonce': nonce, // ROOT FIX: Use the nonce for authentication
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(state),
-          credentials: 'same-origin' // ROOT FIX: Include cookies for authentication
-        });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const result = await response.json();
-        
-        if (result.success) {
+        if (result && result.silent !== true) {
           this.isDirty = false;
           this.lastSaved = Date.now();
           
@@ -715,14 +616,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
             detail: { result, timestamp: this.lastSaved }
           }));
           
-          console.log('✅ Saved to REST API');
+          console.log('✅ Saved via APIService (admin-ajax)');
           return result;
-        } else {
-          throw new Error(result.message || 'Save failed');
         }
         
+        return result;
+        
       } catch (error) {
-        console.error('Failed to save to API:', error);
+        console.error('Failed to save via API:', error);
         throw error;
       } finally {
         this.isSaving = false;

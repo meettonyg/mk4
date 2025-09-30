@@ -1,10 +1,14 @@
 <?php
 /**
- * Media Kit REST API Handler
- * Phase 1: Clean REST API for Vue frontend
- * 
+ * Media Kit API Handler
+ *
+ * This version has been refactored to use the traditional WordPress admin-ajax.php
+ * endpoint for core data operations (load/save) to ensure maximum compatibility
+ * with various hosting environments and security configurations. The REST API is
+ * now only used for secondary features like theme management.
+ *
  * @package GMKB
- * @since 2.0.0
+ * @since 4.0.0
  */
 
 namespace GMKB;
@@ -16,207 +20,193 @@ if (!defined('ABSPATH')) {
 class MediaKitAPI {
     
     /**
-     * Initialize the REST API routes
+     * Initialize the API handlers.
+     * Hooks into WordPress AJAX actions for primary data handling and the REST API for themes.
      */
     public function __construct() {
-        add_action('rest_api_init', array($this, 'register_routes'));
+        // Core data operations via admin-ajax.php for reliability
+        add_action('wp_ajax_gmkb_load_media_kit_vue', array($this, 'ajax_get_mediakit'));
+        add_action('wp_ajax_gmkb_save_media_kit_vue', array($this, 'ajax_save_mediakit'));
+
+        // Secondary features like theme management can still use the REST API
+        add_action('rest_api_init', array($this, 'register_rest_routes'));
     }
-    
+
     /**
-     * Register REST API routes
+     * AJAX handler for loading all media kit data.
+     * This is the primary data source for the Vue application.
      */
-    public function register_routes() {
-        $namespace = 'gmkb/v1';
-        
-        // GET /mediakit/{id} - Fetch media kit data
-        register_rest_route($namespace, '/mediakit/(?P<id>\d+)', array(
-            'methods' => 'GET',
-            'callback' => array($this, 'get_mediakit'),
-            'permission_callback' => array($this, 'check_permissions'),
-            'args' => array(
-                'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
-                )
-            )
-        ));
-        
-        // POST /mediakit/{id}/save - Save media kit data
-        register_rest_route($namespace, '/mediakit/(?P<id>\d+)/save', array(
-            'methods' => 'POST',
-            'callback' => array($this, 'save_mediakit'),
-            'permission_callback' => array($this, 'check_permissions'),
-            'args' => array(
-                'id' => array(
-                    'validate_callback' => function($param) {
-                        return is_numeric($param);
-                    }
-                )
-            )
-        ));
-        
-        // GET /themes/custom - Get custom themes
-        register_rest_route($namespace, '/themes/custom', array(
-            'methods' => 'GET',
-            'callback' => array($this, 'get_custom_themes'),
-            'permission_callback' => array($this, 'check_themes_permission')
-        ));
-        
-        // POST /themes/custom - Save custom theme
-        register_rest_route($namespace, '/themes/custom', array(
-            'methods' => 'POST',
-            'callback' => array($this, 'save_custom_theme'),
-            'permission_callback' => array($this, 'check_themes_permission')
-        ));
+    public function ajax_get_mediakit() {
+        // Security: Verify the AJAX nonce sent from the frontend.
+        if (!check_ajax_referer('gmkb_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Invalid security token. Please refresh the page.'), 403);
+            return;
+        }
+
+        // Input validation.
+        if (!isset($_POST['post_id']) || !is_numeric($_POST['post_id'])) {
+            wp_send_json_error(array('message' => 'Missing or invalid Post ID.'), 400);
+            return;
+        }
+
+        $post_id = intval($_POST['post_id']);
+
+        // Permission check: Ensure the current user has rights to edit this post.
+        if (!current_user_can('edit_post', $post_id)) {
+             wp_send_json_error(array('message' => 'You do not have permission to access this media kit.'), 403);
+             return;
+        }
+
+        // Get the data using our shared helper function.
+        $response_data = $this->get_mediakit_data($post_id);
+
+        if (is_wp_error($response_data)) {
+            wp_send_json_error(array('message' => $response_data->get_error_message()), 404);
+        } else {
+            wp_send_json_success($response_data);
+        }
     }
-    
+
     /**
-     * Check if user has permission to access the endpoint
-     * ROOT FIX: Make GET requests publicly accessible for media kit viewing
+     * AJAX handler for saving the media kit state.
      */
-    public function check_permissions(\WP_REST_Request $request) {
-        // Get the post ID from the request parameters
-        $post_id = $request->get_param('id');
-        
-        // For GET requests, allow public access (media kits should be viewable)
-        if ($request->get_method() === 'GET') {
-            // Just verify the post exists
-            $post = get_post($post_id);
-            return $post ? true : new \WP_Error('rest_post_invalid', 'Post not found', array('status' => 404));
+    public function ajax_save_mediakit() {
+        // Security: Verify the AJAX nonce.
+        if (!check_ajax_referer('gmkb_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Your session has expired. Please refresh the page to continue saving.'), 403);
+            return;
+        }
+
+        // Input validation.
+        if (!isset($_POST['post_id']) || !is_numeric($_POST['post_id'])) {
+            wp_send_json_error(array('message' => 'Missing or invalid Post ID.'), 400);
+            return;
+        }
+
+        $post_id = intval($_POST['post_id']);
+
+        // Permission check.
+        if (!current_user_can('edit_post', $post_id)) {
+             wp_send_json_error(array('message' => 'You do not have permission to save this media kit.'), 403);
+             return;
+        }
+
+        if (!isset($_POST['state'])) {
+            wp_send_json_error(array('message' => 'Missing state data.'), 400);
+            return;
+        }
+
+        // Process and save the data.
+        $state_json = stripslashes($_POST['state']);
+        $data = json_decode($state_json, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            wp_send_json_error(array('message' => 'Invalid state data format.'), 400);
+            return;
         }
         
-        // For POST/PUT/DELETE requests, require authentication
-        $nonce = $request->get_header('X-WP-Nonce');
-        
-        if (!$nonce) {
-            return new \WP_Error('rest_missing_nonce', 'No authentication provided', array('status' => 403));
+        $result = $this->save_mediakit_data($post_id, $data);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => $result->get_error_message()), 500);
+        } else {
+            wp_send_json_success($result);
         }
-        
-        // Verify the nonce
-        if (!wp_verify_nonce($nonce, 'wp_rest')) {
-            return new \WP_Error('rest_nonce_invalid', 'Invalid authentication', array('status' => 403));
-        }
-        
-        // Check edit capability
-        return current_user_can('edit_post', $post_id);
     }
-    
+
     /**
-     * Get media kit data
-     * Implements Phase 1: Single API call for all data
+     * Helper function to fetch all data for a media kit.
+     *
+     * @param int $post_id The ID of the post.
+     * @return array|\WP_Error The complete data array or a WP_Error on failure.
      */
-    public function get_mediakit($request) {
-        $post_id = intval($request->get_param('id'));
+    private function get_mediakit_data($post_id) {
+        $post = get_post($post_id);
+        if (!$post) {
+            return new \WP_Error('post_not_found', 'Post not found', array('status' => 404));
+        }
         
-        // Get saved state from post meta
         $media_kit_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
-        if (empty($media_kit_state)) {
+        if (empty($media_kit_state) || !is_array($media_kit_state)) {
             $media_kit_state = array(
                 'components' => new \stdClass(),
+                'layout' => array(),
                 'sections' => array(),
                 'theme' => 'professional_clean',
-                'themeCustomizations' => array()
+                'themeSettings' => new \stdClass(),
+                'globalSettings' => new \stdClass(),
             );
         }
-        
-        // Fetch ALL Pods data in one go - no N+1 queries!
+
         $pods_data = $this->fetch_all_pods_data($post_id);
         
-        // Get post type for context
-        $post = get_post($post_id);
-        $post_type = $post ? $post->post_type : '';
-        
-        // Return complete data structure
-        return rest_ensure_response(array(
-            'version' => '1.0',
+        return array(
+            'version' => '1.0-ajax',
             'postId' => $post_id,
-            'postType' => $post_type,
+            'postType' => $post->post_type,
             'components' => $media_kit_state['components'] ?? new \stdClass(),
-            'sections' => $media_kit_state['sections'] ?? array(),
+            'layout' => $media_kit_state['layout'] ?? $media_kit_state['sections'] ?? array(), // Handle legacy 'sections' as layout
+            'sections' => $media_kit_state['sections'] ?? $media_kit_state['layout'] ?? array(), // Handle legacy 'layout' as sections
             'theme' => $media_kit_state['theme'] ?? 'professional_clean',
-            'themeCustomizations' => $media_kit_state['themeCustomizations'] ?? array(),
+            'themeSettings' => $media_kit_state['themeSettings'] ?? new \stdClass(),
+            'globalSettings' => $media_kit_state['globalSettings'] ?? new \stdClass(),
             'podsData' => $pods_data,
             'timestamp' => current_time('mysql')
-        ));
+        );
     }
-    
+
     /**
-     * Save media kit data
+     * Helper function to save the media kit state.
+     *
+     * @param int $post_id The ID of the post.
+     * @param array $data The state data from the frontend.
+     * @return array|\WP_Error Success array or a WP_Error on failure.
      */
-    public function save_mediakit($request) {
-        $post_id = intval($request->get_param('id'));
-        
-        // Get JSON payload
-        $data = $request->get_json_params();
-        
-        // Validate required fields
-        if (!isset($data['components']) || !isset($data['sections'])) {
-            return new \WP_Error('missing_data', 'Components and sections are required', array('status' => 400));
+    private function save_mediakit_data($post_id, $data) {
+        if (!isset($data['components']) || !isset($data['layout'])) {
+            return new \WP_Error('missing_data', 'Incomplete state data: components and layout are required.', array('status' => 400));
         }
-        
-        // Prepare state for saving
+
         $state = array(
             'components' => $data['components'] ?? new \stdClass(),
-            'sections' => $data['sections'] ?? array(),
+            'layout' => $data['layout'] ?? array(),
+            'sections' => $data['layout'] ?? array(), // Ensure sections and layout are synced.
             'theme' => $data['theme'] ?? 'professional_clean',
-            'themeCustomizations' => $data['themeCustomizations'] ?? array(),
+            'themeSettings' => $data['themeSettings'] ?? new \stdClass(),
+            'globalSettings' => $data['globalSettings'] ?? new \stdClass(),
             'timestamp' => current_time('mysql')
         );
-        
-        // Save to post meta
+
         $updated = update_post_meta($post_id, 'gmkb_media_kit_state', $state);
         
         if ($updated === false) {
-            return new \WP_Error('save_failed', 'Failed to save media kit', array('status' => 500));
+            return new \WP_Error('save_failed', 'Failed to write media kit state to the database.', array('status' => 500));
         }
-        
-        return rest_ensure_response(array(
+
+        return array(
             'success' => true,
             'timestamp' => $state['timestamp'],
-            'message' => 'Media kit saved successfully'
-        ));
+            'message' => 'Media kit saved successfully.'
+        );
     }
     
     /**
-     * Fetch all Pods data in a single operation
-     * Prevents N+1 query problems
+     * Fetch all relevant Pods data for a post in a single efficient operation.
+     *
+     * @param int $post_id The ID of the post.
+     * @return array The fetched data.
      */
     private function fetch_all_pods_data($post_id) {
         $data = array();
         
-        // Define all fields to fetch
         $fields = array(
-            // Biography fields
-            'biography',
-            'biography_short',
-            
-            // Name fields
-            'first_name',
-            'last_name',
-            'guest_title',
-            'tagline',
-            
-            // Contact fields
-            'email',
-            'phone',
-            'website',
-            
-            // Image fields
-            'guest_headshot'
+            'biography', 'biography_short', 'first_name', 'last_name', 
+            'guest_title', 'tagline', 'email', 'phone', 'website', 'guest_headshot'
         );
         
-        // Add topic fields (1-5)
-        for ($i = 1; $i <= 5; $i++) {
-            $fields[] = "topic_{$i}";
-        }
+        for ($i = 1; $i <= 5; $i++) { $fields[] = "topic_{$i}"; }
+        for ($i = 1; $i <= 10; $i++) { $fields[] = "question_{$i}"; }
         
-        // Add question fields (1-10)
-        for ($i = 1; $i <= 10; $i++) {
-            $fields[] = "question_{$i}";
-        }
-        
-        // Fetch all meta fields at once
         foreach ($fields as $field) {
             $value = get_post_meta($post_id, $field, true);
             if (!empty($value)) {
@@ -224,22 +214,22 @@ class MediaKitAPI {
             }
         }
         
-        // Try Pods API if available and no data found
         if (empty($data['biography']) && function_exists('pods')) {
             try {
                 $pod = pods('mkcg', $post_id);
                 if ($pod && $pod->exists()) {
                     foreach ($fields as $field) {
-                        $value = $pod->field($field);
-                        if (!empty($value)) {
-                            $data[$field] = $value;
+                        if (empty($data[$field])) { // Only fill if not already set by get_post_meta
+                            $value = $pod->field($field);
+                            if (!empty($value)) {
+                                $data[$field] = $value;
+                            }
                         }
                     }
                 }
             } catch (\Exception $e) {
-                // Pods API failed, continue with what we have
                 if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('GMKB API: Pods API error - ' . $e->getMessage());
+                    error_log('GMKB Pods API Error: ' . $e->getMessage());
                 }
             }
         }
@@ -248,91 +238,85 @@ class MediaKitAPI {
     }
     
     /**
-     * Get custom themes from database
-     * Phase 1 compliant - REST API instead of AJAX
+     * Register REST API routes for non-essential features like themes.
      */
-    public function get_custom_themes($request) {
-        // Check if user is logged in for custom themes
-        if (!is_user_logged_in()) {
-            // Return empty for non-logged in users
-            return rest_ensure_response(array(
-                'themes' => array(),
-                'count' => 0,
-                'message' => 'Login required for custom themes'
-            ));
-        }
+    public function register_rest_routes() {
+        $namespace = 'gmkb/v1';
         
-        // Get custom themes from database
-        $custom_themes = get_option('gmkb_custom_themes', array());
+        register_rest_route($namespace, '/themes/custom', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_custom_themes'),
+            'permission_callback' => array($this, 'check_themes_permission')
+        ));
         
-        // Ensure it's an array
-        if (!is_array($custom_themes)) {
-            $custom_themes = array();
-        }
-        
-        return rest_ensure_response(array(
-            'themes' => array_values($custom_themes), // Ensure indexed array
-            'count' => count($custom_themes),
-            'message' => 'Custom themes loaded successfully'
+        register_rest_route($namespace, '/themes/custom', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'save_custom_theme'),
+            'permission_callback' => array($this, 'check_themes_permission')
         ));
     }
     
     /**
-     * Save custom theme to database
-     * Phase 1 compliant - REST API instead of AJAX
+     * Get custom themes from the database via REST API.
      */
-    public function save_custom_theme($request) {
-        // Get theme data from request
-        $theme = $request->get_json_params();
-        
-        // Validate theme data
-        if (!$theme || !isset($theme['id']) || !isset($theme['colors'])) {
-            return new \WP_Error('invalid_theme', 'Invalid theme data', array('status' => 400));
+    public function get_custom_themes($request) {
+        if (!is_user_logged_in()) {
+            return rest_ensure_response(array(
+                'themes' => array(),
+                'message' => 'Login required for custom themes'
+            ));
         }
         
-        // Get existing custom themes
+        $custom_themes = get_option('gmkb_custom_themes', array());
+        
+        return rest_ensure_response(array(
+            'themes' => is_array($custom_themes) ? array_values($custom_themes) : array(),
+        ));
+    }
+    
+    /**
+     * Save a custom theme to the database via REST API.
+     */
+    public function save_custom_theme($request) {
+        $theme = $request->get_json_params();
+        
+        if (!$theme || !isset($theme['id']) || !isset($theme['colors'])) {
+            return new \WP_Error('invalid_theme', 'Invalid theme data.', array('status' => 400));
+        }
+        
         $custom_themes = get_option('gmkb_custom_themes', array());
         if (!is_array($custom_themes)) {
             $custom_themes = array();
         }
         
-        // Add or update theme
         $custom_themes[$theme['id']] = $theme;
         update_option('gmkb_custom_themes', $custom_themes);
         
         return rest_ensure_response(array(
             'success' => true,
-            'message' => 'Theme saved successfully',
+            'message' => 'Theme saved successfully.',
             'theme' => $theme
         ));
     }
     
     /**
-     * Check permissions for theme endpoints
-     * ROOT FIX: Properly handle WP_REST_Request object
+     * Permission check for the theme-related REST endpoints.
      */
     public function check_themes_permission(\WP_REST_Request $request) {
-        // For GET requests, allow public access to themes
+        // Anyone can view themes.
         if ($request->get_method() === 'GET') {
             return true;
         }
         
-        // For POST requests, require authentication
+        // Only authenticated users who can edit posts can save themes.
         $nonce = $request->get_header('X-WP-Nonce');
-        
-        if (!$nonce) {
-            return new \WP_Error('rest_missing_nonce', 'No authentication provided', array('status' => 403));
+        if (!$nonce || !wp_verify_nonce($nonce, 'wp_rest')) {
+            return new \WP_Error('rest_nonce_invalid', 'Invalid authentication.', array('status' => 403));
         }
         
-        // Verify the nonce
-        if (!wp_verify_nonce($nonce, 'wp_rest')) {
-            return new \WP_Error('rest_nonce_invalid', 'Invalid authentication', array('status' => 403));
-        }
-        
-        // Check if user can edit posts
         return current_user_can('edit_posts');
     }
 }
 
-// Initialize the API
+// Initialize the API handler.
 new MediaKitAPI();
