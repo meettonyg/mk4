@@ -98,12 +98,12 @@
                   drag-class="drag"
                 >
                   <template #item="{element: componentId}">
-                    <ComponentRenderer
+                    <ComponentWrapper
                       v-if="getComponent(componentId)"
-                      :component-id="componentId"
                       :component="getComponent(componentId)"
-                      :section-id="section.section_id"
-                      :column="1"
+                      :index="0"
+                      :total-components="1"
+                      :show-controls="true"
                     />
                   </template>
                 </draggable>
@@ -138,12 +138,12 @@
                     drag-class="drag"
                   >
                     <template #item="{element: componentId}">
-                      <ComponentRenderer
+                      <ComponentWrapper
                         v-if="getComponent(componentId)"
-                        :component-id="componentId"
                         :component="getComponent(componentId)"
-                        :section-id="section.section_id"
-                        :column="1"
+                        :index="0"
+                        :total-components="1"
+                        :show-controls="true"
                       />
                     </template>
                   </draggable>
@@ -175,12 +175,12 @@
                     drag-class="drag"
                   >
                     <template #item="{element: componentId}">
-                      <ComponentRenderer
+                      <ComponentWrapper
                         v-if="getComponent(componentId)"
-                        :component-id="componentId"
                         :component="getComponent(componentId)"
-                        :section-id="section.section_id"
-                        :column="2"
+                        :index="0"
+                        :total-components="1"
+                        :show-controls="true"
                       />
                     </template>
                   </draggable>
@@ -221,12 +221,12 @@
                     drag-class="drag"
                   >
                     <template #item="{element: componentId}">
-                      <ComponentRenderer
+                      <ComponentWrapper
                         v-if="getComponent(componentId)"
-                        :component-id="componentId"
                         :component="getComponent(componentId)"
-                        :section-id="section.section_id"
-                        :column="col"
+                        :index="0"
+                        :total-components="1"
+                        :show-controls="true"
                       />
                     </template>
                   </draggable>
@@ -252,7 +252,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
-import ComponentRenderer from './ComponentRenderer.vue';
+import ComponentWrapper from './builder/ComponentWrapper.vue';
 import draggable from 'vuedraggable';
 
 const store = useMediaKitStore();

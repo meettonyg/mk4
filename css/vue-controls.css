@@ -9,6 +9,12 @@
 }
 
 /* Component Controls in Preview */
+/* Vue handles visibility with v-show, so we only need transitions */
+.component-controls {
+  transition: opacity 0.2s;
+}
+
+/* Legacy styles for backwards compatibility */
 .gmkb-component-controls {
   opacity: 0;
   visibility: hidden;

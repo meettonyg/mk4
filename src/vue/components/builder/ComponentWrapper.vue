@@ -29,7 +29,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useMediaKitStore } from '../../stores/mediaKit';
+import { useMediaKitStore } from '../../../stores/mediaKit';
 import ComponentControls from './ComponentControls.vue';
 import ComponentRenderer from '../ComponentRenderer.vue';
 

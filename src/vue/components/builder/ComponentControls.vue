@@ -1,5 +1,5 @@
 <template>
-  <div class="component-controls" v-show="isVisible">
+  <div class="component-controls">
     <div class="component-controls__bar">
       <span class="component-controls__label">{{ componentLabel }}</span>
       
@@ -67,7 +67,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { useMediaKitStore } from '../../stores/mediaKit';
+import { useMediaKitStore } from '../../../stores/mediaKit';
 
 // Props
 const props = defineProps({
@@ -78,10 +78,6 @@ const props = defineProps({
   componentType: {
     type: String,
     required: true
-  },
-  isVisible: {
-    type: Boolean,
-    default: false
   },
   index: {
     type: Number,
