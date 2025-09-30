@@ -278,8 +278,16 @@ export const useMediaKitStore = defineStore('mediaKit', {
           this.applyState(savedState);
         } else if (this.postId) {
           // SINGLE API CALL for ALL data
-          const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+          let apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
           const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+          
+          // FIX: Handle API URL that might be an object
+          if (typeof apiUrl === 'object' && apiUrl.root) {
+            apiUrl = apiUrl.root;
+          }
+          
+          // Ensure apiUrl is a string
+          apiUrl = String(apiUrl);
           
           // Build correct endpoint
           let endpoint;
@@ -597,7 +605,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
         let apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
         const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
         
-        // FIX: Check if apiUrl already contains gmkb/v1 and handle accordingly
+        // FIX: Handle API URL that might be an object
+        if (typeof apiUrl === 'object' && apiUrl.root) {
+          apiUrl = apiUrl.root;
+        }
+        
+        // Ensure apiUrl is a string
+        apiUrl = String(apiUrl);
+        
+        // Check if apiUrl already contains gmkb/v1 and handle accordingly
         let endpoint;
         if (apiUrl.includes('gmkb/v1')) {
           // API URL already includes the namespace, just add the endpoint
@@ -657,7 +673,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
         let apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
         const nonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
         
-        // FIX: Check if apiUrl already contains gmkb/v1 and handle accordingly
+        // FIX: Handle API URL that might be an object
+        if (typeof apiUrl === 'object' && apiUrl.root) {
+          apiUrl = apiUrl.root;
+        }
+        
+        // Ensure apiUrl is a string
+        apiUrl = String(apiUrl);
+        
+        // Check if apiUrl already contains gmkb/v1 and handle accordingly
         let endpoint;
         if (apiUrl.includes('gmkb/v1')) {
           // API URL already includes the namespace, just add the endpoint

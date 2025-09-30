@@ -73,37 +73,22 @@ class MediaKitAPI {
     
     /**
      * Check if user has permission to access the endpoint
-     * ROOT FIX: Properly handle WP_REST_Request object
+     * ROOT FIX: Make GET requests publicly accessible for media kit viewing
      */
     public function check_permissions(\WP_REST_Request $request) {
         // Get the post ID from the request parameters
         $post_id = $request->get_param('id');
         
-        // For routes without post_id (like themes), check general capability
-        if (!$post_id) {
-            // For theme endpoints, just check if user can edit posts
-            if ($request->get_route() && strpos($request->get_route(), '/themes/') !== false) {
-                return current_user_can('edit_posts');
-            }
-            // For other endpoints without ID, deny by default
-            return new \WP_Error('rest_invalid_param', 'No post ID provided', array('status' => 400));
+        // For GET requests, allow public access (media kits should be viewable)
+        if ($request->get_method() === 'GET') {
+            // Just verify the post exists
+            $post = get_post($post_id);
+            return $post ? true : new \WP_Error('rest_post_invalid', 'Post not found', array('status' => 404));
         }
         
-        // Check if post exists
-        $post = get_post($post_id);
-        if (!$post) {
-            return new \WP_Error('rest_post_invalid', 'Post not found', array('status' => 404));
-        }
-        
-        // Get the nonce from the request header
+        // For POST/PUT/DELETE requests, require authentication
         $nonce = $request->get_header('X-WP-Nonce');
         
-        // For GET requests on published posts, allow public access (no nonce required)
-        if ($request->get_method() === 'GET' && $post->post_status === 'publish') {
-            return true;
-        }
-        
-        // For all other requests, require valid nonce
         if (!$nonce) {
             return new \WP_Error('rest_missing_nonce', 'No authentication provided', array('status' => 403));
         }
@@ -113,14 +98,8 @@ class MediaKitAPI {
             return new \WP_Error('rest_nonce_invalid', 'Invalid authentication', array('status' => 403));
         }
         
-        // Check capabilities based on request method
-        if ($request->get_method() === 'GET') {
-            // For authenticated GET requests, check read capability
-            return current_user_can('read_private_posts') || current_user_can('edit_post', $post_id);
-        } else {
-            // For POST/PUT/DELETE, check edit capability
-            return current_user_can('edit_post', $post_id);
-        }
+        // Check edit capability
+        return current_user_can('edit_post', $post_id);
     }
     
     /**

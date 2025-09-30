@@ -23,9 +23,11 @@ define( 'GMKB_VERSION', '2.1.0-vanilla-js-final' );
 define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'GMKB_WORDPRESS_COMPATIBLE', true );
+define( 'GMKB_ARCHITECTURE', 'vue' ); // 100% Vue architecture
+define( 'GMKB_DEV_MODE', defined( 'WP_DEBUG' ) && WP_DEBUG );
 
-// Include primary files
-require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue-separated.php';
+// Include Vue-only enqueue system
+require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue-vue-only.php';
 
 // LEAN ARCHITECTURE: Admin settings for toggling between architectures
 if ( is_admin() ) {
@@ -148,6 +150,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php
 // PHASE 1 IMPLEMENTATION: Pure Vue REST API
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.php';
+}
+
+// PHASE 5: Theme REST API Controller
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.php';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB Phase 5: Theme REST API Controller loaded');
+    }
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('❌ GMKB Phase 5: Theme REST API Controller not found');
+    }
 }
 
 // PHASE 1 MIGRATION: New optimized MediaKit API with single-query data fetching

@@ -1,7 +1,12 @@
 <?php
 /**
- * ARCHITECTURE SEPARATION CONFIGURATION
- * Controls which system loads: Vue/Vite (modern) or Legacy
+ * Architecture Configuration for Media Kit Builder
+ * 
+ * Controls which architecture mode the plugin runs in.
+ * After Phase 5 completion, this should always be 'vue'.
+ * 
+ * @package Guestify
+ * @version 4.0.0
  */
 
 // Exit if accessed directly
@@ -10,122 +15,123 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ================================================
-// MASTER SWITCH - CHANGE THIS TO CONTROL SYSTEM
+// ARCHITECTURE MODE CONFIGURATION
 // ================================================
 
 /**
- * System Architecture Modes:
- * 'vue'    - Use Vue 3 + Vite lean bundle (RECOMMENDED)
- * 'legacy' - Use legacy JavaScript files (DEPRECATED)
- * 'hybrid' - Danger zone! Both systems (DEBUGGING ONLY)
+ * Architecture Mode Options:
+ * - 'vue'    : 100% Vue/Vite architecture (recommended)
+ * - 'legacy' : Old jQuery/Vanilla JS architecture (deprecated)
+ * - 'hybrid' : Both architectures (dangerous, for migration only)
  */
-define( 'GMKB_ARCHITECTURE_MODE', 'vue' );
-
-// ================================================
-// FEATURE FLAGS FOR EACH ARCHITECTURE
-// ================================================
-
-if ( GMKB_ARCHITECTURE_MODE === 'vue' ) {
-    // Vue/Vite Configuration
-    define( 'GMKB_USE_LEAN_BUNDLE', true );
-    define( 'GMKB_LOAD_LEGACY_SCRIPTS', false );
-    define( 'GMKB_VUE_DEV_MODE', false ); // Set to true for Vue DevTools
-    define( 'GMKB_HOT_MODULE_REPLACEMENT', false ); // For Vite HMR in dev
-    
-} elseif ( GMKB_ARCHITECTURE_MODE === 'legacy' ) {
-    // Legacy Configuration
-    define( 'GMKB_USE_LEAN_BUNDLE', false );
-    define( 'GMKB_LOAD_LEGACY_SCRIPTS', true );
-    define( 'GMKB_VUE_DEV_MODE', false );
-    define( 'GMKB_HOT_MODULE_REPLACEMENT', false );
-    
-} elseif ( GMKB_ARCHITECTURE_MODE === 'hybrid' ) {
-    // Hybrid Mode - DEBUGGING ONLY!
-    define( 'GMKB_USE_LEAN_BUNDLE', true );
-    define( 'GMKB_LOAD_LEGACY_SCRIPTS', true );
-    define( 'GMKB_VUE_DEV_MODE', true );
-    define( 'GMKB_HOT_MODULE_REPLACEMENT', false );
-    
-    // Show warning in admin
-    add_action( 'admin_notices', function() {
-        echo '<div class="notice notice-warning"><p><strong>GMKB Warning:</strong> Running in HYBRID mode - both Vue and Legacy systems active. This may cause conflicts!</p></div>';
-    });
+if ( ! defined( 'GMKB_ARCHITECTURE_MODE' ) ) {
+    define( 'GMKB_ARCHITECTURE_MODE', 'vue' );
 }
 
 // ================================================
-// PATH CONFIGURATION
+// ARCHITECTURE PATHS
 // ================================================
 
-// Vue/Modern paths
-define( 'GMKB_VUE_SRC_PATH', GUESTIFY_PLUGIN_DIR . 'src/' );
+// Vue/Vite paths
 define( 'GMKB_VUE_DIST_PATH', GUESTIFY_PLUGIN_DIR . 'dist/' );
 define( 'GMKB_VUE_BUNDLE_URL', GUESTIFY_PLUGIN_URL . 'dist/gmkb.iife.js' );
+define( 'GMKB_VUE_STYLES_URL', GUESTIFY_PLUGIN_URL . 'dist/style.css' );
 
-// Legacy paths  
+// Common paths
+define( 'GMKB_CSS_PATH', GUESTIFY_PLUGIN_DIR . 'css/' );
+define( 'GMKB_CSS_URL', GUESTIFY_PLUGIN_URL . 'css/' );
+define( 'GMKB_COMPONENTS_PATH', GUESTIFY_PLUGIN_DIR . 'components/' );
+define( 'GMKB_COMPONENTS_URL', GUESTIFY_PLUGIN_URL . 'components/' );
+
+// Legacy paths (will be removed)
 define( 'GMKB_LEGACY_JS_PATH', GUESTIFY_PLUGIN_DIR . 'js-legacy/' );
 define( 'GMKB_LEGACY_JS_URL', GUESTIFY_PLUGIN_URL . 'js-legacy/' );
 
-// Shared resources (works with both)
-define( 'GMKB_COMPONENTS_PATH', GUESTIFY_PLUGIN_DIR . 'components/' );
-define( 'GMKB_THEMES_PATH', GUESTIFY_PLUGIN_DIR . 'themes/' );
-define( 'GMKB_CSS_URL', GUESTIFY_PLUGIN_URL . 'css/' );
+// ================================================
+// FEATURE FLAGS
+// ================================================
+
+// Vue features
+define( 'GMKB_VUE_DEV_MODE', defined( 'WP_DEBUG' ) && WP_DEBUG );
+define( 'GMKB_VUE_HMR_ENABLED', false ); // Hot Module Replacement for development
+
+// API features
+define( 'GMKB_API_VERSION', 'v1' );
+define( 'GMKB_API_NAMESPACE', 'gmkb/v1' );
+
+// Component features
+define( 'GMKB_COMPONENTS_CACHE', true );
+define( 'GMKB_COMPONENTS_CACHE_TTL', 3600 ); // 1 hour
 
 // ================================================
-// DEBUG CONFIGURATION
+// COMPATIBILITY CHECKS
+// ================================================
+
+/**
+ * Check if the environment supports the selected architecture
+ */
+function gmkb_check_architecture_compatibility() {
+    $errors = array();
+    
+    if ( GMKB_ARCHITECTURE_MODE === 'vue' ) {
+        // Check for Vue bundle
+        if ( ! file_exists( GMKB_VUE_DIST_PATH . 'gmkb.iife.js' ) ) {
+            $errors[] = 'Vue bundle not found. Run: npm run build';
+        }
+        
+        // Check for required PHP version (7.4+)
+        if ( version_compare( PHP_VERSION, '7.4.0', '<' ) ) {
+            $errors[] = 'Vue mode requires PHP 7.4 or higher';
+        }
+        
+        // Check for REST API availability
+        if ( ! function_exists( 'rest_url' ) ) {
+            $errors[] = 'WordPress REST API is not available';
+        }
+    }
+    
+    if ( GMKB_ARCHITECTURE_MODE === 'legacy' ) {
+        // Check for legacy files
+        if ( ! is_dir( GMKB_LEGACY_JS_PATH ) ) {
+            $errors[] = 'Legacy JavaScript files not found';
+        }
+    }
+    
+    return $errors;
+}
+
+// Run compatibility check
+add_action( 'admin_notices', function() {
+    $errors = gmkb_check_architecture_compatibility();
+    if ( ! empty( $errors ) ) {
+        ?>
+        <div class="notice notice-error">
+            <p><strong>Media Kit Builder - Architecture Configuration Error</strong></p>
+            <ul>
+                <?php foreach ( $errors as $error ) : ?>
+                    <li><?php echo esc_html( $error ); ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <p>Current architecture mode: <strong><?php echo esc_html( GMKB_ARCHITECTURE_MODE ); ?></strong></p>
+        </div>
+        <?php
+    }
+} );
+
+// ================================================
+// ARCHITECTURE INFO FOR DEBUGGING
 // ================================================
 
 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-    // Log which architecture is active
-    error_log( '🏗️ GMKB Architecture Mode: ' . GMKB_ARCHITECTURE_MODE );
-    error_log( '📦 Lean Bundle: ' . ( GMKB_USE_LEAN_BUNDLE ? 'ENABLED' : 'DISABLED' ) );
-    error_log( '🔧 Legacy Scripts: ' . ( GMKB_LOAD_LEGACY_SCRIPTS ? 'ENABLED' : 'DISABLED' ) );
-}
-
-// ================================================
-// NAMESPACE ISOLATION
-// ================================================
-
-/**
- * Prevent namespace conflicts by prefixing based on architecture
- */
-function gmkb_get_namespace_prefix() {
-    if ( GMKB_ARCHITECTURE_MODE === 'vue' ) {
-        return 'gmkbVue';
-    } elseif ( GMKB_ARCHITECTURE_MODE === 'legacy' ) {
-        return 'gmkbLegacy';
-    } else {
-        return 'gmkbHybrid';
-    }
-}
-
-// ================================================
-// CONDITIONAL LOADING HELPER
-// ================================================
-
-/**
- * Check if a feature should load based on architecture
- */
-function gmkb_should_load_feature( $feature ) {
-    $vue_features = array(
-        'vue-app',
-        'pinia-store',
-        'vue-components',
-        'vite-hmr'
-    );
-    
-    $legacy_features = array(
-        'enhanced-state-manager',
-        'component-controls-manager',
-        'section-layout-manager',
-        'theme-manager'
-    );
-    
-    if ( GMKB_ARCHITECTURE_MODE === 'vue' ) {
-        return in_array( $feature, $vue_features );
-    } elseif ( GMKB_ARCHITECTURE_MODE === 'legacy' ) {
-        return in_array( $feature, $legacy_features );
-    } else {
-        // Hybrid mode - load everything (dangerous!)
-        return true;
-    }
+    add_action( 'init', function() {
+        error_log( '========================================' );
+        error_log( 'GMKB Architecture Configuration' );
+        error_log( '========================================' );
+        error_log( 'Mode: ' . GMKB_ARCHITECTURE_MODE );
+        error_log( 'Vue Bundle: ' . ( file_exists( GMKB_VUE_DIST_PATH . 'gmkb.iife.js' ) ? 'Found' : 'Missing' ) );
+        error_log( 'PHP Version: ' . PHP_VERSION );
+        error_log( 'WordPress Version: ' . get_bloginfo( 'version' ) );
+        error_log( 'REST API: ' . ( function_exists( 'rest_url' ) ? 'Available' : 'Not Available' ) );
+        error_log( '========================================' );
+    }, 1 );
 }
