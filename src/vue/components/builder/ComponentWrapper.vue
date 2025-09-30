@@ -11,10 +11,9 @@
     @click="handleClick"
   >
     <ComponentControls
-      v-if="showControls"
+      v-show="showControls && (isHovering || isSelected)"
       :component-id="component.id"
       :component-type="component.type"
-      :is-visible="isHovering || isSelected"
       :index="index"
       :total-components="totalComponents"
     />
