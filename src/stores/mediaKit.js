@@ -338,48 +338,61 @@ export const useMediaKitStore = defineStore('mediaKit', {
      */
     async save() {
       if (!this.isDirty) return;
-
-      const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
       
-      // ROOT FIX: Get fresh nonce from NonceManager for REST API
-      let restNonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
-      
-      if (window.gmkbNonceManager) {
-        // For REST API, we need the wp_rest nonce, not the regular one
-        restNonce = window.gmkbNonceManager.getNonce() || restNonce;
-      }
-      
-      // Build correct endpoint
-      let endpoint;
-      if (apiUrl.includes('gmkb/v1')) {
-        endpoint = `${apiUrl}mediakit/${this.postId}/save`;
-      } else {
-        endpoint = apiUrl.endsWith('/') ? 
-          `${apiUrl}gmkb/v1/mediakit/${this.postId}/save` : 
-          `${apiUrl}/gmkb/v1/mediakit/${this.postId}/save`;
-      }
+      try {
+        // First try the new REST API
+        const apiUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
+        
+        // ROOT FIX: Get fresh nonce from NonceManager for REST API
+        let restNonce = window.gmkbData?.nonce || window.gmkbData?.restNonce || '';
+        
+        if (window.gmkbNonceManager) {
+          // For REST API, we need the wp_rest nonce, not the regular one
+          restNonce = window.gmkbNonceManager.getNonce() || restNonce;
+        }
+        
+        // Build correct endpoint
+        let endpoint;
+        if (apiUrl.includes('gmkb/v1')) {
+          endpoint = `${apiUrl}mediakit/${this.postId}/save`;
+        } else {
+          endpoint = apiUrl.endsWith('/') ? 
+            `${apiUrl}gmkb/v1/mediakit/${this.postId}/save` : 
+            `${apiUrl}/gmkb/v1/mediakit/${this.postId}/save`;
+        }
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': restNonce
-        },
-        body: JSON.stringify({
-          components: this.components,
-          sections: this.sections,
-          theme: this.theme,
-          themeCustomizations: this.themeCustomizations
-          // Note: Don't save podsData - it comes from WordPress
-        })
-      });
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-WP-Nonce': restNonce
+          },
+          credentials: 'same-origin', // Include cookies
+          body: JSON.stringify({
+            components: this.components,
+            sections: this.sections,
+            theme: this.theme,
+            themeCustomizations: this.themeCustomizations
+            // Note: Don't save podsData - it comes from WordPress
+          })
+        });
 
-      if (response.ok) {
-        this.isDirty = false;
-        this.lastSaved = Date.now();
-        console.log('✅ Saved successfully');
-      } else {
-        throw new Error('Save failed');
+        if (response.ok) {
+          this.isDirty = false;
+          this.lastSaved = Date.now();
+          console.log('✅ Saved successfully via REST API');
+          return true;
+        } else if (response.status === 403) {
+          // 403 suggests permission/nonce issue - fallback to AJAX
+          console.log('REST API failed with 403, trying AJAX fallback');
+          return await this.saveToWordPress();
+        } else {
+          throw new Error(`Save failed: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('REST save failed, trying AJAX:', error);
+        // Fallback to traditional AJAX save
+        return await this.saveToWordPress();
       }
     },
 
@@ -394,6 +407,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     // Component CRUD Operations
     addComponent(componentData) {
+      // ROOT FIX: Clean the component type if it contains content
+      // Sometimes drag data includes content, extract just the type
+      if (componentData.type && componentData.type.length > 50) {
+        // Type is too long, likely contains content - try to extract actual type
+        const typeMatch = componentData.type.toLowerCase().match(/^(hero|biography|topics|contact|testimonials|guest-intro|topics-questions|photo-gallery|logo-grid|call-to-action|social|stats|questions|video-intro|podcast-player|booking-calendar|authority-hook)/);
+        if (typeMatch) {
+          console.log('[Store] Extracted component type from content:', typeMatch[1]);
+          componentData.type = typeMatch[1];
+        }
+      }
+      
       // ROOT FIX: Validate component type to prevent unknown_type
       // Get valid types from the registry if available
       let validTypes = [

@@ -235,8 +235,16 @@ function editComponent(componentId) {
 }
 
 // Section settings
-function updateSectionSettings(settings) {
-  store.updateSectionSettings(props.sectionId, settings)
+function updateSectionSettings(updates) {
+  if (updates.settings) {
+    store.updateSectionSettings(props.sectionId, updates.settings)
+  }
+  if (updates.layout || updates.type) {
+    store.updateSection(props.sectionId, {
+      layout: updates.layout || updates.type,
+      type: updates.layout || updates.type
+    })
+  }
 }
 </script>
 
