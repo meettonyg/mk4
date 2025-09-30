@@ -38,17 +38,17 @@ class GMKB_REST_Theme_Controller {
             'permission_callback' => '__return_true'
         ));
         
-        // Get custom themes
+        // Get custom themes - ROOT FIX: Allow public read access, require auth for write
         register_rest_route(self::NAMESPACE, '/themes/custom', array(
             array(
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => array($this, 'get_custom_themes'),
-                'permission_callback' => '__return_true'
+                'permission_callback' => '__return_true' // Allow public read access
             ),
             array(
                 'methods' => WP_REST_Server::CREATABLE,
                 'callback' => array($this, 'save_custom_theme'),
-                'permission_callback' => array($this, 'write_permission_check')
+                'permission_callback' => array($this, 'write_permission_check') // Require auth for write
             )
         ));
         
@@ -408,9 +408,6 @@ class GMKB_REST_Theme_Controller {
     }
 }
 
-// Initialize the controller only if not already loaded
-if (!class_exists('GMKB_REST_MediaKit_Controller') || !has_action('init', 'gmkb_init_rest_theme_controller')) {
-    add_action('init', function() {
-        new GMKB_REST_Theme_Controller();
-    }, 10);
-}
+// ROOT FIX: Controller will be instantiated by main plugin file
+// The controller should be instantiated once via the main plugin's init hook
+// This comment serves as documentation - instantiation happens in guestify-media-kit-builder.php

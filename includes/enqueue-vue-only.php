@@ -136,12 +136,55 @@ function gmkb_get_component_registry_data() {
 }
 
 function gmkb_get_theme_data() {
-    $theme_data = ['builtIn' => [], 'custom' => []];
+    // ROOT FIX: Always provide built-in themes, custom themes are optional
+    $theme_data = array(
+        'builtIn' => array(
+            array(
+                'id' => 'professional_clean',
+                'name' => 'Professional Clean',
+                'description' => 'Clean and professional design'
+            ),
+            array(
+                'id' => 'creative_bold',
+                'name' => 'Creative Bold',
+                'description' => 'Bold and creative design'
+            ),
+            array(
+                'id' => 'minimal_elegant',
+                'name' => 'Minimal Elegant',
+                'description' => 'Minimal and elegant design'
+            ),
+            array(
+                'id' => 'modern_dark',
+                'name' => 'Modern Dark',
+                'description' => 'Modern dark theme'
+            )
+        ),
+        'custom' => array()
+    );
+    
+    // Try to load custom themes if ThemeDiscovery exists
     if (class_exists('\GMKB\ThemeDiscovery')) {
-        $theme_discovery = new \GMKB\ThemeDiscovery(GUESTIFY_PLUGIN_DIR . 'themes/');
-        $theme_data['builtIn'] = array_values($theme_discovery->discover());
-        $theme_data['custom'] = array_values(get_option('gmkb_custom_themes', []));
+        try {
+            $theme_discovery = new \GMKB\ThemeDiscovery(GUESTIFY_PLUGIN_DIR . 'themes/');
+            $discovered = $theme_discovery->discover();
+            if (!empty($discovered)) {
+                $theme_data['builtIn'] = array_values($discovered);
+            }
+        } catch (Exception $e) {
+            // Silently fail - built-in themes already defined above
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB: ThemeDiscovery failed, using built-in themes: ' . $e->getMessage());
+            }
+        }
     }
+    
+    // Try to load custom themes from database
+    $custom_themes = get_option('gmkb_custom_themes', array());
+    if (is_array($custom_themes) && !empty($custom_themes)) {
+        $theme_data['custom'] = array_values($custom_themes);
+    }
+    
     return $theme_data;
 }
 

@@ -155,6 +155,21 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.p
 // PHASE 5: Theme REST API Controller
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.php';
+    
+    // ROOT FIX: Instantiate the controller immediately to ensure REST routes are registered
+    add_action('rest_api_init', function() {
+        if (class_exists('GMKB_REST_Theme_Controller')) {
+            new GMKB_REST_Theme_Controller();
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB Phase 5: Theme REST API Controller instantiated on rest_api_init');
+            }
+        } else {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB Phase 5: GMKB_REST_Theme_Controller class not found after require');
+            }
+        }
+    }, 5); // Early priority to register routes before they're needed
+    
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('✅ GMKB Phase 5: Theme REST API Controller loaded');
     }
@@ -163,6 +178,35 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.
         error_log('❌ GMKB Phase 5: Theme REST API Controller not found');
     }
 }
+
+// ROOT FIX: Verify REST API routes are registered
+add_action('rest_api_init', function() {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('🔍 GMKB: REST API routes registered');
+        $routes = rest_get_server()->get_routes();
+        
+        // Check for theme routes
+        if (isset($routes['/gmkb/v1/themes/custom'])) {
+            error_log('✅ GMKB: /gmkb/v1/themes/custom route exists');
+            error_log('   Methods: ' . print_r(array_column($routes['/gmkb/v1/themes/custom'], 'methods'), true));
+        } else {
+            error_log('❌ GMKB: /gmkb/v1/themes/custom route NOT found');
+        }
+        
+        // Check for other GMKB routes
+        $gmkb_routes = array();
+        foreach ($routes as $route => $handlers) {
+            if (strpos($route, '/gmkb/') === 0) {
+                $gmkb_routes[] = $route;
+            }
+        }
+        if (!empty($gmkb_routes)) {
+            error_log('📋 GMKB: All GMKB routes: ' . implode(', ', $gmkb_routes));
+        } else {
+            error_log('⚠️ GMKB: No GMKB routes found!');
+        }
+    }
+}, 999);
 
 // PHASE 1 MIGRATION: New optimized MediaKit API with single-query data fetching
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php')) {

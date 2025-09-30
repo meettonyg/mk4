@@ -292,6 +292,56 @@ function gmkb_enqueue_assets() {
             }
         }
         
+        // ROOT FIX: Define comprehensive theme data for Vue bundle
+        $themes_data = array(
+            'professional_clean' => array(
+                'id' => 'professional_clean',
+                'name' => 'Professional Clean',
+                'description' => 'Clean and professional design',
+                'colors' => array(
+                    'primary' => '#3b82f6',
+                    'secondary' => '#2563eb',
+                    'background' => '#ffffff',
+                    'surface' => '#f8fafc',
+                    'text' => '#1e293b'
+                ),
+                'typography' => array(
+                    'fontFamily' => 'Inter, system-ui, sans-serif',
+                    'baseFontSize' => 16
+                )
+            ),
+            'creative_bold' => array(
+                'id' => 'creative_bold',
+                'name' => 'Creative Bold',
+                'description' => 'Bold and creative design',
+                'colors' => array(
+                    'primary' => '#f97316',
+                    'secondary' => '#ea580c',
+                    'background' => '#fffbf5'
+                )
+            ),
+            'minimal_elegant' => array(
+                'id' => 'minimal_elegant',
+                'name' => 'Minimal Elegant',
+                'description' => 'Minimal and elegant design',
+                'colors' => array(
+                    'primary' => '#18181b',
+                    'secondary' => '#27272a',
+                    'background' => '#ffffff'
+                )
+            ),
+            'modern_dark' => array(
+                'id' => 'modern_dark',
+                'name' => 'Modern Dark',
+                'description' => 'Modern dark theme',
+                'colors' => array(
+                    'primary' => '#8b5cf6',
+                    'secondary' => '#7c3aed',
+                    'background' => '#0f172a'
+                )
+            )
+        );
+        
         // PHASE 1: Minimal data for Vue app with API configuration
         $vue_config = array(
             // API Configuration - ROOT FIX: Consistent nonce naming
@@ -315,6 +365,9 @@ function gmkb_enqueue_assets() {
             'components' => $components_data_lean,
             'categories' => $categories_data_lean,
             'componentTypes' => $component_types,
+            
+            // ROOT FIX: Theme data for theme system
+            'themes' => $themes_data,
             
             // Initial State (for offline capability)
             'savedState' => $saved_state,
