@@ -41,19 +41,19 @@ export default {
   },
   computed: {
     name() {
-      return this.data.name || this.data.speaker_name || ''
+      return this.data?.name || this.data?.speaker_name || ''
     },
     title() {
-      return this.data.title || this.data.professional_title || ''
+      return this.data?.title || this.data?.professional_title || ''
     },
     bio() {
-      return this.data.bio || this.data.biography || ''
+      return this.data?.bio || this.data?.biography || ''
     },
     imageUrl() {
-      return this.data.image_url || this.data.photo || ''
+      return this.data?.image_url || this.data?.photo || ''
     },
     achievements() {
-      return this.data.achievements || []
+      return this.data?.achievements || []
     },
     formattedBio() {
       // Convert newlines to paragraphs if needed

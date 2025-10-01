@@ -47,11 +47,11 @@ export default {
     
     // Computed properties
     const title = computed(() => {
-      return props.data.title || 'Speaking Topics';
+      return props.data?.title || 'Speaking Topics';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const displayTopics = computed(() => {

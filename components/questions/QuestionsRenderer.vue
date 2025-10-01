@@ -58,11 +58,11 @@ export default {
     
     // Computed properties
     const title = computed(() => {
-      return props.data.title || 'Frequently Asked Questions';
+      return props.data?.title || 'Frequently Asked Questions';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const displayQuestions = computed(() => {

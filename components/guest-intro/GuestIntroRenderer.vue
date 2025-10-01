@@ -73,12 +73,12 @@ export default {
     
     // Computed properties
     const title = computed(() => {
-      return props.data.title || `Meet ${fullName.value || 'Your Speaker'}`;
+      return props.data?.title || `Meet ${fullName.value || 'Your Speaker'}`;
     });
     
     const displayIntroduction = computed(() => {
       // ROOT FIX: Use component data first, then Pods data as fallback
-      if (props.data.introduction || props.data.guest_intro) {
+      if (props.data?.introduction || props.data?.guest_intro) {
         return props.data.introduction || props.data.guest_intro;
       }
       

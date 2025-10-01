@@ -168,14 +168,25 @@ const handleButtonClick = (event) => {
 
 // Position dropdown relative to button
 const getDropdownStyle = computed(() => {
-  if (!buttonRect.value) return {};
+  if (!buttonRect.value) {
+    console.log('⚠️ ThemeSwitcher: No button rect, using fallback position');
+    return {
+      position: 'fixed',
+      top: '60px',
+      right: '20px',
+      zIndex: 10001
+    };
+  }
   
-  return {
+  const style = {
     position: 'fixed',
     top: `${buttonRect.value.bottom + 8}px`,
     left: `${Math.max(10, buttonRect.value.left)}px`,
-    zIndex: 10000
+    zIndex: 10001 // Higher than toolbar (1000)
   };
+  
+  console.log('🎨 ThemeSwitcher: Dropdown position:', style);
+  return style;
 });
 
 // Lifecycle
@@ -234,8 +245,12 @@ onMounted(() => {
   border: 1px solid var(--gmkb-color-border, #e2e8f0);
   border-radius: var(--gmkb-border-radius, 8px);
   box-shadow: var(--gmkb-shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.1));
-  z-index: 1000;
   padding: 12px;
+  
+  /* Critical: Ensure it's visible and on top */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .dropdown-section h4 {
