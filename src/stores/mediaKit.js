@@ -325,40 +325,70 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     /**
-     * PHASE 3: Enhanced save with auto-save via APIService
+     * PHASE 3: Enhanced save with auto-save - ROOT FIX: Direct AJAX save to database
      */
     async save() {
       if (!this.isDirty) return;
       
       try {
-        // ROOT FIX: Use APIService which uses admin-ajax.php
-        const apiService = window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
-          window.gmkbData?.ajaxUrl,
-          window.gmkbData?.nonce,
-          this.postId
-        );
-
+        this.isSaving = true;
+        
+        // Create local backup before saving
+        this.backupToLocalStorage();
+        
+        // Clean up the state before saving
+        const cleanComponents = {};
+        Object.entries(this.components).forEach(([id, comp]) => {
+          cleanComponents[id] = {
+            id: comp.id,
+            type: comp.type,
+            data: comp.data || {},
+            props: comp.props || {},
+            settings: comp.settings || {}
+          };
+        });
+        
         const state = {
-          components: this.components,
+          components: cleanComponents,
           sections: this.sections,
           theme: this.theme,
-          themeCustomizations: this.themeCustomizations
+          themeCustomizations: this.themeCustomizations,
+          layout: this.sections.map(s => s.section_id), // Add layout for compatibility
+          lastSaved: Date.now(), // Add timestamp for conflict detection
+          version: '2.0' // Version for future compatibility
         };
-
-        // Save via APIService (uses admin-ajax, not REST)
-        const result = await apiService.save(state);
-
-        if (result && result.silent !== true) {
-          this.isDirty = false;
-          this.lastSaved = Date.now();
-          console.log('✅ Saved successfully via APIService (admin-ajax)');
-          return true;
+        
+        // ROOT FIX: Use NonceManager for automatic refresh and save to database
+        const result = await window.gmkbNonceManager.ajaxRequest('gmkb_save_media_kit', {
+          post_id: this.postId,
+          state: state
+        });
+        
+        // Check response
+        if (!result.success) {
+          console.error('Save failed:', result);
+          throw new Error(result.data?.message || result.data || 'Save failed');
         }
         
-        return false;
+        console.log('✅ Saved to WordPress database:', result.data);
+        this.isDirty = false;
+        this.lastSaved = Date.now();
+        
+        // Clear local backup after successful save
+        this.clearLocalBackup();
+        
+        // Show success message
+        if (typeof window.showToast === 'function') {
+          window.showToast('Media kit saved successfully', 'success');
+        }
+        
+        return true;
+        
       } catch (error) {
-        console.error('Save failed:', error);
+        console.error('Failed to save:', error);
         throw error;
+      } finally {
+        this.isSaving = false;
       }
     },
 
@@ -1278,77 +1308,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.editingComponentId = null;
     },
 
-    // Enhanced save state to WordPress with backup and retry logic
+    // Alias for backwards compatibility - now just calls save()
     async saveToWordPress() {
-      try {
-        this.isSaving = true;
-        
-        // Create local backup before saving
-        this.backupToLocalStorage();
-        
-        // Clean up the state before saving
-        const cleanComponents = {};
-        Object.entries(this.components).forEach(([id, comp]) => {
-          cleanComponents[id] = {
-            id: comp.id,
-            type: comp.type,
-            data: comp.data || {},
-            props: comp.props || {},
-            settings: comp.settings || {}
-          };
-        });
-        
-        const state = {
-          components: cleanComponents,
-          sections: this.sections,
-          theme: this.theme,
-          themeCustomizations: this.themeCustomizations,
-          layout: this.sections.map(s => s.section_id), // Add layout for compatibility
-          lastSaved: Date.now(), // Add timestamp for conflict detection
-          version: '2.0' // Version for future compatibility
-        };
-        
-        // ROOT FIX: Use NonceManager for automatic refresh
-        const result = await window.gmkbNonceManager.ajaxRequest('gmkb_save_media_kit', {
-          post_id: this.postId || window.gmkbData?.postId || window.gmkbData?.post_id || '',
-          state: state
-        });
-        
-        // Check response
-        if (!result.success) {
-          console.error('Save failed:', result);
-          throw new Error(result.data?.message || result.data || 'Save failed');
-        }
-        
-        console.log('✅ Saved successfully');
-        this.isDirty = false;
-        this.isSaving = false;
-        this.lastSavedAt = Date.now();
-        
-        // Show success message
-        if (typeof window.showToast === 'function') {
-          window.showToast('Media kit saved successfully', 'success');
-        }
-        
-        return true;
-        
-      } catch (error) {
-        console.error('Failed to save to WordPress:', error);
-        
-        // Handle specific error types
-        if (error.name === 'AbortError') {
-          throw new Error('Save timeout - please check your connection');
-        } else if (error.message?.includes('Invalid nonce')) {
-          throw new Error('Session expired - please refresh the page');
-        } else if (error.message?.includes('Insufficient permissions')) {
-          throw new Error('You don\'t have permission to save - please check your login');
-        }
-        
-        throw error;
-        
-      } finally {
-        this.isSaving = false;
-      }
+      return await this.save();
     },
 
     // NEW: Section settings management

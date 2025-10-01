@@ -108,7 +108,7 @@ export function useExportImport() {
   };
 
   /**
-   * Export media kit
+   * Export media kit using WordPress AJAX
    */
   const exportMediaKit = async (format = 'full', componentId = null) => {
     isExporting.value = true;
@@ -122,27 +122,32 @@ export function useExportImport() {
         const component = store.components[componentId];
         filename = `component-${component.type}-${Date.now()}.json`;
       } else if (exportFormats[format]) {
-        exportData = exportFormats[format]();
-        filename = `mediakit-${format}-${Date.now()}.json`;
-      } else {
-        throw new Error(`Unknown export format: ${format}`);
-      }
+        // Use WordPress AJAX for server-side export (better compatibility)
+        const formData = new FormData();
+        formData.append('action', 'gmkb_export_media_kit');
+        formData.append('nonce', window.gmkbData?.nonce || '');
+        formData.append('post_id', store.postId);
+        formData.append('export_type', format);
 
-      // Use REST API for server-side export if needed
-      if (window.gmkbData?.useServerExport && format === 'full') {
-        const response = await fetch(`${window.gmkbData.apiUrl}gmkb/v1/mediakit/${store.postId}/export?format=${format}`, {
-          method: 'GET',
-          headers: {
-            'X-WP-Nonce': window.gmkbData.nonce,
-            'Content-Type': 'application/json'
-          }
+        const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+          method: 'POST',
+          body: formData
         });
 
         if (!response.ok) {
-          throw new Error('Export failed');
+          throw new Error('Export request failed');
         }
 
-        exportData = await response.json();
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.data?.message || 'Export failed');
+        }
+
+        exportData = result.data.export_data;
+        filename = result.data.filename;
+      } else {
+        throw new Error(`Unknown export format: ${format}`);
       }
 
       downloadJSON(exportData, filename);
@@ -166,13 +171,13 @@ export function useExportImport() {
   };
 
   /**
-   * Validate import data
+   * Validate import data using WordPress AJAX
    */
   const validateImport = async (fileContent) => {
     try {
       const importData = JSON.parse(fileContent);
       
-      // Check version compatibility
+      // Check version compatibility locally
       if (!importData.version) {
         throw new Error('Invalid import file: missing version');
       }
@@ -187,7 +192,30 @@ export function useExportImport() {
         throw new Error('Invalid import file: missing format');
       }
 
-      // Detect conflicts
+      // Use WordPress AJAX for server-side validation
+      const formData = new FormData();
+      formData.append('action', 'gmkb_validate_import');
+      formData.append('nonce', window.gmkbData?.nonce || '');
+      formData.append('import_data', JSON.stringify(importData));
+
+      const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Validation request failed');
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.data?.message || 'Validation failed');
+      }
+
+      const validation = result.data;
+
+      // Detect local conflicts
       const conflicts = [];
       
       if (importData.format === 'full' || importData.format === 'components') {
@@ -213,15 +241,20 @@ export function useExportImport() {
         format: importData.format,
         created: importData.created,
         metadata: importData.metadata,
-        componentCount: importData.components ? Object.keys(importData.components).length : 0,
-        sectionCount: importData.sections ? importData.sections.length : 0,
+        componentCount: validation.summary?.components_count || (importData.components ? Object.keys(importData.components).length : 0),
+        sectionCount: validation.summary?.sections_count || (importData.sections ? importData.sections.length : 0),
         hasTheme: !!importData.theme,
         hasPodsData: !!importData.podsData
       };
 
       importConflicts.value = conflicts;
 
-      return { valid: true, data: importData, conflicts };
+      return { 
+        valid: validation.valid, 
+        data: importData, 
+        conflicts,
+        warnings: validation.warnings || []
+      };
 
     } catch (error) {
       console.error('Import validation error:', error);
@@ -230,89 +263,38 @@ export function useExportImport() {
   };
 
   /**
-   * Execute import with conflict resolution
+   * Execute import with conflict resolution using WordPress AJAX
    */
   const executeImport = async (importData, resolutions = {}) => {
     isImporting.value = true;
 
     try {
-      // Handle conflict resolutions
-      let processedData = { ...importData };
+      // Prepare form data for WordPress AJAX
+      const formData = new FormData();
+      formData.append('action', 'gmkb_import_media_kit');
+      formData.append('nonce', window.gmkbData?.nonce || '');
+      formData.append('post_id', store.postId);
+      formData.append('import_data', JSON.stringify(importData));
+      formData.append('import_mode', resolutions.import_mode || 'replace');
+      formData.append('resolutions', JSON.stringify(resolutions));
 
-      // Process duplicate component IDs
-      if (resolutions.duplicate_components === 'rename') {
-        const renamedComponents = {};
-        const timestamp = Date.now();
-        
-        for (const [id, component] of Object.entries(importData.components || {})) {
-          if (store.components[id]) {
-            // Rename duplicate
-            const newId = `${id}_imported_${timestamp}`;
-            renamedComponents[newId] = { ...component, id: newId };
-            
-            // Update section references
-            if (processedData.sections) {
-              processedData.sections = processedData.sections.map(section => ({
-                ...section,
-                components: section.components?.map(cId => cId === id ? newId : cId)
-              }));
-            }
-          } else {
-            renamedComponents[id] = component;
-          }
-        }
-        
-        processedData.components = renamedComponents;
-      } else if (resolutions.duplicate_components === 'skip') {
-        // Remove duplicates from import
-        const filteredComponents = {};
-        for (const [id, component] of Object.entries(importData.components || {})) {
-          if (!store.components[id]) {
-            filteredComponents[id] = component;
-          }
-        }
-        processedData.components = filteredComponents;
+      const response = await fetch(window.gmkbData?.ajaxUrl || '/wp-admin/admin-ajax.php', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Import request failed');
       }
-      // Default resolution is 'replace' - no processing needed
 
-      // Apply import based on format
-      switch (processedData.format) {
-        case 'full':
-          // Full replacement
-          await store.replaceState({
-            components: processedData.components || {},
-            sections: processedData.sections || [],
-            theme: processedData.theme || 'professional_clean',
-            themeCustomizations: processedData.themeCustomizations || {},
-            globalSettings: processedData.globalSettings || {},
-            podsData: processedData.podsData || {}
-          });
-          break;
-
-        case 'template':
-          // Import structure only
-          await store.applyTemplate({
-            sections: processedData.sections || [],
-            theme: processedData.theme || store.theme,
-            themeCustomizations: processedData.themeCustomizations || {}
-          });
-          break;
-
-        case 'components':
-          // Merge components
-          await store.mergeComponents(processedData.components || {});
-          break;
-
-        case 'single_component':
-          // Add single component
-          if (processedData.component) {
-            await store.addComponent(processedData.component);
-          }
-          break;
-
-        default:
-          throw new Error(`Unknown import format: ${processedData.format}`);
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.data?.message || 'Import failed');
       }
+
+      // Reload the media kit state from server
+      await store.loadFromAPI();
 
       // Clear preview after successful import
       importPreview.value = null;

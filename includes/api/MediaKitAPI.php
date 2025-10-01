@@ -27,6 +27,11 @@ class MediaKitAPI {
         // Core data operations via admin-ajax.php for reliability
         add_action('wp_ajax_gmkb_load_media_kit_vue', array($this, 'ajax_get_mediakit'));
         add_action('wp_ajax_gmkb_save_media_kit_vue', array($this, 'ajax_save_mediakit'));
+        
+        // Import/Export operations via admin-ajax.php
+        add_action('wp_ajax_gmkb_export_media_kit', array($this, 'ajax_export_mediakit'));
+        add_action('wp_ajax_gmkb_import_media_kit', array($this, 'ajax_import_mediakit'));
+        add_action('wp_ajax_gmkb_validate_import', array($this, 'ajax_validate_import'));
 
         // Secondary features like theme management can still use the REST API
         add_action('rest_api_init', array($this, 'register_rest_routes'));
@@ -315,6 +320,274 @@ class MediaKitAPI {
         }
         
         return current_user_can('edit_posts');
+    }
+    
+    /**
+     * AJAX handler for exporting media kit
+     * This delegates to the ExportManager for actual export logic
+     */
+    public function ajax_export_mediakit() {
+        // Security check
+        if (!check_ajax_referer('gmkb_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Invalid security token'), 403);
+            return;
+        }
+        
+        // Permission check
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'), 403);
+            return;
+        }
+        
+        // Get parameters
+        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+        $export_type = isset($_POST['export_type']) ? sanitize_text_field($_POST['export_type']) : 'full';
+        
+        if (!$post_id) {
+            wp_send_json_error(array('message' => 'Missing post ID'), 400);
+            return;
+        }
+        
+        // Check if user can edit this post
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error(array('message' => 'You cannot export this media kit'), 403);
+            return;
+        }
+        
+        try {
+            // Use ExportManager if available
+            if (class_exists('GMKB_ExportManager')) {
+                $export_manager = \GMKB_ExportManager::get_instance();
+                $export_data = $export_manager->generate_export($post_id, $export_type);
+                
+                wp_send_json_success(array(
+                    'export_data' => $export_data,
+                    'filename' => $this->generate_export_filename($post_id, $export_type)
+                ));
+            } else {
+                // Fallback: basic export
+                $export_data = $this->generate_basic_export($post_id, $export_type);
+                wp_send_json_success(array(
+                    'export_data' => $export_data,
+                    'filename' => $this->generate_export_filename($post_id, $export_type)
+                ));
+            }
+        } catch (\Exception $e) {
+            wp_send_json_error(array('message' => 'Export failed: ' . $e->getMessage()), 500);
+        }
+    }
+    
+    /**
+     * AJAX handler for importing media kit
+     */
+    public function ajax_import_mediakit() {
+        // Security check
+        if (!check_ajax_referer('gmkb_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Invalid security token'), 403);
+            return;
+        }
+        
+        // Permission check
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'), 403);
+            return;
+        }
+        
+        // Get parameters
+        $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+        $import_data = isset($_POST['import_data']) ? $_POST['import_data'] : '';
+        $import_mode = isset($_POST['import_mode']) ? sanitize_text_field($_POST['import_mode']) : 'replace';
+        $resolutions = isset($_POST['resolutions']) ? json_decode(stripslashes($_POST['resolutions']), true) : array();
+        
+        if (!$post_id) {
+            wp_send_json_error(array('message' => 'Missing post ID'), 400);
+            return;
+        }
+        
+        // Check if user can edit this post
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error(array('message' => 'You cannot import to this media kit'), 403);
+            return;
+        }
+        
+        // Decode import data
+        $data = json_decode(stripslashes($import_data), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            wp_send_json_error(array('message' => 'Invalid JSON data'), 400);
+            return;
+        }
+        
+        try {
+            // Use ImportManager if available
+            if (class_exists('GMKB_ImportManager')) {
+                $import_manager = \GMKB_ImportManager::get_instance();
+                $result = $import_manager->import_media_kit($data, $post_id, $import_mode);
+                
+                if ($result['success']) {
+                    wp_send_json_success(array(
+                        'message' => 'Import successful',
+                        'components_imported' => $result['components_imported'],
+                        'warnings' => $result['warnings'] ?? array()
+                    ));
+                } else {
+                    wp_send_json_error(array('message' => $result['error']), 500);
+                }
+            } else {
+                // Fallback: basic import
+                $result = $this->perform_basic_import($post_id, $data, $import_mode);
+                wp_send_json_success($result);
+            }
+        } catch (\Exception $e) {
+            wp_send_json_error(array('message' => 'Import failed: ' . $e->getMessage()), 500);
+        }
+    }
+    
+    /**
+     * AJAX handler for validating import data
+     */
+    public function ajax_validate_import() {
+        // Security check
+        if (!check_ajax_referer('gmkb_nonce', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Invalid security token'), 403);
+            return;
+        }
+        
+        // Get import data
+        $import_data = isset($_POST['import_data']) ? $_POST['import_data'] : '';
+        
+        // Decode import data
+        $data = json_decode(stripslashes($import_data), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            wp_send_json_error(array('message' => 'Invalid JSON data'), 400);
+            return;
+        }
+        
+        try {
+            // Use ImportManager if available
+            if (class_exists('GMKB_ImportManager')) {
+                $import_manager = \GMKB_ImportManager::get_instance();
+                $validation = $import_manager->validate_import_data($data);
+                
+                wp_send_json_success(array(
+                    'valid' => $validation['valid'],
+                    'errors' => $validation['errors'],
+                    'warnings' => $validation['warnings'],
+                    'summary' => array(
+                        'components_count' => count($data['components'] ?? array()),
+                        'sections_count' => count($data['sections'] ?? array()),
+                        'theme' => $data['theme'] ?? 'not specified',
+                        'version' => $data['version'] ?? 'unknown'
+                    )
+                ));
+            } else {
+                // Basic validation
+                $valid = isset($data['version']) && isset($data['components']);
+                wp_send_json_success(array(
+                    'valid' => $valid,
+                    'errors' => $valid ? array() : array('Missing required fields'),
+                    'warnings' => array(),
+                    'summary' => array(
+                        'components_count' => count($data['components'] ?? array()),
+                        'sections_count' => count($data['sections'] ?? array()),
+                        'theme' => $data['theme'] ?? 'not specified',
+                        'version' => $data['version'] ?? 'unknown'
+                    )
+                ));
+            }
+        } catch (\Exception $e) {
+            wp_send_json_error(array('message' => 'Validation failed: ' . $e->getMessage()), 500);
+        }
+    }
+    
+    /**
+     * Generate filename for export
+     */
+    private function generate_export_filename($post_id, $export_type) {
+        $post = get_post($post_id);
+        $slug = $post ? sanitize_title($post->post_title) : 'media-kit';
+        $date = date('Y-m-d-His');
+        return sprintf('mediakit-%s-%s-%s.json', $slug, $export_type, $date);
+    }
+    
+    /**
+     * Basic export implementation (fallback)
+     */
+    private function generate_basic_export($post_id, $export_type) {
+        $state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+        $post = get_post($post_id);
+        
+        $export = array(
+            'version' => '3.0.0',
+            'format' => $export_type,
+            'created' => current_time('c'),
+            'wordpress_version' => get_bloginfo('version'),
+            'post_id' => $post_id,
+            'post_title' => $post ? $post->post_title : '',
+            'metadata' => array(
+                'author' => get_current_user_id(),
+                'site_url' => get_site_url()
+            )
+        );
+        
+        if ($export_type === 'full' || $export_type === 'components') {
+            $export['components'] = $state['components'] ?? array();
+        }
+        
+        if ($export_type === 'full' || $export_type === 'template') {
+            $export['sections'] = $state['sections'] ?? array();
+            $export['theme'] = $state['theme'] ?? 'professional_clean';
+            $export['themeCustomizations'] = $state['themeCustomizations'] ?? array();
+        }
+        
+        return $export;
+    }
+    
+    /**
+     * Basic import implementation (fallback)
+     */
+    private function perform_basic_import($post_id, $data, $import_mode) {
+        $current_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+        if (empty($current_state)) {
+            $current_state = array(
+                'components' => array(),
+                'sections' => array(),
+                'theme' => 'professional_clean',
+                'themeCustomizations' => array()
+            );
+        }
+        
+        $new_state = $current_state;
+        
+        if ($import_mode === 'replace') {
+            $new_state = array(
+                'components' => $data['components'] ?? array(),
+                'sections' => $data['sections'] ?? array(),
+                'theme' => $data['theme'] ?? 'professional_clean',
+                'themeCustomizations' => $data['themeCustomizations'] ?? array()
+            );
+        } else {
+            // Merge mode
+            if (isset($data['components'])) {
+                $new_state['components'] = array_merge(
+                    $current_state['components'] ?? array(),
+                    $data['components']
+                );
+            }
+            if (isset($data['sections'])) {
+                $new_state['sections'] = array_merge(
+                    $current_state['sections'] ?? array(),
+                    $data['sections']
+                );
+            }
+        }
+        
+        update_post_meta($post_id, 'gmkb_media_kit_state', $new_state);
+        
+        return array(
+            'success' => true,
+            'components_imported' => count($data['components'] ?? array()),
+            'warnings' => array()
+        );
     }
 }
 

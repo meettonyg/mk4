@@ -1,0 +1,65 @@
+=== GEMINI'S ROBUST FIX WITH DEBUGGING ===
+
+Find this code in src/stores/theme.js (around line 400):
+
+FIND THIS:
+----------
+          // Replace availableThemes with server themes (they include built-ins)
+          this.availableThemes = serverThemes.map(theme => ({
+            id: theme.id, // ROOT FIX: Explicitly preserve ID
+            name: theme.name,
+            description: theme.description,
+            // Ensure all required fields exist
+            colors: theme.colors || {},
+            typography: theme.typography || {},
+            spacing: theme.spacing || {},
+            effects: theme.effects || {},
+            isCustom: theme.isCustom || false,
+            isBuiltIn: theme.isBuiltIn || false
+          }));
+
+REPLACE WITH:
+-------------
+          // GEMINI FIX: Defensive mapping with explicit ID preservation and debugging
+          this.availableThemes = serverThemes.map(theme => {
+            // DEBUG: Log the raw theme object from server
+            console.log('[Theme Store] Mapping theme object:', theme);
+            console.log('[Theme Store] Theme ID before mapping:', theme.id);
+            
+            // Create new object with explicit properties to avoid Proxy issues
+            const mappedTheme = {
+              ...theme, // Spread original properties first
+              id: theme.id, // Explicitly ensure ID is preserved
+              colors: theme.colors || {},
+              typography: theme.typography || {},
+              spacing: theme.spacing || {},
+              effects: theme.effects || {},
+              isCustom: theme.isCustom || false,
+              isBuiltIn: theme.isBuiltIn || false
+            };
+            
+            // DEBUG: Verify ID is in the mapped object
+            console.log('[Theme Store] Mapped theme ID:', mappedTheme.id);
+            
+            return mappedTheme;
+          });
+          
+          // DEBUG: Verify final array has IDs
+          console.log('[Theme Store] Final theme IDs:', this.availableThemes.map(t => t.id));
+
+=== STEPS TO APPLY ===
+
+1. Open src/stores/theme.js in your editor
+2. Find the section around line 400
+3. Replace with the code above
+4. Save the file
+5. Run: .\force-rebuild.bat
+6. Hard refresh browser (Ctrl+Shift+R)
+7. Click theme button
+8. Check console for these logs:
+   - "[Theme Store] Mapping theme object: ..."
+   - "[Theme Store] Theme ID before mapping: creative_bold"
+   - "[Theme Store] Mapped theme ID: creative_bold"
+   - "[Theme Store] Final theme IDs: ['creative_bold', ...]"
+
+If you see those logs with actual IDs (not undefined), the fix worked!
