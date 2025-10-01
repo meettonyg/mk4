@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phase 2 API Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .metric {
+            display: inline-block;
+            margin: 10px 20px 10px 0;
+            padding: 10px 15px;
+            background: #f0f9ff;
+            border-radius: 4px;
+            border-left: 3px solid #3b82f6;
+        }
+        .metric-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Phase 2 API Testing Suite</h1>
+        <p>Test the new unified REST API v2 implementation</p>
+
+        <div class="test-section">
+            <h3>1️⃣ Test Load Performance</h3>
+            <button onclick="testLoad()">Run Load Test</button>
+            <button onclick="testLoadCached()">Test Cache</button>
+            <div id="load-result" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2️⃣ Test Save Functionality</h3>
+            <button onclick="testSave()">Run Save Test</button>
+            <div id="save-result" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3️⃣ Test Component Loading</h3>
+            <button onclick="testComponents()">Load Components</button>
+            <div id="components-result" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4️⃣ Performance Metrics</h3>
+            <div id="metrics" style="display:none;">
+                <div class="metric">
+                    <div class="metric-label">Load Time</div>
+                    <div class="metric-value" id="load-time">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Cache Time</div>
+                    <div class="metric-value" id="cache-time">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Save Time</div>
+                    <div class="metric-value" id="save-time">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Speedup</div>
+                    <div class="metric-value" id="speedup">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>5️⃣ Complete Test Suite</h3>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <div id="all-results" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Check if we're in WordPress context
+        if (typeof window.gmkbData === 'undefined') {
+            document.body.innerHTML = '<div class="test-container"><h1>⚠️ Error</h1><p>This test page must be loaded within the Media Kit Builder context where gmkbData is available.</p><p>Please access this via: <code>/wp-admin/admin.php?page=guestify-media-kit-builder&mkcg_id=YOUR_POST_ID</code></p></div>';
+        }
+
+        let apiInstance = null;
+
+        // Initialize API once Vue bundle loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Vue bundle to load
+            setTimeout(() => {
+                if (typeof APIService !== 'undefined') {
+                    apiInstance = new APIService(
+                        window.gmkbData.restUrl,
+                        window.gmkbData.restNonce,
+                        window.gmkbData.postId
+                    );
+                    console.log('✅ APIService initialized');
+                } else {
+                    console.error('❌ APIService not found - Vue bundle may not be loaded');
+                    // Alternative: Try to import from module
+                    import('./src/services/APIService.js').then(module => {
+                        apiInstance = new module.APIService(
+                            window.gmkbData.restUrl,
+                            window.gmkbData.restNonce,
+                            window.gmkbData.postId
+                        );
+                        console.log('✅ APIService initialized from module');
+                    }).catch(err => {
+                        console.error('❌ Failed to load APIService:', err);
+                    });
+                }
+            }, 1000);
+        });
+
+        function showResult(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'result ' + (isError ? 'error' : 'success');
+            element.textContent = message;
+        }
+
+        async function testLoad() {
+            if (!apiInstance) {
+                showResult('load-result', '❌ APIService not initialized yet. Please wait...', true);
+                return;
+            }
+
+            try {
+                const start = performance.now();
+                const data = await apiInstance.load();
+                const duration = performance.now() - start;
+
+                document.getElementById('load-time').textContent = duration.toFixed(2) + 'ms';
+                document.getElementById('metrics').style.display = 'block';
+
+                const message = `✅ Load successful in ${duration.toFixed(2)}ms\n\n` +
+                    `Components: ${Object.keys(data.components).length}\n` +
+                    `Sections: ${data.sections.length}\n` +
+                    `Pods fields: ${Object.keys(data.podsData).length}\n` +
+                    `Theme: ${data.theme}`;
+
+                showResult('load-result', message);
+            } catch (error) {
+                showResult('load-result', '❌ Load failed: ' + error.message, true);
+            }
+        }
+
+        async function testLoadCached() {
+            if (!apiInstance) {
+                showResult('load-result', '❌ APIService not initialized yet', true);
+                return;
+            }
+
+            try {
+                // First load to populate cache
+                await apiInstance.load();
+
+                // Cached load
+                const start = performance.now();
+                const data = await apiInstance.load();
+                const duration = performance.now() - start;
+
+                document.getElementById('cache-time').textContent = duration.toFixed(2) + 'ms';
+                
+                const loadTime = parseFloat(document.getElementById('load-time').textContent);
+                const speedup = (loadTime / duration).toFixed(1);
+                document.getElementById('speedup').textContent = speedup + 'x';
+
+                const message = `✅ Cache hit in ${duration.toFixed(2)}ms\n` +
+                    `Speedup: ${speedup}x faster than initial load`;
+
+                showResult('load-result', message);
+            } catch (error) {
+                showResult('load-result', '❌ Cache test failed: ' + error.message, true);
+            }
+        }
+
+        async function testSave() {
+            if (!apiInstance) {
+                showResult('save-result', '❌ APIService not initialized yet', true);
+                return;
+            }
+
+            try {
+                // Load current state
+                const data = await apiInstance.load();
+
+                // Save it back
+                const start = performance.now();
+                const result = await apiInstance.save(data);
+                const duration = performance.now() - start;
+
+                document.getElementById('save-time').textContent = duration.toFixed(2) + 'ms';
+
+                const message = `✅ Save successful in ${duration.toFixed(2)}ms\n\n` +
+                    `Components saved: ${result.components_saved}\n` +
+                    `Sections saved: ${result.sections_saved}\n` +
+                    `Data size: ${Math.round(result.data_size / 1024)}KB`;
+
+                showResult('save-result', message);
+            } catch (error) {
+                showResult('save-result', '❌ Save failed: ' + error.message, true);
+            }
+        }
+
+        async function testComponents() {
+            if (!apiInstance) {
+                showResult('components-result', '❌ APIService not initialized yet', true);
+                return;
+            }
+
+            try {
+                const start = performance.now();
+                const components = await apiInstance.loadComponents();
+                const duration = performance.now() - start;
+
+                const componentTypes = components.map(c => c.type).join(', ');
+
+                const message = `✅ Loaded ${components.length} components in ${duration.toFixed(2)}ms\n\n` +
+                    `Types: ${componentTypes}`;
+
+                showResult('components-result', message);
+            } catch (error) {
+                showResult('components-result', '❌ Components load failed: ' + error.message, true);
+            }
+        }
+
+        async function runAllTests() {
+            const results = [];
+
+            showResult('all-results', '⏳ Running all tests...');
+
+            try {
+                // Test 1: Load
+                const loadStart = performance.now();
+                const data = await apiInstance.load();
+                const loadTime = performance.now() - loadStart;
+                results.push(`✅ Load: ${loadTime.toFixed(2)}ms`);
+
+                // Test 2: Cache
+                const cacheStart = performance.now();
+                await apiInstance.load();
+                const cacheTime = performance.now() - cacheStart;
+                results.push(`✅ Cache: ${cacheTime.toFixed(2)}ms (${(loadTime/cacheTime).toFixed(1)}x faster)`);
+
+                // Test 3: Save
+                const saveStart = performance.now();
+                const saveResult = await apiInstance.save(data);
+                const saveTime = performance.now() - saveStart;
+                results.push(`✅ Save: ${saveTime.toFixed(2)}ms`);
+
+                // Test 4: Components
+                const compStart = performance.now();
+                const components = await apiInstance.loadComponents();
+                const compTime = performance.now() - compStart;
+                results.push(`✅ Components: ${compTime.toFixed(2)}ms (${components.length} found)`);
+
+                // Summary
+                results.push('');
+                results.push('📊 Summary:');
+                results.push(`  Total time: ${(loadTime + cacheTime + saveTime + compTime).toFixed(2)}ms`);
+                results.push(`  Components: ${Object.keys(data.components).length}`);
+                results.push(`  Sections: ${data.sections.length}`);
+                results.push(`  Data size: ${Math.round(saveResult.data_size / 1024)}KB`);
+
+                showResult('all-results', results.join('\n'));
+
+            } catch (error) {
+                showResult('all-results', '❌ Test suite failed: ' + error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>
