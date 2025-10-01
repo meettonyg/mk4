@@ -120,13 +120,15 @@ const componentLabel = computed(() => {
 // Methods
 const moveUp = () => {
   if (!isFirst.value) {
-    store.moveComponent(props.index, props.index - 1);
+    console.log('Moving component up:', props.componentId);
+    store.moveComponent(props.componentId, 'up');
   }
 };
 
 const moveDown = () => {
   if (!isLast.value) {
-    store.moveComponent(props.index, props.index + 1);
+    console.log('Moving component down:', props.componentId);
+    store.moveComponent(props.componentId, 'down');
   }
 };
 

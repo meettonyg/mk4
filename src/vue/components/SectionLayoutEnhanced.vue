@@ -97,12 +97,12 @@
                   ghost-class="ghost"
                   drag-class="drag"
                 >
-                  <template #item="{element: componentId}">
+                  <template #item="{element: componentId, index}">
                     <ComponentWrapper
                       v-if="getComponent(componentId)"
                       :component="getComponent(componentId)"
-                      :index="0"
-                      :total-components="1"
+                      :index="index"
+                      :total-components="section.components.length"
                       :show-controls="true"
                     />
                   </template>
@@ -137,12 +137,12 @@
                     ghost-class="ghost"
                     drag-class="drag"
                   >
-                    <template #item="{element: componentId}">
+                    <template #item="{element: componentId, index}">
                       <ComponentWrapper
                         v-if="getComponent(componentId)"
                         :component="getComponent(componentId)"
-                        :index="0"
-                        :total-components="1"
+                        :index="index"
+                        :total-components="getColumnComponents(section, 1).length"
                         :show-controls="true"
                       />
                     </template>
@@ -174,12 +174,12 @@
                     ghost-class="ghost"
                     drag-class="drag"
                   >
-                    <template #item="{element: componentId}">
+                    <template #item="{element: componentId, index}">
                       <ComponentWrapper
                         v-if="getComponent(componentId)"
                         :component="getComponent(componentId)"
-                        :index="0"
-                        :total-components="1"
+                        :index="index"
+                        :total-components="getColumnComponents(section, 2).length"
                         :show-controls="true"
                       />
                     </template>
@@ -220,12 +220,12 @@
                     ghost-class="ghost"
                     drag-class="drag"
                   >
-                    <template #item="{element: componentId}">
+                    <template #item="{element: componentId, index}">
                       <ComponentWrapper
                         v-if="getComponent(componentId)"
                         :component="getComponent(componentId)"
-                        :index="0"
-                        :total-components="1"
+                        :index="index"
+                        :total-components="getColumnComponents(section, col).length"
                         :show-controls="true"
                       />
                     </template>
