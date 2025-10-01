@@ -53,6 +53,7 @@
       
       <!-- Theme -->
       <button 
+        id="global-theme-btn"
         @click="handleTheme"
         class="toolbar-btn"
         title="Change Theme"
@@ -104,6 +105,7 @@
       
       <!-- Save -->
       <button 
+        id="save-btn"
         @click="handleSave"
         :disabled="saveStatus === 'saving'"
         class="toolbar-btn toolbar-btn--primary"
@@ -187,8 +189,9 @@ function handleRedo() {
 }
 
 function handleTheme() {
-  // Trigger theme switcher (existing behavior)
-  document.getElementById('global-theme-btn')?.click();
+  // Dispatch custom event for ThemeSwitcher to listen to
+  document.dispatchEvent(new CustomEvent('gmkb:open-theme-switcher'));
+  console.log('🎨 Theme button clicked - event dispatched');
 }
 
 function handleExport() {

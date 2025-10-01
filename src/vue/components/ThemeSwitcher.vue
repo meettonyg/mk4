@@ -180,7 +180,21 @@ const getDropdownStyle = computed(() => {
 
 // Lifecycle
 onMounted(() => {
-  // Find and attach to the existing toolbar button
+  // Listen for theme button clicks via custom event
+  const handleThemeOpen = (event) => {
+    // Update button position
+    const btn = document.getElementById('global-theme-btn');
+    if (btn) {
+      buttonElement.value = btn;
+      buttonRect.value = btn.getBoundingClientRect();
+    }
+    toggleDropdown();
+  };
+  
+  // Listen for custom event from toolbar
+  document.addEventListener('gmkb:open-theme-switcher', handleThemeOpen);
+  
+  // LEGACY SUPPORT: Also listen for clicks on button (for backwards compatibility)
   const btn = document.getElementById('global-theme-btn');
   if (btn) {
     buttonElement.value = btn;
@@ -192,11 +206,18 @@ onMounted(() => {
   }
   
   document.addEventListener('click', handleClickOutside);
+  
+  // Store event handler for cleanup
+  buttonElement.value._themeOpenHandler = handleThemeOpen;
 });
 
 onUnmounted(() => {
   if (buttonElement.value) {
     buttonElement.value.removeEventListener('click', handleButtonClick);
+    // Remove custom event listener
+    if (buttonElement.value._themeOpenHandler) {
+      document.removeEventListener('gmkb:open-theme-switcher', buttonElement.value._themeOpenHandler);
+    }
   }
   document.removeEventListener('click', handleClickOutside);
 });
