@@ -5,6 +5,11 @@
     
     <!-- Main App -->
     <template v-else>
+      <!-- Complete Toolbar with all P0 features -->
+      <Teleport to="#gmkb-toolbar">
+        <MediaKitToolbarComplete />
+      </Teleport>
+      
       <!-- Theme Provider - Manages CSS variables -->
       <ThemeProvider />
       
@@ -57,6 +62,7 @@ import EditorPanel from './EditorPanel.vue';
 import SidebarIntegration from './SidebarIntegration.vue';
 import DesignPanel from './panels/DesignPanel.vue';
 import ImportExportModal from './ImportExportModal.vue';
+import MediaKitToolbarComplete from './MediaKitToolbarComplete.vue';
 
 // Store references
 const store = useMediaKitStore();

@@ -92,7 +92,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             background: #f5f7fa;
         }
 
-        /* ROOT FIX: Full-Featured Layout Structure */
+        /* ROOT FIX: Full-Featured Layout Structure - NO RIGHT SIDEBAR */
         .gmkb-app-wrapper {
             position: fixed;
             top: 60px;
@@ -117,6 +117,23 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             padding: 0 24px;
             z-index: 1000;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .toolbar-loading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .toolbar-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
         
         .toolbar-left {
@@ -231,7 +248,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             padding: 16px;
         }
         
-        /* Main Content Area */
+        /* Main Content Area - NO RIGHT SIDEBAR */
         .gmkb-main-content {
             position: fixed;
             top: 60px;
@@ -332,11 +349,12 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             background: #2563eb;
         }
         
-        /* Responsive adjustments */
+        /* Responsive adjustments - NO RIGHT SIDEBAR */
         @media (max-width: 1024px) {
             .gmkb-sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                z-index: 200;
             }
             
             .gmkb-sidebar.open {
@@ -346,6 +364,18 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             .gmkb-app-wrapper,
             .gmkb-main-content {
                 left: 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .gmkb-toolbar {
+                height: 50px;
+            }
+            
+            .gmkb-app-wrapper,
+            .gmkb-main-content,
+            .gmkb-sidebar {
+                top: 50px;
             }
         }
         
@@ -376,27 +406,12 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         </div>
     </div>
     
-    <!-- ROOT FIX: Toolbar Structure for ThemeSwitcher -->
+    <!-- ROOT FIX: Toolbar Container - Vue will populate this -->
     <div id="gmkb-toolbar" class="gmkb-toolbar">
-        <div class="toolbar-left">
-            <h1 class="toolbar-title"><?php echo esc_html($post->post_title); ?></h1>
-            <span class="toolbar-subtitle">Media Kit Builder</span>
-        </div>
-        <div class="toolbar-right">
-            <button id="global-theme-btn" class="toolbar-btn" title="Change Theme">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-                </svg>
-                <span>Theme</span>
-            </button>
-            <button id="save-btn" class="toolbar-btn toolbar-btn--primary" title="Save Media Kit">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                    <polyline points="7 3 7 8 15 8"></polyline>
-                </svg>
-                <span>Save</span>
-            </button>
+        <!-- Vue MediaKitToolbarComplete component will render here -->
+        <div class="toolbar-loading">
+            <div class="toolbar-loading-spinner"></div>
+            <span>Loading toolbar...</span>
         </div>
     </div>
     
