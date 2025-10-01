@@ -12,7 +12,7 @@
 export class APIService {
   constructor(restUrl, restNonce, postId) {
     // Initialize with REST API endpoints
-    this.restUrl = restUrl || window.gmkbData?.restUrl;
+    this.restUrl = this.normalizeRestUrl(restUrl || window.gmkbData?.restUrl);
     this.restNonce = restNonce || window.gmkbData?.restNonce;
     this.postId = this.detectPostId(postId);
     
@@ -35,9 +35,47 @@ export class APIService {
       console.log('✅ APIService v2.0 initialized:', {
         postId: this.postId,
         baseUrl: this.baseUrl,
-        hasNonce: !!this.restNonce
+        hasNonce: !!this.restNonce,
+        restUrl: this.restUrl
       });
     }
+  }
+
+  /**
+   * Normalizes the REST URL to ensure it's valid and has trailing slash
+   * ROOT FIX: Prevents malformed URLs when restUrl is incorrect
+   */
+  normalizeRestUrl(url) {
+    if (!url) {
+      console.error('❌ APIService: No REST URL provided, using fallback');
+      // Fallback: construct REST URL from current domain
+      const origin = window.location.origin;
+      return `${origin}/wp-json/`;
+    }
+    
+    // ROOT FIX: If URL contains 'admin-ajax.php', it's wrong - use fallback
+    if (url.includes('admin-ajax.php')) {
+      console.warn('⚠️ APIService: Detected admin-ajax.php in REST URL, using fallback');
+      const origin = window.location.origin;
+      return `${origin}/wp-json/`;
+    }
+    
+    // Ensure trailing slash
+    if (!url.endsWith('/')) {
+      url += '/';
+    }
+    
+    // Ensure it ends with wp-json/
+    if (!url.endsWith('wp-json/')) {
+      if (url.endsWith('/')) {
+        url += 'wp-json/';
+      } else {
+        url += '/wp-json/';
+      }
+    }
+    
+    console.log('✅ APIService: Normalized REST URL to:', url);
+    return url;
   }
 
   /**

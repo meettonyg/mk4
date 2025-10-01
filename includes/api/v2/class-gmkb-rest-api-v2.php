@@ -75,6 +75,10 @@ class GMKB_REST_API_V2 {
      * Register REST routes
      */
     public function register_routes() {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔧 GMKB REST API v2: Registering routes with namespace: ' . $this->namespace);
+        }
+        
         // Single endpoint to load EVERYTHING
         register_rest_route($this->namespace, '/mediakit/(?P<id>\d+)', array(
             'methods' => 'GET',
@@ -109,6 +113,13 @@ class GMKB_REST_API_V2 {
             'callback' => array($this, 'get_components'),
             'permission_callback' => '__return_true'
         ));
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB REST API v2: Routes registered successfully:');
+            error_log('  - GET  /' . $this->namespace . '/mediakit/{id}');
+            error_log('  - POST /' . $this->namespace . '/mediakit/{id}');
+            error_log('  - GET  /' . $this->namespace . '/components');
+        }
     }
 
     /**

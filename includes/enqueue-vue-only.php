@@ -78,17 +78,29 @@ function gmkb_inject_data_object_script() {
     require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
     require_once GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php';
 
+    // ROOT FIX: Ensure restUrl has trailing slash for proper API endpoint construction
+    $rest_url = rest_url();
+    if (substr($rest_url, -1) !== '/') {
+        $rest_url .= '/';
+    }
+    
     $gmkb_data = array(
         'ajaxUrl'           => admin_url('admin-ajax.php'),
         'nonce'             => $nonce,
         'postId'            => $post_id,
         'pluginUrl'         => GUESTIFY_PLUGIN_URL,
         'isDevelopment'     => defined('GMKB_DEV_MODE') && GMKB_DEV_MODE,
-        'restUrl'           => esc_url_raw(rest_url()),
+        'restUrl'           => esc_url_raw($rest_url),
         'restNonce'         => wp_create_nonce('wp_rest'),
         'componentRegistry' => gmkb_get_component_registry_data(),
         'themes'            => gmkb_get_theme_data(), // ROOT FIX: Changed from 'themeData' to 'themes' for Vue compatibility
     );
+    
+    // DEBUG: Log the REST URL being set
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB: Setting restUrl to: ' . $rest_url);
+        error_log('✅ GMKB: Expected API endpoint: ' . $rest_url . 'gmkb/v2/mediakit/' . $post_id);
+    }
 
     echo '<script type="text/javascript">';
     echo 'var gmkbData = ' . wp_json_encode($gmkb_data) . ';';
