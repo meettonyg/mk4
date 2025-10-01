@@ -54,7 +54,7 @@
       <!-- Theme -->
       <button 
         id="global-theme-btn"
-        @click="handleTheme"
+        @click.prevent="handleTheme"
         class="toolbar-btn"
         title="Change Theme"
       >

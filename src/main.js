@@ -71,31 +71,8 @@ async function initializeVue() {
       // Clear loading spinner
       mountPoint.innerHTML = '';
       
-      // Verify required elements exist
-      const requiredElements = {
-        '#gmkb-toolbar': 'Toolbar',
-        '#gmkb-sidebar': 'Sidebar',
-        '#gmkb-main-content': 'Main Content',
-        '#media-kit-preview': 'Preview Area',
-        '#global-theme-btn': 'Theme Button',
-        '#add-component-btn': 'Add Component Button',
-        '#save-btn': 'Save Button'
-      };
-      
-      let allPresent = true;
-      for (const [selector, name] of Object.entries(requiredElements)) {
-        const element = document.querySelector(selector);
-        if (!element) {
-          logger.warn(`⚠️ ${name} (${selector}) not found`);
-          allPresent = false;
-        } else {
-          logger.info(`✅ ${name} present`);
-        }
-      }
-      
-      if (!allPresent) {
-        logger.error('Some UI elements are missing - this may cause issues');
-      }
+      // NOTE: UI elements like #global-theme-btn will be created by Vue after mount
+      // Do not check for them here - they don't exist yet!
     } else {
       // Legacy mode - use #media-kit-preview
       const previewContainer = document.getElementById('media-kit-preview');

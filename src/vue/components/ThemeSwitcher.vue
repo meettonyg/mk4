@@ -182,17 +182,21 @@ const getDropdownStyle = computed(() => {
 onMounted(() => {
   // Listen for theme button clicks via custom event
   const handleThemeOpen = (event) => {
+    console.log('🎨 ThemeSwitcher: Received open event');
     // Update button position
     const btn = document.getElementById('global-theme-btn');
     if (btn) {
       buttonElement.value = btn;
       buttonRect.value = btn.getBoundingClientRect();
+      console.log('🎨 ThemeSwitcher: Button position updated', buttonRect.value);
     }
     toggleDropdown();
+    console.log('🎨 ThemeSwitcher: Dropdown toggled, open:', dropdownOpen.value);
   };
   
   // Listen for custom event from toolbar
   document.addEventListener('gmkb:open-theme-switcher', handleThemeOpen);
+  console.log('✅ ThemeSwitcher: Listening for gmkb:open-theme-switcher event');
   
   // LEGACY SUPPORT: Also listen for clicks on button (for backwards compatibility)
   const btn = document.getElementById('global-theme-btn');
@@ -207,19 +211,14 @@ onMounted(() => {
   
   document.addEventListener('click', handleClickOutside);
   
-  // Store event handler for cleanup
-  buttonElement.value._themeOpenHandler = handleThemeOpen;
-});
-
-onUnmounted(() => {
-  if (buttonElement.value) {
-    buttonElement.value.removeEventListener('click', handleButtonClick);
-    // Remove custom event listener
-    if (buttonElement.value._themeOpenHandler) {
-      document.removeEventListener('gmkb:open-theme-switcher', buttonElement.value._themeOpenHandler);
+  // Store cleanup function
+  onUnmounted(() => {
+    document.removeEventListener('gmkb:open-theme-switcher', handleThemeOpen);
+    if (buttonElement.value) {
+      buttonElement.value.removeEventListener('click', handleButtonClick);
     }
-  }
-  document.removeEventListener('click', handleClickOutside);
+    document.removeEventListener('click', handleClickOutside);
+  });
 });
 </script>
 
