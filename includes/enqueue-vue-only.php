@@ -128,9 +128,11 @@ function gmkb_get_post_id() {
 }
 
 function gmkb_get_component_registry_data() {
-    if (class_exists('\GMKB\ComponentDiscovery')) {
-        $discovery = new \GMKB\ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components/');
-        return $discovery->get_all_components();
+    // ROOT FIX: ComponentDiscovery is not namespaced, use global class
+    if (class_exists('ComponentDiscovery')) {
+        $discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components/');
+        $discovery->scan(); // Ensure components are scanned
+        return $discovery->getComponents(); // Use correct method name
     }
     return [];
 }

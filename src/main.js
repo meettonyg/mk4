@@ -16,6 +16,7 @@ import { logger } from './utils/logger.js';
 import UnifiedComponentRegistry from './services/UnifiedComponentRegistry.js';
 import podsDataIntegration from './core/PodsDataIntegration.js';
 import NonceManager from './services/NonceManager.js';
+import importExportService from './services/ImportExportService.js';
 
 // Only essential features for Vue
 import ImportExportManager from './features/ImportExportManager.js';
@@ -195,7 +196,11 @@ async function initializeVue() {
         theme: mediaKitStore.theme
       }),
       save: () => mediaKitStore.saveToWordPress(),
-      store: mediaKitStore
+      store: mediaKitStore,
+      
+      // Import/Export methods exposed globally
+      openImportExport: () => importExportService.openModal(),
+      closeImportExport: () => importExportService.closeModal()
     };
     
     // Console helpers
@@ -235,6 +240,10 @@ Theme Commands:
 - switchTheme('dark') - Switch themes
 - themeStore.openCustomizer() - Open customizer
 - themeStore.applyColorPreset('purple') - Apply preset
+
+Import/Export Commands:
+- GMKB.openImportExport() - Open import/export modal
+- GMKB.closeImportExport() - Close import/export modal
 
 Debug:
 - gmkbStore.$state - View store state
@@ -387,6 +396,10 @@ async function initialize() {
     // Initialize import/export manager
     importExportManager = new ImportExportManager();
     window.gmkbImportExport = importExportManager;
+    
+    // Initialize import/export service (for button integration)
+    // importExportService initializes itself automatically
+    logger.info('✅ Import/Export service initialized');
     
     // Initialize Vue application
     vueApp = await initializeVue();

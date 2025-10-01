@@ -30,13 +30,19 @@
         
         <!-- Design Panel -->
         <DesignPanel />
+        
+        <!-- Import/Export Modal -->
+        <ImportExportModal 
+          v-model="showImportExportModal"
+          @import-success="handleImportSuccess"
+        />
       </Teleport>
     </template>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import { useTheme } from '../composables/useTheme';
 import LoadingScreen from './LoadingScreen.vue';
@@ -48,6 +54,7 @@ import SectionLayoutEnhanced from './SectionLayoutEnhanced.vue';
 import EditorPanel from './EditorPanel.vue';
 import SidebarIntegration from './SidebarIntegration.vue';
 import DesignPanel from './panels/DesignPanel.vue';
+import ImportExportModal from './ImportExportModal.vue';
 
 // Store references
 const store = useMediaKitStore();
@@ -57,8 +64,25 @@ const { applyTheme } = useTheme();
 const isReady = ref(false);
 const loadingProgress = ref(0);
 
+// Import/Export modal state
+const showImportExportModal = ref(false);
+
 // Computed properties
 const themeClass = computed(() => `theme-${store.theme || 'professional_clean'}`);
+
+// Handle import/export modal events
+function handleOpenImportExport() {
+  showImportExportModal.value = true;
+}
+
+function handleCloseImportExport() {
+  showImportExportModal.value = false;
+}
+
+function handleImportSuccess() {
+  console.log('✅ Import completed successfully');
+  // The store will automatically reload, no need to do anything else
+}
 
 // Initialize app with optimized data loading
 onMounted(async () => {
@@ -85,6 +109,10 @@ onMounted(async () => {
     console.log('✅ MediaKitApp: Phase 1 initialization complete');
     console.log('📊 MediaKitApp: Pods data loaded:', store.podsData ? Object.keys(store.podsData).length : 0, 'fields');
     
+    // Listen for import/export events
+    document.addEventListener('gmkb:open-import-export', handleOpenImportExport);
+    document.addEventListener('gmkb:close-import-export', handleCloseImportExport);
+    
   } catch (error) {
     console.error('❌ MediaKitApp: Initialization failed:', error);
     
@@ -96,6 +124,12 @@ onMounted(async () => {
       detail: { error: error.message }
     }));
   }
+});
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.removeEventListener('gmkb:open-import-export', handleOpenImportExport);
+  document.removeEventListener('gmkb:close-import-export', handleCloseImportExport);
 });
 </script>
 
