@@ -277,11 +277,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
           data = savedState;
           this.applyState(savedState);
         } else if (this.postId) {
-          // ROOT FIX: Use APIService which uses admin-ajax.php
+          // ROOT FIX: Use APIService with REST URL (not AJAX URL)
           // Get APIService from window or create new instance
-          const apiService = window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
-            window.gmkbData?.ajaxUrl,
-            window.gmkbData?.nonce,
+          const apiService = window.gmkbAPI || window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
+            window.gmkbData?.restUrl,     // ← Use REST URL
+            window.gmkbData?.restNonce,   // ← Use REST nonce
             this.postId
           );
 
@@ -584,14 +584,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (savedState.globalSettings) this.globalSettings = savedState.globalSettings;
     },
 
-    // Load from API via APIService (uses admin-ajax)
+    // Load from API via APIService (uses REST API)
     async loadFromAPI() {
       if (!this.postId) return;
       
       try {
-        const apiService = window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
-          window.gmkbData?.ajaxUrl,
-          window.gmkbData?.nonce,
+        const apiService = window.gmkbAPI || window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
+          window.gmkbData?.restUrl,
+          window.gmkbData?.restNonce,
           this.postId
         );
 
@@ -614,7 +614,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
     },
 
-    // Save via APIService (uses admin-ajax)
+    // Save via APIService (uses REST API)
     async saveToAPI() {
       if (!this.postId) return;
       
@@ -629,9 +629,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
           globalSettings: this.globalSettings
         };
         
-        const apiService = window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
-          window.gmkbData?.ajaxUrl,
-          window.gmkbData?.nonce,
+        const apiService = window.gmkbAPI || window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
+          window.gmkbData?.restUrl,
+          window.gmkbData?.restNonce,
           this.postId
         );
 
