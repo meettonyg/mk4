@@ -14,8 +14,10 @@
       <!-- Sidebar Integration - Component list -->
       <SidebarIntegration />
       
-      <!-- Main builder content -->
-      <SectionLayoutEnhanced />
+      <!-- ROOT FIX: Main builder content renders in #media-kit-preview -->
+      <Teleport to="#media-kit-preview" v-if="previewMountReady">
+        <SectionLayoutEnhanced />
+      </Teleport>
       
       <!-- Modals rendered outside main content -->
       <Teleport to="body">
@@ -42,7 +44,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import { useTheme } from '../composables/useTheme';
 import LoadingScreen from './LoadingScreen.vue';
@@ -63,6 +65,7 @@ const { applyTheme } = useTheme();
 // Loading states
 const isReady = ref(false);
 const loadingProgress = ref(0);
+const previewMountReady = ref(false); // ROOT FIX: Track preview mount point availability
 
 // Import/Export modal state
 const showImportExportModal = ref(false);
@@ -89,6 +92,24 @@ onMounted(async () => {
   try {
     console.log('🚀 MediaKitApp: Starting Phase 1 initialization');
     loadingProgress.value = 10;
+    
+    // ROOT FIX: Verify preview mount point exists
+    const previewMount = document.getElementById('media-kit-preview');
+    if (previewMount) {
+      previewMountReady.value = true;
+      console.log('✅ Preview mount point ready');
+    } else {
+      console.warn('⚠️ Preview mount point not found yet, will retry...');
+      // Retry after a tick
+      await nextTick();
+      const retryMount = document.getElementById('media-kit-preview');
+      if (retryMount) {
+        previewMountReady.value = true;
+        console.log('✅ Preview mount point ready (retry)');
+      } else {
+        console.error('❌ Preview mount point not found!');
+      }
+    }
     
     // PHASE 1: Single API call for ALL data
     console.log('📡 MediaKitApp: Making single API call for all data');
