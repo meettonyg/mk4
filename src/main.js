@@ -59,47 +59,66 @@ function showToast(message, type = 'info', duration = 3000) {
 async function initializeVue() {
   try {
     console.log('3️⃣ Creating Vue application...');
-    // ROOT FIX: Mount Vue to replace the entire preview content
-    // This ensures Vue takes full control without coexisting with legacy DOM
-    const previewContainer = document.getElementById('media-kit-preview');
+    // ROOT FIX: Support both Pure Vue template and legacy templates
+    // Pure Vue template uses #app, legacy uses #media-kit-preview
+    let mountPoint = document.getElementById('app');
+    const isPureVueMode = window.gmkbData?.architecture === 'pure-vue';
     
-    if (!previewContainer) {
-      logger.error('No preview container found');
-      throw new Error('Preview container not found');
+    if (isPureVueMode && mountPoint) {
+      // PHASE 3: Pure Vue mode - mount directly to #app
+      logger.info('✅ Using Pure Vue mode - mounting to #app');
+      // Clear loading spinner
+      mountPoint.innerHTML = '';
+    } else {
+      // Legacy mode - use #media-kit-preview
+      const previewContainer = document.getElementById('media-kit-preview');
+      
+      if (!previewContainer) {
+        logger.error('No preview container found');
+        logger.error('Looking for: #media-kit-preview (legacy) or #app (pure Vue)');
+        logger.error('Architecture mode:', window.gmkbData?.architecture || 'unknown');
+        throw new Error('Preview container not found');
+      }
+      
+      // Clear ALL existing content - Vue will handle everything
+      previewContainer.innerHTML = '';
+      
+      // Create a new mount point for Vue
+      mountPoint = document.createElement('div');
+      mountPoint.id = 'vue-media-kit-app';
+      mountPoint.className = 'vue-media-kit-app';
+      previewContainer.appendChild(mountPoint);
+      logger.info('✅ Using Legacy mode - created mount point in #media-kit-preview');
     }
-    
-    // Clear ALL existing content - Vue will handle everything
-    previewContainer.innerHTML = '';
-    
-    // Create a new mount point for Vue
-    const mountPoint = document.createElement('div');
-    mountPoint.id = 'vue-media-kit-app';
-    mountPoint.className = 'vue-media-kit-app';
-    previewContainer.appendChild(mountPoint);
     
     logger.info('Created fresh Vue mount point');
     
-    // ROOT FIX: Aggressive cleanup of ALL legacy elements
-    // Remove all legacy containers and components
-    const legacySelectors = [
-      '#empty-state',
-      '#saved-components-container',
-      '.gmkb-component-wrapper',
-      '.gmkb-hero-component',
-      '.gmkb-sections-container:not(.vue-sections)',
-      '.saved-components',
-      '.empty-state-optimized'
-    ];
-    
-    legacySelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(el => {
-        // Don't remove if it's inside our Vue app
-        if (!el.closest('#vue-media-kit-app')) {
-          el.remove();
-        }
+    // ROOT FIX: Aggressive cleanup of ALL legacy elements (only in legacy mode)
+    if (!isPureVueMode) {
+      // Remove all legacy containers and components
+      const legacySelectors = [
+        '#empty-state',
+        '#saved-components-container',
+        '.gmkb-component-wrapper',
+        '.gmkb-hero-component',
+        '.gmkb-sections-container:not(.vue-sections)',
+        '.saved-components',
+        '.empty-state-optimized'
+      ];
+      
+      legacySelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          // Don't remove if it's inside our Vue app
+          if (!el.closest('#vue-media-kit-app') && !el.closest('#app')) {
+            el.remove();
+          }
+        });
       });
-    });
+      logger.info('🧹 Cleaned up legacy elements');
+    } else {
+      logger.info('ℹ️ Pure Vue mode - no legacy cleanup needed');
+    }
     
     // ROOT FIX: Disable any legacy rendering systems
     // Override global functions that might be called by legacy code

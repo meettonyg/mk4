@@ -14,20 +14,60 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get post ID
+// ROOT FIX: Enhanced post ID detection with multiple strategies
 $post_id = 0;
 if (isset($_GET['mkcg_id'])) {
     $post_id = intval($_GET['mkcg_id']);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB Phase 3: Using mkcg_id parameter: ' . $post_id);
+    }
 } elseif (isset($_GET['post_id'])) {
     $post_id = intval($_GET['post_id']);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB Phase 3: Using post_id parameter: ' . $post_id);
+    }
+} elseif (isset($_GET['p'])) {
+    $post_id = intval($_GET['p']);
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB Phase 3: Using p parameter: ' . $post_id);
+    }
 } else {
     $post_id = get_the_ID();
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB Phase 3: Using get_the_ID(): ' . ($post_id ?: 'NULL'));
+    }
 }
 
-// Verify post exists
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('GMKB Phase 3: Final detected post_id: ' . $post_id);
+    error_log('GMKB Phase 3: REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
+    error_log('GMKB Phase 3: GET parameters: ' . print_r($_GET, true));
+}
+
+// ROOT FIX: Verify post exists - support both 'guests' and 'mkcg' post types
 $post = get_post($post_id);
-if (!$post || $post->post_type !== 'mkcg') {
-    wp_die('Invalid media kit ID');
+if (!$post) {
+    $error_details = '';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $error_details = '<br><br><strong>Debug Info:</strong><br>';
+        $error_details .= 'Post ID attempted: ' . esc_html($post_id) . '<br>';
+        $error_details .= 'URL: ' . esc_html($_SERVER['REQUEST_URI'] ?? 'N/A') . '<br>';
+        $error_details .= 'GET parameters: ' . esc_html(print_r($_GET, true));
+    }
+    wp_die(
+        'Invalid media kit ID: Post not found (ID: ' . esc_html($post_id) . ')' . $error_details,
+        'Media Kit Builder Error',
+        array('response' => 404)
+    );
+}
+
+// Support multiple post types (guests is the primary post type)
+$allowed_post_types = array('guests', 'mkcg');
+if (!in_array($post->post_type, $allowed_post_types)) {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB Phase 3: Invalid post type for media kit: ' . $post->post_type . ' (ID: ' . $post_id . ')');
+    }
+    wp_die('Invalid media kit ID: Post type "' . esc_html($post->post_type) . '" is not supported. Expected: guests or mkcg');
 }
 
 ?><!DOCTYPE html>
