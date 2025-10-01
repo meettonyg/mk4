@@ -548,7 +548,9 @@ class GMKB_REST_API_V2 {
     }
 }
 
-// Initialize API
-add_action('rest_api_init', function() {
-    new GMKB_REST_API_V2();
-});
+// Initialize API - instantiate immediately, the constructor adds the rest_api_init hook
+new GMKB_REST_API_V2();
+
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('✅ GMKB REST API v2: Class instantiated immediately');
+}
