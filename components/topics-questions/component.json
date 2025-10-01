@@ -1,12 +1,13 @@
 {
   "type": "topics-questions",
   "name": "Topics & Questions",
-  "description": "Combined topics and Q&A section",
+  "description": "Combined topics and Q&A section with flexible display modes",
   "category": "content",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "renderers": {
-    "vue": "TopicsQuestions.vue",
-    "editor": "TopicsQuestionsEditor.vue"
+    "vue": "TopicsQuestionsRenderer.vue",
+    "editor": "TopicsQuestionsEditor.vue",
+    "legacy": "TopicsQuestions.vue"
   },
   "schema": "schema.json",
   "supports": {
@@ -14,5 +15,22 @@
     "vueRender": true,
     "inlineEdit": true,
     "designPanel": true
+  },
+  "features": {
+    "displayModes": ["topics", "questions", "combined"],
+    "topicsDisplay": ["cards", "list"],
+    "questionsDisplay": ["accordion", "list"],
+    "maxTopics": 5,
+    "maxQuestions": 25
+  },
+  "pods": {
+    "topics": ["topic_1", "topic_2", "topic_3", "topic_4", "topic_5"],
+    "questions": [
+      "question_1", "question_2", "question_3", "question_4", "question_5",
+      "question_6", "question_7", "question_8", "question_9", "question_10",
+      "question_11", "question_12", "question_13", "question_14", "question_15",
+      "question_16", "question_17", "question_18", "question_19", "question_20",
+      "question_21", "question_22", "question_23", "question_24", "question_25"
+    ]
   }
 }

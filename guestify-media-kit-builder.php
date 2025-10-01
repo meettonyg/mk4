@@ -147,9 +147,16 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php
     require_once GUESTIFY_PLUGIN_DIR . 'system/version-control/VersionManager.php';
 }
 
-// PHASE 1 IMPLEMENTATION: Pure Vue REST API
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-rest-api-mediakit.php';
+// PHASE 2 IMPLEMENTATION: Pure Vue REST API v2 - Unified Endpoint
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php';
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('✅ GMKB Phase 2: REST API v2 loaded (unified endpoint)');
+    }
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('❌ GMKB Phase 2: REST API v2 not found at: ' . GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.php');
+    }
 }
 
 // PHASE 5: Theme REST API Controller
