@@ -74,12 +74,26 @@ class GMKB_Frontend_Template_Router {
     }
     
     /**
-     * ROOT FIX: Route to media kit template if data exists
+     * PHASE 3: Route to PURE VUE template for builder pages
+     * Uses builder-template-vue-pure.php for 100% Vue SPA
      * 
      * @param string $template Current template path
      * @return string Modified template path
      */
     public function route_media_kit_template($template) {
+        // PHASE 3: Check if this is a builder page (has mkcg_id parameter)
+        $is_builder_page = isset($_GET['mkcg_id']) || isset($_GET['post_id']);
+        
+        if ($is_builder_page) {
+            $vue_pure_template = GMKB_PLUGIN_DIR . 'templates/builder-template-vue-pure.php';
+            
+            if (file_exists($vue_pure_template)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('🎯 GMKB Phase 3: Using Pure Vue template for builder');
+                }
+                return $vue_pure_template;
+            }
+        }
         // ROOT FIX: Debug current template being used
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('GMKB Template Router: Current template: ' . $template);

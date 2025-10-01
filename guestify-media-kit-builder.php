@@ -24,6 +24,7 @@ define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'GMKB_WORDPRESS_COMPATIBLE', true );
 define( 'GMKB_ARCHITECTURE', 'vue' ); // 100% Vue architecture
+define( 'GMKB_USE_PURE_VUE', true ); // PHASE 3: Enable Pure Vue template
 define( 'GMKB_DEV_MODE', defined( 'WP_DEBUG' ) && WP_DEBUG );
 
 // Include Vue-only enqueue system
@@ -459,10 +460,19 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * STRICT: Template takeover - ONLY on specific pages
-     * ROOT FIX: Prevents template takeover on wrong pages
+     * PHASE 3: Template takeover - Pure Vue Mode
+     * Uses builder-template-vue-pure.php for 100% Vue SPA
      */
     public function isolated_builder_template_takeover() {
+        // PHASE 3: Check if Pure Vue mode is enabled (via query param or constant)
+        $use_pure_vue = defined('GMKB_USE_PURE_VUE') && GMKB_USE_PURE_VUE;
+        $use_pure_vue = $use_pure_vue || (isset($_GET['vue_mode']) && $_GET['vue_mode'] === 'pure');
+        
+        if ($use_pure_vue) {
+            // Let template router handle Pure Vue template
+            return;
+        }
+        
         $is_builder_page = false;
         
         // Strategy 1: EXACT page slug detection
