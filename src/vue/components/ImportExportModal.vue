@@ -2,7 +2,7 @@
   <div v-if="isOpen" class="gmkb-modal-overlay" @click.self="close">
     <div class="gmkb-modal import-export-modal">
       <div class="modal-header">
-        <h2>{{ $t('Import/Export Media Kit') }}</h2>
+        <h2>Import/Export Media Kit</h2>
         <button @click="close" class="close-btn" aria-label="Close">×</button>
       </div>
 
