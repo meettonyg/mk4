@@ -61,7 +61,15 @@ export default {
   setup(props) {
     // Store and composables
     const store = useMediaKitStore();
-    const { biography, fullName, tagline, position, company } = usePodsData();
+    const pods = usePodsData();
+    
+    // ROOT FIX: Extract only the fields that exist in usePodsData
+    const { biography, fullName } = pods;
+    
+    // ROOT FIX: Access professional fields correctly from the professional object
+    const position = computed(() => pods.professional.value?.title || '');
+    const company = computed(() => pods.professional.value?.company || '');
+    const tagline = computed(() => store.podsData?.tagline || store.podsData?.professional_tagline || '');
     
     // Computed properties
     const title = computed(() => {

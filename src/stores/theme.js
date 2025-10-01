@@ -712,7 +712,17 @@ export const useThemeStore = defineStore('theme', {
     
     // Load custom themes from database
     async loadCustomThemes() {
-      // GEMINI FIX: Properly authenticated custom themes loading
+      // ROOT FIX: Custom themes endpoint doesn't exist yet in v2 API
+      // Skip loading custom themes for now - only use built-in themes from PHP
+      // Custom themes feature can be re-enabled once v2 API endpoint is created
+      
+      if (window.gmkbData?.isDevelopment) {
+        console.log('[Theme Store] Custom themes not yet implemented in v2 API');
+      }
+      
+      return; // Skip custom themes for now
+      
+      /* DISABLED UNTIL v2 API ENDPOINT EXISTS
       let restUrl = window.gmkbData?.api || window.gmkbData?.restUrl || '/wp-json/';
       const nonce = window.gmkbData?.restNonce || window.gmkbData?.nonce || '';
       
@@ -783,6 +793,7 @@ export const useThemeStore = defineStore('theme', {
           console.log('[Theme Store] Custom themes not available:', error.message);
         }
       }
+      */
     }
   }
 });
