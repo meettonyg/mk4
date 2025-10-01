@@ -83,7 +83,7 @@ class GMKB_REST_API_V2 {
         register_rest_route($this->namespace, '/mediakit/(?P<id>\d+)', array(
             'methods' => 'GET',
             'callback' => array($this, 'get_mediakit'),
-            'permission_callback' => '__return_true', // Public read
+            'permission_callback' => array($this, 'check_read_permissions'), // ROOT FIX: Custom permission check
             'args' => array(
                 'id' => array(
                     'validate_callback' => function($param) {
@@ -136,6 +136,16 @@ class GMKB_REST_API_V2 {
      */
     public function get_mediakit($request) {
         $post_id = (int) $request['id'];
+        
+        // DEBUG: Log the request details
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('🔍 GMKB REST API: get_mediakit called for post ' . $post_id);
+            error_log('  - Is user logged in: ' . (is_user_logged_in() ? 'YES' : 'NO'));
+            if (is_user_logged_in()) {
+                error_log('  - Current user ID: ' . get_current_user_id());
+            }
+            error_log('  - Nonce from header: ' . ($request->get_header('X-WP-Nonce') ?: 'MISSING'));
+        }
 
         // Verify post exists
         $post = get_post($post_id);
@@ -408,6 +418,43 @@ class GMKB_REST_API_V2 {
         }
 
         return true;
+    }
+
+    /**
+     * Check read permissions - more lenient for logged-in users
+     * 
+     * @param WP_REST_Request $request The request
+     * @return bool|WP_Error Whether the user can read
+     */
+    public function check_read_permissions($request) {
+        $post_id = (int) $request['id'];
+        
+        // If user is logged in, allow access
+        if (is_user_logged_in()) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB REST API: User is logged in, granting read access');
+            }
+            return true;
+        }
+        
+        // For non-logged-in users, check if post is public
+        $post = get_post($post_id);
+        if ($post && $post->post_status === 'publish') {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB REST API: Post is published, granting public read access');
+            }
+            return true;
+        }
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('❌ GMKB REST API: Access denied - user not logged in and post not public');
+        }
+        
+        return new WP_Error(
+            'rest_forbidden',
+            'You must be logged in to access this media kit',
+            array('status' => 403)
+        );
     }
 
     /**

@@ -367,15 +367,20 @@ async function initialize() {
   logger.info('🚀 Initializing Media Kit Builder v4.0 - Pure Vue');
   
   try {
-    // Setup API service
-    const ajaxUrl = window.gmkbData?.ajaxUrl || 
-                    window.ajaxurl || 
-                    '/wp-admin/admin-ajax.php';
-    
-    const nonce = window.gmkbData?.nonce || '';
+    // ROOT FIX: Pass REST URL, not AJAX URL to APIService
+    const restUrl = window.gmkbData?.restUrl || window.location.origin + '/wp-json/';
+    const restNonce = window.gmkbData?.restNonce || '';
     const postId = window.gmkbData?.postId;
     
-    apiService = new APIService(ajaxUrl, nonce, postId);
+    // DEBUG: Log what we're passing to APIService
+    console.log('🔧 Initializing APIService with:', {
+      restUrl,
+      restNonce: restNonce ? 'present' : 'missing',
+      postId
+    });
+    
+    apiService = new APIService(restUrl, restNonce, postId);
+    window.gmkbAPI = apiService; // Make available globally
     
     // Initialize component registry
     UnifiedComponentRegistry.initialize();
