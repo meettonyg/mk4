@@ -159,63 +159,10 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/v2/class-gmkb-rest-api-v2.ph
     }
 }
 
-// PHASE 5: Theme REST API Controller
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/api/class-rest-theme-controller.php';
-    
-    // ROOT FIX: Instantiate the controller immediately to ensure REST routes are registered
-    add_action('rest_api_init', function() {
-        if (class_exists('GMKB_REST_Theme_Controller')) {
-            new GMKB_REST_Theme_Controller();
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('✅ GMKB Phase 5: Theme REST API Controller instantiated on rest_api_init');
-            }
-        } else {
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('❌ GMKB Phase 5: GMKB_REST_Theme_Controller class not found after require');
-            }
-        }
-    }, 5); // Early priority to register routes before they're needed
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB Phase 5: Theme REST API Controller loaded');
-    }
-} else {
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('❌ GMKB Phase 5: Theme REST API Controller not found');
-    }
-}
-
-// ROOT FIX: Verify REST API routes are registered
-add_action('rest_api_init', function() {
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('🔍 GMKB: REST API routes registered');
-        $routes = rest_get_server()->get_routes();
-        
-        // Check for theme routes
-        if (isset($routes['/gmkb/v1/themes/custom'])) {
-            error_log('✅ GMKB: /gmkb/v1/themes/custom route exists');
-            error_log('   Methods: ' . print_r(array_column($routes['/gmkb/v1/themes/custom'], 'methods'), true));
-        } else {
-            error_log('❌ GMKB: /gmkb/v1/themes/custom route NOT found');
-        }
-        
-        // Check for other GMKB routes
-        $gmkb_routes = array();
-        foreach ($routes as $route => $handlers) {
-            if (strpos($route, '/gmkb/') === 0) {
-                $gmkb_routes[] = $route;
-            }
-        }
-        if (!empty($gmkb_routes)) {
-            error_log('📋 GMKB: All GMKB routes: ' . implode(', ', $gmkb_routes));
-        } else {
-            error_log('⚠️ GMKB: No GMKB routes found!');
-        }
-    }
-}, 999);
-
-// PHASE 1 MIGRATION: New optimized MediaKit API with single-query data fetching
+// ROOT FIX: DEPRECATED - MediaKitAPI.php uses AJAX and conflicts with REST API v2
+// This file has been deprecated in favor of the unified REST API v2
+// Keeping the include commented out for reference but it should NOT be loaded
+/*
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php';
     // ROOT FIX: Initialize API immediately to ensure REST routes are registered
@@ -236,6 +183,7 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php')) {
         error_log('❌ GMKB Phase 1: MediaKitAPI.php not found at: ' . GUESTIFY_PLUGIN_DIR . 'includes/api/MediaKitAPI.php');
     }
 }
+*/
 
 // PHASE 3: Component Discovery API for scalable component architecture
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/ComponentDiscoveryAPI.php')) {
