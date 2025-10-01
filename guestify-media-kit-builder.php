@@ -16,10 +16,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // DEFINE CONSTANTS AT THE TOP LEVEL
-define( 'GUESTIFY_VERSION', '2.1.0-vanilla-js-final' );
+define( 'GUESTIFY_VERSION', '2.1.0-phase5-legacy-removed' );
 define( 'GUESTIFY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GUESTIFY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'GMKB_VERSION', '2.1.0-vanilla-js-final' );
+define( 'GMKB_VERSION', '2.1.0-phase5-legacy-removed' );
 define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'GMKB_WORDPRESS_COMPATIBLE', true );
@@ -398,12 +398,19 @@ class Guestify_Media_Kit_Builder {
         // Register AJAX handlers with consistent nonce validation
         add_action( 'wp_ajax_guestify_get_components', array( $this, 'ajax_get_components' ) );
         add_action( 'wp_ajax_nopriv_guestify_get_components', array( $this, 'ajax_get_components' ) );
+        
+        // PHASE 5: DEPRECATED - PHP Rendering AJAX Handlers
+        // These handlers are deprecated in favor of pure Vue client-side rendering
+        // Replaced by: REST API v2 (/gmkb/v2/mediakit/{id}) + Vue components
+        // Keeping commented for backward compatibility reference only
+        /*
         add_action( 'wp_ajax_guestify_render_component', array( $this, 'ajax_render_component' ) );
         add_action( 'wp_ajax_nopriv_guestify_render_component', array( $this, 'ajax_render_component' ) );
         add_action( 'wp_ajax_guestify_render_component_enhanced', array( $this, 'ajax_render_component_enhanced' ) );
         add_action( 'wp_ajax_nopriv_guestify_render_component_enhanced', array( $this, 'ajax_render_component_enhanced' ) );
         add_action( 'wp_ajax_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
         add_action( 'wp_ajax_nopriv_guestify_render_design_panel', array( $this, 'ajax_render_design_panel' ) );
+        */
         
         // Component cache management AJAX handlers
         add_action( 'wp_ajax_gmkb_clear_component_cache', array( $this, 'ajax_clear_component_cache' ) );
@@ -888,10 +895,20 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * AJAX handler to render a single component server-side.
-     * --- ROOT FIX: SINGLE-STEP RENDER LOGIC ---
-     * This function is now responsible for fetching data for components like 'topics'
-     * before rendering, creating a more reliable "single-step render".
+     * PHASE 5: DEPRECATED - PHP Component Rendering
+     * 
+     * This method is DEPRECATED as of Phase 5: Remove Legacy Systems
+     * Purpose changed: PHP rendering → Vue client-side rendering
+     * 
+     * REPLACEMENT: Vue components now handle all rendering
+     * - Component data loaded via REST API v2: GET /gmkb/v2/mediakit/{id}
+     * - Vue renders components client-side based on data
+     * - No server-side HTML generation
+     * 
+     * KEPT FOR: Backward compatibility reference only
+     * STATUS: Not registered in init_hooks() (commented out)
+     * 
+     * @deprecated 2.1.0 Use REST API v2 + Vue rendering instead
      */
     public function ajax_render_component() {
         check_ajax_referer('gmkb_nonce', 'nonce');
@@ -1080,6 +1097,22 @@ class Guestify_Media_Kit_Builder {
         return $scripts;
     }
     
+    /**
+     * PHASE 5: DEPRECATED - PHP Design Panel Rendering
+     * 
+     * This method is DEPRECATED as of Phase 5: Remove Legacy Systems
+     * Purpose changed: PHP panel rendering → Vue design panel components
+     * 
+     * REPLACEMENT: Vue design panel components handle all panel UI
+     * - Design panels are Vue components in src/vue/components/
+     * - No server-side HTML generation
+     * - All panel state managed by Pinia store
+     * 
+     * KEPT FOR: Backward compatibility reference only
+     * STATUS: Not registered in init_hooks() (commented out)
+     * 
+     * @deprecated 2.1.0 Use Vue design panel components instead
+     */
     public function ajax_render_design_panel() {
         // Verify nonce for security
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
@@ -2023,8 +2056,20 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * ROOT FIX: Enhanced AJAX render component method
-     * Improved server-side component rendering with topics data pre-loading
+     * PHASE 5: DEPRECATED - Enhanced PHP Component Rendering
+     * 
+     * This method is DEPRECATED as of Phase 5: Remove Legacy Systems
+     * Purpose changed: Enhanced PHP rendering → Pure Vue rendering
+     * 
+     * REPLACEMENT: Vue components with data from REST API v2
+     * - Component data pre-loaded in single API call
+     * - Vue renders all components client-side
+     * - No server-side HTML generation
+     * 
+     * KEPT FOR: Backward compatibility reference only
+     * STATUS: Not registered in init_hooks() (commented out)
+     * 
+     * @deprecated 2.1.0 Use REST API v2 + Vue rendering instead
      */
     public function ajax_render_component_enhanced() {
         check_ajax_referer('gmkb_nonce', 'nonce');
