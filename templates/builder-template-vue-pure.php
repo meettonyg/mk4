@@ -441,37 +441,62 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             architecture: 'pure-vue',
             debugMode: <?php echo json_encode(defined('WP_DEBUG') && WP_DEBUG); ?>,
             
-            // ROOT FIX: Add themes data for theme store
+            // ROOT FIX: Add themes data for theme store (MUST BE ARRAY, not object)
             themes: <?php echo json_encode(array(
-                'professional_clean' => array(
+                array(
                     'id' => 'professional_clean',
                     'name' => 'Professional Clean',
                     'description' => 'Clean and professional design',
-                    'category' => 'professional'
+                    'category' => 'professional',
+                    'colors' => array(
+                        'primary' => '#3b82f6',
+                        'secondary' => '#8b5cf6',
+                        'border' => '#e2e8f0'
+                    )
                 ),
-                'creative_bold' => array(
+                array(
                     'id' => 'creative_bold',
                     'name' => 'Creative Bold',
                     'description' => 'Bold and creative design',
-                    'category' => 'creative'
+                    'category' => 'creative',
+                    'colors' => array(
+                        'primary' => '#ec4899',
+                        'secondary' => '#f59e0b',
+                        'border' => '#fbbf24'
+                    )
                 ),
-                'modern_minimal' => array(
+                array(
                     'id' => 'modern_minimal',
                     'name' => 'Modern Minimal',
                     'description' => 'Minimal and modern design',
-                    'category' => 'modern'
+                    'category' => 'modern',
+                    'colors' => array(
+                        'primary' => '#06b6d4',
+                        'secondary' => '#0ea5e9',
+                        'border' => '#e0f2fe'
+                    )
                 ),
-                'elegant_classic' => array(
+                array(
                     'id' => 'elegant_classic',
                     'name' => 'Elegant Classic',
                     'description' => 'Classic and elegant design',
-                    'category' => 'elegant'
+                    'category' => 'elegant',
+                    'colors' => array(
+                        'primary' => '#7c3aed',
+                        'secondary' => '#a78bfa',
+                        'border' => '#ddd6fe'
+                    )
                 ),
-                'dark_mode' => array(
+                array(
                     'id' => 'dark_mode',
                     'name' => 'Dark Mode',
                     'description' => 'Dark theme for modern look',
-                    'category' => 'dark'
+                    'category' => 'dark',
+                    'colors' => array(
+                        'primary' => '#8b5cf6',
+                        'secondary' => '#a78bfa',
+                        'border' => '#4c1d95'
+                    )
                 )
             )); ?>,
             
