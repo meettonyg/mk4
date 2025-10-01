@@ -89,6 +89,162 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             height: 100vh;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+        }
+
+        /* ROOT FIX: Full-Featured Layout Structure */
+        .gmkb-app-wrapper {
+            position: fixed;
+            top: 60px;
+            left: 280px;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+        
+        /* Toolbar Styles */
+        .gmkb-toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .toolbar-left {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+        
+        .toolbar-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .toolbar-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .toolbar-right {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .toolbar-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+            transition: all 0.2s ease;
+        }
+        
+        .toolbar-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+        
+        .toolbar-btn--primary {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #ffffff;
+        }
+        
+        .toolbar-btn--primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .toolbar-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        /* Sidebar Styles */
+        .gmkb-sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 280px;
+            bottom: 0;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .sidebar-header h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .sidebar-btn-primary {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #3b82f6;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s ease;
+        }
+        
+        .sidebar-btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        /* Main Content Area */
+        .gmkb-main-content {
+            position: fixed;
+            top: 60px;
+            left: 280px;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+            background: #f5f7fa;
+        }
+        
+        .media-kit-preview {
+            min-height: 100%;
+            padding: 24px;
         }
 
         #app {
@@ -175,12 +331,41 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         .gmkb-error__button:hover {
             background: #2563eb;
         }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .gmkb-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .gmkb-sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .gmkb-app-wrapper,
+            .gmkb-main-content {
+                left: 0;
+            }
+        }
+        
+        /* Hide WordPress admin bar in builder */
+        #wpadminbar {
+            display: none !important;
+        }
+        
+        html {
+            margin-top: 0 !important;
+        }
     </style>
 </head>
 <body class="gmkb-builder gmkb-pure-vue">
 
-    <!-- Vue Application Mount Point -->
-    <div id="app">
+    <!-- ROOT FIX: Full-Featured Pure Vue Structure -->
+    <!-- This provides ALL the DOM elements that Vue components expect -->
+    
+    <!-- Main Application Container -->
+    <div id="app" class="gmkb-app-wrapper">
         <!-- Loading State (Vue will replace this) -->
         <div class="gmkb-loading">
             <div class="gmkb-loading__content">
@@ -188,6 +373,54 @@ if (!in_array($post->post_type, $allowed_post_types)) {
                 <h2 class="gmkb-loading__title">Loading Media Kit Builder</h2>
                 <p class="gmkb-loading__message">Initializing Vue application...</p>
             </div>
+        </div>
+    </div>
+    
+    <!-- ROOT FIX: Toolbar Structure for ThemeSwitcher -->
+    <div id="gmkb-toolbar" class="gmkb-toolbar">
+        <div class="toolbar-left">
+            <h1 class="toolbar-title"><?php echo esc_html($post->post_title); ?></h1>
+            <span class="toolbar-subtitle">Media Kit Builder</span>
+        </div>
+        <div class="toolbar-right">
+            <button id="global-theme-btn" class="toolbar-btn" title="Change Theme">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+                <span>Theme</span>
+            </button>
+            <button id="save-btn" class="toolbar-btn toolbar-btn--primary" title="Save Media Kit">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span>Save</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- ROOT FIX: Sidebar Structure for SidebarIntegration -->
+    <div id="gmkb-sidebar" class="gmkb-sidebar">
+        <div class="sidebar-header">
+            <h3>Components</h3>
+            <button id="add-component-btn" class="sidebar-btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Component
+            </button>
+        </div>
+        <div id="sidebar-components" class="sidebar-content">
+            <!-- Vue will populate this -->
+        </div>
+    </div>
+    
+    <!-- ROOT FIX: Main Content Area -->
+    <div id="gmkb-main-content" class="gmkb-main-content">
+        <div id="media-kit-preview" class="media-kit-preview">
+            <!-- Vue SectionLayoutEnhanced will render here -->
         </div>
     </div>
 
@@ -205,7 +438,70 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             environment: <?php echo json_encode(defined('WP_DEBUG') && WP_DEBUG ? 'development' : 'production'); ?>,
             version: '2.0.0',
             timestamp: <?php echo time(); ?>,
-            architecture: 'pure-vue'
+            architecture: 'pure-vue',
+            debugMode: <?php echo json_encode(defined('WP_DEBUG') && WP_DEBUG); ?>,
+            
+            // ROOT FIX: Add themes data for theme store
+            themes: <?php echo json_encode(array(
+                'professional_clean' => array(
+                    'id' => 'professional_clean',
+                    'name' => 'Professional Clean',
+                    'description' => 'Clean and professional design',
+                    'category' => 'professional'
+                ),
+                'creative_bold' => array(
+                    'id' => 'creative_bold',
+                    'name' => 'Creative Bold',
+                    'description' => 'Bold and creative design',
+                    'category' => 'creative'
+                ),
+                'modern_minimal' => array(
+                    'id' => 'modern_minimal',
+                    'name' => 'Modern Minimal',
+                    'description' => 'Minimal and modern design',
+                    'category' => 'modern'
+                ),
+                'elegant_classic' => array(
+                    'id' => 'elegant_classic',
+                    'name' => 'Elegant Classic',
+                    'description' => 'Classic and elegant design',
+                    'category' => 'elegant'
+                ),
+                'dark_mode' => array(
+                    'id' => 'dark_mode',
+                    'name' => 'Dark Mode',
+                    'description' => 'Dark theme for modern look',
+                    'category' => 'dark'
+                )
+            )); ?>,
+            
+            // Load saved state if exists
+            savedState: <?php 
+                $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+                echo json_encode($saved_state ?: null);
+            ?>,
+            
+            // Pods data if available
+            pods_data: <?php
+                $pods_data = array();
+                if (function_exists('pods')) {
+                    $pod = pods('guests', $post_id);
+                    if ($pod && $pod->exists()) {
+                        $fields = array(
+                            'biography', 'first_name', 'last_name', 'email', 
+                            'phone', 'website', 'headshot'
+                        );
+                        foreach ($fields as $field) {
+                            $pods_data[$field] = $pod->field($field);
+                        }
+                        // Add topics
+                        for ($i = 1; $i <= 5; $i++) {
+                            $pods_data["topic_$i"] = $pod->field("topic_$i");
+                        }
+                    }
+                }
+                echo json_encode($pods_data);
+            ?>
         };
 
         // Debugging helper
