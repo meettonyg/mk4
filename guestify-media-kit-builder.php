@@ -28,7 +28,7 @@ define( 'GMKB_USE_PURE_VUE', true ); // PHASE 3: Enable Pure Vue template
 define( 'GMKB_DEV_MODE', defined( 'WP_DEBUG' ) && WP_DEBUG );
 
 // Include Vue-only enqueue system
-require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue-vue-only.php';
+require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 
 // LEAN ARCHITECTURE: Admin settings for toggling between architectures
 if ( is_admin() ) {
