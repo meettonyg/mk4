@@ -442,9 +442,10 @@ class GMKB_Ajax_Handlers {
 
             
         
-        // 4. ROOT FIX: Ensure components are preserved
-        // The state from json_decode should already have components
-        // We just need to ensure empty arrays become objects for JS compatibility
+        // 4. ROOT FIX: Clean Pods data BEFORE saving (prevent database bloat)
+        $state = apply_filters('gmkb_before_save_media_kit_state', $state, $post_id);
+        
+        // Ensure components are preserved after cleaning
         if (!isset($state['components'])) {
             $state['components'] = new stdClass();
             error_log('GMKB Save - No components key, initialized as empty object');

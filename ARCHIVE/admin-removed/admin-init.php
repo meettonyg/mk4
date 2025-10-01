@@ -19,7 +19,7 @@ add_action('init', function() {
         
         // Include admin viewer if not already loaded
         if (!class_exists('GMKB_Admin_Media_Kit_Viewer')) {
-            $viewer_file = GUESTIFY_PLUGIN_DIR . 'includes/admin-media-kit-viewer.php';
+            $viewer_file = GUESTIFY_PLUGIN_DIR . 'admin/media-kit-viewer.php';
             if (file_exists($viewer_file)) {
                 require_once $viewer_file;
                 
@@ -33,7 +33,7 @@ add_action('init', function() {
 
 // Also try loading directly if we're in admin
 if (is_admin() && !class_exists('GMKB_Admin_Media_Kit_Viewer')) {
-    $viewer_file = GUESTIFY_PLUGIN_DIR . 'includes/admin-media-kit-viewer.php';
+    $viewer_file = GUESTIFY_PLUGIN_DIR . 'admin/media-kit-viewer.php';
     if (file_exists($viewer_file)) {
         require_once $viewer_file;
     }

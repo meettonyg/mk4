@@ -30,10 +30,10 @@ define( 'GMKB_DEV_MODE', defined( 'WP_DEBUG' ) && WP_DEBUG );
 // Include Vue-only enqueue system
 require_once GUESTIFY_PLUGIN_DIR . 'includes/enqueue.php';
 
-// LEAN ARCHITECTURE: Admin settings for toggling between architectures
-if ( is_admin() ) {
-    require_once GUESTIFY_PLUGIN_DIR . 'admin/gmkb-settings.php';
-}
+// ADMIN FILES: Only load essential admin tools
+// Removed: admin/settings.php (architecture toggle no longer needed - 100% Vue)
+// Removed: admin/data-cleanup.php (one-time cleanup completed)
+// Removed: admin/admin-init.php (redundant loader workaround)
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/Base_Component_Data_Service.php';
 } else {
@@ -49,6 +49,15 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-pods-enrichment.php'))
 } else {
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('GMKB: component-pods-enrichment.php not found, skipping include');
+    }
+}
+
+// ROOT FIX: Include component data sanitization (prevent database bloat)
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-data-sanitization.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/component-data-sanitization.php';
+} else {
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('GMKB: component-data-sanitization.php not found, skipping include');
     }
 }
 
@@ -139,8 +148,8 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php')) {
 }
 
 // ROOT FIX: Admin diagnostic tool for fixing component save issues
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-admin-diagnostic.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-admin-diagnostic.php';
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'admin/diagnostic-tools.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'admin/diagnostic-tools.php';
 }
 
 // PHASE 7: Version Control System
@@ -247,13 +256,8 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php')) {
         error_log('GMKB: enhanced-ajax.php not found, skipping include');
     }
 }
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/admin-init.php';
-} else {
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB: admin-init.php not found, skipping include');
-    }
-}
+// admin/admin-init.php REMOVED - redundant loader workaround no longer needed
+// media-kit-viewer.php loads directly (see admin section below)
 
 // ROOT FIX: Include frontend template router for conditional media kit display
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php')) {
@@ -273,15 +277,18 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php'
     }
 }
 
-// Also protect the admin cleanup script loading
+// ADMIN TOOLS: Load essential admin functionality only
 if (is_admin()) {
-    $cleanup_file = GUESTIFY_PLUGIN_DIR . 'admin/topics-data-cleanup.php';
-    if (file_exists($cleanup_file)) {
-        require_once $cleanup_file;
-    } else {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('Guestify Plugin Warning: Missing optional file ' . $cleanup_file);
-        }
+    // Media Kit Data Viewer - Shows component data on admin pages
+    $viewer_file = GUESTIFY_PLUGIN_DIR . 'admin/media-kit-viewer.php';
+    if (file_exists($viewer_file)) {
+        require_once $viewer_file;
+    }
+    
+    // Diagnostic Tools - Repair and debugging utilities
+    $diagnostic_file = GUESTIFY_PLUGIN_DIR . 'admin/diagnostic-tools.php';
+    if (file_exists($diagnostic_file)) {
+        require_once $diagnostic_file;
     }
 }
 /**
