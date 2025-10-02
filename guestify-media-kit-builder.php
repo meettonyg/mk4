@@ -423,15 +423,9 @@ class Guestify_Media_Kit_Builder {
         add_action( 'wp_ajax_gmkb_clear_component_cache', array( $this, 'ajax_clear_component_cache' ) );
         add_action( 'wp_ajax_gmkb_refresh_components', array( $this, 'ajax_refresh_components' ) );
         
-        // Media kit save/load handlers with consistent nonce validation
-        add_action( 'wp_ajax_guestify_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
-        add_action( 'wp_ajax_nopriv_guestify_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
-        add_action( 'wp_ajax_guestify_load_media_kit', array( $this, 'ajax_load_media_kit' ) );
-        add_action( 'wp_ajax_nopriv_guestify_load_media_kit', array( $this, 'ajax_load_media_kit' ) );
-        
-        // ROOT FIX: Add gmkb_ prefixed handlers for section persistence compatibility
-        add_action( 'wp_ajax_gmkb_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
-        add_action( 'wp_ajax_nopriv_gmkb_save_media_kit', array( $this, 'ajax_save_media_kit' ) );
+        // REMOVED: Duplicate AJAX handlers - now handled by GMKB_Ajax_Handlers class
+        // The handlers in includes/gmkb-ajax-handlers.php are the single source of truth
+        // This eliminates duplicate registration and ensures the sanitization filter runs
     }
 
     /**
@@ -1181,11 +1175,10 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * ROOT FIX: Save media kit state to database with comprehensive error handling and diagnostics
-     * CRITICAL FIX: Ensures proper data format consistency between save and load operations
-     * FIXED: Save to guest post, not just any post_id
+     * DEPRECATED: Removed - handled by GMKB_Ajax_Handlers::save_media_kit()
+     * This method is no longer registered and will not be called.
      */
-    public function ajax_save_media_kit() {
+    private function ajax_save_media_kit_DEPRECATED() {
         // Enhanced error logging for debugging
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('🔄 GMKB: ajax_save_media_kit called');
@@ -1739,9 +1732,10 @@ class Guestify_Media_Kit_Builder {
     }
     
     /**
-     * FIXED: Load media kit state from database with enhanced error handling
+     * DEPRECATED: Removed - handled by GMKB_Ajax_Handlers::load_media_kit()
+     * This method is no longer registered and will not be called.
      */
-    public function ajax_load_media_kit() {
+    private function ajax_load_media_kit_DEPRECATED() {
         // Enhanced error logging
         if (defined('WP_DEBUG') && WP_DEBUG) {
             error_log('🔄 GMKB: ajax_load_media_kit called');
