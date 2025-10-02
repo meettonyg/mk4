@@ -218,7 +218,36 @@ async function initializeVue() {
       
       // PHASE 6: Debug methods
       cacheStatus: () => apiService.getCacheStatus(),
-      inflightStatus: () => apiService.getInflightStatus()
+      inflightStatus: () => apiService.getInflightStatus(),
+      
+      // ROOT FIX: Orphaned components debug methods
+      checkOrphans: () => {
+        if (!window.stateManager) {
+          console.error('State manager not initialized');
+          return { error: 'State manager not available' };
+        }
+        const result = window.stateManager.checkForOrphanedComponents();
+        console.log('📊 Orphaned Components Report:');
+        console.log(`  Total components: ${result.total}`);
+        console.log(`  In sections: ${result.inSections}`);
+        console.log(`  Orphaned: ${result.orphaned}`);
+        if (result.orphaned > 0) {
+          console.log(`  Orphaned IDs:`, result.orphanedIds);
+        }
+        return result;
+      },
+      fixOrphans: () => {
+        if (!window.stateManager) {
+          console.error('State manager not initialized');
+          return { error: 'State manager not available' };
+        }
+        console.log('🔧 Fixing orphaned components...');
+        const result = window.stateManager.fixOrphanedComponents();
+        if (result.fixed > 0) {
+          showToast(`Fixed ${result.fixed} orphaned components`, 'success', 5000);
+        }
+        return result;
+      }
     };
     
     // Console helpers
@@ -263,6 +292,8 @@ Import/Export Commands:
 Debug Commands (Phase 6):
 - GMKB.cacheStatus() - Check API cache status
 - GMKB.inflightStatus() - Check in-flight requests
+- GMKB.checkOrphans() - Check for orphaned components
+- GMKB.fixOrphans() - Fix orphaned components
 - gmkbStore.$state - View store state
     `);
     

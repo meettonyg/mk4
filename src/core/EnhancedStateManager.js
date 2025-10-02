@@ -109,10 +109,16 @@ function mainReducer(state = STATE_SCHEMA, action) {
                 console.log('Created default section for new component');
             }
             
-            // ROOT FIX: Ensure component has a sectionId
-            if (!component.sectionId && newState.sections.length > 0) {
-                // Assign to first section by default
-                component.sectionId = newState.sections[0].section_id;
+            // ROOT FIX: Ensure component has a sectionId - ALWAYS assign to a section
+            if (!component.sectionId) {
+                if (newState.sections.length > 0) {
+                    // Assign to first section by default
+                    component.sectionId = newState.sections[0].section_id;
+                    console.log(`Auto-assigned component ${component.id} to section ${component.sectionId}`);
+                } else {
+                    // If no sections exist yet, will be handled below
+                    console.warn(`Component ${component.id} added without section - will be assigned to default section`);
+                }
             }
             
             // Ensure component has required fields
@@ -140,20 +146,35 @@ function mainReducer(state = STATE_SCHEMA, action) {
                 [component.id]: normalizedComponent
             };
             
-            // ROOT FIX: When sections exist, ONLY track in sections, NOT in layout
-            // This prevents double rendering - components should be in ONE place only
-            if (normalizedComponent.sectionId) {
-                // Component is in a section - add to section ONLY
-                newState = addComponentToSection(newState, component.id, normalizedComponent.sectionId);
-                // DO NOT add to layout array when using sections
-            } else if (newState.sections.length === 0) {
-                // No sections - use flat layout mode
-                if (!newState.layout.includes(component.id)) {
-                    newState.layout = [...newState.layout, component.id];
+            // ROOT FIX: ALWAYS track components in sections (single source of truth)
+            // If component doesn't have a sectionId by now, something went wrong
+            if (!normalizedComponent.sectionId) {
+                console.error(`CRITICAL: Component ${component.id} has no sectionId after normalization. ` +
+                             `This should never happen. Assigning to default section as emergency fix.`);
+                
+                // Emergency: create default section if needed
+                if (newState.sections.length === 0) {
+                    const emergencySectionId = `section_emergency_${Date.now()}`;
+                    newState.sections = [{
+                        section_id: emergencySectionId,
+                        section_type: 'full_width',
+                        type: 'full_width',
+                        components: [],
+                        layout: {},
+                        section_options: {},
+                        created_at: Date.now(),
+                        updated_at: Date.now()
+                    }];
                 }
+                normalizedComponent.sectionId = newState.sections[0].section_id;
             }
-            // If sections exist but component has no sectionId, it's orphaned
-            // Don't add to layout - it won't render
+            
+            // Add component to its section
+            newState = addComponentToSection(newState, component.id, normalizedComponent.sectionId);
+            
+            // IMPORTANT: DO NOT add to layout array - sections are the single source of truth
+            // The layout array should remain empty when using sections
+            newState.layout = [];
             
             // ROOT FIX: Dispatch event when component is added so controls can re-attach
             setTimeout(() => {
@@ -683,6 +704,16 @@ export class EnhancedStateManager {
         
         // Initialize proper history manager
         this.historyManager = new HistoryManager(10); // Max 10 undo levels
+        
+        // ROOT FIX: Automatically fix any orphaned components on initialization
+        const orphanCheck = this.checkForOrphanedComponents();
+        if (orphanCheck.orphaned > 0) {
+            console.warn(`⚠️ Found ${orphanCheck.orphaned} orphaned components on initialization`);
+            const fixResult = this.fixOrphanedComponents();
+            if (fixResult.fixed > 0) {
+                console.log(`✅ Auto-fixed ${fixResult.fixed} orphaned components`);
+            }
+        }
         
         console.log('✅ Enhanced State Manager initialized with reducer pattern and proper history');
     }
@@ -1384,15 +1415,24 @@ export class EnhancedStateManager {
                     }));
                     
                     firstSection.components = [...existingComponents, ...newComponents];
+                    firstSection.updated_at = Date.now();
                     
                     // Mark components as assigned
                     unassignedIds.forEach(id => {
                         if (processedData.components[id]) {
                             processedData.components[id].sectionId = firstSection.section_id;
+                            console.log(`Fixed orphaned component ${id} -> assigned to section ${firstSection.section_id}`);
                         }
                     });
                     
-                    console.log('Assigned', unassignedIds.length, 'unassigned components to first section');
+                    console.log(`✅ Fixed ${unassignedIds.length} orphaned components by assigning to section ${firstSection.section_id}`);
+                    
+                    // Force a save after fixing orphans
+                    setTimeout(() => {
+                        document.dispatchEvent(new CustomEvent('gmkb:orphans-fixed', {
+                            detail: { count: unassignedIds.length, sectionId: firstSection.section_id }
+                        }));
+                    }, 100);
                 }
             }
         }
@@ -1450,6 +1490,124 @@ export class EnhancedStateManager {
             console.error('Failed to load state:', error);
         }
         return false;
+    }
+    
+    /**
+     * Check for orphaned components (components not assigned to any section)
+     * Returns count of orphaned components
+     */
+    checkForOrphanedComponents() {
+        const components = Object.keys(this.state.components);
+        const sections = this.state.sections;
+        
+        if (components.length === 0) {
+            return { total: 0, orphaned: 0, inSections: 0 };
+        }
+        
+        // Collect all component IDs referenced in sections
+        const componentsInSections = new Set();
+        sections.forEach(section => {
+            if (section.components && Array.isArray(section.components)) {
+                section.components.forEach(comp => {
+                    const compId = typeof comp === 'string' ? comp : (comp.component_id || comp.id);
+                    if (compId) {
+                        componentsInSections.add(compId);
+                    }
+                });
+            }
+        });
+        
+        // Find orphaned components
+        const orphanedIds = components.filter(id => !componentsInSections.has(id));
+        
+        return {
+            total: components.length,
+            orphaned: orphanedIds.length,
+            inSections: componentsInSections.size,
+            orphanedIds: orphanedIds
+        };
+    }
+    
+    /**
+     * Fix orphaned components - assigns unassigned components to sections
+     * Call this if you have components that aren't showing up
+     */
+    fixOrphanedComponents() {
+        const components = Object.keys(this.state.components);
+        const sections = this.state.sections;
+        
+        if (components.length === 0) {
+            console.log('No components to fix');
+            return { fixed: 0, total: 0 };
+        }
+        
+        // Collect all component IDs referenced in sections
+        const componentsInSections = new Set();
+        sections.forEach(section => {
+            if (section.components && Array.isArray(section.components)) {
+                section.components.forEach(comp => {
+                    const compId = typeof comp === 'string' ? comp : (comp.component_id || comp.id);
+                    if (compId) {
+                        componentsInSections.add(compId);
+                    }
+                });
+            }
+        });
+        
+        // Find orphaned components
+        const orphanedIds = components.filter(id => !componentsInSections.has(id));
+        
+        if (orphanedIds.length === 0) {
+            console.log('✅ No orphaned components found');
+            return { fixed: 0, total: components.length };
+        }
+        
+        console.warn(`Found ${orphanedIds.length} orphaned components:`, orphanedIds);
+        
+        // Ensure at least one section exists
+        if (sections.length === 0) {
+            this.addSection({
+                section_id: `section_recovered_${Date.now()}`,
+                section_type: 'full_width',
+                type: 'full_width',
+                components: [],
+                layout: {},
+                section_options: {}
+            });
+            console.log('Created default section for orphaned components');
+        }
+        
+        // Assign orphaned components to first section
+        const targetSection = this.state.sections[0];
+        
+        orphanedIds.forEach(compId => {
+            // Update component
+            this.updateComponent(compId, {
+                sectionId: targetSection.section_id
+            });
+            
+            // Add to section
+            const existingComponents = targetSection.components || [];
+            const componentEntry = {
+                component_id: compId,
+                column: 1,
+                order: existingComponents.length,
+                assigned_at: Date.now()
+            };
+            
+            this.updateSection(targetSection.section_id, {
+                components: [...existingComponents, componentEntry]
+            });
+            
+            console.log(`✅ Fixed orphan: ${compId} -> section ${targetSection.section_id}`);
+        });
+        
+        console.log(`✅ Fixed ${orphanedIds.length} orphaned components`);
+        
+        // Trigger a save
+        this.saveToStorage();
+        
+        return { fixed: orphanedIds.length, total: components.length };
     }
     
     /**
