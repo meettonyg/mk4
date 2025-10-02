@@ -182,6 +182,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             flex: 1;
             display: flex;
             overflow: hidden;
+            /* Remove fixed height - let it flex naturally */
         }
         
         #gmkb-sidebar {
@@ -232,7 +233,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         <div id="gmkb-toolbar"></div>
         
         <!-- Main content area with sidebar -->
-        <div id="gmkb-main-content" style="display: flex; height: calc(100vh - 60px);">
+        <div id="gmkb-main-content">
             <!-- Sidebar -->
             <aside id="gmkb-sidebar"></aside>
             

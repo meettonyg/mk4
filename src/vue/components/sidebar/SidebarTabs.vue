@@ -295,7 +295,6 @@ export default {
   position: relative !important;
   z-index: 10 !important;
   min-height: 48px !important;
-  background: red !important; /* DEBUG: Make tabs visible */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
 }
