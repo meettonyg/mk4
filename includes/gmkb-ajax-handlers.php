@@ -443,7 +443,19 @@ class GMKB_Ajax_Handlers {
             
         
         // 4. ROOT FIX: Clean Pods data BEFORE saving (prevent database bloat)
+        error_log('🔍 GMKB SAVE: About to apply filter gmkb_before_save_media_kit_state');
+        error_log('🔍 GMKB SAVE: Filter registered? ' . (has_filter('gmkb_before_save_media_kit_state') ? 'YES' : 'NO'));
+        if (has_filter('gmkb_before_save_media_kit_state')) {
+            global $wp_filter;
+            if (isset($wp_filter['gmkb_before_save_media_kit_state'])) {
+                error_log('🔍 GMKB SAVE: Filter callbacks: ' . print_r($wp_filter['gmkb_before_save_media_kit_state']->callbacks, true));
+            }
+        }
+        
         $state = apply_filters('gmkb_before_save_media_kit_state', $state, $post_id);
+        
+        error_log('🔍 GMKB SAVE: Filter applied, state returned');
+        error_log('🔍 GMKB SAVE: Components after filter: ' . (isset($state['components']) ? count($state['components']) : 0));
         
         // Ensure components are preserved after cleaning
         if (!isset($state['components'])) {

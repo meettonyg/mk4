@@ -24,6 +24,12 @@ if (!defined('ABSPATH')) {
  */
 add_filter('gmkb_before_save_media_kit_state', 'gmkb_sanitize_components_before_save', 5, 2);
 
+// ROOT FIX: Log that the filter is registered
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('✅ GMKB SANITIZATION: Filter gmkb_before_save_media_kit_state registered with priority 5');
+    error_log('✅ GMKB SANITIZATION: Target function: gmkb_sanitize_components_before_save');
+}
+
 /**
  * Remove Pods data from components before saving to database
  * 
@@ -39,6 +45,15 @@ add_filter('gmkb_before_save_media_kit_state', 'gmkb_sanitize_components_before_
  * @return array Cleaned state with Pods data removed
  */
 function gmkb_sanitize_components_before_save($state, $post_id) {
+    // CRITICAL DEBUG: Log that filter was triggered
+    error_log('================================');
+    error_log('🚨 GMKB SANITIZATION FILTER TRIGGERED!');
+    error_log('Post ID: ' . $post_id);
+    error_log('State type: ' . gettype($state));
+    error_log('State keys: ' . (is_array($state) ? implode(', ', array_keys($state)) : 'N/A'));
+    error_log('Components count: ' . (isset($state['components']) ? count($state['components']) : 0));
+    error_log('================================');
+    
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('🧹 GMKB: Sanitizing components before save (removing Pods bloat)');
     }

@@ -56,23 +56,19 @@ class GMKB_Admin_Media_Kit_Viewer {
     }
     
     /**
-     * Add meta box to post edit screen
+     * Add meta box to post edit screen - ONLY for guests post type
      */
     public function add_meta_box() {
-        // Only add to posts that likely have media kit data
-        $post_types = array('post', 'page', 'guest', 'mkcg');
-        
-        foreach ($post_types as $post_type) {
-            if (post_type_exists($post_type)) {
-                add_meta_box(
-                    'gmkb_media_kit_data',
-                    'Media Kit Data',
-                    array($this, 'render_meta_box'),
-                    $post_type,
-                    'normal',
-                    'low'
-                );
-            }
+        // ONLY show on guests post type
+        if (post_type_exists('guests')) {
+            add_meta_box(
+                'gmkb_media_kit_data',
+                'Media Kit Data',
+                array($this, 'render_meta_box'),
+                'guests',  // ONLY guests
+                'normal',
+                'high'
+            );
         }
     }
     
@@ -151,7 +147,114 @@ class GMKB_Admin_Media_Kit_Viewer {
      * Render the meta box on post edit screen
      */
     public function render_meta_box($post) {
-        $this->display_post_data($post->ID, true);
+        // DEBUG
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: render_meta_box() called for post ID: ' . $post->ID);
+        }
+        
+        $saved_state = get_post_meta($post->ID, 'gmkb_media_kit_state', true);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('GMKB: Saved state exists: ' . (empty($saved_state) ? 'NO' : 'YES'));
+            if (!empty($saved_state)) {
+                error_log('GMKB: Components count: ' . (isset($saved_state['components']) ? count($saved_state['components']) : '0'));
+            }
+        }
+        
+        if (empty($saved_state)) {
+            echo '<p style="color: #999;">No Media Kit data saved for this post yet.</p>';
+            echo '<p><a href="' . admin_url('admin.php?page=gmkb-data-viewer') . '" target="_blank">View Data Viewer</a></p>';
+            return;
+        }
+        
+        // Show compact summary for meta box
+        $components_count = isset($saved_state['components']) ? count($saved_state['components']) : 0;
+        $sections_count = isset($saved_state['sections']) ? count($saved_state['sections']) : 0;
+        $data_size = strlen(serialize($saved_state));
+        
+        ?>
+        <div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
+            <table class="widefat striped" style="background: white;">
+                <tr>
+                    <th style="width: 40%;">Components:</th>
+                    <td><strong><?php echo $components_count; ?></strong> components</td>
+                </tr>
+                <tr>
+                    <th>Sections:</th>
+                    <td><strong><?php echo $sections_count; ?></strong> sections</td>
+                </tr>
+                <tr>
+                    <th>Data Size:</th>
+                    <td><?php echo size_format($data_size); ?></td>
+                </tr>
+                <tr>
+                    <th>Last Saved:</th>
+                    <td><?php echo esc_html($saved_state['last_saved'] ?? 'Unknown'); ?></td>
+                </tr>
+            </table>
+            
+            <?php if ($components_count > 0): ?>
+            <details style="margin-top: 15px;">
+                <summary style="cursor: pointer; padding: 10px; background: #0073aa; color: white; border-radius: 4px; font-weight: bold;">📋 View All Components</summary>
+                <div style="margin-top: 10px; padding: 10px; background: white; border: 1px solid #ddd; max-height: 400px; overflow-y: auto;">
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th>Component ID</th>
+                                <th>Type</th>
+                                <th>Data Source</th>
+                                <th>Size</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($saved_state['components'] as $comp_id => $component): ?>
+                                <tr>
+                                    <td><code style="font-size: 11px;"><?php echo esc_html($comp_id); ?></code></td>
+                                    <td><strong><?php echo esc_html($component['type'] ?? 'unknown'); ?></strong></td>
+                                    <td>
+                                        <?php 
+                                        if (isset($component['_usesPods']) && $component['_usesPods']) {
+                                            echo '<span style="color: green;">✓ Dynamic (Pods)</span>';
+                                        } elseif (isset($component['data']['_dataSource']) && $component['data']['_dataSource'] === 'pods') {
+                                            echo '<span style="color: green;">✓ Dynamic (Pods)</span>';
+                                        } else {
+                                            $has_bloat = $this->check_hardcoded_data($component);
+                                            if ($has_bloat) {
+                                                echo '<span style="color: red;">⚠ Hardcoded</span>';
+                                            } else {
+                                                echo '<span style="color: #999;">Static</span>';
+                                            }
+                                        }
+                                        ?>
+                                    </td>
+                                    <td><?php echo size_format(strlen(serialize($component))); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+            <?php endif; ?>
+            
+            <!-- Raw Data - Always Visible on Post Edit Page -->
+            <details open style="margin-top: 15px;">
+                <summary style="cursor: pointer; padding: 10px; background: #2271b1; color: white; border-radius: 4px; font-weight: bold;">🔍 Raw JSON Data</summary>
+                <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; max-height: 500px; overflow-y: auto;">
+                    <pre style="margin: 0; font-family: 'Courier New', monospace; font-size: 11px; white-space: pre-wrap; word-wrap: break-word;"><?php 
+                        echo esc_html(json_encode($saved_state, JSON_PRETTY_PRINT)); 
+                    ?></pre>
+                </div>
+            </details>
+            
+            <p style="margin-top: 15px; text-align: center;">
+                <a href="<?php echo admin_url('admin.php?page=gmkb-data-viewer&post_id=' . $post->ID); ?>" 
+                   class="button button-primary" 
+                   target="_blank">
+                    🔍 View Full Details
+                </a>
+            </p>
+        </div>
+        <?php
     }
     
     /**
