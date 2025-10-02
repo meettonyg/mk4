@@ -24,6 +24,8 @@ onMounted(() => {
   if (newSidebar) {
     sidebarMountPoint.value = true;
     console.log('✅ New sidebar mount point found');
+    console.log('Sidebar element:', newSidebar);
+    console.log('Sidebar visible:', window.getComputedStyle(newSidebar).display !== 'none');
   } else {
     // Fallback to old mount point
     const oldMountPoint = document.getElementById('vue-component-list');

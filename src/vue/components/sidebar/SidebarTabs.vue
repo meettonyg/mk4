@@ -1,5 +1,5 @@
 <template>
-  <div class="gmkb-sidebar">
+  <div class="gmkb-sidebar gmkb-sidebar-tabs">
     <!-- Tab Navigation -->
     <div class="sidebar-tabs">
       <button 

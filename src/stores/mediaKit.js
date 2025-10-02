@@ -716,18 +716,57 @@ export const useMediaKitStore = defineStore('mediaKit', {
     removeSection(sectionId) {
       const index = this.sections.findIndex(s => s.section_id === sectionId);
       if (index > -1) {
-        // Remove components in this section
         const section = this.sections[index];
-        if (section.components) {
+        
+        // ROOT FIX: Collect all component IDs from this section
+        const componentIdsToDelete = [];
+        
+        // Remove components in full-width sections
+        if (section.components && Array.isArray(section.components)) {
           section.components.forEach(compRef => {
             const componentId = typeof compRef === 'string' ? compRef : compRef.component_id;
-            delete this.components[componentId];
+            if (componentId) {
+              componentIdsToDelete.push(componentId);
+            }
           });
         }
         
+        // ROOT FIX: Also remove components in multi-column sections
+        if (section.columns) {
+          Object.values(section.columns).forEach(column => {
+            if (Array.isArray(column)) {
+              column.forEach(componentId => {
+                if (componentId) {
+                  componentIdsToDelete.push(componentId);
+                }
+              });
+            }
+          });
+        }
+        
+        // Delete all collected components
+        componentIdsToDelete.forEach(componentId => {
+          delete this.components[componentId];
+          console.log(`🗑️ Deleted component ${componentId} from section ${sectionId}`);
+        });
+        
+        // Remove the section itself
         this.sections.splice(index, 1);
+        
+        // Log the action
+        console.log(`🗑️ Removed section ${sectionId} and ${componentIdsToDelete.length} components`);
+        
         this.isDirty = true;
         this._trackChange();
+        
+        // Dispatch event
+        document.dispatchEvent(new CustomEvent('gmkb:section-removed', {
+          detail: { 
+            sectionId, 
+            componentsDeleted: componentIdsToDelete.length,
+            componentIds: componentIdsToDelete
+          }
+        }));
       }
     },
 

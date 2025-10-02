@@ -187,9 +187,10 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         #gmkb-sidebar {
             flex-shrink: 0;
             width: 300px;
-            overflow-y: auto;
-            background: white;
-            border-right: 1px solid #e5e7eb;
+            height: 100%;
+            overflow: hidden; /* Let child component handle scroll */
+            display: flex;
+            flex-direction: column;
         }
         
         #media-kit-preview {
@@ -233,7 +234,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         <!-- Main content area with sidebar -->
         <div id="gmkb-main-content" style="display: flex; height: calc(100vh - 60px);">
             <!-- Sidebar -->
-            <aside id="gmkb-sidebar" style="width: 300px; border-right: 1px solid #e5e7eb; overflow-y: auto; background: white;"></aside>
+            <aside id="gmkb-sidebar"></aside>
             
             <!-- Preview area -->
             <div id="media-kit-preview" style="flex: 1; overflow-y: auto; background: #f9fafb;"></div>
