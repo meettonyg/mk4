@@ -54,14 +54,7 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/component-field-sync.php')) {
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/class-theme-generator.php';
 }
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-ajax-handlers.php';
-}
-
-// PHASE 4.2: Theme Customizer AJAX handlers
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/theme-customizer-ajax.php';
-}
+// PHASE 3: AJAX handlers removed - all theme operations via REST API v2
 
 // PHASE 5: Component Marketplace Ready
 if (is_admin()) {
@@ -81,15 +74,9 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/import/ImportManager.php';
 }
 
-// ROOT FIX: Single source AJAX handlers - no fallbacks
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-ajax-handlers.php';
-}
-
-// ROOT FIX: Database state inspector for debugging persistence issues
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/gmkb-database-inspector.php';
-}
+// PHASE 3: AJAX handlers removed - all operations via REST API v2
+// Data loaded via: GET /wp-json/gmkb/v2/mediakit/{id}
+// Data saved via: POST /wp-json/gmkb/v2/mediakit/{id}
 
 // ROOT FIX: Admin diagnostic tool for fixing component save issues
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'admin/diagnostic-tools.php')) {
@@ -135,9 +122,7 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
 }
 
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'includes/enhanced-ajax.php';
-}
+// PHASE 3: enhanced-ajax.php removed (was already deprecated)
 
 // ROOT FIX: Include frontend template router for conditional media kit display
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php')) {

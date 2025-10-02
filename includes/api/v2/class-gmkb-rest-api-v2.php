@@ -511,33 +511,26 @@ class GMKB_REST_API_V2 {
      * @return WP_REST_Response|WP_Error The response
      */
     public function get_components($request) {
-        // Use ComponentDiscovery if available
-        $discovery_file = GMKB_PLUGIN_DIR . 'includes/ComponentDiscovery.php';
+        // ROOT FIX: Use global ComponentDiscovery instance
+        // The main plugin file already initializes ComponentDiscovery and stores it globally
+        global $gmkb_component_discovery;
         
-        if (!file_exists($discovery_file)) {
+        if (!$gmkb_component_discovery) {
             return new WP_Error(
-                'discovery_not_found',
-                'Component discovery system not available',
-                array('status' => 500)
-            );
-        }
-        
-        require_once $discovery_file;
-        
-        if (!class_exists('ComponentDiscovery')) {
-            return new WP_Error(
-                'discovery_class_missing',
-                'ComponentDiscovery class not found',
+                'discovery_not_available',
+                'Component discovery system not initialized. ComponentDiscovery should be initialized by the main plugin.',
                 array('status' => 500)
             );
         }
         
         try {
-            $discovery = new ComponentDiscovery(GMKB_PLUGIN_DIR . 'components/');
-            $discovery->scan(); // Use cache if available
-
-            $components = $discovery->getComponents();
-            $categories = $discovery->getCategories();
+            // Use the global instance - it's already scanned on plugin init
+            $components = $gmkb_component_discovery->getComponents();
+            $categories = $gmkb_component_discovery->getCategories();
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB REST API v2: Returning ' . count($components) . ' components');
+            }
 
             return rest_ensure_response(array(
                 'success' => true,
