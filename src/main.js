@@ -1,6 +1,12 @@
 /**
  * Media Kit Builder - Main Entry Point
- * Phase 4-8: Pure Vue.js Implementation - NO LEGACY CODE
+ * Phase 6: Race Conditions & Optimization
+ * 
+ * ENHANCEMENTS:
+ * - Event-driven initialization
+ * - Retry logic for failed loads
+ * - Better error handling
+ * - Loading states with feedback
  */
 
 // Import styles
@@ -10,8 +16,9 @@ import '../css/vue-controls.css';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 
-// Core services
+// PHASE 6: Import enhanced services
 import { APIService } from './services/APIService.js';
+import { DataValidator } from './services/DataValidator.js';
 import { logger } from './utils/logger.js';
 import UnifiedComponentRegistry from './services/UnifiedComponentRegistry.js';
 import podsDataIntegration from './core/PodsDataIntegration.js';
@@ -47,47 +54,35 @@ function showToast(message, type = 'info', duration = 3000) {
 }
 
 /**
- * Initialize Vue application - PHASE 3: Pure Vue, no legacy bridges
+ * PHASE 6: Initialize Vue application with proper error handling
  * 
  * Steps:
  * 3. Create Vue app
  * 4. Mount Vue app  
  * 5. Initialize stores
- * 6. Load data
+ * 6. Load data with retry
  * 7. Initialize theme
  */
 async function initializeVue() {
   try {
     console.log('3️⃣ Creating Vue application...');
+    
     // ROOT FIX: Support both Pure Vue template and legacy templates
-    // Pure Vue template uses #app, legacy uses #media-kit-preview
     let mountPoint = document.getElementById('app');
     const isPureVueMode = window.gmkbData?.architecture === 'pure-vue';
     
     if (isPureVueMode && mountPoint) {
-      // PHASE 3: Pure Vue mode - mount directly to #app
       logger.info('✅ Using Pure Vue mode - mounting to #app');
-      logger.info('ℹ️ Pure Vue mode has full UI structure (toolbar, sidebar, preview)');
       // Clear loading spinner
       mountPoint.innerHTML = '';
-      
-      // NOTE: UI elements like #global-theme-btn will be created by Vue after mount
-      // Do not check for them here - they don't exist yet!
     } else {
-      // Legacy mode - use #media-kit-preview
       const previewContainer = document.getElementById('media-kit-preview');
       
       if (!previewContainer) {
-        logger.error('No preview container found');
-        logger.error('Looking for: #media-kit-preview (legacy) or #app (pure Vue)');
-        logger.error('Architecture mode:', window.gmkbData?.architecture || 'unknown');
         throw new Error('Preview container not found');
       }
       
-      // Clear ALL existing content - Vue will handle everything
       previewContainer.innerHTML = '';
-      
-      // Create a new mount point for Vue
       mountPoint = document.createElement('div');
       mountPoint.id = 'vue-media-kit-app';
       mountPoint.className = 'vue-media-kit-app';
@@ -95,37 +90,7 @@ async function initializeVue() {
       logger.info('✅ Using Legacy mode - created mount point in #media-kit-preview');
     }
     
-    logger.info('Created fresh Vue mount point');
-    
-    // ROOT FIX: Aggressive cleanup of ALL legacy elements (only in legacy mode)
-    if (!isPureVueMode) {
-      // Remove all legacy containers and components
-      const legacySelectors = [
-        '#empty-state',
-        '#saved-components-container',
-        '.gmkb-component-wrapper',
-        '.gmkb-hero-component',
-        '.gmkb-sections-container:not(.vue-sections)',
-        '.saved-components',
-        '.empty-state-optimized'
-      ];
-      
-      legacySelectors.forEach(selector => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => {
-          // Don't remove if it's inside our Vue app
-          if (!el.closest('#vue-media-kit-app') && !el.closest('#app')) {
-            el.remove();
-          }
-        });
-      });
-      logger.info('🧹 Cleaned up legacy elements');
-    } else {
-      logger.info('ℹ️ Pure Vue mode - no legacy cleanup needed');
-    }
-    
     // ROOT FIX: Disable any legacy rendering systems
-    // Override global functions that might be called by legacy code
     if (window.enhancedComponentManager) {
       window.enhancedComponentManager.renderComponent = () => {
         console.log('Legacy rendering disabled - Vue handles all rendering');
@@ -138,7 +103,6 @@ async function initializeVue() {
       };
     }
     
-    // Disable legacy state managers if they exist
     if (window.stateManager && window.stateManager !== window.gmkbStore) {
       window.stateManager.render = () => {};
       window.stateManager.renderComponents = () => {};
@@ -151,6 +115,7 @@ async function initializeVue() {
     // Load Vue app components
     const { default: MediaKitApp } = await import('./vue/components/MediaKitApp.vue');
     const { default: ComponentLibrary } = await import('./vue/components/ComponentLibraryNew.vue');
+    const { default: LoadingScreen } = await import('./vue/components/LoadingScreen.vue');
     console.log('✅ Vue components loaded');
     
     // Create and mount Vue app
@@ -158,9 +123,10 @@ async function initializeVue() {
     const app = createApp(MediaKitApp);
     app.use(pinia);
     app.component('ComponentLibrary', ComponentLibrary);
+    app.component('LoadingScreen', LoadingScreen);
     
     const instance = app.mount(mountPoint);
-    console.log('✅ Vue mounted to #app');
+    console.log('✅ Vue mounted successfully');
     
     // Make available globally for debugging
     window.gmkbApp = app;
@@ -184,15 +150,28 @@ async function initializeVue() {
     window.mediaKitStore = mediaKitStore;
     window.themeStore = themeStore;
     
-    // STEP 6: Load data
+    // PHASE 6: Load data with retry logic and better error handling
     console.log('6️⃣ Loading media kit data...');
-    if (window.gmkbData?.savedState) {
-      await mediaKitStore.initialize(window.gmkbData.savedState);
-      console.log('✅ Data loaded from savedState');
-    } else {
-      // Load from API
-      await mediaKitStore.initialize();
-      console.log('✅ Data loaded from API');
+    try {
+      if (window.gmkbData?.savedState) {
+        await mediaKitStore.initialize(window.gmkbData.savedState);
+        console.log('✅ Data loaded from savedState');
+      } else {
+        // Load from API with built-in retry
+        await mediaKitStore.initialize();
+        console.log('✅ Data loaded from API');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load data:', error);
+      
+      // Try to restore from localStorage as fallback
+      const restored = mediaKitStore.restoreFromLocalStorage();
+      if (restored) {
+        console.log('♻️ Restored from local backup');
+        showToast('Restored from local backup', 'warning');
+      } else {
+        throw error; // Re-throw if no backup available
+      }
     }
     
     // STEP 7: Initialize theme
@@ -208,7 +187,6 @@ async function initializeVue() {
       await themeStore.initialize(mediaKitStore.theme, mediaKitStore.themeCustomizations);
       console.log('✅ Theme initialized:', mediaKitStore.theme);
     } else {
-      // Apply default theme
       await themeStore.selectTheme('professional_clean');
       console.log('✅ Default theme applied');
     }
@@ -217,7 +195,7 @@ async function initializeVue() {
     window.GMKB = {
       apiService,
       vueApp: app,
-      version: '4.0.0', // Updated for pure Vue version
+      version: '4.0.0-phase6',
       
       // Store methods
       addComponent: (type, data) => {
@@ -237,9 +215,13 @@ async function initializeVue() {
       save: () => mediaKitStore.saveToWordPress(),
       store: mediaKitStore,
       
-      // Import/Export methods exposed globally
+      // Import/Export methods
       openImportExport: () => importExportService.openModal(),
-      closeImportExport: () => importExportService.closeModal()
+      closeImportExport: () => importExportService.closeModal(),
+      
+      // PHASE 6: Debug methods
+      cacheStatus: () => apiService.getCacheStatus(),
+      inflightStatus: () => apiService.getInflightStatus()
     };
     
     // Console helpers
@@ -250,7 +232,7 @@ async function initializeVue() {
     
     console.log('✅ Vue Media Kit Builder initialized successfully');
     
-    // Debug Pods data availability
+    // Debug info
     setTimeout(() => {
       console.log('📊 Pods Data Check:');
       const podsData = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
@@ -259,12 +241,11 @@ async function initializeVue() {
       if (fieldCount > 0) {
         console.log('  Available fields:', Object.keys(podsData).slice(0, 5));
       }
-      console.log('  PodsDataIntegration:', window.podsDataIntegration ? '✅ Available' : '❌ Missing');
     }, 1000);
     
     console.log(`
-🎯 Media Kit Builder v4.0 - Pure Vue Implementation
-================================================
+🎯 Media Kit Builder v4.0 - Phase 6 Optimized
+==============================================
 Component Commands:
 - GMKB.addComponent('hero') - Add a component
 - GMKB.removeComponent(id) - Remove component
@@ -278,34 +259,29 @@ Section Commands:
 Theme Commands:
 - switchTheme('dark') - Switch themes
 - themeStore.openCustomizer() - Open customizer
-- themeStore.applyColorPreset('purple') - Apply preset
 
 Import/Export Commands:
 - GMKB.openImportExport() - Open import/export modal
-- GMKB.closeImportExport() - Close import/export modal
 
-Debug:
+Debug Commands (Phase 6):
+- GMKB.cacheStatus() - Check API cache status
+- GMKB.inflightStatus() - Check in-flight requests
 - gmkbStore.$state - View store state
-- gmkbStore.componentCount - Component count
-- themeStore.mergedTheme - Current theme
-- window.gmkbData.pods_data - View Pods data
     `);
     
     return app;
     
   } catch (error) {
     console.error('❌ Failed to initialize Vue:', error);
-    throw error; // Re-throw to be caught by main initialize()
+    throw error;
   }
 }
 
 /**
- * Setup empty state button handlers - ROOT FIX: Let Vue handle DOM updates
+ * Setup empty state button handlers
  */
 function setupEmptyStateHandlers() {
-  // Use event delegation for dynamic buttons
   document.addEventListener('click', async (event) => {
-    // Handle Add Component button specifically
     if (event.target.id === 'add-component-btn' || 
         event.target.closest('#add-component-btn')) {
       event.preventDefault();
@@ -327,11 +303,9 @@ function setupEmptyStateHandlers() {
     switch (action) {
       case 'add-component':
         event.preventDefault();
-        // Open the component library modal instead of directly adding
         if (window.openComponentLibrary) {
           window.openComponentLibrary();
         } else {
-          // Fallback: dispatch event to open library
           document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
         }
         break;
@@ -349,7 +323,6 @@ function setupEmptyStateHandlers() {
         target.textContent = 'Generating...';
         
         try {
-          // Add typical MKCG components
           const componentsToAdd = ['hero', 'biography', 'topics', 'authority-hook', 'contact'];
           componentsToAdd.forEach(type => {
             store.addComponent({ type });
@@ -371,10 +344,9 @@ function setupEmptyStateHandlers() {
 }
 
 /**
- * Setup UI handlers for non-Vue elements (if any remain)
+ * Setup UI handlers for non-Vue elements
  */
 function setupMinimalUIHandlers() {
-  // Save button
   const saveBtn = document.getElementById('save-btn');
   if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
@@ -399,7 +371,7 @@ function setupMinimalUIHandlers() {
 }
 
 /**
- * Main initialization - PHASE 3: Pure Vue Implementation
+ * PHASE 6: Main initialization with enhanced error handling
  * 
  * Initialization Steps:
  * 1. Validate environment
@@ -407,36 +379,25 @@ function setupMinimalUIHandlers() {
  * 3. Create Vue app
  * 4. Mount Vue app
  * 5. Initialize stores
- * 6. Load data
+ * 6. Load data (with retry)
  * 7. Initialize theme
  */
 async function initialize() {
-  console.log('🚀 Initializing Media Kit Builder v2.0 - Phase 3...');
+  console.log('🚀 Initializing Media Kit Builder v4.0 - Phase 6...');
   
   try {
-    // STEP 1: Validate environment
+    // STEP 1: Validate environment using DataValidator
     console.log('1️⃣ Validating environment...');
-    if (!window.gmkbData) {
-      throw new Error('gmkbData not available. Ensure template injects window.gmkbData before Vue bundle loads.');
-    }
-    
-    const required = ['postId', 'nonce', 'restUrl', 'restNonce', 'ajaxUrl'];
-    const missing = required.filter(key => !window.gmkbData[key]);
-    
-    if (missing.length > 0) {
-      throw new Error(`gmkbData missing required fields: ${missing.join(', ')}`);
-    }
+    DataValidator.validateGmkbData();
     console.log('✅ Environment valid');
     
     // STEP 2: Initialize services
     console.log('2️⃣ Initializing services...');
     
-    // ROOT FIX: Pass REST URL, not AJAX URL to APIService
     const restUrl = window.gmkbData?.restUrl || window.location.origin + '/wp-json/';
     const restNonce = window.gmkbData?.restNonce || '';
     const postId = window.gmkbData?.postId;
     
-    // DEBUG: Log what we're passing to APIService
     console.log('🔧 Initializing APIService with:', {
       restUrl,
       restNonce: restNonce ? 'present' : 'missing',
@@ -451,10 +412,7 @@ async function initialize() {
     UnifiedComponentRegistry.initialize();
     console.log('✅ Component registry initialized');
     
-    // ROOT FIX: Initialize NonceManager for event-driven nonce refresh
-    logger.info('✅ Nonce manager initialized');
-    
-    // Make PodsDataIntegration available globally for the store
+    // Initialize Pods integration
     window.podsDataIntegration = podsDataIntegration;
     window.gmkbPodsIntegration = podsDataIntegration;
     logger.info('✅ Pods data integration initialized');
@@ -463,15 +421,12 @@ async function initialize() {
     initDragDrop();
     logger.info('✅ Drag and drop initialized');
     
-    // Initialize import/export manager
+    // Initialize import/export
     importExportManager = new ImportExportManager();
     window.gmkbImportExport = importExportManager;
-    
-    // Initialize import/export service (for button integration)
-    // importExportService initializes itself automatically
     logger.info('✅ Import/Export service initialized');
     
-    // STEP 3-7: Initialize Vue application (handles remaining steps)
+    // STEP 3-7: Initialize Vue application
     console.log('3️⃣ Creating Vue application...');
     vueApp = await initializeVue();
     
@@ -479,10 +434,8 @@ async function initialize() {
       throw new Error('Vue application failed to initialize');
     }
     
-    // Setup minimal UI handlers
+    // Setup UI handlers
     setupMinimalUIHandlers();
-    
-    // Setup empty state button handlers  
     setupEmptyStateHandlers();
     
     // SUCCESS!
@@ -496,9 +449,10 @@ async function initialize() {
     // Dispatch ready event
     document.dispatchEvent(new CustomEvent('gmkb:ready', {
       detail: { 
-        version: '2.0.0',
+        version: '4.0.0-phase6',
         vueEnabled: true,
         pureVue: true,
+        optimized: true,
         timestamp: Date.now()
       }
     }));
@@ -515,6 +469,9 @@ async function initialize() {
           <p class="gmkb-error__message">
             ${error.message}
           </p>
+          <p class="gmkb-error__detail">
+            Check the browser console for more details.
+          </p>
           <button class="gmkb-error__button" onclick="location.reload()">
             Reload Page
           </button>
@@ -522,9 +479,14 @@ async function initialize() {
       `;
     }
     
-    // Report error (could send to logging service)
+    // Report error
     if (window.gmkbData?.environment === 'production') {
       // TODO: Send to error tracking service
+      console.error('Production error:', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
     }
   }
 }
@@ -539,6 +501,7 @@ if (document.readyState === 'loading') {
 // Export for module usage
 export {
   APIService,
+  DataValidator,
   logger,
   showToast
 };

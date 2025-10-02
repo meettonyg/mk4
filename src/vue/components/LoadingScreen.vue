@@ -1,118 +1,173 @@
 <template>
-  <div class="gmkb-loading-screen">
-    <div class="loading-container">
-      <div class="loading-logo">
-        <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-          <rect width="60" height="60" rx="12" fill="var(--color-primary, #1a73e8)" fill-opacity="0.1"/>
-          <path d="M30 15L40 25L30 35L20 25L30 15Z" fill="var(--color-primary, #1a73e8)"/>
-        </svg>
+  <div class="loading-screen">
+    <div class="loading-screen__content">
+      <div class="loading-screen__spinner"></div>
+      <h2 class="loading-screen__title">{{ title }}</h2>
+      <p class="loading-screen__message">{{ message }}</p>
+
+      <!-- Show retry info if retrying -->
+      <div v-if="retryAttempt > 0" class="loading-screen__retry">
+        <p>Attempt {{ retryAttempt }} of {{ maxRetries }}</p>
+        <p class="loading-screen__retry-detail">{{ retryMessage }}</p>
       </div>
-      
-      <h2 class="loading-title">Loading Media Kit Builder</h2>
-      <p class="loading-message">{{ message }}</p>
-      
-      <div class="loading-progress">
-        <div class="progress-bar">
-          <div class="progress-fill" :style="{ width: `${progress}%` }"></div>
-        </div>
-        <span class="progress-text">{{ progress }}%</span>
+
+      <!-- Progress bar if available -->
+      <div v-if="progress > 0" class="loading-screen__progress">
+        <div class="loading-screen__progress-bar" :style="{ width: progress + '%' }"></div>
+      </div>
+
+      <!-- Action buttons if needed -->
+      <div v-if="showReload" class="loading-screen__actions">
+        <button @click="handleReload" class="loading-screen__button">
+          Reload Page
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
+  title: {
+    type: String,
+    default: 'Loading Media Kit Builder'
+  },
+  message: {
+    type: String,
+    default: 'Please wait while we load your media kit...'
+  },
   progress: {
     type: Number,
-    default: 0,
-    validator: (value) => value >= 0 && value <= 100
+    default: 0
+  },
+  showReload: {
+    type: Boolean,
+    default: false
   }
 });
 
-const message = computed(() => {
-  if (props.progress < 25) return 'Initializing...';
-  if (props.progress < 50) return 'Loading components...';
-  if (props.progress < 75) return 'Fetching data...';
-  if (props.progress < 100) return 'Applying theme...';
-  return 'Almost ready...';
+const retryAttempt = ref(0);
+const maxRetries = ref(3);
+const retryMessage = ref('');
+
+// Listen for retry events
+const handleRetry = (event) => {
+  retryAttempt.value = event.detail.attempt;
+  maxRetries.value = event.detail.max;
+  retryMessage.value = event.detail.error || 'Retrying...';
+};
+
+const handleReload = () => {
+  location.reload();
+};
+
+onMounted(() => {
+  document.addEventListener('gmkb:load-retry', handleRetry);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('gmkb:load-retry', handleRetry);
 });
 </script>
 
 <style scoped>
-.gmkb-loading-screen {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.loading-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  animation: fadeIn 0.3s ease-out;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.loading-container {
+.loading-screen__content {
   text-align: center;
-  padding: 2rem;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 400px;
-  width: 90%;
+  color: white;
+  max-width: 500px;
+  padding: 40px;
 }
 
-.loading-logo {
-  margin-bottom: 1.5rem;
-  animation: pulse 2s ease-in-out infinite;
+.loading-screen__spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 30px;
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.loading-title {
-  margin: 0 0 0.5rem;
-  font-size: 1.5rem;
+.loading-screen__title {
+  font-size: 28px;
+  margin: 0 0 12px;
   font-weight: 600;
-  color: #1a1a1a;
 }
 
-.loading-message {
-  margin: 0 0 1.5rem;
-  color: #666;
-  font-size: 0.875rem;
+.loading-screen__message {
+  font-size: 16px;
+  opacity: 0.9;
+  margin: 0;
 }
 
-.loading-progress {
-  position: relative;
+.loading-screen__retry {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 14px;
 }
 
-.progress-bar {
-  height: 8px;
-  background: #e0e0e0;
-  border-radius: 4px;
+.loading-screen__retry p {
+  margin: 0 0 8px;
+}
+
+.loading-screen__retry-detail {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.loading-screen__progress {
+  margin-top: 24px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
   overflow: hidden;
-  margin-bottom: 0.5rem;
 }
 
-.progress-fill {
+.loading-screen__progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 4px;
-  transition: width 0.3s ease-out;
+  background: white;
+  transition: width 0.3s ease;
 }
 
-.progress-text {
-  font-size: 0.75rem;
-  color: #666;
+.loading-screen__actions {
+  margin-top: 24px;
+}
+
+.loading-screen__button {
+  padding: 12px 24px;
+  background: white;
+  color: #667eea;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loading-screen__button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.loading-screen__button:active {
+  transform: translateY(0);
 }
 </style>

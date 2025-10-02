@@ -5,9 +5,18 @@
  * Uses unified gmkb/v2/mediakit/{id} endpoint
  * Eliminates N+1 queries with single-query data fetching
  * 
+ * PHASE 6 ENHANCEMENTS:
+ * - Retry logic with exponential backoff
+ * - Improved caching with TTL
+ * - Race condition prevention
+ * - Better error handling
+ * 
  * @package GMKB
  * @version 2.0.0
  */
+
+import { retryOperation } from '../utils/retry.js';
+import { DataValidator } from './DataValidator.js';
 
 export class APIService {
   constructor(restUrl, restNonce, postId) {
@@ -19,9 +28,12 @@ export class APIService {
     // V2 API base URL
     this.baseUrl = `${this.restUrl}gmkb/v2/mediakit/${this.postId}`;
     
-    // Response cache
+    // PHASE 6: Enhanced response cache with TTL
     this.cache = new Map();
     this.cacheExpiry = 60000; // 1 minute
+    
+    // PHASE 6: Track in-flight requests to prevent race conditions
+    this.inflightRequests = new Map();
     
     // Validate initialization
     if (!this.restUrl || !this.restNonce) {
@@ -113,7 +125,7 @@ export class APIService {
   }
 
   /**
-   * Load complete media kit in ONE API call
+   * PHASE 6: Load complete media kit with retry logic and race condition prevention
    * 
    * Returns:
    * {
@@ -134,6 +146,12 @@ export class APIService {
     const { useCache = true, forceRefresh = false } = options;
     
     try {
+      // PHASE 6: Check if there's already an in-flight request
+      if (this.inflightRequests.has('load')) {
+        console.log('⏳ Load already in progress, waiting...');
+        return await this.inflightRequests.get('load');
+      }
+
       // Check cache first
       if (useCache && !forceRefresh) {
         const cached = this.getFromCache('load');
@@ -149,60 +167,98 @@ export class APIService {
         throw new Error('Cannot load: No post ID available');
       }
       
-      // Fetch from REST API v2
-      const response = await fetch(this.baseUrl, {
-        method: 'GET',
-        headers: {
-          'X-WP-Nonce': this.restNonce
+      // PHASE 6: Create load promise with retry logic
+      const loadPromise = retryOperation(
+        async () => {
+          // Fetch from REST API v2
+          const response = await fetch(this.baseUrl, {
+            method: 'GET',
+            headers: {
+              'X-WP-Nonce': this.restNonce
+            },
+            credentials: 'same-origin'
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || `HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!data.success) {
+            throw new Error(data.message || 'API returned unsuccessful response');
+          }
+
+          // PHASE 6: Validate response structure
+          DataValidator.validateAPIResponse(data);
+          
+          // Transform response to expected format
+          const result = {
+            components: data.state.components || {},
+            sections: data.state.sections || [],
+            layout: data.state.layout || [],
+            globalSettings: data.state.globalSettings || {},
+            theme: data.theme.id || 'professional_clean',
+            themeCustomizations: data.theme.customizations || {},
+            podsData: data.podsData || {},
+            metadata: data.metadata || {}
+          };
+          
+          // Cache response
+          this.setCache('load', result);
+
+          if (window.gmkbData?.debugMode) {
+            console.log('✅ Loaded media kit data:', {
+              components: Object.keys(result.components).length,
+              sections: result.sections.length,
+              podsFields: Object.keys(result.podsData).length,
+              theme: result.theme
+            });
+          }
+
+          return result;
         },
-        credentials: 'same-origin'
-      });
+        {
+          maxRetries: 3,
+          delay: 1000,
+          backoff: 2,
+          onRetry: (attempt, max, wait, error) => {
+            console.warn(`⚠️ Load attempt ${attempt}/${max} failed: ${error.message}. Retrying in ${wait}ms...`);
+            
+            // Dispatch retry event for UI feedback
+            document.dispatchEvent(new CustomEvent('gmkb:load-retry', {
+              detail: { attempt, max, wait, error: error.message }
+            }));
+          }
+        }
+      );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP ${response.status}`);
+      // PHASE 6: Track in-flight request
+      this.inflightRequests.set('load', loadPromise);
+
+      try {
+        const result = await loadPromise;
+        return result;
+      } finally {
+        // Clear in-flight request
+        this.inflightRequests.delete('load');
       }
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.message || 'API returned unsuccessful response');
-      }
-      
-      // Transform response to expected format
-      const result = {
-        components: data.state.components || {},
-        sections: data.state.sections || [],
-        layout: data.state.layout || [],
-        globalSettings: data.state.globalSettings || {},
-        theme: data.theme.id || 'professional_clean',
-        themeCustomizations: data.theme.customizations || {},
-        podsData: data.podsData || {},
-        metadata: data.metadata || {}
-      };
-      
-      // Cache response
-      this.setCache('load', result);
-
-      if (window.gmkbData?.debugMode) {
-        console.log('✅ Loaded media kit data:', {
-          components: Object.keys(result.components).length,
-          sections: result.sections.length,
-          podsFields: Object.keys(result.podsData).length,
-          theme: result.theme
-        });
-      }
-
-      return result;
 
     } catch (error) {
       console.error('Failed to load media kit:', error);
+      
+      // Dispatch error event
+      document.dispatchEvent(new CustomEvent('gmkb:load-error', {
+        detail: { error: error.message }
+      }));
+      
       throw error;
     }
   }
 
   /**
-   * Save complete media kit in ONE API call
+   * PHASE 6: Save complete media kit with retry logic
    * 
    * @param {Object} state - Complete state to save
    * @param {Object} options - Save options
@@ -211,72 +267,130 @@ export class APIService {
    */
   async save(state, options = {}) {
     try {
+      // PHASE 6: Check if there's already an in-flight save request
+      if (this.inflightRequests.has('save')) {
+        console.log('⏳ Save already in progress, waiting...');
+        return await this.inflightRequests.get('save');
+      }
+
       if (!this.postId) {
         throw new Error('Cannot save: No post ID available');
       }
       
+      // PHASE 6: Validate and sanitize state before saving
+      DataValidator.validateState(state);
+      const sanitizedState = DataValidator.sanitizeState(state);
+      
+      // PHASE 6: Check state size
+      const sizeCheck = DataValidator.validateStateSize(sanitizedState);
+      if (!sizeCheck.valid) {
+        throw new Error('State data too large');
+      }
+      
       // Prepare payload
       const payload = {
-        components: state.components || {},
-        sections: state.sections || [],
-        layout: state.layout || [],
-        globalSettings: state.globalSettings || {},
-        theme: state.theme || 'professional_clean',
-        themeCustomizations: state.themeCustomizations || {}
+        components: sanitizedState.components || {},
+        sections: sanitizedState.sections || [],
+        layout: sanitizedState.layout || [],
+        globalSettings: sanitizedState.globalSettings || {},
+        theme: sanitizedState.theme || 'professional_clean',
+        themeCustomizations: sanitizedState.themeCustomizations || {}
       };
       
       // Log payload size in debug mode
       if (window.gmkbData?.debugMode) {
-        const payloadSize = JSON.stringify(payload).length;
         console.log('💾 Saving media kit:', {
           components: Object.keys(payload.components).length,
           sections: payload.sections.length,
-          payloadSize: Math.round(payloadSize / 1024) + 'KB'
+          payloadSize: sizeCheck.sizeInKB + 'KB'
         });
       }
 
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': this.restNonce
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload)
-      });
+      // PHASE 6: Create save promise with retry logic
+      const savePromise = retryOperation(
+        async () => {
+          const response = await fetch(this.baseUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-WP-Nonce': this.restNonce
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+          });
 
-      if (!response.ok) {
-        const error = await response.json();
+          if (!response.ok) {
+            const error = await response.json();
+            
+            // Handle nonce expiration gracefully
+            if (response.status === 403 || error.code === 'rest_forbidden') {
+              return { success: false, silent: true, reason: 'nonce_expired' };
+            }
+            
+            throw new Error(error.message || `HTTP ${response.status}`);
+          }
+
+          const result = await response.json();
+
+          if (!result.success) {
+            throw new Error(result.message || 'Save failed');
+          }
+          
+          // Clear cache after successful save
+          this.clearCache();
+
+          if (!options.silent && window.gmkbData?.debugMode) {
+            console.log('✅ Saved media kit:', {
+              components: result.components_saved,
+              sections: result.sections_saved,
+              dataSize: Math.round(result.data_size / 1024) + 'KB'
+            });
+          }
+
+          return result;
+        },
+        {
+          maxRetries: 2, // Fewer retries for saves
+          delay: 1000,
+          backoff: 2,
+          onRetry: (attempt, max, wait, error) => {
+            console.warn(`⚠️ Save attempt ${attempt}/${max} failed: ${error.message}. Retrying in ${wait}ms...`);
+            
+            // Dispatch retry event for UI feedback
+            document.dispatchEvent(new CustomEvent('gmkb:save-retry', {
+              detail: { attempt, max, wait, error: error.message }
+            }));
+          }
+        }
+      );
+
+      // PHASE 6: Track in-flight request
+      this.inflightRequests.set('save', savePromise);
+
+      try {
+        const result = await savePromise;
         
-        // Handle nonce expiration gracefully
-        if (response.status === 403 || error.code === 'rest_forbidden') {
-          return { success: false, silent: true, reason: 'nonce_expired' };
+        // Dispatch success event
+        if (result.success && !result.silent) {
+          document.dispatchEvent(new CustomEvent('gmkb:save-success', {
+            detail: { result }
+          }));
         }
         
-        throw new Error(error.message || `HTTP ${response.status}`);
+        return result;
+      } finally {
+        // Clear in-flight request
+        this.inflightRequests.delete('save');
       }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Save failed');
-      }
-      
-      // Clear cache after successful save
-      this.clearCache();
-
-      if (!options.silent && window.gmkbData?.debugMode) {
-        console.log('✅ Saved media kit:', {
-          components: result.components_saved,
-          sections: result.sections_saved,
-          dataSize: Math.round(result.data_size / 1024) + 'KB'
-        });
-      }
-
-      return result;
 
     } catch (error) {
       console.error('Failed to save media kit:', error);
+      
+      // Dispatch error event
+      document.dispatchEvent(new CustomEvent('gmkb:save-error', {
+        detail: { error: error.message }
+      }));
+      
       throw error;
     }
   }
@@ -319,7 +433,7 @@ export class APIService {
   }
 
   /**
-   * Cache management
+   * PHASE 6: Enhanced cache management
    */
   getFromCache(key) {
     const cached = this.cache.get(key);
@@ -349,19 +463,32 @@ export class APIService {
   }
 
   /**
-   * Get current cache status for debugging
+   * PHASE 6: Get current cache status for debugging
    */
   getCacheStatus() {
     const entries = Array.from(this.cache.entries()).map(([key, value]) => ({
       key,
       age: Date.now() - value.timestamp,
+      ageMinutes: Math.round((Date.now() - value.timestamp) / 60000),
       size: JSON.stringify(value.data).length
     }));
     
     return {
       entries,
       total: entries.length,
-      totalSize: entries.reduce((sum, e) => sum + e.size, 0)
+      totalSize: entries.reduce((sum, e) => sum + e.size, 0),
+      totalSizeKB: Math.round(entries.reduce((sum, e) => sum + e.size, 0) / 1024)
+    };
+  }
+
+  /**
+   * PHASE 6: Get in-flight request status
+   */
+  getInflightStatus() {
+    return {
+      load: this.inflightRequests.has('load'),
+      save: this.inflightRequests.has('save'),
+      total: this.inflightRequests.size
     };
   }
 }
