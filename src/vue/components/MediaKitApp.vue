@@ -133,6 +133,9 @@ onMounted(async () => {
     isReady.value = true;
     loadingProgress.value = 100;
     
+    // ROOT FIX: Add class to body to show builder UI
+    document.body.classList.add('gmkb-vue-ready');
+    
     console.log('✅ MediaKitApp: Phase 1 initialization complete');
     console.log('📊 MediaKitApp: Pods data loaded:', store.podsData ? Object.keys(store.podsData).length : 0, 'fields');
     

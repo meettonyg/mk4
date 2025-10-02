@@ -1,0 +1,73 @@
+# Deployment Ignore File
+# Files/folders listed here should NOT be uploaded to production server
+
+# Development Dependencies
+node_modules/
+package.json
+package-lock.json
+
+# Source Files (we upload compiled dist/ instead)
+src/
+
+# Build Configuration
+vite.config.js
+vitest.config.js
+jsconfig.json
+tsconfig.json
+
+# Tests
+tests/
+*.test.js
+*.spec.js
+
+# Documentation (optional - include if you want docs on server)
+README.md
+CHANGELOG.md
+*.md
+
+# Git Files
+.git/
+.gitignore
+.gitattributes
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment Files
+.env
+.env.local
+.env.*.local
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# Archive/Backup Files
+ARCHIVE/
+backup/
+*.bak
+*.old
+
+# Option C Documentation (keep on server for reference)
+# Remove the # below if you want to exclude these too
+# OPTION-C-*.md
+
+# Critical: NEVER upload these
+.htpasswd
+wp-config.php

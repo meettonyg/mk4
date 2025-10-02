@@ -162,6 +162,40 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         html {
             margin-top: 0 !important;
         }
+        
+        /* Builder UI Structure */
+        #gmkb-builder-wrapper {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #gmkb-toolbar {
+            flex-shrink: 0;
+            z-index: 100;
+        }
+        
+        #gmkb-main-content {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        
+        #media-kit-preview {
+            width: 100%;
+            min-height: 100%;
+        }
+        
+        /* Show builder wrapper when Vue is ready */
+        .gmkb-vue-ready #gmkb-builder-wrapper {
+            display: flex !important;
+        }
+        
+        /* Hide loading screen when Vue is ready */
+        .gmkb-vue-ready #app {
+            display: none;
+        }
     </style>
 </head>
 <body class="gmkb-builder gmkb-pure-vue">
@@ -176,6 +210,18 @@ if (!in_array($post->post_type, $allowed_post_types)) {
                 <h2 class="gmkb-loading__title">Loading Media Kit Builder</h2>
                 <p class="gmkb-loading__message">Phase 6 optimizations active...</p>
             </div>
+        </div>
+    </div>
+    
+    <!-- Builder UI Structure - Mount points for Vue Teleport -->
+    <div id="gmkb-builder-wrapper" style="display: none;">
+        <!-- Toolbar mount point -->
+        <div id="gmkb-toolbar"></div>
+        
+        <!-- Main content area -->
+        <div id="gmkb-main-content">
+            <!-- Preview area mount point -->
+            <div id="media-kit-preview"></div>
         </div>
     </div>
 

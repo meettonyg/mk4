@@ -9,9 +9,6 @@
  * - Loading states with feedback
  */
 
-// Import styles
-import '../css/vue-controls.css';
-
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
