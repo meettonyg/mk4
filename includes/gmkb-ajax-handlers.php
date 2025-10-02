@@ -210,9 +210,42 @@ class GMKB_Ajax_Handlers {
     }
     
     /**
-     * Load media kit - ROOT FIX: Properly retrieve and validate saved state
+     * Load media kit - DEPRECATED in v2.0.0
+     * 
+     * @deprecated 2.0.0 Use REST API v2 instead: GET /wp-json/gmkb/v2/mediakit/{id}
+     * 
+     * This endpoint is deprecated. Use REST API v2 for all data operations.
+     * The REST API provides:
+     * - Single query data fetching (no N+1 problems)
+     * - Better error handling
+     * - Standardized response format
+     * - No race conditions
+     * 
+     * ROOT FIX: Properly retrieve and validate saved state
      */
     public function load_media_kit() {
+        // PHASE C2: Deprecation check
+        $force_ajax = isset($_POST['force_ajax']) && $_POST['force_ajax'] === 'true';
+        
+        if (!$force_ajax) {
+            $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+            
+            // Return deprecation notice
+            wp_send_json_error(array(
+                'message' => 'This AJAX endpoint is deprecated. Use REST API v2 instead.',
+                'deprecated' => true,
+                'new_endpoint' => rest_url('gmkb/v2/mediakit/' . ($post_id ?: '{id}')),
+                'migration_guide' => 'Use APIService.js load() method',
+                'documentation' => 'See OPTION-C-AJAX-AUDIT.md for details',
+                'code' => 410 // HTTP 410 Gone
+            ), 410);
+            return;
+        }
+        
+        // If force_ajax is set, log warning but allow (for emergency backward compatibility)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ GMKB: Deprecated AJAX load handler called with force_ajax=true');
+        }
         // Verify nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'gmkb_nonce')) {
             wp_send_json_error('Invalid nonce');
@@ -375,9 +408,42 @@ class GMKB_Ajax_Handlers {
     }
     
     /**
-     * Save media kit - ROOT FIX: Properly handle JavaScript object -> PHP array conversion
+     * Save media kit - DEPRECATED in v2.0.0
+     * 
+     * @deprecated 2.0.0 Use REST API v2 instead: POST /wp-json/gmkb/v2/mediakit/{id}
+     * 
+     * This endpoint is deprecated. Use REST API v2 for all data operations.
+     * The REST API provides:
+     * - Single source of truth (no duplicate save handlers)
+     * - Atomic saves (no race conditions)
+     * - Better validation
+     * - Consistent error handling
+     * 
+     * ROOT FIX: Properly handle JavaScript object -> PHP array conversion
      */
     public function save_media_kit() {
+        // PHASE C2: Deprecation check
+        $force_ajax = isset($_POST['force_ajax']) && $_POST['force_ajax'] === 'true';
+        
+        if (!$force_ajax) {
+            $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+            
+            // Return deprecation notice
+            wp_send_json_error(array(
+                'message' => 'This AJAX endpoint is deprecated. Use REST API v2 instead.',
+                'deprecated' => true,
+                'new_endpoint' => rest_url('gmkb/v2/mediakit/' . ($post_id ?: '{id}')),
+                'migration_guide' => 'Use APIService.js save() method',
+                'documentation' => 'See OPTION-C-AJAX-AUDIT.md for details',
+                'code' => 410 // HTTP 410 Gone
+            ), 410);
+            return;
+        }
+        
+        // If force_ajax is set, log warning but allow (for emergency backward compatibility)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ GMKB: Deprecated AJAX save handler called with force_ajax=true');
+        }
         // 1. Security Verification - ROOT FIX: Use the correct nonce name
         $nonce = isset($_POST['nonce']) ? $_POST['nonce'] : '';
         if (!wp_verify_nonce($nonce, 'gmkb-builder-nonce') && !wp_verify_nonce($nonce, 'gmkb_nonce')) {
