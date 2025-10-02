@@ -281,16 +281,21 @@ export default {
 
 /* Main sidebar container */
 .gmkb-sidebar {
-  height: 100%;
-  display: flex;
+  height: 100%;  display: flex;
   flex-direction: column;
   background: #0f172a !important;
   border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Tab Navigation */
+/* Tab Navigation - CONSOLIDATED */
 .gmkb-sidebar .sidebar-tabs {
-  display: flex;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 10 !important;
+  min-height: 48px !important;
+  background: red !important; /* DEBUG: Make tabs visible */
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
 }
