@@ -175,7 +175,8 @@ export default {
     const isSelected = ref(false);
     const isEditing = ref(false);
     const showDesignPanel = ref(false);
-    const localBiography = ref(props.biography || podsBiography.value);
+    // ROOT FIX: Always prefer Pods data over saved component data
+    const localBiography = ref(podsBiography.value || props.biography);
     const bioTextarea = ref(null);
     
     // Local copies of props for editing
@@ -190,9 +191,18 @@ export default {
       biography: podsBiography.value
     }));
     
-    // Watch for prop changes
+    // ROOT FIX: Watch for Pods data changes (real-time sync)
+    watch(() => podsBiography.value, (newVal) => {
+      if (newVal) {
+        localBiography.value = newVal;
+      }
+    });
+    
+    // Watch for prop changes (only if no Pods data)
     watch(() => props.biography, (newVal) => {
-      localBiography.value = newVal;
+      if (!podsBiography.value) {
+        localBiography.value = newVal;
+      }
     });
     
     // Format biography text
@@ -327,9 +337,10 @@ export default {
         }
       });
       
-      // ROOT FIX: Load from Pods data using composable, no direct access
-      if (!localBiography.value && podsBiography.value) {
+      // ROOT FIX: Always use Pods data when available (real-time sync)
+      if (podsBiography.value) {
         localBiography.value = podsBiography.value;
+        // Also update the display without needing to call updateComponent
       }
     });
     

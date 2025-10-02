@@ -302,6 +302,18 @@ export const useMediaKitStore = defineStore('mediaKit', {
             lastSaved: Date.now(),
             isDirty: false
           });
+          
+          // ROOT FIX: Enrich ALL loaded components with Pods data
+          if (window.podsDataIntegration || window.gmkbPodsIntegration) {
+            const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
+            Object.keys(this.components).forEach(componentId => {
+              const component = this.components[componentId];
+              if (component) {
+                podsIntegration.enrichComponentData(component);
+              }
+            });
+            console.log('✅ Enriched all loaded components with Pods data');
+          }
         }
         
         // Ensure at least one section exists
