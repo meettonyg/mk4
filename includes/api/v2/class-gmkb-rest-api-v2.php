@@ -354,13 +354,21 @@ class GMKB_REST_API_V2 {
     private function fetch_all_pods_data($post_id, $post_type) {
         $data = array();
         
-        // Only fetch Pods data for guests post type
-        if ($post_type !== 'guests' || !function_exists('pods')) {
+        // ROOT FIX: Fetch Pods data for both mkcg and guests post types
+        if (!in_array($post_type, array('mkcg', 'guests')) || !function_exists('pods')) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB API v2: Skipping Pods data - post_type=' . $post_type . ', pods_available=' . (function_exists('pods') ? 'YES' : 'NO'));
+            }
             return $data;
         }
         
         try {
-            $pod = pods('guests', $post_id);
+            // ROOT FIX: Use correct post type for Pods
+            $pod = pods($post_type, $post_id);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB API v2: Loading Pods data for ' . $post_type . ' #' . $post_id);
+            }
             
             if (!$pod || !$pod->exists()) {
                 return $data;
