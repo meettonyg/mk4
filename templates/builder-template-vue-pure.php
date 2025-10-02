@@ -18,55 +18,27 @@ if (!defined('ABSPATH')) {
 $post_id = 0;
 if (isset($_GET['mkcg_id'])) {
     $post_id = intval($_GET['mkcg_id']);
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB Phase 3: Using mkcg_id parameter: ' . $post_id);
-    }
 } elseif (isset($_GET['post_id'])) {
     $post_id = intval($_GET['post_id']);
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB Phase 3: Using post_id parameter: ' . $post_id);
-    }
 } elseif (isset($_GET['p'])) {
     $post_id = intval($_GET['p']);
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB Phase 3: Using p parameter: ' . $post_id);
-    }
 } else {
     $post_id = get_the_ID();
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB Phase 3: Using get_the_ID(): ' . ($post_id ?: 'NULL'));
-    }
 }
 
-if (defined('WP_DEBUG') && WP_DEBUG) {
-    error_log('GMKB Phase 3: Final detected post_id: ' . $post_id);
-    error_log('GMKB Phase 3: REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'N/A'));
-    error_log('GMKB Phase 3: GET parameters: ' . print_r($_GET, true));
-}
-
-// ROOT FIX: Verify post exists - support both 'guests' and 'mkcg' post types
+// Verify post exists
 $post = get_post($post_id);
 if (!$post) {
-    $error_details = '';
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        $error_details = '<br><br><strong>Debug Info:</strong><br>';
-        $error_details .= 'Post ID attempted: ' . esc_html($post_id) . '<br>';
-        $error_details .= 'URL: ' . esc_html($_SERVER['REQUEST_URI'] ?? 'N/A') . '<br>';
-        $error_details .= 'GET parameters: ' . esc_html(print_r($_GET, true));
-    }
     wp_die(
-        'Invalid media kit ID: Post not found (ID: ' . esc_html($post_id) . ')' . $error_details,
+        'Invalid media kit ID: Post not found (ID: ' . esc_html($post_id) . ')',
         'Media Kit Builder Error',
         array('response' => 404)
     );
 }
 
-// Support multiple post types (guests is the primary post type)
+// Support multiple post types
 $allowed_post_types = array('guests', 'mkcg');
 if (!in_array($post->post_type, $allowed_post_types)) {
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('GMKB Phase 3: Invalid post type for media kit: ' . $post->post_type . ' (ID: ' . $post_id . ')');
-    }
     wp_die('Invalid media kit ID: Post type "' . esc_html($post->post_type) . '" is not supported. Expected: guests or mkcg');
 }
 
@@ -92,184 +64,12 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             background: #f5f7fa;
         }
 
-        /* ROOT FIX: Full-Featured Layout Structure - NO RIGHT SIDEBAR */
-        .gmkb-app-wrapper {
-            position: fixed;
-            top: 60px;
-            left: 280px;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-        }
-        
-        /* Toolbar Styles */
-        .gmkb-toolbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            z-index: 1000;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-        
-        .toolbar-loading {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #64748b;
-            font-size: 14px;
-        }
-        
-        .toolbar-loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #e2e8f0;
-            border-top-color: #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        .toolbar-left {
-            display: flex;
-            align-items: baseline;
-            gap: 12px;
-        }
-        
-        .toolbar-title {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: #1e293b;
-        }
-        
-        .toolbar-subtitle {
-            font-size: 14px;
-            color: #64748b;
-        }
-        
-        .toolbar-right {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .toolbar-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: #475569;
-            transition: all 0.2s ease;
-        }
-        
-        .toolbar-btn:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-        }
-        
-        .toolbar-btn--primary {
-            background: #3b82f6;
-            border-color: #3b82f6;
-            color: #ffffff;
-        }
-        
-        .toolbar-btn--primary:hover {
-            background: #2563eb;
-            border-color: #2563eb;
-        }
-        
-        .toolbar-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-        
-        /* Sidebar Styles */
-        .gmkb-sidebar {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            width: 280px;
-            bottom: 0;
-            background: #ffffff;
-            border-right: 1px solid #e2e8f0;
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-        }
-        
-        .sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .sidebar-header h3 {
-            margin: 0 0 12px 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1e293b;
-        }
-        
-        .sidebar-btn-primary {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background: #3b82f6;
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background 0.2s ease;
-        }
-        
-        .sidebar-btn-primary:hover {
-            background: #2563eb;
-        }
-        
-        .sidebar-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-        }
-        
-        /* Main Content Area - NO RIGHT SIDEBAR */
-        .gmkb-main-content {
-            position: fixed;
-            top: 60px;
-            left: 280px;
-            right: 0;
-            bottom: 0;
-            overflow: auto;
-            background: #f5f7fa;
-        }
-        
-        .media-kit-preview {
-            min-height: 100%;
-            padding: 24px;
-        }
-
         #app {
             width: 100%;
             height: 100%;
         }
 
-        /* Loading screen */
+        /* PHASE 6: Loading screen - Shows until Vue takes over */
         .gmkb-loading {
             display: flex;
             align-items: center;
@@ -311,7 +111,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             margin: 0;
         }
 
-        /* Error screen */
+        /* PHASE 6: Error screen */
         .gmkb-error {
             display: flex;
             flex-direction: column;
@@ -320,63 +120,38 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             height: 100vh;
             padding: 40px;
             text-align: center;
-            background: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
 
         .gmkb-error__title {
-            color: #dc2626;
-            font-size: 24px;
-            margin-bottom: 16px;
+            font-size: 32px;
+            margin: 0 0 16px;
+            font-weight: 600;
         }
 
         .gmkb-error__message {
-            color: #64748b;
-            max-width: 500px;
+            font-size: 18px;
+            margin: 0 0 24px;
+            max-width: 600px;
+            line-height: 1.6;
         }
 
         .gmkb-error__button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #3b82f6;
-            color: white;
+            padding: 12px 32px;
+            background: white;
+            color: #667eea;
             border: none;
             border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 14px;
+            transition: all 0.2s ease;
         }
 
         .gmkb-error__button:hover {
-            background: #2563eb;
-        }
-        
-        /* Responsive adjustments - NO RIGHT SIDEBAR */
-        @media (max-width: 1024px) {
-            .gmkb-sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                z-index: 200;
-            }
-            
-            .gmkb-sidebar.open {
-                transform: translateX(0);
-            }
-            
-            .gmkb-app-wrapper,
-            .gmkb-main-content {
-                left: 0;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .gmkb-toolbar {
-                height: 50px;
-            }
-            
-            .gmkb-app-wrapper,
-            .gmkb-main-content,
-            .gmkb-sidebar {
-                top: 50px;
-            }
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         
         /* Hide WordPress admin bar in builder */
@@ -391,51 +166,16 @@ if (!in_array($post->post_type, $allowed_post_types)) {
 </head>
 <body class="gmkb-builder gmkb-pure-vue">
 
-    <!-- ROOT FIX: Full-Featured Pure Vue Structure -->
-    <!-- This provides ALL the DOM elements that Vue components expect -->
-    
-    <!-- Main Application Container -->
-    <div id="app" class="gmkb-app-wrapper">
-        <!-- Loading State (Vue will replace this) -->
+    <!-- PHASE 3 & 6: Pure Vue Application Mount Point -->
+    <!-- Vue takes complete control - NO static UI elements -->
+    <div id="app">
+        <!-- Loading State - Vue will replace this entire content -->
         <div class="gmkb-loading">
             <div class="gmkb-loading__content">
                 <div class="gmkb-loading__spinner"></div>
                 <h2 class="gmkb-loading__title">Loading Media Kit Builder</h2>
-                <p class="gmkb-loading__message">Initializing Vue application...</p>
+                <p class="gmkb-loading__message">Phase 6 optimizations active...</p>
             </div>
-        </div>
-    </div>
-    
-    <!-- ROOT FIX: Toolbar Container - Vue will populate this -->
-    <div id="gmkb-toolbar" class="gmkb-toolbar">
-        <!-- Vue MediaKitToolbarComplete component will render here -->
-        <div class="toolbar-loading">
-            <div class="toolbar-loading-spinner"></div>
-            <span>Loading toolbar...</span>
-        </div>
-    </div>
-    
-    <!-- ROOT FIX: Sidebar Structure for SidebarIntegration -->
-    <div id="gmkb-sidebar" class="gmkb-sidebar">
-        <div class="sidebar-header">
-            <h3>Components</h3>
-            <button id="add-component-btn" class="sidebar-btn-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Add Component
-            </button>
-        </div>
-        <div id="sidebar-components" class="sidebar-content">
-            <!-- Vue will populate this -->
-        </div>
-    </div>
-    
-    <!-- ROOT FIX: Main Content Area -->
-    <div id="gmkb-main-content" class="gmkb-main-content">
-        <div id="media-kit-preview" class="media-kit-preview">
-            <!-- Vue SectionLayoutEnhanced will render here -->
         </div>
     </div>
 
@@ -451,12 +191,12 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             ajaxUrl: <?php echo json_encode(admin_url('admin-ajax.php')); ?>,
             pluginUrl: <?php echo json_encode(GUESTIFY_PLUGIN_URL); ?>,
             environment: <?php echo json_encode(defined('WP_DEBUG') && WP_DEBUG ? 'development' : 'production'); ?>,
-            version: '2.0.0',
+            version: '4.0.0-phase6',
             timestamp: <?php echo time(); ?>,
             architecture: 'pure-vue',
             debugMode: <?php echo json_encode(defined('WP_DEBUG') && WP_DEBUG); ?>,
             
-            // ROOT FIX: Add themes data for theme store (MUST BE ARRAY, not object)
+            // Themes data for theme store
             themes: <?php echo json_encode(array(
                 array(
                     'id' => 'professional_clean',
@@ -545,28 +285,37 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         };
 
         // Debugging helper
-        if (window.gmkbData.environment === 'development') {
-            console.log('🎯 GMKB Pure Vue Mode - Data Available:', window.gmkbData);
+        if (window.gmkbData.debugMode) {
+            console.log('🎯 GMKB Pure Vue Mode - Phase 6 Active');
+            console.log('📊 Data Available:', {
+                postId: window.gmkbData.postId,
+                architecture: window.gmkbData.architecture,
+                version: window.gmkbData.version,
+                hasState: !!window.gmkbData.savedState,
+                podsFields: Object.keys(window.gmkbData.pods_data).length
+            });
         }
     </script>
 
     <!-- WordPress Footer (loads scripts) -->
     <?php wp_footer(); ?>
 
-    <!-- Fallback Error Handler -->
+    <!-- PHASE 6: Fallback Error Handler -->
     <script type="text/javascript">
         // If Vue doesn't mount within 10 seconds, show error
         setTimeout(function() {
-            // Check if Vue has mounted by looking for Vue-specific attributes
             const app = document.getElementById('app');
-            const vueAttrs = app.querySelectorAll('[data-v-app]');
             
-            if (!window.gmkbApp && vueAttrs.length === 0) {
+            // Check if Vue has successfully mounted
+            if (!window.gmkbApp && !window.gmkbVueInstance) {
                 app.innerHTML = '<div class="gmkb-error">' +
                     '<h1 class="gmkb-error__title">⚠️ Failed to Load</h1>' +
                     '<p class="gmkb-error__message">' +
                     'The Media Kit Builder failed to initialize. ' +
                     'This could be due to a JavaScript error or network issue.' +
+                    '</p>' +
+                    '<p class="gmkb-error__message" style="font-size: 14px; opacity: 0.8;">' +
+                    'Check the browser console for details.' +
                     '</p>' +
                     '<button class="gmkb-error__button" onclick="location.reload()">Reload Page</button>' +
                     '</div>';

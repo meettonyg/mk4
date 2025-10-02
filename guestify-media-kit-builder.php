@@ -112,15 +112,13 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/api/ComponentDiscoveryAPI.php'))
 }
 
 // Component system files
+// LEGACY CLEANUP: ComponentLoader and DesignPanel archived (Pure Vue migration)
+// Only ComponentDiscovery needed for metadata
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
 }
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentLoader.php';
-}
-if (file_exists(GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php')) {
-    require_once GUESTIFY_PLUGIN_DIR . 'system/DesignPanel.php';
-}
+// ARCHIVED: ComponentLoader.php -> ARCHIVE/legacy-rendering/ (PHP rendering removed)
+// ARCHIVED: DesignPanel.php -> ARCHIVE/legacy-rendering/ (PHP panels removed)
 
 // PHASE 3: enhanced-ajax.php removed (was already deprecated)
 
@@ -155,8 +153,7 @@ class Guestify_Media_Kit_Builder {
     private static $instance;
     private static $initialized = false;
     private $component_discovery;
-    private $component_loader;
-    private $design_panel;
+    // LEGACY CLEANUP: Removed $component_loader and $design_panel (archived to ARCHIVE/legacy-rendering/)
 
     public static function get_instance() {
         if ( null === self::$instance ) {
@@ -197,8 +194,10 @@ class Guestify_Media_Kit_Builder {
             }
         }
         
-        $this->component_loader = new ComponentLoader(GUESTIFY_PLUGIN_DIR . 'components', $this->component_discovery);
-        $this->design_panel = new DesignPanel(GUESTIFY_PLUGIN_DIR . 'components');
+        // LEGACY CLEANUP: ComponentLoader and DesignPanel no longer instantiated
+        // All rendering handled by Vue.js components
+        // Archived: ARCHIVE/legacy-rendering/ComponentLoader.php
+        // Archived: ARCHIVE/legacy-rendering/DesignPanel.php
         
         $this->init_hooks();
         
@@ -716,9 +715,7 @@ class Guestify_Media_Kit_Builder {
         return $this->component_discovery;
     }
     
-    public function get_component_loader() {
-        return $this->component_loader;
-    }
+    // LEGACY CLEANUP: get_component_loader() removed (ComponentLoader archived)
     
     private function detect_mkcg_post_id() {
         $post_id = 0;
