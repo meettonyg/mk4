@@ -276,22 +276,26 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
+/* Unscoped styles - properly namespace everything with .gmkb-sidebar */
+
+/* Main sidebar container */
 .gmkb-sidebar {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #0f172a;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0f172a !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Tab Navigation */
-.sidebar-tabs {
+.gmkb-sidebar .sidebar-tabs {
   display: flex;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
 
-.tab-button {
+.gmkb-sidebar .tab-button {
   flex: 1;
   display: flex;
   align-items: center;
@@ -300,55 +304,56 @@ export default {
   padding: 12px 8px;
   background: transparent;
   border: none;
-  color: #64748b;
+  color: #64748b !important;
   cursor: pointer;
   transition: all 0.2s;
   border-bottom: 2px solid transparent;
+  font-size: 13px;
 }
 
-.tab-button:hover {
-  color: #94a3b8;
+.gmkb-sidebar .tab-button:hover {
+  color: #94a3b8 !important;
   background: rgba(255, 255, 255, 0.02);
 }
 
-.tab-button.active {
-  color: #3b82f6;
+.gmkb-sidebar .tab-button.active {
+  color: #3b82f6 !important;
   border-bottom-color: #3b82f6;
   background: rgba(59, 130, 246, 0.05);
 }
 
-.tab-icon {
+.gmkb-sidebar .tab-icon {
   font-size: 16px;
 }
 
-.tab-label {
+.gmkb-sidebar .tab-label {
   font-size: 13px;
   font-weight: 500;
 }
 
 /* Tab Content */
-.sidebar-content {
+.gmkb-sidebar .sidebar-content {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-.tab-panel {
+.gmkb-sidebar .tab-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-/* Component Library Sidebar */
-.component-library-sidebar {
+/* Rest of the styles remain the same but with .gmkb-sidebar prefix */
+.gmkb-sidebar .component-library-sidebar {
   padding: 12px;
   background: rgba(255, 255, 255, 0.02);
   border-radius: 8px;
   margin: 12px;
 }
 
-.library-header h3 {
+.gmkb-sidebar .library-header h3 {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
@@ -357,7 +362,7 @@ export default {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.library-components {
+.gmkb-sidebar .library-components {
   display: grid;
   grid-template-columns: 1fr;
   gap: 6px;
@@ -365,7 +370,7 @@ export default {
   overflow-y: auto;
 }
 
-.library-component {
+.gmkb-sidebar .library-component {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -377,28 +382,28 @@ export default {
   transition: all 0.2s;
 }
 
-.library-component:hover {
+.gmkb-sidebar .library-component:hover {
   background: rgba(59, 130, 246, 0.1);
   border-color: rgba(59, 130, 246, 0.3);
 }
 
-.library-component.dragging {
+.gmkb-sidebar .library-component.dragging {
   opacity: 0.5;
   transform: scale(0.95);
 }
 
-.component-icon {
+.gmkb-sidebar .component-icon {
   font-size: 18px;
 }
 
-.component-name {
+.gmkb-sidebar .component-name {
   flex: 1;
   font-size: 13px;
   color: #cbd5e1;
   font-weight: 500;
 }
 
-.add-btn {
+.gmkb-sidebar .add-btn {
   width: 24px;
   height: 24px;
   display: flex;
@@ -413,38 +418,37 @@ export default {
   transition: all 0.2s;
 }
 
-.add-btn:hover {
+.gmkb-sidebar .add-btn:hover {
   background: rgba(59, 130, 246, 0.3);
   transform: scale(1.1);
 }
 
-/* Sidebar Divider */
-.sidebar-divider {
+.gmkb-sidebar .sidebar-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.1);
   margin: 12px;
 }
 
 /* Layout Panel */
-.layout-panel {
+.gmkb-sidebar .layout-panel {
   padding: 16px;
 }
 
-.layout-panel h3 {
+.gmkb-sidebar .layout-panel h3 {
   margin: 0 0 16px 0;
   font-size: 14px;
   font-weight: 600;
   color: #e2e8f0;
 }
 
-.layout-options {
+.gmkb-sidebar .layout-options {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 24px;
 }
 
-.layout-option {
+.gmkb-sidebar .layout-option {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -458,35 +462,35 @@ export default {
   transition: all 0.2s;
 }
 
-.layout-option:hover {
+.gmkb-sidebar .layout-option:hover {
   background: rgba(59, 130, 246, 0.1);
   border-color: rgba(59, 130, 246, 0.3);
   color: #3b82f6;
 }
 
-.layout-icon {
+.gmkb-sidebar .layout-icon {
   width: 32px;
   height: 32px;
 }
 
-.layout-option span {
+.gmkb-sidebar .layout-option span {
   font-size: 11px;
   font-weight: 500;
 }
 
 /* Section List */
-.section-list {
+.gmkb-sidebar .section-list {
   margin-top: 24px;
 }
 
-.section-list h4 {
+.gmkb-sidebar .section-list h4 {
   margin: 0 0 12px 0;
   font-size: 13px;
   font-weight: 600;
   color: #cbd5e1;
 }
 
-.section-item {
+.gmkb-sidebar .section-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -497,7 +501,7 @@ export default {
   border-radius: 6px;
 }
 
-.section-number {
+.gmkb-sidebar .section-number {
   width: 24px;
   height: 24px;
   display: flex;
@@ -510,13 +514,13 @@ export default {
   font-weight: 600;
 }
 
-.section-type {
+.gmkb-sidebar .section-type {
   flex: 1;
   font-size: 13px;
   color: #cbd5e1;
 }
 
-.remove-btn {
+.gmkb-sidebar .remove-btn {
   width: 24px;
   height: 24px;
   display: flex;
@@ -531,35 +535,35 @@ export default {
   transition: all 0.2s;
 }
 
-.remove-btn:hover {
+.gmkb-sidebar .remove-btn:hover {
   background: rgba(239, 68, 68, 0.2);
   transform: scale(1.1);
 }
 
 /* Settings Panel */
-.settings-panel {
+.gmkb-sidebar .settings-panel {
   padding: 16px;
 }
 
-.settings-panel h3 {
+.gmkb-sidebar .settings-panel h3 {
   margin: 0 0 20px 0;
   font-size: 14px;
   font-weight: 600;
   color: #e2e8f0;
 }
 
-.setting-group {
+.gmkb-sidebar .setting-group {
   margin-bottom: 20px;
 }
 
-.setting-group label {
+.gmkb-sidebar .setting-group label {
   display: block;
   margin-bottom: 8px;
   font-size: 13px;
   color: #94a3b8;
 }
 
-.setting-select {
+.gmkb-sidebar .setting-select {
   width: 100%;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.05);
@@ -570,25 +574,25 @@ export default {
   cursor: pointer;
 }
 
-.setting-select:focus {
+.gmkb-sidebar .setting-select:focus {
   outline: none;
   border-color: #3b82f6;
 }
 
-.toggle-label {
+.gmkb-sidebar .toggle-label {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
 
-.toggle-input {
+.gmkb-sidebar .toggle-input {
   width: 16px;
   height: 16px;
   cursor: pointer;
 }
 
-.setting-btn {
+.gmkb-sidebar .setting-btn {
   width: 100%;
   padding: 10px;
   margin-bottom: 8px;
@@ -601,26 +605,26 @@ export default {
   transition: all 0.2s;
 }
 
-.setting-btn:hover {
+.gmkb-sidebar .setting-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Scrollbar styling */
-.library-components::-webkit-scrollbar {
+.gmkb-sidebar .library-components::-webkit-scrollbar {
   width: 4px;
 }
 
-.library-components::-webkit-scrollbar-track {
+.gmkb-sidebar .library-components::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.02);
 }
 
-.library-components::-webkit-scrollbar-thumb {
+.gmkb-sidebar .library-components::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
 }
 
-.library-components::-webkit-scrollbar-thumb:hover {
+.gmkb-sidebar .library-components::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 </style>
