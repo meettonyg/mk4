@@ -273,10 +273,21 @@ class GMKB_REST_API_V2 {
         try {
             // Get request body
             $body = $request->get_json_params();
+            
+            // ROOT FIX: Debug logging for troubleshooting
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('💾 GMKB REST API v2: Saving media kit #' . $post_id);
+                error_log('  - Request body size: ' . strlen(json_encode($body)) . ' bytes');
+                error_log('  - Components: ' . (isset($body['components']) ? count((array)$body['components']) : 0));
+                error_log('  - Sections: ' . (isset($body['sections']) ? count($body['sections']) : 0));
+            }
 
             // Validate data structure
             $validation_result = $this->validate_state_data($body);
             if (is_wp_error($validation_result)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('❌ GMKB REST API v2: Validation failed: ' . $validation_result->get_error_message());
+                }
                 return $validation_result;
             }
 
@@ -290,6 +301,15 @@ class GMKB_REST_API_V2 {
                 'version' => '2.0'
             );
 
+            // ROOT FIX: Apply sanitization filter BEFORE saving
+            // This removes Pods data bloat from components
+            if (has_filter('gmkb_before_save_media_kit_state')) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('🔧 GMKB REST API v2: Applying gmkb_before_save_media_kit_state filter');
+                }
+                $state_data = apply_filters('gmkb_before_save_media_kit_state', $state_data, $post_id);
+            }
+
             // CRITICAL: Check data size before saving
             $serialized = maybe_serialize($state_data);
             $data_size = strlen($serialized);
@@ -302,12 +322,35 @@ class GMKB_REST_API_V2 {
                 );
             }
 
-            // Save to database
+            // ROOT FIX: Save to database with proper error handling
+            global $wpdb;
+            
+            // Clear any previous errors
+            $wpdb->flush();
+            
+            // Attempt to save
             $result = update_post_meta($post_id, 'gmkb_media_kit_state', $state_data);
 
-            if ($result === false) {
-                global $wpdb;
+            // Check for database errors
+            if ($wpdb->last_error) {
                 throw new Exception('Database error: ' . $wpdb->last_error);
+            }
+            
+            // update_post_meta returns false if the value is the same as before
+            // This is NOT an error - it just means no update was needed
+            if ($result === false) {
+                // Check if the meta key exists
+                $existing = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+                
+                if ($existing === false || $existing === '') {
+                    // Meta doesn't exist and couldn't be created - this IS an error
+                    throw new Exception('Failed to create post meta. Database error: ' . ($wpdb->last_error ?: 'Unknown'));
+                }
+                
+                // Meta exists and values are identical - not an error, just no change needed
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('ℹ️ GMKB REST API v2: No database update needed (values identical)');
+                }
             }
 
             // Save theme if provided
@@ -322,6 +365,14 @@ class GMKB_REST_API_V2 {
 
             // Trigger action for extensibility
             do_action('gmkb_after_save_mediakit', $post_id, $state_data);
+            
+            // ROOT FIX: Log successful save
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB REST API v2: Media kit #' . $post_id . ' saved successfully');
+                error_log('  - Data size: ' . size_format($data_size));
+                error_log('  - Components: ' . (is_object($state_data['components']) ? 0 : count($state_data['components'])));
+                error_log('  - Sections: ' . count($state_data['sections']));
+            }
 
             // Return success response
             return rest_ensure_response(array(
@@ -334,6 +385,14 @@ class GMKB_REST_API_V2 {
             ));
 
         } catch (Exception $e) {
+            // ROOT FIX: Enhanced error logging
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('❌ GMKB REST API v2: Save failed for post #' . $post_id);
+                error_log('  - Error: ' . $e->getMessage());
+                error_log('  - File: ' . $e->getFile() . ':' . $e->getLine());
+                error_log('  - Trace: ' . $e->getTraceAsString());
+            }
+            
             return new WP_Error(
                 'save_failed',
                 'Failed to save media kit: ' . $e->getMessage(),
