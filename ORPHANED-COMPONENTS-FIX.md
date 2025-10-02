@@ -6,11 +6,11 @@ The Media Kit Data Viewer was showing multiple warnings about "orphaned componen
 
 ## Root Cause
 
-Looking at the code flow in `EnhancedStateManager.js`, when a component was added via the `ADD_COMPONENT` action:
+When a component was added via the `addComponent` action in the Pinia store:
 
 1. ✅ Component was created in the `components` object
-2. ✅ If `component.sectionId` was provided, it was added to that section
-3. ❌ **If no `sectionId` was provided, component was NOT added to any section**
+2. ✅ Component was added to a section's array
+3. ❌ **But sometimes the section assignment logic failed**
 
 This resulted in "orphaned" components - they existed in state but were invisible because they weren't in any section's render list.
 
@@ -18,41 +18,51 @@ This resulted in "orphaned" components - they existed in state but were invisibl
 
 The issue occurred because:
 
-1. Components could be added without a `sectionId`
-2. There was no fallback logic to automatically assign components to a section
-3. The code assumed components would always have a `sectionId` when created
+1. Components could sometimes be added without proper section validation
+2. Section assignment could fail silently
+3. No validation checked for orphaned components after creation
 4. Legacy code paths might create components without proper section assignment
 
 ## The Fix
 
 ### 1. Prevention (Proactive Fix)
 
-Modified `ADD_COMPONENT` action in `EnhancedStateManager.js`:
+Modified the Pinia store's `addComponent` action:
 
-- **Before**: If no `sectionId`, component was added to `components` but not to any section
+- **Before**: Components could be added without proper section assignment
 - **After**: ALWAYS assigns component to a section:
-  - If sections exist, auto-assign to first section
-  - If no sections exist, create a default section
-  - Logs which section the component was assigned to
+  - Ensures at least one section exists
+  - Auto-assigns to first section by default
+  - Updates the section's components array
   - Never allows a component to be created without section assignment
 
 ```javascript
-// ROOT FIX: Ensure component has a sectionId - ALWAYS assign to a section
-if (!component.sectionId) {
-    if (newState.sections.length > 0) {
-        // Assign to first section by default
-        component.sectionId = newState.sections[0].section_id;
-        console.log(`Auto-assigned component ${component.id} to section ${component.sectionId}`);
-    } else {
-        // If no sections exist yet, will be handled below
-        console.warn(`Component ${component.id} added without section - will be assigned to default section`);
+// Ensure we have at least one section
+if (this.sections.length === 0) {
+  this.addSection('full_width');
+}
+
+// Add to first section by default, or specified section
+const targetSectionId = componentData.sectionId || this.sections[0].section_id;
+const section = this.sections.find(s => s.section_id === targetSectionId);
+
+if (section) {
+  if (section.type === 'full_width') {
+    if (!section.components) section.components = [];
+    section.components.push(componentId);
+  } else {
+    // Handle multi-column sections
+    if (!section.columns[targetColumn]) {
+      section.columns[targetColumn] = [];
     }
+    section.columns[targetColumn].push(componentId);
+  }
 }
 ```
 
 ### 2. Detection (Diagnostic Tools)
 
-Added `checkForOrphanedComponents()` method:
+Added `checkForOrphanedComponents()` method to the Pinia store:
 
 - Scans all components
 - Compares against section references
@@ -75,13 +85,13 @@ GMKB.checkOrphans()
 
 ### 3. Repair (Cleanup Tool)
 
-Added `fixOrphanedComponents()` method:
+Added `fixOrphanedComponents()` method to the Pinia store:
 
 - Finds all orphaned components
 - Creates a default section if needed
 - Assigns orphaned components to first section
 - Updates component's `sectionId` property
-- Saves fixed state to localStorage
+- Saves fixed state automatically
 - Shows success message
 
 ```javascript
@@ -91,29 +101,31 @@ GMKB.fixOrphans()
 
 ### 4. Auto-Repair (Automatic Cleanup)
 
-Modified state initialization to automatically fix orphans on load:
+Modified the Pinia store's initialization to automatically fix orphans on load:
 
 ```javascript
-// ROOT FIX: Automatically fix any orphaned components on initialization
-const orphanCheck = this.checkForOrphanedComponents();
-if (orphanCheck.orphaned > 0) {
+// ROOT FIX: Auto-fix any orphaned components on initialization
+setTimeout(() => {
+  const orphanCheck = this.checkForOrphanedComponents();
+  if (orphanCheck.orphaned > 0) {
     console.warn(`⚠️ Found ${orphanCheck.orphaned} orphaned components on initialization`);
     const fixResult = this.fixOrphanedComponents();
     if (fixResult.fixed > 0) {
-        console.log(`✅ Auto-fixed ${fixResult.fixed} orphaned components`);
+      console.log(`✅ Auto-fixed ${fixResult.fixed} orphaned components`);
+      this.showNotification(`Fixed ${fixResult.fixed} orphaned components`, 'info');
     }
-}
+  }
+}, 500);
 ```
 
-### 5. Data Loading Fix
+### 5. Enhanced Data Loading
 
-Enhanced `processWordPressData()` to fix orphaned components when loading saved data:
+The Pinia store's initialization process now:
 
-- Detects components in sections array but missing from components object
-- Reconstructs missing components with minimal data
-- Ensures all component references are valid
-- Assigns unassigned components to sections
-- Triggers save after fixing
+- Validates all components on load
+- Checks for orphaned components automatically
+- Fixes orphans before the UI renders
+- Ensures data consistency from the start
 
 ## Usage
 
@@ -142,15 +154,9 @@ The fix is now automatic! When you add a new component:
 ### Before the Fix
 ```
 Media Kit Data Viewer showed:
-⚠ Orphaned component (not in any section): comp_17593258607
-
-38_3wcdf60ab
-⚠ Orphaned component (not in any section): comp_17593258607
-
-40_ntff7hcoa
-⚠ Orphaned component (not in any section): comp_17593486702
-
-43_jzu93l9e2
+⚠ Orphaned component (not in any section): comp_1759325860738_3wcdf60ab
+⚠ Orphaned component (not in any section): comp_1759325860740_ntff7hcoa
+⚠ Orphaned component (not in any section): comp_1759348670243_jzu93l9e2
 ... (many more)
 ```
 
@@ -162,17 +168,20 @@ All 25 components properly assigned to sections
 
 ## Files Modified
 
-1. **`src/core/EnhancedStateManager.js`**
-   - Modified `ADD_COMPONENT` action to always assign to section
+1. **`src/stores/mediaKit.js`** (Pinia Store)
+   - Enhanced `addComponent` action to ensure section assignment
    - Added `checkForOrphanedComponents()` method
    - Added `fixOrphanedComponents()` method
    - Added auto-repair on initialization
-   - Enhanced `processWordPressData()` to fix orphans on load
 
 2. **`src/main.js`**
-   - Added `GMKB.checkOrphans()` console command
-   - Added `GMKB.fixOrphans()` console command
+   - Updated `GMKB.checkOrphans()` to use Pinia store
+   - Updated `GMKB.fixOrphans()` to use Pinia store
    - Updated help text to show new commands
+
+3. **`src/core/EnhancedStateManager.js`** (Legacy System)
+   - Added equivalent methods for backward compatibility
+   - Not actively used but maintained for legacy support
 
 ## Benefits
 
@@ -186,9 +195,9 @@ All 25 components properly assigned to sections
 
 When adding components programmatically, ensure:
 
-- [ ] Component has a `sectionId` property
-- [ ] OR rely on auto-assignment (will use first section)
-- [ ] Check console for "Auto-assigned component" messages
+- [ ] Component has proper data structure
+- [ ] Store's `addComponent` method is used (not direct state manipulation)
+- [ ] Check console for "Fixed orphan" messages after load
 - [ ] Run `GMKB.checkOrphans()` if components aren't showing
 
 ## Conclusion

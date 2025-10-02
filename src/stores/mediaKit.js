@@ -321,6 +321,20 @@ export const useMediaKitStore = defineStore('mediaKit', {
           this.addSection('full_width');
         }
 
+        // ROOT FIX: Auto-fix any orphaned components on initialization
+        setTimeout(() => {
+          const orphanCheck = this.checkForOrphanedComponents();
+          if (orphanCheck.orphaned > 0) {
+            console.warn(`⚠️ Found ${orphanCheck.orphaned} orphaned components on initialization`);
+            const fixResult = this.fixOrphanedComponents();
+            if (fixResult.fixed > 0) {
+              console.log(`✅ Auto-fixed ${fixResult.fixed} orphaned components`);
+              // Show a subtle notification
+              this.showNotification(`Fixed ${fixResult.fixed} orphaned components`, 'info');
+            }
+          }
+        }, 500); // Small delay to ensure everything is loaded
+
         // Initialize history
         this._saveToHistory();
         
@@ -1454,6 +1468,128 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // Also log to console
       const emoji = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
       console.log(`${emoji} ${message}`);
+    },
+
+    /**
+     * ROOT FIX: Check for orphaned components (components not in any section)
+     * Returns detailed report of orphaned components
+     */
+    checkForOrphanedComponents() {
+      const componentIds = Object.keys(this.components);
+      
+      if (componentIds.length === 0) {
+        return { total: 0, orphaned: 0, inSections: 0, orphanedIds: [] };
+      }
+      
+      // Collect all component IDs referenced in sections
+      const componentsInSections = new Set();
+      
+      this.sections.forEach(section => {
+        // Check full-width sections
+        if (section.components && Array.isArray(section.components)) {
+          section.components.forEach(comp => {
+            const compId = typeof comp === 'string' ? comp : (comp.component_id || comp.id);
+            if (compId) {
+              componentsInSections.add(compId);
+            }
+          });
+        }
+        
+        // Check multi-column sections
+        if (section.columns) {
+          Object.values(section.columns).forEach(column => {
+            if (Array.isArray(column)) {
+              column.forEach(compId => {
+                if (compId) {
+                  componentsInSections.add(compId);
+                }
+              });
+            }
+          });
+        }
+      });
+      
+      // Find orphaned components
+      const orphanedIds = componentIds.filter(id => !componentsInSections.has(id));
+      
+      return {
+        total: componentIds.length,
+        orphaned: orphanedIds.length,
+        inSections: componentsInSections.size,
+        orphanedIds: orphanedIds
+      };
+    },
+
+    /**
+     * ROOT FIX: Fix orphaned components by assigning them to sections
+     * Automatically assigns orphaned components to the first section
+     */
+    fixOrphanedComponents() {
+      const check = this.checkForOrphanedComponents();
+      
+      if (check.orphaned === 0) {
+        console.log('✅ No orphaned components found');
+        return { fixed: 0, total: check.total };
+      }
+      
+      console.warn(`Found ${check.orphaned} orphaned components:`, check.orphanedIds);
+      
+      // Ensure at least one section exists
+      if (this.sections.length === 0) {
+        const sectionId = this.addSection('full_width');
+        console.log('Created default section for orphaned components:', sectionId);
+      }
+      
+      // Get the first section
+      const targetSection = this.sections[0];
+      let fixedCount = 0;
+      
+      // Assign orphaned components to first section
+      check.orphanedIds.forEach(compId => {
+        if (targetSection.type === 'full_width' || targetSection.layout === 'full_width') {
+          // Add to full-width section
+          if (!targetSection.components) {
+            targetSection.components = [];
+          }
+          if (!targetSection.components.includes(compId)) {
+            targetSection.components.push(compId);
+            fixedCount++;
+            console.log(`✅ Fixed orphan: ${compId} -> section ${targetSection.section_id}`);
+          }
+        } else {
+          // Add to first column of multi-column section
+          if (!targetSection.columns) {
+            targetSection.columns = { 1: [], 2: [], 3: [] };
+          }
+          if (!targetSection.columns['1'].includes(compId)) {
+            targetSection.columns['1'].push(compId);
+            fixedCount++;
+            console.log(`✅ Fixed orphan: ${compId} -> section ${targetSection.section_id} column 1`);
+          }
+        }
+        
+        // Update component's sectionId
+        if (this.components[compId]) {
+          this.components[compId].sectionId = targetSection.section_id;
+        }
+      });
+      
+      if (fixedCount > 0) {
+        this.isDirty = true;
+        this._trackChange();
+        
+        // Auto-save the fixes
+        this.autoSave();
+        
+        console.log(`✅ Fixed ${fixedCount} orphaned components`);
+        
+        // Dispatch event
+        document.dispatchEvent(new CustomEvent('gmkb:orphans-fixed', {
+          detail: { count: fixedCount, sectionId: targetSection.section_id }
+        }));
+      }
+      
+      return { fixed: fixedCount, total: check.total };
     }
   }
 });

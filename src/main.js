@@ -222,11 +222,12 @@ async function initializeVue() {
       
       // ROOT FIX: Orphaned components debug methods
       checkOrphans: () => {
-        if (!window.stateManager) {
-          console.error('State manager not initialized');
-          return { error: 'State manager not available' };
+        if (!window.gmkbStore && !window.mediaKitStore) {
+          console.error('Store not initialized');
+          return { error: 'Store not available' };
         }
-        const result = window.stateManager.checkForOrphanedComponents();
+        const store = window.gmkbStore || window.mediaKitStore;
+        const result = store.checkForOrphanedComponents();
         console.log('📊 Orphaned Components Report:');
         console.log(`  Total components: ${result.total}`);
         console.log(`  In sections: ${result.inSections}`);
@@ -237,14 +238,17 @@ async function initializeVue() {
         return result;
       },
       fixOrphans: () => {
-        if (!window.stateManager) {
-          console.error('State manager not initialized');
-          return { error: 'State manager not available' };
+        if (!window.gmkbStore && !window.mediaKitStore) {
+          console.error('Store not initialized');
+          return { error: 'Store not available' };
         }
+        const store = window.gmkbStore || window.mediaKitStore;
         console.log('🔧 Fixing orphaned components...');
-        const result = window.stateManager.fixOrphanedComponents();
+        const result = store.fixOrphanedComponents();
         if (result.fixed > 0) {
           showToast(`Fixed ${result.fixed} orphaned components`, 'success', 5000);
+        } else {
+          showToast('No orphaned components found', 'info', 3000);
         }
         return result;
       }
