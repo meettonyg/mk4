@@ -72,6 +72,19 @@ export function usePodsData() {
       expertise: store.podsData?.expertise || ''
     })),
     
+    // ROOT FIX: Add individual professional fields for direct access
+    position: computed(() => store.podsData?.professional_title || store.podsData?.position || ''),
+    company: computed(() => store.podsData?.company || ''),
+    
+    // ROOT FIX: Add stats object for authority components
+    stats: computed(() => ({
+      downloads: store.podsData?.downloads || store.podsData?.podcast_downloads || null,
+      episodes: store.podsData?.episodes || store.podsData?.episode_count || null,
+      followers: store.podsData?.followers || store.podsData?.social_followers || null,
+      subscribers: store.podsData?.subscribers || store.podsData?.email_subscribers || null,
+      years_experience: store.podsData?.years_experience || null
+    })),
+    
     // Media assets
     media: computed(() => ({
       headshot: store.podsData?.guest_headshot || '',

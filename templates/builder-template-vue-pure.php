@@ -174,17 +174,29 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         #gmkb-toolbar {
             flex-shrink: 0;
             z-index: 100;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
         }
         
         #gmkb-main-content {
             flex: 1;
-            overflow: auto;
-            position: relative;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        #gmkb-sidebar {
+            flex-shrink: 0;
+            width: 300px;
+            overflow-y: auto;
+            background: white;
+            border-right: 1px solid #e5e7eb;
         }
         
         #media-kit-preview {
-            width: 100%;
-            min-height: 100%;
+            flex: 1;
+            overflow-y: auto;
+            background: #f9fafb;
+            padding: 20px;
         }
         
         /* Show builder wrapper when Vue is ready */
@@ -218,10 +230,13 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         <!-- Toolbar mount point -->
         <div id="gmkb-toolbar"></div>
         
-        <!-- Main content area -->
-        <div id="gmkb-main-content">
-            <!-- Preview area mount point -->
-            <div id="media-kit-preview"></div>
+        <!-- Main content area with sidebar -->
+        <div id="gmkb-main-content" style="display: flex; height: calc(100vh - 60px);">
+            <!-- Sidebar -->
+            <aside id="gmkb-sidebar" style="width: 300px; border-right: 1px solid #e5e7eb; overflow-y: auto; background: white;"></aside>
+            
+            <!-- Preview area -->
+            <div id="media-kit-preview" style="flex: 1; overflow-y: auto; background: #f9fafb;"></div>
         </div>
     </div>
 
