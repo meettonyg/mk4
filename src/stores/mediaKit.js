@@ -337,7 +337,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     /**
-     * PHASE 3: Enhanced save with auto-save - ROOT FIX: Direct AJAX save to database
+     * OPTION C FIX: Save using REST API v2 via APIService
+     * PHASE 3: Enhanced save with auto-save
      */
     async save() {
       if (!this.isDirty) return;
@@ -365,24 +366,26 @@ export const useMediaKitStore = defineStore('mediaKit', {
           sections: this.sections,
           theme: this.theme,
           themeCustomizations: this.themeCustomizations,
-          layout: this.sections.map(s => s.section_id), // Add layout for compatibility
-          lastSaved: Date.now(), // Add timestamp for conflict detection
-          version: '2.0' // Version for future compatibility
+          globalSettings: this.globalSettings,
+          layout: this.sections.map(s => s.section_id) // Add layout for compatibility
         };
         
-        // ROOT FIX: Use NonceManager for automatic refresh and save to database
-        const result = await window.gmkbNonceManager.ajaxRequest('gmkb_save_media_kit', {
-          post_id: this.postId,
-          state: state
-        });
+        // OPTION C FIX: Use APIService which calls REST API v2
+        const apiService = window.gmkbAPI || window.GMKB?.apiService;
         
-        // Check response
-        if (!result.success) {
-          console.error('Save failed:', result);
-          throw new Error(result.data?.message || result.data || 'Save failed');
+        if (!apiService) {
+          throw new Error('APIService not available');
         }
         
-        console.log('✅ Saved to WordPress database:', result.data);
+        const result = await apiService.save(state);
+        
+        // Check response
+        if (!result || !result.success) {
+          console.error('Save failed:', result);
+          throw new Error('Save failed');
+        }
+        
+        console.log('✅ Saved to WordPress via REST API v2:', result);
         this.isDirty = false;
         this.lastSaved = Date.now();
         

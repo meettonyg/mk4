@@ -124,8 +124,11 @@ SOLUTION: Single path → NO RACE CONDITIONS ✅
   - Expected: GET to `/wp-json/gmkb/v2/mediakit/{id}`
   - Expected: No admin-ajax.php calls
 
-- [ ] **Test 3**: Direct AJAX call (deprecated)
+- [x] **Test 3**: Direct AJAX call (deprecated) ✅ **PASSED**
   - Expected: HTTP 410 Gone with deprecation message
+  - Result: ✅ HTTP 410 Gone received
+  - Result: ✅ `success: false` returned
+  - Result: ✅ Deprecation data included
   
 - [ ] **Test 4**: Rapid saves (race condition test)
   - Expected: All saves complete successfully
