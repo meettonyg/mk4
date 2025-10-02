@@ -109,83 +109,14 @@ class DragDropManager {
   }
 
   setupDropHandlers() {
-    // Handle drops on Vue drop zones
-    document.addEventListener('drop', (e) => {
-      // ROOT FIX: Allow dropping on any droppable area, not just explicit drop zones
-      const dropTarget = e.target.closest('.component-drop-zone, .gmkb-section__content--droppable, .gmkb-section__column');
-      if (!dropTarget) return;
-      
-      // Prevent default to allow drop
-      e.preventDefault();
-      
-      // Get drop target info - check multiple sources
-      const sectionId = dropTarget.dataset.sectionId || 
-                       dropTarget.closest('[data-section-id]')?.dataset.sectionId;
-      const column = dropTarget.dataset.column || 1;
-      
-      // Get component type from various sources
-      let componentType = e.dataTransfer.getData('component-type') || 
-                         e.dataTransfer.getData('text/plain') ||
-                         e.dataTransfer.getData('text');
-      
-      console.log('[DragDropManager] Drop received, initial componentType:', componentType);
-      
-      // Also try to get from JSON data if available
-      try {
-        const jsonData = e.dataTransfer.getData('application/json');
-        if (jsonData) {
-          console.log('[DragDropManager] JSON data received:', jsonData);
-          const parsedData = JSON.parse(jsonData);
-          console.log('[DragDropManager] Parsed data:', parsedData);
-          // ROOT FIX: Use type directly, not 'new-component'
-          componentType = parsedData.type || parsedData.componentType || componentType;
-        }
-      } catch (err) {
-        console.log('[DragDropManager] JSON parse failed, using text fallback');
-      }
-      
-      console.log('[DragDropManager] Final componentType to use:', componentType);
-      
-      if (componentType && sectionId && componentType !== 'new-component') {
-        console.log(`🎯 Attempting to add component: ${componentType} to section ${sectionId}, column ${column}`);
-        
-        // ROOT FIX: Try multiple store locations
-        const store = window.gmkbStore || window.mediaKitStore || window.stateManager;
-        
-        if (store && store.addComponent) {
-          console.log('Using store.addComponent directly');
-          try {
-            const componentId = store.addComponent({
-              type: componentType,
-              sectionId: sectionId,
-              column: parseInt(column)
-            });
-            
-            console.log(`✅ Component dropped: ${componentType} in section ${sectionId}, column ${column}`);
-            
-            // Show feedback
-            if (window.showToast) {
-              window.showToast(`Added ${componentType} to column ${column}`, 'success');
-            }
-          } catch (error) {
-            console.error('Error adding component:', error);
-          }
-        } else if (window.GMKB && window.GMKB.addComponent) {
-          console.log('Using GMKB.addComponent fallback');
-          window.GMKB.addComponent(componentType, {
-            sectionId: sectionId,
-            column: parseInt(column)
-          });
-        } else {
-          console.error('No store or GMKB available to add component');
-        }
-      }
-      
-      // Clean up visual feedback
-      dropTarget.classList.remove('drag-over');
-    });
+    // ROOT FIX: DISABLED - Vue SectionLayoutEnhanced.vue handles drops
+    // This was causing duplicate component additions
+    // The Vue component's @drop handler is the single source of truth
     
-    // Visual feedback for drag over
+    // We only handle visual feedback here
+    // The actual component addition is handled by Vue's onDrop handler
+    
+    // Visual feedback only - no component addition
     document.addEventListener('dragenter', (e) => {
       const dropTarget = e.target.closest('.component-drop-zone, .gmkb-section__content--droppable, .gmkb-section__column');
       if (dropTarget) {
@@ -204,6 +135,8 @@ class DragDropManager {
         }
       }
     });
+    
+    console.log('✅ DragDropManager: Visual feedback only, Vue handles drops');
   }
 
   // Enable drag for sidebar items

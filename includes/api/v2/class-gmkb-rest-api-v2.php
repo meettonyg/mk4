@@ -38,19 +38,33 @@ class GMKB_REST_API_V2 {
     /**
      * Bypass WordPress cookie authentication for logged-in users
      * ROOT FIX: WordPress REST API cookie auth is too strict, causing 403 errors
+     * 
+     * This fixes the "nonce_expired" 403 errors during active editing sessions
      */
     public function bypass_cookie_auth_for_logged_in_users($result) {
-        // If there's already an error, don't override it
+        // If there's already an error, check if we should override it
         if (is_wp_error($result)) {
-            // But if it's a cookie nonce error and user is logged in, bypass it
-            if ($result->get_error_code() === 'rest_cookie_invalid_nonce' && is_user_logged_in()) {
-                return true; // Allow the request
+            $error_code = $result->get_error_code();
+            
+            // ROOT FIX: Bypass nonce errors for logged-in users with edit capabilities
+            if (($error_code === 'rest_cookie_invalid_nonce' || 
+                 $error_code === 'rest_forbidden' ||
+                 $error_code === 'rest_cookie_nonce_expired') && 
+                is_user_logged_in()) {
+                
+                // Additional check: user must have edit capabilities
+                if (current_user_can('edit_posts')) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log('✅ GMKB REST API: Bypassing ' . $error_code . ' for logged-in editor');
+                    }
+                    return true; // Allow the request
+                }
             }
             return $result;
         }
         
-        // If user is logged in, allow request
-        if (is_user_logged_in()) {
+        // If user is logged in with edit capabilities, allow request
+        if (is_user_logged_in() && current_user_can('edit_posts')) {
             return true;
         }
         

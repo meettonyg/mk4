@@ -169,6 +169,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             height: 100vh;
             display: flex;
             flex-direction: column;
+            padding-top: 60px; /* Account for fixed toolbar */
         }
         
         #gmkb-toolbar {
@@ -183,6 +184,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             display: flex;
             overflow: hidden;
             /* Remove fixed height - let it flex naturally */
+            padding-top: 0; /* Toolbar should take its space naturally via flex */
         }
         
         #gmkb-sidebar {
@@ -192,6 +194,8 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             overflow: hidden; /* Let child component handle scroll */
             display: flex;
             flex-direction: column;
+            margin-top: 0; /* Ensure no negative margin */
+            position: relative; /* Ensure proper stacking */
         }
         
         #media-kit-preview {

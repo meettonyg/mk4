@@ -179,13 +179,21 @@ const shareLink = computed(() => {
 
 // Action handlers
 function handleUndo() {
-  store.undo();
-  console.log('↩️ Undo action');
+  if (store.canUndo) {
+    store.undo();
+    console.log('↩️ Undo action');
+  } else {
+    console.log('⚠️ Cannot undo - no history');
+  }
 }
 
 function handleRedo() {
-  store.redo();
-  console.log('↪️ Redo action');
+  if (store.canRedo) {
+    store.redo();
+    console.log('↪️ Redo action');
+  } else {
+    console.log('⚠️ Cannot redo - no forward history');
+  }
 }
 
 function handleTheme() {
@@ -259,7 +267,8 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style>
+/* Removed scoped - toolbar is teleported so scoped styles don't apply properly */
 .gmkb-toolbar-complete {
   position: fixed;
   top: 0;

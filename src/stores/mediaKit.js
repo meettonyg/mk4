@@ -423,8 +423,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     /**
      * PHASE 3: Track changes and trigger auto-save
+     * ROOT FIX: Don't track if we're in undo/redo operation
      */
     _trackChange() {
+      // ROOT FIX: Skip history save during undo/redo operations
+      if (this._isUndoRedoOperation) {
+        console.log('⏭️ Skipping history save during undo/redo operation');
+        return;
+      }
+      
       this.isDirty = true;
       this._saveToHistory();
       this.autoSave(); // Debounced auto-save
@@ -1173,26 +1180,90 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     undo() {
-      if (this.canUndo) {
+      if (!this.canUndo) {
+        console.warn('⚠️ Cannot undo - no history available');
+        return;
+      }
+      
+      console.log(`↩️ Undo: Moving from index ${this.historyIndex} to ${this.historyIndex - 1}`);
+      
+      // ROOT FIX: Set flag to prevent history tracking during undo
+      this._isUndoRedoOperation = true;
+      
+      try {
         this.historyIndex--;
+        
         const state = this.history[this.historyIndex];
+        if (!state) {
+          console.error('❌ Undo failed - state not found at index', this.historyIndex);
+          return;
+        }
+        
+        // Apply state without triggering history save
         this.$patch({
           components: JSON.parse(JSON.stringify(state.components)),
           sections: JSON.parse(JSON.stringify(state.sections))
         });
-        this._trackChange();
+        
+        // Mark as dirty but don't add to history (we're navigating history)
+        this.isDirty = true;
+        
+        // Trigger auto-save after undo
+        this.autoSave();
+        
+        // Dispatch undo event
+        document.dispatchEvent(new CustomEvent('gmkb:undo', {
+          detail: { historyIndex: this.historyIndex }
+        }));
+        
+        console.log('✅ Undo complete');
+      } finally {
+        // ROOT FIX: Always clear the flag
+        this._isUndoRedoOperation = false;
       }
     },
 
     redo() {
-      if (this.canRedo) {
+      if (!this.canRedo) {
+        console.warn('⚠️ Cannot redo - no forward history available');
+        return;
+      }
+      
+      console.log(`↪️ Redo: Moving from index ${this.historyIndex} to ${this.historyIndex + 1}`);
+      
+      // ROOT FIX: Set flag to prevent history tracking during redo
+      this._isUndoRedoOperation = true;
+      
+      try {
         this.historyIndex++;
+        
         const state = this.history[this.historyIndex];
+        if (!state) {
+          console.error('❌ Redo failed - state not found at index', this.historyIndex);
+          return;
+        }
+        
+        // Apply state without triggering history save
         this.$patch({
           components: JSON.parse(JSON.stringify(state.components)),
           sections: JSON.parse(JSON.stringify(state.sections))
         });
-        this._trackChange();
+        
+        // Mark as dirty but don't add to history (we're navigating history)
+        this.isDirty = true;
+        
+        // Trigger auto-save after redo
+        this.autoSave();
+        
+        // Dispatch redo event
+        document.dispatchEvent(new CustomEvent('gmkb:redo', {
+          detail: { historyIndex: this.historyIndex }
+        }));
+        
+        console.log('✅ Redo complete');
+      } finally {
+        // ROOT FIX: Always clear the flag
+        this._isUndoRedoOperation = false;
       }
     },
 

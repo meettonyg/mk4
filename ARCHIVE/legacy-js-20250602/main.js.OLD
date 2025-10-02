@@ -1,19 +1,19 @@
 /**
- * Media Kit Builder - Main Entry Point (Pure Vue)
- * Version: 4.0.0 - 100% Vue.js SPA
+ * Media Kit Builder - Main Entry Point
+ * Phase 6: Race Conditions & Optimization
  * 
- * ROOT FIX: Removed ALL legacy JavaScript competing with Vue
- * - No more DragDropManager (Vue handles it)
- * - No more ImportExportManager (Vue composable handles it)  
- * - No more StateManager/EventBus (Pinia handles it)
- * - 100% Vue-driven architecture
+ * ENHANCEMENTS:
+ * - Event-driven initialization
+ * - Retry logic for failed loads
+ * - Better error handling
+ * - Loading states with feedback
  */
 
 // Vue 3 imports
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 
-// Pure utilities (no DOM manipulation, no event listeners)
+// PHASE 6: Import enhanced services
 import { APIService } from './services/APIService.js';
 import { DataValidator } from './services/DataValidator.js';
 import { logger } from './utils/logger.js';
@@ -22,9 +22,14 @@ import podsDataIntegration from './core/PodsDataIntegration.js';
 import NonceManager from './services/NonceManager.js';
 import importExportService from './services/ImportExportService.js';
 
+// Only essential features for Vue
+import ImportExportManager from './features/ImportExportManager.js';
+import { initDragDrop } from './features/DragDropManager.js';
+
 // Initialize core systems
 let apiService;
 let vueApp = null;
+let importExportManager = null;
 
 /**
  * Show toast notification
@@ -46,7 +51,7 @@ function showToast(message, type = 'info', duration = 3000) {
 }
 
 /**
- * Initialize Vue application with proper error handling
+ * PHASE 6: Initialize Vue application with proper error handling
  * 
  * Steps:
  * 3. Create Vue app
@@ -142,7 +147,7 @@ async function initializeVue() {
     window.mediaKitStore = mediaKitStore;
     window.themeStore = themeStore;
     
-    // Load data with retry logic and better error handling
+    // PHASE 6: Load data with retry logic and better error handling
     console.log('6️⃣ Loading media kit data...');
     try {
       if (window.gmkbData?.savedState) {
@@ -187,7 +192,7 @@ async function initializeVue() {
     window.GMKB = {
       apiService,
       vueApp: app,
-      version: '4.0.0-pure-vue',
+      version: '4.0.0-phase6',
       
       // Store methods
       addComponent: (type, data) => {
@@ -211,7 +216,7 @@ async function initializeVue() {
       openImportExport: () => importExportService.openModal(),
       closeImportExport: () => importExportService.closeModal(),
       
-      // Debug methods
+      // PHASE 6: Debug methods
       cacheStatus: () => apiService.getCacheStatus(),
       inflightStatus: () => apiService.getInflightStatus(),
       
@@ -269,7 +274,7 @@ async function initializeVue() {
     }, 1000);
     
     console.log(`
-🎯 Media Kit Builder v4.0 - 100% Pure Vue
+🎯 Media Kit Builder v4.0 - Phase 6 Optimized
 ==============================================
 Component Commands:
 - GMKB.addComponent('hero') - Add a component
@@ -288,7 +293,7 @@ Theme Commands:
 Import/Export Commands:
 - GMKB.openImportExport() - Open import/export modal
 
-Debug Commands:
+Debug Commands (Phase 6):
 - GMKB.cacheStatus() - Check API cache status
 - GMKB.inflightStatus() - Check in-flight requests
 - GMKB.checkOrphans() - Check for orphaned components
@@ -398,7 +403,7 @@ function setupMinimalUIHandlers() {
 }
 
 /**
- * Main initialization with enhanced error handling
+ * PHASE 6: Main initialization with enhanced error handling
  * 
  * Initialization Steps:
  * 1. Validate environment
@@ -410,7 +415,7 @@ function setupMinimalUIHandlers() {
  * 7. Initialize theme
  */
 async function initialize() {
-  console.log('🚀 Initializing Media Kit Builder v4.0 - Pure Vue...');
+  console.log('🚀 Initializing Media Kit Builder v4.0 - Phase 6...');
   
   try {
     // STEP 1: Validate environment using DataValidator
@@ -418,7 +423,7 @@ async function initialize() {
     DataValidator.validateGmkbData();
     console.log('✅ Environment valid');
     
-    // STEP 2: Initialize services (utilities only, no DOM manipulation)
+    // STEP 2: Initialize services
     console.log('2️⃣ Initializing services...');
     
     const restUrl = window.gmkbData?.restUrl || window.location.origin + '/wp-json/';
@@ -439,14 +444,19 @@ async function initialize() {
     UnifiedComponentRegistry.initialize();
     console.log('✅ Component registry initialized');
     
-    // Initialize Pods integration (utility only)
+    // Initialize Pods integration
     window.podsDataIntegration = podsDataIntegration;
     window.gmkbPodsIntegration = podsDataIntegration;
     logger.info('✅ Pods data integration initialized');
     
-    // ROOT FIX: NO MORE initDragDrop() - Vue handles ALL drag/drop!
-    // ROOT FIX: NO MORE ImportExportManager - Vue composable handles it!
-    logger.info('✅ Using 100% Vue architecture - no legacy managers');
+    // Initialize drag and drop
+    initDragDrop();
+    logger.info('✅ Drag and drop initialized');
+    
+    // Initialize import/export
+    importExportManager = new ImportExportManager();
+    window.gmkbImportExport = importExportManager;
+    logger.info('✅ Import/Export service initialized');
     
     // STEP 3-7: Initialize Vue application
     console.log('3️⃣ Creating Vue application...');
@@ -471,10 +481,10 @@ async function initialize() {
     // Dispatch ready event
     document.dispatchEvent(new CustomEvent('gmkb:ready', {
       detail: { 
-        version: '4.0.0-pure-vue',
+        version: '4.0.0-phase6',
         vueEnabled: true,
         pureVue: true,
-        legacyRemoved: true,
+        optimized: true,
         timestamp: Date.now()
       }
     }));
