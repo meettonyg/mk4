@@ -46,38 +46,47 @@ const setDevice = (device) => {
   currentDevice.value = device;
   const deviceData = devices.find(d => d.value === device);
   
-  if (!deviceData) return;
-  
-  // Apply to main content area
-  const mainContent = document.querySelector('.gmkb-main-content');
-  const previewArea = document.querySelector('.media-kit-preview');
-  
-  if (mainContent) {
-    // Remove all device classes
-    mainContent.classList.remove('device-desktop', 'device-tablet', 'device-mobile');
-    // Add current device class
-    mainContent.classList.add(`device-${device}`);
-    
-    // Apply width constraints
-    if (deviceData.maxWidth) {
-      mainContent.style.maxWidth = deviceData.maxWidth;
-      mainContent.style.margin = '0 auto';
-      mainContent.style.boxShadow = '0 0 20px rgba(0,0,0,0.1)';
-    } else {
-      mainContent.style.maxWidth = '';
-      mainContent.style.margin = '';
-      mainContent.style.boxShadow = '';
-    }
+  if (!deviceData) {
+    console.warn('Device data not found for:', device);
+    return;
   }
   
-  if (previewArea) {
-    previewArea.classList.remove('device-desktop', 'device-tablet', 'device-mobile');
-    previewArea.classList.add(`device-${device}`);
+  // ROOT FIX: Target the correct elements from the template
+  const previewArea = document.getElementById('media-kit-preview');
+  const mainContent = document.getElementById('gmkb-main-content');
+  
+  if (!previewArea) {
+    console.warn('Preview area (#media-kit-preview) not found');
+    return;
+  }
+  
+  // Remove all device classes
+  previewArea.classList.remove('device-desktop', 'device-tablet', 'device-mobile');
+  if (mainContent) {
+    mainContent.classList.remove('device-desktop', 'device-tablet', 'device-mobile');
+  }
+  
+  // Add current device class
+  previewArea.classList.add(`device-${device}`);
+  if (mainContent) {
+    mainContent.classList.add(`device-${device}`);
+  }
+  
+  // Apply width constraints to preview area
+  if (deviceData.maxWidth) {
+    previewArea.style.maxWidth = deviceData.maxWidth;
+    previewArea.style.margin = '0 auto';
+    previewArea.style.boxShadow = '0 0 20px rgba(0,0,0,0.1)';
+    previewArea.style.transition = 'all 0.3s ease';
+  } else {
+    previewArea.style.maxWidth = '';
+    previewArea.style.margin = '';
+    previewArea.style.boxShadow = '';
   }
   
   // Dispatch event for other components
   document.dispatchEvent(new CustomEvent('gmkb:device-changed', {
-    detail: { device, width: deviceData.width }
+    detail: { device, width: deviceData.width, maxWidth: deviceData.maxWidth }
   }));
   
   console.log(`📱 Device preview changed to: ${device} (${deviceData.width})`);
@@ -85,8 +94,20 @@ const setDevice = (device) => {
 
 // Initialize on mount
 onMounted(() => {
-  setDevice('desktop');
-  console.log('✅ Device Preview component mounted');
+  // ROOT FIX: Wait for DOM to be ready before applying device styles
+  // The preview area might not be mounted yet if Teleport hasn't completed
+  const initializeDevice = () => {
+    const previewArea = document.getElementById('media-kit-preview');
+    if (previewArea) {
+      setDevice('desktop');
+      console.log('✅ Device Preview component mounted and initialized');
+    } else {
+      console.warn('Preview area not ready, retrying in 100ms...');
+      setTimeout(initializeDevice, 100);
+    }
+  };
+  
+  initializeDevice();
 });
 
 // Keyboard shortcuts

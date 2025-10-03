@@ -203,6 +203,26 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             overflow-y: auto;
             background: #f9fafb;
             padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        /* Device preview styles */
+        #media-kit-preview.device-desktop {
+            max-width: 100%;
+            margin: 0;
+            box-shadow: none;
+        }
+        
+        #media-kit-preview.device-tablet {
+            max-width: 768px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        #media-kit-preview.device-mobile {
+            max-width: 375px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
         
         /* Show builder wrapper when Vue is ready */
