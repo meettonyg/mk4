@@ -94,13 +94,29 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useThemeStore } from '../../../stores/theme';
 
 const themeStore = useThemeStore();
 const importFileName = ref('');
 
+// ROOT FIX: Debug active theme ID
+onMounted(() => {
+  console.log('[ThemesPanel] Active theme ID:', themeStore.activeThemeId);
+  console.log('[ThemesPanel] Available themes:', themeStore.availableThemes);
+  
+  themeStore.availableThemes.forEach((theme, index) => {
+    console.log(`[ThemesPanel] Theme ${index}:`, {
+      id: theme.id,
+      name: theme.name,
+      isActive: themeStore.activeThemeId === theme.id,
+      comparison: `"${themeStore.activeThemeId}" === "${theme.id}"`
+    });
+  });
+});
+
 const selectTheme = (themeId) => {
+  console.log('[ThemesPanel] Selecting theme:', themeId);
   themeStore.selectTheme(themeId);
 };
 
