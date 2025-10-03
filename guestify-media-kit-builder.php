@@ -127,6 +127,11 @@ if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php')) 
     require_once GUESTIFY_PLUGIN_DIR . 'includes/frontend-template-router.php';
 }
 
+// ROOT FIX: Include debug REST endpoint for troubleshooting
+if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php')) {
+    require_once GUESTIFY_PLUGIN_DIR . 'includes/debug-rest-endpoint.php';
+}
+
 // PHASE 8: Enhanced Frontend Display with Theme Support
 if (file_exists(GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php')) {
     require_once GUESTIFY_PLUGIN_DIR . 'includes/class-gmkb-frontend-display.php';

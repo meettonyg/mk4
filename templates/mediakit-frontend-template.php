@@ -63,6 +63,39 @@ if (empty($media_kit_state)) {
 $sections = isset($media_kit_state['sections']) ? $media_kit_state['sections'] : array();
 $components_map = isset($media_kit_state['components']) ? $media_kit_state['components'] : array();
 
+// ROOT FIX: Debug loaded data structure
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    error_log('========== MEDIA KIT STATE STRUCTURE ==========');
+    error_log('Post ID: ' . $post_id);
+    error_log('Has sections: ' . (!empty($sections) ? count($sections) : 0));
+    error_log('Has components_map: ' . (!empty($components_map) ? count($components_map) : 0));
+    
+    if (!empty($sections)) {
+        foreach ($sections as $idx => $section) {
+            error_log('Section ' . $idx . ': ID=' . ($section['section_id'] ?? 'no-id') . ', Type=' . ($section['section_type'] ?? 'no-type'));
+            $sec_comps = $section['components'] ?? array();
+            error_log('  - Has ' . count($sec_comps) . ' component references');
+            if (!empty($sec_comps)) {
+                foreach ($sec_comps as $cidx => $cref) {
+                    if (is_array($cref)) {
+                        error_log('    [' . $cidx . '] Ref: ' . print_r($cref, true));
+                    } else {
+                        error_log('    [' . $cidx . '] ID: ' . $cref);
+                    }
+                }
+            }
+        }
+    }
+    
+    if (!empty($components_map)) {
+        error_log('Components in map:');
+        foreach ($components_map as $cid => $comp) {
+            error_log('  - ' . $cid . ' => type=' . ($comp['type'] ?? 'no-type') . ', has_props=' . (!empty($comp['props']) ? 'YES' : 'NO') . ', has_settings=' . (!empty($comp['settings']) ? 'YES' : 'NO'));
+        }
+    }
+    error_log('===============================================');
+}
+
 // Build ordered component list
 $components = array();
 if (!empty($media_kit_state['saved_components'])) {
@@ -117,24 +150,7 @@ $post = get_post($post_id);
 </head>
 <body>
 
-<?php
-if (defined('WP_DEBUG') && WP_DEBUG && !empty($media_kit_state)) {
-    error_log('=== MEDIA KIT DATA STRUCTURE DEBUG ===');
-    error_log('Post ID: ' . $post_id);
-    error_log('Has sections: ' . (!empty($sections) ? 'YES (' . count($sections) . ')' : 'NO'));
-    error_log('Has components_map: ' . (!empty($components_map) ? 'YES (' . count($components_map) . ')' : 'NO'));
-    error_log('Has ordered components: ' . (!empty($components) ? 'YES (' . count($components) . ')' : 'NO'));
-    
-    if (!empty($components)) {
-        foreach ($components as $idx => $comp) {
-            error_log('Component ' . $idx . ': Type=' . ($comp['type'] ?? 'unknown') . ', ID=' . ($comp['id'] ?? 'no-id'));
-            if (isset($comp['props'])) {
-                error_log('  Props: ' . json_encode($comp['props']));
-            }
-        }
-    }
-}
-?>
+
 
 <?php
 // Debug output
@@ -230,36 +246,43 @@ if (class_exists('GMKB_Frontend_Display')) {
                                 // ROOT FIX: Debug component rendering
                                 if (defined('WP_DEBUG') && WP_DEBUG) {
                                     error_log('Section ' . $section_id . ' has ' . count($section_components) . ' component references');
+                                    error_log('Components map has ' . count($components_map) . ' components');
                                     foreach ($section_components as $comp_ref) {
-                                        $cid = $comp_ref['component_id'];
+                                        $cid = isset($comp_ref['component_id']) ? $comp_ref['component_id'] : 'NO_ID';
                                         $exists = isset($components_map[$cid]) ? 'YES' : 'NO';
-                                        error_log('  - Looking for component: ' . $cid . ' - Exists: ' . $exists);
+                                        error_log('  - Looking for component: ' . $cid . ' - Exists in map: ' . $exists);
+                                        if ($exists) {
+                                            error_log('  - Component type: ' . ($components_map[$cid]['type'] ?? 'unknown'));
+                                        }
                                     }
                                     error_log('Available components in map: ' . implode(', ', array_keys($components_map)));
                                 }
                                 
                                 foreach ($section_components as $comp_ref):
-                                    $component_id = $comp_ref['component_id'];
+                                    // ROOT FIX: Handle both string IDs and array refs
+                                    if (is_string($comp_ref)) {
+                                        $component_id = $comp_ref;
+                                    } elseif (is_array($comp_ref) && isset($comp_ref['component_id'])) {
+                                        $component_id = $comp_ref['component_id'];
+                                    } else {
+                                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                                            error_log('Invalid component reference: ' . print_r($comp_ref, true));
+                                        }
+                                        continue;
+                                    }
+                                    
                                     if (isset($components_map[$component_id])):
                                         $component = $components_map[$component_id];
                                         $component['id'] = $component_id;
+                                        
+                                        if (defined('WP_DEBUG') && WP_DEBUG) {
+                                            error_log('✅ Rendering component: ' . $component_id . ' of type: ' . ($component['type'] ?? 'unknown'));
+                                        }
+                                        
                                         render_component($component, $post_id);
                                     else:
-                                        // ROOT FIX: Try to find orphaned component by checking all components
                                         if (defined('WP_DEBUG') && WP_DEBUG) {
-                                            error_log('Component ' . $component_id . ' not found in map, checking orphaned components...');
-                                        }
-                                        // Check if we have any orphaned components that should be here
-                                        foreach ($components as $orphan_comp) {
-                                            if (!$orphan_comp['sectionId'] || $orphan_comp['sectionId'] === null) {
-                                                if (defined('WP_DEBUG') && WP_DEBUG) {
-                                                    error_log('Found orphaned component: ' . $orphan_comp['id'] . ' - rendering it');
-                                                }
-                                                render_component($orphan_comp, $post_id);
-                                                // Mark as rendered to avoid duplicates
-                                                $orphan_comp['sectionId'] = 'rendered';
-                                                break; // Only render one orphan per missing reference
-                                            }
+                                            error_log('❌ Component ' . $component_id . ' not found in map');
                                         }
                                     endif;
                                 endforeach; ?>
@@ -298,9 +321,15 @@ function render_component($component, $post_id, $index = 0) {
     $component_data = isset($component['data']) ? $component['data'] : array();
     $component_props = isset($component['props']) ? $component['props'] : array();
     
+    // ROOT FIX: Also check for settings which might contain props
+    if (empty($component_props) && isset($component['settings'])) {
+        $component_props = $component['settings'];
+    }
+    
     // ROOT FIX: Debug component data
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log('Rendering component: ' . $component_type . ' with ID: ' . $component_id);
+        error_log('Component data: ' . print_r($component_data, true));
         error_log('Component props: ' . print_r($component_props, true));
     }
     ?>
@@ -320,25 +349,27 @@ function render_component($component, $post_id, $index = 0) {
         }
         
         if (file_exists($component_template)) {
-            // ROOT FIX: Extract props as variables for the template
-            // The hero template expects: $name, $title, $bio (or $title, $subtitle, $description)
-            if (!empty($component_props)) {
-                // Extract props directly as variables
-                extract($component_props, EXTR_SKIP);
-                
-                // Also handle common variations
-                if (isset($component_props['title'])) $title = $component_props['title'];
-                if (isset($component_props['subtitle'])) $subtitle = $component_props['subtitle'];
-                if (isset($component_props['buttonText'])) $buttonText = $component_props['buttonText'];
+            // ROOT FIX: Merge props and data - props take precedence
+            $merged_props = array_merge($component_data, $component_props);
+            
+            // ROOT FIX: Extract merged props as variables for the template
+            if (!empty($merged_props)) {
+                extract($merged_props, EXTR_SKIP);
             }
             
-            // Set up additional variables
-            $props = array_merge($component_props, array(
-                'data' => $component_data,
+            // ROOT FIX: Set up the $props array that templates expect
+            $props = array_merge($merged_props, array(
                 'component_id' => $component_id,
                 'is_frontend' => true,
                 'post_id' => $post_id
             ));
+            
+            // ROOT FIX: Also make data available separately
+            $data = $component_data;
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Template variables for ' . $component_type . ': ' . print_r(array_keys($merged_props), true));
+            }
             
             // Include template
             include $component_template;

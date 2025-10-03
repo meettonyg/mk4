@@ -347,13 +347,17 @@ class GMKB_Frontend_Display {
                 
                 <div class="gmkb-section__inner">
                     <?php 
-                    // Render section based on type
+                    // ROOT FIX: For multi-column layouts, check for 'columns' key first
                     switch ($section_type) {
                         case 'two_column':
-                            $this->render_two_column_section($section_components, $components, $post_id, $atts);
+                            // Pass columns data if it exists, otherwise components
+                            $section_data = isset($section['columns']) ? $section['columns'] : $section_components;
+                            $this->render_two_column_section($section_data, $components, $post_id, $atts);
                             break;
                         case 'three_column':
-                            $this->render_three_column_section($section_components, $components, $post_id, $atts);
+                            // Pass columns data if it exists, otherwise components
+                            $section_data = isset($section['columns']) ? $section['columns'] : $section_components;
+                            $this->render_three_column_section($section_data, $components, $post_id, $atts);
                             break;
                         default:
                             $this->render_full_width_section($section_components, $components, $post_id, $atts);
@@ -372,8 +376,15 @@ class GMKB_Frontend_Display {
         ?>
         <div class="gmkb-section__content">
             <?php
+            // ROOT FIX: Handle both string IDs and array refs
             foreach ($section_components as $comp_ref) {
-                $component_id = $comp_ref['component_id'] ?? null;
+                if (is_string($comp_ref)) {
+                    $component_id = $comp_ref;
+                } elseif (is_array($comp_ref)) {
+                    $component_id = $comp_ref['component_id'] ?? null;
+                } else {
+                    $component_id = null;
+                }
                 if ($component_id && isset($components[$component_id])) {
                     $this->render_component($components[$component_id], $component_id, $post_id, $atts);
                 }
@@ -387,12 +398,20 @@ class GMKB_Frontend_Display {
      * Render two column section
      */
     private function render_two_column_section($section_components, $components, $post_id, $atts) {
-        // Group components by column
+        // ROOT FIX: Handle both formats - columns object OR flat array
         $columns = array(1 => array(), 2 => array());
         
-        foreach ($section_components as $comp_ref) {
-            $column = $comp_ref['column'] ?? 1;
-            $columns[$column][] = $comp_ref;
+        // Check if we have a 'columns' key in the section (Vue format)
+        if (is_array($section_components) && isset($section_components['1']) && isset($section_components['2'])) {
+            // Vue saves as: columns: {1: [...], 2: [...], 3: [...]}
+            $columns[1] = $section_components['1'] ?? array();
+            $columns[2] = $section_components['2'] ?? array();
+        } else {
+            // Legacy format: flat array with column property
+            foreach ($section_components as $comp_ref) {
+                $column = is_array($comp_ref) ? ($comp_ref['column'] ?? 1) : 1;
+                $columns[$column][] = $comp_ref;
+            }
         }
         
         ?>
@@ -401,7 +420,14 @@ class GMKB_Frontend_Display {
                 <div class="gmkb-section__column" data-column="<?php echo $col; ?>">
                     <?php
                     foreach ($columns[$col] as $comp_ref) {
-                        $component_id = $comp_ref['component_id'] ?? null;
+                        // ROOT FIX: Handle both string and array format
+                        if (is_string($comp_ref)) {
+                            $component_id = $comp_ref;
+                        } elseif (is_array($comp_ref)) {
+                            $component_id = $comp_ref['component_id'] ?? null;
+                        } else {
+                            $component_id = null;
+                        }
                         if ($component_id && isset($components[$component_id])) {
                             $this->render_component($components[$component_id], $component_id, $post_id, $atts);
                         }
@@ -417,12 +443,21 @@ class GMKB_Frontend_Display {
      * Render three column section
      */
     private function render_three_column_section($section_components, $components, $post_id, $atts) {
-        // Group components by column
+        // ROOT FIX: Handle both formats - columns object OR flat array
         $columns = array(1 => array(), 2 => array(), 3 => array());
         
-        foreach ($section_components as $comp_ref) {
-            $column = $comp_ref['column'] ?? 1;
-            $columns[$column][] = $comp_ref;
+        // Check if we have a 'columns' key in the section (Vue format)
+        if (is_array($section_components) && isset($section_components['1'])) {
+            // Vue saves as: columns: {1: [...], 2: [...], 3: [...]}
+            $columns[1] = $section_components['1'] ?? array();
+            $columns[2] = $section_components['2'] ?? array();
+            $columns[3] = $section_components['3'] ?? array();
+        } else {
+            // Legacy format: flat array with column property
+            foreach ($section_components as $comp_ref) {
+                $column = is_array($comp_ref) ? ($comp_ref['column'] ?? 1) : 1;
+                $columns[$column][] = $comp_ref;
+            }
         }
         
         ?>
@@ -431,7 +466,14 @@ class GMKB_Frontend_Display {
                 <div class="gmkb-section__column" data-column="<?php echo $col; ?>">
                     <?php
                     foreach ($columns[$col] as $comp_ref) {
-                        $component_id = $comp_ref['component_id'] ?? null;
+                        // ROOT FIX: Handle both string and array format
+                        if (is_string($comp_ref)) {
+                            $component_id = $comp_ref;
+                        } elseif (is_array($comp_ref)) {
+                            $component_id = $comp_ref['component_id'] ?? null;
+                        } else {
+                            $component_id = null;
+                        }
                         if ($component_id && isset($components[$component_id])) {
                             $this->render_component($components[$component_id], $component_id, $post_id, $atts);
                         }
@@ -492,8 +534,11 @@ class GMKB_Frontend_Display {
              <?php if ($component_styles): ?>style="<?php echo esc_attr($component_styles); ?>"<?php endif; ?>>
             
             <?php
-            // Load component template
-            $this->load_component_template($component_type, array_merge($component_props, array(
+            // ROOT FIX: Merge data and props - props take precedence
+            $merged_data = array_merge($component_data, $component_props);
+            
+            // Load component template with merged data
+            $this->load_component_template($component_type, array_merge($merged_data, array(
                 'component_id' => $component_id,
                 'post_id' => $post_id,
                 'data' => $component_data,
