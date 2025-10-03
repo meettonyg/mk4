@@ -40,6 +40,18 @@ function gmkb_enqueue_vue_only_assets() {
     }
     $assets_enqueued = true;
     
+    // ROOT FIX: Enqueue design system FIRST (single source of truth)
+    $design_system_path = GUESTIFY_PLUGIN_DIR . 'design-system/index.css';
+    if (file_exists($design_system_path)) {
+        $design_system_version = filemtime($design_system_path);
+        $design_system_url = GUESTIFY_PLUGIN_URL . 'design-system/index.css';
+        wp_enqueue_style('gmkb-design-system', $design_system_url, array(), $design_system_version);
+        
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ GMKB: Design System CSS loaded');
+        }
+    }
+    
     $bundle_js_path = GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js';
     if (!file_exists($bundle_js_path)) {
         add_action('wp_footer', 'gmkb_display_build_error_notice');
@@ -55,11 +67,13 @@ function gmkb_enqueue_vue_only_assets() {
 
     wp_enqueue_script('gmkb-vue-app', $script_url, array(), $script_version, true);
 
-    // --- STYLE ENQUEUEING ---
+    // --- STYLE ENQUEUEING (Vue component styles) ---
+    // This should EXTEND the design system, not replace it
     if (file_exists($bundle_css_path)) {
         $style_version = filemtime($bundle_css_path);
         $style_url = GUESTIFY_PLUGIN_URL . 'dist/style.css';
-        wp_enqueue_style('gmkb-vue-style', $style_url, array(), $style_version);
+        // Depends on design system
+        wp_enqueue_style('gmkb-vue-style', $style_url, array('gmkb-design-system'), $style_version);
     }
 }
 

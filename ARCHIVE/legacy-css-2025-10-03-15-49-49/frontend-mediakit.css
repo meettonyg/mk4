@@ -71,7 +71,26 @@
     color: white;
 }
 
-/* Multi-Column Layouts */
+/* Multi-Column Layouts - Match PHP output */
+.gmkb-section__columns {
+    display: grid;
+    gap: var(--gmkb-spacing-component-gap, 40px);
+}
+
+.gmkb-section__columns--2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.gmkb-section__columns--3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.gmkb-section__column {
+    width: 100%;
+    min-width: 0; /* Prevent grid blowout */
+}
+
+/* Legacy class names (keep for backwards compatibility) */
 .gmkb-section-columns {
     display: grid;
     gap: var(--gmkb-spacing-component-gap, 40px);

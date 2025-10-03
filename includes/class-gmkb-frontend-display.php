@@ -187,12 +187,16 @@ class GMKB_Frontend_Display {
      * Enqueue assets for template rendering
      */
     private function enqueue_template_assets() {
-        // Base frontend CSS
-        wp_print_styles('gmkb-frontend-base');
-        wp_print_styles('gmkb-frontend-components');
-        wp_print_styles('gmkb-frontend-sections');
+        // ROOT FIX: Use design system (single source of truth)
+        $design_system_path = GMKB_PLUGIN_DIR . 'design-system/index.css';
+        if (file_exists($design_system_path)) {
+            $design_system_version = filemtime($design_system_path);
+            $design_system_url = GMKB_PLUGIN_URL . 'design-system/index.css';
+            wp_enqueue_style('gmkb-design-system', $design_system_url, array(), $design_system_version);
+            wp_print_styles('gmkb-design-system');
+        }
         
-        // Ensure scripts are loaded
+        // Optional: Print any JS needed
         wp_print_scripts('gmkb-frontend-lazy');
         wp_print_scripts('gmkb-frontend-animations');
     }
@@ -270,6 +274,9 @@ class GMKB_Frontend_Display {
      * @param array $atts Attributes
      */
     private function render_media_kit($state, $post_id, $atts) {
+        // Get theme customizations
+        $theme_customizations = get_post_meta($post_id, 'gmkb_theme_customizations', true) ?: array();
+        $theme_id = $atts['theme'] ?: ($state['globalSettings']['theme'] ?? 'professional_clean');
         $sections = $state['sections'] ?? array();
         $components = $state['components'] ?? array();
         $layout = $state['layout'] ?? array();
@@ -295,7 +302,13 @@ class GMKB_Frontend_Display {
         ?>
         <div class="<?php echo implode(' ', $wrapper_classes); ?>" 
              data-media-kit-id="<?php echo esc_attr($post_id); ?>"
-             data-theme="<?php echo esc_attr($this->current_theme['theme_id']); ?>">
+             data-gmkb-theme="<?php echo esc_attr($theme_id); ?>"
+             data-gmkb-post-id="<?php echo esc_attr($post_id); ?>">
+            
+            <?php
+            // Inject theme customizations as inline CSS
+            $this->render_theme_customizations($theme_customizations, $post_id);
+            ?>
             
             <?php if (!empty($sections)): ?>
                 <?php $this->render_sections($sections, $components, $post_id, $atts); ?>
@@ -321,7 +334,8 @@ class GMKB_Frontend_Display {
     private function render_sections($sections, $components, $post_id, $atts) {
         foreach ($sections as $section) {
             $section_id = $section['section_id'] ?? 'section-' . uniqid();
-            $section_type = $section['section_type'] ?? 'full_width';
+            // ROOT FIX: Check both 'section_type' and 'type' keys
+            $section_type = $section['section_type'] ?? $section['type'] ?? $section['layout'] ?? 'full_width';
             $section_components = $section['components'] ?? array();
             $section_styles = $section['styles'] ?? array();
             
@@ -502,7 +516,7 @@ class GMKB_Frontend_Display {
     }
     
     /**
-     * Render single component
+     * Render single component (includes user customizations)
      * 
      * @param array $component Component data
      * @param string $component_id Component ID
@@ -513,9 +527,10 @@ class GMKB_Frontend_Display {
         $component_type = $component['type'] ?? 'unknown';
         $component_data = $component['data'] ?? array();
         $component_props = $component['props'] ?? array();
+        $component_settings = $component['settings'] ?? array();
         
-        // Apply theme styles to component
-        $component_styles = $this->get_component_theme_styles($component_type);
+        // Build inline styles from component settings (user customizations)
+        $inline_styles = $this->build_component_inline_styles($component_settings);
         
         // Component classes
         $component_classes = array(
@@ -527,11 +542,23 @@ class GMKB_Frontend_Display {
             $component_classes[] = 'gmkb-lazy';
         }
         
+        if (!empty($component_settings['customClass'])) {
+            $component_classes[] = sanitize_html_class($component_settings['customClass']);
+        }
+        
         ?>
         <div class="<?php echo implode(' ', $component_classes); ?>"
+             id="<?php echo esc_attr($component_id); ?>"
              data-component-id="<?php echo esc_attr($component_id); ?>"
              data-component-type="<?php echo esc_attr($component_type); ?>"
-             <?php if ($component_styles): ?>style="<?php echo esc_attr($component_styles); ?>"<?php endif; ?>>
+             <?php if ($inline_styles): ?>style="<?php echo esc_attr($inline_styles); ?>"<?php endif; ?>>
+            
+            <?php
+            // Inject custom CSS if provided
+            if (!empty($component_settings['customCSS'])) {
+                $this->render_component_custom_css($component_id, $component_settings['customCSS']);
+            }
+            ?>
             
             <?php
             // ROOT FIX: Merge data and props - props take precedence
@@ -682,6 +709,76 @@ class GMKB_Frontend_Display {
     }
     
     /**
+     * Render theme customizations as inline CSS
+     * 
+     * @param array $customizations User customizations
+     * @param int $post_id Post ID
+     */
+    private function render_theme_customizations($customizations, $post_id) {
+        if (empty($customizations)) {
+            return;
+        }
+        
+        ?>
+        <style id="gmkb-theme-customizations-<?php echo esc_attr($post_id); ?>">
+            /* User's custom theme overrides */
+            [data-gmkb-post-id="<?php echo esc_attr($post_id); ?>"] {
+                <?php
+                // Color overrides
+                if (!empty($customizations['colors'])) {
+                    foreach ($customizations['colors'] as $key => $value) {
+                        if ($value) {
+                            echo '--gmkb-color-' . esc_attr($key) . ': ' . esc_attr($value) . ';';
+                        }
+                    }
+                }
+                
+                // Typography overrides
+                if (!empty($customizations['typography'])) {
+                    if (!empty($customizations['typography']['fontFamily'])) {
+                        echo '--gmkb-font-primary: ' . esc_attr($customizations['typography']['fontFamily']) . ';';
+                    }
+                    if (!empty($customizations['typography']['headingFont'])) {
+                        echo '--gmkb-font-heading: ' . esc_attr($customizations['typography']['headingFont']) . ';';
+                    }
+                    if (!empty($customizations['typography']['fontSize'])) {
+                        echo '--gmkb-font-size-base: ' . esc_attr($customizations['typography']['fontSize']) . 'px;';
+                    }
+                    if (!empty($customizations['typography']['lineHeight'])) {
+                        echo '--gmkb-line-height-base: ' . esc_attr($customizations['typography']['lineHeight']) . ';';
+                    }
+                }
+                
+                // Spacing overrides
+                if (!empty($customizations['spacing'])) {
+                    if (!empty($customizations['spacing']['sectionGap'])) {
+                        echo '--gmkb-section-gap: ' . esc_attr($customizations['spacing']['sectionGap']) . 'px;';
+                    }
+                    if (!empty($customizations['spacing']['componentGap'])) {
+                        echo '--gmkb-component-gap: ' . esc_attr($customizations['spacing']['componentGap']) . 'px;';
+                    }
+                    if (!empty($customizations['spacing']['containerPadding'])) {
+                        echo '--gmkb-container-padding: ' . esc_attr($customizations['spacing']['containerPadding']) . 'px;';
+                    }
+                }
+                
+                // Effects overrides
+                if (!empty($customizations['effects'])) {
+                    if (isset($customizations['effects']['borderRadius'])) {
+                        echo '--gmkb-radius-base: ' . esc_attr($customizations['effects']['borderRadius']) . 'px;';
+                        echo '--gmkb-radius-lg: ' . esc_attr($customizations['effects']['borderRadius'] * 2) . 'px;';
+                    }
+                    if (!empty($customizations['effects']['boxShadow'])) {
+                        echo '--gmkb-shadow-base: ' . esc_attr($customizations['effects']['boxShadow']) . ';';
+                    }
+                }
+                ?>
+            }
+        </style>
+        <?php
+    }
+    
+    /**
      * Add inline theme CSS
      */
     private function add_inline_theme_css() {
@@ -701,12 +798,15 @@ class GMKB_Frontend_Display {
     }
     
     /**
-     * Build section styles from configuration
+     * Build section styles from configuration (includes user customizations)
      * 
      * @param array $styles Style configuration
      * @return string CSS string
      */
     private function build_section_styles($styles) {
+        if (empty($styles)) {
+            return '';
+        }
         $css_rules = array();
         
         // Background
@@ -756,6 +856,79 @@ class GMKB_Frontend_Display {
     }
     
     /**
+     * Build component inline styles from settings (user customizations)
+     * 
+     * @param array $settings Component settings
+     * @return string CSS string
+     */
+    private function build_component_inline_styles($settings) {
+        if (empty($settings)) {
+            return '';
+        }
+        
+        $styles = array();
+        
+        // Background
+        if (!empty($settings['backgroundColor'])) {
+            $styles[] = 'background-color: ' . $settings['backgroundColor'];
+        }
+        
+        // Text color
+        if (!empty($settings['textColor'])) {
+            $styles[] = 'color: ' . $settings['textColor'];
+        }
+        
+        // Font size
+        if (!empty($settings['fontSize'])) {
+            $styles[] = 'font-size: ' . $settings['fontSize'];
+        }
+        
+        // Padding
+        if (!empty($settings['padding'])) {
+            $styles[] = 'padding: ' . $settings['padding'];
+        }
+        
+        // Margin
+        if (!empty($settings['margin'])) {
+            $styles[] = 'margin: ' . $settings['margin'];
+        }
+        
+        // Border radius
+        if (!empty($settings['borderRadius'])) {
+            $styles[] = 'border-radius: ' . $settings['borderRadius'];
+        }
+        
+        // Box shadow
+        if (!empty($settings['boxShadow'])) {
+            $styles[] = 'box-shadow: ' . $settings['boxShadow'];
+        }
+        
+        // Display (for hiding)
+        if (isset($settings['hidden']) && $settings['hidden']) {
+            $styles[] = 'display: none';
+        }
+        
+        return implode('; ', $styles);
+    }
+    
+    /**
+     * Render component custom CSS (scoped to component)
+     * 
+     * @param string $component_id Component ID
+     * @param string $custom_css Custom CSS
+     */
+    private function render_component_custom_css($component_id, $custom_css) {
+        // Scope custom CSS to this component only
+        $scoped_css = "#{$component_id} { {$custom_css} }";
+        
+        ?>
+        <style id="<?php echo esc_attr($component_id); ?>-custom">
+            <?php echo wp_strip_all_tags($scoped_css); ?>
+        </style>
+        <?php
+    }
+    
+    /**
      * Get component theme styles
      * 
      * @param string $component_type Component type
@@ -796,29 +969,13 @@ class GMKB_Frontend_Display {
             return;
         }
         
-        // Base frontend CSS
-        wp_enqueue_style(
-            'gmkb-frontend-base',
-            GMKB_PLUGIN_URL . 'css/frontend-display.css',
-            array(),
-            GMKB_VERSION
-        );
-        
-        // Component styles
-        wp_enqueue_style(
-            'gmkb-frontend-components',
-            GMKB_PLUGIN_URL . 'css/modules/components.css',
-            array('gmkb-frontend-base'),
-            GMKB_VERSION
-        );
-        
-        // Section styles
-        wp_enqueue_style(
-            'gmkb-frontend-sections',
-            GMKB_PLUGIN_URL . 'css/modules/sections.css',
-            array('gmkb-frontend-base'),
-            GMKB_VERSION
-        );
+        // ROOT FIX: Use design system (single source of truth)
+        $design_system_path = GMKB_PLUGIN_DIR . 'design-system/index.css';
+        if (file_exists($design_system_path)) {
+            $design_system_version = filemtime($design_system_path);
+            $design_system_url = GMKB_PLUGIN_URL . 'design-system/index.css';
+            wp_enqueue_style('gmkb-design-system', $design_system_url, array(), $design_system_version);
+        }
         
         // Lazy loading JS if needed
         wp_enqueue_script(

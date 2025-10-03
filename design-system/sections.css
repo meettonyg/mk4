@@ -1,0 +1,93 @@
+/**
+ * Section Layouts - Single Source of Truth
+ * 
+ * Used by both Vue Builder and PHP Frontend
+ * Class names MUST match exactly between Vue and PHP
+ */
+
+/* Base Section */
+.gmkb-section {
+  width: 100%;
+  margin-bottom: var(--gmkb-section-gap);
+  position: relative;
+}
+
+.gmkb-section__inner {
+  max-width: var(--gmkb-container-max-width);
+  margin: 0 auto;
+  padding: 0 var(--gmkb-container-padding);
+}
+
+/* Full Width Section */
+.gmkb-section--full_width .gmkb-section__content {
+  width: 100%;
+}
+
+/* Two Column Layout */
+.gmkb-section--two_column .gmkb-section__columns,
+.gmkb-section__columns--2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gmkb-column-gap);
+  align-items: start;
+}
+
+/* Three Column Layout */
+.gmkb-section--three_column .gmkb-section__columns,
+.gmkb-section__columns--3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gmkb-column-gap);
+  align-items: start;
+}
+
+/* Column Wrapper */
+.gmkb-section__column {
+  min-width: 0; /* Prevent grid blowout */
+  width: 100%;
+}
+
+/* Section Animations */
+.gmkb-section.gmkb-animate--fade {
+  animation: gmkb-fade-in 0.6s ease-out;
+}
+
+.gmkb-section.gmkb-animate--slide {
+  animation: gmkb-slide-up 0.6s ease-out;
+}
+
+@keyframes gmkb-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gmkb-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive: Mobile Stacking */
+@media (max-width: 768px) {
+  .gmkb-section__columns--2,
+  .gmkb-section__columns--3 {
+    grid-template-columns: 1fr;
+    gap: var(--gmkb-component-gap);
+  }
+}
+
+/* Responsive: Tablet (optional 2-col → 1-col) */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .gmkb-section__columns--3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
