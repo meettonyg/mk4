@@ -4,7 +4,14 @@
     <div v-if="buttonElement" class="theme-switcher-wrapper" ref="wrapperRef">
     
     <Transition name="dropdown">
-      <div v-if="dropdownOpen" class="theme-dropdown" ref="dropdown" :style="getDropdownStyle">
+      <div 
+        v-if="dropdownOpen" 
+        class="theme-dropdown" 
+        ref="dropdown" 
+        :style="getDropdownStyle"
+        @mouseenter="onDropdownEnter"
+        @mouseleave="onDropdownLeave"
+      >
         <!-- Quick Theme Selection -->
         <div class="dropdown-section">
           <h4>Select Theme</h4>
@@ -60,6 +67,8 @@ const dropdown = ref(null);
 const wrapperRef = ref(null);
 const buttonElement = ref(null);
 const buttonRect = ref(null);
+const isHoveringDropdown = ref(false);
+let closeTimeout = null;
 
 // Computed properties
 const currentTheme = computed(() => themeStore.activeTheme || { name: 'Default', id: 'professional' });
@@ -166,6 +175,25 @@ const handleButtonClick = (event) => {
   toggleDropdown();
 };
 
+// SIMPLE FIX: Delay dropdown close to allow mouse movement
+const onDropdownEnter = () => {
+  isHoveringDropdown.value = true;
+  if (closeTimeout) {
+    clearTimeout(closeTimeout);
+    closeTimeout = null;
+  }
+};
+
+const onDropdownLeave = () => {
+  isHoveringDropdown.value = false;
+  // Give 300ms grace period before closing
+  closeTimeout = setTimeout(() => {
+    if (!isHoveringDropdown.value) {
+      dropdownOpen.value = false;
+    }
+  }, 300);
+};
+
 // Position dropdown relative to button
 const getDropdownStyle = computed(() => {
   if (!buttonRect.value) {
@@ -180,7 +208,7 @@ const getDropdownStyle = computed(() => {
   
   const style = {
     position: 'fixed',
-    top: `${buttonRect.value.bottom + 8}px`,
+    top: `${buttonRect.value.bottom + 4}px`, // Reduced gap for easier hover transition
     left: `${Math.max(10, buttonRect.value.left)}px`,
     zIndex: 10001
   };
@@ -230,6 +258,11 @@ onUnmounted(() => {
     buttonElement.value.removeEventListener('click', handleButtonClick);
   }
   document.removeEventListener('click', handleClickOutside);
+  
+  // Clear any pending close timeout
+  if (closeTimeout) {
+    clearTimeout(closeTimeout);
+  }
 });
 </script>
 
