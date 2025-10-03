@@ -4,17 +4,7 @@
     <div v-if="buttonElement" class="theme-switcher-wrapper" ref="wrapperRef">
     
     <Transition name="dropdown">
-      <!-- ROOT FIX: Invisible bridge to prevent dropdown from closing when moving mouse -->
-      <div v-if="dropdownOpen" class="dropdown-container" :style="getContainerStyle">
-        <!-- Invisible hover bridge -->
-        <div class="dropdown-bridge" @mouseenter="onDropdownMouseEnter" @mouseleave="onDropdownMouseLeave"></div>
-        
-        <div 
-          class="theme-dropdown" 
-          ref="dropdown" 
-          @mouseenter="onDropdownMouseEnter"
-          @mouseleave="onDropdownMouseLeave"
-        >
+      <div v-if="dropdownOpen" class="theme-dropdown" ref="dropdown" :style="getDropdownStyle">
         <!-- Quick Theme Selection -->
         <div class="dropdown-section">
           <h4>Select Theme</h4>
@@ -55,7 +45,6 @@
           </button>
         </div>
       </div>
-      </div>
     </Transition>
     </div>
   </Teleport>
@@ -71,8 +60,6 @@ const dropdown = ref(null);
 const wrapperRef = ref(null);
 const buttonElement = ref(null);
 const buttonRect = ref(null);
-const isHoveringDropdown = ref(false);
-const isHoveringButton = ref(false);
 
 // Computed properties
 const currentTheme = computed(() => themeStore.activeTheme || { name: 'Default', id: 'professional' });
@@ -164,25 +151,12 @@ const showToast = (message) => {
   }
 };
 
-// ROOT FIX: Close dropdown when clicking outside
-// Must check if click is inside dropdown OR on the theme button
+// Close dropdown when clicking outside
 const handleClickOutside = (event) => {
-  if (!dropdownOpen.value) return;
-  
-  // Don't close if clicking inside the dropdown
-  if (dropdown.value && dropdown.value.contains(event.target)) {
-    return;
+  if (dropdownOpen.value && dropdown.value && !dropdown.value.contains(event.target) && 
+      !event.target.closest('#global-theme-btn')) {
+    dropdownOpen.value = false;
   }
-  
-  // Don't close if clicking the theme button
-  const themeBtn = document.getElementById('global-theme-btn');
-  if (themeBtn && (themeBtn.contains(event.target) || event.target.closest('#global-theme-btn'))) {
-    return;
-  }
-  
-  // Close the dropdown
-  dropdownOpen.value = false;
-  console.log('🎨 ThemeSwitcher: Closed via outside click');
 };
 
 // Handle toolbar button click
@@ -192,27 +166,8 @@ const handleButtonClick = (event) => {
   toggleDropdown();
 };
 
-// ROOT FIX: Hover handlers to keep dropdown open
-const onDropdownMouseEnter = () => {
-  isHoveringDropdown.value = true;
-  console.log('🎨 ThemeSwitcher: Mouse entered dropdown');
-};
-
-const onDropdownMouseLeave = () => {
-  isHoveringDropdown.value = false;
-  console.log('🎨 ThemeSwitcher: Mouse left dropdown');
-};
-
-const onButtonMouseEnter = () => {
-  isHoveringButton.value = true;
-};
-
-const onButtonMouseLeave = () => {
-  isHoveringButton.value = false;
-};
-
-// Position container (includes bridge and dropdown)
-const getContainerStyle = computed(() => {
+// Position dropdown relative to button
+const getDropdownStyle = computed(() => {
   if (!buttonRect.value) {
     console.log('⚠️ ThemeSwitcher: No button rect, using fallback position');
     return {
@@ -223,15 +178,14 @@ const getContainerStyle = computed(() => {
     };
   }
   
-  // ROOT FIX: Position container to include bridge area
   const style = {
     position: 'fixed',
-    top: `${buttonRect.value.bottom}px`, // Start right at button bottom
+    top: `${buttonRect.value.bottom + 8}px`,
     left: `${Math.max(10, buttonRect.value.left)}px`,
-    zIndex: 10001 // Higher than toolbar (1000)
+    zIndex: 10001
   };
   
-  console.log('🎨 ThemeSwitcher: Container position:', style);
+  console.log('🎨 ThemeSwitcher: Dropdown position:', style);
   return style;
 });
 
@@ -284,23 +238,6 @@ onUnmounted(() => {
   /* Wrapper is just for organization, no positioning needed */
 }
 
-/* ROOT FIX: Container for dropdown and bridge */
-.dropdown-container {
-  /* Position is set via inline style */
-  display: flex;
-  flex-direction: column;
-  pointer-events: none; /* Only children have pointer events */
-}
-
-/* ROOT FIX: Invisible bridge to prevent dropdown closing */
-.dropdown-bridge {
-  width: 100%;
-  height: 8px; /* Gap between button and dropdown */
-  background: transparent;
-  pointer-events: auto; /* Critical: Make bridge hoverable */
-  z-index: 10001;
-}
-
 .theme-dropdown {
   /* Position is set via inline style for fixed positioning */
   min-width: 320px;
@@ -310,17 +247,6 @@ onUnmounted(() => {
   border-radius: var(--gmkb-border-radius, 8px);
   box-shadow: var(--gmkb-shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.1));
   padding: 12px;
-  
-  /* ROOT FIX: Critical - Ensure it's visible, interactive, and on top */
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important; /* Ensure clicks work */
-  user-select: auto !important; /* Ensure text is selectable */
-  
-  /* Prevent any parent from hiding us */
-  transform: none !important;
-  overflow: visible !important;
 }
 
 .dropdown-section h4 {
@@ -434,17 +360,10 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 500;
   transition: background 0.2s ease;
-  
-  /* ROOT FIX: Ensure button is always clickable */
-  pointer-events: auto !important;
-  position: relative;
-  z-index: 1;
 }
 
 .customizer-button:hover {
   background: var(--gmkb-color-primary-hover, #2563eb);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 /* Dropdown animation */
