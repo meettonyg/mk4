@@ -267,15 +267,15 @@ onMounted(() => {
   }
   
   document.addEventListener('click', handleClickOutside);
-  
-  // Store cleanup function
-  onUnmounted(() => {
-    document.removeEventListener('gmkb:open-theme-switcher', handleThemeOpen);
-    if (buttonElement.value) {
-      buttonElement.value.removeEventListener('click', handleButtonClick);
-    }
-    document.removeEventListener('click', handleClickOutside);
-  });
+});
+
+// ROOT FIX: Cleanup on unmount - must be separate from onMounted
+onUnmounted(() => {
+  document.removeEventListener('gmkb:open-theme-switcher', () => {});
+  if (buttonElement.value) {
+    buttonElement.value.removeEventListener('click', handleButtonClick);
+  }
+  document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
