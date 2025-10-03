@@ -389,31 +389,78 @@ export const useThemeStore = defineStore('theme', {
   actions: {
     // Initialize theme from saved state
     initialize(savedTheme, savedCustomizations) {
-      // GEMINI FIX: Validate gmkbData exists and has themes
-      if (!window.gmkbData) {
-        console.warn('[Theme Store] gmkbData not available, using built-in themes only');
-      } else if (!window.gmkbData.themes || !Array.isArray(window.gmkbData.themes)) {
-        console.warn('[Theme Store] No themes data in gmkbData, using built-in themes only');
-      } else {
-        // Merge server themes with available themes
-        const serverThemes = window.gmkbData.themes;
-        if (serverThemes.length > 0) {
-          console.log(`[Theme Store] Loading ${serverThemes.length} themes from server`);
+      // CRITICAL FIX: Load themes from PHP first
+      if (window.gmkbData && window.gmkbData.themes && Array.isArray(window.gmkbData.themes)) {
+        console.log(`[Theme Store] Loading ${window.gmkbData.themes.length} themes from server`);
+        
+        // ROOT FIX: Define defaults BEFORE mapping to avoid circular reference
+        const defaultTypography = {
+          fontFamily: "'Inter', system-ui, sans-serif",
+          headingFamily: "'Inter', system-ui, sans-serif",
+          baseFontSize: 16,
+          headingScale: 1.25,
+          lineHeight: 1.6,
+          fontWeight: 400
+        };
+        
+        const defaultSpacing = {
+          baseUnit: 8,
+          componentGap: 24,
+          sectionPadding: 40,
+          containerMaxWidth: 1200
+        };
+        
+        const defaultEffects = {
+          borderRadius: '8px',
+          shadowIntensity: 'medium',
+          animationSpeed: 'normal',
+          gradients: false,
+          blurEffects: false
+        };
+        
+        // CRITICAL FIX: Ensure each theme has an ID and complete structure
+        // ROOT FIX: Build array using plain objects first (no Pinia reactivity yet)
+        const themesFromPHP = [];
+        
+        for (let i = 0; i < window.gmkbData.themes.length; i++) {
+          const theme = window.gmkbData.themes[i];
           
-          // Replace availableThemes with server themes (they include built-ins)
-          this.availableThemes = serverThemes.map(theme => ({
-            id: theme.id, // ROOT FIX: Explicitly preserve ID
-            name: theme.name,
-            description: theme.description,
-            // Ensure all required fields exist
+          // ROOT FIX: Skip themes without ID
+          if (!theme.id) {
+            console.error('[Theme Store] Theme missing ID:', theme);
+            continue;
+          }
+          
+          // ROOT FIX: Create plain object (not reactive yet)
+          const plainTheme = {
+            id: String(theme.id), // Explicitly convert to string
+            name: theme.name || 'Unnamed Theme',
+            description: theme.description || '',
             colors: theme.colors || {},
-            typography: theme.typography || {},
-            spacing: theme.spacing || {},
-            effects: theme.effects || {},
+            typography: theme.typography || defaultTypography,
+            spacing: theme.spacing || defaultSpacing,
+            effects: theme.effects || defaultEffects,
+            category: theme.category || 'custom',
             isCustom: theme.isCustom || false,
-            isBuiltIn: theme.isBuiltIn || false
-          }));
+            isBuiltIn: theme.isBuiltIn !== false // Default to true
+          };
+          
+          themesFromPHP.push(plainTheme);
         }
+        
+        // ROOT FIX: Now assign the completed array to Pinia state
+        // This avoids issues with Pinia reactivity during array construction
+        this.availableThemes = themesFromPHP;
+        
+        console.log(`[Theme Store] Initialized with ${this.availableThemes.length} themes`);
+        
+        // Debug: Log first theme to verify structure
+        if (this.availableThemes.length > 0) {
+          console.log('[Theme Store] First theme:', this.availableThemes[0]);
+          console.log('[Theme Store] First theme ID:', this.availableThemes[0].id);
+        }
+      } else {
+        console.warn('[Theme Store] No themes data in gmkbData, using built-in themes only');
       }
       
       // ROOT FIX: Ensure store is ready before applying theme

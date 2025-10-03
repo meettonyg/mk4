@@ -76,10 +76,12 @@ const activeThemeId = computed(() => themeStore.activeThemeId);
 const availableThemes = computed(() => {
   const themes = themeStore.availableThemes;
   
-  // DEBUG: Log themes to see structure
+  // CRITICAL DEBUG: Check what we're actually getting
   if (themes && themes.length > 0) {
     console.log('[ThemeSwitcher] Available themes:', themes);
     console.log('[ThemeSwitcher] First theme:', themes[0]);
+    console.log('[ThemeSwitcher] First theme ID:', themes[0]?.id);
+    console.log('[ThemeSwitcher] First theme keys:', Object.keys(themes[0] || {}));
   }
   
   return themes;

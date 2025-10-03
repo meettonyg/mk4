@@ -283,64 +283,174 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             architecture: 'pure-vue',
             debugMode: <?php echo json_encode(defined('WP_DEBUG') && WP_DEBUG); ?>,
             
-            // Themes data for theme store
-            themes: <?php echo json_encode(array(
-                array(
-                    'id' => 'professional_clean',
-                    'name' => 'Professional Clean',
-                    'description' => 'Clean and professional design',
-                    'category' => 'professional',
-                    'colors' => array(
-                        'primary' => '#3b82f6',
-                        'secondary' => '#8b5cf6',
-                        'border' => '#e2e8f0'
+            // ROOT FIX: Themes data - provide complete theme objects
+            // These MUST match the structure in theme.js availableThemes
+            themes: <?php 
+                // CRITICAL: Build themes array with ALL required fields
+                // Test that PHP is encoding correctly
+                $themes = array(
+                    array(
+                        'id' => 'professional_clean',  // CRITICAL: This MUST encode as "id": "professional_clean"
+                        'name' => 'Professional Clean',
+                        'description' => 'Clean and professional design',
+                        'category' => 'professional',
+                        'colors' => array(
+                            'primary' => '#3b82f6',
+                            'secondary' => '#2563eb',
+                            'background' => '#ffffff',
+                            'surface' => '#f8fafc',
+                            'text' => '#1e293b',
+                            'textLight' => '#64748b',
+                            'border' => '#e2e8f0',
+                            'success' => '#10b981',
+                            'warning' => '#f59e0b',
+                            'error' => '#ef4444'
+                        ),
+                        'typography' => array(
+                            'fontFamily' => "'Inter', system-ui, sans-serif",
+                            'headingFamily' => "'Inter', system-ui, sans-serif",
+                            'baseFontSize' => 16,
+                            'headingScale' => 1.25,
+                            'lineHeight' => 1.6,
+                            'fontWeight' => 400
+                        ),
+                        'spacing' => array(
+                            'baseUnit' => 8,
+                            'componentGap' => 24,
+                            'sectionPadding' => 40,
+                            'containerMaxWidth' => 1200
+                        ),
+                        'effects' => array(
+                            'borderRadius' => '8px',
+                            'shadowIntensity' => 'medium',
+                            'animationSpeed' => 'normal',
+                            'gradients' => false,
+                            'blurEffects' => false
+                        )
+                    ),
+                    array(
+                        'id' => 'creative_bold',
+                        'name' => 'Creative Bold',
+                        'description' => 'Bold and creative design',
+                        'category' => 'creative',
+                        'colors' => array(
+                            'primary' => '#f97316',
+                            'secondary' => '#ea580c',
+                            'background' => '#fffbf5',
+                            'surface' => '#fff7ed',
+                            'text' => '#1f2937',
+                            'textLight' => '#78716c',
+                            'border' => '#fed7aa',
+                            'success' => '#84cc16',
+                            'warning' => '#fbbf24',
+                            'error' => '#dc2626'
+                        ),
+                        'typography' => array(
+                            'fontFamily' => "'Poppins', system-ui, sans-serif",
+                            'headingFamily' => "'Playfair Display', serif",
+                            'baseFontSize' => 17,
+                            'headingScale' => 1.3,
+                            'lineHeight' => 1.7,
+                            'fontWeight' => 400
+                        ),
+                        'spacing' => array(
+                            'baseUnit' => 10,
+                            'componentGap' => 32,
+                            'sectionPadding' => 48,
+                            'containerMaxWidth' => 1280
+                        ),
+                        'effects' => array(
+                            'borderRadius' => '12px',
+                            'shadowIntensity' => 'strong',
+                            'animationSpeed' => 'normal',
+                            'gradients' => true,
+                            'blurEffects' => false
+                        )
+                    ),
+                    array(
+                        'id' => 'minimal_elegant',
+                        'name' => 'Minimal Elegant',
+                        'description' => 'Minimal and elegant design',
+                        'category' => 'minimal',
+                        'colors' => array(
+                            'primary' => '#18181b',
+                            'secondary' => '#27272a',
+                            'background' => '#ffffff',
+                            'surface' => '#fafafa',
+                            'text' => '#18181b',
+                            'textLight' => '#71717a',
+                            'border' => '#e4e4e7',
+                            'success' => '#22c55e',
+                            'warning' => '#eab308',
+                            'error' => '#f87171'
+                        ),
+                        'typography' => array(
+                            'fontFamily' => "'Helvetica Neue', system-ui, sans-serif",
+                            'headingFamily' => "'Georgia', serif",
+                            'baseFontSize' => 16,
+                            'headingScale' => 1.2,
+                            'lineHeight' => 1.5,
+                            'fontWeight' => 300
+                        ),
+                        'spacing' => array(
+                            'baseUnit' => 8,
+                            'componentGap' => 20,
+                            'sectionPadding' => 32,
+                            'containerMaxWidth' => 1100
+                        ),
+                        'effects' => array(
+                            'borderRadius' => '2px',
+                            'shadowIntensity' => 'subtle',
+                            'animationSpeed' => 'fast',
+                            'gradients' => false,
+                            'blurEffects' => false
+                        )
+                    ),
+                    array(
+                        'id' => 'modern_dark',
+                        'name' => 'Modern Dark',
+                        'description' => 'Modern dark theme',
+                        'category' => 'dark',
+                        'colors' => array(
+                            'primary' => '#8b5cf6',
+                            'secondary' => '#7c3aed',
+                            'background' => '#0f172a',
+                            'surface' => '#1e293b',
+                            'text' => '#f1f5f9',
+                            'textLight' => '#94a3b8',
+                            'border' => '#334155',
+                            'success' => '#4ade80',
+                            'warning' => '#fbbf24',
+                            'error' => '#f87171'
+                        ),
+                        'typography' => array(
+                            'fontFamily' => "'Inter', system-ui, sans-serif",
+                            'headingFamily' => "'Inter', system-ui, sans-serif",
+                            'baseFontSize' => 16,
+                            'headingScale' => 1.25,
+                            'lineHeight' => 1.6,
+                            'fontWeight' => 400
+                        ),
+                        'spacing' => array(
+                            'baseUnit' => 8,
+                            'componentGap' => 24,
+                            'sectionPadding' => 40,
+                            'containerMaxWidth' => 1200
+                        ),
+                        'effects' => array(
+                            'borderRadius' => '8px',
+                            'shadowIntensity' => 'strong',
+                            'animationSpeed' => 'normal',
+                            'gradients' => true,
+                            'blurEffects' => true
+                        )
                     )
-                ),
-                array(
-                    'id' => 'creative_bold',
-                    'name' => 'Creative Bold',
-                    'description' => 'Bold and creative design',
-                    'category' => 'creative',
-                    'colors' => array(
-                        'primary' => '#ec4899',
-                        'secondary' => '#f59e0b',
-                        'border' => '#fbbf24'
-                    )
-                ),
-                array(
-                    'id' => 'modern_minimal',
-                    'name' => 'Modern Minimal',
-                    'description' => 'Minimal and modern design',
-                    'category' => 'modern',
-                    'colors' => array(
-                        'primary' => '#06b6d4',
-                        'secondary' => '#0ea5e9',
-                        'border' => '#e0f2fe'
-                    )
-                ),
-                array(
-                    'id' => 'elegant_classic',
-                    'name' => 'Elegant Classic',
-                    'description' => 'Classic and elegant design',
-                    'category' => 'elegant',
-                    'colors' => array(
-                        'primary' => '#7c3aed',
-                        'secondary' => '#a78bfa',
-                        'border' => '#ddd6fe'
-                    )
-                ),
-                array(
-                    'id' => 'dark_mode',
-                    'name' => 'Dark Mode',
-                    'description' => 'Dark theme for modern look',
-                    'category' => 'dark',
-                    'colors' => array(
-                        'primary' => '#8b5cf6',
-                        'secondary' => '#a78bfa',
-                        'border' => '#4c1d95'
-                    )
-                )
-            )); ?>,
+                );
+                
+                // ROOT FIX: Output as clean JSON
+                // Try without flags first to ensure proper encoding
+                echo json_encode($themes);
+            ?>,
             
             // Load saved state if exists
             savedState: <?php 
@@ -371,7 +481,7 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             ?>
         };
 
-        // Debugging helper
+        // ROOT FIX: DEBUG - Log themes data structure immediately
         if (window.gmkbData.debugMode) {
             console.log('🎯 GMKB Pure Vue Mode - Phase 6 Active');
             console.log('📊 Data Available:', {
@@ -381,6 +491,14 @@ if (!in_array($post->post_type, $allowed_post_types)) {
                 hasState: !!window.gmkbData.savedState,
                 podsFields: Object.keys(window.gmkbData.pods_data).length
             });
+            
+            // CRITICAL: Check themes IMMEDIATELY after PHP output
+            console.log('🎨 Themes from PHP:', window.gmkbData.themes);
+            if (window.gmkbData.themes && window.gmkbData.themes.length > 0) {
+                console.log('🎨 First theme from PHP:', window.gmkbData.themes[0]);
+                console.log('🎨 First theme ID from PHP:', window.gmkbData.themes[0].id);
+                console.log('🎨 First theme keys from PHP:', Object.keys(window.gmkbData.themes[0]));
+            }
         }
     </script>
 

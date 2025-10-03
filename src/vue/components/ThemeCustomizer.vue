@@ -161,11 +161,13 @@ onUnmounted(() => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  z-index: 1;
+  /* REMOVED backdrop-filter to prevent modal content from being blurred */
 }
 
 .modal-content {
   position: relative;
+  z-index: 2; /* Ensure content is above overlay */
   background: white;
   border-radius: 12px;
   width: 95%;
