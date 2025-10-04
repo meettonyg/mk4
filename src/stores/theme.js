@@ -7,161 +7,8 @@ import { useMediaKitStore } from './mediaKit';
 
 export const useThemeStore = defineStore('theme', {
   state: () => ({
-    // Available themes
-    availableThemes: [
-      {
-        id: 'professional_clean',
-        name: 'Professional Clean',
-        description: 'Clean and professional design',
-        colors: {
-          primary: '#3b82f6',
-          secondary: '#2563eb',
-          background: '#ffffff',
-          surface: '#f8fafc',
-          text: '#1e293b',
-          textLight: '#64748b',
-          border: '#e2e8f0',
-          success: '#10b981',
-          warning: '#f59e0b',
-          error: '#ef4444'
-        },
-        typography: {
-          fontFamily: "'Inter', system-ui, sans-serif",
-          headingFamily: "'Inter', system-ui, sans-serif",
-          baseFontSize: 16,
-          headingScale: 1.25,
-          lineHeight: 1.6,
-          fontWeight: 400
-        },
-        spacing: {
-          baseUnit: 8,
-          componentGap: 24,
-          sectionPadding: 40,
-          containerMaxWidth: 1200
-        },
-        effects: {
-          borderRadius: '8px',
-          shadowIntensity: 'medium',
-          animationSpeed: 'normal',
-          gradients: false,
-          blurEffects: false
-        }
-      },
-      {
-        id: 'creative_bold',
-        name: 'Creative Bold',
-        description: 'Bold and creative design',
-        colors: {
-          primary: '#f97316',
-          secondary: '#ea580c',
-          background: '#fffbf5',
-          surface: '#fff7ed',
-          text: '#1f2937',
-          textLight: '#78716c',
-          border: '#fed7aa',
-          success: '#84cc16',
-          warning: '#fbbf24',
-          error: '#dc2626'
-        },
-        typography: {
-          fontFamily: "'Poppins', system-ui, sans-serif",
-          headingFamily: "'Playfair Display', serif",
-          baseFontSize: 17,
-          headingScale: 1.3,
-          lineHeight: 1.7,
-          fontWeight: 400
-        },
-        spacing: {
-          baseUnit: 10,
-          componentGap: 32,
-          sectionPadding: 48,
-          containerMaxWidth: 1280
-        },
-        effects: {
-          borderRadius: '12px',
-          shadowIntensity: 'strong',
-          animationSpeed: 'normal',
-          gradients: true,
-          blurEffects: false
-        }
-      },
-      {
-        id: 'minimal_elegant',
-        name: 'Minimal Elegant',
-        description: 'Minimal and elegant design',
-        colors: {
-          primary: '#18181b',
-          secondary: '#27272a',
-          background: '#ffffff',
-          surface: '#fafafa',
-          text: '#18181b',
-          textLight: '#71717a',
-          border: '#e4e4e7',
-          success: '#22c55e',
-          warning: '#eab308',
-          error: '#f87171'
-        },
-        typography: {
-          fontFamily: "'Helvetica Neue', system-ui, sans-serif",
-          headingFamily: "'Georgia', serif",
-          baseFontSize: 16,
-          headingScale: 1.2,
-          lineHeight: 1.5,
-          fontWeight: 300
-        },
-        spacing: {
-          baseUnit: 8,
-          componentGap: 20,
-          sectionPadding: 32,
-          containerMaxWidth: 1100
-        },
-        effects: {
-          borderRadius: '2px',
-          shadowIntensity: 'subtle',
-          animationSpeed: 'fast',
-          gradients: false,
-          blurEffects: false
-        }
-      },
-      {
-        id: 'modern_dark',
-        name: 'Modern Dark',
-        description: 'Modern dark theme',
-        colors: {
-          primary: '#8b5cf6',
-          secondary: '#7c3aed',
-          background: '#0f172a',
-          surface: '#1e293b',
-          text: '#f1f5f9',
-          textLight: '#94a3b8',
-          border: '#334155',
-          success: '#4ade80',
-          warning: '#fbbf24',
-          error: '#f87171'
-        },
-        typography: {
-          fontFamily: "'Inter', system-ui, sans-serif",
-          headingFamily: "'Inter', system-ui, sans-serif",
-          baseFontSize: 16,
-          headingScale: 1.25,
-          lineHeight: 1.6,
-          fontWeight: 400
-        },
-        spacing: {
-          baseUnit: 8,
-          componentGap: 24,
-          sectionPadding: 40,
-          containerMaxWidth: 1200
-        },
-        effects: {
-          borderRadius: '8px',
-          shadowIntensity: 'strong',
-          animationSpeed: 'normal',
-          gradients: true,
-          blurEffects: true
-        }
-      }
-    ],
+    // Available themes - START EMPTY, populated from PHP in initialize()
+    availableThemes: [],
     
     // Custom themes (user-created)
     customThemes: [],
@@ -449,7 +296,6 @@ export const useThemeStore = defineStore('theme', {
         }
         
         // ROOT FIX: Now assign the completed array to Pinia state
-        // This avoids issues with Pinia reactivity during array construction
         this.availableThemes = themesFromPHP;
         
         console.log(`[Theme Store] Initialized with ${this.availableThemes.length} themes`);
@@ -525,9 +371,18 @@ export const useThemeStore = defineStore('theme', {
     
     // Select a theme
     selectTheme(themeId) {
+      console.log('[Theme Store] selectTheme called with:', themeId);
+      console.log('[Theme Store] Current activeThemeId:', this.activeThemeId);
+      console.log('[Theme Store] All themes:', this.allThemes.map(t => ({ id: t.id, name: t.name })));
+      
       const theme = this.allThemes.find(t => t.id === themeId);
+      console.log('[Theme Store] Found theme:', theme);
+      
       if (theme) {
+        console.log('[Theme Store] Setting activeThemeId from', this.activeThemeId, 'to', themeId);
         this.activeThemeId = themeId;
+        console.log('[Theme Store] activeThemeId is now:', this.activeThemeId);
+        
         this.tempCustomizations = {
           colors: {},
           typography: {},
@@ -543,6 +398,8 @@ export const useThemeStore = defineStore('theme', {
         mediaKitStore._trackChange();  // Mark for save and trigger auto-save
         
         console.log('[Theme Store] Theme selected and saved to media kit store:', themeId);
+      } else {
+        console.error('[Theme Store] Could not find theme with ID:', themeId);
       }
     },
     
