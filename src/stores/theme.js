@@ -265,22 +265,11 @@ export const useThemeStore = defineStore('theme', {
           blurEffects: false
         };
         
-        // CRITICAL FIX: Ensure each theme has an ID and complete structure
-        // ROOT FIX: Build array using plain objects first (no Pinia reactivity yet)
-        const themesFromPHP = [];
-        
-        for (let i = 0; i < window.gmkbData.themes.length; i++) {
-          const theme = window.gmkbData.themes[i];
-          
-          // ROOT FIX: Skip themes without ID
-          if (!theme.id) {
-            console.error('[Theme Store] Theme missing ID:', theme);
-            continue;
-          }
-          
-          // ROOT FIX: Create plain object (not reactive yet)
-          const plainTheme = {
-            id: String(theme.id), // Explicitly convert to string
+        // CRITICAL FIX: Map themes preserving all fields
+        this.availableThemes = window.gmkbData.themes.map(theme => {
+          // ROOT FIX DEBUG: Log each theme as it's processed
+          const processedTheme = {
+            id: theme.id, // CRITICAL: Don't convert to string or modify
             name: theme.name || 'Unnamed Theme',
             description: theme.description || '',
             colors: theme.colors || {},
@@ -292,11 +281,15 @@ export const useThemeStore = defineStore('theme', {
             isBuiltIn: theme.isBuiltIn !== false // Default to true
           };
           
-          themesFromPHP.push(plainTheme);
-        }
-        
-        // ROOT FIX: Now assign the completed array to Pinia state
-        this.availableThemes = themesFromPHP;
+          console.log(`[Theme Store] Processing theme: ${theme.name}`, {
+            originalId: theme.id,
+            processedId: processedTheme.id,
+            idMatch: theme.id === processedTheme.id
+          });
+          
+          return processedTheme;
+        })
+
         
         console.log(`[Theme Store] Initialized with ${this.availableThemes.length} themes`);
         

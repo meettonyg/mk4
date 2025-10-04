@@ -169,19 +169,15 @@ async function initializeVue() {
     // STEP 7: Initialize theme
     console.log('7️⃣ Initializing theme...');
     
-    // Load custom themes first (non-blocking)
+    // ROOT FIX: Initialize themes from PHP data FIRST, before anything else
+    // This ensures the theme IDs are properly set
+    await themeStore.initialize(mediaKitStore.theme, mediaKitStore.themeCustomizations);
+    console.log('✅ Theme initialized:', mediaKitStore.theme);
+    
+    // Load custom themes after (non-blocking)
     themeStore.loadCustomThemes().catch(() => {
       console.log('ℹ️ Custom themes not available, using built-in themes');
-    });
-    
-    // Initialize theme with proper timing
-    if (mediaKitStore.theme) {
-      await themeStore.initialize(mediaKitStore.theme, mediaKitStore.themeCustomizations);
-      console.log('✅ Theme initialized:', mediaKitStore.theme);
-    } else {
-      await themeStore.selectTheme('professional_clean');
-      console.log('✅ Default theme applied');
-    }
+    })
     
     // Setup global methods for console access
     window.GMKB = {
