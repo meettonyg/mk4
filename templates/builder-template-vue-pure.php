@@ -447,9 +447,9 @@ if (!in_array($post->post_type, $allowed_post_types)) {
                     )
                 );
                 
-                // ROOT FIX: Output as clean JSON
-                // Try without flags first to ensure proper encoding
-                echo json_encode($themes);
+                // ROOT FIX: Force proper encoding with JSON flags
+                // JSON_FORCE_OBJECT ensures proper object structure
+                echo json_encode($themes, JSON_HEX_QUOT | JSON_HEX_APOS);
             ?>,
             
             // Load saved state if exists

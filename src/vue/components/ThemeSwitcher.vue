@@ -74,7 +74,8 @@ let closeTimeout = null;
 const currentTheme = computed(() => themeStore.activeTheme || { name: 'Default', id: 'professional' });
 const activeThemeId = computed(() => themeStore.activeThemeId);
 const availableThemes = computed(() => {
-  const themes = themeStore.availableThemes;
+  // CRITICAL FIX: Use the getter that bypasses reactivity issues
+  const themes = themeStore.getAvailableThemes || themeStore.availableThemes;
   
   // CRITICAL DEBUG: Check what we're actually getting
   if (themes && themes.length > 0) {
