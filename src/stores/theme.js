@@ -5,9 +5,6 @@
 import { defineStore } from 'pinia';
 import { useMediaKitStore } from './mediaKit';
 
-// CRITICAL FIX: Store raw themes outside of reactive state
-let rawThemes = [];
-
 export const useThemeStore = defineStore('theme', {
   state: () => ({
     // Available themes - START EMPTY, populated from PHP in initialize()
@@ -46,12 +43,6 @@ export const useThemeStore = defineStore('theme', {
   }),
 
   getters: {
-    // CRITICAL FIX: Get themes from raw storage to avoid reactivity issues
-    getAvailableThemes: () => {
-      // Return the raw themes directly, bypassing reactive state
-      return rawThemes;
-    },
-    
     // Get the currently active theme object
     activeTheme: (state) => {
       // First check custom themes
@@ -274,46 +265,30 @@ export const useThemeStore = defineStore('theme', {
           blurEffects: false
         };
         
-        // CRITICAL FIX: Deep clone and ensure ID field is preserved
-        // Using structuredClone or JSON.parse/stringify to avoid Vue reactivity issues
+        // Process themes from PHP data
         const themesData = window.gmkbData.themes;
-        
-        // Store raw themes for non-reactive access
-        rawThemes = themesData.map((theme, index) => ({
-          ...theme,
-          id: theme.id || `theme_${index}` // Ensure ID exists
-        }));
-        
-        // Process themes for reactive state
         this.availableThemes = themesData.map((theme, index) => {
-          // Create a completely new object to avoid reference issues
-          const newTheme = {};
-          
-          // CRITICAL: Set ID first as a non-enumerable property to protect it
-          Object.defineProperty(newTheme, 'id', {
-            value: theme.id || `theme_${index}`,
-            writable: true,
-            enumerable: true,
-            configurable: true
-          });
-          
-          // Set other properties
-          newTheme.name = theme.name || 'Unnamed Theme';
-          newTheme.description = theme.description || '';
-          newTheme.colors = { ...(theme.colors || {}) };
-          newTheme.typography = { ...defaultTypography, ...(theme.typography || {}) };
-          newTheme.spacing = { ...defaultSpacing, ...(theme.spacing || {}) };
-          newTheme.effects = { ...defaultEffects, ...(theme.effects || {}) };
-          newTheme.category = theme.category || 'custom';
-          newTheme.isCustom = theme.isCustom || false;
-          newTheme.isBuiltIn = theme.isBuiltIn !== false;
-          
+          // Create a new object with standard property assignment for the ID.
+          // This is the correct way to ensure Vue's reactivity system tracks the property.
+          const newTheme = {
+            id: theme.id || `theme_${index}`,
+            name: theme.name || 'Unnamed Theme',
+            description: theme.description || '',
+            colors: { ...(theme.colors || {}) },
+            typography: { ...defaultTypography, ...(theme.typography || {}) },
+            spacing: { ...defaultSpacing, ...(theme.spacing || {}) },
+            effects: { ...defaultEffects, ...(theme.effects || {}) },
+            category: theme.category || 'custom',
+            isCustom: theme.isCustom || false,
+            isBuiltIn: theme.isBuiltIn !== false
+          };
+
           console.log(`[Theme Store] Processed theme ${index}: ${newTheme.name}`, {
             id: newTheme.id,
             hasId: 'id' in newTheme,
             idEnumerable: Object.propertyIsEnumerable.call(newTheme, 'id')
           });
-          
+
           return newTheme;
         })
 

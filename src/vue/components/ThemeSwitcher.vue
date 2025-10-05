@@ -74,10 +74,9 @@ let closeTimeout = null;
 const currentTheme = computed(() => themeStore.activeTheme || { name: 'Default', id: 'professional' });
 const activeThemeId = computed(() => themeStore.activeThemeId);
 const availableThemes = computed(() => {
-  // CRITICAL FIX: Use the getter that bypasses reactivity issues
-  const themes = themeStore.getAvailableThemes || themeStore.availableThemes;
+  const themes = themeStore.availableThemes;
   
-  // CRITICAL DEBUG: Check what we're actually getting
+  // DEBUG: Verify themes have their IDs
   if (themes && themes.length > 0) {
     console.log('[ThemeSwitcher] Available themes:', themes);
     console.log('[ThemeSwitcher] First theme:', themes[0]);
