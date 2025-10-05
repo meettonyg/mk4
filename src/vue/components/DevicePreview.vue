@@ -14,7 +14,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 
 const devices = [
   { 
@@ -110,28 +110,37 @@ onMounted(() => {
   initializeDevice();
 });
 
-// Keyboard shortcuts
-onMounted(() => {
-  const handleKeyboard = (e) => {
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === '1') {
-        e.preventDefault();
-        setDevice('desktop');
-      } else if (e.key === '2') {
-        e.preventDefault();
-        setDevice('tablet');
-      } else if (e.key === '3') {
-        e.preventDefault();
-        setDevice('mobile');
-      }
+// ROOT FIX: Store handler reference for proper cleanup
+let keyboardHandler = null;
+
+// Setup keyboard shortcuts
+keyboardHandler = (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === '1') {
+      e.preventDefault();
+      setDevice('desktop');
+    } else if (e.key === '2') {
+      e.preventDefault();
+      setDevice('tablet');
+    } else if (e.key === '3') {
+      e.preventDefault();
+      setDevice('mobile');
     }
-  };
-  
-  document.addEventListener('keydown', handleKeyboard);
-  
-  return () => {
-    document.removeEventListener('keydown', handleKeyboard);
-  };
+  }
+};
+
+// ROOT FIX: Add keyboard handler in onMounted
+onMounted(() => {
+  document.addEventListener('keydown', keyboardHandler);
+  console.log('✅ Device preview keyboard shortcuts enabled');
+});
+
+// ROOT FIX: Proper cleanup in onUnmounted
+onUnmounted(() => {
+  if (keyboardHandler) {
+    document.removeEventListener('keydown', keyboardHandler);
+    console.log('✅ Device preview keyboard shortcuts cleaned up');
+  }
 });
 </script>
 

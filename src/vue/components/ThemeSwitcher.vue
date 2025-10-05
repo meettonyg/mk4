@@ -170,11 +170,17 @@ const handleClickOutside = (event) => {
   }
 };
 
-// Handle toolbar button click
+// ROOT FIX: Store handler reference for proper cleanup
+let themeOpenHandler = null;
+let buttonClickHandler = null;
+let clickOutsideHandler = null;
+
+// Handle toolbar button click - prevent double toggle
 const handleButtonClick = (event) => {
   event.preventDefault();
   event.stopPropagation();
-  toggleDropdown();
+  // ROOT FIX: Don't toggle if already handling custom event
+  // Just prevent default and stop propagation
 };
 
 // SIMPLE FIX: Delay dropdown close to allow mouse movement
@@ -219,52 +225,64 @@ const getDropdownStyle = computed(() => {
   return style;
 });
 
-// Lifecycle
-onMounted(() => {
-  // Listen for theme button clicks via custom event
-  const handleThemeOpen = (event) => {
-    console.log('🎨 ThemeSwitcher: Received open event');
-    // Update button position
-    const btn = document.getElementById('global-theme-btn');
-    if (btn) {
-      buttonElement.value = btn;
-      buttonRect.value = btn.getBoundingClientRect();
-      console.log('🎨 ThemeSwitcher: Button position updated', buttonRect.value);
-    }
-    toggleDropdown();
-    console.log('🎨 ThemeSwitcher: Dropdown toggled, open:', dropdownOpen.value);
-  };
-  
-  // Listen for custom event from toolbar
-  document.addEventListener('gmkb:open-theme-switcher', handleThemeOpen);
-  console.log('✅ ThemeSwitcher: Listening for gmkb:open-theme-switcher event');
-  
-  // LEGACY SUPPORT: Also listen for clicks on button (for backwards compatibility)
+// ROOT FIX: Create handler functions that can be properly removed
+themeOpenHandler = (event) => {
+  console.log('🎨 ThemeSwitcher: Received open event');
+  // Update button position
   const btn = document.getElementById('global-theme-btn');
   if (btn) {
     buttonElement.value = btn;
-    btn.addEventListener('click', handleButtonClick);
+    buttonRect.value = btn.getBoundingClientRect();
+    console.log('🎨 ThemeSwitcher: Button position updated', buttonRect.value);
+  }
+  toggleDropdown();
+  console.log('🎨 ThemeSwitcher: Dropdown toggled, open:', dropdownOpen.value);
+};
+
+buttonClickHandler = handleButtonClick;
+clickOutsideHandler = handleClickOutside;
+
+// Lifecycle
+onMounted(() => {
+  // Listen for custom event from toolbar
+  document.addEventListener('gmkb:open-theme-switcher', themeOpenHandler);
+  console.log('✅ ThemeSwitcher: Listening for gmkb:open-theme-switcher event');
+  
+  // ROOT FIX: Only prevent default on button, don't toggle
+  const btn = document.getElementById('global-theme-btn');
+  if (btn) {
+    buttonElement.value = btn;
+    btn.addEventListener('click', buttonClickHandler);
     buttonRect.value = btn.getBoundingClientRect();
     console.log('✅ ThemeSwitcher: Attached to toolbar button');
   } else {
     console.warn('⚠️ ThemeSwitcher: Toolbar button not found');
   }
   
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener('click', clickOutsideHandler);
 });
 
-// ROOT FIX: Cleanup on unmount - must be separate from onMounted
+// ROOT FIX: Proper cleanup - remove the exact same handler references
 onUnmounted(() => {
-  document.removeEventListener('gmkb:open-theme-switcher', () => {});
-  if (buttonElement.value) {
-    buttonElement.value.removeEventListener('click', handleButtonClick);
+  // Remove the exact handlers we added
+  if (themeOpenHandler) {
+    document.removeEventListener('gmkb:open-theme-switcher', themeOpenHandler);
   }
-  document.removeEventListener('click', handleClickOutside);
+  
+  if (buttonElement.value && buttonClickHandler) {
+    buttonElement.value.removeEventListener('click', buttonClickHandler);
+  }
+  
+  if (clickOutsideHandler) {
+    document.removeEventListener('click', clickOutsideHandler);
+  }
   
   // Clear any pending close timeout
   if (closeTimeout) {
     clearTimeout(closeTimeout);
   }
+  
+  console.log('✅ ThemeSwitcher: Event listeners properly cleaned up');
 });
 </script>
 

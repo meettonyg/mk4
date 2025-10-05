@@ -54,7 +54,6 @@
       <!-- Theme -->
       <button 
         id="global-theme-btn"
-        @mouseenter="handleThemeHover"
         @click.prevent="handleTheme"
         class="toolbar-btn"
         title="Change Theme"
@@ -198,21 +197,12 @@ function handleRedo() {
 }
 
 function handleTheme() {
-  // Dispatch custom event for ThemeSwitcher to listen to
+  // ROOT FIX: Only dispatch event once on click, not on hover
   const event = new CustomEvent('gmkb:open-theme-switcher', {
     detail: { trigger: 'click' }
   });
   document.dispatchEvent(event);
   console.log('🎨 Theme button clicked - event dispatched');
-}
-
-function handleThemeHover() {
-  // Also dispatch on hover for immediate feedback
-  const event = new CustomEvent('gmkb:open-theme-switcher', {
-    detail: { trigger: 'hover' }
-  });
-  document.dispatchEvent(event);
-  console.log('🎨 Theme button hovered - event dispatched');
 }
 
 function handleExport() {
