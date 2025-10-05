@@ -236,7 +236,7 @@ export const useThemeStore = defineStore('theme', {
   actions: {
     // Initialize theme from saved state
     initialize(savedTheme, savedCustomizations) {
-      // CRITICAL FIX: Load themes from PHP first
+      // CRITICAL FIX: Load themes from PHP FIRST, before anything else
       if (window.gmkbData && window.gmkbData.themes && Array.isArray(window.gmkbData.themes)) {
         console.log(`[Theme Store] Loading ${window.gmkbData.themes.length} themes from server`);
         
@@ -290,8 +290,7 @@ export const useThemeStore = defineStore('theme', {
           });
 
           return newTheme;
-        })
-
+        });
         
         console.log(`[Theme Store] Initialized with ${this.availableThemes.length} themes`);
         
@@ -302,6 +301,47 @@ export const useThemeStore = defineStore('theme', {
         }
       } else {
         console.warn('[Theme Store] No themes data in gmkbData, using built-in themes only');
+        // CRITICAL: Must have at least one theme
+        this.availableThemes = [{
+          id: 'professional_clean',
+          name: 'Professional Clean',
+          description: 'Clean and professional design',
+          category: 'professional',
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#2563eb',
+            background: '#ffffff',
+            surface: '#f8fafc',
+            text: '#1e293b',
+            textLight: '#64748b',
+            border: '#e2e8f0',
+            success: '#10b981',
+            warning: '#f59e0b',
+            error: '#ef4444'
+          },
+          typography: {
+            fontFamily: "'Inter', system-ui, sans-serif",
+            headingFamily: "'Inter', system-ui, sans-serif",
+            baseFontSize: 16,
+            headingScale: 1.25,
+            lineHeight: 1.6,
+            fontWeight: 400
+          },
+          spacing: {
+            baseUnit: 8,
+            componentGap: 24,
+            sectionPadding: 40,
+            containerMaxWidth: 1200
+          },
+          effects: {
+            borderRadius: '8px',
+            shadowIntensity: 'medium',
+            animationSpeed: 'normal',
+            gradients: false,
+            blurEffects: false
+          },
+          isBuiltIn: true
+        }];
       }
       
       // ROOT FIX: Ensure store is ready before applying theme
@@ -314,17 +354,20 @@ export const useThemeStore = defineStore('theme', {
       
       if (savedTheme) {
         // Validate theme exists before setting
-        if (this.availableThemes.find(t => t.id === savedTheme)) {
+        const themeExists = this.availableThemes.find(t => t.id === savedTheme);
+        if (themeExists) {
           this.activeThemeId = savedTheme;
           console.log(`[Theme Store] Set active theme: ${savedTheme}`);
         } else {
-          console.warn(`[Theme Store] Saved theme "${savedTheme}" not found, using default`);
+          console.warn(`[Theme Store] Saved theme "${savedTheme}" not found in available themes:`, 
+            this.availableThemes.map(t => t.id));
+          console.log(`[Theme Store] Using default theme instead: ${this.availableThemes[0].id}`);
           this.activeThemeId = this.availableThemes[0].id;
         }
       } else {
         // Set first theme as default
         this.activeThemeId = this.availableThemes[0].id;
-        console.log(`[Theme Store] Using default theme: ${this.activeThemeId}`);
+        console.log(`[Theme Store] No saved theme, using default: ${this.activeThemeId}`);
       }
       
       if (savedCustomizations) {

@@ -117,13 +117,24 @@ onMounted(async () => {
       }
     }
     
-    // PHASE 1: Single API call for ALL data
-    console.log('📡 MediaKitApp: Making single API call for all data');
-    loadingProgress.value = 25;
-    
-    await store.initialize(); // Single API call as per Phase 1 specification
-    loadingProgress.value = 75;
-    console.log('✅ MediaKitApp: Data loaded in single API call');
+    // ROOT FIX: Check if store is already initialized (by main.js)
+    if (store.isInitialized) {
+      console.log('✅ MediaKitApp: Store already initialized by main.js');
+      loadingProgress.value = 75;
+    } else {
+      // This should rarely happen - only if main.js initialization failed
+      console.warn('⚠️ MediaKitApp: Store not initialized, performing fallback initialization');
+      loadingProgress.value = 25;
+      
+      try {
+        await store.initialize();
+        loadingProgress.value = 75;
+        console.log('✅ MediaKitApp: Fallback initialization complete');
+      } catch (initError) {
+        console.error('❌ MediaKitApp: Fallback initialization failed:', initError);
+        throw initError;
+      }
+    }
     
     // Apply theme after data loaded
     await applyTheme();

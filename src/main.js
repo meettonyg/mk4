@@ -22,28 +22,16 @@ import podsDataIntegration from './core/PodsDataIntegration.js';
 import NonceManager from './services/NonceManager.js';
 import importExportService from './services/ImportExportService.js';
 
+// ROOT FIX: Import new modular services
+import { ToastService, showToast } from './services/ToastService.js';
+import { ConsoleAPI } from './services/ConsoleAPI.js';
+import { DOMHandlers } from './services/DOMHandlers.js';
+
 // Initialize core systems
 let apiService;
 let vueApp = null;
 
-/**
- * Show toast notification
- */
-function showToast(message, type = 'info', duration = 3000) {
-  const toast = document.createElement('div');
-  toast.className = `toast toast--${type}`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.classList.add('toast--visible');
-  }, 10);
-  
-  setTimeout(() => {
-    toast.classList.remove('toast--visible');
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
-}
+// ROOT FIX: showToast now imported from ToastService
 
 /**
  * Initialize Vue application with proper error handling
@@ -170,16 +158,35 @@ async function initializeVue() {
     console.log('7️⃣ Initializing theme...');
     
     // ROOT FIX: Initialize themes from PHP data FIRST, before anything else
-    // This ensures the theme IDs are properly set
-    await themeStore.initialize(mediaKitStore.theme, mediaKitStore.themeCustomizations);
-    console.log('✅ Theme initialized:', mediaKitStore.theme);
+    // Pass the saved theme from the media kit store
+    const savedTheme = mediaKitStore.theme || 'professional_clean';
+    const savedCustomizations = mediaKitStore.themeCustomizations || {};
+    
+    console.log('🎨 Initializing theme store with saved theme:', savedTheme);
+    await themeStore.initialize(savedTheme, savedCustomizations);
+    console.log('✅ Theme initialized:', themeStore.activeThemeId);
+    
+    // CRITICAL: If the theme changed during initialization (e.g., theme not found),
+    // update the media kit store to match
+    if (themeStore.activeThemeId !== savedTheme) {
+      console.warn('⚠️ Theme mismatch detected, updating media kit store');
+      mediaKitStore.theme = themeStore.activeThemeId;
+    }
     
     // Load custom themes after (non-blocking)
     themeStore.loadCustomThemes().catch(() => {
       console.log('ℹ️ Custom themes not available, using built-in themes');
     })
     
-    // Setup global methods for console access
+    // ROOT FIX: Use ConsoleAPI service instead of inline code
+    ConsoleAPI.install({
+      mediaKitStore,
+      themeStore,
+      apiService
+    });
+    
+    // DEPRECATED: Old inline console API replaced by ConsoleAPI service
+    /*
     window.GMKB = {
       apiService,
       vueApp: app,
@@ -244,12 +251,15 @@ async function initializeVue() {
         return result;
       }
     };
+    */
     
-    // Console helpers
+    // DEPRECATED: Now handled by ConsoleAPI
+    /*
     window.switchTheme = (themeId) => {
       themeStore.selectTheme(themeId);
       console.log(`✅ Switched to ${themeId} theme`);
     };
+    */
     
     console.log('✅ Vue Media Kit Builder initialized successfully');
     
@@ -264,33 +274,8 @@ async function initializeVue() {
       }
     }, 1000);
     
-    console.log(`
-🎯 Media Kit Builder v4.0 - 100% Pure Vue
-==============================================
-Component Commands:
-- GMKB.addComponent('hero') - Add a component
-- GMKB.removeComponent(id) - Remove component
-- GMKB.getState() - View current state
-- GMKB.save() - Save to WordPress
-
-Section Commands:
-- GMKB.addSection('two_column') - Add section
-- GMKB.removeSection(id) - Remove section
-
-Theme Commands:
-- switchTheme('dark') - Switch themes
-- themeStore.openCustomizer() - Open customizer
-
-Import/Export Commands:
-- GMKB.openImportExport() - Open import/export modal
-
-Debug Commands:
-- GMKB.cacheStatus() - Check API cache status
-- GMKB.inflightStatus() - Check in-flight requests
-- GMKB.checkOrphans() - Check for orphaned components
-- GMKB.fixOrphans() - Fix orphaned components
-- gmkbStore.$state - View store state
-    `);
+    // ROOT FIX: Console help now handled by ConsoleAPI.help()
+    console.log('🎯 Media Kit Builder v4.0 initialized. Type GMKB.help() for commands.');
     
     return app;
     
@@ -300,9 +285,8 @@ Debug Commands:
   }
 }
 
-/**
- * Setup empty state button handlers
- */
+// ROOT FIX: DOM handlers moved to DOMHandlers service
+/*
 function setupEmptyStateHandlers() {
   document.addEventListener('click', async (event) => {
     if (event.target.id === 'add-component-btn' || 
@@ -365,10 +349,10 @@ function setupEmptyStateHandlers() {
     }
   });
 }
+*/
 
-/**
- * Setup UI handlers for non-Vue elements
- */
+// ROOT FIX: UI handlers moved to DOMHandlers service
+/*
 function setupMinimalUIHandlers() {
   const saveBtn = document.getElementById('save-btn');
   if (saveBtn) {
@@ -392,6 +376,7 @@ function setupMinimalUIHandlers() {
     });
   }
 }
+*/
 
 /**
  * Main initialization with enhanced error handling
@@ -452,9 +437,8 @@ async function initialize() {
       throw new Error('Vue application failed to initialize');
     }
     
-    // Setup UI handlers
-    setupMinimalUIHandlers();
-    setupEmptyStateHandlers();
+    // ROOT FIX: Use DOMHandlers service for UI event handling
+    DOMHandlers.initialize();
     
     // SUCCESS!
     console.log('✅ Media Kit Builder initialized successfully!');
@@ -516,10 +500,7 @@ if (document.readyState === 'loading') {
   setTimeout(initialize, 0);
 }
 
-// Export for module usage
+// ROOT FIX: Clean exports - only what's truly needed
 export {
-  APIService,
-  DataValidator,
-  logger,
-  showToast
+  showToast  // From ToastService, commonly used
 };

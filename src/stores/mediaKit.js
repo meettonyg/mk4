@@ -8,6 +8,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
     components: {},
     sections: [],
     theme: 'professional_clean',
+    
+    // ROOT FIX: Track initialization state to prevent duplicate loads
+    isInitialized: false,
     themeCustomizations: {
       colors: {},
       typography: {},
@@ -266,6 +269,12 @@ export const useMediaKitStore = defineStore('mediaKit', {
      * Fetches ALL data including Pods in one request via APIService
      */
     async initialize(savedState) {
+      // ROOT FIX: Prevent duplicate initialization
+      if (this.isInitialized) {
+        console.log('⏭️ Store already initialized, skipping duplicate call');
+        return { alreadyInitialized: true };
+      }
+      
       this.isLoading = true;
       this.loadError = null;
 
@@ -337,6 +346,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
         // Initialize history
         this._saveToHistory();
+        
+        // ROOT FIX: Mark as initialized to prevent duplicate calls
+        this.isInitialized = true;
         
         console.log('✅ State initialized via APIService (admin-ajax)');
         return data;

@@ -1,10 +1,11 @@
 /**
  * Theme Composable - Provides reactive theme functionality
- * Generates and applies CSS variables from theme data
+ * ROOT FIX: Uses theme store as single source of truth instead of window.gmkbData
  */
 
 import { computed, watch, onMounted } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
+import { useThemeStore } from '../../stores/theme';
 
 // Deep merge utility for theme customizations
 function deepMerge(target, source) {
@@ -90,30 +91,34 @@ function generateCSSVariables(theme, prefix = '--gmkb') {
 }
 
 export function useTheme() {
-  const store = useMediaKitStore();
+  const mediaKitStore = useMediaKitStore();
+  const themeStore = useThemeStore();
   
-  // Get theme data from window.gmkbData
+  // ROOT FIX: Get theme data from theme store, not window.gmkbData
   const getThemeData = (themeId) => {
-    if (!window.gmkbData?.themes) {
-      console.warn('No themes data available in gmkbData');
+    // Check theme store's allThemes (includes both built-in and custom)
+    const theme = themeStore.allThemes.find(t => t.id === themeId);
+    
+    if (!theme) {
+      console.warn(`Theme "${themeId}" not found in theme store`);
       return null;
     }
     
-    return window.gmkbData.themes.find(t => 
-      t.id === themeId || 
-      t.slug === themeId || 
-      t.name?.toLowerCase() === themeId?.toLowerCase()
-    );
+    return theme;
   };
   
-  // Compute merged theme (base + customizations)
+  // ROOT FIX: Use theme store's computed properties instead of manual computation
   const mergedTheme = computed(() => {
-    const baseTheme = getThemeData(store.theme);
+    // Use theme store's mergedTheme which already handles customizations
+    const storeTheme = themeStore.mergedTheme;
     
-    if (!baseTheme) {
-      console.warn(`Theme "${store.theme}" not found, using default`);
-      // Return a minimal default theme
-      return {
+    if (storeTheme && Object.keys(storeTheme).length > 0) {
+      return storeTheme;
+    }
+    
+    // Fallback to a minimal default theme if theme store is not ready
+    console.warn('Theme store not ready, using fallback theme');
+    return {
         colors: {
           primary: '#3b82f6',
           secondary: '#8b5cf6',
@@ -142,14 +147,6 @@ export function useTheme() {
           transitions: 'all 0.2s ease'
         }
       };
-    }
-    
-    // Deep merge with customizations if they exist
-    if (store.themeCustomizations && Object.keys(store.themeCustomizations).length > 0) {
-      return deepMerge(baseTheme, store.themeCustomizations);
-    }
-    
-    return baseTheme;
   });
   
   // Apply theme to DOM
@@ -172,14 +169,14 @@ export function useTheme() {
     styleEl.textContent = `:root {\n  ${cssVars}\n}`;
     
     // Set theme attribute on document for potential theme-specific styles
-    document.documentElement.setAttribute('data-gmkb-theme', store.theme);
+    document.documentElement.setAttribute('data-gmkb-theme', themeStore.activeThemeId);
     
-    console.log('✅ Theme applied:', store.theme);
+    console.log('✅ Theme applied:', themeStore.activeThemeId);
   };
   
-  // Watch for theme changes
-  watch(() => store.theme, applyTheme, { immediate: true });
-  watch(() => store.themeCustomizations, applyTheme, { deep: true });
+  // ROOT FIX: Watch theme store for changes, not media kit store
+  watch(() => themeStore.activeThemeId, applyTheme, { immediate: true });
+  watch(() => themeStore.tempCustomizations, applyTheme, { deep: true });
   
   // Apply theme on mount
   onMounted(() => {
@@ -187,30 +184,33 @@ export function useTheme() {
   });
   
   return {
-    theme: computed(() => store.theme),
+    theme: computed(() => themeStore.activeThemeId),
     mergedTheme,
     applyTheme,
     setTheme: (themeId) => {
-      store.theme = themeId;
-      store.hasUnsavedChanges = true;
+      // ROOT FIX: Use theme store's selectTheme method
+      themeStore.selectTheme(themeId);
     },
     updateCustomization: (path, value) => {
-      // Use lodash-like set for nested path updates
+      // ROOT FIX: Update theme store customizations
       const keys = path.split('.');
-      const last = keys.pop();
-      let obj = store.themeCustomizations;
+      const [category, property] = keys;
       
-      for (const key of keys) {
-        if (!obj[key]) obj[key] = {};
-        obj = obj[key];
+      if (category === 'colors') {
+        themeStore.updateColor(property, value);
+      } else if (category === 'typography') {
+        themeStore.updateTypography(property, value);
+      } else if (category === 'spacing') {
+        themeStore.updateSpacing(property, value);
+      } else if (category === 'effects') {
+        themeStore.updateEffects(property, value);
       }
-      
-      obj[last] = value;
-      store.hasUnsavedChanges = true;
     },
     resetCustomizations: () => {
-      store.themeCustomizations = {};
-      store.hasUnsavedChanges = true;
-    }
+      themeStore.resetToOriginal();
+    },
+    // Additional helper methods
+    getThemeData,
+    availableThemes: computed(() => themeStore.allThemes)
   };
 }
