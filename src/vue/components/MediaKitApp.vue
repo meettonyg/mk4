@@ -120,21 +120,44 @@ onMounted(async () => {
       }
     }
     
-    // ROOT FIX: Check if store is already initialized (by main.js)
+    // ROOT FIX: Wait for store initialization (main.js handles this)
+    // Check if already initialized
     if (store.isInitialized) {
-      console.log('✅ MediaKitApp: Store already initialized by main.js');
+      console.log('✅ MediaKitApp: Store already initialized');
       loadingProgress.value = 75;
+    } else if (store.isInitializing) {
+      // Store is currently initializing (by main.js), wait for it
+      console.log('⏳ MediaKitApp: Waiting for ongoing store initialization...');
+      loadingProgress.value = 25;
+      
+      // Wait for initialization to complete by listening for the event
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Store initialization timeout after 10s'));
+        }, 10000);
+        
+        const checkInterval = setInterval(() => {
+          if (store.isInitialized) {
+            clearInterval(checkInterval);
+            clearTimeout(timeout);
+            resolve();
+          }
+        }, 100);
+      });
+      
+      loadingProgress.value = 75;
+      console.log('✅ MediaKitApp: Store initialization complete');
     } else {
-      // This should rarely happen - only if main.js initialization failed
-      console.warn('⚠️ MediaKitApp: Store not initialized, performing fallback initialization');
+      // Neither initialized nor initializing - this shouldn't happen but handle it
+      console.warn('⚠️ MediaKitApp: Store not initialized and not initializing, performing emergency initialization');
       loadingProgress.value = 25;
       
       try {
         await store.initialize();
         loadingProgress.value = 75;
-        console.log('✅ MediaKitApp: Fallback initialization complete');
+        console.log('✅ MediaKitApp: Emergency initialization complete');
       } catch (initError) {
-        console.error('❌ MediaKitApp: Fallback initialization failed:', initError);
+        console.error('❌ MediaKitApp: Emergency initialization failed:', initError);
         throw initError;
       }
     }

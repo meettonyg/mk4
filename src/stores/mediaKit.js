@@ -11,6 +11,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     
     // ROOT FIX: Track initialization state to prevent duplicate loads
     isInitialized: false,
+    isInitializing: false,
     themeCustomizations: {
       colors: {},
       typography: {},
@@ -275,6 +276,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
         return { alreadyInitialized: true };
       }
       
+      // ROOT FIX: Check if already initializing
+      if (this.isInitializing) {
+        console.warn('⚠️ Store is already initializing, waiting for completion...');
+        // Wait for initialization to complete
+        while (this.isInitializing && !this.isInitialized) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return { alreadyInitialized: true };
+      }
+      
+      this.isInitializing = true;
       this.isLoading = true;
       this.loadError = null;
 
@@ -349,6 +361,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // ROOT FIX: Mark as initialized to prevent duplicate calls
         this.isInitialized = true;
+        this.isInitializing = false;
         
         console.log('✅ State initialized via APIService (admin-ajax)');
         return data;
@@ -356,6 +369,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       } catch (error) {
         console.error('Failed to initialize:', error);
         this.loadError = error.message;
+        this.isInitializing = false; // Clear flag on error too
         throw error;
       } finally {
         this.isLoading = false;

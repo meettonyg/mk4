@@ -373,6 +373,17 @@ export default {
     });
     
     // Lifecycle
+    // Handle component discovery events
+    const handleComponentsDiscovered = () => {
+      console.log('🔄 ComponentLibrary: Refreshing components after discovery');
+      components.value = UnifiedComponentRegistry.getAll();
+      categories.value = UnifiedComponentRegistry.getCategories().reduce((acc, cat) => {
+        acc[cat.slug] = cat.name;
+        return acc;
+      }, {});
+      console.log(`✅ ComponentLibrary: Refreshed, now have ${components.value.length} components`);
+    };
+    
     onMounted(() => {
       // Register global open function
       window.openComponentLibrary = open;
@@ -380,12 +391,15 @@ export default {
       document.addEventListener('gmkb:open-component-library', handleOpenEvent);
       document.addEventListener('keydown', handleKeydown);
       
+      // ROOT FIX: Listen for component discovery events
+      document.addEventListener('gmkb:components-discovered', handleComponentsDiscovered);
+      
       // Also listen to store state
       if (store.componentLibraryOpen) {
         open();
       }
       
-      console.log('✅ Vue Component Library ready');
+      console.log('✅ Vue Component Library ready with', components.value.length, 'components');
     });
     
     onUnmounted(() => {
@@ -394,6 +408,7 @@ export default {
       
       document.removeEventListener('gmkb:open-component-library', handleOpenEvent);
       document.removeEventListener('keydown', handleKeydown);
+      document.removeEventListener('gmkb:components-discovered', handleComponentsDiscovered);
       delete window.openComponentLibrary;
     });
     

@@ -431,6 +431,13 @@ async function handleImport() {
     importProgressText.value = 'Starting import...';
     importResult.value = null;
 
+    // ROOT FIX: Save preview data before it gets cleared by executeImport
+    const savedPreview = importPreview.value ? {
+      componentCount: importPreview.value.componentCount,
+      sectionCount: importPreview.value.sectionCount,
+      hasTheme: importPreview.value.hasTheme
+    } : null;
+
     // Prepare resolutions
     const resolutions = {};
     if (importConflicts.value.length > 0) {
@@ -453,16 +460,23 @@ async function handleImport() {
     importProgress.value = 100;
     importProgressText.value = 'Import complete!';
 
-    // Show success result
-    importResult.value = {
-      success: true,
-      message: 'Media kit imported successfully!',
-      details: [
-        `${importPreview.value.componentCount} components imported`,
-        `${importPreview.value.sectionCount} sections created`,
-        importPreview.value.hasTheme ? 'Theme applied' : ''
-      ].filter(Boolean)
-    };
+    // ROOT FIX: Use saved preview data (executeImport clears importPreview)
+    if (savedPreview) {
+      importResult.value = {
+        success: true,
+        message: 'Media kit imported successfully!',
+        details: [
+          `${savedPreview.componentCount} components imported`,
+          `${savedPreview.sectionCount} sections created`,
+          savedPreview.hasTheme ? 'Theme applied' : ''
+        ].filter(Boolean)
+      };
+    } else {
+      importResult.value = {
+        success: true,
+        message: 'Media kit imported successfully!'
+      };
+    }
 
     // Emit success event
     emit('import-success');

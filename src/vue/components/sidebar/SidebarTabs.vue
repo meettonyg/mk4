@@ -91,17 +91,20 @@
           <div class="setting-group">
             <label>Theme</label>
             <select v-model="selectedTheme" @change="updateTheme" class="setting-select">
-              <option value="professional_clean">Professional Clean</option>
-              <option value="creative_bold">Creative Bold</option>
-              <option value="minimal_elegant">Minimal Elegant</option>
-              <option value="modern_dark">Modern Dark</option>
+              <option 
+                v-for="theme in availableThemes" 
+                :key="theme.id" 
+                :value="theme.id"
+              >
+                {{ theme.name }}
+              </option>
             </select>
           </div>
           
           <!-- Auto-save Toggle -->
           <div class="setting-group">
             <label class="toggle-label">
-              <input type="checkbox" v-model="autoSave" class="toggle-input" />
+              <input type="checkbox" v-model="autoSave" @change="toggleAutoSave" class="toggle-input" />
               <span>Auto-save</span>
             </label>
           </div>
@@ -118,8 +121,10 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
+import { useThemeStore } from '../../../stores/theme';
+import UnifiedComponentRegistry from '../../../services/UnifiedComponentRegistry';
 import ComponentList from './ComponentList.vue';
 
 export default {
@@ -130,6 +135,7 @@ export default {
   
   setup() {
     const store = useMediaKitStore();
+    const themeStore = useThemeStore();
     
     // Tab configuration
     const tabs = [
@@ -140,25 +146,27 @@ export default {
     
     const activeTab = ref('components');
     
-    // Component types for library
-    const componentTypes = [
-      { type: 'hero', name: 'Hero', icon: '🌟' },
-      { type: 'biography', name: 'Biography', icon: '👤' },
-      { type: 'topics', name: 'Topics', icon: '📚' },
-      { type: 'authority-hook', name: 'Authority', icon: '🎯' },
-      { type: 'guest-intro', name: 'Guest Intro', icon: '🎤' },
-      { type: 'questions', name: 'Q&A', icon: '❓' },
-      { type: 'testimonials', name: 'Testimonials', icon: '💬' },
-      { type: 'call-to-action', name: 'CTA', icon: '📢' },
-      { type: 'social', name: 'Social Links', icon: '🔗' },
-      { type: 'contact', name: 'Contact', icon: '📧' },
-      { type: 'stats', name: 'Statistics', icon: '📊' },
-      { type: 'photo-gallery', name: 'Gallery', icon: '🖼️' },
-      { type: 'video-intro', name: 'Video', icon: '🎥' },
-      { type: 'podcast-player', name: 'Podcast', icon: '🎙️' },
-      { type: 'booking-calendar', name: 'Booking', icon: '📅' },
-      { type: 'logo-grid', name: 'Logos', icon: '🏢' }
-    ];
+    // ROOT FIX: Load component types from registry instead of hard-coding
+    const componentTypes = ref([]);
+    
+    // Function to refresh component types from registry
+    const refreshComponentTypes = () => {
+      const registryComponents = UnifiedComponentRegistry.getAll();
+      componentTypes.value = registryComponents.map(comp => ({
+        type: comp.type,
+        name: comp.name,
+        icon: comp.icon || '📦'
+      }));
+      console.log(`✅ SidebarTabs: Loaded ${componentTypes.value.length} components from registry`);
+    };
+    
+    // Initialize component types
+    refreshComponentTypes();
+    
+    // Listen for component discovery events
+    const handleComponentsDiscovered = () => {
+      refreshComponentTypes();
+    };
     
     // Layout options
     const layouts = [
@@ -183,7 +191,21 @@ export default {
     const sections = computed(() => store.sections);
     const sectionCount = computed(() => store.sectionCount);
     const selectedTheme = ref(store.theme);
-    const autoSave = ref(true);
+    const autoSave = ref(store.autoSaveEnabled || true);
+    
+    // ROOT FIX: Load available themes from theme store
+    const availableThemes = computed(() => {
+      if (!themeStore.availableThemes || themeStore.availableThemes.length === 0) {
+        // Fallback to default themes
+        return [
+          { id: 'professional_clean', name: 'Professional Clean' },
+          { id: 'creative_bold', name: 'Creative Bold' },
+          { id: 'minimal_elegant', name: 'Minimal Elegant' },
+          { id: 'modern_dark', name: 'Modern Dark' }
+        ];
+      }
+      return themeStore.availableThemes;
+    });
     
     // Methods
     const openComponentLibrary = () => {
@@ -224,6 +246,12 @@ export default {
       console.log('✅ Theme changed to:', selectedTheme.value);
     };
     
+    // ROOT FIX: Wire up auto-save toggle
+    const toggleAutoSave = () => {
+      store.autoSaveEnabled = autoSave.value;
+      console.log('✅ Auto-save', autoSave.value ? 'enabled' : 'disabled');
+    };
+    
     // Drag handlers for component library
     const onDragStart = (event, componentType) => {
       event.dataTransfer.effectAllowed = 'copy';
@@ -259,6 +287,11 @@ export default {
       console.log('Added component:', type);
     };
     
+    // ROOT FIX: Register event listeners
+    onMounted(() => {
+      document.addEventListener('gmkb:components-discovered', handleComponentsDiscovered);
+    });
+    
     return {
       tabs,
       activeTab,
@@ -267,12 +300,14 @@ export default {
       sectionCount,
       selectedTheme,
       autoSave,
+      availableThemes,
       componentTypes,
       openComponentLibrary,
       addSection,
       removeSection,
       getSectionLabel,
       updateTheme,
+      toggleAutoSave,
       onDragStart,
       onDragEnd,
       addComponent

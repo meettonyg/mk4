@@ -578,8 +578,19 @@ const getColumnStyles = (section) => {
   const gapValue = section.settings?.columnGap || section.settings?.gap;
   
   if (gapValue) {
+    // Map semantic tokens to actual pixel values
+    const gapMap = {
+      'small': '12px',
+      'medium': '24px',
+      'large': '40px',
+      'none': '0px'
+    };
+    
+    // If it's a semantic token, map it; otherwise treat as px value
+    const mappedGap = gapMap[gapValue] || (typeof gapValue === 'number' ? `${gapValue}px` : gapValue);
+    
     return {
-      gap: `${gapValue}px`
+      gap: mappedGap
     };
   }
   return {};
