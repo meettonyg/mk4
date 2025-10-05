@@ -594,10 +594,10 @@ export const useThemeStore = defineStore('theme', {
         root.style.setProperty(key, value);
       });
       
-      // Apply special classes for effects
+      // Apply special classes for effects (with correct CSS class names)
       const theme = this.mergedTheme;
-      document.body.classList.toggle('theme-gradients', theme.effects.gradients);
-      document.body.classList.toggle('theme-blur', theme.effects.blurEffects);
+      document.body.classList.toggle('gmkb-theme-gradients', theme.effects.gradients);
+      document.body.classList.toggle('gmkb-theme-blur', theme.effects.blurEffects);
       
       // Dispatch event for other systems
       document.dispatchEvent(new CustomEvent('gmkb:theme-applied', {

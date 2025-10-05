@@ -259,7 +259,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import ComponentWrapper from './ComponentWrapper.vue';
 import SectionSettings from './sections/SectionSettings.vue';
@@ -365,19 +365,52 @@ const moveSection = (index, direction) => {
 const duplicateSection = (sectionId) => {
   const section = store.sections.find(s => s.section_id === sectionId);
   if (section) {
+    // Create component ID mapping for duplicated components
+    const componentIdMap = {};
+    
+    // Clone components with new IDs
+    const cloneComponents = (componentIds) => {
+      if (!componentIds || !Array.isArray(componentIds)) return [];
+      
+      return componentIds.map(oldId => {
+        const newId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        componentIdMap[oldId] = newId;
+        
+        // Clone the component in the store
+        const originalComponent = store.components[oldId];
+        if (originalComponent) {
+          store.components[newId] = {
+            ...originalComponent,
+            id: newId,
+            data: { ...originalComponent.data },
+            props: { ...originalComponent.props },
+            settings: { ...originalComponent.settings }
+          };
+        }
+        
+        return newId;
+      });
+    };
+    
+    // Create new section with cloned components
     const newSection = {
       ...section,
       section_id: `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      components: [...(section.components || [])],
-      columns: section.columns ? { 
-        1: [...(section.columns[1] || [])],
-        2: [...(section.columns[2] || [])],
-        3: [...(section.columns[3] || [])]
-      } : undefined
+      components: section.components ? cloneComponents(section.components) : undefined,
+      columns: section.columns ? {
+        1: cloneComponents(section.columns[1] || []),
+        2: cloneComponents(section.columns[2] || []),
+        3: cloneComponents(section.columns[3] || [])
+      } : undefined,
+      settings: section.settings ? { ...section.settings } : {}
     };
+    
     const index = store.sections.findIndex(s => s.section_id === sectionId);
     store.sections.splice(index + 1, 0, newSection);
     store.hasUnsavedChanges = true;
+    store._trackChange();
+    
+    console.log(`✅ Duplicated section with ${Object.keys(componentIdMap).length} new components`);
   }
 };
 
@@ -497,6 +530,7 @@ const updateColumnComponents = (section, column, newComponents) => {
 const onComponentOrderChange = (evt) => {
   console.log('Component order changed:', evt);
   store.hasUnsavedChanges = true;
+  store._trackChange(); // Track change for history and auto-save
 };
 
 // Get section styles from settings
@@ -507,8 +541,32 @@ const getSectionStyles = (section) => {
     styles.backgroundColor = section.settings.backgroundColor;
   }
   
+  // Map padding tokens to actual px values
   if (section.settings?.padding) {
-    styles.padding = `${section.settings.padding}px`;
+    const paddingMap = {
+      'small': '20px',
+      'medium': '40px',
+      'large': '60px',
+      'none': '0px'
+    };
+    
+    const padding = section.settings.padding;
+    // If it's a token, map it; otherwise use as-is
+    styles.padding = paddingMap[padding] || `${padding}px`;
+  }
+  
+  // Apply background opacity if set
+  if (section.settings?.backgroundOpacity !== undefined) {
+    const bgColor = section.settings.backgroundColor || '#ffffff';
+    const opacity = section.settings.backgroundOpacity;
+    
+    // Convert hex to rgba if needed
+    if (bgColor.startsWith('#')) {
+      const r = parseInt(bgColor.slice(1, 3), 16);
+      const g = parseInt(bgColor.slice(3, 5), 16);
+      const b = parseInt(bgColor.slice(5, 7), 16);
+      styles.backgroundColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
   }
   
   return styles;
@@ -516,9 +574,12 @@ const getSectionStyles = (section) => {
 
 // Get column gap styles
 const getColumnStyles = (section) => {
-  if (section.settings?.columnGap) {
+  // Support both 'gap' and 'columnGap' keys for backwards compatibility
+  const gapValue = section.settings?.columnGap || section.settings?.gap;
+  
+  if (gapValue) {
     return {
-      gap: `${section.settings.columnGap}px`
+      gap: `${gapValue}px`
     };
   }
   return {};
@@ -546,15 +607,32 @@ onMounted(async () => {
 
 // Listen for section settings modal events
 
-// Watch for changes and auto-save
+// Watch for changes and auto-save with proper debouncing
+let autoSaveTimer = null;
 watch(() => store.hasUnsavedChanges, (hasChanges) => {
+  // Clear any existing timer
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+  
   if (hasChanges) {
     // Debounced auto-save
-    setTimeout(() => {
-      if (store.hasUnsavedChanges) {
-        store.saveToWordPress().catch(console.error);
+    autoSaveTimer = setTimeout(() => {
+      if (store.hasUnsavedChanges && !store.isSaving) {
+        store.saveToWordPress().catch(console.error).finally(() => {
+          autoSaveTimer = null;
+        });
       }
     }, 2000);
+  }
+});
+
+// Clean up timer on unmount
+onUnmounted(() => {
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
   }
 });
 </script>

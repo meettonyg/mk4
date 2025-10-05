@@ -239,13 +239,14 @@ export default {
     const open = () => {
       isOpen.value = true;
       document.body.style.overflow = 'hidden';
+      store.setComponentLibraryOpen(true); // Sync store state
     };
     
     const close = () => {
       isOpen.value = false;
       document.body.style.overflow = '';
       resetFilters();
-      store.setComponentLibraryOpen(false);
+      store.setComponentLibraryOpen(false); // Sync store state
     };
     
     const addComponent = (component) => {
@@ -388,6 +389,9 @@ export default {
     });
     
     onUnmounted(() => {
+      // Restore body overflow in case component unmounts while modal is open
+      document.body.style.overflow = '';
+      
       document.removeEventListener('gmkb:open-component-library', handleOpenEvent);
       document.removeEventListener('keydown', handleKeydown);
       delete window.openComponentLibrary;

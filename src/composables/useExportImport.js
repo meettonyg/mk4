@@ -267,6 +267,9 @@ export function useExportImport() {
    */
   const executeImport = async (importData, resolutions = {}) => {
     isImporting.value = true;
+    
+    // Save preview data before it gets cleared
+    const savedPreview = importPreview.value ? { ...importPreview.value } : null;
 
     try {
       // Prepare form data for WordPress AJAX
@@ -296,13 +299,18 @@ export function useExportImport() {
       // Reload the media kit state from server
       await store.loadFromAPI();
 
+      // Build success message using saved preview data
+      const successMessage = savedPreview ? 
+        `Import completed: ${savedPreview.componentCount || 0} components, ${savedPreview.sectionCount || 0} sections` :
+        'Import completed successfully';
+      
       // Clear preview after successful import
       importPreview.value = null;
       importConflicts.value = [];
 
-      // Show success message
+      // Show success message with details
       if (window.gmkbData?.showNotifications) {
-        store.showNotification('Import completed successfully', 'success');
+        store.showNotification(successMessage, 'success');
       }
 
       return true;

@@ -413,6 +413,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         console.log('✅ Saved to WordPress via REST API v2:', result);
         this.isDirty = false;
+        this.hasUnsavedChanges = false;
         this.lastSaved = Date.now();
         
         // Clear local backup after successful save
@@ -588,6 +589,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           ...updates
         };
         this.isDirty = true;
+        this.hasUnsavedChanges = true;
         this._trackChange();
         
         // Dispatch update event
@@ -1339,16 +1341,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this._trackChange();
     },
 
-    // Update component data
-    updateComponent(componentId, updates) {
-      if (this.components[componentId]) {
-        this.components[componentId] = {
-          ...this.components[componentId],
-          ...updates
-        };
-        this.hasUnsavedChanges = true;
-      }
-    },
+    // REMOVED: Duplicate updateComponent definition - keeping the one above with history tracking
 
     // UI Management - Added methods
     setComponentLibraryOpen(isOpen) {

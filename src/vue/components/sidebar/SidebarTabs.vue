@@ -212,11 +212,16 @@ export default {
     };
     
     const updateTheme = () => {
+      // Update store theme
       store.theme = selectedTheme.value;
-      // Trigger theme change event
-      document.dispatchEvent(new CustomEvent('gmkb:theme-changed', {
-        detail: { theme: selectedTheme.value }
+      store._trackChange();
+      
+      // Trigger the correct event that ThemeProvider listens for
+      document.dispatchEvent(new CustomEvent('gmkb:change-theme', {
+        detail: { themeId: selectedTheme.value }
       }));
+      
+      console.log('✅ Theme changed to:', selectedTheme.value);
     };
     
     // Drag handlers for component library
