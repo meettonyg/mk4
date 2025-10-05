@@ -325,17 +325,22 @@ export default {
       }
     };
     
+    // ROOT FIX: Store listener reference for proper cleanup
+    let panelOpenHandler = null;
+    
     onMounted(() => {
       document.addEventListener('click', handleGlobalClick);
       document.addEventListener('keydown', handleEscKey);
       
-      // Listen for external edit panel open events
-      // Use document-level event for reliability
-      document.addEventListener('gmkb:open-vue-panel', (e) => {
+      // ROOT FIX: Store handler reference so we can remove it later
+      panelOpenHandler = (e) => {
         if (e.detail?.componentId === props.componentId) {
           openEditPanel();
         }
-      });
+      };
+      
+      // Listen for external edit panel open events
+      document.addEventListener('gmkb:open-vue-panel', panelOpenHandler);
       
       // ROOT FIX: Always use Pods data when available (real-time sync)
       if (podsBiography.value) {
@@ -347,6 +352,12 @@ export default {
     onUnmounted(() => {
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleEscKey);
+      
+      // ROOT FIX: Remove panel open listener
+      if (panelOpenHandler) {
+        document.removeEventListener('gmkb:open-vue-panel', panelOpenHandler);
+      }
+      
       document.body.classList.remove('design-panel-open');
     });
     

@@ -7,12 +7,19 @@
 import { showToast } from './ToastService.js';
 
 export class DOMHandlers {
+  // ROOT FIX: Store handler references for proper cleanup
+  static handlers = {
+    emptyStateHandler: null,
+    saveButtonHandler: null
+  };
+  
   /**
    * Setup empty state button handlers
    * These handle clicks on buttons shown when there are no components
    */
   static setupEmptyStateHandlers() {
-    document.addEventListener('click', async (event) => {
+    // ROOT FIX: Create named handler function that we can remove later
+    this.handlers.emptyStateHandler = async (event) => {
       // Check for add component button
       if (event.target.id === 'add-component-btn' || 
           event.target.closest('#add-component-btn')) {
@@ -73,7 +80,10 @@ export class DOMHandlers {
           }
           break;
       }
-    });
+    };
+    
+    // ROOT FIX: Register the handler we can later remove
+    document.addEventListener('click', this.handlers.emptyStateHandler);
   }
   
   /**
@@ -82,7 +92,8 @@ export class DOMHandlers {
   static setupMinimalUIHandlers() {
     const saveBtn = document.getElementById('save-btn');
     if (saveBtn) {
-      saveBtn.addEventListener('click', async () => {
+      // ROOT FIX: Create named handler function
+      this.handlers.saveButtonHandler = async () => {
         const store = window.gmkbStore || window.mediaKitStore;
         if (!store) return;
         
@@ -99,7 +110,10 @@ export class DOMHandlers {
           saveBtn.disabled = false;
           saveBtn.textContent = 'Save';
         }
-      });
+      };
+      
+      // ROOT FIX: Register handler we can later remove
+      saveBtn.addEventListener('click', this.handlers.saveButtonHandler);
     }
     
     // Add any other minimal UI handlers here
@@ -118,9 +132,21 @@ export class DOMHandlers {
    * Cleanup DOM handlers (for testing or cleanup)
    */
   static cleanup() {
-    // Remove event listeners if needed
-    // This would require storing references to the handlers
-    console.log('DOM handlers cleaned up');
+    // ROOT FIX: Actually remove event listeners using stored references
+    if (this.handlers.emptyStateHandler) {
+      document.removeEventListener('click', this.handlers.emptyStateHandler);
+      this.handlers.emptyStateHandler = null;
+    }
+    
+    if (this.handlers.saveButtonHandler) {
+      const saveBtn = document.getElementById('save-btn');
+      if (saveBtn) {
+        saveBtn.removeEventListener('click', this.handlers.saveButtonHandler);
+      }
+      this.handlers.saveButtonHandler = null;
+    }
+    
+    console.log('✅ DOM handlers cleaned up');
   }
 }
 
