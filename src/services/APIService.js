@@ -55,7 +55,7 @@ export class APIService {
 
   /**
    * Normalizes the REST URL to ensure it's valid and has trailing slash
-   * ROOT FIX: Prevents malformed URLs when restUrl is incorrect
+   * ROOT FIX: Use URL constructor for proper parsing and validation
    */
   normalizeRestUrl(url) {
     if (!url) {
@@ -72,22 +72,43 @@ export class APIService {
       return `${origin}/wp-json/`;
     }
     
-    // Ensure trailing slash
-    if (!url.endsWith('/')) {
-      url += '/';
-    }
-    
-    // Ensure it ends with wp-json/
-    if (!url.endsWith('wp-json/')) {
-      if (url.endsWith('/')) {
-        url += 'wp-json/';
+    try {
+      // ROOT FIX: Use URL constructor for proper parsing
+      let parsedUrl;
+      
+      // Handle relative URLs
+      if (url.startsWith('/')) {
+        parsedUrl = new URL(url, window.location.origin);
+      } else if (!url.startsWith('http')) {
+        parsedUrl = new URL(url, window.location.origin);
       } else {
-        url += '/wp-json/';
+        parsedUrl = new URL(url);
       }
+      
+      // Clean up the pathname - remove double slashes
+      let pathname = parsedUrl.pathname.replace(/\/+/g, '/');
+      
+      // Ensure it ends with wp-json/
+      if (!pathname.endsWith('wp-json/')) {
+        if (pathname.endsWith('/')) {
+          pathname += 'wp-json/';
+        } else {
+          pathname += '/wp-json/';
+        }
+      }
+      
+      // Rebuild the URL
+      const normalizedUrl = `${parsedUrl.origin}${pathname}`;
+      
+      console.log('✅ APIService: Normalized REST URL to:', normalizedUrl);
+      return normalizedUrl;
+      
+    } catch (error) {
+      console.error('❌ APIService: Failed to parse URL:', error);
+      // Fallback to origin-based URL
+      const origin = window.location.origin;
+      return `${origin}/wp-json/`;
     }
-    
-    console.log('✅ APIService: Normalized REST URL to:', url);
-    return url;
   }
 
   /**

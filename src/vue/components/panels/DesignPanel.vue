@@ -234,7 +234,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, markRaw, defineAsyncComponent } from 'vue';
+import { ref, computed, watch, nextTick, markRaw, defineAsyncComponent, onMounted, onUnmounted } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
 
 const store = useMediaKitStore();
@@ -536,8 +536,11 @@ const closePanel = () => {
   customEditor.value = null;
 };
 
-// Keyboard shortcuts
-const handleKeydown = (e) => {
+// ROOT FIX: Store handler reference for proper cleanup
+let keyboardHandler = null;
+
+// Keyboard shortcuts handler
+keyboardHandler = (e) => {
   if (e.key === 'Escape' && isOpen.value) {
     closePanel();
   }
@@ -547,10 +550,24 @@ const handleKeydown = (e) => {
   }
 };
 
-// Add keyboard listener
-if (typeof window !== 'undefined') {
-  window.addEventListener('keydown', handleKeydown);
-}
+// ROOT FIX: Add keyboard listener in lifecycle hook
+onMounted(() => {
+  window.addEventListener('keydown', keyboardHandler);
+  console.log('✅ DesignPanel: Keyboard shortcuts registered');
+});
+
+// ROOT FIX: Proper cleanup in onUnmounted
+onUnmounted(() => {
+  if (keyboardHandler) {
+    window.removeEventListener('keydown', keyboardHandler);
+    console.log('✅ DesignPanel: Keyboard shortcuts cleaned up');
+  }
+  
+  // Clear any pending update timeout
+  if (updateTimeout) {
+    clearTimeout(updateTimeout);
+  }
+});
 </script>
 
 <style scoped>

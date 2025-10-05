@@ -211,23 +211,41 @@ function handleKeyboard(event) {
   }
 }
 
+// ROOT FIX: Store handler references for proper cleanup
+let keyboardHandler = null;
+let notificationHandler = null;
+
+// Create handlers
+keyboardHandler = handleKeyboard;
+notificationHandler = (event) => {
+  showNotification(event.detail.message, event.detail.type);
+};
+
 // Lifecycle
 onMounted(() => {
-  document.addEventListener('keydown', handleKeyboard)
-  
-  // Listen for notification events from store
-  const handleNotification = (event) => {
-    showNotification(event.detail.message, event.detail.type)
-  }
-  document.addEventListener('gmkb:notification', handleNotification)
+  document.addEventListener('keydown', keyboardHandler);
+  document.addEventListener('gmkb:notification', notificationHandler);
   
   // Make showNotification available globally
-  window.showToast = showNotification
-})
+  window.showToast = showNotification;
+  
+  console.log('✅ MediaKitBuilder: Event listeners registered');
+});
 
 onBeforeUnmount(() => {
-  document.removeEventListener('keydown', handleKeyboard)
-})
+  // ROOT FIX: Remove both listeners properly
+  if (keyboardHandler) {
+    document.removeEventListener('keydown', keyboardHandler);
+  }
+  if (notificationHandler) {
+    document.removeEventListener('gmkb:notification', notificationHandler);
+  }
+  
+  // Clean up global reference
+  delete window.showToast;
+  
+  console.log('✅ MediaKitBuilder: All event listeners cleaned up');
+});
 </script>
 
 <style scoped>

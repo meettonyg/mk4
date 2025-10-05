@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import { watch, onMounted, computed } from 'vue';
+import { watch, onMounted, onUnmounted, computed } from 'vue';
 import { useThemeStore } from '../../stores/theme';
 
 const themeStore = useThemeStore();
@@ -228,6 +228,16 @@ watch(
   }
 );
 
+// ROOT FIX: Store handler reference for proper cleanup
+let changeThemeHandler = null;
+
+// Create handler function
+changeThemeHandler = (event) => {
+  if (event.detail?.themeId) {
+    themeStore.selectTheme(event.detail.themeId);
+  }
+};
+
 // Initialize on mount
 onMounted(() => {
   console.log('[ThemeProvider] Mounted, applying initial theme');
@@ -239,11 +249,16 @@ onMounted(() => {
   applyThemeToDOM();
   
   // Listen for external theme change requests
-  document.addEventListener('gmkb:change-theme', (event) => {
-    if (event.detail?.themeId) {
-      themeStore.selectTheme(event.detail.themeId);
-    }
-  });
+  document.addEventListener('gmkb:change-theme', changeThemeHandler);
+  console.log('✅ ThemeProvider: Event listener registered');
+});
+
+// ROOT FIX: Proper cleanup in onUnmounted
+onUnmounted(() => {
+  if (changeThemeHandler) {
+    document.removeEventListener('gmkb:change-theme', changeThemeHandler);
+    console.log('✅ ThemeProvider: Event listener cleaned up');
+  }
 });
 </script>
 

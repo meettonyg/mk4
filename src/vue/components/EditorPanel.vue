@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, markRaw } from 'vue';
+import { computed, defineAsyncComponent, markRaw, onMounted, onUnmounted } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import GenericEditor from './GenericEditor.vue';
 
@@ -134,10 +134,27 @@ const closeEditor = () => {
   store.closeEditPanel();
 };
 
-// Listen for escape key
-document.addEventListener('keydown', (e) => {
+// ROOT FIX: Store handler reference for proper cleanup
+let escapeHandler = null;
+
+// Create escape key handler
+escapeHandler = (e) => {
   if (e.key === 'Escape' && isEditing.value) {
     closeEditor();
+  }
+};
+
+// ROOT FIX: Add keyboard listener in onMounted
+onMounted(() => {
+  document.addEventListener('keydown', escapeHandler);
+  console.log('✅ EditorPanel: Escape key listener registered');
+});
+
+// ROOT FIX: Proper cleanup in onUnmounted
+onUnmounted(() => {
+  if (escapeHandler) {
+    document.removeEventListener('keydown', escapeHandler);
+    console.log('✅ EditorPanel: Escape key listener cleaned up');
   }
 });
 </script>

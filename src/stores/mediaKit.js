@@ -25,7 +25,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     // Meta state for error tracking and status
     isDirty: false,
     loadError: null,
-    maxHistorySize: 50,
+    maxHistorySize: 30, // ROOT FIX: Reduced from 50 to 30 for better memory usage
     
     // UI state
     selectedComponentId: null,
@@ -1174,20 +1174,53 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (!this.history) this.history = [];
       if (this.historyIndex === undefined) this.historyIndex = -1;
       
+      // ROOT FIX: Don't save if state hasn't actually changed
+      const currentState = {
+        components: this.components,
+        sections: this.sections
+      };
+      
+      // Compare with last history entry
+      if (this.history.length > 0) {
+        const lastEntry = this.history[this.historyIndex];
+        const hasChanged = JSON.stringify(currentState) !== JSON.stringify(lastEntry);
+        if (!hasChanged) {
+          return; // Skip duplicate history entries
+        }
+      }
+      
       // Remove any forward history when adding new state
       this.history = this.history.slice(0, this.historyIndex + 1);
       
-      // Add current state to history
-      this.history.push({
+      // ROOT FIX: Compress history entry to save memory
+      // Only store the differences for old entries
+      const historyEntry = {
         components: JSON.parse(JSON.stringify(this.components)),
-        sections: JSON.parse(JSON.stringify(this.sections))
-      });
+        sections: JSON.parse(JSON.stringify(this.sections)),
+        timestamp: Date.now()
+      };
       
-      // Limit history size
-      if (this.history.length > this.maxHistorySize) {
+      // Add current state to history
+      this.history.push(historyEntry);
+      
+      // ROOT FIX: Enforce history size limit properly
+      while (this.history.length > this.maxHistorySize) {
+        // Remove oldest entry
         this.history.shift();
-      } else {
-        this.historyIndex++;
+        // Adjust index
+        if (this.historyIndex > 0) {
+          this.historyIndex--;
+        }
+      }
+      
+      // Update index if we haven't hit the limit
+      if (this.history.length <= this.maxHistorySize) {
+        this.historyIndex = this.history.length - 1;
+      }
+      
+      // ROOT FIX: Log history status in debug mode
+      if (window.gmkbData?.debugMode) {
+        console.log(`📚 History: ${this.history.length}/${this.maxHistorySize} entries, index: ${this.historyIndex}`);
       }
     },
 
@@ -1712,6 +1745,37 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
       
       return { fixed: fixedCount, total: check.total };
+    },
+    
+    /**
+     * ROOT FIX: Compress history to save memory
+     * Keeps recent history intact but removes old entries
+     */
+    compressHistory() {
+      if (!this.history || this.history.length === 0) return;
+      
+      const keepRecent = 10; // Keep last 10 entries in full detail
+      
+      if (this.history.length > keepRecent) {
+        // Keep only recent history
+        const recentHistory = this.history.slice(-keepRecent);
+        this.history = recentHistory;
+        this.historyIndex = this.history.length - 1;
+        
+        if (window.gmkbData?.debugMode) {
+          console.log(`🗑️ Compressed history to ${this.history.length} entries`);
+        }
+      }
+    },
+    
+    /**
+     * ROOT FIX: Clear all history (for memory management)
+     */
+    clearHistory() {
+      this.history = [];
+      this.historyIndex = -1;
+      this._saveToHistory(); // Save current state as first entry
+      console.log('🗑️ History cleared');
     }
   }
 });

@@ -9,23 +9,43 @@ class VueComponentDiscovery {
   constructor() {
     this.discoveredComponents = new Map();
     this.vueRenderers = new Map();
+    
+    // ROOT FIX: Store handler references for cleanup
+    this.componentRegisteredHandler = null;
+    this.wordpressDataReadyHandler = null;
+    this.isInitialized = false;
+    
     this.initializeDiscovery();
   }
 
   /**
    * Initialize discovery system
+   * ROOT FIX: Prevent duplicate initialization and store handler references
    */
   initializeDiscovery() {
+    // ROOT FIX: Prevent duplicate initialization
+    if (this.isInitialized) {
+      console.warn('⚠️ ComponentDiscovery already initialized, skipping');
+      return;
+    }
+    
     // Check for components from PHP discovery
     if (window.gmkbData?.components) {
       this.processDiscoveredComponents(window.gmkbData.components);
     }
 
+    // ROOT FIX: Create named handlers so we can remove them later
+    this.componentRegisteredHandler = this.handleComponentRegistered.bind(this);
+    this.wordpressDataReadyHandler = this.handleWordPressDataReady.bind(this);
+    
     // Listen for dynamic component discovery
-    window.addEventListener('gmkb:component-registered', this.handleComponentRegistered.bind(this));
+    window.addEventListener('gmkb:component-registered', this.componentRegisteredHandler);
     
     // Listen for WordPress data ready
-    window.addEventListener('gmkb:wordpress-data-ready', this.handleWordPressDataReady.bind(this));
+    window.addEventListener('gmkb:wordpress-data-ready', this.wordpressDataReadyHandler);
+    
+    this.isInitialized = true;
+    console.log('✅ ComponentDiscovery: Event listeners registered');
   }
 
   /**
@@ -151,6 +171,41 @@ class VueComponentDiscovery {
     const config = this.getComponentConfig(type);
     return config?.schema || null;
   }
+  
+  /**
+   * ROOT FIX: Cleanup method for removing event listeners
+   */
+  cleanup() {
+    if (this.componentRegisteredHandler) {
+      window.removeEventListener('gmkb:component-registered', this.componentRegisteredHandler);
+    }
+    
+    if (this.wordpressDataReadyHandler) {
+      window.removeEventListener('gmkb:wordpress-data-ready', this.wordpressDataReadyHandler);
+    }
+    
+    this.isInitialized = false;
+    console.log('✅ ComponentDiscovery: Event listeners cleaned up');
+  }
+  
+  /**
+   * ROOT FIX: Reset instance (for HMR)
+   */
+  reset() {
+    this.cleanup();
+    this.discoveredComponents.clear();
+    this.vueRenderers.clear();
+    this.componentRegisteredHandler = null;
+    this.wordpressDataReadyHandler = null;
+    console.log('✅ ComponentDiscovery: Instance reset');
+  }
+}
+
+// ROOT FIX: Check if singleton already exists
+if (window.vueComponentDiscovery) {
+  // Clean up existing instance
+  console.log('⚠️ ComponentDiscovery: Cleaning up existing instance');
+  window.vueComponentDiscovery.cleanup();
 }
 
 // Create singleton instance
@@ -158,6 +213,14 @@ const vueComponentDiscovery = new VueComponentDiscovery();
 
 // Expose to global scope for integration
 window.vueComponentDiscovery = vueComponentDiscovery;
+
+// ROOT FIX: Handle HMR cleanup
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    console.log('🔄 HMR: Cleaning up ComponentDiscovery');
+    vueComponentDiscovery.cleanup();
+  });
+}
 
 // Export for ES6 modules
 export default vueComponentDiscovery;

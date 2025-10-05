@@ -21,7 +21,9 @@
       
       <!-- ROOT FIX: Main builder content renders in #media-kit-preview -->
       <Teleport to="#media-kit-preview" v-if="previewMountReady">
-        <SectionLayoutEnhanced />
+        <ErrorBoundary :show-details="true">
+          <SectionLayoutEnhanced />
+        </ErrorBoundary>
       </Teleport>
       
       <!-- Modals rendered outside main content -->
@@ -63,6 +65,7 @@ import SidebarIntegration from './SidebarIntegration.vue';
 import DesignPanel from './panels/DesignPanel.vue';
 import ImportExportModal from './ImportExportModal.vue';
 import MediaKitToolbarComplete from './MediaKitToolbarComplete.vue';
+import ErrorBoundary from './ErrorBoundary.vue';
 
 // Store references
 const store = useMediaKitStore();

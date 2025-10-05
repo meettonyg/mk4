@@ -112,16 +112,42 @@ export class DataValidator {
     if (!state || typeof state !== 'object') {
       throw new Error('State must be an object');
     }
+    
+    // ROOT FIX: Check for circular references
+    try {
+      JSON.stringify(state);
+    } catch (error) {
+      if (error.message.includes('circular')) {
+        throw new Error('State contains circular references');
+      }
+      throw error;
+    }
 
     // Validate components
     if (state.components) {
+      // ROOT FIX: Handle both empty object {} and null
+      if (state.components === null) {
+        state.components = {};
+      }
+      
       if (typeof state.components !== 'object' || Array.isArray(state.components)) {
         throw new Error('State.components must be an object (not array)');
+      }
+      
+      // ROOT FIX: Check component count
+      const componentCount = Object.keys(state.components).length;
+      if (componentCount > 500) {
+        throw new Error(`Too many components: ${componentCount} (max 500)`);
       }
 
       Object.entries(state.components).forEach(([id, component]) => {
         try {
           this.validateComponent(component);
+          // ROOT FIX: Validate individual component size
+          const componentSize = JSON.stringify(component).length;
+          if (componentSize > 100000) { // 100KB per component
+            console.warn(`Component ${id} is very large: ${Math.round(componentSize/1024)}KB`);
+          }
         } catch (error) {
           throw new Error(`Invalid component ${id}: ${error.message}`);
         }

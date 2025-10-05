@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import { ExportService } from '../../services/ExportService';
 
@@ -145,8 +145,27 @@ const exportAs = async (format) => {
 // Expose methods for external access
 defineExpose({ open, close });
 
-// Listen for global export event
-document.addEventListener('gmkb:open-export', open);
+// ROOT FIX: Store handler reference for proper cleanup
+let openExportHandler = null;
+
+// Create handler function
+openExportHandler = () => {
+  open();
+};
+
+// Listen for global export event in onMounted
+onMounted(() => {
+  document.addEventListener('gmkb:open-export', openExportHandler);
+  console.log('✅ ExportModal: Event listener registered');
+});
+
+// ROOT FIX: Proper cleanup in onUnmounted
+onUnmounted(() => {
+  if (openExportHandler) {
+    document.removeEventListener('gmkb:open-export', openExportHandler);
+    console.log('✅ ExportModal: Event listener cleaned up');
+  }
+});
 </script>
 
 <style scoped>
