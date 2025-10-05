@@ -232,19 +232,8 @@ watch(
 onMounted(() => {
   console.log('[ThemeProvider] Mounted, applying initial theme');
   
-  // Initialize theme store with data from window.gmkbData if available
-  if (window.gmkbData?.themes) {
-    // Override default themes with server-provided themes
-    themeStore.availableThemes = window.gmkbData.themes.map(theme => ({
-      id: theme.slug,  // ROOT FIX: WordPress uses 'slug' as the identifier
-      name: theme.name,
-      description: theme.description || '',
-      colors: theme.colors || {},
-      typography: theme.typography || theme.fonts || {},
-      spacing: theme.spacing || {},
-      effects: theme.effects || {}
-    }));
-  }
+  // The theme store should already be initialized by main.js
+  // We should NOT override it here - just apply the theme to DOM
   
   // Apply initial theme
   applyThemeToDOM();
