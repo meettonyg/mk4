@@ -53,6 +53,16 @@ export const useThemeStore = defineStore('theme', {
       return state.availableThemes.find(t => t.id === state.activeThemeId) || state.availableThemes[0];
     },
     
+    // ROOT FIX: Add getTheme getter for backwards compatibility
+    getTheme: (state) => (themeId) => {
+      // First check custom themes
+      const customTheme = state.customThemes.find(t => t.id === themeId);
+      if (customTheme) return customTheme;
+      
+      // Then check available themes
+      return state.availableThemes.find(t => t.id === themeId);
+    },
+    
     // ROOT FIX: Add currentTheme getter for consistency with test expectations
     currentTheme: (state) => {
       // First check custom themes
