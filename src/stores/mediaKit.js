@@ -338,6 +338,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
           // ROOT FIX: Enrich ALL loaded components with Pods data
           if (window.podsDataIntegration || window.gmkbPodsIntegration) {
             const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
+            
+            // CRITICAL FIX: Refresh Pods data source before enriching
+            // The integration may have initialized before store had Pods data
+            if (this.podsData && Object.keys(this.podsData).length > 0) {
+              podsIntegration.podsData = this.podsData;
+              console.log('✅ Updated PodsDataIntegration with store Pods data:', Object.keys(this.podsData).length, 'fields');
+            }
+            
             Object.keys(this.components).forEach(componentId => {
               const component = this.components[componentId];
               if (component) {
