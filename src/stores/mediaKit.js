@@ -27,6 +27,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     isDirty: false,
     loadError: null,
     maxHistorySize: 30, // ROOT FIX: Reduced from 50 to 30 for better memory usage
+    autoSaveEnabled: true, // ROOT FIX: Add auto-save toggle support
     
     // UI state
     selectedComponentId: null,
@@ -45,7 +46,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
     hasUnsavedChanges: false,
     isSaving: false,
     isLoading: false, // Added for loading state
-    postTitle: '', // Added for post title
+    // ROOT FIX: Initialize postTitle from gmkbData
+    postTitle: window.gmkbData?.postTitle || window.gmkbData?.post?.title || '',
     
     // History (for undo/redo)
     history: [],
@@ -487,11 +489,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
         'authority-hook'
       ];
       
-      // If registry is available, use it as source of truth
-      if (window.UnifiedComponentRegistry?.getAvailableTypes) {
-        const registeredTypes = window.UnifiedComponentRegistry.getAvailableTypes();
-        if (registeredTypes && registeredTypes.length > 0) {
-          validTypes = registeredTypes;
+      // ROOT FIX: Use the actual registry singleton (window.gmkbComponentRegistry)
+      if (window.gmkbComponentRegistry) {
+        const registryComponents = window.gmkbComponentRegistry.getAll();
+        if (registryComponents && registryComponents.length > 0) {
+          validTypes = registryComponents.map(comp => comp.type);
         }
       }
       
@@ -1054,6 +1056,12 @@ export const useMediaKitStore = defineStore('mediaKit', {
     
     // Actual auto-save implementation
     _performAutoSave: async function() {
+      // ROOT FIX: Check if auto-save is enabled
+      if (!this.autoSaveEnabled) {
+        console.log('⏩ Auto-save disabled, skipping');
+        return;
+      }
+      
       if (this.isDirty && !this.isSaving) {
         try {
           // Use the new save method that uses REST API
@@ -1430,13 +1438,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
       
       const newId = `${original.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Clone the component
+      // ROOT FIX: Deep clone component to prevent shared references
       this.components[newId] = {
         ...original,
         id: newId,
-        data: { ...original.data },
-        props: { ...original.props },
-        settings: { ...original.settings }
+        data: JSON.parse(JSON.stringify(original.data || {})),
+        props: JSON.parse(JSON.stringify(original.props || {})),
+        settings: JSON.parse(JSON.stringify(original.settings || {}))
       };
       
       // Find the original in sections and add duplicate after it

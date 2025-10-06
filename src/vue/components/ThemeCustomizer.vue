@@ -86,9 +86,18 @@ import SaveThemePanel from './panels/SaveThemePanel.vue';
 
 const themeStore = useThemeStore();
 
-// Ensure store is initialized with defaults if needed
-if (!themeStore.activeThemeId) {
-  themeStore.activeThemeId = 'professional';
+// ROOT FIX: Use valid fallback theme that actually exists in the registry
+// Check all available themes first before setting fallback
+if (!themeStore.activeThemeId || !themeStore.getTheme(themeStore.activeThemeId)) {
+  // Get first available theme as fallback
+  const availableThemes = themeStore.availableThemes || [];
+  if (availableThemes.length > 0) {
+    themeStore.activeThemeId = availableThemes[0].id;
+  } else {
+    // Last resort: use 'professional_clean' which should always exist
+    themeStore.activeThemeId = 'professional_clean';
+  }
+  console.log(`✅ ThemeCustomizer: Set fallback theme to ${themeStore.activeThemeId}`);
 }
 
 const panels = [

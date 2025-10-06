@@ -55,7 +55,7 @@ export class APIService {
 
   /**
    * Normalizes the REST URL to ensure it's valid and has trailing slash
-   * ROOT FIX: Use URL constructor for proper parsing and validation
+   * ROOT FIX: Properly handle URLs that already contain wp-json to avoid duplication
    */
   normalizeRestUrl(url) {
     if (!url) {
@@ -85,11 +85,17 @@ export class APIService {
         parsedUrl = new URL(url);
       }
       
-      // Clean up the pathname - remove double slashes
+      // ROOT FIX: Clean up the pathname - remove double slashes AND avoid duplication
       let pathname = parsedUrl.pathname.replace(/\/+/g, '/');
       
-      // Ensure it ends with wp-json/
-      if (!pathname.endsWith('wp-json/')) {
+      // ROOT FIX: Check if wp-json is already in the path
+      if (pathname.includes('/wp-json')) {
+        // Already has wp-json, just ensure trailing slash
+        if (!pathname.endsWith('/')) {
+          pathname += '/';
+        }
+      } else {
+        // Doesn't have wp-json, add it
         if (pathname.endsWith('/')) {
           pathname += 'wp-json/';
         } else {
@@ -97,10 +103,15 @@ export class APIService {
         }
       }
       
+      // ROOT FIX: Final cleanup - remove any double slashes that might have been created
+      pathname = pathname.replace(/\/+/g, '/');
+      
       // Rebuild the URL
       const normalizedUrl = `${parsedUrl.origin}${pathname}`;
       
-      console.log('✅ APIService: Normalized REST URL to:', normalizedUrl);
+      if (window.gmkbData?.debugMode) {
+        console.log('✅ APIService: Normalized REST URL:', url, '→', normalizedUrl);
+      }
       return normalizedUrl;
       
     } catch (error) {

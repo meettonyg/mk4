@@ -109,10 +109,10 @@
             </label>
           </div>
           
-          <!-- Export/Import -->
+          <!-- ROOT FIX: Wire up export/import buttons -->
           <div class="setting-group">
-            <button class="setting-btn">Export Media Kit</button>
-            <button class="setting-btn">Import Media Kit</button>
+            <button class="setting-btn" @click="openExportModal">Export Media Kit</button>
+            <button class="setting-btn" @click="openImportModal">Import Media Kit</button>
           </div>
         </div>
       </div>
@@ -121,7 +121,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useMediaKitStore } from '../../../stores/mediaKit';
 import { useThemeStore } from '../../../stores/theme';
 import UnifiedComponentRegistry from '../../../services/UnifiedComponentRegistry';
@@ -149,13 +149,55 @@ export default {
     // ROOT FIX: Load component types from registry instead of hard-coding
     const componentTypes = ref([]);
     
+    // ROOT FIX: Component label mapping for friendly display names
+    const componentLabels = {
+      'hero': 'Hero Section',
+      'biography': 'Biography',
+      'topics': 'Speaking Topics',
+      'topics-questions': 'Topics & Questions',
+      'questions': 'Questions',
+      'guest-intro': 'Guest Introduction',
+      'contact': 'Contact Info',
+      'social': 'Social Links',
+      'testimonials': 'Testimonials',
+      'stats': 'Statistics',
+      'authority-hook': 'Authority Hook',
+      'logo-grid': 'Logo Grid',
+      'call-to-action': 'Call to Action',
+      'booking-calendar': 'Booking Calendar',
+      'video-intro': 'Video Introduction',
+      'photo-gallery': 'Photo Gallery',
+      'podcast-player': 'Podcast Player'
+    };
+    
+    // ROOT FIX: Component icon mapping
+    const componentIcons = {
+      'hero': '🎯',
+      'biography': '👤',
+      'topics': '💬',
+      'topics-questions': '❓',
+      'questions': '❓',
+      'guest-intro': '👋',
+      'contact': '📧',
+      'social': '🔗',
+      'testimonials': '⭐',
+      'stats': '📊',
+      'authority-hook': '🏆',
+      'logo-grid': '🖼️',
+      'call-to-action': '🎯',
+      'booking-calendar': '📅',
+      'video-intro': '🎥',
+      'photo-gallery': '📷',
+      'podcast-player': '🎙️'
+    };
+    
     // Function to refresh component types from registry
     const refreshComponentTypes = () => {
       const registryComponents = UnifiedComponentRegistry.getAll();
       componentTypes.value = registryComponents.map(comp => ({
         type: comp.type,
-        name: comp.name,
-        icon: comp.icon || '📦'
+        name: componentLabels[comp.type] || comp.name || comp.type,
+        icon: componentIcons[comp.type] || comp.icon || '📦'
       }));
       console.log(`✅ SidebarTabs: Loaded ${componentTypes.value.length} components from registry`);
     };
@@ -190,8 +232,14 @@ export default {
     // Computed
     const sections = computed(() => store.sections);
     const sectionCount = computed(() => store.sectionCount);
-    const selectedTheme = ref(store.theme);
-    const autoSave = ref(store.autoSaveEnabled || true);
+    // ROOT FIX: Use computed property to stay synced with store
+    const selectedTheme = computed({
+      get: () => store.theme,
+      set: (value) => {
+        store.theme = value;
+      }
+    });
+    const autoSave = ref(store.autoSaveEnabled !== false); // Default to true if undefined
     
     // ROOT FIX: Load available themes from theme store
     const availableThemes = computed(() => {
@@ -246,9 +294,14 @@ export default {
       console.log('✅ Theme changed to:', selectedTheme.value);
     };
     
-    // ROOT FIX: Wire up auto-save toggle
+    // ROOT FIX: Wire up auto-save toggle - properly set store property
     const toggleAutoSave = () => {
-      store.autoSaveEnabled = autoSave.value;
+      if (!store.autoSaveEnabled && store.autoSaveEnabled !== false) {
+        // Property doesn't exist, add it
+        store.$patch({ autoSaveEnabled: autoSave.value });
+      } else {
+        store.autoSaveEnabled = autoSave.value;
+      }
       console.log('✅ Auto-save', autoSave.value ? 'enabled' : 'disabled');
     };
     
@@ -287,9 +340,27 @@ export default {
       console.log('Added component:', type);
     };
     
-    // ROOT FIX: Register event listeners
+    // ROOT FIX: Add methods to open export/import modals
+    const openExportModal = () => {
+      // Dispatch event that ImportExportModal component listens for
+      document.dispatchEvent(new CustomEvent('gmkb:open-export'));
+      console.log('✅ Dispatched gmkb:open-export event');
+    };
+    
+    const openImportModal = () => {
+      // Dispatch event that ImportExportModal component listens for  
+      document.dispatchEvent(new CustomEvent('gmkb:open-import'));
+      console.log('✅ Dispatched gmkb:open-import event');
+    };
+    
+    // ROOT FIX: Register event listeners with proper cleanup
     onMounted(() => {
       document.addEventListener('gmkb:components-discovered', handleComponentsDiscovered);
+    });
+    
+    // ROOT FIX: Clean up event listeners to prevent memory leaks
+    onBeforeUnmount(() => {
+      document.removeEventListener('gmkb:components-discovered', handleComponentsDiscovered);
     });
     
     return {
@@ -310,7 +381,9 @@ export default {
       toggleAutoSave,
       onDragStart,
       onDragEnd,
-      addComponent
+      addComponent,
+      openExportModal,
+      openImportModal
     };
   }
 };

@@ -37,9 +37,9 @@ export class PodsDataIntegration {
       }
     }
     
-    // Then check if we have it from UnifiedComponentRegistry
-    if (window.UnifiedComponentRegistry) {
-      const component = window.UnifiedComponentRegistry.get(componentType);
+    // ROOT FIX: Check the actual registry singleton (window.gmkbComponentRegistry)
+    if (window.gmkbComponentRegistry) {
+      const component = window.gmkbComponentRegistry.get(componentType);
       if (component && component.pods_config) {
         return component.pods_config;
       }

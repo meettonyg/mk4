@@ -66,9 +66,9 @@ class UnifiedComponentRegistry {
    * Register all Vue component implementations
    */
   registerVueComponents() {
-    // ROOT FIX: Use import.meta.glob for statically analyzable dynamic imports
+    // ROOT FIX: Include topics-questions component
     const componentTypes = [
-      'hero', 'biography', 'topics', 'questions', 'guest-intro',
+      'hero', 'biography', 'topics', 'topics-questions', 'questions', 'guest-intro',
       'contact', 'social', 'testimonials', 'stats', 'authority-hook',
       'logo-grid', 'call-to-action', 'booking-calendar', 'video-intro',
       'photo-gallery', 'podcast-player'
@@ -103,6 +103,14 @@ class UnifiedComponentRegistry {
     
     console.log('✅ Registered', Object.keys(this.vueComponents).length, 'Vue components');
     console.log('Available component paths:', Object.keys(componentModules));
+    
+    // ROOT FIX: Recompute hasVueRenderer after Vue components are registered
+    Object.keys(this.vueComponents).forEach(type => {
+      if (this.definitions[type]) {
+        this.definitions[type].hasVueRenderer = true;
+      }
+    });
+    console.log('✅ Updated hasVueRenderer flags after registration');
   }
   
   /**

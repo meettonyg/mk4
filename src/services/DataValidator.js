@@ -39,8 +39,9 @@ export class DataValidator {
       throw new Error('gmkbData.postId must be a number');
     }
 
-    if (!window.gmkbData.restUrl.startsWith('http')) {
-      throw new Error('gmkbData.restUrl must be a valid URL');
+    // ROOT FIX: Allow relative URLs (WordPress commonly supplies '/wp-json/')
+    if (!window.gmkbData.restUrl.startsWith('http') && !window.gmkbData.restUrl.startsWith('/')) {
+      throw new Error('gmkbData.restUrl must be a valid URL or relative path');
     }
 
     return true;

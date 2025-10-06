@@ -43,6 +43,7 @@
         <!-- Import/Export Modal -->
         <ImportExportModal 
           v-model="showImportExportModal"
+          :initial-tab="importExportModalTab"
           @import-success="handleImportSuccess"
         />
       </Teleport>
@@ -78,12 +79,23 @@ const previewMountReady = ref(false); // ROOT FIX: Track preview mount point ava
 
 // Import/Export modal state
 const showImportExportModal = ref(false);
+const importExportModalTab = ref('export'); // Track which tab to open
 
 // Computed properties
 const themeClass = computed(() => `theme-${store.theme || 'professional_clean'}`);
 
-// Handle import/export modal events
+// ROOT FIX: Handle separate import and export modal events
 function handleOpenImportExport() {
+  showImportExportModal.value = true;
+}
+
+function handleOpenExport() {
+  importExportModalTab.value = 'export';
+  showImportExportModal.value = true;
+}
+
+function handleOpenImport() {
+  importExportModalTab.value = 'import';
   showImportExportModal.value = true;
 }
 
@@ -130,13 +142,20 @@ onMounted(async () => {
       console.log('⏳ MediaKitApp: Waiting for ongoing store initialization...');
       loadingProgress.value = 25;
       
+      // ROOT FIX: Store interval reference so we can clear it
+      let checkInterval = null;
+      
       // Wait for initialization to complete by listening for the event
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
+          // ROOT FIX: Clear interval before rejecting
+          if (checkInterval) {
+            clearInterval(checkInterval);
+          }
           reject(new Error('Store initialization timeout after 10s'));
         }, 10000);
         
-        const checkInterval = setInterval(() => {
+        checkInterval = setInterval(() => {
           if (store.isInitialized) {
             clearInterval(checkInterval);
             clearTimeout(timeout);
@@ -176,8 +195,10 @@ onMounted(async () => {
     console.log('✅ MediaKitApp: Phase 1 initialization complete');
     console.log('📊 MediaKitApp: Pods data loaded:', store.podsData ? Object.keys(store.podsData).length : 0, 'fields');
     
-    // Listen for import/export events
+    // ROOT FIX: Listen for BOTH combined and separate import/export events
     document.addEventListener('gmkb:open-import-export', handleOpenImportExport);
+    document.addEventListener('gmkb:open-export', handleOpenExport);
+    document.addEventListener('gmkb:open-import', handleOpenImport);
     document.addEventListener('gmkb:close-import-export', handleCloseImportExport);
     
   } catch (error) {
@@ -196,6 +217,8 @@ onMounted(async () => {
 // Cleanup on unmount
 onUnmounted(() => {
   document.removeEventListener('gmkb:open-import-export', handleOpenImportExport);
+  document.removeEventListener('gmkb:open-export', handleOpenExport);
+  document.removeEventListener('gmkb:open-import', handleOpenImport);
   document.removeEventListener('gmkb:close-import-export', handleCloseImportExport);
 });
 </script>

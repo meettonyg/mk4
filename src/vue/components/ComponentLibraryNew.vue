@@ -258,10 +258,14 @@ export default {
         return;
       }
       
-      // Add component with default data
+      // ROOT FIX: Get default props from registry instead of component.defaultData
+      const defaultProps = UnifiedComponentRegistry.getDefaultProps(component.type);
+      
+      // Add component with default data from registry
       store.addComponent({
         type: component.type,
-        data: component.defaultData || {}
+        data: defaultProps,
+        props: defaultProps
       });
       
       // Show success message

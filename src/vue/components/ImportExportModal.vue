@@ -294,6 +294,12 @@ const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false
+  },
+  // ROOT FIX: Add initialTab prop to control which tab opens
+  initialTab: {
+    type: String,
+    default: 'export',
+    validator: (value) => ['export', 'import'].includes(value)
   }
 });
 
@@ -311,8 +317,19 @@ const {
   loadImportFile
 } = useExportImport();
 
-// Local state
-const activeTab = ref('export');
+// ROOT FIX: Watch for prop changes to set active tab
+import { watch } from 'vue';
+
+// Local state - initialize from prop
+const activeTab = ref(props.initialTab);
+
+// ROOT FIX: Watch initialTab prop and update activeTab when modal opens
+watch(() => props.modelValue, (newValue) => {
+  if (newValue) {
+    // Modal is opening, set tab from prop
+    activeTab.value = props.initialTab;
+  }
+});
 const exportFormat = ref('full');
 const includeTheme = ref(true);
 const includePodsData = ref(false);
@@ -352,7 +369,14 @@ function resetState() {
 
 async function handleExport() {
   try {
-    await exportMediaKit(exportFormat.value);
+    // ROOT FIX: Create proper export options object that respects ALL toggle settings
+    const options = {
+      format: exportFormat.value,
+      includeTheme: includeTheme.value,
+      includePodsData: includePodsData.value && exportFormat.value === 'full'
+    };
+    
+    await exportMediaKit(exportFormat.value, options);
     
     // Show success notification
     store.showNotification('Export downloaded successfully', 'success');
@@ -438,8 +462,12 @@ async function handleImport() {
       hasTheme: importPreview.value.hasTheme
     } : null;
 
-    // Prepare resolutions
-    const resolutions = {};
+    // ROOT FIX: Forward BOTH import mode AND conflict resolution to executeImport
+    const resolutions = {
+      import_mode: importMode.value,  // Pass the selected import mode (replace/merge)
+      conflict_strategy: conflictResolution.value  // Pass conflict resolution (replace/rename/skip)
+    };
+    
     if (importConflicts.value.length > 0) {
       resolutions.duplicate_components = conflictResolution.value;
     }

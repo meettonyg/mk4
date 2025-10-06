@@ -118,22 +118,50 @@ export default {
   emits: ['remove', 'move-up', 'move-down'],
   
   setup(props) {
+    // ROOT FIX: Respect explicit column assignments instead of using modulo
     // For two-column layout
     const leftComponents = computed(() => {
+      // If components have explicit column property, use it
+      const hasColumnProp = props.components.some(c => c.column !== undefined);
+      if (hasColumnProp) {
+        return props.components.filter(c => c.column === 1 || c.column === null || c.column === undefined);
+      }
+      // Fallback to index-based distribution
       return props.components.filter((_, index) => index % 2 === 0);
     });
     
     const rightComponents = computed(() => {
+      // If components have explicit column property, use it
+      const hasColumnProp = props.components.some(c => c.column !== undefined);
+      if (hasColumnProp) {
+        return props.components.filter(c => c.column === 2);
+      }
+      // Fallback to index-based distribution
       return props.components.filter((_, index) => index % 2 === 1);
     });
     
     // For three-column layout
     const getColumnComponents = (column) => {
+      // If components have explicit column property, use it
+      const hasColumnProp = props.components.some(c => c.column !== undefined);
+      if (hasColumnProp) {
+        if (column === 1) {
+          return props.components.filter(c => c.column === 1 || c.column === null || c.column === undefined);
+        }
+        return props.components.filter(c => c.column === column);
+      }
+      // Fallback to index-based distribution
       return props.components.filter((_, index) => (index % 3) === (column - 1));
     };
     
     // Get the actual index of the component in the main array
     const getComponentIndex = (column, localIndex) => {
+      // When using explicit columns, return the actual index from filtered array
+      const columnComponents = getColumnComponents(column);
+      if (localIndex < columnComponents.length) {
+        return props.components.indexOf(columnComponents[localIndex]);
+      }
+      // Fallback
       return (localIndex * 3) + (column - 1);
     };
     
