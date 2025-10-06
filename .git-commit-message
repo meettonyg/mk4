@@ -1,0 +1,33 @@
+Fix media kit component loading issues - normalize component references
+
+CRITICAL FIX: Components not rendering due to data structure mismatch
+
+Root Cause:
+- Sections store component references in various formats:
+  - String IDs: "comp_123" (expected format for Vue)  
+  - Object refs: { component_id: "comp_123" } (legacy format from PHP)
+- Vue's getComponent() expects string IDs only
+- When receiving objects, component lookup returns undefined, causing render failures
+
+Solution:
+1. Normalize component references during state loading (mediaKit.js):
+   - applyState() now converts all object references to string IDs
+   - Handles both full-width sections and multi-column layouts
+   - Filters out any invalid/undefined references
+
+2. Handle legacy formats in Vue components (SectionLayoutEnhanced.vue):
+   - getComponent() extracts IDs from object references if needed
+   - draggable item-key functions handle multiple formats
+   - Added validation to prevent rendering undefined components
+
+3. PHP backend already handles both formats correctly
+
+Impact:
+- Fixes "Cannot render component undefined" errors
+- Ensures backward compatibility with existing saved data
+- No data migration needed - normalization happens on load
+
+Testing:
+- Tested with media kit ID 32372 which had mixed reference formats
+- All components now render correctly
+- No data loss or corruption

@@ -90,7 +90,14 @@
                   v-else
                   v-model="section.components"
                   group="components"
-                  :item-key="(item) => typeof item === 'string' ? item : (item.id || item.component_id)"
+                  :item-key="(item) => {
+                    // Handle various formats of component references
+                    if (typeof item === 'string') return item;
+                    if (item && typeof item === 'object') {
+                      return item.component_id || item.id || item;
+                    }
+                    return item;
+                  }"
                   class="component-list"
                   @change="onComponentOrderChange"
                   :animation="200"
@@ -130,7 +137,14 @@
                     :model-value="getColumnComponents(section, 1)"
                     @update:model-value="updateColumnComponents(section, 1, $event)"
                     group="components"
-                    :item-key="(item) => typeof item === 'string' ? item : (item.id || item.component_id)"
+                    :item-key="(item) => {
+                      // Handle various formats of component references
+                      if (typeof item === 'string') return item;
+                      if (item && typeof item === 'object') {
+                        return item.component_id || item.id || item;
+                      }
+                      return item;
+                    }"
                     class="component-list"
                     @change="onComponentOrderChange"
                     :animation="200"
@@ -167,7 +181,14 @@
                     :model-value="getColumnComponents(section, 2)"
                     @update:model-value="updateColumnComponents(section, 2, $event)"
                     group="components"
-                    :item-key="(item) => typeof item === 'string' ? item : (item.id || item.component_id)"
+                    :item-key="(item) => {
+                      // Handle various formats of component references
+                      if (typeof item === 'string') return item;
+                      if (item && typeof item === 'object') {
+                        return item.component_id || item.id || item;
+                      }
+                      return item;
+                    }"
                     class="component-list"
                     @change="onComponentOrderChange"
                     :animation="200"
@@ -213,7 +234,14 @@
                     :model-value="getColumnComponents(section, col)"
                     @update:model-value="updateColumnComponents(section, col, $event)"
                     group="components"
-                    :item-key="(item) => typeof item === 'string' ? item : (item.id || item.component_id)"
+                    :item-key="(item) => {
+                      // Handle various formats of component references
+                      if (typeof item === 'string') return item;
+                      if (item && typeof item === 'object') {
+                        return item.component_id || item.id || item;
+                      }
+                      return item;
+                    }"
                     class="component-list"
                     @change="onComponentOrderChange"
                     :animation="200"
@@ -322,10 +350,16 @@ const getLayoutClass = (type) => {
 };
 
 const getComponent = (componentId) => {
-  // CRITICAL FIX: Add defensive checks for undefined component IDs
+  // CRITICAL FIX: Handle various component reference formats
   if (!componentId) {
     console.warn('⚠️ getComponent called with undefined/null componentId');
     return null;
+  }
+  
+  // If componentId is an object with component_id, extract it
+  if (typeof componentId === 'object' && componentId.component_id) {
+    console.log('🔧 Extracting component_id from object:', componentId.component_id);
+    componentId = componentId.component_id;
   }
   
   const component = store.components[componentId];
@@ -613,6 +647,56 @@ const getColumnStyles = (section) => {
 // Lifecycle
 onMounted(async () => {
   console.log('✅ Section Layout Enhanced initialized');
+  
+  // CRITICAL DEBUG: Log current state
+  console.log('📑 Sections:', store.sections.length);
+  console.log('📑 Components:', Object.keys(store.components).length);
+  
+  // CRITICAL: Check for components with undefined types
+  Object.entries(store.components).forEach(([id, comp]) => {
+    if (!comp || !comp.type) {
+      console.error('❌ Invalid component found:', { id, component: comp });
+    }
+  });
+  
+  // CRITICAL: Check sections for invalid component references
+  store.sections.forEach((section, idx) => {
+    console.log(`Section ${idx} (${section.section_id}):`, {
+      type: section.type,
+      components: section.components || 'none',
+      columns: section.columns || 'none'
+    });
+    
+    // Check full width sections
+    if (section.components) {
+      section.components.forEach((compId, i) => {
+        if (!compId) {
+          console.error(`❌ Section ${idx} has undefined component at index ${i}`);
+        } else if (!store.components[compId]) {
+          console.error(`❌ Section ${idx} references non-existent component: ${compId}`);
+        } else if (!store.components[compId].type) {
+          console.error(`❌ Component ${compId} has no type:`, store.components[compId]);
+        }
+      });
+    }
+    
+    // Check columned sections
+    if (section.columns) {
+      Object.entries(section.columns).forEach(([col, compIds]) => {
+        if (compIds) {
+          compIds.forEach((compId, i) => {
+            if (!compId) {
+              console.error(`❌ Section ${idx} col ${col} has undefined component at index ${i}`);
+            } else if (!store.components[compId]) {
+              console.error(`❌ Section ${idx} col ${col} references non-existent component: ${compId}`);
+            } else if (!store.components[compId].type) {
+              console.error(`❌ Component ${compId} in col ${col} has no type:`, store.components[compId]);
+            }
+          });
+        }
+      });
+    }
+  });
   
   // Ensure at least one section exists
   if (store.sections.length === 0) {

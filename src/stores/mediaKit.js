@@ -669,8 +669,48 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     // Apply state data to store
     applyState(savedState) {
-      // Safely merge saved state
-      if (savedState.sections) this.sections = savedState.sections;
+      // CRITICAL FIX: Normalize section component references before applying
+      if (savedState.sections) {
+        this.sections = savedState.sections.map(section => {
+          const normalized = { ...section };
+          
+          // Fix full-width sections
+          if (section.components && Array.isArray(section.components)) {
+            normalized.components = section.components.map(comp => {
+              // If it's an object with component_id, extract the ID
+              if (comp && typeof comp === 'object' && comp.component_id) {
+                console.log('🔧 Normalizing object reference to string:', comp.component_id);
+                return comp.component_id;
+              }
+              // If it's already a string, keep it
+              return comp;
+            }).filter(id => id && typeof id === 'string');
+          }
+          
+          // Fix multi-column sections
+          if (section.columns) {
+            normalized.columns = {};
+            Object.entries(section.columns).forEach(([col, components]) => {
+              if (Array.isArray(components)) {
+                normalized.columns[col] = components.map(comp => {
+                  // If it's an object with component_id, extract the ID
+                  if (comp && typeof comp === 'object' && comp.component_id) {
+                    console.log('🔧 Normalizing column object reference to string:', comp.component_id);
+                    return comp.component_id;
+                  }
+                  // If it's already a string, keep it
+                  return comp;
+                }).filter(id => id && typeof id === 'string');
+              } else {
+                normalized.columns[col] = [];
+              }
+            });
+          }
+          
+          return normalized;
+        });
+      }
+      
       if (savedState.components) {
         // Ensure components is an object, not array
         if (Array.isArray(savedState.components)) {
