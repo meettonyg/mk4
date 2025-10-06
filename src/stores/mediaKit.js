@@ -3,6 +3,7 @@ import UnifiedComponentRegistry from '../services/UnifiedComponentRegistry';
 import { debounce } from '../utils/debounce';
 import eventBus from '../services/EventBus.js';
 import systemReadiness from '../services/SystemReadiness.js';
+import { deepClone, generateUniqueId, deepEqual } from '../utils/deepClone.js';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -559,7 +560,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         return null;
       }
       
-      const componentId = componentData.id || `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // GEMINI FIX #3: Use collision-resistant ID generation
+      const componentId = componentData.id || generateUniqueId('comp');
       
       // Ensure we have at least one section
       if (this.sections.length === 0) {
@@ -856,7 +858,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     // Add a new section
     addSection(layout = 'full_width', position = null) {
-      const sectionId = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // GEMINI FIX #3: Use collision-resistant ID generation
+      const sectionId = generateUniqueId('section');
       const newSection = {
         section_id: sectionId,
         type: layout,
@@ -888,8 +891,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         structuredClone(section) :
         JSON.parse(JSON.stringify(section));
       
-      // Generate new unique IDs
-      const newSectionId = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // GEMINI FIX #3: Generate new unique IDs with collision-resistant method
+      const newSectionId = generateUniqueId('section');
       newSection.section_id = newSectionId;
       newSection.createdAt = Date.now();
       delete newSection.updatedAt; // Remove old update timestamp
@@ -903,7 +906,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         return ids.map(oldId => {
           if (!componentIdMap.has(oldId)) {
-            const newId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            // GEMINI FIX #3: Use collision-resistant ID generation
+            const newId = generateUniqueId('comp');
             componentIdMap.set(oldId, newId);
             
             // Deep clone the component
@@ -1406,16 +1410,18 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (!this.history) this.history = [];
       if (this.historyIndex === undefined) this.historyIndex = -1;
       
-      // ROOT FIX: Don't save if state hasn't actually changed
+      // GEMINI FIX #2: Don't save if state hasn't actually changed
+      // Use efficient deep comparison instead of JSON.stringify
       const currentState = {
         components: this.components,
         sections: this.sections
       };
       
-      // Compare with last history entry
+      // Compare with last history entry using efficient deepEqual
       if (this.history.length > 0) {
         const lastEntry = this.history[this.historyIndex];
-        const hasChanged = JSON.stringify(currentState) !== JSON.stringify(lastEntry);
+        // deepEqual is much more efficient than JSON.stringify for large objects
+        const hasChanged = !deepEqual(currentState, lastEntry);
         if (!hasChanged) {
           return; // Skip duplicate history entries
         }
@@ -1424,11 +1430,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
       // Remove any forward history when adding new state
       this.history = this.history.slice(0, this.historyIndex + 1);
       
-      // ROOT FIX: Compress history entry to save memory
-      // Only store the differences for old entries
+      // GEMINI FIX #1: Use efficient deep clone for history entry
       const historyEntry = {
-        components: JSON.parse(JSON.stringify(this.components)),
-        sections: JSON.parse(JSON.stringify(this.sections)),
+        components: deepClone(this.components),
+        sections: deepClone(this.sections),
         timestamp: Date.now()
       };
       
@@ -1476,10 +1481,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
           return;
         }
         
-        // Apply state without triggering history save
+        // GEMINI FIX #1: Apply state without triggering history save using deepClone
         this.$patch({
-          components: JSON.parse(JSON.stringify(state.components)),
-          sections: JSON.parse(JSON.stringify(state.sections))
+          components: deepClone(state.components),
+          sections: deepClone(state.sections)
         });
         
         // Mark as dirty but don't add to history (we're navigating history)
@@ -1520,10 +1525,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
           return;
         }
         
-        // Apply state without triggering history save
+        // GEMINI FIX #1: Apply state without triggering history save using deepClone
         this.$patch({
-          components: JSON.parse(JSON.stringify(state.components)),
-          sections: JSON.parse(JSON.stringify(state.sections))
+          components: deepClone(state.components),
+          sections: deepClone(state.sections)
         });
         
         // Mark as dirty but don't add to history (we're navigating history)
@@ -1644,16 +1649,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
       const original = this.components[componentId];
       if (!original) return;
       
-      const newId = `${original.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // GEMINI FIX #1 & #3: Use proper deep clone and collision-resistant ID
+      // Deep clone prevents any shared references between original and duplicate
+      const cloned = deepClone(original);
+      const newId = generateUniqueId('comp');
       
-      // ROOT FIX: Deep clone component to prevent shared references
-      this.components[newId] = {
-        ...original,
-        id: newId,
-        data: JSON.parse(JSON.stringify(original.data || {})),
-        props: JSON.parse(JSON.stringify(original.props || {})),
-        settings: JSON.parse(JSON.stringify(original.settings || {}))
-      };
+      // Update the cloned component with new metadata
+      cloned.id = newId;
+      cloned.createdAt = Date.now();
+      delete cloned.updatedAt; // Remove old timestamp
+      
+      this.components[newId] = cloned;
       
       // Find the original in sections and add duplicate after it
       for (const section of this.sections) {

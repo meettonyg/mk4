@@ -9,7 +9,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:utils": "node test-utilities-node.js",
+    "test:fixes": "npm run test:utils && npm run build"
   },
   "dependencies": {
     "pinia": "^2.1.0",
