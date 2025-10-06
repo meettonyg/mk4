@@ -308,6 +308,26 @@ export const useMediaKitStore = defineStore('mediaKit', {
               console.log('✅ Loaded Pods data from window.gmkbData:', Object.keys(this.podsData).length, 'fields');
             }
           }
+          
+          // CHATGPT CRITICAL FIX: Enrich components in savedState branch too!
+          // Previously this only happened in the API branch, leaving savedState components unenriched
+          if (window.podsDataIntegration || window.gmkbPodsIntegration) {
+            const podsIntegration = window.podsDataIntegration || window.gmkbPodsIntegration;
+            
+            // CRITICAL FIX: Refresh Pods data source before enriching
+            if (this.podsData && Object.keys(this.podsData).length > 0) {
+              podsIntegration.podsData = this.podsData;
+              console.log('✅ Updated PodsDataIntegration with store Pods data:', Object.keys(this.podsData).length, 'fields');
+            }
+            
+            Object.keys(this.components).forEach(componentId => {
+              const component = this.components[componentId];
+              if (component) {
+                podsIntegration.enrichComponentData(component);
+              }
+            });
+            console.log('✅ Enriched all loaded components with Pods data (savedState branch)');
+          }
         } else if (this.postId) {
           // ROOT FIX: Use APIService with REST URL (not AJAX URL)
           // Get APIService from window or create new instance
