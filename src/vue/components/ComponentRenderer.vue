@@ -46,7 +46,8 @@ import { useCleanup } from '@/composables/useCleanup';
 const props = defineProps({
   componentId: {
     type: String,
-    required: true
+    required: false, // CRITICAL FIX: Changed to false to handle undefined gracefully
+    default: null
   },
   waitForPods: {
     type: Boolean,
@@ -62,6 +63,13 @@ const props = defineProps({
   }
 });
 
+// CRITICAL FIX: Guard against undefined/null componentId
+if (!props.componentId) {
+  console.error('❌ ComponentRenderer: componentId is required but was not provided');
+  hasError.value = true;
+  isLoading.value = false;
+}
+
 const emit = defineEmits(['ready', 'error', 'retry']);
 
 const store = useMediaKitStore();
@@ -76,15 +84,23 @@ const componentKey = ref(0); // For force re-render
 
 // Computed
 const componentData = computed(() => {
-  if (!props.componentId || !store.components[props.componentId]) {
+  // CRITICAL FIX: Guard against undefined/null componentId
+  if (!props.componentId) {
+    console.error('❌ ComponentRenderer: componentId is undefined or null');
+    return null;
+  }
+  
+  // Check if component exists in store
+  if (!store.components[props.componentId]) {
+    console.warn(`⚠️ Component ${props.componentId} not found in store`);
     return null;
   }
   
   const component = store.components[props.componentId];
   
-  // PHASE 9 FIX: Ensure component has required data
+  // Ensure component has required data
   if (!component.type) {
-    console.warn(`Component ${props.componentId} missing type`);
+    console.error(`❌ Component ${props.componentId} missing type property`);
     return null;
   }
   

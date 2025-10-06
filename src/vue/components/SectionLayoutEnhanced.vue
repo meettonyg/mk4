@@ -94,9 +94,10 @@
                     // Handle various formats of component references
                     if (typeof item === 'string') return item;
                     if (item && typeof item === 'object') {
-                      return item.component_id || item.id || item;
+                      return item.component_id || item.id || String(Math.random());
                     }
-                    return item;
+                    // Fallback for any other type
+                    return String(item || Math.random());
                   }"
                   class="component-list"
                   @change="onComponentOrderChange"
@@ -106,12 +107,17 @@
                 >
                   <template #item="{element: componentId, index}">
                     <ComponentWrapper
-                      v-if="getComponent(componentId)"
+                      v-if="componentId && getComponent(componentId)"
                       :component="getComponent(componentId)"
+                      :component-id="componentId"
                       :index="index"
                       :total-components="section.components.length"
                       :show-controls="true"
                     />
+                    <!-- CRITICAL: Debug placeholder for undefined IDs -->
+                    <div v-else-if="!componentId" class="component-error-placeholder">
+                      <span>❌ Missing component ID at index {{ index }}</span>
+                    </div>
                   </template>
                 </draggable>
               </div>
@@ -141,9 +147,10 @@
                       // Handle various formats of component references
                       if (typeof item === 'string') return item;
                       if (item && typeof item === 'object') {
-                        return item.component_id || item.id || item;
+                        return item.component_id || item.id || String(Math.random());
                       }
-                      return item;
+                      // Fallback for any other type
+                      return String(item || Math.random());
                     }"
                     class="component-list"
                     @change="onComponentOrderChange"
@@ -153,12 +160,16 @@
                   >
                     <template #item="{element: componentId, index}">
                       <ComponentWrapper
-                        v-if="getComponent(componentId)"
+                        v-if="componentId && getComponent(componentId)"
                         :component="getComponent(componentId)"
+                        :component-id="componentId"
                         :index="index"
                         :total-components="getColumnComponents(section, 1).length"
                         :show-controls="true"
                       />
+                      <div v-else-if="!componentId" class="component-error-placeholder">
+                        <span>❌ Missing component ID at index {{ index }}</span>
+                      </div>
                     </template>
                   </draggable>
                 </div>
@@ -185,9 +196,10 @@
                       // Handle various formats of component references
                       if (typeof item === 'string') return item;
                       if (item && typeof item === 'object') {
-                        return item.component_id || item.id || item;
+                        return item.component_id || item.id || String(Math.random());
                       }
-                      return item;
+                      // Fallback for any other type
+                      return String(item || Math.random());
                     }"
                     class="component-list"
                     @change="onComponentOrderChange"
@@ -197,12 +209,16 @@
                   >
                     <template #item="{element: componentId, index}">
                       <ComponentWrapper
-                        v-if="getComponent(componentId)"
+                        v-if="componentId && getComponent(componentId)"
                         :component="getComponent(componentId)"
+                        :component-id="componentId"
                         :index="index"
                         :total-components="getColumnComponents(section, 2).length"
                         :show-controls="true"
                       />
+                      <div v-else-if="!componentId" class="component-error-placeholder">
+                        <span>❌ Missing component ID at index {{ index }}</span>
+                      </div>
                     </template>
                   </draggable>
                 </div>
@@ -250,12 +266,16 @@
                   >
                     <template #item="{element: componentId, index}">
                       <ComponentWrapper
-                        v-if="getComponent(componentId)"
+                        v-if="componentId && getComponent(componentId)"
                         :component="getComponent(componentId)"
+                        :component-id="componentId"
                         :index="index"
                         :total-components="getColumnComponents(section, col).length"
                         :show-controls="true"
                       />
+                      <div v-else-if="!componentId" class="component-error-placeholder">
+                        <span>❌ Missing component ID in col {{ col }} at index {{ index }}</span>
+                      </div>
                     </template>
                   </draggable>
                 </div>
@@ -356,17 +376,40 @@ const getComponent = (componentId) => {
     return null;
   }
   
-  // If componentId is an object with component_id, extract it
-  if (typeof componentId === 'object' && componentId.component_id) {
-    console.log('🔧 Extracting component_id from object:', componentId.component_id);
-    componentId = componentId.component_id;
+  // Normalize the component ID
+  let normalizedId = componentId;
+  
+  // If componentId is an object, extract the actual ID
+  if (typeof componentId === 'object' && componentId !== null) {
+    if (componentId.component_id) {
+      console.log('🔧 Extracting component_id from object:', componentId.component_id);
+      normalizedId = componentId.component_id;
+    } else if (componentId.id) {
+      console.log('🔧 Extracting id from object:', componentId.id);
+      normalizedId = componentId.id;
+    } else {
+      console.error('❌ Object has no recognizable ID property:', componentId);
+      return null;
+    }
   }
   
-  const component = store.components[componentId];
+  // Ensure we have a string ID
+  if (typeof normalizedId !== 'string') {
+    console.error('❌ Component ID is not a string:', normalizedId, typeof normalizedId);
+    return null;
+  }
+  
+  // Look up the component
+  const component = store.components[normalizedId];
+  
+  if (!component) {
+    console.warn(`⚠️ Component not found: ${normalizedId}`);
+    return null;
+  }
   
   // CRITICAL FIX: Validate component has required data
-  if (component && !component.type) {
-    console.error('❌ Component missing type:', componentId, component);
+  if (!component.type) {
+    console.error('❌ Component missing type:', normalizedId, component);
     return null;
   }
   
@@ -1049,5 +1092,17 @@ onUnmounted(() => {
   opacity: 0.4;
   background: rgba(59, 130, 246, 0.1);
   border: 2px dashed rgba(59, 130, 246, 0.5);
+}
+
+/* Component Error Placeholder */
+.component-error-placeholder {
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px dashed rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  color: #ef4444;
+  text-align: center;
+  font-size: 13px;
+  margin-bottom: 8px;
 }
 </style>

@@ -667,24 +667,60 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
 
 
+    // Helper function to normalize component references
+    _normalizeComponentRef(ref) {
+      // If ref is null or undefined, return null
+      if (!ref) {
+        console.warn('⚠️ Encountered null/undefined component reference');
+        return null;
+      }
+      
+      // If it's an object with component_id property, extract the ID
+      if (typeof ref === 'object' && ref !== null) {
+        if (ref.component_id) {
+          console.log('🔧 Normalizing object reference to string:', ref.component_id);
+          return ref.component_id;
+        }
+        // If it's an object with id property
+        if (ref.id) {
+          console.log('🔧 Normalizing object (id) reference to string:', ref.id);
+          return ref.id;
+        }
+        // If object has no recognizable ID, warn and skip
+        console.warn('⚠️ Object reference has no component_id or id:', ref);
+        return null;
+      }
+      
+      // If it's already a string, validate and return
+      if (typeof ref === 'string') {
+        return ref;
+      }
+      
+      // Unknown type, warn and return null
+      console.warn('⚠️ Unknown component reference type:', typeof ref, ref);
+      return null;
+    },
+
     // Apply state data to store
     applyState(savedState) {
+      console.log('📥 Applying state with normalization...');
+      
       // CRITICAL FIX: Normalize section component references before applying
       if (savedState.sections) {
-        this.sections = savedState.sections.map(section => {
+        this.sections = savedState.sections.map((section, idx) => {
           const normalized = { ...section };
           
           // Fix full-width sections
           if (section.components && Array.isArray(section.components)) {
-            normalized.components = section.components.map(comp => {
-              // If it's an object with component_id, extract the ID
-              if (comp && typeof comp === 'object' && comp.component_id) {
-                console.log('🔧 Normalizing object reference to string:', comp.component_id);
-                return comp.component_id;
-              }
-              // If it's already a string, keep it
-              return comp;
-            }).filter(id => id && typeof id === 'string');
+            const originalCount = section.components.length;
+            normalized.components = section.components
+              .map(comp => this._normalizeComponentRef(comp))
+              .filter(Boolean); // Remove null/undefined entries
+            
+            const normalizedCount = normalized.components.length;
+            if (originalCount !== normalizedCount) {
+              console.warn(`⚠️ Section ${idx}: Removed ${originalCount - normalizedCount} invalid component references`);
+            }
           }
           
           // Fix multi-column sections
@@ -692,15 +728,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
             normalized.columns = {};
             Object.entries(section.columns).forEach(([col, components]) => {
               if (Array.isArray(components)) {
-                normalized.columns[col] = components.map(comp => {
-                  // If it's an object with component_id, extract the ID
-                  if (comp && typeof comp === 'object' && comp.component_id) {
-                    console.log('🔧 Normalizing column object reference to string:', comp.component_id);
-                    return comp.component_id;
-                  }
-                  // If it's already a string, keep it
-                  return comp;
-                }).filter(id => id && typeof id === 'string');
+                const originalCount = components.length;
+                normalized.columns[col] = components
+                  .map(comp => this._normalizeComponentRef(comp))
+                  .filter(Boolean); // Remove null/undefined entries
+                
+                const normalizedCount = normalized.columns[col].length;
+                if (originalCount !== normalizedCount) {
+                  console.warn(`⚠️ Section ${idx} col ${col}: Removed ${originalCount - normalizedCount} invalid component references`);
+                }
               } else {
                 normalized.columns[col] = [];
               }
@@ -709,6 +745,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
           
           return normalized;
         });
+        
+        console.log('✅ Normalized sections:', this.sections.length);
       }
       
       if (savedState.components) {
