@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import UnifiedComponentRegistry from '../vue/services/UnifiedComponentRegistry';
+import UnifiedComponentRegistry from '../services/UnifiedComponentRegistry';
 import { debounce } from '../utils/debounce';
 import eventBus from '../services/EventBus.js';
 import systemReadiness from '../services/SystemReadiness.js';

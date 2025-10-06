@@ -19,6 +19,7 @@
     <div class="component-wrapper__content">
       <ComponentRenderer
         v-if="component"
+        :component-id="componentId || component.id"
         :component="component"
         :section-id="sectionId"
         :is-editing="isEditing"

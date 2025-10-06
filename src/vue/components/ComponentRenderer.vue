@@ -63,13 +63,6 @@ const props = defineProps({
   }
 });
 
-// CRITICAL FIX: Guard against undefined/null componentId
-if (!props.componentId) {
-  console.error('❌ ComponentRenderer: componentId is required but was not provided');
-  hasError.value = true;
-  isLoading.value = false;
-}
-
 const emit = defineEmits(['ready', 'error', 'retry']);
 
 const store = useMediaKitStore();
@@ -124,20 +117,29 @@ const canRender = computed(() => {
 });
 
 const componentType = computed(() => {
-  if (!componentData.value?.type) return null;
-  
-  // Get component from registry
-  const registeredComponent = UnifiedComponentRegistry.get(componentData.value.type);
-  if (registeredComponent?.component) {
-    return registeredComponent.component;
+  if (!componentData.value?.type) {
+    console.warn('❌ ComponentRenderer: No component type provided');
+    return null;
   }
   
-  // Fallback to dynamic import attempt
-  return () => import(`@/vue/components/library/${componentData.value.type}.vue`)
-    .catch(() => {
+  // ROOT FIX: Use getVueComponent instead of get
+  // UnifiedComponentRegistry.get() returns the definition
+  // UnifiedComponentRegistry.getVueComponent() returns the actual Vue component
+  try {
+    const vueComponent = UnifiedComponentRegistry.getVueComponent(componentData.value.type);
+    
+    if (!vueComponent) {
       console.error(`Component type not found: ${componentData.value.type}`);
       return null;
-    });
+    }
+    
+    console.log(`✅ Loaded Vue component for type: ${componentData.value.type}`);
+    return vueComponent;
+    
+  } catch (error) {
+    console.error(`Failed to load component ${componentData.value.type}:`, error);
+    return null;
+  }
 });
 
 const componentProps = computed(() => {
@@ -230,6 +232,15 @@ const onComponentError = (error) => {
 
 // Lifecycle
 onMounted(async () => {
+  // CRITICAL FIX: Guard against undefined/null componentId
+  // Must be in onMounted after refs are created
+  if (!props.componentId) {
+    console.error('❌ ComponentRenderer: componentId is required but was not provided');
+    hasError.value = true;
+    isLoading.value = false;
+    return; // Exit early
+  }
+  
   await loadComponent();
   
   // Listen for Pods data updates
