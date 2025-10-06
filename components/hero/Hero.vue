@@ -249,7 +249,7 @@ export default {
 
 .hero__cta {
   display: inline-block;
-  padding: 12px 32px;
+  padding: var(--gmkb-space-3, 12px) 32px;
   font-size: 1rem;
   font-weight: 600;
   text-decoration: none;
@@ -317,7 +317,7 @@ export default {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .hero-component {
     padding: 40px 20px;
     min-height: 300px;

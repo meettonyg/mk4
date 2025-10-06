@@ -210,7 +210,7 @@ export default {
   line-height: var(--gmkb-line-height-base, 1.6);
 }
 
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .topics-grid {
     grid-template-columns: 1fr;
   }

@@ -294,7 +294,7 @@ export default {
   margin: 0;
 }
 
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .intro-details {
     grid-template-columns: 1fr;
   }

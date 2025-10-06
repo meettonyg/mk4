@@ -279,7 +279,7 @@ export default {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .logo-container.columns-5,
   .logo-container.columns-6,
   .logo-container.columns-8 {

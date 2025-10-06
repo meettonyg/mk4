@@ -263,7 +263,7 @@ const closeEditor = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: var(--gmkb-spacing-md, 16px) 20px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -337,7 +337,7 @@ const closeEditor = () => {
 }
 
 .testimonial-item {
-  padding: 16px;
+  padding: var(--gmkb-spacing-md, 16px);
   background: #f8fafc;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
@@ -406,7 +406,7 @@ const closeEditor = () => {
 }
 
 .add-btn {
-  padding: 12px;
+  padding: var(--gmkb-space-3, 12px);
   background: #f0f9ff;
   border: 1px solid #bae6fd;
   color: #0284c7;
@@ -422,7 +422,7 @@ const closeEditor = () => {
 
 .advanced-section {
   margin-top: 24px;
-  padding: 16px;
+  padding: var(--gmkb-spacing-md, 16px);
   background: #f8fafc;
   border-radius: 8px;
 }

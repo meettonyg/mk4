@@ -223,7 +223,7 @@ export default {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .gmkb-guest-intro {
     padding: var(--gmkb-spacing-md, 1rem);
   }

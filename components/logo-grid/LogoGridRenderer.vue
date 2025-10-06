@@ -206,7 +206,7 @@ export default {
   justify-content: center;
 }
 
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .logo-grid.grid-auto {
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }

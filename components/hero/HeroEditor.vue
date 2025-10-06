@@ -226,7 +226,7 @@ const updateField = (field) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: var(--gmkb-spacing-md, 16px) 20px;
   border-bottom: 1px solid #e5e7eb;
   background: linear-gradient(to bottom, #ffffff, #f9fafb);
 }
@@ -268,7 +268,7 @@ const updateField = (field) => {
 .editor-section {
   background: white;
   border-radius: 8px;
-  padding: 16px;
+  padding: var(--gmkb-spacing-md, 16px);
   margin-bottom: 16px;
   border: 1px solid #e5e7eb;
 }
@@ -304,7 +304,7 @@ const updateField = (field) => {
 .field-group select,
 .field-group textarea {
   width: 100%;
-  padding: 8px 12px;
+  padding: var(--gmkb-spacing-sm, 8px) 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   font-size: 14px;

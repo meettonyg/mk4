@@ -136,7 +136,7 @@ export default {
 
 <style scoped>
 .gmkb-authority-hook-component {
-  padding: 3rem 2rem;
+  padding: var(--gmkb-spacing-xxl, 3rem) 2rem;
   background: linear-gradient(135deg, var(--gmkb-color-primary, #007cba), var(--gmkb-color-secondary, #0056b3));
   color: white;
 }
@@ -166,7 +166,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
-  margin: 2rem 0;
+  margin: var(--gmkb-spacing-xl, 2rem) 0;
   text-align: left;
 }
 
@@ -210,7 +210,7 @@ export default {
   line-height: var(--gmkb-line-height-base, 1.6);
 }
 
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .authority-headline {
     font-size: 2rem;
   }

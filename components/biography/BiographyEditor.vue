@@ -249,7 +249,7 @@ const openMediaLibrary = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: var(--gmkb-spacing-md, 16px) 20px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -333,7 +333,7 @@ const openMediaLibrary = () => {
 
 .media-btn {
   margin-top: 8px;
-  padding: 8px 12px;
+  padding: var(--gmkb-spacing-sm, 8px) 12px;
   background: #f8fafc;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
@@ -361,7 +361,7 @@ const openMediaLibrary = () => {
 
 .advanced-section {
   margin-top: 24px;
-  padding: 16px;
+  padding: var(--gmkb-spacing-md, 16px);
   background: #f8fafc;
   border-radius: 8px;
 }

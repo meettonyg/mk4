@@ -196,7 +196,7 @@ export default {
   box-shadow: var(--gmkb-shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.1));
 }
 
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .hero-container {
     flex-direction: column;
     text-align: center;

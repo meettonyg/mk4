@@ -249,7 +249,7 @@ export default {
   transform: translateY(-2px);
 }
 
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .cta-title {
     font-size: var(--gmkb-font-size-2xl, 2rem);
   }

@@ -364,7 +364,7 @@ export default {
   transform: scale(1.2);
 }
 
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .testimonials-carousel {
     flex-direction: column;
   }

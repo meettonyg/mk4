@@ -260,7 +260,7 @@ export default {
   transform: translateY(-10px);
 }
 
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .question-text {
     font-size: var(--gmkb-font-size-base, 1rem);
   }

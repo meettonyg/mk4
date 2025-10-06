@@ -342,7 +342,7 @@ export default {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .gallery-grid.columns-3,
   .gallery-grid.columns-4,
   .gallery-grid.columns-5,

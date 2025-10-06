@@ -463,7 +463,7 @@ export default {
 .biography__textarea {
   width: 100%;
   min-height: 200px;
-  padding: 12px;
+  padding: var(--gmkb-space-3, 12px);
   border: 1px solid var(--gmkb-color-border, #e2e8f0);
   border-radius: 4px;
   font-family: inherit;
@@ -577,7 +577,7 @@ export default {
 .design-panel__select,
 .design-panel__textarea {
   width: 100%;
-  padding: 8px 12px;
+  padding: var(--gmkb-spacing-sm, 8px) 12px;
   border: 1px solid #e2e8f0;
   border-radius: 4px;
   font-size: 0.875rem;
@@ -622,7 +622,7 @@ export default {
 }
 
 .btn--sm {
-  padding: 6px 12px;
+  padding: var(--gmkb-space-1, 6px) 12px;
   font-size: 0.875rem;
 }
 
@@ -631,7 +631,7 @@ export default {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-max-width: var(--gmkb-max-width-content, 768px)) {
   .design-panel__content {
     width: 100%;
   }
