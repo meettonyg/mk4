@@ -473,6 +473,12 @@ export default {
       });
     };
     
+    // PHASE 2 ITEM #2: Manual refresh capability
+    const refreshComponents = async () => {
+      console.log('🔄 ComponentLibrary: Manual refresh requested');
+      await loadComponentsFromAPI();
+    };
+    
     // Handle component discovery events (legacy compatibility)
     const handleComponentsDiscovered = () => {
       console.log('🔄 ComponentLibrary: Component discovery event received, reloading from API...');
