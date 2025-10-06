@@ -1,9 +1,19 @@
 /**
  * Component Discovery Integration for Vue
  * 
+ * @deprecated PHASE 2: This service is deprecated in favor of direct REST API usage.
+ * Component metadata should be fetched from /gmkb/v2/components via APIService.
+ * 
  * This module bridges the PHP ComponentDiscovery system with Vue's component registry.
  * It maintains the self-contained component architecture while enabling Vue rendering.
+ * 
+ * MIGRATION PATH:
+ * - Use APIService.loadComponents() instead
+ * - ComponentLibraryNew.vue now uses REST API directly
+ * - This file will be removed in a future version
  */
+
+console.warn('⚠️ componentDiscovery.js is deprecated. Use APIService.loadComponents() instead.');
 
 class VueComponentDiscovery {
   constructor() {
@@ -199,6 +209,13 @@ class VueComponentDiscovery {
     this.wordpressDataReadyHandler = null;
     console.log('✅ ComponentDiscovery: Instance reset');
   }
+}
+
+// PHASE 2: Deprecation warning
+if (window.gmkbData?.debugMode) {
+  console.log('%c⚠️ DEPRECATED: componentDiscovery.js', 'color: orange; font-weight: bold');
+  console.log('Use APIService.loadComponents() for component metadata.');
+  console.log('See /gmkb/v2/components REST API endpoint.');
 }
 
 // ROOT FIX: Check if singleton already exists

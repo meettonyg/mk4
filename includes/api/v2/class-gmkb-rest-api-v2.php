@@ -591,10 +591,47 @@ class GMKB_REST_API_V2 {
      * 
      * Returns component metadata (not rendered components)
      * 
+     * PHASE 2 ENHANCEMENT: Full v2 API alignment
+     * - HTTP cache headers for performance
+     * - Enriched response metadata
+     * - Normalized component data structure
+     * - Performance timing
+     * 
      * @param WP_REST_Request $request The request
      * @return WP_REST_Response|WP_Error The response
+     * 
+     * @example Response structure:
+     * {
+     *   "success": true,
+     *   "version": "2.0",
+     *   "timestamp": 1704567890,
+     *   "components": [
+     *     {
+     *       "type": "hero",
+     *       "name": "Hero Section",
+     *       "description": "Main header section",
+     *       "category": "essential",
+     *       "icon": "hero-icon.svg",
+     *       "order": 1,
+     *       "isPremium": false,
+     *       "supportsSettings": true
+     *     }
+     *   ],
+     *   "categories": { "essential": [...] },
+     *   "total": 15,
+     *   "metadata": {
+     *     "cached": true,
+     *     "cacheAge": 120,
+     *     "cacheSource": "wordpress_transient",
+     *     "discoverySource": "filesystem_scan",
+     *     "executionTime": 0.023
+     *   }
+     * }
      */
     public function get_components($request) {
+        // PHASE 2: Track execution time
+        $start_time = microtime(true);
+        
         // ROOT FIX: Use global ComponentDiscovery instance
         // The main plugin file already initializes ComponentDiscovery and stores it globally
         global $gmkb_component_discovery;
@@ -608,20 +645,92 @@ class GMKB_REST_API_V2 {
         }
         
         try {
+            // Get cache debug info
+            $cache_info = method_exists($gmkb_component_discovery, 'getDebugInfo') 
+                ? $gmkb_component_discovery->getDebugInfo() 
+                : array('cache_status' => array('cache_exists' => false, 'cache_age' => 0));
+            
             // Use the global instance - it's already scanned on plugin init
             $components = $gmkb_component_discovery->getComponents();
             $categories = $gmkb_component_discovery->getCategories();
             
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log('GMKB REST API v2: Returning ' . count($components) . ' components');
+            // PHASE 2: Normalize component data for consistency
+            $normalized_components = array();
+            foreach ($components as $key => $component) {
+                $normalized = array(
+                    'type' => $component['type'] ?? $key,
+                    'name' => $component['name'] ?? ucfirst(str_replace('-', ' ', $key)),
+                    'title' => $component['title'] ?? $component['name'] ?? ucfirst(str_replace('-', ' ', $key)),
+                    'description' => $component['description'] ?? 'No description available',
+                    'category' => $component['category'] ?? 'general',
+                    'icon' => $component['icon'] ?? 'default-icon.svg',
+                    'order' => $component['order'] ?? 999,
+                    'isPremium' => $component['isPremium'] ?? false,
+                    'supportsSettings' => !empty($component['settings']) || !empty($component['schema']),
+                    'directory' => $component['directory'] ?? $key
+                );
+                
+                // Preserve any additional fields
+                foreach ($component as $field => $value) {
+                    if (!isset($normalized[$field])) {
+                        $normalized[$field] = $value;
+                    }
+                }
+                
+                $normalized_components[] = $normalized;
             }
-
-            return rest_ensure_response(array(
+            
+            // PHASE 2: Calculate execution time
+            $execution_time = microtime(true) - $start_time;
+            
+            // PHASE 2: Build enriched response with metadata
+            $response_data = array(
                 'success' => true,
-                'components' => array_values($components), // Convert to array
+                'version' => '2.0',
+                'timestamp' => current_time('timestamp'),
+                'components' => $normalized_components,
                 'categories' => $categories,
-                'total' => count($components)
-            ));
+                'total' => count($normalized_components),
+                'metadata' => array(
+                    'cached' => !empty($cache_info['cache_status']['cache_exists']),
+                    'cacheAge' => !empty($cache_info['cache_status']['cache_age']) ? $cache_info['cache_status']['cache_age'] : 0,
+                    'cacheSource' => 'wordpress_transient',
+                    'discoverySource' => 'filesystem_scan',
+                    'executionTime' => round($execution_time, 4),
+                    'componentsDir' => $cache_info['components_dir'] ?? '',
+                    'scanRequired' => empty($cache_info['cache_status']['cache_exists'])
+                )
+            );
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('GMKB REST API v2: Returning ' . count($normalized_components) . ' components');
+                error_log('GMKB REST API v2: Cache status - ' . ($response_data['metadata']['cached'] ? 'HIT' : 'MISS'));
+                error_log('GMKB REST API v2: Execution time: ' . $execution_time . 's');
+            }
+            
+            // PHASE 2: Create REST response with cache headers
+            $response = rest_ensure_response($response_data);
+            
+            // PHASE 2: Add HTTP cache headers for browser/proxy caching
+            // Components rarely change, so we can cache for 5 minutes
+            $cache_duration = 300; // 5 minutes
+            $response->header('Cache-Control', 'public, max-age=' . $cache_duration);
+            $response->header('Expires', gmdate('D, d M Y H:i:s', time() + $cache_duration) . ' GMT');
+            
+            // Add ETag for conditional requests
+            $etag = md5(json_encode($normalized_components));
+            $response->header('ETag', '"' . $etag . '"');
+            
+            // Check if client has cached version
+            $request_etag = $request->get_header('if_none_match');
+            if ($request_etag && trim($request_etag, '"') === $etag) {
+                // Client has current version, return 304 Not Modified
+                $response->set_status(304);
+                $response->set_data(null);
+                return $response;
+            }
+            
+            return $response;
             
         } catch (Exception $e) {
             return new WP_Error(

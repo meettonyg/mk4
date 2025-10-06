@@ -1,34 +1,85 @@
 /**
- * Debounce utility function
- * Delays function execution until after wait milliseconds have elapsed
- * since the last time the debounced function was invoked
+ * Debounce Utility
+ * 
+ * PHASE 2 ITEM #2: Debounce function for performance optimization
+ * Delays execution of a function until after a specified wait time has elapsed
+ * since the last time it was invoked.
+ * 
+ * Use cases:
+ * - Search input filtering (avoid filtering on every keystroke)
+ * - Resize/scroll handlers
+ * - API calls from user input
+ * 
+ * @param {Function} func - The function to debounce
+ * @param {number} wait - The number of milliseconds to delay
+ * @param {boolean} immediate - If true, trigger on leading edge instead of trailing
+ * @returns {Function} Debounced function
+ * 
+ * @example
+ * const debouncedSearch = debounce((value) => {
+ *   performSearch(value);
+ * }, 300);
+ * 
+ * input.addEventListener('input', (e) => {
+ *   debouncedSearch(e.target.value);
+ * });
  */
-export function debounce(func, wait = 300) {
+export function debounce(func, wait, immediate = false) {
   let timeout;
   
   return function executedFunction(...args) {
+    const context = this;
+    
     const later = () => {
-      clearTimeout(timeout);
-      func(...args);
+      timeout = null;
+      if (!immediate) {
+        func.apply(context, args);
+      }
     };
+    
+    const callNow = immediate && !timeout;
     
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
+    
+    if (callNow) {
+      func.apply(context, args);
+    }
   };
 }
 
 /**
- * Throttle utility function
- * Ensures function is called at most once per specified time period
+ * Throttle Utility
+ * 
+ * Creates a throttled function that only invokes func at most once per every wait milliseconds
+ * Unlike debounce, throttle guarantees execution at regular intervals
+ * 
+ * @param {Function} func - The function to throttle
+ * @param {number} wait - The number of milliseconds to throttle invocations to
+ * @returns {Function} Throttled function
+ * 
+ * @example
+ * const throttledScroll = throttle(() => {
+ *   handleScroll();
+ * }, 200);
+ * 
+ * window.addEventListener('scroll', throttledScroll);
  */
-export function throttle(func, limit = 100) {
+export function throttle(func, wait) {
   let inThrottle;
+  let lastTime;
   
   return function(...args) {
+    const context = this;
+    
     if (!inThrottle) {
-      func.apply(this, args);
+      func.apply(context, args);
+      lastTime = Date.now();
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      
+      setTimeout(() => {
+        inThrottle = false;
+      }, wait);
     }
   };
 }

@@ -1,8 +1,20 @@
 /**
  * Component Discovery Service
+ * 
+ * @deprecated PHASE 2: This service is deprecated in favor of REST API component loading.
+ * Use APIService.loadComponents() to fetch component metadata from /gmkb/v2/components.
+ * 
  * Automatically discovers and loads self-contained components
  * Implements scalable component architecture
+ * 
+ * MIGRATION:
+ * - ComponentLibraryNew.vue now uses APIService.loadComponents()
+ * - Component metadata served from PHP ComponentDiscovery via REST API
+ * - This provides a single source of truth (PHP) with caching
+ * - This file may be removed in a future version
  */
+
+console.warn('⚠️ ComponentDiscoveryService.js is deprecated. Use APIService.loadComponents() instead.');
 
 import { defineAsyncComponent, markRaw } from 'vue';
 
@@ -12,6 +24,13 @@ const editorModules = import.meta.glob('/components/*/*Editor.vue');
 
 class ComponentDiscoveryService {
   constructor() {
+    // PHASE 2: Deprecation warning
+    if (window.gmkbData?.debugMode) {
+      console.log('%c⚠️ DEPRECATED: ComponentDiscoveryService', 'color: orange; font-weight: bold');
+      console.log('This service is being phased out in favor of REST API component loading.');
+      console.log('Use: APIService.loadComponents() or fetch from /gmkb/v2/components');
+    }
+    
     this.componentCache = new Map();
     this.componentManifests = new Map();
     this.discoveredComponents = new Set();

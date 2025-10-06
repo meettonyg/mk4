@@ -1,4 +1,8 @@
-<template>
+    // PHASE 2 ITEM #2: Manual refresh capability
+    const refreshComponents = async () => {
+      console.log('🔄 ComponentLibrary: Manual refresh requested');
+      await loadComponentsFromAPI();
+    };<template>
   <Teleport to="body">
     <!-- Modal Overlay -->
     <Transition name="modal-fade">
@@ -44,14 +48,12 @@
                   type="text" 
                   class="gmkb-search-input"
                   placeholder="Search components..."
-                  @input="filterComponents"
                 />
               </div>
               
               <select 
                 v-model="selectedCategory" 
                 class="gmkb-category-select"
-                @change="filterComponents"
               >
                 <option value="all">All Categories</option>
                 <option 
@@ -62,11 +64,31 @@
                   {{ label }}
                 </option>
               </select>
+              
+              <!-- PHASE 2 ITEM #2: Manual Refresh Button -->
+              <button 
+                class="gmkb-refresh-button"
+                @click="refreshComponents"
+                :disabled="isLoadingComponents"
+                title="Refresh component list"
+              >
+                <svg class="gmkb-refresh-icon" :class="{ 'spinning': isLoadingComponents }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
             </div>
 
             <!-- Component Grid -->
             <div class="gmkb-library-body">
-              <div v-if="filteredComponents.length > 0" class="gmkb-component-grid">
+              <!-- PHASE 2: Loading State -->
+              <div v-if="isLoadingComponents" class="gmkb-loading-state">
+                <div class="gmkb-loading-spinner"></div>
+                <p class="gmkb-loading-message">Loading components...</p>
+              </div>
+              
+              <div v-else-if="filteredComponents.length > 0" class="gmkb-component-grid">
                 <div
                   v-for="component in filteredComponents"
                   :key="component.type"
@@ -158,9 +180,12 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted, watch, h } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, watchEffect, h } from 'vue';
 import { useMediaKitStore } from '../../stores/mediaKit';
 import UnifiedComponentRegistry from '../../services/UnifiedComponentRegistry';
+import { APIService } from '../../services/APIService';
+import { debounce } from '../../utils/debounce';
+import ToastService from '../../services/ToastService';
 
 // Simple icon components as render functions
 const icons = {
@@ -206,14 +231,32 @@ export default {
     const selectedCategory = ref('all');
     const hasPremiumAccess = ref(window.gmkbData?.hasPremiumAccess || false);
     
-    // Get components and categories from unified registry
-    const components = ref(UnifiedComponentRegistry.getAll());
-    const categories = ref(UnifiedComponentRegistry.getCategories().reduce((acc, cat) => {
-      acc[cat.slug] = cat.name;
-      return acc;
-    }, {}));
+    // PHASE 2: Get components via REST API instead of direct registry access
+    const components = ref([]);
+    const categories = ref({});
+    const isLoadingComponents = ref(true);
+    const lastRefreshTime = ref(0);
+    const apiCallCount = ref(0);
     
-    // PHASE 3 FIX: Harden search filter to prevent errors on missing descriptions
+    // Initialize APIService
+    const apiService = window.gmkbAPI || new APIService(
+      window.gmkbData?.restUrl,
+      window.gmkbData?.restNonce,
+      window.gmkbData?.postId
+    );
+    
+    // PHASE 2 ITEM #2: Debounced search for better performance
+    const debouncedSearchTerm = ref('');
+    const searchDebounced = debounce((value) => {
+      debouncedSearchTerm.value = value;
+    }, 300); // 300ms delay
+    
+    // Watch search term and debounce it
+    watch(searchTerm, (newValue) => {
+      searchDebounced(newValue);
+    });
+    
+    // PHASE 2 ITEM #2: Reactive filtered components with debounced search
     const filteredComponents = computed(() => {
       let filtered = components.value;
       
@@ -222,9 +265,9 @@ export default {
         filtered = filtered.filter(c => c.category === selectedCategory.value);
       }
       
-      // Filter by search term - PHASE 3 FIX: Safe property access
-      if (searchTerm.value) {
-        const term = searchTerm.value.toLowerCase();
+      // PHASE 2 ITEM #2: Use debounced search term for better performance
+      if (debouncedSearchTerm.value) {
+        const term = debouncedSearchTerm.value.toLowerCase();
         filtered = filtered.filter(c => {
           const name = (c.name || '').toLowerCase();
           const description = (c.description || '').toLowerCase();
@@ -286,6 +329,7 @@ export default {
     
     const resetFilters = () => {
       searchTerm.value = '';
+      debouncedSearchTerm.value = ''; // PHASE 2 ITEM #2: Also reset debounced term
       selectedCategory.value = 'all';
     };
     
@@ -293,45 +337,15 @@ export default {
       return icons[iconName] || icons.default;
     };
     
-    // PHASE 5 FIX: Use ToastService if available, fallback to custom
+    // PHASE 2 ITEM #3: Use unified ToastService instead of inline implementation
     const showToast = (message, type = 'info') => {
-      // First try to use ToastService if available
-      if (window.ToastService && typeof window.ToastService.show === 'function') {
-        window.ToastService.show(message, type);
-        return;
-      }
-      
-      // Fallback to window.showToast if available
-      if (typeof window.showToast === 'function') {
-        window.showToast(message, type);
-        return;
-      }
-      
-      // Last resort: Create our own toast
-      const toast = document.createElement('div');
-      toast.className = `gmkb-toast gmkb-toast--${type}`;
-      toast.textContent = message;
-      toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 12px 24px;
-        background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
-        color: white;
-        border-radius: 6px;
-        z-index: 10001;
-        animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.7s;
-      `;
-      
-      document.body.appendChild(toast);
-      
-      setTimeout(() => {
-        toast.remove();
-      }, 3000);
+      // Use centralized ToastService
+      ToastService.show(message, type);
       
       // Also log to console for debugging
-      console.log(`[${type}] ${message}`);
+      if (window.gmkbData?.debugMode) {
+        console.log(`[Toast:${type}] ${message}`);
+      }
     };
     
     // PHASE 3 FIX: Add premium access check for drag operations
@@ -399,18 +413,73 @@ export default {
     });
     
     // Lifecycle
-    // Handle component discovery events
-    const handleComponentsDiscovered = () => {
-      console.log('🔄 ComponentLibrary: Refreshing components after discovery');
-      components.value = UnifiedComponentRegistry.getAll();
-      categories.value = UnifiedComponentRegistry.getCategories().reduce((acc, cat) => {
-        acc[cat.slug] = cat.name;
-        return acc;
-      }, {});
-      console.log(`✅ ComponentLibrary: Refreshed, now have ${components.value.length} components`);
+    // PHASE 2 ITEM #2: Load components from REST API
+    const loadComponentsFromAPI = async () => {
+      isLoadingComponents.value = true;
+      apiCallCount.value++;
+      
+      try {
+        console.log('🔄 ComponentLibrary: Loading components from REST API...');
+        const componentData = await apiService.loadComponents();
+        
+        if (Array.isArray(componentData)) {
+          components.value = componentData;
+          lastRefreshTime.value = Date.now();
+          
+          // Build categories from components
+          const catMap = {};
+          componentData.forEach(comp => {
+            if (comp.category) {
+              catMap[comp.category] = comp.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+          });
+          categories.value = catMap;
+          
+          console.log(`✅ ComponentLibrary: Loaded ${components.value.length} components from API`);
+          console.log(`📊 ComponentLibrary: API call #${apiCallCount.value}, last refresh: ${new Date(lastRefreshTime.value).toLocaleTimeString()}`);
+        }
+      } catch (error) {
+        console.error('❌ ComponentLibrary: Failed to load components:', error);
+        // Fallback to UnifiedComponentRegistry
+        console.log('⚠️ ComponentLibrary: Falling back to UnifiedComponentRegistry');
+        components.value = UnifiedComponentRegistry.getAll();
+        categories.value = UnifiedComponentRegistry.getCategories().reduce((acc, cat) => {
+          acc[cat.slug] = cat.name;
+          return acc;
+        }, {});
+      } finally {
+        isLoadingComponents.value = false;
+      }
     };
     
-    onMounted(() => {
+    // PHASE 2 ITEM #2: Reactive auto-refresh with watchEffect
+    // This automatically re-runs when dependencies change
+    let stopAutoRefresh = null;
+    
+    const setupAutoRefresh = () => {
+      // Only auto-refresh if modal is open and components are old
+      stopAutoRefresh = watchEffect(() => {
+        if (!isOpen.value) return; // Don't refresh when closed
+        
+        const now = Date.now();
+        const timeSinceRefresh = now - lastRefreshTime.value;
+        const refreshInterval = 60000; // 1 minute
+        
+        // Auto-refresh if data is stale and not currently loading
+        if (timeSinceRefresh > refreshInterval && !isLoadingComponents.value) {
+          console.log('🔄 ComponentLibrary: Auto-refreshing stale data...');
+          loadComponentsFromAPI();
+        }
+      });
+    };
+    
+    // Handle component discovery events (legacy compatibility)
+    const handleComponentsDiscovered = () => {
+      console.log('🔄 ComponentLibrary: Component discovery event received, reloading from API...');
+      loadComponentsFromAPI();
+    };
+    
+    onMounted(async () => {
       // Register global open function
       window.openComponentLibrary = open;
       
@@ -425,7 +494,14 @@ export default {
         open();
       }
       
+      // PHASE 2: Load components from API on mount
+      await loadComponentsFromAPI();
+      
+      // PHASE 2 ITEM #2: Setup auto-refresh watcher
+      setupAutoRefresh();
+      
       console.log('✅ Vue Component Library ready with', components.value.length, 'components');
+      console.log('🔄 Auto-refresh enabled (checks every 60s when open)');
     });
     
     onUnmounted(() => {
@@ -436,6 +512,12 @@ export default {
       document.removeEventListener('keydown', handleKeydown);
       document.removeEventListener('gmkb:components-discovered', handleComponentsDiscovered);
       delete window.openComponentLibrary;
+      
+      // PHASE 2 ITEM #2: Stop auto-refresh watcher
+      if (stopAutoRefresh) {
+        stopAutoRefresh();
+        console.log('🛑 Auto-refresh disabled (component unmounted)');
+      }
     });
     
     return {
@@ -446,6 +528,9 @@ export default {
       categories,
       filteredComponents,
       hasPremiumAccess,
+      isLoadingComponents,
+      lastRefreshTime,
+      refreshComponents,
       open,
       close,
       addComponent,
@@ -588,11 +673,80 @@ export default {
   border-color: #3b82f6;
 }
 
+/* PHASE 2 ITEM #2: Refresh Button */
+.gmkb-refresh-button {
+  padding: 10px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #f1f5f9;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+}
+
+.gmkb-refresh-button:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #3b82f6;
+}
+
+.gmkb-refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gmkb-refresh-icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+}
+
+.gmkb-refresh-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Body */
 .gmkb-library-body {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
+}
+
+/* PHASE 2: Loading State */
+.gmkb-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 60px 20px;
+}
+
+.gmkb-loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #334155;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.gmkb-loading-message {
+  color: #94a3b8;
+  font-size: 16px;
+  margin: 20px 0 0 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Component Grid */
