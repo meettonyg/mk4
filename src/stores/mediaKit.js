@@ -299,6 +299,15 @@ export const useMediaKitStore = defineStore('mediaKit', {
         if (savedState) {
           data = savedState;
           this.applyState(savedState);
+          
+          // ROOT FIX: If Pods data not in savedState, get it from window.gmkbData
+          if (!this.podsData || Object.keys(this.podsData).length === 0) {
+            const podsDataFromWindow = window.gmkbData?.pods_data || window.gmkbData?.podsData || {};
+            if (Object.keys(podsDataFromWindow).length > 0) {
+              this.podsData = podsDataFromWindow;
+              console.log('✅ Loaded Pods data from window.gmkbData:', Object.keys(this.podsData).length, 'fields');
+            }
+          }
         } else if (this.postId) {
           // ROOT FIX: Use APIService with REST URL (not AJAX URL)
           // Get APIService from window or create new instance

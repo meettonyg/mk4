@@ -132,53 +132,22 @@ onMounted(async () => {
       }
     }
     
-    // ROOT FIX: Wait for store initialization (main.js handles this)
-    // Check if already initialized
-    if (store.isInitialized) {
-      console.log('✅ MediaKitApp: Store already initialized');
-      loadingProgress.value = 75;
-    } else if (store.isInitializing) {
-      // Store is currently initializing (by main.js), wait for it
-      console.log('⏳ MediaKitApp: Waiting for ongoing store initialization...');
-      loadingProgress.value = 25;
-      
-      // ROOT FIX: Store interval reference so we can clear it
-      let checkInterval = null;
-      
-      // Wait for initialization to complete by listening for the event
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          // ROOT FIX: Clear interval before rejecting
-          if (checkInterval) {
-            clearInterval(checkInterval);
-          }
-          reject(new Error('Store initialization timeout after 10s'));
-        }, 10000);
-        
-        checkInterval = setInterval(() => {
-          if (store.isInitialized) {
-            clearInterval(checkInterval);
-            clearTimeout(timeout);
-            resolve();
-          }
-        }, 100);
-      });
-      
-      loadingProgress.value = 75;
-      console.log('✅ MediaKitApp: Store initialization complete');
-    } else {
-      // Neither initialized nor initializing - this shouldn't happen but handle it
-      console.warn('⚠️ MediaKitApp: Store not initialized and not initializing, performing emergency initialization');
-      loadingProgress.value = 25;
-      
-      try {
-        await store.initialize();
-        loadingProgress.value = 75;
-        console.log('✅ MediaKitApp: Emergency initialization complete');
-      } catch (initError) {
-        console.error('❌ MediaKitApp: Emergency initialization failed:', initError);
-        throw initError;
-      }
+    // ROOT FIX: Stores are ALWAYS initialized before Vue mounts (see main.js)
+    // We just verify the state is ready
+    if (!store.isInitialized) {
+      console.error('❌ MediaKitApp: Store not initialized - this should never happen!');
+      console.error('Check main.js initialization order - stores must initialize BEFORE Vue mount');
+      throw new Error('Store not initialized - initialization order bug in main.js');
+    }
+    
+    console.log('✅ MediaKitApp: Store already initialized and ready');
+    loadingProgress.value = 75;
+    
+    // ROOT FIX: Log Pods data status for debugging
+    const podsFieldCount = store.podsData ? Object.keys(store.podsData).length : 0;
+    console.log(`📊 MediaKitApp: Pods data loaded: ${podsFieldCount} fields`);
+    if (podsFieldCount > 0 && window.gmkbData?.debugMode) {
+      console.log('📊 Pods data fields:', Object.keys(store.podsData));
     }
     
     // Apply theme after data loaded

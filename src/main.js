@@ -37,11 +37,12 @@ let vueApp = null;
  * Initialize Vue application with proper error handling
  * 
  * Steps:
- * 3. Create Vue app
- * 4. Mount Vue app  
- * 5. Initialize stores
- * 6. Load data with retry
- * 7. Initialize theme
+ * 3. Create Pinia
+ * 4. Initialize stores (BEFORE Vue mount)
+ * 5. Load data (BEFORE Vue mount)
+ * 6. Initialize theme (BEFORE Vue mount) 
+ * 7. Load Vue components
+ * 8. Mount Vue app (stores already ready)
  */
 async function initializeVue() {
   try {
@@ -92,46 +93,28 @@ async function initializeVue() {
     const pinia = createPinia();
     console.log('✅ Pinia store created');
     
-    // Load Vue app components
-    const { default: MediaKitApp } = await import('./vue/components/MediaKitApp.vue');
-    const { default: ComponentLibrary } = await import('./vue/components/ComponentLibraryNew.vue');
-    const { default: LoadingScreen } = await import('./vue/components/LoadingScreen.vue');
-    console.log('✅ Vue components loaded');
-    
-    // Create and mount Vue app
-    console.log('4️⃣ Mounting Vue application...');
-    const app = createApp(MediaKitApp);
-    app.use(pinia);
-    app.component('ComponentLibrary', ComponentLibrary);
-    app.component('LoadingScreen', LoadingScreen);
-    
-    const instance = app.mount(mountPoint);
-    console.log('✅ Vue mounted successfully');
-    
-    // Make available globally for debugging
-    window.gmkbApp = app;
-    window.gmkbVueInstance = instance;
-    window.gmkbPinia = pinia;
-    
-    // STEP 5: Initialize stores
-    console.log('5️⃣ Initializing stores...');
+    // ROOT FIX: Initialize stores BEFORE mounting Vue to prevent race condition
+    // STEP 4: Initialize stores (BEFORE Vue mount)
+    console.log('4️⃣ Initializing stores...');
     const { useMediaKitStore } = await import('./stores/mediaKit.js');
     const { useThemeStore } = await import('./stores/theme.js');
     
-    const mediaKitStore = useMediaKitStore();
-    const themeStore = useThemeStore();
-    console.log('✅ Stores initialized');
+    const mediaKitStore = useMediaKitStore(pinia);
+    const themeStore = useThemeStore(pinia);
+    console.log('✅ Stores created');
+    
+    // Make stores available globally BEFORE Vue mount
+    window.gmkbStore = mediaKitStore;
+    window.mediaKitStore = mediaKitStore;
+    window.themeStore = themeStore;
+    window.gmkbPinia = pinia;
     
     // ROOT FIX: Initialize the debounced autoSave with proper context
     mediaKitStore.initAutoSave();
     logger.info('✅ AutoSave initialized with proper context');
     
-    window.gmkbStore = mediaKitStore;
-    window.mediaKitStore = mediaKitStore;
-    window.themeStore = themeStore;
-    
-    // Load data with retry logic and better error handling
-    console.log('6️⃣ Loading media kit data...');
+    // STEP 5: Load data (BEFORE Vue mount)
+    console.log('5️⃣ Loading media kit data...');
     try {
       if (window.gmkbData?.savedState) {
         await mediaKitStore.initialize(window.gmkbData.savedState);
@@ -154,8 +137,8 @@ async function initializeVue() {
       }
     }
     
-    // STEP 7: Initialize theme
-    console.log('7️⃣ Initializing theme...');
+    // STEP 6: Initialize theme (BEFORE Vue mount)
+    console.log('6️⃣ Initializing theme...');
     
     // ROOT FIX: Initialize themes from PHP data FIRST, before anything else
     // Pass the saved theme from the media kit store
@@ -177,6 +160,27 @@ async function initializeVue() {
     themeStore.loadCustomThemes().catch(() => {
       console.log('ℹ️ Custom themes not available, using built-in themes');
     })
+    
+    // STEP 7: NOW mount Vue (with stores already initialized)
+    console.log('7️⃣ Loading Vue components...');
+    const { default: MediaKitApp } = await import('./vue/components/MediaKitApp.vue');
+    const { default: ComponentLibrary } = await import('./vue/components/ComponentLibraryNew.vue');
+    const { default: LoadingScreen } = await import('./vue/components/LoadingScreen.vue');
+    console.log('✅ Vue components loaded');
+    
+    // Create and mount Vue app
+    console.log('8️⃣ Mounting Vue application...');
+    const app = createApp(MediaKitApp);
+    app.use(pinia);
+    app.component('ComponentLibrary', ComponentLibrary);
+    app.component('LoadingScreen', LoadingScreen);
+    
+    const instance = app.mount(mountPoint);
+    console.log('✅ Vue mounted successfully');
+    
+    // Make available globally for debugging
+    window.gmkbApp = app;
+    window.gmkbVueInstance = instance;
     
     // ROOT FIX: Use ConsoleAPI service instead of inline code
     ConsoleAPI.install({
@@ -429,7 +433,7 @@ async function initialize() {
     // ROOT FIX: NO MORE ImportExportManager - Vue composable handles it!
     logger.info('✅ Using 100% Vue architecture - no legacy managers');
     
-    // STEP 3-7: Initialize Vue application
+    // STEP 3-8: Initialize Vue application
     console.log('3️⃣ Creating Vue application...');
     vueApp = await initializeVue();
     
