@@ -555,10 +555,11 @@ const onDragLeave = (e) => {
   e.currentTarget.classList.remove('drag-over');
 };
 
+// GEMINI FIX #3: Guard drop workflow with comprehensive verification
 const onDrop = (e, sectionId, column) => {
   e.currentTarget.classList.remove('drag-over');
   
-  // ROOT FIX: Handle multiple data transfer formats
+  // Handle multiple data transfer formats
   const textData = e.dataTransfer.getData('text/plain');
   const jsonData = e.dataTransfer.getData('application/json');
   const componentType = e.dataTransfer.getData('component-type');
@@ -592,9 +593,43 @@ const onDrop = (e, sectionId, column) => {
       column
     });
     
-    console.log('✅ Component dropped:', componentData.type, 'in section:', sectionId, 'column:', column, 'id:', newComponentId);
+    // GEMINI FIX #3: Verify component was actually added before declaring success
+    if (!newComponentId) {
+      throw new Error('addComponent returned no ID');
+    }
     
-    // Trigger legacy event for any listeners
+    // GEMINI FIX #3: Verify component exists in store
+    const component = store.components[newComponentId];
+    if (!component) {
+      throw new Error(`Component ${newComponentId} not found in store after adding`);
+    }
+    
+    // GEMINI FIX #3: Verify component has required properties
+    if (!component.type) {
+      throw new Error(`Component ${newComponentId} has no type`);
+    }
+    
+    // GEMINI FIX #3: Verify component is actually in the section
+    const section = store.sections.find(s => s.section_id === sectionId);
+    if (!section) {
+      throw new Error(`Section ${sectionId} not found`);
+    }
+    
+    let componentInSection = false;
+    if (section.components) {
+      componentInSection = section.components.includes(newComponentId);
+    } else if (section.columns && section.columns[column]) {
+      componentInSection = section.columns[column].includes(newComponentId);
+    }
+    
+    if (!componentInSection) {
+      throw new Error(`Component ${newComponentId} not found in section ${sectionId}`);
+    }
+    
+    // NOW we can log success (verified)
+    console.log('✅ Component dropped (verified):', componentData.type, 'in section:', sectionId, 'column:', column, 'id:', newComponentId);
+    
+    // Trigger success event (only after verification)
     document.dispatchEvent(new CustomEvent('gmkb:component-dropped', {
       detail: {
         componentId: newComponentId,
@@ -603,18 +638,24 @@ const onDrop = (e, sectionId, column) => {
         column
       }
     }));
+    
   } catch (error) {
-    console.error('Error handling drop:', error);
+    console.error('❌ Failed to add component:', error);
+    
+    // GEMINI FIX #3: Show error to user
+    document.dispatchEvent(new CustomEvent('gmkb:error', {
+      detail: {
+        message: 'Failed to add component: ' + error.message,
+        type: 'error'
+      }
+    }));
   }
 };
 
-// Update column components when dragging between columns
+// GEMINI FIX #2: Update column components through store action
+// This prevents direct state mutation from view layer
 const updateColumnComponents = (section, column, newComponents) => {
-  if (!section.columns) {
-    section.columns = { 1: [], 2: [], 3: [] };
-  }
-  section.columns[column] = newComponents;
-  store.hasUnsavedChanges = true;
+  store.updateColumnComponents(section.section_id, column, newComponents);
 };
 
 // Handle component order changes
@@ -749,11 +790,10 @@ onMounted(async () => {
   // Initialize sections if needed
   await nextTick();
   
-  // Initialize columns structure for existing sections
+  // GEMINI FIX #2: Initialize columns through store action (proper architecture)
+  // This moves the logic from view layer to store, preventing direct state mutation
   store.sections.forEach(section => {
-    if (section.type !== 'full_width' && !section.columns) {
-      section.columns = { 1: [], 2: [], 3: [] };
-    }
+    store.initializeSectionColumns(section.section_id);
   });
 });
 

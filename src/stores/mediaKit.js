@@ -707,15 +707,17 @@ export const useMediaKitStore = defineStore('mediaKit', {
     applyState(savedState) {
       console.log('📥 Applying state with normalization...');
       
-      // CRITICAL FIX: Normalize section component references before applying
+      // GEMINI FIX #1: Deep clone all incoming state to prevent external mutations
+      // This prevents external code from mutating store state via shared references
       if (savedState.sections) {
         this.sections = savedState.sections.map((section, idx) => {
-          const normalized = { ...section };
+          // GEMINI FIX: Use deepClone instead of shallow spread
+          const normalized = deepClone(section);
           
           // Fix full-width sections
-          if (section.components && Array.isArray(section.components)) {
-            const originalCount = section.components.length;
-            normalized.components = section.components
+          if (normalized.components && Array.isArray(normalized.components)) {
+            const originalCount = normalized.components.length;
+            normalized.components = normalized.components
               .map(comp => this._normalizeComponentRef(comp))
               .filter(Boolean); // Remove null/undefined entries
             
@@ -726,23 +728,24 @@ export const useMediaKitStore = defineStore('mediaKit', {
           }
           
           // Fix multi-column sections
-          if (section.columns) {
-            normalized.columns = {};
-            Object.entries(section.columns).forEach(([col, components]) => {
+          if (normalized.columns) {
+            const newColumns = {};
+            Object.entries(normalized.columns).forEach(([col, components]) => {
               if (Array.isArray(components)) {
                 const originalCount = components.length;
-                normalized.columns[col] = components
+                newColumns[col] = components
                   .map(comp => this._normalizeComponentRef(comp))
                   .filter(Boolean); // Remove null/undefined entries
                 
-                const normalizedCount = normalized.columns[col].length;
+                const normalizedCount = newColumns[col].length;
                 if (originalCount !== normalizedCount) {
                   console.warn(`⚠️ Section ${idx} col ${col}: Removed ${originalCount - normalizedCount} invalid component references`);
                 }
               } else {
-                normalized.columns[col] = [];
+                newColumns[col] = [];
               }
             });
+            normalized.columns = newColumns;
           }
           
           return normalized;
@@ -752,11 +755,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
       }
       
       if (savedState.components) {
-        // Ensure components is an object, not array
+        // GEMINI FIX: Deep clone components to prevent external mutations
         if (Array.isArray(savedState.components)) {
           this.components = {};
         } else {
-          this.components = savedState.components;
+          this.components = deepClone(savedState.components);
         }
       }
       
@@ -775,9 +778,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       }
       
-      if (savedState.themeCustomizations) this.themeCustomizations = savedState.themeCustomizations;
-      if (savedState.podsData) this.podsData = savedState.podsData;
-      if (savedState.globalSettings) this.globalSettings = savedState.globalSettings;
+      // GEMINI FIX: Deep clone all other state properties to prevent mutations
+      if (savedState.themeCustomizations) this.themeCustomizations = deepClone(savedState.themeCustomizations);
+      if (savedState.podsData) this.podsData = deepClone(savedState.podsData);
+      if (savedState.globalSettings) this.globalSettings = deepClone(savedState.globalSettings);
     },
 
     // Load from API via APIService (uses REST API)
@@ -2005,6 +2009,79 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.historyIndex = -1;
       this._saveToHistory(); // Save current state as first entry
       console.log('🗑️ History cleared');
+    },
+    
+    /**
+     * GEMINI FIX #2: Initialize section columns structure
+     * Ensures multi-column sections have proper column arrays
+     * Moves this logic from view layer to store (proper architecture)
+     */
+    initializeSectionColumns(sectionId) {
+      const section = this.sections.find(s => s.section_id === sectionId);
+      if (!section) {
+        console.warn(`⚠️ Section ${sectionId} not found`);
+        return false;
+      }
+      
+      // Skip full-width sections
+      if (section.type === 'full_width' || section.layout === 'full_width') {
+        return false;
+      }
+      
+      // Only initialize if columns don't exist
+      if (!section.columns) {
+        section.columns = this.getDefaultColumnsForLayout(section.type);
+        console.log(`✅ Initialized columns for section ${sectionId} (${section.type})`);
+        return true;
+      }
+      
+      return false;
+    },
+    
+    /**
+     * GEMINI FIX #2: Get default columns structure based on layout type
+     * Centralizes column initialization logic in one place
+     */
+    getDefaultColumnsForLayout(layout) {
+      switch(layout) {
+        case 'two_column':
+          return { '1': [], '2': [] };
+        case 'three_column':
+          return { '1': [], '2': [], '3': [] };
+        case 'main_sidebar':
+        case 'sidebar':
+          return { '1': [], '2': [] };
+        default:
+          return null;
+      }
+    },
+    
+    /**
+     * GEMINI FIX #2: Update column components (for drag-and-drop)
+     * Moves column mutation from view layer to store action
+     * Also tracks changes for history/auto-save
+     */
+    updateColumnComponents(sectionId, column, newComponents) {
+      const section = this.sections.find(s => s.section_id === sectionId);
+      if (!section) {
+        console.warn(`⚠️ Section ${sectionId} not found`);
+        return false;
+      }
+      
+      // Initialize columns if needed
+      if (!section.columns) {
+        section.columns = this.getDefaultColumnsForLayout(section.type);
+      }
+      
+      // Update the column
+      section.columns[column] = newComponents;
+      
+      // Track change for history and auto-save
+      this.isDirty = true;
+      this._trackChange();
+      
+      console.log(`✅ Updated section ${sectionId} column ${column} with ${newComponents.length} components`);
+      return true;
     }
   }
 });
