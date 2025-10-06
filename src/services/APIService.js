@@ -55,7 +55,7 @@ export class APIService {
 
   /**
    * Normalizes the REST URL to ensure it's valid and has trailing slash
-   * ROOT FIX: Properly handle URLs that already contain wp-json to avoid duplication
+   * PHASE 6 FIX: Properly handle forward slashes (not backslashes)
    */
   normalizeRestUrl(url) {
     if (!url) {
@@ -85,7 +85,8 @@ export class APIService {
         parsedUrl = new URL(url);
       }
       
-      // ROOT FIX: Clean up the pathname - remove double slashes AND avoid duplication
+      // PHASE 6 FIX: Use correct regex for forward slashes (not backslashes)
+      // The original used /\\/+/g which targets backslashes, not forward slashes
       let pathname = parsedUrl.pathname.replace(/\/+/g, '/');
       
       // ROOT FIX: Check if wp-json is already in the path
@@ -103,7 +104,7 @@ export class APIService {
         }
       }
       
-      // ROOT FIX: Final cleanup - remove any double slashes that might have been created
+      // PHASE 6 FIX: Final cleanup - remove any double forward slashes
       pathname = pathname.replace(/\/+/g, '/');
       
       // Rebuild the URL

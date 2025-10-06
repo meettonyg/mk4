@@ -213,7 +213,7 @@ export default {
       return acc;
     }, {}));
     
-    // Computed
+    // PHASE 3 FIX: Harden search filter to prevent errors on missing descriptions
     const filteredComponents = computed(() => {
       let filtered = components.value;
       
@@ -222,29 +222,35 @@ export default {
         filtered = filtered.filter(c => c.category === selectedCategory.value);
       }
       
-      // Filter by search term
+      // Filter by search term - PHASE 3 FIX: Safe property access
       if (searchTerm.value) {
         const term = searchTerm.value.toLowerCase();
-        filtered = filtered.filter(c => 
-          c.name.toLowerCase().includes(term) ||
-          c.description.toLowerCase().includes(term) ||
-          c.type.toLowerCase().includes(term)
-        );
+        filtered = filtered.filter(c => {
+          const name = (c.name || '').toLowerCase();
+          const description = (c.description || '').toLowerCase();
+          const type = (c.type || '').toLowerCase();
+          return name.includes(term) || description.includes(term) || type.includes(term);
+        });
       }
       
       return filtered;
     });
     
-    // Methods
+    // PHASE 3 FIX: Properly save and restore body overflow state
+    let previousOverflow = '';
+    
     const open = () => {
       isOpen.value = true;
+      // PHASE 3 FIX: Save previous overflow state
+      previousOverflow = document.body.style.overflow || '';
       document.body.style.overflow = 'hidden';
       store.setComponentLibraryOpen(true); // Sync store state
     };
     
     const close = () => {
       isOpen.value = false;
-      document.body.style.overflow = '';
+      // PHASE 3 FIX: Restore previous overflow state
+      document.body.style.overflow = previousOverflow;
       resetFilters();
       store.setComponentLibraryOpen(false); // Sync store state
     };
@@ -287,8 +293,21 @@ export default {
       return icons[iconName] || icons.default;
     };
     
+    // PHASE 5 FIX: Use ToastService if available, fallback to custom
     const showToast = (message, type = 'info') => {
-      // Create a simple toast notification
+      // First try to use ToastService if available
+      if (window.ToastService && typeof window.ToastService.show === 'function') {
+        window.ToastService.show(message, type);
+        return;
+      }
+      
+      // Fallback to window.showToast if available
+      if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+        return;
+      }
+      
+      // Last resort: Create our own toast
       const toast = document.createElement('div');
       toast.className = `gmkb-toast gmkb-toast--${type}`;
       toast.textContent = message;
@@ -298,7 +317,7 @@ export default {
         left: 50%;
         transform: translateX(-50%);
         padding: 12px 24px;
-        background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+        background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
         color: white;
         border-radius: 6px;
         z-index: 10001;
@@ -313,15 +332,18 @@ export default {
       
       // Also log to console for debugging
       console.log(`[${type}] ${message}`);
-      
-      // If window.showToast exists, also call it
-      if (window.showToast) {
-        window.showToast(message, type);
-      }
     };
     
-    // Drag and Drop handlers
+    // PHASE 3 FIX: Add premium access check for drag operations
     const onDragStart = (event, component) => {
+      // PHASE 3 FIX: Check premium access before allowing drag
+      if (component.isPremium && !hasPremiumAccess.value) {
+        event.preventDefault();
+        event.dataTransfer.effectAllowed = 'none';
+        showToast('Premium components require an upgrade', 'warning');
+        return false;
+      }
+      
       // Set drag data with component information
       event.dataTransfer.effectAllowed = 'copy';
       event.dataTransfer.dropEffect = 'copy';

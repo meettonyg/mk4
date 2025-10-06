@@ -90,7 +90,7 @@
                   v-else
                   v-model="section.components"
                   group="components"
-                  item-key="id"
+                  :item-key="(item) => typeof item === 'string' ? item : (item.id || item.component_id)"
                   class="component-list"
                   @change="onComponentOrderChange"
                   :animation="200"
@@ -130,7 +130,7 @@
                     :model-value="getColumnComponents(section, 1)"
                     @update:model-value="updateColumnComponents(section, 1, $event)"
                     group="components"
-                    item-key="id"
+                    :item-key="(item) => typeof item === 'string' ? item : (item.id || item.component_id)"
                     class="component-list"
                     @change="onComponentOrderChange"
                     :animation="200"
@@ -167,7 +167,7 @@
                     :model-value="getColumnComponents(section, 2)"
                     @update:model-value="updateColumnComponents(section, 2, $event)"
                     group="components"
-                    item-key="id"
+                    :item-key="(item) => typeof item === 'string' ? item : (item.id || item.component_id)"
                     class="component-list"
                     @change="onComponentOrderChange"
                     :animation="200"
@@ -213,7 +213,7 @@
                     :model-value="getColumnComponents(section, col)"
                     @update:model-value="updateColumnComponents(section, col, $event)"
                     group="components"
-                    item-key="id"
+                    :item-key="(item) => typeof item === 'string' ? item : (item.id || item.component_id)"
                     class="component-list"
                     @change="onComponentOrderChange"
                     :animation="200"
@@ -322,7 +322,21 @@ const getLayoutClass = (type) => {
 };
 
 const getComponent = (componentId) => {
-  return store.components[componentId];
+  // CRITICAL FIX: Add defensive checks for undefined component IDs
+  if (!componentId) {
+    console.warn('⚠️ getComponent called with undefined/null componentId');
+    return null;
+  }
+  
+  const component = store.components[componentId];
+  
+  // CRITICAL FIX: Validate component has required data
+  if (component && !component.type) {
+    console.error('❌ Component missing type:', componentId, component);
+    return null;
+  }
+  
+  return component;
 };
 
 const getColumnComponents = (section, column) => {

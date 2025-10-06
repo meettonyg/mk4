@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import UnifiedComponentRegistry from '../vue/services/UnifiedComponentRegistry';
 import { debounce } from '../utils/debounce';
+import eventBus from '../services/EventBus.js';
+import systemReadiness from '../services/SystemReadiness.js';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -293,6 +295,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.loadError = null;
 
       try {
+        // Emit initialization start event
+        eventBus.emit('store:initializing');
+        
         let data;
         
         // If savedState is provided directly, use it
@@ -402,6 +407,13 @@ export const useMediaKitStore = defineStore('mediaKit', {
         this.isInitialized = true;
         this.isInitializing = false;
         
+        // Mark store as ready in system readiness
+        systemReadiness.markReady('store', this);
+        eventBus.emit('store:initialized', { 
+          componentCount: Object.keys(this.components).length,
+          sectionCount: this.sections.length 
+        });
+        
         console.log('✅ State initialized via APIService (admin-ajax)');
         return data;
 
@@ -409,6 +421,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         console.error('Failed to initialize:', error);
         this.loadError = error.message;
         this.isInitializing = false; // Clear flag on error too
+        eventBus.emit('store:error', error);
         throw error;
       } finally {
         this.isLoading = false;
@@ -784,6 +797,86 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.isDirty = true;
       this._trackChange();
       return sectionId;
+    },
+
+    // PHASE 2 FIX: Duplicate a section with proper deep cloning
+    duplicateSection(sectionId) {
+      const section = this.sections.find(s => s.section_id === sectionId);
+      if (!section) return null;
+      
+      // CRITICAL: Use structuredClone for true deep copy (prevents reference leaks)
+      // Fallback to JSON method for older browsers
+      const newSection = typeof structuredClone !== 'undefined' ?
+        structuredClone(section) :
+        JSON.parse(JSON.stringify(section));
+      
+      // Generate new unique IDs
+      const newSectionId = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      newSection.section_id = newSectionId;
+      newSection.createdAt = Date.now();
+      delete newSection.updatedAt; // Remove old update timestamp
+      
+      // Create component ID mapping for remapping
+      const componentIdMap = new Map();
+      
+      // Helper to deep clone and remap component IDs
+      const remapComponentIds = (ids) => {
+        if (!ids || !Array.isArray(ids)) return [];
+        
+        return ids.map(oldId => {
+          if (!componentIdMap.has(oldId)) {
+            const newId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            componentIdMap.set(oldId, newId);
+            
+            // Deep clone the component
+            if (this.components[oldId]) {
+              const clonedComponent = typeof structuredClone !== 'undefined' ?
+                structuredClone(this.components[oldId]) :
+                JSON.parse(JSON.stringify(this.components[oldId]));
+              
+              // Update component metadata
+              clonedComponent.id = newId;
+              clonedComponent.createdAt = Date.now();
+              delete clonedComponent.updatedAt;
+              
+              // Store the new component
+              this.components[newId] = clonedComponent;
+            }
+          }
+          return componentIdMap.get(oldId);
+        });
+      };
+      
+      // Update component references
+      if (newSection.components) {
+        newSection.components = remapComponentIds(newSection.components);
+      }
+      
+      // Handle multi-column layouts
+      if (newSection.columns) {
+        const newColumns = {};
+        Object.entries(newSection.columns).forEach(([key, value]) => {
+          newColumns[key] = remapComponentIds(value);
+        });
+        newSection.columns = newColumns;
+      }
+      
+      // Insert after original section
+      const index = this.sections.findIndex(s => s.section_id === sectionId);
+      this.sections.splice(index + 1, 0, newSection);
+      
+      // Track change
+      this.isDirty = true;
+      this._trackChange();
+      
+      // Emit duplication event
+      eventBus.emit('section:duplicated', { 
+        original: sectionId, 
+        duplicate: newSectionId,
+        componentCount: componentIdMap.size 
+      });
+      
+      return newSectionId;
     },
 
     // Remove a section and all its components

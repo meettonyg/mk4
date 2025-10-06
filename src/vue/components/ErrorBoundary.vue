@@ -1,198 +1,319 @@
-<!-- Vue Error Boundary Component
-     Catches errors in child components and provides fallback UI
-     ROOT FIX: Prevents entire app crash from component errors -->
 <template>
-  <div v-if="hasError" class="error-boundary">
-    <div class="error-boundary__content">
+  <div v-if="hasError" class="gmkb-error-boundary">
+    <div class="error-boundary__container">
       <div class="error-boundary__icon">⚠️</div>
-      <h3 class="error-boundary__title">Component Error</h3>
-      <p class="error-boundary__message">{{ errorMessage }}</p>
       
-      <div class="error-boundary__actions">
-        <button @click="retry" class="error-boundary__btn error-boundary__btn--primary">
-          Retry
-        </button>
-        <button @click="reset" class="error-boundary__btn">
-          Reset Component
-        </button>
+      <h2 class="error-boundary__title">
+        {{ errorTitle }}
+      </h2>
+      
+      <p class="error-boundary__message">
+        {{ errorMessage }}
+      </p>
+      
+      <div v-if="showDetails && error" class="error-boundary__details">
+        <details>
+          <summary>Error Details</summary>
+          <pre>{{ errorDetails }}</pre>
+        </details>
       </div>
       
-      <details v-if="showDetails" class="error-boundary__details">
-        <summary>Error Details</summary>
-        <pre>{{ errorDetails }}</pre>
-      </details>
+      <div class="error-boundary__actions">
+        <button 
+          @click="handleReset"
+          class="error-boundary__button error-boundary__button--primary"
+        >
+          Try Again
+        </button>
+        
+        <button 
+          @click="handleReload"
+          class="error-boundary__button error-boundary__button--secondary"
+        >
+          Reload Page
+        </button>
+        
+        <button 
+          v-if="onReport"
+          @click="handleReport"
+          class="error-boundary__button error-boundary__button--tertiary"
+        >
+          Report Issue
+        </button>
+      </div>
     </div>
   </div>
-  <slot v-else />
+  
+  <slot v-else></slot>
 </template>
 
 <script setup>
-import { ref, onErrorCaptured, defineEmits, defineProps } from 'vue';
+import { ref, computed, onErrorCaptured } from 'vue';
+import { trackError } from '@/services/Analytics.js';
 
 const props = defineProps({
+  errorTitle: {
+    type: String,
+    default: 'Something went wrong'
+  },
+  errorMessage: {
+    type: String,
+    default: 'An unexpected error occurred. Please try again.'
+  },
   showDetails: {
     type: Boolean,
-    default: false
+    default: true
+  },
+  onReset: {
+    type: Function,
+    default: null
+  },
+  onReport: {
+    type: Function,
+    default: null
   },
   fallback: {
-    type: String,
-    default: ''
-  },
-  onError: {
-    type: Function,
+    type: Object,
     default: null
   }
 });
 
-const emit = defineEmits(['error', 'retry', 'reset']);
+const emit = defineEmits(['error', 'reset']);
 
+// State
 const hasError = ref(false);
-const errorMessage = ref('');
-const errorDetails = ref('');
+const error = ref(null);
 const errorInfo = ref(null);
 
-// Catch errors from child components
+// Computed
+const errorDetails = computed(() => {
+  if (!error.value) return '';
+  
+  return JSON.stringify({
+    message: error.value.message,
+    stack: error.value.stack,
+    info: errorInfo.value
+  }, null, 2);
+});
+
+/**
+ * Error capture handler
+ */
 onErrorCaptured((err, instance, info) => {
   hasError.value = true;
-  errorMessage.value = err.message || 'An unexpected error occurred';
-  errorDetails.value = err.stack || err.toString();
-  errorInfo.value = { err, instance, info };
+  error.value = err;
+  errorInfo.value = info;
   
-  // Log error in development
-  if (window.gmkbData?.debugMode) {
-    console.error('🔥 Error Boundary caught:', err);
-    console.error('Component:', instance);
-    console.error('Info:', info);
-  }
+  console.error('🔴 Error Boundary caught error:', {
+    error: err,
+    component: instance?.$options?.name,
+    info
+  });
   
-  // Call custom error handler if provided
-  if (props.onError) {
-    props.onError(err, instance, info);
-  }
+  // Track error
+  trackError(err, {
+    component: instance?.$options?.name,
+    info,
+    boundary: 'ErrorBoundary'
+  });
   
   // Emit error event
-  emit('error', { error: err, instance, info });
+  emit('error', { error: err, info });
   
-  // Report to error tracking service in production
-  if (window.gmkbData?.environment === 'production') {
-    // TODO: Send to error tracking service like Sentry
-    console.error('Production error:', {
-      message: err.message,
-      stack: err.stack,
-      component: instance?.$options.name || 'Unknown',
-      info
-    });
-  }
-  
-  // Prevent error from propagating
+  // Prevent propagation
   return false;
 });
 
-// Retry rendering the component
-const retry = () => {
+/**
+ * Handle reset
+ */
+const handleReset = () => {
   hasError.value = false;
-  errorMessage.value = '';
-  errorDetails.value = '';
-  emit('retry');
+  error.value = null;
+  errorInfo.value = null;
+  
+  // Call custom reset handler
+  if (props.onReset) {
+    props.onReset();
+  }
+  
+  emit('reset');
+  
+  console.log('🔄 Error boundary reset');
 };
 
-// Reset component completely
-const reset = () => {
-  hasError.value = false;
-  errorMessage.value = '';
-  errorDetails.value = '';
-  
-  // Force re-render by changing key
-  emit('reset');
+/**
+ * Handle reload
+ */
+const handleReload = () => {
+  window.location.reload();
+};
+
+/**
+ * Handle report
+ */
+const handleReport = () => {
+  if (props.onReport) {
+    props.onReport({
+      error: error.value,
+      info: errorInfo.value
+    });
+  }
 };
 </script>
 
 <style scoped>
-.error-boundary {
+.gmkb-error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
   padding: 40px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
-.error-boundary__content {
+.error-boundary__container {
+  max-width: 600px;
+  width: 100%;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   text-align: center;
-  max-width: 500px;
-  margin: 0 auto;
 }
 
 .error-boundary__icon {
-  font-size: 48px;
+  font-size: 64px;
   margin-bottom: 20px;
 }
 
 .error-boundary__title {
   font-size: 24px;
   font-weight: 600;
-  color: #1e293b;
+  color: #2d3748;
   margin: 0 0 12px;
 }
 
 .error-boundary__message {
   font-size: 16px;
-  color: #64748b;
+  color: #718096;
   margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.error-boundary__details {
+  margin: 24px 0;
+  text-align: left;
+}
+
+.error-boundary__details details {
+  padding: 16px;
+  background: #f7fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.error-boundary__details summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: #4a5568;
+  user-select: none;
+}
+
+.error-boundary__details summary:hover {
+  color: #2d3748;
+}
+
+.error-boundary__details pre {
+  margin: 12px 0 0;
+  padding: 12px;
+  background: #2d3748;
+  color: #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .error-boundary__actions {
   display: flex;
   gap: 12px;
   justify-content: center;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
-.error-boundary__btn {
-  padding: 10px 20px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  border-radius: 6px;
+.error-boundary__button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.error-boundary__btn:hover {
-  background: #f8fafc;
+.error-boundary__button--primary {
+  background: #3182ce;
+  color: white;
 }
 
-.error-boundary__btn--primary {
-  background: #3b82f6;
-  border-color: #3b82f6;
-  color: #fff;
+.error-boundary__button--primary:hover {
+  background: #2c5aa0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
 }
 
-.error-boundary__btn--primary:hover {
-  background: #2563eb;
-  border-color: #2563eb;
+.error-boundary__button--secondary {
+  background: #e2e8f0;
+  color: #2d3748;
 }
 
-.error-boundary__details {
-  text-align: left;
-  margin-top: 24px;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 6px;
+.error-boundary__button--secondary:hover {
+  background: #cbd5e0;
 }
 
-.error-boundary__details summary {
-  cursor: pointer;
-  font-weight: 500;
-  color: #475569;
-  margin-bottom: 12px;
+.error-boundary__button--tertiary {
+  background: transparent;
+  color: #4a5568;
+  border: 1px solid #cbd5e0;
 }
 
-.error-boundary__details pre {
-  margin: 0;
-  font-size: 12px;
-  color: #ef4444;
-  white-space: pre-wrap;
-  word-break: break-all;
+.error-boundary__button--tertiary:hover {
+  background: #f7fafc;
+  border-color: #a0aec0;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .gmkb-error-boundary {
+    padding: 20px;
+    min-height: 300px;
+  }
+  
+  .error-boundary__container {
+    padding: 24px;
+  }
+  
+  .error-boundary__icon {
+    font-size: 48px;
+  }
+  
+  .error-boundary__title {
+    font-size: 20px;
+  }
+  
+  .error-boundary__message {
+    font-size: 14px;
+  }
+  
+  .error-boundary__actions {
+    flex-direction: column;
+  }
+  
+  .error-boundary__button {
+    width: 100%;
+  }
 }
 </style>

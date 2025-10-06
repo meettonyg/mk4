@@ -1,294 +1,345 @@
 <template>
-  <div 
-    class="component-renderer"
-    :class="[
-      `component-type--${componentType}`,
-      { 
-        'component-renderer--editing': isEditing,
-        'component-renderer--selected': isSelected,
-        'component-renderer--loading': isLoading
-      }
-    ]"
-    :data-component-id="componentId"
-  >
+  <div class="component-renderer">
     <!-- Loading State -->
-    <div v-if="isLoading" class="component-loading">
-      <div class="loading-spinner"></div>
-      <span>Loading {{ componentType }}...</span>
+    <div v-if="isLoading" class="component-skeleton">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-content">
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line skeleton-line--short"></div>
+      </div>
     </div>
     
-    <!-- Dynamic Component Loading -->
+    <!-- Error State -->
+    <div v-else-if="hasError" class="component-error">
+      <div class="error-icon">⚠️</div>
+      <p class="error-message">Failed to load component</p>
+      <button class="retry-button" @click="retry">
+        <span>🔄</span> Retry
+      </button>
+    </div>
+    
+    <!-- Rendered Component -->
     <component
-      v-else-if="dynamicComponent"
-      :is="dynamicComponent"
+      v-else-if="canRender && componentType"
+      :is="componentType"
+      :key="componentKey"
       v-bind="componentProps"
-      @edit="handleEdit"
-      @update="handleUpdate"
+      @ready="onComponentReady"
+      @error="onComponentError"
     />
     
-    <!-- Fallback if component not found -->
-    <FallbackRenderer
-      v-else
-      :component-id="componentId"
-      :data="componentData"
-      :settings="componentSettings"
-      :config="{ type: componentType }"
-    />
+    <!-- Fallback for unknown component -->
+    <div v-else class="component-fallback">
+      <div class="fallback-icon">📦</div>
+      <p class="fallback-message">Unknown component type: {{ componentData?.type }}</p>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, watch } from 'vue';
-import { useMediaKitStore } from '../../stores/mediaKit';
-import FallbackRenderer from './FallbackRenderer.vue';
-import ComponentDiscoveryService from '../services/ComponentDiscoveryService';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { useMediaKitStore } from '@/stores/mediaKit';
+import UnifiedComponentRegistry from '@/services/UnifiedComponentRegistry';
+import eventBus from '@/services/EventBus';
+import { useCleanup } from '@/composables/useCleanup';
 
 const props = defineProps({
   componentId: {
     type: String,
-    required: false
+    required: true
   },
-  component: {
-    type: Object,
-    default: null
-  },
-  sectionId: {
-    type: String,
-    default: ''
-  },
-  column: {
-    type: Number,
-    default: 1
-  },
-  isEditing: {
+  waitForPods: {
     type: Boolean,
-    default: false
+    default: true
+  },
+  retryAttempts: {
+    type: Number,
+    default: 3
+  },
+  retryDelay: {
+    type: Number,
+    default: 1000
   }
 });
 
-const emit = defineEmits(['edit', 'update']);
+const emit = defineEmits(['ready', 'error', 'retry']);
 
 const store = useMediaKitStore();
+const { registerCleanup, addEventListener } = useCleanup();
 
 // State
-const dynamicComponent = ref(null);
 const isLoading = ref(true);
+const hasError = ref(false);
+const componentReady = ref(false);
+const currentRetry = ref(0);
+const componentKey = ref(0); // For force re-render
 
-// Get component from store or props
-const currentComponent = computed(() => {
-  // Prefer component prop over looking up by ID
-  if (props.component) {
-    return props.component;
-  }
-  // Fallback to componentId if no component provided
-  if (props.componentId) {
-    return store.components[props.componentId] || {};
-  }
-  return {};
-});
-
-// Determine the component ID from various sources
-const componentId = computed(() => {
-  return props.componentId || props.component?.id || currentComponent.value?.id || 'unknown';
-});
-
-// Component properties
-const componentType = computed(() => {
-  return currentComponent.value?.type || 'unknown';
-});
-
+// Computed
 const componentData = computed(() => {
-  return currentComponent.value?.data || currentComponent.value?.props || {};
+  if (!props.componentId || !store.components[props.componentId]) {
+    return null;
+  }
+  
+  const component = store.components[props.componentId];
+  
+  // PHASE 9 FIX: Ensure component has required data
+  if (!component.type) {
+    console.warn(`Component ${props.componentId} missing type`);
+    return null;
+  }
+  
+  return component;
 });
 
-const componentSettings = computed(() => {
-  return currentComponent.value?.settings || {};
+const canRender = computed(() => {
+  // Check basic requirements
+  if (!componentData.value) return false;
+  
+  // Check if Pods data is required and available
+  if (props.waitForPods) {
+    const podsAvailable = store.podsData && Object.keys(store.podsData).length > 0;
+    if (!podsAvailable) {
+      console.log(`⏳ Waiting for Pods data for component ${props.componentId}`);
+      return false;
+    }
+  }
+  
+  return true;
 });
 
-const isSelected = computed(() => {
-  return store.selectedComponentId === componentId.value;
+const componentType = computed(() => {
+  if (!componentData.value?.type) return null;
+  
+  // Get component from registry
+  const registeredComponent = UnifiedComponentRegistry.get(componentData.value.type);
+  if (registeredComponent?.component) {
+    return registeredComponent.component;
+  }
+  
+  // Fallback to dynamic import attempt
+  return () => import(`@/vue/components/library/${componentData.value.type}.vue`)
+    .catch(() => {
+      console.error(`Component type not found: ${componentData.value.type}`);
+      return null;
+    });
 });
 
-// Props to pass to the actual component
 const componentProps = computed(() => {
+  if (!componentData.value) return {};
+  
   return {
-    id: componentId.value,
-    componentId: componentId.value,
-    data: componentData.value,
-    props: componentData.value, // Some components use 'props' instead of 'data'
-    settings: componentSettings.value,
-    isEditing: props.isEditing,
-    isSelected: isSelected.value,
-    sectionId: props.sectionId,
-    column: props.column
+    component: componentData.value,
+    componentId: props.componentId,
+    data: componentData.value.data || {},
+    props: componentData.value.props || {},
+    settings: componentData.value.settings || {}
   };
 });
 
-// Load component dynamically using discovery service
+// Methods
 const loadComponent = async () => {
-  const type = componentType.value;
-  
-  if (!type || type === 'unknown') {
-    isLoading.value = false;
-    return;
-  }
-  
-  isLoading.value = true;
-  
   try {
-    // First, try to load the component manifest if not already loaded
-    await ComponentDiscoveryService.loadManifest(type);
+    isLoading.value = true;
+    hasError.value = false;
     
-    // Get the component from discovery service
-    const component = await ComponentDiscoveryService.getComponent(type);
-    
-    if (component) {
-      dynamicComponent.value = component;
-      console.log(`✅ Loaded component: ${type}`);
-    } else {
-      console.warn(`⚠️ Component "${type}" not found, using fallback`);
+    // Wait for store initialization if needed
+    if (!store.isInitialized) {
+      console.log(`⏳ Waiting for store initialization for component ${props.componentId}`);
+      await eventBus.waitFor('store:initialized', 5000);
     }
-  } catch (error) {
-    console.error(`Error loading component "${type}":`, error);
-  } finally {
+    
+    // Wait for Pods data if required
+    if (props.waitForPods && (!store.podsData || Object.keys(store.podsData).length === 0)) {
+      console.log(`⏳ Waiting for Pods data for component ${props.componentId}`);
+      
+      // First check if Pods will be loaded
+      const timeout = setTimeout(() => {
+        console.warn(`⚠️ Pods data timeout for component ${props.componentId}`);
+        if (currentRetry.value < props.retryAttempts) {
+          retry();
+        } else {
+          hasError.value = true;
+        }
+      }, 5000);
+      
+      // Wait for Pods loaded event
+      await eventBus.waitFor('pods:loaded', 5000);
+      clearTimeout(timeout);
+    }
+    
+    // Verify component can render
+    await nextTick();
+    
+    if (!canRender.value) {
+      throw new Error(`Cannot render component ${props.componentId}: Missing required data`);
+    }
+    
     isLoading.value = false;
+    emit('ready', props.componentId);
+    
+  } catch (error) {
+    console.error(`Failed to load component ${props.componentId}:`, error);
+    
+    if (currentRetry.value < props.retryAttempts) {
+      setTimeout(() => retry(), props.retryDelay);
+    } else {
+      hasError.value = true;
+      isLoading.value = false;
+      emit('error', { componentId: props.componentId, error });
+    }
   }
 };
 
-// Event handlers
-const handleEdit = () => {
-  emit('edit');
-  store.openComponentEditor(componentId.value);
+const retry = async () => {
+  currentRetry.value++;
+  hasError.value = false;
+  componentKey.value++; // Force re-render
+  
+  console.log(`🔄 Retrying component ${props.componentId} (attempt ${currentRetry.value}/${props.retryAttempts})`);
+  emit('retry', { componentId: props.componentId, attempt: currentRetry.value });
+  
+  await loadComponent();
 };
 
-const handleUpdate = (updates) => {
-  emit('update', updates);
-  store.updateComponent(componentId.value, updates);
+const onComponentReady = () => {
+  componentReady.value = true;
+  console.log(`✅ Component ${props.componentId} ready`);
+};
+
+const onComponentError = (error) => {
+  console.error(`Component ${props.componentId} error:`, error);
+  hasError.value = true;
+  isLoading.value = false;
 };
 
 // Lifecycle
-onMounted(() => {
-  loadComponent();
+onMounted(async () => {
+  await loadComponent();
+  
+  // Listen for Pods data updates
+  const handlePodsLoaded = () => {
+    if (!componentReady.value && !hasError.value) {
+      console.log(`📦 Pods data loaded, retrying component ${props.componentId}`);
+      loadComponent();
+    }
+  };
+  
+  addEventListener(document, 'gmkb:pods-loaded', handlePodsLoaded);
 });
 
-// Watch for type changes
-watch(componentType, () => {
-  loadComponent();
+// Watch for component data changes
+watch(componentData, (newData, oldData) => {
+  if (newData && !oldData) {
+    // Component became available
+    loadComponent();
+  }
 });
 </script>
 
 <style scoped>
 .component-renderer {
   position: relative;
-  min-height: 50px;
-  transition: all 0.3s ease;
+  min-height: 80px;
 }
 
-/* Add margin between components */
-.component-renderer + .component-renderer {
-  margin-top: 16px;
+/* Skeleton Loading */
+.component-skeleton {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  animation: pulse 1.5s infinite;
 }
 
-/* Loading state */
-.component-loading {
+.skeleton-header {
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  width: 40%;
+}
+
+.skeleton-content {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  background: rgba(248, 250, 252, 0.5);
-  border: 2px dashed #cbd5e1;
+  gap: 8px;
+}
+
+.skeleton-line {
+  height: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+.skeleton-line--short {
+  width: 60%;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Error State */
+.component-error {
+  padding: 32px;
+  text-align: center;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 8px;
-  min-height: 150px;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 12px;
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  filter: grayscale(0);
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.component-loading span {
-  color: #64748b;
+.error-message {
+  color: #f87171;
+  margin: 0 0 16px 0;
   font-size: 14px;
 }
 
-/* Selected state */
-.component-renderer--selected {
-  position: relative;
-}
-
-.component-renderer--selected::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border: 2px solid var(--gmkb-color-primary, #3b82f6);
-  border-radius: 8px;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Editing state */
-.component-renderer--editing {
-  position: relative;
-}
-
-.component-renderer--editing::after {
-  content: 'EDITING';
-  position: absolute;
-  top: -20px;
-  right: 0;
-  background: var(--gmkb-color-primary, #3b82f6);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  z-index: 2;
-}
-
-/* Component type specific styles */
-.component-type--hero {
-  min-height: 200px;
-}
-
-.component-type--biography {
-  min-height: 150px;
-}
-
-.component-type--unknown {
-  opacity: 0.8;
-}
-
-/* Hover effects */
-.component-renderer:hover {
+.retry-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 6px;
+  color: #fca5a5;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-/* Shimmer loading animation */
-.component-renderer--loading {
-  background: linear-gradient(
-    90deg,
-    #f0f0f0 25%,
-    #f8f8f8 50%,
-    #f0f0f0 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+.retry-button:hover {
+  background: rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
 }
 
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+/* Fallback */
+.component-fallback {
+  padding: 32px;
+  text-align: center;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+}
+
+.fallback-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.fallback-message {
+  color: #fbbf24;
+  margin: 0;
+  font-size: 14px;
 }
 </style>

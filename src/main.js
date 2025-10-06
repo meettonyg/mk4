@@ -27,6 +27,13 @@ import { ToastService, showToast } from './services/ToastService.js';
 import { ConsoleAPI } from './services/ConsoleAPI.js';
 import { DOMHandlers } from './services/DOMHandlers.js';
 
+// PHASE 17-24: Import new critical services
+import { securityService } from './services/SecurityService.js';
+import { undoRedoManager, setupUndoRedoShortcuts } from './services/UndoRedoManager.js';
+import { keyboardManager } from './services/KeyboardManager.js';
+import { performanceMonitor } from './services/PerformanceMonitor.js';
+import { analytics } from './services/Analytics.js';
+
 // Initialize core systems
 let apiService;
 let vueApp = null;
@@ -189,6 +196,53 @@ async function initializeVue() {
       apiService
     });
     
+    // PHASE 17-24: Initialize new critical services
+    console.log('🔐 Initializing security services...');
+    window.gmkbSecurity = securityService;
+    
+    console.log('↩️ Initializing undo/redo manager...');
+    window.gmkbUndoRedo = undoRedoManager;
+    setupUndoRedoShortcuts(undoRedoManager);
+    
+    // Connect undo/redo to store
+    mediaKitStore.$subscribe((mutation, state) => {
+      if (!undoRedoManager.isApplyingHistory) {
+        undoRedoManager.record({
+          type: mutation.type,
+          target: 'store',
+          oldValue: mutation.payload?.oldValue,
+          newValue: mutation.payload?.newValue
+        });
+      }
+    });
+    
+    console.log('⌨️ Keyboard manager already initialized');
+    window.gmkbKeyboard = keyboardManager;
+    
+    console.log('📊 Initializing performance monitor...');
+    window.gmkbPerformance = performanceMonitor;
+    
+    console.log('📈 Initializing analytics...');
+    window.gmkbAnalytics = analytics;
+    
+    // Identify user if available
+    if (window.gmkbData?.userId) {
+      analytics.identify(window.gmkbData.userId, {
+        role: window.gmkbData.userRole,
+        email: window.gmkbData.userEmail
+      });
+    }
+    
+    // Track initialization
+    analytics.track('app_initialized', {
+      version: '4.0.0',
+      pureVue: true,
+      componentCount: mediaKitStore.componentCount,
+      sectionCount: mediaKitStore.sectionCount
+    });
+    
+    console.log('✅ All critical services initialized');
+    
     // DEPRECATED: Old inline console API replaced by ConsoleAPI service
     /*
     window.GMKB = {
@@ -280,6 +334,11 @@ async function initializeVue() {
     
     // ROOT FIX: Console help now handled by ConsoleAPI.help()
     console.log('🎯 Media Kit Builder v4.0 initialized. Type GMKB.help() for commands.');
+    console.log('🔐 Security: XSS protection active');
+    console.log('↩️ Undo/Redo: Ctrl/Cmd+Z / Ctrl/Cmd+Y');
+    console.log('⌨️ Keyboard shortcuts available - press ? for help');
+    console.log('📊 Performance monitoring active');
+    console.log('📈 Analytics tracking enabled');
     
     return app;
     
