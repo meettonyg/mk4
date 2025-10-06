@@ -235,6 +235,17 @@ class GMKB_REST_API_V2 {
                 )
             );
 
+            // GEMINI FIX: Enrich components with Pods data BEFORE sending to client
+            // Apply server-side enrichment if function exists
+            if (function_exists('gmkb_enrich_components_with_pods_data')) {
+                // Enrich the state before sending to client
+                $response['state'] = gmkb_enrich_components_with_pods_data($response['state'], $post_id);
+                
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('✅ GMKB REST API v2: Server-side Pods enrichment applied');
+                }
+            }
+            
             // Apply enrichment filters (for extensibility)
             $response = apply_filters('gmkb_api_mediakit_response', $response, $post_id);
 
