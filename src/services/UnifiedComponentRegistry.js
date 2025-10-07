@@ -254,6 +254,54 @@ class UnifiedComponentRegistry {
   }
   
   /**
+   * Issue #14 FIX: Centralized validation and retrieval
+   * Validates component type and returns definition in one call
+   * Replaces scattered validation logic across the codebase
+   * 
+   * @param {string} type Component type to validate and retrieve
+   * @returns {Object} Component definition
+   * @throws {Error} If type is invalid or component doesn't exist
+   */
+  validateAndGet(type) {
+    if (!this.initialized) this.initialize();
+    
+    // Validation 1: Check if type is provided
+    if (!type) {
+      throw new Error('Component type is required');
+    }
+    
+    // Validation 2: Check if type is a string
+    if (typeof type !== 'string') {
+      throw new Error(`Component type must be a string, got ${typeof type}`);
+    }
+    
+    // Validation 3: Check for known invalid types
+    const invalidTypes = ['unknown_type', 'Unknown Component', ''];
+    if (invalidTypes.includes(type)) {
+      throw new Error(`Invalid component type: "${type}"`);
+    }
+    
+    // Validation 4: Check if type is too long (likely contains content)
+    if (type.length > 50) {
+      throw new Error(`Component type is too long (${type.length} chars). Type should be short identifier, not content.`);
+    }
+    
+    // Validation 5: Check if component exists in registry
+    const definition = this.definitions[type];
+    if (!definition) {
+      const availableTypes = Object.keys(this.definitions).join(', ');
+      throw new Error(`Unknown component type: "${type}". Available types: ${availableTypes}`);
+    }
+    
+    // Validation 6: Warn if component has no schema (non-fatal)
+    if (!definition.schema && !definition.defaultProps) {
+      console.warn(`[UnifiedComponentRegistry] Component "${type}" has no schema or defaultProps defined`);
+    }
+    
+    return definition;
+  }
+  
+  /**
    * Get all component definitions
    * @returns {Array} All component definitions
    */

@@ -65,9 +65,10 @@ export default {
       return props.data?.description || '';
     });
     
+    // PHASE 2 FIX: Add null safety with optional chaining
     const displayQuestions = computed(() => {
       // Handle array format (new structure)
-      if (Array.isArray(props.data.questions) && props.data.questions.length > 0) {
+      if (Array.isArray(props.data?.questions) && props.data.questions.length > 0) {
         // If questions is an array of objects with question and answer
         if (typeof props.data.questions[0] === 'object') {
           return props.data.questions.filter(q => q && q.question);
@@ -84,8 +85,8 @@ export default {
       // Build from individual question fields (legacy format)
       const questionsList = [];
       for (let i = 1; i <= 10; i++) {
-        const question = props.data[`question_${i}`] || props.data[`question${i}`];
-        const answer = props.data[`answer_${i}`] || props.data[`answer${i}`];
+        const question = props.data?.[`question_${i}`] || props.data?.[`question${i}`];
+        const answer = props.data?.[`answer_${i}`] || props.data?.[`answer${i}`];
         
         if (question) {
           questionsList.push({

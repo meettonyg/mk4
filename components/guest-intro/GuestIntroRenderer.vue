@@ -97,14 +97,15 @@ export default {
       return 'Welcome! I\'m excited to share my expertise and insights with your audience.';
     });
     
+    // PHASE 2 FIX: Add null safety with optional chaining
     const displayHighlights = computed(() => {
-      if (Array.isArray(props.data.highlights) && props.data.highlights.length > 0) {
+      if (Array.isArray(props.data?.highlights) && props.data.highlights.length > 0) {
         return props.data.highlights;
       }
       
       const highlightsList = [];
       for (let i = 1; i <= 5; i++) {
-        if (props.data[`highlight_${i}`]) {
+        if (props.data?.[`highlight_${i}`]) {
           highlightsList.push(props.data[`highlight_${i}`]);
         }
       }
@@ -120,19 +121,19 @@ export default {
     });
     
     const availability = computed(() => {
-      return props.data.availability || '';
+      return props.data?.availability || '';
     });
     
     const travelRequirements = computed(() => {
-      return props.data.travel_requirements || '';
+      return props.data?.travel_requirements || '';
     });
     
     const technicalNeeds = computed(() => {
-      return props.data.technical_needs || '';
+      return props.data?.technical_needs || '';
     });
     
     const specialRequests = computed(() => {
-      return props.data.special_requests || '';
+      return props.data?.special_requests || '';
     });
     
     // Lifecycle

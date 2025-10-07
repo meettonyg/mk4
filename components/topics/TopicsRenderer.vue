@@ -54,16 +54,17 @@ export default {
       return props.data?.description || '';
     });
     
+    // PHASE 2 FIX: Add null safety with optional chaining
     const displayTopics = computed(() => {
       // Handle various data formats
-      if (Array.isArray(props.data.topics) && props.data.topics.length > 0) {
+      if (Array.isArray(props.data?.topics) && props.data.topics.length > 0) {
         return props.data.topics;
       }
       
       // Handle individual topic fields from component data
       const topicsList = [];
       for (let i = 1; i <= 10; i++) {
-        if (props.data[`topic_${i}`]) {
+        if (props.data?.[`topic_${i}`]) {
           const topicValue = props.data[`topic_${i}`];
           if (typeof topicValue === 'object') {
             topicsList.push(topicValue);

@@ -42,30 +42,24 @@ export default {
   setup(props) {
     // Store and composables
     const store = useMediaKitStore();
-    const { 
-      twitter: podsTwitter, 
-      linkedin: podsLinkedin, 
-      facebook: podsFacebook,
-      instagram: podsInstagram,
-      youtube: podsYoutube 
-    } = usePodsData();
+    const { socialLinks: podsSocialLinks } = usePodsData();
     
     // Computed properties
     const title = computed(() => {
-      return props.data.title || 'Connect With Me';
+      return props.data?.title || 'Connect With Me';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const showLabels = computed(() => {
-      return props.data.show_labels !== false;
+      return props.data?.show_labels !== false;
     });
     
     const socialLinks = computed(() => {
       // Handle array format
-      if (Array.isArray(props.data.links)) {
+      if (Array.isArray(props.data?.links)) {
         return props.data.links;
       }
       
@@ -74,14 +68,14 @@ export default {
       
       // ROOT FIX: Use Pods data as fallback, no global object checking
       const socialData = {
-        facebook: props.data.facebook || podsFacebook.value,
-        twitter: props.data.twitter || podsTwitter.value,
-        linkedin: props.data.linkedin || podsLinkedin.value,
-        instagram: props.data.instagram || podsInstagram.value,
-        youtube: props.data.youtube || podsYoutube.value,
-        github: props.data.github,
-        pinterest: props.data.pinterest,
-        tiktok: props.data.tiktok
+        facebook: props.data?.facebook || podsSocialLinks.value?.facebook,
+        twitter: props.data?.twitter || podsSocialLinks.value?.twitter,
+        linkedin: props.data?.linkedin || podsSocialLinks.value?.linkedin,
+        instagram: props.data?.instagram || podsSocialLinks.value?.instagram,
+        youtube: props.data?.youtube || podsSocialLinks.value?.youtube,
+        github: props.data?.github,
+        pinterest: props.data?.pinterest,
+        tiktok: props.data?.tiktok
       };
       
       Object.entries(socialData).forEach(([platform, url]) => {
@@ -141,9 +135,9 @@ export default {
         console.log('Social component mounted:', props.componentId);
         
         // Check if using Pods data
-        const usingPodsData = !props.data.facebook && podsFacebook.value || 
-                             !props.data.twitter && podsTwitter.value ||
-                             !props.data.linkedin && podsLinkedin.value;
+        const usingPodsData = !props.data?.facebook && podsSocialLinks.value?.facebook || 
+                             !props.data?.twitter && podsSocialLinks.value?.twitter ||
+                             !props.data?.linkedin && podsSocialLinks.value?.linkedin;
         
         // Dispatch mount event
         document.dispatchEvent(new CustomEvent('gmkb:vue-component-mounted', {

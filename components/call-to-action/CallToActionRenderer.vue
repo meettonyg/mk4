@@ -40,40 +40,43 @@ export default {
   setup(props, { emit }) {
     // Store and composables
     const store = useMediaKitStore();
-    const { email, phone, website } = usePodsData();
+    const { email, phone, socialLinks } = usePodsData();
+    
+    // Extract website from socialLinks
+    const website = computed(() => socialLinks.value?.website || '');
     
     // Computed properties
     const title = computed(() => {
-      return props.data.title || 'Ready to Take Action?';
+      return props.data?.title || 'Ready to Take Action?';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const displayButtons = computed(() => {
-      if (Array.isArray(props.data.buttons) && props.data.buttons.length > 0) {
+      if (Array.isArray(props.data?.buttons) && props.data.buttons.length > 0) {
         return props.data.buttons;
       }
       
       // Build from individual button fields
       const buttonsList = [];
       
-      if (props.data.button_text && props.data.button_url) {
+      if (props.data?.button_text && props.data?.button_url) {
         buttonsList.push({
           text: props.data.button_text,
           url: props.data.button_url,
           style: 'primary',
-          target: props.data.button_target || '_self'
+          target: props.data?.button_target || '_self'
         });
       }
       
-      if (props.data.secondary_button_text && props.data.secondary_button_url) {
+      if (props.data?.secondary_button_text && props.data?.secondary_button_url) {
         buttonsList.push({
           text: props.data.secondary_button_text,
           url: props.data.secondary_button_url,
           style: 'secondary',
-          target: props.data.secondary_button_target || '_self'
+          target: props.data?.secondary_button_target || '_self'
         });
       }
       
@@ -104,11 +107,11 @@ export default {
     const containerStyle = computed(() => {
       const styles = {};
       
-      if (props.data.background_color) {
+      if (props.data?.background_color) {
         styles.background = props.data.background_color;
       }
       
-      if (props.data.background_image) {
+      if (props.data?.background_image) {
         styles.backgroundImage = `url(${props.data.background_image})`;
         styles.backgroundSize = 'cover';
         styles.backgroundPosition = 'center';

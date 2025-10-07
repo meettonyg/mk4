@@ -14,7 +14,8 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 
 // ROOT FIX: Import optimized systems
-import { LazyComponents, preloadCriticalComponents } from './services/LazyLoader.js';
+// P0 FIX #12: LazyComponents import - only preload function is used
+import { preloadCriticalComponents } from './services/LazyLoader.js';
 
 // Pure utilities (no DOM manipulation, no event listeners)
 import { APIService } from './services/APIService.js';
@@ -22,8 +23,10 @@ import { DataValidator } from './services/DataValidator.js';
 import { logger } from './utils/logger.js';
 import UnifiedComponentRegistry from './services/UnifiedComponentRegistry.js';
 import podsDataIntegration from './core/PodsDataIntegration.js';
-import NonceManager from './services/NonceManager.js';
-import importExportService from './services/ImportExportService.js';
+// P0 FIX #12: NonceManager removed - unused import
+// Nonce handling is done in APIService directly
+// P0 FIX #12: importExportService removed - handled by Vue composable
+// Import/export functionality moved to useImportExport() composable
 
 // ROOT FIX: Import new modular services
 import { ToastService, showToast } from './services/ToastService.js';
@@ -215,10 +218,9 @@ async function initializeVue() {
     app.component('DebouncedInput', () => import('./vue/components/DebouncedInput.vue'));
     app.component('ErrorBoundary', () => import('./vue/components/ErrorBoundary.vue'));
     
-    // ROOT FIX: Register lazy loaded components
-    Object.entries(LazyComponents).forEach(([name, component]) => {
-      app.component(name, component);
-    });
+    // P0 FIX #12: LazyComponents removed - components loaded dynamically via registry
+    // All components registered through UnifiedComponentRegistry.getVueComponent()
+    // No need to pre-register empty LazyComponents object
     
     const instance = app.mount(mountPoint);
     console.log('✅ Vue mounted successfully');

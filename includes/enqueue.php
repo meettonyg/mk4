@@ -44,12 +44,26 @@ function gmkb_enqueue_vue_only_assets() {
     }
     
     // --- JAVASCRIPT BUNDLE ---
-    $script_version = filemtime($bundle_js_path);
+    // Cache file modification time to reduce filesystem I/O (Issue #16 fix)
+    $cache_key = 'gmkb_script_version_' . md5($bundle_js_path);
+    $script_version = get_transient($cache_key);
+    
+    if (false === $script_version) {
+        if (file_exists($bundle_js_path)) {
+            $script_version = filemtime($bundle_js_path);
+            // Cache for 5 minutes
+            set_transient($cache_key, $script_version, 5 * MINUTE_IN_SECONDS);
+        } else {
+            $script_version = GMKB_VERSION; // Fallback to plugin version
+        }
+    }
+    
     $script_url = GUESTIFY_PLUGIN_URL . 'dist/gmkb.iife.js';
     wp_enqueue_script('gmkb-vue-app', $script_url, array(), $script_version, true);
 
     // --- CSS BUNDLE (check both possible names) ---
     // After clean rebuild, should be gmkb.css
+    // Cache CSS file operations too (Issue #16 fix)
     $css_paths = array(
         'gmkb.css' => GUESTIFY_PLUGIN_DIR . 'dist/gmkb.css',
         'style.css' => GUESTIFY_PLUGIN_DIR . 'dist/style.css'
@@ -57,7 +71,16 @@ function gmkb_enqueue_vue_only_assets() {
     
     foreach ($css_paths as $filename => $path) {
         if (file_exists($path)) {
-            $style_version = filemtime($path);
+            // Cache CSS file modification time
+            $css_cache_key = 'gmkb_style_version_' . md5($path);
+            $style_version = get_transient($css_cache_key);
+            
+            if (false === $style_version) {
+                $style_version = filemtime($path);
+                // Cache for 5 minutes
+                set_transient($css_cache_key, $style_version, 5 * MINUTE_IN_SECONDS);
+            }
+            
             $style_url = GUESTIFY_PLUGIN_URL . 'dist/' . $filename;
             wp_enqueue_style('gmkb-vue-style', $style_url, array(), $style_version);
             
@@ -78,6 +101,23 @@ function gmkb_inject_data_object_script() {
     }
 
     $post_id = gmkb_get_post_id();
+    
+    // Validate post exists and user has permission (Issue #15 fix)
+    if (!$post_id || !get_post($post_id)) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ GMKB: Invalid post_id, assets not loaded');
+        }
+        return; // Don't inject data if post is invalid
+    }
+    
+    // Check user has permission to edit this post
+    if (!current_user_can('edit_post', $post_id)) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('⚠️ GMKB: User lacks permission for post_id ' . $post_id);
+        }
+        return; // Don't inject data if user lacks permission
+    }
+    
     $nonce = wp_create_nonce('gmkb_nonce');
 
     // Explicitly include the class files before using them

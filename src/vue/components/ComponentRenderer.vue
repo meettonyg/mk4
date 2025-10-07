@@ -40,7 +40,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useMediaKitStore } from '@/stores/mediaKit';
 import UnifiedComponentRegistry from '@/services/UnifiedComponentRegistry';
-import eventBus from '@/services/EventBus';
+// Issue #24 FIX: Removed EventBus import, using Pinia state and DOM events
 import { useCleanup } from '@/composables/useCleanup';
 
 const props = defineProps({
@@ -160,29 +160,53 @@ const loadComponent = async () => {
     isLoading.value = true;
     hasError.value = false;
     
-    // Wait for store initialization if needed
+    // Issue #24 FIX: Wait for store initialization using Pinia state
     if (!store.isInitialized) {
       console.log(`⏳ Waiting for store initialization for component ${props.componentId}`);
-      await eventBus.waitFor('store:initialized', 5000);
+      
+      // Use Pinia $subscribe to wait for initialization
+      await new Promise((resolve, reject) => {
+        const unwatch = store.$subscribe((mutation, state) => {
+          if (state.isInitialized) {
+            unwatch();
+            resolve();
+          }
+        });
+        
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          unwatch();
+          reject(new Error('Store initialization timeout'));
+        }, 5000);
+      });
     }
     
-    // Wait for Pods data if required
+    // Issue #24 FIX: Wait for Pods data using store state
     if (props.waitForPods && (!store.podsData || Object.keys(store.podsData).length === 0)) {
       console.log(`⏳ Waiting for Pods data for component ${props.componentId}`);
       
-      // First check if Pods will be loaded
-      const timeout = setTimeout(() => {
-        console.warn(`⚠️ Pods data timeout for component ${props.componentId}`);
-        if (currentRetry.value < props.retryAttempts) {
-          retry();
-        } else {
-          hasError.value = true;
+      // Wait for Pods data using DOM event
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          console.warn(`⚠️ Pods data timeout for component ${props.componentId}`);
+          if (currentRetry.value < props.retryAttempts) {
+            retry();
+          } else {
+            reject(new Error('Pods data timeout'));
+          }
+        }, 5000);
+        
+        const handler = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        
+        document.addEventListener('gmkb:pods-loaded', handler, { once: true });
+      }).catch(error => {
+        if (currentRetry.value >= props.retryAttempts) {
+          throw error;
         }
-      }, 5000);
-      
-      // Wait for Pods loaded event
-      await eventBus.waitFor('pods:loaded', 5000);
-      clearTimeout(timeout);
+      });
     }
     
     // Verify component can render

@@ -96,23 +96,23 @@ export default {
     
     // Computed properties
     const title = computed(() => {
-      if (props.data.title) return props.data.title;
+      if (props.data?.title) return props.data.title;
       // ROOT FIX: Use Pods data as fallback
       if (fullName.value) return `Book Time with ${fullName.value}`;
       return 'Book a Meeting';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const calendarService = computed(() => {
-      return props.data.calendar_service || '';
+      return props.data?.calendar_service || '';
     });
     
     const calendarUrl = computed(() => {
       // Check component data first
-      if (props.data.calendar_url || props.data.calendly_url) {
+      if (props.data?.calendar_url || props.data?.calendly_url) {
         return props.data.calendar_url || props.data.calendly_url;
       }
       // ROOT FIX: Check Pods data for booking URLs
@@ -122,7 +122,7 @@ export default {
     });
     
     const availableTimes = computed(() => {
-      if (Array.isArray(props.data.available_times)) {
+      if (Array.isArray(props.data?.available_times)) {
         return props.data.available_times;
       }
       

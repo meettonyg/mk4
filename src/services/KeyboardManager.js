@@ -4,10 +4,11 @@
  * Provides comprehensive keyboard navigation and shortcuts
  * for improved productivity and accessibility.
  * 
+ * Issue #24 FIX: Removed EventBus dependency, using DOM CustomEvents
+ * 
  * @version 2.0.0
  */
 
-import eventBus from './EventBus.js';
 
 export class KeyboardManager {
   constructor() {
@@ -28,9 +29,9 @@ export class KeyboardManager {
     document.addEventListener('keydown', this.handleKeyDown.bind(this), true);
     document.addEventListener('keyup', this.handleKeyUp.bind(this), true);
     
-    // Listen for modal state
-    eventBus.on('modal:opened', () => { this.modalOpen = true; });
-    eventBus.on('modal:closed', () => { this.modalOpen = false; });
+    // Issue #24 FIX: Listen for modal state using DOM events
+    document.addEventListener('gmkb:modal:opened', () => { this.modalOpen = true; });
+    document.addEventListener('gmkb:modal:closed', () => { this.modalOpen = false; });
     
     console.log('✅ KeyboardManager initialized');
   }
@@ -41,98 +42,99 @@ export class KeyboardManager {
   registerDefaults() {
     // Save
     this.register('mod+s', () => {
-      eventBus.emit('keyboard:save');
+      // Issue #24 FIX: Use DOM CustomEvent
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:save'));
     }, 'Save');
 
     // Copy
     this.register('mod+c', () => {
       if (!this.isInputElement(document.activeElement)) {
-        eventBus.emit('keyboard:copy');
+        document.dispatchEvent(new CustomEvent('gmkb:keyboard:copy'));
       }
     }, 'Copy');
 
     // Paste
     this.register('mod+v', () => {
       if (!this.isInputElement(document.activeElement)) {
-        eventBus.emit('keyboard:paste');
+        document.dispatchEvent(new CustomEvent('gmkb:keyboard:paste'));
       }
     }, 'Paste');
 
     // Duplicate
     this.register('mod+d', () => {
-      eventBus.emit('keyboard:duplicate');
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:duplicate'));
     }, 'Duplicate');
 
     // Delete
     this.register('delete', () => {
-      eventBus.emit('keyboard:delete');
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:delete'));
     }, 'Delete');
     
     this.register('backspace', () => {
       if (!this.isInputElement(document.activeElement)) {
-        eventBus.emit('keyboard:delete');
+        document.dispatchEvent(new CustomEvent('gmkb:keyboard:delete'));
       }
     }, 'Delete (backspace)');
 
     // Deselect
     this.register('escape', () => {
-      eventBus.emit('keyboard:deselect');
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:deselect'));
     }, 'Deselect');
 
     // Focus navigation
     this.register('tab', () => {
-      eventBus.emit('keyboard:focus-next');
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:focus-next'));
     }, 'Next component');
 
     this.register('shift+tab', () => {
-      eventBus.emit('keyboard:focus-prev');
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:focus-prev'));
     }, 'Previous component');
 
     // Arrow navigation
     this.register('arrowup', () => {
       if (!this.isInputElement(document.activeElement)) {
-        eventBus.emit('keyboard:move-up');
+        document.dispatchEvent(new CustomEvent('gmkb:keyboard:move-up'));
       }
     }, 'Move up');
 
     this.register('arrowdown', () => {
       if (!this.isInputElement(document.activeElement)) {
-        eventBus.emit('keyboard:move-down');
+        document.dispatchEvent(new CustomEvent('gmkb:keyboard:move-down'));
       }
     }, 'Move down');
 
     this.register('arrowleft', () => {
       if (!this.isInputElement(document.activeElement)) {
-        eventBus.emit('keyboard:move-left');
+        document.dispatchEvent(new CustomEvent('gmkb:keyboard:move-left'));
       }
     }, 'Move left');
 
     this.register('arrowright', () => {
       if (!this.isInputElement(document.activeElement)) {
-        eventBus.emit('keyboard:move-right');
+        document.dispatchEvent(new CustomEvent('gmkb:keyboard:move-right'));
       }
     }, 'Move right');
 
     // Select all
     this.register('mod+a', () => {
       if (!this.isInputElement(document.activeElement)) {
-        eventBus.emit('keyboard:select-all');
+        document.dispatchEvent(new CustomEvent('gmkb:keyboard:select-all'));
       }
     }, 'Select all');
 
     // Find
     this.register('mod+f', () => {
-      eventBus.emit('keyboard:find');
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:find'));
     }, 'Find');
 
     // Toggle component library
     this.register('mod+k', () => {
-      eventBus.emit('keyboard:toggle-library');
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:toggle-library'));
     }, 'Toggle component library');
 
     // Toggle preview
     this.register('mod+p', () => {
-      eventBus.emit('keyboard:toggle-preview');
+      document.dispatchEvent(new CustomEvent('gmkb:keyboard:toggle-preview'));
     }, 'Toggle preview');
 
     console.log(`✅ Registered ${this.shortcuts.size} default shortcuts`);

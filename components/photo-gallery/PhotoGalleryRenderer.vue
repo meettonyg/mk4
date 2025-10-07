@@ -52,7 +52,10 @@ export default {
   setup(props) {
     // Store and composables
     const store = useMediaKitStore();
-    const { headshotUrl, rawPodsData } = usePodsData();
+    const { media, allData: rawPodsData } = usePodsData();
+    
+    // Extract headshot from media
+    const headshotUrl = computed(() => media.value?.headshot || '');
     
     // Local state
     const lightboxOpen = ref(false);
@@ -60,23 +63,23 @@ export default {
     
     // Computed properties
     const title = computed(() => {
-      return props.data.title || 'Photo Gallery';
+      return props.data?.title || 'Photo Gallery';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const photos = computed(() => {
       // Handle array format
-      if (Array.isArray(props.data.photos)) {
+      if (Array.isArray(props.data?.photos)) {
         return props.data.photos;
       }
       
       // Build from individual photo fields
       const photosList = [];
       for (let i = 1; i <= 12; i++) {
-        if (props.data[`photo_${i}_url`]) {
+        if (props.data?.[`photo_${i}_url`]) {
           photosList.push({
             url: props.data[`photo_${i}_url`],
             thumbnail: props.data[`photo_${i}_thumbnail`] || props.data[`photo_${i}_url`],

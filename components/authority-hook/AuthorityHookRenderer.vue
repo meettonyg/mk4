@@ -49,8 +49,9 @@ export default {
     const { position, company, stats, fullName } = usePodsData();
     
     // Computed properties
+    // PHASE 2 FIX: Add null safety with optional chaining
     const headline = computed(() => {
-      if (props.data.headline || props.data.authority_headline) {
+      if (props.data?.headline || props.data?.authority_headline) {
         return props.data.headline || props.data.authority_headline;
       }
       // ROOT FIX: Use Pods data as fallback
@@ -61,7 +62,7 @@ export default {
     });
     
     const subheadline = computed(() => {
-      if (props.data.subheadline || props.data.authority_subheadline) {
+      if (props.data?.subheadline || props.data?.authority_subheadline) {
         return props.data.subheadline || props.data.authority_subheadline;
       }
       // ROOT FIX: Use Pods data as fallback
@@ -72,13 +73,13 @@ export default {
     });
     
     const authorityPoints = computed(() => {
-      if (Array.isArray(props.data.authority_points)) {
+      if (Array.isArray(props.data?.authority_points)) {
         return props.data.authority_points;
       }
       
       const points = [];
       for (let i = 1; i <= 5; i++) {
-        if (props.data[`authority_point_${i}`]) {
+        if (props.data?.[`authority_point_${i}`]) {
           points.push(props.data[`authority_point_${i}`]);
         }
       }
@@ -95,11 +96,11 @@ export default {
     });
     
     const credentials = computed(() => {
-      return props.data.credentials || props.data.authority_credentials || '';
+      return props.data?.credentials || props.data?.authority_credentials || '';
     });
     
     const socialProof = computed(() => {
-      return props.data.social_proof || '';
+      return props.data?.social_proof || '';
     });
     
     // Lifecycle

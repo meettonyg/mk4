@@ -18,25 +18,56 @@ global.window.gmkbData = {
   timestamp: Date.now()
 };
 
-// Mock usePodsData composable
+// PHASE 2 FIX: Comprehensive Pods composable mock
+// This prevents "Cannot read properties of undefined (reading 'value')" errors
+
+// Mock function that returns all Pods refs
+const createPodsMock = () => ({
+  // Raw Pods data ref (most important for tests)
+  rawPodsData: ref({}),
+  
+  // Basic information (matches actual composable)
+  biography: ref(''),
+  firstName: ref(''),
+  lastName: ref(''),
+  email: ref(''),
+  phone: ref(''),
+  fullName: ref(''),
+  
+  // Arrays
+  topics: ref([]),
+  questions: ref([]),
+  
+  // Social links object
+  socialLinks: ref({}),
+  
+  // Professional object
+  professional: ref({}),
+  
+  // Individual professional fields
+  position: ref(''),
+  company: ref(''),
+  
+  // Stats object
+  stats: ref({}),
+  
+  // Media object
+  media: ref({}),
+  
+  // Helper methods
+  getField: () => ref(''),
+  isLoaded: ref(false),
+  allData: ref({})
+});
+
+// Mock with @ alias (for src imports)
+vi.mock('@/composables/usePodsData', () => ({
+  usePodsData: createPodsMock
+}));
+
+// Mock with relative path (for component imports)
 vi.mock('../../src/composables/usePodsData', () => ({
-  usePodsData: () => ({
-    biography: ref(''),
-    fullName: ref(''),
-    firstName: ref(''),
-    lastName: ref(''),
-    email: ref(''),
-    phone: ref(''),
-    website: ref(''),
-    topics: ref([]),
-    questions: ref([]),
-    professional: ref({}),
-    social: ref({}),
-    stats: ref({}),
-    headshot: ref(''),
-    company: computed(() => ''),
-    position: computed(() => '')
-  })
+  usePodsData: createPodsMock
 }));
 
 // Provide default mocks for Vue provide/inject

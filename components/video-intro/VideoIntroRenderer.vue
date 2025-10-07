@@ -64,19 +64,19 @@ export default {
     
     // Computed properties
     const title = computed(() => {
-      if (props.data.title) return props.data.title;
+      if (props.data?.title) return props.data.title;
       // ROOT FIX: Use Pods data as fallback
       if (fullName.value) return `Meet ${fullName.value}`;
       return 'Watch My Introduction';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const videoUrl = computed(() => {
       // Check component data first
-      if (props.data.video_url || props.data.url) {
+      if (props.data?.video_url || props.data?.url) {
         return props.data.video_url || props.data.url;
       }
       // ROOT FIX: Check Pods data for video fields
@@ -87,7 +87,7 @@ export default {
     
     const thumbnailUrl = computed(() => {
       // Check component data first
-      if (props.data.thumbnail || props.data.poster) {
+      if (props.data?.thumbnail || props.data?.poster) {
         return props.data.thumbnail || props.data.poster;
       }
       // ROOT FIX: Check Pods data for thumbnail

@@ -99,7 +99,7 @@ export default {
   setup(props, { emit }) {
     // Store and composables
     const store = useMediaKitStore();
-    const { email: podsEmail, phone: podsPhone, website: podsWebsite, location: podsLocation } = usePodsData();
+    const { email: podsEmail, phone: podsPhone, professional, allData: rawPodsData } = usePodsData();
     
     // Form data
     const formData = ref({
@@ -110,32 +110,32 @@ export default {
     
     // Computed properties with Pods data fallbacks
     const title = computed(() => {
-      return props.data.title || 'Get In Touch';
+      return props.data?.title || 'Get In Touch';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const email = computed(() => {
       // ROOT FIX: Use Pods data as fallback, no global object checking
-      return props.data.email || props.data.contact_email || podsEmail.value || '';
+      return props.data?.email || props.data?.contact_email || podsEmail.value || '';
     });
     
     const phone = computed(() => {
-      return props.data.phone || props.data.contact_phone || podsPhone.value || '';
+      return props.data?.phone || props.data?.contact_phone || podsPhone.value || '';
     });
     
     const website = computed(() => {
-      return props.data.website || props.data.contact_website || podsWebsite.value || '';
+      return props.data?.website || props.data?.contact_website || rawPodsData.value?.website || '';
     });
     
     const address = computed(() => {
-      return props.data.address || props.data.contact_address || podsLocation.value || '';
+      return props.data?.address || props.data?.contact_address || rawPodsData.value?.location || rawPodsData.value?.address || '';
     });
     
     const showForm = computed(() => {
-      return props.data.show_form !== false;
+      return props.data?.show_form !== false;
     });
     
     const displayWebsite = computed(() => {

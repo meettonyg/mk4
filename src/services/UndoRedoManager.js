@@ -4,10 +4,11 @@
  * Provides comprehensive undo/redo functionality with batching,
  * keyboard shortcuts, and history management.
  * 
+ * Issue #24 FIX: Removed EventBus dependency, using DOM CustomEvents
+ * 
  * @version 2.0.0
  */
 
-import eventBus from './EventBus.js';
 
 export class UndoRedoManager {
   constructor(options = {}) {
@@ -99,8 +100,10 @@ export class UndoRedoManager {
       description: entry.description
     });
     
-    // Emit event
-    eventBus.emit('undoredo:recorded', entry);
+    // Issue #24 FIX: Use DOM CustomEvent instead of EventBus
+    document.dispatchEvent(new CustomEvent('gmkb:undoredo:recorded', {
+      detail: entry
+    }));
   }
 
   /**
@@ -181,7 +184,11 @@ export class UndoRedoManager {
       await this.applyOperations(reverseOps);
       
       console.log('✅ Undo complete');
-      eventBus.emit('undoredo:undo', entry);
+      
+      // Issue #24 FIX: Use DOM CustomEvent instead of EventBus
+      document.dispatchEvent(new CustomEvent('gmkb:undoredo:undo', {
+        detail: entry
+      }));
       
       return entry;
     } catch (error) {
@@ -215,7 +222,11 @@ export class UndoRedoManager {
       await this.applyOperations(entry.changes);
       
       console.log('✅ Redo complete');
-      eventBus.emit('undoredo:redo', entry);
+      
+      // Issue #24 FIX: Use DOM CustomEvent instead of EventBus
+      document.dispatchEvent(new CustomEvent('gmkb:undoredo:redo', {
+        detail: entry
+      }));
       
       return entry;
     } catch (error) {
@@ -286,7 +297,10 @@ export class UndoRedoManager {
    */
   async applyOperations(operations) {
     for (const op of operations) {
-      eventBus.emit('undoredo:apply', op);
+      // Issue #24 FIX: Use DOM CustomEvent instead of EventBus
+      document.dispatchEvent(new CustomEvent('gmkb:undoredo:apply', {
+        detail: op
+      }));
     }
   }
 
@@ -350,7 +364,9 @@ export class UndoRedoManager {
     }
     
     console.log('🗑️ History cleared');
-    eventBus.emit('undoredo:cleared');
+    
+    // Issue #24 FIX: Use DOM CustomEvent instead of EventBus
+    document.dispatchEvent(new CustomEvent('gmkb:undoredo:cleared'));
   }
 
   /**

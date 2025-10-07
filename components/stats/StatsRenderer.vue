@@ -42,24 +42,25 @@ export default {
     const { stats: podsStats } = usePodsData();
     
     // Computed properties
+    // PHASE 2 FIX: Add null safety with optional chaining
     const title = computed(() => {
-      return props.data.title || 'By The Numbers';
+      return props.data?.title || 'By The Numbers';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const displayStats = computed(() => {
       // Handle array format
-      if (Array.isArray(props.data.stats)) {
+      if (Array.isArray(props.data?.stats)) {
         return props.data.stats;
       }
       
       // Build from individual stat fields
       const statsList = [];
       for (let i = 1; i <= 4; i++) {
-        if (props.data[`stat_${i}_value`] && props.data[`stat_${i}_label`]) {
+        if (props.data?.[`stat_${i}_value`] && props.data?.[`stat_${i}_label`]) {
           statsList.push({
             value: props.data[`stat_${i}_value`],
             label: props.data[`stat_${i}_label`],

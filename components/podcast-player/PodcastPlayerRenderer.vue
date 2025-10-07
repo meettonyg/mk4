@@ -68,11 +68,11 @@ export default {
     
     // Computed properties
     const title = computed(() => {
-      return props.data.title || 'Podcast Episodes';
+      return props.data?.title || 'Podcast Episodes';
     });
     
     const description = computed(() => {
-      if (props.data.description) return props.data.description;
+      if (props.data?.description) return props.data.description;
       // ROOT FIX: Use Pods data as fallback
       if (stats.value?.episodes) {
         return `Featured episodes from my ${stats.value.episodes}+ podcast episodes`;
@@ -82,14 +82,14 @@ export default {
     
     const episodes = computed(() => {
       // Handle array format
-      if (Array.isArray(props.data.episodes)) {
+      if (Array.isArray(props.data?.episodes)) {
         return props.data.episodes;
       }
       
       // Build from individual episode fields
       const episodesList = [];
       for (let i = 1; i <= 5; i++) {
-        if (props.data[`episode_${i}_title`]) {
+        if (props.data?.[`episode_${i}_title`]) {
           episodesList.push({
             title: props.data[`episode_${i}_title`],
             description: props.data[`episode_${i}_description`] || '',

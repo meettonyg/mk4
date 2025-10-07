@@ -36,31 +36,34 @@ export default {
   setup(props) {
     // Store and composables
     const store = useMediaKitStore();
-    const { logoUrl: companyLogo } = usePodsData();
+    const { media } = usePodsData();
+    
+    // Extract company logo from media
+    const companyLogo = computed(() => media.value?.logo || '');
     
     // Computed properties
     const title = computed(() => {
-      return props.data.title || 'Featured In';
+      return props.data?.title || 'Featured In';
     });
     
     const description = computed(() => {
-      return props.data.description || '';
+      return props.data?.description || '';
     });
     
     const gridStyle = computed(() => {
-      return props.data.grid_style || 'grid-auto';
+      return props.data?.grid_style || 'grid-auto';
     });
     
     const displayLogos = computed(() => {
       // Handle array format
-      if (Array.isArray(props.data.logos) && props.data.logos.length > 0) {
+      if (Array.isArray(props.data?.logos) && props.data.logos.length > 0) {
         return props.data.logos;
       }
       
       // Build from individual logo fields
       const logosList = [];
       for (let i = 1; i <= 12; i++) {
-        if (props.data[`logo_${i}_url`]) {
+        if (props.data?.[`logo_${i}_url`]) {
           logosList.push({
             url: props.data[`logo_${i}_url`],
             name: props.data[`logo_${i}_name`] || '',

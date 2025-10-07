@@ -4,10 +4,11 @@
  * Manages initialization order and dependencies between systems.
  * Prevents race conditions by ensuring proper initialization sequence.
  * 
+ * Issue #24 FIX: Removed EventBus dependency, using DOM CustomEvents
+ * 
  * @implements Checklist: No Polling, Event-Driven Initialization
  */
 
-import eventBus from './EventBus.js';
 
 class SystemReadiness {
   constructor() {
@@ -37,8 +38,10 @@ class SystemReadiness {
     
     this.readySystems.add(systemName);
     
-    // Emit individual system ready event
-    eventBus.emit(`system:${systemName}:ready`, systemData);
+    // Issue #24 FIX: Emit individual system ready event using DOM CustomEvent
+    document.dispatchEvent(new CustomEvent(`gmkb:system:${systemName}:ready`, {
+      detail: systemData
+    }));
     
     // Log readiness
     const elapsed = Date.now() - this.startTime;
@@ -62,16 +65,20 @@ class SystemReadiness {
       
       console.log(`[SystemReadiness] 🎉 All systems ready! (${totalTime}ms)`);
       
-      // Emit global ready event
-      eventBus.emit('app:ready', {
-        systems: Array.from(this.readySystems),
-        initTime: totalTime
-      });
+      // Issue #24 FIX: Emit global ready event using DOM CustomEvent
+      document.dispatchEvent(new CustomEvent('gmkb:app:ready', {
+        detail: {
+          systems: Array.from(this.readySystems),
+          initTime: totalTime
+        }
+      }));
     }
   }
 
   /**
    * Wait for a specific system to be ready
+   * 
+   * Issue #24 FIX: Replaced EventBus with DOM event listener
    * 
    * @param {string} systemName - Name of the system
    * @param {number} timeout - Optional timeout in milliseconds
@@ -82,11 +89,27 @@ class SystemReadiness {
       return Promise.resolve();
     }
     
-    return eventBus.waitFor(`system:${systemName}:ready`, timeout);
+    return new Promise((resolve, reject) => {
+      const eventName = `gmkb:system:${systemName}:ready`;
+      
+      const handler = () => {
+        clearTimeout(timeoutId);
+        resolve();
+      };
+      
+      document.addEventListener(eventName, handler, { once: true });
+      
+      const timeoutId = setTimeout(() => {
+        document.removeEventListener(eventName, handler);
+        reject(new Error(`Timeout waiting for system: ${systemName}`));
+      }, timeout);
+    });
   }
 
   /**
    * Wait for all systems to be ready
+   * 
+   * Issue #24 FIX: Replaced EventBus with DOM event listener
    * 
    * @param {number} timeout - Optional timeout in milliseconds
    * @returns {Promise} Resolves when all systems are ready
@@ -96,7 +119,19 @@ class SystemReadiness {
       return Promise.resolve();
     }
     
-    return eventBus.waitFor('app:ready', timeout);
+    return new Promise((resolve, reject) => {
+      const handler = () => {
+        clearTimeout(timeoutId);
+        resolve();
+      };
+      
+      document.addEventListener('gmkb:app:ready', handler, { once: true });
+      
+      const timeoutId = setTimeout(() => {
+        document.removeEventListener('gmkb:app:ready', handler);
+        reject(new Error('Timeout waiting for all systems'));
+      }, timeout);
+    });
   }
 
   /**
