@@ -13,6 +13,9 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 
+// ROOT FIX: Import optimized systems
+import { LazyComponents, preloadCriticalComponents } from './services/LazyLoader.js';
+
 // Pure utilities (no DOM manipulation, no event listeners)
 import { APIService } from './services/APIService.js';
 import { DataValidator } from './services/DataValidator.js';
@@ -26,6 +29,7 @@ import importExportService from './services/ImportExportService.js';
 import { ToastService, showToast } from './services/ToastService.js';
 import { ConsoleAPI } from './services/ConsoleAPI.js';
 import { DOMHandlers } from './services/DOMHandlers.js';
+import { useUIStore } from './stores/ui.js';
 
 // PHASE 17-24: Import new critical services
 import { securityService } from './services/SecurityService.js';
@@ -99,6 +103,10 @@ async function initializeVue() {
     // Create Pinia store
     const pinia = createPinia();
     console.log('✅ Pinia store created');
+    
+    // ROOT FIX: Initialize UI store
+    const uiStore = useUIStore(pinia);
+    window.gmkbUIStore = uiStore;
     
     // ROOT FIX: Initialize stores BEFORE mounting Vue to prevent race condition
     // STEP 4: Initialize stores (BEFORE Vue mount)
@@ -179,11 +187,23 @@ async function initializeVue() {
     console.log('8️⃣ Mounting Vue application...');
     const app = createApp(MediaKitApp);
     app.use(pinia);
+    
+    // ROOT FIX: Register global components
     app.component('ComponentLibrary', ComponentLibrary);
     app.component('LoadingScreen', LoadingScreen);
+    app.component('DebouncedInput', () => import('./vue/components/DebouncedInput.vue'));
+    app.component('ErrorBoundary', () => import('./vue/components/ErrorBoundary.vue'));
+    
+    // ROOT FIX: Register lazy loaded components
+    Object.entries(LazyComponents).forEach(([name, component]) => {
+      app.component(name, component);
+    });
     
     const instance = app.mount(mountPoint);
     console.log('✅ Vue mounted successfully');
+    
+    // ROOT FIX: Preload critical components after mount
+    preloadCriticalComponents();
     
     // Make available globally for debugging
     window.gmkbApp = app;

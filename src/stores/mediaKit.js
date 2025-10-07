@@ -32,17 +32,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
     maxHistorySize: 30, // ROOT FIX: Reduced from 50 to 30 for better memory usage
     autoSaveEnabled: true, // ROOT FIX: Add auto-save toggle support
     
-    // UI state
-    selectedComponentId: null,
-    selectedComponentIds: [], // For multi-select support
-    hoveredComponentId: null,
-    editingComponentId: null,
-    editPanelOpen: false,
-    isDragging: false,
-    draggedComponentId: null,
-    dropTargetId: null,
-    componentLibraryOpen: false,  // Added for component library modal
-    designPanelOpen: false,  // Added for design panel
+    // ROOT FIX: UI state moved to UIStore
+    // All selection, hover, drag, and modal state now in src/stores/ui.js
     
     // Meta state
     lastSaved: null,

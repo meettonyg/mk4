@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     // Custom plugin to handle component Vue files
@@ -25,49 +25,100 @@ export default defineConfig({
       formats: ['iife']
     },
     outDir: 'dist',
-    emptyOutDir: false,
+    emptyOutDir: true, // Clean dist folder on each build
+    
+    // Use esbuild for minification (faster, no extra dependency)
+    minify: mode === 'production' ? 'esbuild' : false,
+    
+    chunkSizeWarningLimit: 1000,
+    
     rollupOptions: {
       output: {
-        inlineDynamicImports: true,
-        // Ensure all dynamic imports are bundled
-        manualChunks: undefined
+        // SIMPLIFIED: Single file naming - no hash, no subdirectories
+        assetFileNames: 'gmkb.[ext]',
+        entryFileNames: 'gmkb.iife.js'
+      },
+      
+      // External dependencies
+      external: ['jquery', 'wp', 'lodash'],
+      
+      // Tree shaking
+      treeshake: {
+        preset: 'recommended',
+        moduleSideEffects: false
       }
     },
-    // Increase chunk size warning limit for component bundles
-    chunkSizeWarningLimit: 1000
+    
+    // Source maps only in development
+    sourcemap: mode === 'development' ? 'inline' : false,
+    
+    // Report compressed size
+    reportCompressedSize: true,
+    
+    // CRITICAL: Disable CSS code splitting - single CSS file
+    cssCodeSplit: false,
+    
+    // Asset inlining threshold (4kb)
+    assetsInlineLimit: 4096
   },
+  
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@components': path.resolve(__dirname, './components'),
       '@themes': path.resolve(__dirname, './themes'),
-      '@renderers': path.resolve(__dirname, './src/vue/components/renderers'), // Temporary for migration
-      'vue': 'vue/dist/vue.esm-bundler.js' // Use the ESM bundler build for runtime compilation
+      '@renderers': path.resolve(__dirname, './src/vue/components/renderers'),
+      '@stores': path.resolve(__dirname, './src/stores'),
+      '@services': path.resolve(__dirname, './src/services'),
+      '@composables': path.resolve(__dirname, './src/vue/composables'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+      'vue': 'vue/dist/vue.esm-bundler.js'
     },
-    // Ensure Vite can resolve Vue files in component directories
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue']
   },
+  
   define: {
     __VUE_OPTIONS_API__: true,
-    __VUE_PROD_DEVTOOLS__: false,
-    // Fix for process is not defined error
+    __VUE_PROD_DEVTOOLS__: mode === 'development',
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
     'process.env': {},
-    'process.env.NODE_ENV': JSON.stringify('production')
+    'process.env.NODE_ENV': JSON.stringify(mode || 'production')
   },
-  // Optimize dependencies
+  
   optimizeDeps: {
     include: ['vue', 'pinia'],
-    // Allow component Vue files to be optimized
-    entries: [
-      'src/main.js',
-      'components/**/*.vue'
-    ]
+    exclude: ['@vue/devtools-api'],
+    entries: ['src/main.js', 'components/**/*.vue']
   },
+  
   // Server configuration for development
   server: {
     watch: {
-      // Watch component directories
       ignored: ['!**/components/**/*.vue']
+    },
+    cors: true,
+    hmr: {
+      overlay: true
     }
+  },
+  
+  preview: {
+    cors: true
+  },
+  
+  // Performance optimizations with esbuild
+  esbuild: {
+    target: 'es2015',
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+    legalComments: 'none',
+    minify: mode === 'production',
+    minifyIdentifiers: mode === 'production',
+    minifySyntax: mode === 'production',
+    minifyWhitespace: mode === 'production'
+  },
+  
+  json: {
+    namedExports: true,
+    stringify: false
   }
-});
+}));
