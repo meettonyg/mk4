@@ -23,8 +23,8 @@ define( 'GMKB_VERSION', '2.1.0-option-a-pure-vue' );
 define( 'GMKB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GMKB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'GMKB_WORDPRESS_COMPATIBLE', true );
-define( 'GMKB_ARCHITECTURE', 'vue' ); // 100% Vue architecture
-define( 'GMKB_USE_PURE_VUE', true ); // PHASE 3: Enable Pure Vue template
+define( 'GMKB_ARCHITECTURE', 'pure-vue' ); // PHASE 3 COMPLETE: 100% Vue architecture, no PHP rendering
+define( 'GMKB_USE_PURE_VUE', true ); // PHASE 3: Always use Pure Vue template
 define( 'GMKB_DEV_MODE', defined( 'WP_DEBUG' ) && WP_DEBUG );
 
 // Include Vue-only enqueue system
@@ -238,6 +238,10 @@ class Guestify_Media_Kit_Builder {
         add_action( 'wp_ajax_gmkb_refresh_components', array( $this, 'ajax_refresh_components' ) );
     }
 
+    /**
+     * PHASE 3 FIX: Early builder check - Mark builder pages
+     * Used by template router to identify builder pages
+     */
     public function early_builder_check() {
         $is_builder_page = false;
         
@@ -251,6 +255,10 @@ class Guestify_Media_Kit_Builder {
             }
         }
         elseif (is_admin() && isset($_GET['page']) && $_GET['page'] === 'guestify-media-kit-builder') {
+            $is_builder_page = true;
+        }
+        // PHASE 3: Also check for URL parameters
+        elseif (isset($_GET['mkcg_id']) || isset($_GET['post_id'])) {
             $is_builder_page = true;
         }
         
@@ -392,23 +400,26 @@ class Guestify_Media_Kit_Builder {
         exit();
     }
 
+    /**
+     * PHASE 3 FIX: Media Kit Shortcode - Pure Vue Only
+     * NO PHP RENDERING - just loads Vue SPA
+     */
     public function media_kit_shortcode( $atts ) {
         ob_start();
         
-        $use_simple_template = defined('GMKB_USE_LEAN_BUNDLE') && GMKB_USE_LEAN_BUNDLE;
-        
-        if ($use_simple_template) {
-            $template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template-simple.php';
-        } else {
-            $template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template.php';
-        }
+        // CRITICAL FIX: Always use Pure Vue template
+        $template = GUESTIFY_PLUGIN_DIR . 'templates/builder-template-vue-pure.php';
         
         if (file_exists($template)) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: Loading Pure Vue template via shortcode');
+            }
             include $template;
         } else {
             echo '<div style="padding: 20px; text-align: center; background: #fee; border: 2px solid #f88; border-radius: 8px; margin: 20px;">
                 <h2>⚠️ Template Not Found</h2>
-                <p>Builder template file not found: ' . esc_html($template) . '</p>
+                <p>Pure Vue template file not found: ' . esc_html($template) . '</p>
+                <p>Please ensure the builder-template-vue-pure.php file exists in the templates directory.</p>
             </div>';
         }
         

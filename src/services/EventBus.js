@@ -1,4 +1,44 @@
 /**
+ * Event Bus System - DEPRECATED
+ * 
+ * @deprecated Since v4.0.0 - Use Pinia $subscribe or DOM CustomEvents instead
+ * @willBeRemovedIn v5.0.0
+ * 
+ * P0 FIX #10: EventBus has been replaced with:
+ * - Pinia $subscribe for store state changes
+ * - DOM CustomEvents for component communication
+ * 
+ * Migration guide:
+ * ```javascript
+ * // OLD (EventBus):
+ * eventBus.on('store:initialized', handler);
+ * eventBus.emit('store:initialized', data);
+ * 
+ * // NEW (Pinia):
+ * const unwatch = store.$subscribe((mutation, state) => {
+ *   if (state.isInitialized) {
+ *     handler(state);
+ *     unwatch();
+ *   }
+ * });
+ * 
+ * // NEW (DOM CustomEvents for non-store events):
+ * document.addEventListener('gmkb:event-name', handler);
+ * document.dispatchEvent(new CustomEvent('gmkb:event-name', { detail: data }));
+ * ```
+ * 
+ * @version 2.0.0
+ */
+
+if (typeof console !== 'undefined') {
+  console.warn(
+    '[DEPRECATED] EventBus is deprecated and will be removed in v5.0.0. ' +
+    'Use Pinia $subscribe or DOM CustomEvents instead. ' +
+    'See EventBus.js for migration guide.'
+  );
+}
+
+/**
  * Event Bus System - Core Foundation for Event-Driven Architecture
  * 
  * This replaces all polling/timeout patterns with proper event-driven communication.

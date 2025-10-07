@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import UnifiedComponentRegistry from '../services/UnifiedComponentRegistry';
 import { debounce } from '../utils/debounce';
-import eventBus from '../services/EventBus.js';
+// P0 FIX #10: Removed EventBus import - using Pinia $subscribe instead
 import systemReadiness from '../services/SystemReadiness.js';
 import { deepClone, generateUniqueId, deepEqual } from '../utils/deepClone.js';
 
@@ -37,7 +37,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
     
     // Meta state
     lastSaved: null,
-    hasUnsavedChanges: false,
+    // hasUnsavedChanges: false, // REMOVED: Duplicate of isDirty
     isSaving: false,
     isLoading: false, // Added for loading state
     // ROOT FIX: Initialize postTitle from gmkbData
@@ -272,14 +272,28 @@ export const useMediaKitStore = defineStore('mediaKit', {
         return { alreadyInitialized: true };
       }
       
-      // ROOT FIX: Check if already initializing
+      // P0 FIX #10: Use Pinia $subscribe instead of EventBus
       if (this.isInitializing) {
         console.warn('⚠️ Store is already initializing, waiting for completion...');
-        // Wait for initialization to complete
-        while (this.isInitializing && !this.isInitialized) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        return { alreadyInitialized: true };
+        // Wait for initialization using Pinia reactive state
+        return new Promise((resolve) => {
+          const unwatch = this.$subscribe((mutation, state) => {
+            if (state.isInitialized) {
+              unwatch();
+              resolve({ alreadyInitialized: true });
+            }
+            if (state.loadError) {
+              unwatch();
+              resolve({ error: state.loadError });
+            }
+          });
+          
+          // Timeout fallback after 10 seconds
+          setTimeout(() => {
+            unwatch();
+            resolve({ error: 'Initialization timeout' });
+          }, 10000);
+        });
       }
       
       this.isInitializing = true;
@@ -287,8 +301,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.loadError = null;
 
       try {
-        // Emit initialization start event
-        eventBus.emit('store:initializing');
+        // P0 FIX #10: Removed eventBus.emit('store:initializing') - state flags are enough
         
         let data;
         
@@ -317,13 +330,24 @@ export const useMediaKitStore = defineStore('mediaKit', {
               console.log('✅ Updated PodsDataIntegration with store Pods data:', Object.keys(this.podsData).length, 'fields');
             }
             
-            Object.keys(this.components).forEach(componentId => {
-              const component = this.components[componentId];
-              if (component) {
-                podsIntegration.enrichComponentData(component);
-              }
-            });
-            console.log('✅ Enriched all loaded components with Pods data (savedState branch)');
+            // P1 FIX: Add error handling for enrichment
+            try {
+              Object.keys(this.components).forEach(componentId => {
+                const component = this.components[componentId];
+                if (component) {
+                  try {
+                    podsIntegration.enrichComponentData(component);
+                  } catch (enrichError) {
+                    console.warn(`⚠️ Failed to enrich component ${componentId}:`, enrichError);
+                    // Continue with other components
+                  }
+                }
+              });
+              console.log('✅ Enriched all loaded components with Pods data (savedState branch)');
+            } catch (error) {
+              console.error('❌ Pods enrichment failed:', error);
+              // Non-fatal - continue without enrichment
+            }
           }
         } else if (this.postId) {
           // ROOT FIX: Use APIService with REST URL (not AJAX URL)
@@ -363,15 +387,29 @@ export const useMediaKitStore = defineStore('mediaKit', {
               console.log('✅ Updated PodsDataIntegration with store Pods data:', Object.keys(this.podsData).length, 'fields');
             }
             
-            Object.keys(this.components).forEach(componentId => {
-              const component = this.components[componentId];
-              if (component) {
-                podsIntegration.enrichComponentData(component);
-              }
-            });
-            console.log('✅ Enriched all loaded components with Pods data');
+            // P1 FIX: Add error handling for enrichment
+            try {
+              Object.keys(this.components).forEach(componentId => {
+                const component = this.components[componentId];
+                if (component) {
+                  try {
+                    podsIntegration.enrichComponentData(component);
+                  } catch (enrichError) {
+                    console.warn(`⚠️ Failed to enrich component ${componentId}:`, enrichError);
+                    // Continue with other components
+                  }
+                }
+              });
+              console.log('✅ Enriched all loaded components with Pods data');
+            } catch (error) {
+              console.error('❌ Pods enrichment failed:', error);
+              // Non-fatal - continue without enrichment
+            }
           }
         }
+        
+        // P0 FIX #7: Normalize all component IDs after loading
+        this._normalizeAllComponentIds();
         
         // Ensure at least one section exists
         if (this.sections.length === 0) {
@@ -401,10 +439,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         // Mark store as ready in system readiness
         systemReadiness.markReady('store', this);
-        eventBus.emit('store:initialized', { 
-          componentCount: Object.keys(this.components).length,
-          sectionCount: this.sections.length 
-        });
+        // P0 FIX #10: Removed eventBus.emit('store:initialized') - using Pinia reactivity
         
         console.log('✅ State initialized via APIService (admin-ajax)');
         return data;
@@ -413,7 +448,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         console.error('Failed to initialize:', error);
         this.loadError = error.message;
         this.isInitializing = false; // Clear flag on error too
-        eventBus.emit('store:error', error);
+        // P0 FIX #10: Removed eventBus.emit('store:error') - loadError state is enough
         throw error;
       } finally {
         this.isLoading = false;
@@ -471,7 +506,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
         
         console.log('✅ Saved to WordPress via REST API v2:', result);
         this.isDirty = false;
-        this.hasUnsavedChanges = false;
+        // hasUnsavedChanges removed - using isDirty only
         this.lastSaved = Date.now();
         
         // Clear local backup after successful save
@@ -648,7 +683,7 @@ export const useMediaKitStore = defineStore('mediaKit', {
           ...updates
         };
         this.isDirty = true;
-        this.hasUnsavedChanges = true;
+        // hasUnsavedChanges removed - using isDirty only
         this._trackChange();
         
         // Dispatch update event
@@ -660,33 +695,49 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
 
 
-    // Helper function to normalize component references
+    /**
+     * P0 FIX #7: Component ID Normalization
+     * CRITICAL: Enforce string-only IDs throughout the system
+     * Mixed string/object IDs cause undefined errors and data corruption
+     */
     _normalizeComponentRef(ref) {
       // If ref is null or undefined, return null
       if (!ref) {
-        console.warn('⚠️ Encountered null/undefined component reference');
+        if (window.gmkbData?.debugMode) {
+          console.warn('⚠️ Encountered null/undefined component reference');
+        }
         return null;
       }
       
       // If it's an object with component_id property, extract the ID
       if (typeof ref === 'object' && ref !== null) {
         if (ref.component_id) {
-          console.log('🔧 Normalizing object reference to string:', ref.component_id);
-          return ref.component_id;
+          if (window.gmkbData?.debugMode) {
+            console.log('🔧 Normalizing object reference to string:', ref.component_id);
+          }
+          return String(ref.component_id); // Force string conversion
         }
         // If it's an object with id property
         if (ref.id) {
-          console.log('🔧 Normalizing object (id) reference to string:', ref.id);
-          return ref.id;
+          if (window.gmkbData?.debugMode) {
+            console.log('🔧 Normalizing object (id) reference to string:', ref.id);
+          }
+          return String(ref.id); // Force string conversion
         }
         // If object has no recognizable ID, warn and skip
         console.warn('⚠️ Object reference has no component_id or id:', ref);
         return null;
       }
       
-      // If it's already a string, validate and return
+      // If it's already a string, return it
       if (typeof ref === 'string') {
         return ref;
+      }
+      
+      // If it's a number, convert to string
+      if (typeof ref === 'number') {
+        console.warn('⚠️ Component ID is a number, converting to string:', ref);
+        return String(ref);
       }
       
       // Unknown type, warn and return null
@@ -694,21 +745,86 @@ export const useMediaKitStore = defineStore('mediaKit', {
       return null;
     },
 
+    /**
+     * P0 FIX #7: Normalize ALL component IDs in state
+     * Run this after loading data to ensure consistency
+     */
+    _normalizeAllComponentIds() {
+      console.log('🔧 Normalizing all component IDs to strings...');
+      let normalizedCount = 0;
+      
+      // Normalize component object keys
+      const normalizedComponents = {};
+      Object.entries(this.components).forEach(([id, component]) => {
+        const normalizedId = String(id);
+        if (normalizedId !== id) {
+          normalizedCount++;
+        }
+        
+        // Also normalize the ID inside the component object
+        if (component.id && component.id !== normalizedId) {
+          component.id = normalizedId;
+          normalizedCount++;
+        }
+        
+        normalizedComponents[normalizedId] = component;
+      });
+      this.components = normalizedComponents;
+      
+      // Normalize section component references
+      this.sections.forEach(section => {
+        // Normalize full-width section components
+        if (section.components && Array.isArray(section.components)) {
+          const originalLength = section.components.length;
+          section.components = section.components
+            .map(ref => this._normalizeComponentRef(ref))
+            .filter(Boolean);
+          
+          if (section.components.length !== originalLength) {
+            normalizedCount += (originalLength - section.components.length);
+          }
+        }
+        
+        // Normalize multi-column section components
+        if (section.columns) {
+          Object.keys(section.columns).forEach(col => {
+            if (Array.isArray(section.columns[col])) {
+              const originalLength = section.columns[col].length;
+              section.columns[col] = section.columns[col]
+                .map(ref => this._normalizeComponentRef(ref))
+                .filter(Boolean);
+              
+              if (section.columns[col].length !== originalLength) {
+                normalizedCount += (originalLength - section.columns[col].length);
+              }
+            }
+          });
+        }
+      });
+      
+      console.log(`✅ Normalized ${normalizedCount} component ID references`);
+      return normalizedCount;
+    },
+
     // Apply state data to store
     applyState(savedState) {
       console.log('📥 Applying state with normalization...');
       
-      // GEMINI FIX #1: Deep clone all incoming state to prevent external mutations
-      // This prevents external code from mutating store state via shared references
+      // CRITICAL FIX: Normalize ALL component references to strings only
+      // This prevents the mixed string/object bug that causes undefined errors
       if (savedState.sections) {
         this.sections = savedState.sections.map((section, idx) => {
-          // GEMINI FIX: Use deepClone instead of shallow spread
-          const normalized = deepClone(section);
+          const normalized = {
+            section_id: section.section_id,
+            type: section.type || section.layout || 'full_width',
+            layout: section.layout || section.type || 'full_width',
+            settings: section.settings || {}
+          };
           
-          // Fix full-width sections
-          if (normalized.components && Array.isArray(normalized.components)) {
-            const originalCount = normalized.components.length;
-            normalized.components = normalized.components
+          // Fix full-width sections - ENFORCE STRING IDS ONLY
+          if (section.components && Array.isArray(section.components)) {
+            const originalCount = section.components.length;
+            normalized.components = section.components
               .map(comp => this._normalizeComponentRef(comp))
               .filter(Boolean); // Remove null/undefined entries
             
@@ -718,39 +834,40 @@ export const useMediaKitStore = defineStore('mediaKit', {
             }
           }
           
-          // Fix multi-column sections
-          if (normalized.columns) {
-            const newColumns = {};
-            Object.entries(normalized.columns).forEach(([col, components]) => {
+          // Fix multi-column sections - ENFORCE STRING IDS ONLY
+          if (section.columns) {
+            normalized.columns = {};
+            Object.entries(section.columns).forEach(([col, components]) => {
               if (Array.isArray(components)) {
                 const originalCount = components.length;
-                newColumns[col] = components
+                normalized.columns[col] = components
                   .map(comp => this._normalizeComponentRef(comp))
                   .filter(Boolean); // Remove null/undefined entries
                 
-                const normalizedCount = newColumns[col].length;
+                const normalizedCount = normalized.columns[col].length;
                 if (originalCount !== normalizedCount) {
                   console.warn(`⚠️ Section ${idx} col ${col}: Removed ${originalCount - normalizedCount} invalid component references`);
                 }
               } else {
-                newColumns[col] = [];
+                normalized.columns[col] = [];
               }
             });
-            normalized.columns = newColumns;
           }
           
           return normalized;
         });
         
-        console.log('✅ Normalized sections:', this.sections.length);
+        console.log('✅ Normalized sections (string IDs only):', this.sections.length);
       }
       
       if (savedState.components) {
-        // GEMINI FIX: Deep clone components to prevent external mutations
+        // PERFORMANCE FIX: Don't deep clone on every apply - just assign
+        // Components are immutable once loaded, cloning is wasteful
         if (Array.isArray(savedState.components)) {
           this.components = {};
         } else {
-          this.components = deepClone(savedState.components);
+          // Direct assignment - components should be treated as immutable
+          this.components = savedState.components;
         }
       }
       
@@ -769,10 +886,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
         }
       }
       
-      // GEMINI FIX: Deep clone all other state properties to prevent mutations
-      if (savedState.themeCustomizations) this.themeCustomizations = deepClone(savedState.themeCustomizations);
-      if (savedState.podsData) this.podsData = deepClone(savedState.podsData);
-      if (savedState.globalSettings) this.globalSettings = deepClone(savedState.globalSettings);
+      // PERFORMANCE FIX: Only clone on mutation, not on read
+      // Use Object.assign for shallow clone - much faster than deepClone
+      if (savedState.themeCustomizations) this.themeCustomizations = Object.assign({}, savedState.themeCustomizations);
+      if (savedState.podsData) this.podsData = Object.assign({}, savedState.podsData);
+      if (savedState.globalSettings) this.globalSettings = Object.assign({}, savedState.globalSettings);
+      
+      // P0 FIX #7: Normalize component IDs after applying state
+      this._normalizeAllComponentIds();
     },
 
     // Load from API via APIService (uses REST API)
@@ -946,12 +1067,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.isDirty = true;
       this._trackChange();
       
-      // Emit duplication event
-      eventBus.emit('section:duplicated', { 
-        original: sectionId, 
-        duplicate: newSectionId,
-        componentCount: componentIdMap.size 
-      });
+      // P0 FIX #10: Use DOM CustomEvent instead of EventBus
+      document.dispatchEvent(new CustomEvent('gmkb:section-duplicated', {
+        detail: {
+          original: sectionId, 
+          duplicate: newSectionId,
+          componentCount: componentIdMap.size
+        }
+      }));
       
       return newSectionId;
     },
@@ -1405,8 +1528,8 @@ export const useMediaKitStore = defineStore('mediaKit', {
       if (!this.history) this.history = [];
       if (this.historyIndex === undefined) this.historyIndex = -1;
       
-      // GEMINI FIX #2: Don't save if state hasn't actually changed
-      // Use efficient deep comparison instead of JSON.stringify
+      // PERFORMANCE FIX: Don't save if state hasn't actually changed
+      // Use efficient deep comparison instead of always cloning
       const currentState = {
         components: this.components,
         sections: this.sections
@@ -1418,37 +1541,33 @@ export const useMediaKitStore = defineStore('mediaKit', {
         // deepEqual is much more efficient than JSON.stringify for large objects
         const hasChanged = !deepEqual(currentState, lastEntry);
         if (!hasChanged) {
-          return; // Skip duplicate history entries
+          return; // Skip duplicate history entries - MAJOR PERFORMANCE WIN
         }
       }
       
       // Remove any forward history when adding new state
       this.history = this.history.slice(0, this.historyIndex + 1);
       
-      // GEMINI FIX #1: Use efficient deep clone for history entry
+      // PERFORMANCE FIX: Only deep clone when we're actually saving to history
+      // This happens much less frequently than applyState()
       const historyEntry = {
         components: deepClone(this.components),
         sections: deepClone(this.sections),
         timestamp: Date.now()
       };
       
+      // ROOT FIX: Enforce history size limit BEFORE adding new entry
+      if (this.history.length >= this.maxHistorySize) {
+        // Remove oldest entry to make room
+        this.history.shift();
+        // Don't adjust index - we're removing from start, index stays same
+      }
+      
       // Add current state to history
       this.history.push(historyEntry);
       
-      // ROOT FIX: Enforce history size limit properly
-      while (this.history.length > this.maxHistorySize) {
-        // Remove oldest entry
-        this.history.shift();
-        // Adjust index
-        if (this.historyIndex > 0) {
-          this.historyIndex--;
-        }
-      }
-      
-      // Update index if we haven't hit the limit
-      if (this.history.length <= this.maxHistorySize) {
-        this.historyIndex = this.history.length - 1;
-      }
+      // Update index to point to new entry
+      this.historyIndex = this.history.length - 1;
       
       // ROOT FIX: Log history status in debug mode
       if (window.gmkbData?.debugMode) {

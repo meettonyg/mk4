@@ -200,57 +200,71 @@ export class APIService {
         throw new Error('Cannot load: No post ID available');
       }
       
-      // PHASE 6: Create load promise with retry logic
+      // PHASE 6: Create load promise with retry logic and timeout
       const loadPromise = retryOperation(
         async () => {
-          // Fetch from REST API v2
-          const response = await fetch(this.baseUrl, {
-            method: 'GET',
-            headers: {
-              'X-WP-Nonce': this.restNonce
-            },
-            credentials: 'same-origin'
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || `HTTP ${response.status}`);
-          }
-
-          const data = await response.json();
-
-          if (!data.success) {
-            throw new Error(data.message || 'API returned unsuccessful response');
-          }
-
-          // PHASE 6: Validate response structure
-          DataValidator.validateAPIResponse(data);
+          // CRITICAL: Add timeout to prevent hanging
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
           
-          // Transform response to expected format
-          const result = {
-            components: data.state.components || {},
-            sections: data.state.sections || [],
-            layout: data.state.layout || [],
-            globalSettings: data.state.globalSettings || {},
-            theme: data.theme.id || 'professional_clean',
-            themeCustomizations: data.theme.customizations || {},
-            podsData: data.podsData || {},
-            metadata: data.metadata || {}
-          };
-          
-          // Cache response
-          this.setCache('load', result);
-
-          if (window.gmkbData?.debugMode) {
-            console.log('✅ Loaded media kit data:', {
-              components: Object.keys(result.components).length,
-              sections: result.sections.length,
-              podsFields: Object.keys(result.podsData).length,
-              theme: result.theme
+          try {
+            // Fetch from REST API v2
+            const response = await fetch(this.baseUrl, {
+              method: 'GET',
+              headers: {
+                'X-WP-Nonce': this.restNonce
+              },
+              credentials: 'same-origin',
+              signal: controller.signal
             });
-          }
 
-          return result;
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.message || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!data.success) {
+              throw new Error(data.message || 'API returned unsuccessful response');
+            }
+
+            // PHASE 6: Validate response structure
+            DataValidator.validateAPIResponse(data);
+            
+            // Transform response to expected format
+            const result = {
+              components: data.state.components || {},
+              sections: data.state.sections || [],
+              layout: data.state.layout || [],
+              globalSettings: data.state.globalSettings || {},
+              theme: data.theme.id || 'professional_clean',
+              themeCustomizations: data.theme.customizations || {},
+              podsData: data.podsData || {},
+              metadata: data.metadata || {}
+            };
+            
+            // Cache response
+            this.setCache('load', result);
+
+            if (window.gmkbData?.debugMode) {
+              console.log('✅ Loaded media kit data:', {
+                components: Object.keys(result.components).length,
+                sections: result.sections.length,
+                podsFields: Object.keys(result.podsData).length,
+                theme: result.theme
+              });
+            }
+
+            return result;
+          } catch (error) {
+            if (error.name === 'AbortError') {
+              throw new Error('Request timeout after 30 seconds');
+            }
+            throw error;
+          } finally {
+            clearTimeout(timeoutId);
+          }
         },
         {
           maxRetries: 3,
@@ -339,48 +353,62 @@ export class APIService {
         });
       }
 
-      // PHASE 6: Create save promise with retry logic
+      // PHASE 6: Create save promise with retry logic and timeout
       const savePromise = retryOperation(
         async () => {
-          const response = await fetch(this.baseUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-WP-Nonce': this.restNonce
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify(payload)
-          });
+          // CRITICAL: Add timeout to prevent hanging
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+          
+          try {
+            const response = await fetch(this.baseUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-WP-Nonce': this.restNonce
+              },
+              credentials: 'same-origin',
+              body: JSON.stringify(payload),
+              signal: controller.signal
+            });
 
-          if (!response.ok) {
-            const error = await response.json();
-            
-            // Handle nonce expiration gracefully
-            if (response.status === 403 || error.code === 'rest_forbidden') {
-              return { success: false, silent: true, reason: 'nonce_expired' };
+            if (!response.ok) {
+              const error = await response.json();
+              
+              // Handle nonce expiration gracefully
+              if (response.status === 403 || error.code === 'rest_forbidden') {
+                return { success: false, silent: true, reason: 'nonce_expired' };
+              }
+              
+              throw new Error(error.message || `HTTP ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            if (!result.success) {
+              throw new Error(result.message || 'Save failed');
             }
             
-            throw new Error(error.message || `HTTP ${response.status}`);
+            // Clear cache after successful save
+            this.clearCache();
+
+            if (!options.silent && window.gmkbData?.debugMode) {
+              console.log('✅ Saved media kit:', {
+                components: result.components_saved,
+                sections: result.sections_saved,
+                dataSize: Math.round(result.data_size / 1024) + 'KB'
+              });
+            }
+
+            return result;
+          } catch (error) {
+            if (error.name === 'AbortError') {
+              throw new Error('Save timeout after 30 seconds');
+            }
+            throw error;
+          } finally {
+            clearTimeout(timeoutId);
           }
-
-          const result = await response.json();
-
-          if (!result.success) {
-            throw new Error(result.message || 'Save failed');
-          }
-          
-          // Clear cache after successful save
-          this.clearCache();
-
-          if (!options.silent && window.gmkbData?.debugMode) {
-            console.log('✅ Saved media kit:', {
-              components: result.components_saved,
-              sections: result.sections_saved,
-              dataSize: Math.round(result.data_size / 1024) + 'KB'
-            });
-          }
-
-          return result;
         },
         {
           maxRetries: 2, // Fewer retries for saves

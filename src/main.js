@@ -104,9 +104,8 @@ async function initializeVue() {
     const pinia = createPinia();
     console.log('✅ Pinia store created');
     
-    // ROOT FIX: Initialize UI store
+    // ROOT FIX: Initialize UI store (accessible via GMKB.stores.ui)
     const uiStore = useUIStore(pinia);
-    window.gmkbUIStore = uiStore;
     
     // ROOT FIX: Initialize stores BEFORE mounting Vue to prevent race condition
     // STEP 4: Initialize stores (BEFORE Vue mount)
@@ -118,11 +117,8 @@ async function initializeVue() {
     const themeStore = useThemeStore(pinia);
     console.log('✅ Stores created');
     
-    // Make stores available globally BEFORE Vue mount
-    window.gmkbStore = mediaKitStore;
-    window.mediaKitStore = mediaKitStore;
-    window.themeStore = themeStore;
-    window.gmkbPinia = pinia;
+    // Make stores available ONLY through GMKB namespace
+    // Removed individual window.gmkbStore, window.mediaKitStore assignments
     
     // ROOT FIX: Initialize the debounced autoSave with proper context
     mediaKitStore.initAutoSave();
@@ -172,9 +168,12 @@ async function initializeVue() {
     }
     
     // Load custom themes after (non-blocking)
-    themeStore.loadCustomThemes().catch(() => {
-      console.log('ℹ️ Custom themes not available, using built-in themes');
-    })
+    themeStore.loadCustomThemes().catch((error) => {
+      console.log('ℹ️ Custom themes not available, using built-in themes only');
+      if (window.gmkbData?.debugMode) {
+        console.warn('Custom themes load error:', error);
+      }
+    });
     
     // STEP 7: NOW mount Vue (with stores already initialized)
     console.log('7️⃣ Loading Vue components...');
@@ -186,6 +185,28 @@ async function initializeVue() {
     // Create and mount Vue app
     console.log('8️⃣ Mounting Vue application...');
     const app = createApp(MediaKitApp);
+    
+    // CRITICAL: Add global error handler to prevent app crashes
+    app.config.errorHandler = (err, instance, info) => {
+      console.error('❌ Vue Error:', err);
+      console.error('Component:', instance?.$options?.name || 'Unknown');
+      console.error('Error Info:', info);
+      
+      // Show user-friendly error
+      if (typeof window.showToast === 'function') {
+        window.showToast('An error occurred. Check console for details.', 'error');
+      }
+      
+      // Log to error service in production
+      if (window.gmkbData?.environment === 'production' && window.gmkbAnalytics) {
+        window.gmkbAnalytics.track('vue_error', {
+          error: err.message,
+          component: instance?.$options?.name,
+          info: info
+        });
+      }
+    };
+    
     app.use(pinia);
     
     // ROOT FIX: Register global components
@@ -205,9 +226,48 @@ async function initializeVue() {
     // ROOT FIX: Preload critical components after mount
     preloadCriticalComponents();
     
-    // Make available globally for debugging
-    window.gmkbApp = app;
-    window.gmkbVueInstance = instance;
+    // CRITICAL FIX: Consolidate ALL global objects into single GMKB namespace
+    // Prevents namespace pollution, memory leaks, and debugging chaos
+    window.GMKB = {
+      // Version info
+      version: '4.0.0-pure-vue',
+      architecture: 'pure-vue',
+      
+      // Core application
+      app: app,
+      vueInstance: instance,
+      
+      // Stores
+      stores: {
+        mediaKit: mediaKitStore,
+        theme: themeStore,
+        ui: uiStore,
+        pinia: pinia
+      },
+      
+      // Services
+      services: {
+        api: apiService,
+        security: securityService,
+        undoRedo: undoRedoManager,
+        keyboard: keyboardManager,
+        performance: performanceMonitor,
+        analytics: analytics,
+        toast: { show: showToast },
+        console: ConsoleAPI,
+        pods: podsDataIntegration
+      },
+      
+      // Legacy aliases for backwards compatibility (deprecated)
+      get gmkbStore() { return this.stores.mediaKit; },
+      get mediaKitStore() { return this.stores.mediaKit; },
+      get themeStore() { return this.stores.theme; },
+      get gmkbAPI() { return this.services.api; },
+      get gmkbApp() { return this.app; }
+    };
+    
+    // Expose ONLY the consolidated namespace globally
+    // Individual services accessible via GMKB.services.*
     
     // ROOT FIX: Use ConsoleAPI service instead of inline code
     ConsoleAPI.install({
@@ -216,12 +276,10 @@ async function initializeVue() {
       apiService
     });
     
-    // PHASE 17-24: Initialize new critical services
+    // PHASE 17-24: Initialize new critical services (accessible via GMKB.services)
     console.log('🔐 Initializing security services...');
-    window.gmkbSecurity = securityService;
     
     console.log('↩️ Initializing undo/redo manager...');
-    window.gmkbUndoRedo = undoRedoManager;
     setupUndoRedoShortcuts(undoRedoManager);
     
     // Connect undo/redo to store
@@ -237,13 +295,10 @@ async function initializeVue() {
     });
     
     console.log('⌨️ Keyboard manager already initialized');
-    window.gmkbKeyboard = keyboardManager;
     
     console.log('📊 Initializing performance monitor...');
-    window.gmkbPerformance = performanceMonitor;
     
     console.log('📈 Initializing analytics...');
-    window.gmkbAnalytics = analytics;
     
     // Identify user if available
     if (window.gmkbData?.userId) {
@@ -263,81 +318,7 @@ async function initializeVue() {
     
     console.log('✅ All critical services initialized');
     
-    // DEPRECATED: Old inline console API replaced by ConsoleAPI service
-    /*
-    window.GMKB = {
-      apiService,
-      vueApp: app,
-      version: '4.0.0-pure-vue',
-      
-      // Store methods
-      addComponent: (type, data) => {
-        if (typeof type === 'object') {
-          return mediaKitStore.addComponent(type);
-        }
-        return mediaKitStore.addComponent({ type, data });
-      },
-      removeComponent: (id) => mediaKitStore.removeComponent(id),
-      addSection: (type) => mediaKitStore.addSection(type),
-      removeSection: (id) => mediaKitStore.removeSection(id),
-      getState: () => ({
-        components: mediaKitStore.components,
-        sections: mediaKitStore.sections,
-        theme: mediaKitStore.theme
-      }),
-      save: () => mediaKitStore.saveToWordPress(),
-      store: mediaKitStore,
-      
-      // Import/Export methods
-      openImportExport: () => importExportService.openModal(),
-      closeImportExport: () => importExportService.closeModal(),
-      
-      // Debug methods
-      cacheStatus: () => apiService.getCacheStatus(),
-      inflightStatus: () => apiService.getInflightStatus(),
-      
-      // ROOT FIX: Orphaned components debug methods
-      checkOrphans: () => {
-        if (!window.gmkbStore && !window.mediaKitStore) {
-          console.error('Store not initialized');
-          return { error: 'Store not available' };
-        }
-        const store = window.gmkbStore || window.mediaKitStore;
-        const result = store.checkForOrphanedComponents();
-        console.log('📊 Orphaned Components Report:');
-        console.log(`  Total components: ${result.total}`);
-        console.log(`  In sections: ${result.inSections}`);
-        console.log(`  Orphaned: ${result.orphaned}`);
-        if (result.orphaned > 0) {
-          console.log(`  Orphaned IDs:`, result.orphanedIds);
-        }
-        return result;
-      },
-      fixOrphans: () => {
-        if (!window.gmkbStore && !window.mediaKitStore) {
-          console.error('Store not initialized');
-          return { error: 'Store not available' };
-        }
-        const store = window.gmkbStore || window.mediaKitStore;
-        console.log('🔧 Fixing orphaned components...');
-        const result = store.fixOrphanedComponents();
-        if (result.fixed > 0) {
-          showToast(`Fixed ${result.fixed} orphaned components`, 'success', 5000);
-        } else {
-          showToast('No orphaned components found', 'info', 3000);
-        }
-        return result;
-      }
-    };
-    */
-    
-    // DEPRECATED: Now handled by ConsoleAPI
-    /*
-    window.switchTheme = (themeId) => {
-      themeStore.selectTheme(themeId);
-      console.log(`✅ Switched to ${themeId} theme`);
-    };
-    */
+    // Console API now handled by ConsoleAPI service (see ConsoleAPI.install above)
     
     console.log('✅ Vue Media Kit Builder initialized successfully');
     
@@ -368,98 +349,7 @@ async function initializeVue() {
   }
 }
 
-// ROOT FIX: DOM handlers moved to DOMHandlers service
-/*
-function setupEmptyStateHandlers() {
-  document.addEventListener('click', async (event) => {
-    if (event.target.id === 'add-component-btn' || 
-        event.target.closest('#add-component-btn')) {
-      event.preventDefault();
-      if (window.openComponentLibrary) {
-        window.openComponentLibrary();
-      } else {
-        document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
-      }
-      return;
-    }
-    
-    const target = event.target.closest('[data-action]');
-    if (!target) return;
-    
-    const action = target.dataset.action;
-    const store = window.gmkbStore;
-    if (!store) return;
-    
-    switch (action) {
-      case 'add-component':
-        event.preventDefault();
-        if (window.openComponentLibrary) {
-          window.openComponentLibrary();
-        } else {
-          document.dispatchEvent(new CustomEvent('gmkb:open-component-library'));
-        }
-        break;
-        
-      case 'add-section':
-        event.preventDefault();
-        store.addSection('full_width');
-        showToast('Section added', 'success');
-        break;
-        
-      case 'auto-generate-all':
-        event.preventDefault();
-        target.disabled = true;
-        const originalText = target.textContent;
-        target.textContent = 'Generating...';
-        
-        try {
-          const componentsToAdd = ['hero', 'biography', 'topics', 'authority-hook', 'contact'];
-          componentsToAdd.forEach(type => {
-            store.addComponent({ type });
-          });
-          
-          showToast('Media kit components generated!', 'success');
-          await store.saveToWordPress();
-          
-        } catch (error) {
-          console.error('Auto-generate failed:', error);
-          showToast('Generation failed', 'error');
-        } finally {
-          target.disabled = false;
-          target.textContent = originalText;
-        }
-        break;
-    }
-  });
-}
-*/
-
-// ROOT FIX: UI handlers moved to DOMHandlers service
-/*
-function setupMinimalUIHandlers() {
-  const saveBtn = document.getElementById('save-btn');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', async () => {
-      const store = window.gmkbStore;
-      if (!store) return;
-      
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
-      
-      try {
-        await store.saveToWordPress();
-        showToast('Saved successfully', 'success');
-      } catch (error) {
-        console.error('Save failed:', error);
-        showToast('Save failed', 'error');
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save';
-      }
-    });
-  }
-}
-*/
+// DOM and UI handlers now handled by DOMHandlers service
 
 /**
  * Main initialization with enhanced error handling
@@ -496,14 +386,15 @@ async function initialize() {
     });
     
     apiService = new APIService(restUrl, restNonce, postId);
-    window.gmkbAPI = apiService;
+    // Accessible via GMKB.services.api
     console.log('✅ API Service ready');
     
     // Initialize component registry
     UnifiedComponentRegistry.initialize();
     console.log('✅ Component registry initialized');
     
-    // Initialize Pods integration (utility only)
+    // Initialize Pods integration (accessible via GMKB.services.pods)
+    // Accessible via window for legacy compatibility
     window.podsDataIntegration = podsDataIntegration;
     window.gmkbPodsIntegration = podsDataIntegration;
     logger.info('✅ Pods data integration initialized');

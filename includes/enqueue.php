@@ -1,14 +1,9 @@
 <?php
 /**
- * Vue-Only Enqueue System - Final Patched Version
- *
- * This version includes explicit require_once calls for discovery classes to prevent
- * fatal errors if files are not autoloaded, ensuring gmkbData is always populated.
- * It uses a direct script injection method for localizing data, which is more robust
- * than wp_localize_script and prevents race conditions.
+ * Vue-Only Enqueue System - Clean Build Version
  *
  * @package Guestify
- * @version 4.0.4-final
+ * @version 4.0.5
  */
 
 if (!defined('ABSPATH')) {
@@ -40,18 +35,7 @@ function gmkb_enqueue_vue_only_assets() {
     }
     $assets_enqueued = true;
     
-    // ROOT FIX: Enqueue design system FIRST (single source of truth)
-    $design_system_path = GUESTIFY_PLUGIN_DIR . 'design-system/index.css';
-    if (file_exists($design_system_path)) {
-        $design_system_version = filemtime($design_system_path);
-        $design_system_url = GUESTIFY_PLUGIN_URL . 'design-system/index.css';
-        wp_enqueue_style('gmkb-design-system', $design_system_url, array(), $design_system_version);
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Design System CSS loaded');
-        }
-    }
-    
+    // Check for built files
     $bundle_js_path = GUESTIFY_PLUGIN_DIR . 'dist/gmkb.iife.js';
     if (!file_exists($bundle_js_path)) {
         add_action('wp_footer', 'gmkb_display_build_error_notice');
@@ -59,21 +43,29 @@ function gmkb_enqueue_vue_only_assets() {
         return;
     }
     
-    $bundle_css_path = GUESTIFY_PLUGIN_DIR . 'dist/style.css';
-    
-    // --- SCRIPT ENQUEUEING ---
-    $script_version = time(); // AGGRESSIVE cache bust - use current timestamp
+    // --- JAVASCRIPT BUNDLE ---
+    $script_version = filemtime($bundle_js_path);
     $script_url = GUESTIFY_PLUGIN_URL . 'dist/gmkb.iife.js';
-
     wp_enqueue_script('gmkb-vue-app', $script_url, array(), $script_version, true);
 
-    // --- STYLE ENQUEUEING (Vue component styles) ---
-    // This should EXTEND the design system, not replace it
-    if (file_exists($bundle_css_path)) {
-        $style_version = filemtime($bundle_css_path);
-        $style_url = GUESTIFY_PLUGIN_URL . 'dist/style.css';
-        // Depends on design system
-        wp_enqueue_style('gmkb-vue-style', $style_url, array('gmkb-design-system'), $style_version);
+    // --- CSS BUNDLE (check both possible names) ---
+    // After clean rebuild, should be gmkb.css
+    $css_paths = array(
+        'gmkb.css' => GUESTIFY_PLUGIN_DIR . 'dist/gmkb.css',
+        'style.css' => GUESTIFY_PLUGIN_DIR . 'dist/style.css'
+    );
+    
+    foreach ($css_paths as $filename => $path) {
+        if (file_exists($path)) {
+            $style_version = filemtime($path);
+            $style_url = GUESTIFY_PLUGIN_URL . 'dist/' . $filename;
+            wp_enqueue_style('gmkb-vue-style', $style_url, array(), $style_version);
+            
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('✅ GMKB: CSS loaded: ' . $filename);
+            }
+            break; // Only load one CSS file
+        }
     }
 }
 
@@ -88,11 +80,11 @@ function gmkb_inject_data_object_script() {
     $post_id = gmkb_get_post_id();
     $nonce = wp_create_nonce('gmkb_nonce');
 
-    // [THE CRITICAL FIX] Explicitly include the class files before using them.
+    // Explicitly include the class files before using them
     require_once GUESTIFY_PLUGIN_DIR . 'system/ComponentDiscovery.php';
     require_once GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php';
 
-    // ROOT FIX: Ensure restUrl has trailing slash for proper API endpoint construction
+    // Ensure restUrl has trailing slash
     $rest_url = rest_url();
     if (substr($rest_url, -1) !== '/') {
         $rest_url .= '/';
@@ -107,27 +99,17 @@ function gmkb_inject_data_object_script() {
         'restUrl'           => esc_url_raw($rest_url),
         'restNonce'         => wp_create_nonce('wp_rest'),
         'componentRegistry' => gmkb_get_component_registry_data(),
-        'themes'            => gmkb_get_theme_data(), // ROOT FIX: Changed from 'themeData' to 'themes' for Vue compatibility
+        'themes'            => gmkb_get_theme_data(),
     );
-    
-    // DEBUG: Log the REST URL being set
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: Setting restUrl to: ' . $rest_url);
-        error_log('✅ GMKB: Expected API endpoint: ' . $rest_url . 'gmkb/v2/mediakit/' . $post_id);
-    }
 
     echo '<script type="text/javascript">';
     echo 'var gmkbData = ' . wp_json_encode($gmkb_data) . ';';
     echo '</script>';
-    
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: gmkbData object injected into head.');
-    }
 }
 
 
 // ===============================================
-// HELPER FUNCTIONS (Preserved from original file)
+// HELPER FUNCTIONS
 // ===============================================
 
 function gmkb_is_builder_page() {
@@ -154,22 +136,18 @@ function gmkb_get_post_id() {
 }
 
 function gmkb_get_component_registry_data() {
-    // ROOT FIX: ComponentDiscovery is not namespaced, use global class
     if (class_exists('ComponentDiscovery')) {
         $discovery = new ComponentDiscovery(GUESTIFY_PLUGIN_DIR . 'components/');
-        $discovery->scan(); // Ensure components are scanned
-        return $discovery->getComponents(); // Use correct method name
+        $discovery->scan();
+        return $discovery->getComponents();
     }
     return [];
 }
 
 function gmkb_get_theme_data() {
-    // ROOT FIX: Load themes using ThemeDiscovery and return flat array for Vue
-    // Gemini feedback: Vue expects direct array, not nested structure
-    
     $themes_array = array();
     
-    // Strategy 1: Try ThemeDiscovery for filesystem themes
+    // Try ThemeDiscovery for filesystem themes
     $theme_discovery_file = GUESTIFY_PLUGIN_DIR . 'system/ThemeDiscovery.php';
     if (file_exists($theme_discovery_file)) {
         require_once $theme_discovery_file;
@@ -181,14 +159,11 @@ function gmkb_get_theme_data() {
                 $theme_discovery->scan();
                 $themes = $theme_discovery->getThemes();
                 
-                // Convert to flat array with proper structure
                 foreach ($themes as $theme_id => $theme_data) {
-                    // ROOT FIX: Ensure ID is set - use theme_id from JSON or array key
                     $id = $theme_data['theme_id'] ?? $theme_id;
                     
-                    // Ensure theme has required fields for Vue
                     $themes_array[] = array(
-                        'id' => $id,  // Use the validated ID
+                        'id' => $id,
                         'name' => $theme_data['name'] ?? ucfirst(str_replace('_', ' ', $theme_id)),
                         'description' => $theme_data['description'] ?? '',
                         'colors' => $theme_data['colors'] ?? array(),
@@ -199,10 +174,6 @@ function gmkb_get_theme_data() {
                         'isBuiltIn' => true
                     );
                 }
-                
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('✅ GMKB: Loaded ' . count($themes_array) . ' themes via ThemeDiscovery');
-                }
             } catch (Exception $e) {
                 if (defined('WP_DEBUG') && WP_DEBUG) {
                     error_log('⚠️ GMKB: ThemeDiscovery failed: ' . $e->getMessage());
@@ -211,12 +182,8 @@ function gmkb_get_theme_data() {
         }
     }
     
-    // Strategy 2: Fallback to hardcoded themes if discovery failed
+    // Fallback themes
     if (empty($themes_array)) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('⚠️ GMKB: ThemeDiscovery not available, using fallback themes');
-        }
-        
         $themes_array = array(
             array(
                 'id' => 'professional_clean',
@@ -268,11 +235,10 @@ function gmkb_get_theme_data() {
         );
     }
     
-    // Strategy 3: Add custom themes from database
+    // Add custom themes from database
     $custom_themes = get_option('gmkb_custom_themes', array());
     if (is_array($custom_themes) && !empty($custom_themes)) {
         foreach ($custom_themes as $theme_id => $theme_data) {
-            // Ensure custom theme has ID
             if (!isset($theme_data['id'])) {
                 $theme_data['id'] = $theme_id;
             }
@@ -280,19 +246,8 @@ function gmkb_get_theme_data() {
             $theme_data['isBuiltIn'] = false;
             $themes_array[] = $theme_data;
         }
-        
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('✅ GMKB: Added ' . count($custom_themes) . ' custom themes from database');
-        }
     }
     
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('✅ GMKB: Total themes available: ' . count($themes_array));
-        $theme_ids = array_column($themes_array, 'id');
-        error_log('✅ GMKB: Theme IDs: ' . implode(', ', $theme_ids));
-    }
-    
-    // ROOT FIX: Return flat array, not nested structure (Vue compatibility)
     return $themes_array;
 }
 

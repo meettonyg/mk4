@@ -1,10 +1,13 @@
 /**
  * Data Validator - Ensures data integrity
  * Phase 6: Race Conditions & Optimization
+ * P0 FIX #9: XSS Sanitization integrated
  * 
  * @package GMKB
  * @version 2.0.0
  */
+
+import { sanitizeState as sanitizeForXSS, sanitizeComponentData } from './XSSSanitizer.js';
 
 export class DataValidator {
 
@@ -176,18 +179,21 @@ export class DataValidator {
   }
 
   /**
-   * Sanitize state data for saving
-   * Removes Vue reactivity wrappers and invalid data
+   * P0 FIX #9: Sanitize state data for saving
+   * Removes Vue reactivity wrappers and XSS vulnerabilities
    */
   static sanitizeState(state) {
     try {
-      // Deep clone to remove reactivity
+      // Step 1: Deep clone to remove reactivity
       const sanitized = JSON.parse(JSON.stringify(state));
 
-      // Clean components
-      if (sanitized.components) {
-        Object.keys(sanitized.components).forEach(id => {
-          const component = sanitized.components[id];
+      // Step 2: XSS sanitization (P0 FIX #9)
+      const xssSanitized = sanitizeForXSS(sanitized);
+
+      // Step 3: Clean components
+      if (xssSanitized.components) {
+        Object.keys(xssSanitized.components).forEach(id => {
+          const component = xssSanitized.components[id];
 
           // Remove Vue internal properties
           delete component.__v_skip;
@@ -202,9 +208,9 @@ export class DataValidator {
         });
       }
 
-      // Clean sections
-      if (sanitized.sections) {
-        sanitized.sections.forEach(section => {
+      // Step 4: Clean sections
+      if (xssSanitized.sections) {
+        xssSanitized.sections.forEach(section => {
           // Remove Vue internal properties
           delete section.__v_skip;
           delete section.__v_isRef;
@@ -222,7 +228,7 @@ export class DataValidator {
         });
       }
 
-      return sanitized;
+      return xssSanitized;
     } catch (error) {
       console.error('Failed to sanitize state:', error);
       throw new Error('State sanitization failed: ' + error.message);
