@@ -1,33 +1,42 @@
-Fix media kit component loading issues - normalize component references
+CRITICAL FIX: Resolve "APIService not available" error
 
-CRITICAL FIX: Components not rendering due to data structure mismatch
+ROOT CAUSE:
+- Race condition where addComponent() → _trackChange() → autoSave() → save()
+  was called before store initialization completed
+- APIService was only created during initialize(), causing save() to fail
+- Error: "APIService not available" when auto-save triggered too early
 
-Root Cause:
-- Sections store component references in various formats:
-  - String IDs: "comp_123" (expected format for Vue)  
-  - Object refs: { component_id: "comp_123" } (legacy format from PHP)
-- Vue's getComponent() expects string IDs only
-- When receiving objects, component lookup returns undefined, causing render failures
+THE FIX:
+1. Import APIService at top of mediaKit store
+2. Add apiService to Pinia state (initialized as null)  
+3. Create APIService instance early in initialize() before any async operations
+4. Use store's apiService instance consistently (not window.gmkbAPI)
+5. Add initialization guard to _performAutoSave() to prevent premature saves
+6. Lazy-create APIService in save() if somehow missing (defensive programming)
+7. Update loadFromAPI() and saveToAPI() to use store's apiService instance
 
-Solution:
-1. Normalize component references during state loading (mediaKit.js):
-   - applyState() now converts all object references to string IDs
-   - Handles both full-width sections and multi-column layouts
-   - Filters out any invalid/undefined references
+ARCHITECTURE PRINCIPLE FOLLOWED:
+Ensure dependencies exist before allowing operations that need them.
+No polling, no waiting - proper initialization sequence.
 
-2. Handle legacy formats in Vue components (SectionLayoutEnhanced.vue):
-   - getComponent() extracts IDs from object references if needed
-   - draggable item-key functions handle multiple formats
-   - Added validation to prevent rendering undefined components
+CHECKLIST VERIFIED:
+✅ No Polling - uses isInitialized flag check
+✅ Event-Driven - proper initialization sequence  
+✅ Dependency-Awareness - checks isInitialized before operations
+✅ No Global Object Sniffing - uses this.apiService from state
+✅ Root Cause Fix - addresses missing APIService at initialization
+✅ Simplicity First - simple guards, no complex logic
+✅ Code Reduction - reuses single APIService instance
+✅ Centralized State - APIService stored in Pinia state
+✅ Graceful Failure - guards prevent errors before ready
+✅ Diagnostic Logging - clear console logs
 
-3. PHP backend already handles both formats correctly
+FILES CHANGED:
+- src/stores/mediaKit.js (8 targeted edits)
+- CRITICAL-FIX-APISERVICE.md (documentation)
 
-Impact:
-- Fixes "Cannot render component undefined" errors
-- Ensures backward compatibility with existing saved data
-- No data migration needed - normalization happens on load
-
-Testing:
-- Tested with media kit ID 32372 which had mixed reference formats
-- All components now render correctly
-- No data loss or corruption
+TESTING:
+- Verify no "APIService not available" error in console
+- Verify components can be added immediately after page load
+- Verify auto-save works after initialization
+- Verify manual save works

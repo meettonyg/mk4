@@ -4,6 +4,7 @@ import { debounce } from '../utils/debounce';
 // P0 FIX #10: Removed EventBus import - using Pinia $subscribe instead
 import systemReadiness from '../services/SystemReadiness.js';
 import { deepClone, generateUniqueId, deepEqual } from '../utils/deepClone.js';
+import { APIService } from '../services/APIService.js';
 
 export const useMediaKitStore = defineStore('mediaKit', {
   state: () => ({
@@ -25,6 +26,9 @@ export const useMediaKitStore = defineStore('mediaKit', {
     
     // CRITICAL: Pods data stored here, fetched ONCE on initialize
     podsData: {},
+    
+    // CRITICAL FIX: API Service instance
+    apiService: null,
     
     // Meta state for error tracking and status
     isDirty: false,
@@ -301,6 +305,22 @@ export const useMediaKitStore = defineStore('mediaKit', {
       this.loadError = null;
 
       try {
+        // CRITICAL FIX: Initialize APIService first if not already created
+        if (!this.apiService) {
+          this.apiService = new APIService(
+            window.gmkbData?.restUrl,
+            window.gmkbData?.restNonce,
+            this.postId
+          );
+          
+          // Make globally available for debugging
+          window.gmkbAPI = this.apiService;
+          
+          if (window.gmkbData?.debugMode) {
+            console.log('✅ APIService initialized in store');
+          }
+        }
+        
         // P0 FIX #10: Removed eventBus.emit('store:initializing') - state flags are enough
         
         let data;
@@ -350,16 +370,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
             }
           }
         } else if (this.postId) {
-          // ROOT FIX: Use APIService with REST URL (not AJAX URL)
-          // Get APIService from window or create new instance
-          const apiService = window.gmkbAPI || window.GMKB?.apiService || new (await import('../services/APIService.js')).APIService(
-            window.gmkbData?.restUrl,     // ← Use REST URL
-            window.gmkbData?.restNonce,   // ← Use REST nonce
-            this.postId
-          );
-
-          // Load data via APIService (uses admin-ajax, not REST)
-          data = await apiService.load();
+          // ROOT FIX: Use the APIService we already created
+          // No need to create new instance - we have one in state
+          
+          // Load data via APIService
+          data = await this.apiService.load();
 
           if (!data) {
             throw new Error('No data returned from API');
@@ -489,14 +504,20 @@ export const useMediaKitStore = defineStore('mediaKit', {
           layout: this.sections.map(s => s.section_id) // Add layout for compatibility
         };
         
-        // OPTION C FIX: Use APIService which calls REST API v2
-        const apiService = window.gmkbAPI || window.GMKB?.apiService;
-        
-        if (!apiService) {
-          throw new Error('APIService not available');
+        // CRITICAL FIX: Ensure APIService exists, create if needed
+        if (!this.apiService) {
+          console.warn('⚠️ APIService not available, creating new instance...');
+          this.apiService = new APIService(
+            window.gmkbData?.restUrl,
+            window.gmkbData?.restNonce,
+            this.postId
+          );
+          window.gmkbAPI = this.apiService;
         }
         
-        const result = await apiService.save(state);
+        // OPTION C FIX: Use APIService which calls REST API v2
+        // Use our store's apiService instance
+        const result = await this.apiService.save(state);
         
         // Check response
         if (!result || !result.success) {
@@ -1386,6 +1407,14 @@ export const useMediaKitStore = defineStore('mediaKit', {
     
     // Actual auto-save implementation
     _performAutoSave: async function() {
+      // CRITICAL FIX: Check if store is initialized before auto-saving
+      if (!this.isInitialized) {
+        if (window.gmkbData?.debugMode) {
+          console.log('⏩ Auto-save skipped: Store not initialized yet');
+        }
+        return;
+      }
+      
       // ROOT FIX: Check if auto-save is enabled
       if (!this.autoSaveEnabled) {
         console.log('⏩ Auto-save disabled, skipping');
