@@ -218,6 +218,19 @@ export class APIService {
               signal: controller.signal
             });
 
+            // P0 FIX #10: Handle nonce expiration gracefully
+            if (response.status === 403) {
+              const error = await response.json();
+              if (error.code === 'rest_cookie_invalid_nonce' || error.code === 'rest_forbidden') {
+                console.error('⚠️ Nonce expired or invalid - page reload required');
+                // Dispatch event for UI to handle
+                document.dispatchEvent(new CustomEvent('gmkb:nonce-expired', {
+                  detail: { action: 'load' }
+                }));
+                throw new Error('Authentication expired. Please reload the page.');
+              }
+            }
+
             if (!response.ok) {
               const error = await response.json();
               throw new Error(error.message || `HTTP ${response.status}`);
@@ -372,14 +385,23 @@ export class APIService {
               signal: controller.signal
             });
 
-            if (!response.ok) {
+            // P0 FIX #10: Enhanced nonce expiration handling
+            if (response.status === 403) {
               const error = await response.json();
               
               // Handle nonce expiration gracefully
-              if (response.status === 403 || error.code === 'rest_forbidden') {
+              if (error.code === 'rest_cookie_invalid_nonce' || error.code === 'rest_forbidden') {
+                console.error('⚠️ Nonce expired or invalid - page reload required');
+                // Dispatch event for UI to handle
+                document.dispatchEvent(new CustomEvent('gmkb:nonce-expired', {
+                  detail: { action: 'save', unsavedData: payload }
+                }));
                 return { success: false, silent: true, reason: 'nonce_expired' };
               }
-              
+            }
+
+            if (!response.ok) {
+              const error = await response.json();
               throw new Error(error.message || `HTTP ${response.status}`);
             }
 

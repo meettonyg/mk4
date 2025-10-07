@@ -566,6 +566,10 @@ export const useMediaKitStore = defineStore('mediaKit', {
 
     // Component CRUD Operations
     addComponent(componentData) {
+      // P0 FIX #8: Sanitize component data to prevent XSS
+      if (window.GMKB?.services?.security) {
+        componentData = window.GMKB.services.security.sanitizeComponentData(componentData);
+      }
       // ROOT FIX: Clean the component type if it contains content
       // Sometimes drag data includes content, extract just the type
       if (componentData.type && componentData.type.length > 50) {
@@ -698,6 +702,11 @@ export const useMediaKitStore = defineStore('mediaKit', {
     },
 
     updateComponent(componentId, updates) {
+      // P0 FIX #8: Sanitize updates to prevent XSS
+      if (window.GMKB?.services?.security) {
+        updates = window.GMKB.services.security.sanitizeComponentData(updates);
+      }
+      
       if (this.components[componentId]) {
         this.components[componentId] = {
           ...this.components[componentId],

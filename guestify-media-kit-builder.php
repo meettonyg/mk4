@@ -269,135 +269,16 @@ class Guestify_Media_Kit_Builder {
     }
     
     public function isolated_builder_template_takeover() {
-        $use_pure_vue = defined('GMKB_USE_PURE_VUE') && GMKB_USE_PURE_VUE;
-        $use_pure_vue = $use_pure_vue || (isset($_GET['vue_mode']) && $_GET['vue_mode'] === 'pure');
-        
-        if ($use_pure_vue) {
-            return;
+        // P0 FIX #9: ALWAYS use Pure Vue - no PHP rendering
+        // PHP template takeover completely removed in favor of Vue SPA
+        // This maintains the hook for other plugins but doesn't render anything
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('✅ P0 FIX #9: Template takeover disabled - Pure Vue only');
         }
-        
-        $is_builder_page = false;
-        
-        if (is_page('media-kit') || is_page('guestify-media-kit')) {
-            $is_builder_page = true;
-        }
-        elseif (isset($_SERVER['REQUEST_URI'])) {
-            $uri = $_SERVER['REQUEST_URI'];
-            if (preg_match('#/tools/media-kit/?($|\?)#', $uri)) {
-                $is_builder_page = true;
-            }
-        }
-        
-        if (!$is_builder_page) {
-            return;
-        }
-        
-        global $gmkb_template_active;
-        $gmkb_template_active = true;
-        
-        $post_id = $this->detect_mkcg_post_id();
-        
-        $saved_state = array();
-        if ( $post_id > 0 ) {
-            $saved_state = get_post_meta( $post_id, 'gmkb_media_kit_state', true );
-            if ( empty( $saved_state ) ) {
-                $saved_state = array(
-                    'components' => array(),
-                    'layout' => array(),
-                    'globalSettings' => array()
-                );
-            }
-        }
-        
-        ?>
-        <!DOCTYPE html>
-        <html <?php language_attributes(); ?> class="gmkb-isolated">
-        <head>
-            <meta charset="<?php bloginfo( 'charset' ); ?>" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <meta name="robots" content="noindex, nofollow" />
-            <title>Media Kit Builder - <?php bloginfo('name'); ?></title>
-            
-            <style id="gmkb-isolation-styles">
-                body, html { 
-                    margin: 0; 
-                    padding: 0; 
-                    overflow: hidden; 
-                    height: 100vh; 
-                    width: 100vw; 
-                    background: #1a1a1a;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                }
-                
-                .gmkb-ready::before {
-                    content: 'PURE VUE ✓';
-                    position: fixed;
-                    top: 5px;
-                    left: 5px;
-                    background: #10b981;
-                    color: white;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-size: 10px;
-                    z-index: 10002;
-                    font-weight: bold;
-                }
-                
-                #wpadminbar { display: none !important; }
-                html { margin-top: 0 !important; }
-            </style>
-            
-            <?php wp_head(); ?>
-            
-            <link rel="stylesheet" href="<?php echo GUESTIFY_PLUGIN_URL . 'css/guestify-builder.css?v=' . time(); ?>" type="text/css" media="all" />
-        </head>
-        <body class="media-kit-builder-isolated gmkb-isolated-builder gmkb-pure-vue" data-post-id="<?php echo esc_attr($post_id); ?>" data-template-version="option-a-pure-vue">
-            
-            <div id="gmkb-template-error-boundary" style="display: none;">
-                <div style="
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: #fee;
-                    border: 2px solid #f88;
-                    padding: 30px;
-                    border-radius: 8px;
-                    text-align: center;
-                    color: #d44;
-                    max-width: 500px;
-                    z-index: 10004;
-                ">
-                    <h2>⚠️ Template Error</h2>
-                    <p>The builder template encountered an error.</p>
-                    <button onclick="location.reload()" style="
-                        background: #d44;
-                        color: white;
-                        border: none;
-                        padding: 10px 20px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        margin-top: 10px;
-                    ">Reload Builder</button>
-                </div>
-            </div>
-            
-            <?php
-            try {
-                echo do_shortcode('[guestify_media_kit]');
-            } catch (Exception $e) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log('GMKB Template Error: ' . $e->getMessage());
-                }
-                echo '<script>document.getElementById("gmkb-template-error-boundary").style.display = "block";</script>';
-            }
-            
-            wp_footer();
-            ?>
-        </body>
-        </html>
-        <?php
-        exit();
+        return;
+        // P0 FIX #9: All template logic removed - Vue handles everything
+        // The shortcode [guestify_media_kit] loads the Pure Vue template
+        // No PHP rendering needed
     }
 
     /**
@@ -733,34 +614,62 @@ class Guestify_Media_Kit_Builder {
     
     // LEGACY CLEANUP: get_component_loader() removed (ComponentLoader archived)
     
+    /**
+     * P0 FIX #11: Enhanced post ID detection with validation
+     * Ensures post exists and user has permission before allowing access
+     */
     private function detect_mkcg_post_id() {
         $post_id = 0;
         
+        // P0 FIX #11: Sanitize and validate all inputs
         if (isset($_GET['post_id']) && is_numeric($_GET['post_id'])) {
-            $post_id = intval($_GET['post_id']);
+            $post_id = absint($_GET['post_id']); // Use absint for safer integer conversion
         }
         elseif (isset($_GET['p']) && is_numeric($_GET['p'])) {
-            $post_id = intval($_GET['p']);
+            $post_id = absint($_GET['p']);
         }
         elseif (isset($_GET['page_id']) && is_numeric($_GET['page_id'])) {
-            $post_id = intval($_GET['page_id']);
+            $post_id = absint($_GET['page_id']);
         }
         elseif (isset($_GET['mkcg_id']) && is_numeric($_GET['mkcg_id'])) {
-            $post_id = intval($_GET['mkcg_id']);
+            $post_id = absint($_GET['mkcg_id']);
         }
         elseif (isset($_GET['media_kit_id']) && is_numeric($_GET['media_kit_id'])) {
-            $post_id = intval($_GET['media_kit_id']);
+            $post_id = absint($_GET['media_kit_id']);
         }
         elseif (function_exists('get_the_ID') && get_the_ID()) {
-            $post_id = get_the_ID();
+            $post_id = absint(get_the_ID());
         }
         elseif (isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
-            $post_id = intval($GLOBALS['post']->ID);
+            $post_id = absint($GLOBALS['post']->ID);
         }
         
+        // P0 FIX #11: Validate post exists and is accessible
         if ($post_id > 0) {
             $post = get_post($post_id);
-            if (!$post || $post->post_status === 'trash') {
+            
+            // Check if post exists
+            if (!$post) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB: Invalid post ID - post does not exist: ' . $post_id);
+                }
+                return 0;
+            }
+            
+            // Check if post is trashed
+            if ($post->post_status === 'trash') {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB: Invalid post ID - post is trashed: ' . $post_id);
+                }
+                return 0;
+            }
+            
+            // P0 FIX #11: Check user permissions
+            // User must be able to edit the post to use the builder
+            if (!current_user_can('edit_post', $post_id)) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('GMKB: User lacks permission to edit post: ' . $post_id);
+                }
                 return 0;
             }
         }

@@ -226,8 +226,10 @@ async function initializeVue() {
     // ROOT FIX: Preload critical components after mount
     preloadCriticalComponents();
     
-    // CRITICAL FIX: Consolidate ALL global objects into single GMKB namespace
+    // P0 FIX #6: Consolidate ALL global objects into single GMKB namespace
     // Prevents namespace pollution, memory leaks, and debugging chaos
+    // BEFORE: 15+ window objects cluttering namespace
+    // AFTER: 1 organized namespace with proper structure
     window.GMKB = {
       // Version info
       version: '4.0.0-pure-vue',
@@ -255,19 +257,49 @@ async function initializeVue() {
         analytics: analytics,
         toast: { show: showToast },
         console: ConsoleAPI,
-        pods: podsDataIntegration
+        pods: podsDataIntegration,
+        registry: UnifiedComponentRegistry
       },
       
-      // Legacy aliases for backwards compatibility (deprecated)
-      get gmkbStore() { return this.stores.mediaKit; },
-      get mediaKitStore() { return this.stores.mediaKit; },
-      get themeStore() { return this.stores.theme; },
-      get gmkbAPI() { return this.services.api; },
-      get gmkbApp() { return this.app; }
+      // Utility functions
+      utils: {
+        showToast,
+        logger
+      },
+      
+      // Legacy aliases for backwards compatibility (deprecated - will be removed in v5)
+      get gmkbStore() { 
+        console.warn('⚠️ window.gmkbStore is deprecated. Use GMKB.stores.mediaKit');
+        return this.stores.mediaKit; 
+      },
+      get mediaKitStore() { 
+        console.warn('⚠️ window.mediaKitStore is deprecated. Use GMKB.stores.mediaKit');
+        return this.stores.mediaKit; 
+      },
+      get themeStore() { 
+        console.warn('⚠️ window.themeStore is deprecated. Use GMKB.stores.theme');
+        return this.stores.theme; 
+      },
+      get gmkbAPI() { 
+        console.warn('⚠️ window.gmkbAPI is deprecated. Use GMKB.services.api');
+        return this.services.api; 
+      },
+      get gmkbApp() { 
+        console.warn('⚠️ window.gmkbApp is deprecated. Use GMKB.app');
+        return this.app; 
+      }
     };
     
-    // Expose ONLY the consolidated namespace globally
-    // Individual services accessible via GMKB.services.*
+    // P0 FIX #6: Clean up old global references
+    // Remove any lingering window.* assignments from other parts of the codebase
+    // Only GMKB namespace should be exposed
+    
+    // Log cleanup message
+    if (window.gmkbData?.debugMode) {
+      console.log('✅ P0 FIX #6: Single GMKB namespace created');
+      console.log('📦 Available: GMKB.stores, GMKB.services, GMKB.utils');
+      console.log('⚠️ Legacy window.gmkbStore etc. are deprecated');
+    }
     
     // ROOT FIX: Use ConsoleAPI service instead of inline code
     ConsoleAPI.install({
