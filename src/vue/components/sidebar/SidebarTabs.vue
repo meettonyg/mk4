@@ -514,7 +514,7 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 /* Global box-sizing reset */
 *,
 *::before,
@@ -533,7 +533,8 @@ export default {
   transition: all 0.2s;
 }
 
-.gmkb-sidebar.dark-mode {
+/* Dark mode */
+body.dark-mode .gmkb-sidebar {
   background: #0f172a;
   border-right-color: #334155;
 }
@@ -546,7 +547,7 @@ export default {
   flex-shrink: 0;
 }
 
-.dark-mode .sidebar-tabs {
+body.dark-mode .sidebar-tabs {
   border-bottom-color: #334155;
   background: #1e293b;
 }
@@ -573,11 +574,11 @@ export default {
   background: rgba(0, 0, 0, 0.02);
 }
 
-.dark-mode .tab-button {
+body.dark-mode .tab-button {
   color: #9ca3af;
 }
 
-.dark-mode .tab-button:hover {
+body.dark-mode .tab-button:hover {
   color: #f3f4f6;
   background: rgba(255, 255, 255, 0.05);
 }
@@ -588,7 +589,7 @@ export default {
   background: white;
 }
 
-.dark-mode .tab-button.active {
+body.dark-mode .tab-button.active {
   background: #0f172a;
 }
 
@@ -598,7 +599,7 @@ export default {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.dark-mode .search-container {
+body.dark-mode .search-container {
   border-bottom-color: #334155;
 }
 
@@ -631,7 +632,7 @@ export default {
   box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
 }
 
-.dark-mode .search-input {
+body.dark-mode .search-input {
   background: #1e293b;
   border-color: #334155;
   color: #f3f4f6;
@@ -652,7 +653,7 @@ export default {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.dark-mode .category-section {
+body.dark-mode .category-section {
   border-bottom-color: #334155;
 }
 
@@ -672,7 +673,7 @@ export default {
   background: #f9fafb;
 }
 
-.dark-mode .category-header:hover {
+body.dark-mode .category-header:hover {
   background: #1e293b;
 }
 
@@ -695,7 +696,7 @@ export default {
   color: #374151;
 }
 
-.dark-mode .category-label {
+body.dark-mode .category-label {
   color: #d1d5db;
 }
 
@@ -746,7 +747,7 @@ export default {
   transform: scale(0.95);
 }
 
-.dark-mode .component-card {
+body.dark-mode .component-card {
   background: #1e293b;
   border-color: #334155;
 }
@@ -768,7 +769,7 @@ export default {
   border-radius: 0;
 }
 
-.dark-mode .component-icon-wrapper {  
+body.dark-mode .component-icon-wrapper {  
   background: transparent;
 }
 
@@ -784,12 +785,12 @@ export default {
   opacity: 1;
 }
 
-.dark-mode .component-icon-wrapper i {
+body.dark-mode .component-icon-wrapper i {
   color: #9ca3af;
   opacity: 0.6;
 }
 
-.dark-mode .component-card:hover .component-icon-wrapper i {
+body.dark-mode .component-card:hover .component-icon-wrapper i {
   color: #d1d5db;
   opacity: 1;
 }
@@ -802,7 +803,7 @@ export default {
   line-height: 1.3;
 }
 
-.dark-mode .component-label {
+body.dark-mode .component-label {
   color: #d1d5db;
 }
 
@@ -866,7 +867,7 @@ export default {
   margin: 0 0 12px;
 }
 
-.dark-mode .panel-section-title {
+body.dark-mode .panel-section-title {
   color: #d1d5db;
 }
 
@@ -901,12 +902,12 @@ export default {
   box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15);
 }
 
-.dark-mode .layout-card {
+body.dark-mode .layout-card {
   background: #1e293b;
   border-color: #334155;
 }
 
-.dark-mode .layout-card.active {
+body.dark-mode .layout-card.active {
   background: rgba(236, 72, 153, 0.1);
 }
 
@@ -921,7 +922,7 @@ export default {
   flex-shrink: 0;
 }
 
-.dark-mode .layout-preview {
+body.dark-mode .layout-preview {
   background: #334155;
 }
 
@@ -930,7 +931,7 @@ export default {
   border-radius: 2px;
 }
 
-.dark-mode .layout-column {
+body.dark-mode .layout-column {
   background: #6b7280;
 }
 
@@ -946,7 +947,7 @@ export default {
   margin-bottom: 2px;
 }
 
-.dark-mode .layout-name {
+body.dark-mode .layout-name {
   color: #f3f4f6;
 }
 
@@ -955,7 +956,7 @@ export default {
   color: #6b7280;
 }
 
-.dark-mode .layout-description {
+body.dark-mode .layout-description {
   color: #9ca3af;
 }
 
@@ -999,13 +1000,13 @@ export default {
   border-color: #9ca3af;
 }
 
-.dark-mode .action-btn {
+body.dark-mode .action-btn {
   background: #1e293b;
   border-color: #334155;
   color: #d1d5db;
 }
 
-.dark-mode .action-btn:hover {
+body.dark-mode .action-btn:hover {
   background: #334155;
 }
 
@@ -1035,12 +1036,12 @@ export default {
   background: #f9fafb;
 }
 
-.dark-mode .section-item {
+body.dark-mode .section-item {
   background: #1e293b;
   border-color: #334155;
 }
 
-.dark-mode .section-item:hover {
+body.dark-mode .section-item:hover {
   background: #334155;
 }
 
@@ -1077,7 +1078,7 @@ export default {
   margin-bottom: 2px;
 }
 
-.dark-mode .section-name {
+body.dark-mode .section-name {
   color: #f3f4f6;
 }
 
@@ -1086,7 +1087,7 @@ export default {
   color: #6b7280;
 }
 
-.dark-mode .section-meta {
+body.dark-mode .section-meta {
   color: #9ca3af;
 }
 
@@ -1139,7 +1140,7 @@ export default {
   box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15);
 }
 
-.dark-mode .theme-card {
+body.dark-mode .theme-card {
   background: #1e293b;
   border-color: #334155;
 }
@@ -1160,7 +1161,7 @@ export default {
   color: #111827;
 }
 
-.dark-mode .theme-name {
+body.dark-mode .theme-name {
   color: #f3f4f6;
 }
 
@@ -1181,7 +1182,7 @@ export default {
   background: #f9fafb;
 }
 
-.dark-mode .secondary-btn {
+body.dark-mode .secondary-btn {
   background: #1e293b;
   border-color: #334155;
   color: #d1d5db;
@@ -1200,7 +1201,7 @@ export default {
   margin-bottom: 6px;
 }
 
-.dark-mode .input-label {
+body.dark-mode .input-label {
   color: #d1d5db;
 }
 
@@ -1221,7 +1222,7 @@ export default {
   box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
 }
 
-.dark-mode .text-input {
+body.dark-mode .text-input {
   background: #1e293b;
   border-color: #334155;
   color: #f3f4f6;
@@ -1251,7 +1252,7 @@ export default {
   border-color: #d1d5db;
 }
 
-.dark-mode .customize-btn {
+body.dark-mode .customize-btn {
   background: #1e293b;
   border-color: #334155;
   color: #d1d5db;
@@ -1275,7 +1276,7 @@ export default {
   background: #f9fafb;
 }
 
-.dark-mode .sidebar-footer {
+body.dark-mode .sidebar-footer {
   border-top-color: #334155;
   background: #1e293b;
 }
@@ -1315,7 +1316,7 @@ export default {
   background: #f3f4f6;
 }
 
-.dark-mode .sidebar-content::-webkit-scrollbar-track {
+body.dark-mode .sidebar-content::-webkit-scrollbar-track {
   background: #1e293b;
 }
 
@@ -1324,7 +1325,7 @@ export default {
   border-radius: 3px;
 }
 
-.dark-mode .sidebar-content::-webkit-scrollbar-thumb {
+body.dark-mode .sidebar-content::-webkit-scrollbar-thumb {
   background: #4b5563;
 }
 
@@ -1332,7 +1333,7 @@ export default {
   background: #9ca3af;
 }
 
-.dark-mode .sidebar-content::-webkit-scrollbar-thumb:hover {
+body.dark-mode .sidebar-content::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
 </style>

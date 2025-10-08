@@ -750,6 +750,50 @@ onUnmounted(() => {
   transition: all 0.3s ease;
 }
 
+/* Global dark mode overrides - Clean approach */
+body.dark-mode .gmkb-toolbar {
+  background: #0f172a;
+  border-bottom-color: #334155;
+}
+
+body.dark-mode .gmkb-toolbar__editing-label {
+  color: #9ca3af;
+}
+
+body.dark-mode .gmkb-toolbar__document-title {
+  color: #f3f4f6;
+}
+
+body.dark-mode .gmkb-toolbar__device-selector {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark-mode .gmkb-toolbar__device-btn {
+  color: #cbd5e1;
+}
+
+body.dark-mode .gmkb-toolbar__device-btn:hover {
+  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .gmkb-toolbar__save-status {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .gmkb-toolbar__btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #334155;
+  color: #d1d5db;
+}
+
+body.dark-mode .gmkb-toolbar__btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #475569;
+}
+
 /* Desktop - Full width */
 #media-kit-preview.gmkb-device--desktop {
   max-width: 100%;
