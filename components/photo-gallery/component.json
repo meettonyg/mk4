@@ -2,6 +2,7 @@
   "type": "photo-gallery",
   "name": "Photo Gallery",
   "description": "Image gallery with lightbox",
+  "icon": "fa-solid fa-image",
   "category": "media",
   "version": "1.0.0",
   "renderers": {

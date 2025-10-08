@@ -2,6 +2,7 @@
   "type": "testimonials",
   "name": "Testimonials",
   "description": "Client testimonials carousel",
+  "icon": "fa-solid fa-comment",
   "category": "social-proof",
   "version": "1.0.0",
   "renderers": {

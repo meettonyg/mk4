@@ -2,6 +2,7 @@
   "type": "hero",
   "name": "Hero",
   "description": "Hero section with headline, description and call-to-action",
+  "icon": "fa-solid fa-square",
   "category": "content",
   "version": "1.0.0",
   "renderers": {

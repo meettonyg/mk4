@@ -2,6 +2,7 @@
   "type": "podcast-player",
   "name": "Podcast Player",
   "description": "Podcast episodes player",
+  "icon": "fa-solid fa-microphone",
   "category": "media",
   "version": "1.0.0",
   "renderers": {

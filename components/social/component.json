@@ -2,6 +2,7 @@
   "type": "social",
   "name": "Social Media",
   "description": "Social media links and icons",
+  "icon": "fa-solid fa-share-nodes",
   "category": "social",
   "version": "1.0.0",
   "renderers": {

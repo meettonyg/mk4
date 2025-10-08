@@ -2,6 +2,7 @@
   "type": "logo-grid",
   "name": "Logo Grid",
   "description": "Display client or partner logos",
+  "icon": "fa-solid fa-grip",
   "category": "social-proof",
   "version": "1.0.0",
   "renderers": {

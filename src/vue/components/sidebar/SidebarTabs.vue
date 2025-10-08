@@ -72,7 +72,9 @@
                 </svg>
               </div>
               
-              <div class="component-icon-wrapper" v-html="component.icon"></div>
+              <div class="component-icon-wrapper">
+                <i :class="component.icon"></i>
+              </div>
               
               <span class="component-label">{{ component.label }}</span>
             </div>
@@ -275,47 +277,6 @@ export default {
     }));
     const draggingComponent = ref(null);
     
-    // Component labels and icons mapping
-    const componentLabels = {
-      'hero': 'Hero',
-      'biography': 'Biography',
-      'topics': 'Topics',
-      'topics-questions': 'Topics & Questions',
-      'questions': 'Questions',
-      'guest-intro': 'Guest Intro',
-      'contact': 'Contact',
-      'social': 'Social',
-      'testimonials': 'Testimonials',
-      'stats': 'Stats',
-      'authority-hook': 'Authority Hook',
-      'logo-grid': 'Logo Grid',
-      'call-to-action': 'Call to Action',
-      'booking-calendar': 'Booking',
-      'video-intro': 'Video Intro',
-      'photo-gallery': 'Gallery',
-      'podcast-player': 'Podcast'
-    };
-    
-    const componentIcons = {
-      'hero': '🎯',
-      'biography': '📄',
-      'topics': '💬',
-      'topics-questions': '❓',
-      'questions': '❓',
-      'guest-intro': '👋',
-      'contact': '📧',
-      'social': '🔗',
-      'testimonials': '⭐',
-      'stats': '📊',
-      'authority-hook': '🏆',
-      'logo-grid': '🖼️',
-      'call-to-action': '⚡',
-      'booking-calendar': '📅',
-      'video-intro': '🎥',
-      'photo-gallery': '📷',
-      'podcast-player': '🎙️'
-    };
-    
     // Tabs
     const tabs = [
       { id: 'components', label: 'Components', icon: '☰' },
@@ -323,7 +284,7 @@ export default {
       { id: 'settings', label: 'Settings', icon: '⚙️' }
     ];
     
-    // Dynamic categories from registry
+    // Dynamic categories from registry (NO FALLBACKS - all icons in component.json)
     const categories = computed(() => {
       const registryComponents = UnifiedComponentRegistry.getAll();
       
@@ -334,8 +295,10 @@ export default {
       registryComponents.forEach(comp => {
         const componentData = {
           id: comp.type,
-          icon: componentIcons[comp.type] || '📦',
-          label: componentLabels[comp.type] || comp.name || comp.type,
+          // Read icon directly from component.json (required field)
+          icon: comp.icon || 'fa-solid fa-cube',
+          // Read label directly from component.json
+          label: comp.name || comp.type,
           isPro: comp.isPremium || false
         };
         
@@ -801,25 +764,26 @@ export default {
   background: transparent;
 }
 
-.component-icon {  
-  font-size: 28px;
-  filter: grayscale(100%) contrast(0.3) brightness(0.7);
-  opacity: 0.8;
+.component-icon-wrapper i {
+  font-size: 24px;
+  color: #6b7280;
+  opacity: 0.7;
   transition: all 0.2s;
 }
 
-.component-card:hover .component-icon {
-  filter: grayscale(100%) contrast(0.5) brightness(0.6);
+.component-card:hover .component-icon-wrapper i {
+  color: #374151;
   opacity: 1;
 }
 
-.dark-mode .component-icon {
-  filter: grayscale(100%) contrast(0.5) brightness(1.3) invert(1);
+.dark-mode .component-icon-wrapper i {
+  color: #9ca3af;
   opacity: 0.6;
 }
 
-.dark-mode .component-card:hover .component-icon {
-  opacity: 0.9;
+.dark-mode .component-card:hover .component-icon-wrapper i {
+  color: #d1d5db;
+  opacity: 1;
 }
 
 .component-label {

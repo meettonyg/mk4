@@ -2,6 +2,7 @@
   "type": "biography",
   "name": "Biography",
   "description": "Biography section with image and text content",
+  "icon": "fa-solid fa-file-lines",
   "category": "content",
   "version": "1.0.0",
   "renderers": {

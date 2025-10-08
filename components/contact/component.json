@@ -2,6 +2,7 @@
   "type": "contact",
   "name": "Contact",
   "description": "Contact information and form",
+  "icon": "fa-solid fa-envelope",
   "category": "contact",
   "version": "1.0.0",
   "renderers": {

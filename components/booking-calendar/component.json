@@ -2,6 +2,7 @@
   "type": "booking-calendar",
   "name": "Booking Calendar",
   "description": "Appointment booking calendar",
+  "icon": "fa-solid fa-calendar",
   "category": "conversion",
   "version": "1.0.0",
   "renderers": {

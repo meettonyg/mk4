@@ -2,6 +2,7 @@
   "type": "topics-questions",
   "name": "Topics & Questions",
   "description": "Combined topics and Q&A section with flexible display modes",
+  "icon": "fa-solid fa-circle-question",
   "category": "content",
   "version": "1.1.0",
   "renderers": {

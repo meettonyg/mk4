@@ -2,6 +2,7 @@
   "type": "authority-hook",
   "name": "Authority Hook",
   "description": "Establish credibility and authority",
+  "icon": "fa-solid fa-layer-group",
   "category": "social-proof",
   "version": "1.0.0",
   "renderers": {

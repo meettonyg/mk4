@@ -2,6 +2,7 @@
   "type": "stats",
   "name": "Statistics",
   "description": "Display key statistics and numbers",
+  "icon": "fa-solid fa-chart-column",
   "category": "social-proof",
   "version": "1.0.0",
   "renderers": {

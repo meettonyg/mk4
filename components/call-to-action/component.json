@@ -2,6 +2,7 @@
   "type": "call-to-action",
   "name": "Call to Action",
   "description": "Call to action section with buttons",
+  "icon": "fa-solid fa-bolt",
   "category": "conversion",
   "version": "1.0.0",
   "renderers": {
