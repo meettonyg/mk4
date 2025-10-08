@@ -5,9 +5,16 @@
       @save="save"
       @undo="store.undo"
       @redo="store.redo"
+      @export="exportMediaKit"
+      @share="shareMediaKit"
+      @open-theme="openThemeCustomizer"
+      @device-change="handleDeviceChange"
+      @dark-mode-change="handleDarkModeChange"
       :can-undo="store.canUndo"
       :can-redo="store.canRedo"
       :save-status="store.saveStatus"
+      :document-title="documentTitle"
+      :device-mode="deviceMode"
     />
 
     <div class="builder-content">
@@ -79,6 +86,8 @@ const { sections } = storeToRefs(store)
 const showSectionSelector = ref(false)
 const isEditMode = ref(true)
 const notifications = ref([])
+const deviceMode = ref('desktop')
+const documentTitle = computed(() => store.title || 'Untitled Media Kit')
 
 // Section management
 function addSection(layout = 'full_width') {
@@ -161,6 +170,41 @@ async function save() {
   } catch (error) {
     showNotification(`Save failed: ${error.message}`, 'error')
   }
+}
+
+// Export handler
+function exportMediaKit() {
+  document.dispatchEvent(new CustomEvent('gmkb:open-export'))
+  console.log('✅ Opened export modal')
+}
+
+// Share handler
+function shareMediaKit() {
+  // TODO: Implement share functionality
+  showNotification('Share functionality coming soon', 'info')
+}
+
+// Theme customizer handler
+function openThemeCustomizer() {
+  document.dispatchEvent(new CustomEvent('gmkb:open-theme-customizer'))
+  console.log('✅ Opened theme customizer')
+}
+
+// Device change handler
+function handleDeviceChange(device) {
+  deviceMode.value = device
+  document.dispatchEvent(new CustomEvent('gmkb:device-change', {
+    detail: { device }
+  }))
+  console.log('✅ Device mode changed to:', device)
+}
+
+// Dark mode handler
+function handleDarkModeChange(isDark) {
+  document.dispatchEvent(new CustomEvent('gmkb:dark-mode-change', {
+    detail: { isDark }
+  }))
+  console.log('✅ Dark mode:', isDark ? 'enabled' : 'disabled')
 }
 
 // Notification system

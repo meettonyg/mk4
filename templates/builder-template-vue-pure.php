@@ -60,8 +60,10 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             padding: 0;
             height: 100vh;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+            background: #f8f9fb;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         #app {
@@ -75,7 +77,25 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gmkb-loading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)" /></svg>');
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(20px, 20px); }
         }
 
         .gmkb-loading__content {
@@ -83,16 +103,20 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             color: white;
             max-width: 500px;
             padding: 40px;
+            position: relative;
+            z-index: 1;
         }
 
         .gmkb-loading__spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
+            width: 64px;
+            height: 64px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
             border-top-color: white;
+            border-right-color: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
             margin: 0 auto 30px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
         }
 
         @keyframes spin {
@@ -100,15 +124,19 @@ if (!in_array($post->post_type, $allowed_post_types)) {
         }
 
         .gmkb-loading__title {
-            font-size: 28px;
+            font-size: 32px;
             margin: 0 0 12px;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
         .gmkb-loading__message {
             font-size: 16px;
-            opacity: 0.9;
+            opacity: 0.95;
             margin: 0;
+            font-weight: 500;
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
         }
 
         /* PHASE 6: Error screen */
@@ -163,66 +191,100 @@ if (!in_array($post->post_type, $allowed_post_types)) {
             margin-top: 0 !important;
         }
         
-        /* Builder UI Structure */
+        /* Builder UI Structure - Enhanced Design */
         #gmkb-builder-wrapper {
             width: 100%;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            padding-top: 60px; /* Account for fixed toolbar */
+            padding-top: 0;
         }
         
         #gmkb-toolbar {
             flex-shrink: 0;
             z-index: 100;
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(to right, #1e293b, #0f172a);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         
         #gmkb-main-content {
             flex: 1;
             display: flex;
             overflow: hidden;
-            /* Remove fixed height - let it flex naturally */
-            padding-top: 0; /* Toolbar should take its space naturally via flex */
+            background: #f8f9fb;
         }
         
         #gmkb-sidebar {
             flex-shrink: 0;
-            width: 300px;
+            width: 320px;
             height: 100%;
-            overflow: hidden; /* Let child component handle scroll */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            margin-top: 0; /* Ensure no negative margin */
-            position: relative; /* Ensure proper stacking */
+            position: relative;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
         }
         
         #media-kit-preview {
             flex: 1;
             overflow-y: auto;
-            background: #f9fafb;
-            padding: 20px;
-            transition: all 0.3s ease;
+            background: #f8f9fb;
+            padding: 32px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        /* Device preview styles */
+        /* Enhanced scrollbar for preview */
+        #media-kit-preview::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #media-kit-preview::-webkit-scrollbar-track {
+            background: #e5e7eb;
+        }
+        
+        #media-kit-preview::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        #media-kit-preview::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Device preview styles - Enhanced */
         #media-kit-preview.device-desktop {
-            max-width: 100%;
-            margin: 0;
-            box-shadow: none;
+            padding: 32px;
         }
         
         #media-kit-preview.device-tablet {
+            padding: 48px 32px;
+        }
+        
+        #media-kit-preview.device-tablet > * {
             max-width: 768px;
-            margin: 0 auto;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin-left: auto;
+            margin-right: auto;
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+            overflow: hidden;
         }
         
         #media-kit-preview.device-mobile {
+            padding: 48px 32px;
+        }
+        
+        #media-kit-preview.device-mobile > * {
             max-width: 375px;
-            margin: 0 auto;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin-left: auto;
+            margin-right: auto;
+            background: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 24px;
+            overflow: hidden;
         }
         
         /* Show builder wrapper when Vue is ready */
