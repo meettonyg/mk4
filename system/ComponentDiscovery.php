@@ -375,99 +375,22 @@ class ComponentDiscovery {
     
     /**
      * ROOT FIX: Ensure topics component is properly registered
-     * Force registration even if component.json is missing or invalid
+     * REMOVED: This method was overwriting component.json with hardcoded values
+     * component.json is now the single source of truth
      */
     public function ensure_topics_component_registered() {
-        // ROOT FIX: Check BOTH topics and topics-questions components
-        $components_to_register = array(
-            'topics' => array(
-                'name' => 'Speaking Topics',
-                'description' => 'Showcase your areas of expertise and speaking topics',
-                'category' => 'essential',
-                'icon' => 'topics-icon.svg',
-                'type' => 'topics',
-                'order' => 3,
-                'has_vue_renderer' => true  // ROOT FIX: Mark as having Vue renderer
-            ),
-            'topics-questions' => array(
-                'name' => 'Topics & Questions',
-                'description' => 'Combined topics and questions component',
-                'category' => 'essential',
-                'icon' => 'topics-questions-icon.svg',
-                'type' => 'topics-questions',
-                'order' => 4,
-                'has_vue_renderer' => true  // ROOT FIX: Mark as having Vue renderer
-            )
-        );
+        // ARCHITECTURE FIX: Do nothing - component.json is authoritative
+        // This method previously force-registered topics with hardcoded icons,
+        // which violated the self-contained component architecture.
+        // 
+        // All component data should come from component.json files.
+        // If a component needs special handling, update its component.json,
+        // not this discovery class.
         
-        foreach ($components_to_register as $component_type => $base_config) {
-            $component_dir = $this->componentsDir . '/' . $component_type;
-            
-            if (!is_dir($component_dir)) {
-                if (defined('WP_DEBUG') && WP_DEBUG) {
-                    error_log("GMKB ROOT FIX: {$component_type} component directory not found: {$component_dir}");
-                }
-                continue;
-            }
-
-            // Build full config
-            $topics_config = array_merge($base_config, array(
-                'template' => $component_dir . '/template.php',
-                'script' => $component_dir . '/script.js',
-                'panel_script' => $component_dir . '/panel-script.js',
-                'design_panel' => $component_dir . '/design-panel.php',
-                'ajax_handler' => $component_dir . '/ajax-handler.php',
-                'directory' => $component_type,
-                'isPremium' => false,
-                'dependencies' => array(),
-                'root_fix' => true,
-                'single_step_render' => true
-            ));
-
-            // Verify all required files exist
-            $required_files = array('template', 'ajax_handler');
-            $all_files_exist = true;
-            foreach ($required_files as $file_key) {
-                if (isset($topics_config[$file_key]) && !file_exists($topics_config[$file_key])) {
-                    if (defined('WP_DEBUG') && WP_DEBUG) {
-                        error_log("GMKB ROOT FIX: Required {$component_type} file missing: {$topics_config[$file_key]}");
-                    }
-                    $all_files_exist = false;
-                    break;
-                }
-            }
-            
-            if (!$all_files_exist) {
-                continue;
-            }
-
-            // Force add to components array (overwrite if exists)
-            $this->components[$component_type] = $topics_config;
-            
-            // Ensure essential category exists
-            if (!isset($this->categories['essential'])) {
-                $this->categories['essential'] = array();
-            }
-            
-            // Check if component is already in essential category
-            $component_in_category = false;
-            foreach ($this->categories['essential'] as $existing_component) {
-                if (isset($existing_component['directory']) && $existing_component['directory'] === $component_type) {
-                    $component_in_category = true;
-                    break;
-                }
-            }
-            
-            // Add to category if not already there
-            if (!$component_in_category) {
-                $this->categories['essential'][] = $topics_config;
-            }
-
-            if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log("GMKB ROOT FIX: {$component_type} component force-registered successfully");
-            }
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('ComponentDiscovery: ensure_topics_component_registered() called but doing nothing (using component.json instead)');
         }
-
+        
         return true;
     }
     

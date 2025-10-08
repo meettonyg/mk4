@@ -2,7 +2,7 @@
   "type": "topics",
   "name": "Speaking Topics",
   "description": "Display speaking or expertise topics",
-  "icon": "fa-solid fa-message",
+  "icon": "fa-solid fa-bullhorn",
   "category": "content",
   "version": "1.0.0",
   "renderers": {
