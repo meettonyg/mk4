@@ -401,7 +401,7 @@
               </div>
             </button>
           </div>
-          <button class="secondary-btn">Browse All Themes</button>
+          <button class="secondary-btn" @click="openThemeCustomizer">Browse All Themes</button>
         </div>
 
         <div class="panel-section">
@@ -422,15 +422,15 @@
 
         <div class="panel-section">
           <h3 class="panel-section-title">Customize</h3>
-          <button class="customize-btn">
+          <button class="customize-btn" @click="openThemeCustomizer('colors')">
             <div class="customize-icon">🎨</div>
             <span>Global Colors</span>
           </button>
-          <button class="customize-btn">
+          <button class="customize-btn" @click="openThemeCustomizer('typography')">
             <div class="customize-icon">📝</div>
             <span>Global Fonts</span>
           </button>
-          <button class="customize-btn">
+          <button class="customize-btn" @click="openThemeCustomizer('spacing')">
             <div class="customize-icon">⚙️</div>
             <span>Advanced Settings</span>
           </button>
@@ -635,6 +635,9 @@ export default {
       store.theme = themeId;
       store._trackChange();
       
+      // CRITICAL FIX: Also update theme store to maintain sync
+      themeStore.selectTheme(themeId);
+      
       document.dispatchEvent(new CustomEvent('gmkb:change-theme', {
         detail: { themeId }
       }));
@@ -793,6 +796,13 @@ export default {
       updatePageBackground();
     };
     
+    // Open theme customizer
+    const openThemeCustomizer = (panel = 'themes') => {
+      // CRITICAL FIX: Pass panel directly to openCustomizer
+      themeStore.openCustomizer(panel);
+      console.log('✅ Opened theme customizer:', panel);
+    };
+    
     // Refresh components from registry
     const refreshComponents = () => {
       console.log('✅ Refreshed components from registry');
@@ -885,7 +895,8 @@ export default {
       handleFooterAction,
       updatePageBackground,
       openMediaLibrary,
-      removeBackgroundImage
+      removeBackgroundImage,
+      openThemeCustomizer
     };
   }
 };
