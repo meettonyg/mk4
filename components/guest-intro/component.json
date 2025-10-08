@@ -2,7 +2,7 @@
   "type": "guest-intro",
   "name": "Guest Introduction",
   "description": "Guest speaker introduction",
-  "icon": "fa-solid fa-user",
+  "icon": "fa-solid fa-microphone",
   "category": "content",
   "version": "1.0.0",
   "renderers": {
