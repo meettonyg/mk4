@@ -151,7 +151,7 @@ function gmkb_inject_data_object_script() {
         'debugMode'         => defined('WP_DEBUG') && WP_DEBUG,
         'componentRegistry' => gmkb_get_component_registry_data(),
         'themes'            => gmkb_get_theme_data(),
-        'savedState'        => get_post_meta($post_id, 'gmkb_media_kit_state', true) ?: null,
+        'savedState'        => gmkb_get_saved_state($post_id),
         'pods_data'         => gmkb_get_pods_data($post_id),
     );
 
@@ -163,6 +163,21 @@ function gmkb_inject_data_object_script() {
     if ($component_count > 0) {
         $first_key = array_key_first($gmkb_data['componentRegistry']);
         echo 'console.log("🔍 PHP DEBUG: First component key:", "' . esc_js($first_key) . '");';
+    }
+    
+    // DEBUG: Output pods_data structure
+    if (defined('WP_DEBUG') && WP_DEBUG && !empty($gmkb_data['pods_data'])) {
+        echo 'console.log("🔍 PHP DEBUG: Pods data keys:", ' . json_encode(array_keys($gmkb_data['pods_data'])) . ');';
+        // Check for non-string values
+        $non_string_fields = array();
+        foreach ($gmkb_data['pods_data'] as $key => $value) {
+            if (!is_null($value) && !is_string($value) && !is_numeric($value)) {
+                $non_string_fields[$key] = gettype($value);
+            }
+        }
+        if (!empty($non_string_fields)) {
+            echo 'console.warn("⚠️ PHP DEBUG: Non-string Pods fields:", ' . json_encode($non_string_fields) . ');';
+        }
     }
     echo '</script>';
 
@@ -381,6 +396,64 @@ function gmkb_get_theme_data() {
     return $themes_array;
 }
 
+function gmkb_get_saved_state($post_id) {
+    $saved_state = get_post_meta($post_id, 'gmkb_media_kit_state', true);
+    
+    // If no saved state, return null
+    if (!$saved_state) {
+        return null;
+    }
+    
+    // ROOT FIX: Sanitize saved state to prevent .replace() errors
+    // Ensure all component props are simple types
+    if (isset($saved_state['sections']) && is_array($saved_state['sections'])) {
+        foreach ($saved_state['sections'] as &$section) {
+            if (isset($section['components']) && is_array($section['components'])) {
+                foreach ($section['components'] as &$component) {
+                    if (isset($component['props']) && is_array($component['props'])) {
+                        $component['props'] = gmkb_sanitize_component_props($component['props']);
+                    }
+                }
+            }
+        }
+    }
+    
+    return $saved_state;
+}
+
+function gmkb_sanitize_component_props($props) {
+    $sanitized = array();
+    
+    foreach ($props as $key => $value) {
+        // Handle different value types
+        if (is_null($value)) {
+            $sanitized[$key] = null;
+        } elseif (is_string($value) || is_numeric($value) || is_bool($value)) {
+            // Simple types - keep as is
+            $sanitized[$key] = $value;
+        } elseif (is_array($value)) {
+            // Arrays - recursively sanitize
+            $sanitized[$key] = array_map(function($item) {
+                if (is_array($item)) {
+                    return gmkb_sanitize_component_props($item);
+                } elseif (is_object($item)) {
+                    return null; // Can't use objects
+                } else {
+                    return $item;
+                }
+            }, $value);
+        } elseif (is_object($value)) {
+            // Objects - convert to null (can't be serialized safely)
+            $sanitized[$key] = null;
+        } else {
+            // Unknown type - use null
+            $sanitized[$key] = null;
+        }
+    }
+    
+    return $sanitized;
+}
+
 function gmkb_get_pods_data($post_id) {
     $pods_data = array();
     
@@ -398,12 +471,38 @@ function gmkb_get_pods_data($post_id) {
             );
             
             foreach ($fields as $field) {
-                $pods_data[$field] = $pod->field($field);
+                $value = $pod->field($field);
+                
+                // ROOT FIX: Ensure all values are simple types (string/null)
+                // Pods can return complex objects/arrays for relationship fields
+                if (is_array($value) || is_object($value)) {
+                    // For complex types, try to extract a simple value
+                    if (is_array($value) && isset($value['guid'])) {
+                        // Image/file field - use URL
+                        $pods_data[$field] = $value['guid'];
+                    } elseif (is_array($value) && isset($value[0])) {
+                        // Array of values - use first one
+                        $pods_data[$field] = is_string($value[0]) ? $value[0] : null;
+                    } else {
+                        // Can't convert - use null
+                        $pods_data[$field] = null;
+                    }
+                } else {
+                    // Simple value (string/number/null) - use as is
+                    $pods_data[$field] = $value;
+                }
             }
             
             // Add topics
             for ($i = 1; $i <= 5; $i++) {
-                $pods_data["topic_$i"] = $pod->field("topic_$i");
+                $value = $pod->field("topic_$i");
+                
+                // ROOT FIX: Sanitize topic values too
+                if (is_array($value) || is_object($value)) {
+                    $pods_data["topic_$i"] = null;
+                } else {
+                    $pods_data["topic_$i"] = $value;
+                }
             }
         }
     } catch (Exception $e) {
